@@ -2,8 +2,11 @@
 
 Date: 2026-08-17
 Status: approved in design discussion with the user, 2026-08-17
-Next step after this spec: user review of this document, then the
-`writing-plans` skill plans the implementation of milestone 1.
+Next step: a new session resumes from
+`handoff/2026-08-17-research-handoff.md` — it executes the research
+tracks (T1–T5) and, once the user has read the five research docs,
+uses the `writing-plans` skill to plan the implementation of
+milestone 1.
 
 ## 1. What the project is
 
