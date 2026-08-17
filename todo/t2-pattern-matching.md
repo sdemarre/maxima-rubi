@@ -42,3 +42,29 @@ Depends on: T1 (the pattern grammar to probe against)
 
 ## Evidence
 
+- 2026-08-17, builtins audit (probe `probes/maxima/probe-builtin-audit.run`
+  → `.out`), build branch_5_49_base_796_g60186bb22_dirty (2026-07-28),
+  SBCL 2.6.7. UNBOUND in this build (stays a noun): `head`, `car`,
+  `cdr`, `boundp`, `functionp`, `position`, `index`, `element`,
+  `null`, `lconcat`, `lappend`, `lpart`, `explode`, `together`,
+  `apart`, `simplify`, `cancellist`, `fractpart`, `get_seconds`,
+  `catch_error`, `file_namestring`, `den`. Manual confirms: no topic
+  for `head`/`car`/`boundp`/`functionp`/`position` (list sense)/
+  `null`/`together`/`apart` — these are not Maxima functions (the
+  only `position` topic is a 3d-graphics object option). Workarounds
+  that WORK and are measurement-verified: `part(x, i)`,
+  `freeof`, `atom`, `listp`, `symbolp`, `member`, `delete`,
+  `adjoin` (sets), `unique`, `sort`, `setdifference`, `intersection`,
+  `is`, `integerp`, `numberp`, `ratsimp`, `rat`, `num`, `denom`,
+  `expand`, `factor`, `trigsimp`, `resimplify`, `diff`, `mod`,
+  `floor`,   `catch`/`throw`, `concat`/`sconcat` (string concat; `+`
+  is SUM, never concatenation). 2026-08-17 addition from the corpus
+  probes: `stringmatch` is also unbound (stays a noun). Traps: `numer`
+  is an option variable
+  — calling `numer(expr)` is a fatal Lisp error; `sublist` is bound
+  but returned `[]` for both `sublist([a,b,c],{1,2})` and
+  `sublist([a,b,c],[1,3])` (do not rely on it); `adjoin` needs set
+  arguments (errors on lists); one Lisp error aborts a `-b` batch
+  run. `string(build_info())` prints a `?%build_info(...)` form;
+  `disp(build_info())` is the clean form.
+
