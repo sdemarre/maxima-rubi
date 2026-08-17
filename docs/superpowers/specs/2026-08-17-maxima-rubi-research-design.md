@@ -66,11 +66,10 @@ out of milestone 1's scope.
   *transcendental* Risch case; the manual states that the algebraic
   case has not been implemented. Recorded for the record; out of scope
   for this project.
-- Maxima's pattern machinery, **as measured in this build on
-  2026-08-17**, probe at
-  `probes/probe-pattern-facilities.mac`): it
+- Maxima's pattern machinery — **as measured in this build on
+  2026-08-17**, probe at `probes/probe-pattern-facilities.mac` —
   is **not** the `match`/`matchfix`/`matchfree` + `%`/`%%` wildcards
-  one might expect — `match` is unbound in a bare session (the call
+  one might expect: `match` is unbound in a bare session (the call
   stays a noun), `matchfix` raises a Lisp type error, and there is no
   manual topic "match". What *is* documented (manual topic
   "Functions and Variables for Rules and Patterns") is the **rule
@@ -256,8 +255,8 @@ T2 → {T4, T5}; all of T1–T4 → T5.
   script), named so the doc can point at it.
 - Doc sections are written when their evidence exists, not stubbed
   ahead of it.
-- Counts and timings are stamped with date and Maxima build (`version()`
-  string plus the installed tree name).
+- Counts and timings are stamped with date and Maxima build, per
+  `build_info()`.
 - "Maxima surely has X" is never a claim: look it up per `AGENTS.md`
   (`describe(..., exact)`) or write a probe.
 - A probe's output, when cited, lives next to the probe (a `.out` file)
@@ -288,7 +287,8 @@ implementation-plan item; the default is gitignored.
 
 - All five docs committed; every claim in them cites a re-runnable probe.
 - The seed class confirmed or changed, with T1's counts as the evidence.
-- T2 has a go/no-go with the matcher cost scoped.
+- T2 has a go/no-go across routes A/B, with the pattern-support cost
+  scoped.
 - T3 has the baseline profile and the milestone-1 acceptance set.
 - T4 has the translation procedure and the chosen rule format.
 - T5 has the harness spec with the test protocol pinned.
