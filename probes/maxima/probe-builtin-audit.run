@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run the builtin audit probe (from repo root):
+#   sh probes/maxima/probe-builtin-audit.run
+# Output is redirected to probe-builtin-audit.out with a date/build
+# stamp and committed (measured-claims discipline).
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# probe-builtin-audit output, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  maxima --very-quiet -b probes/maxima/probe-builtin-audit.mac
+} > probes/maxima/probe-builtin-audit.out
+echo "wrote probes/maxima/probe-builtin-audit.out"

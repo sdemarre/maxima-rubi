@@ -1,0 +1,95 @@
+/* probes/maxima/probe-builtin-audit.mac  (T2/T5 input)
+ *
+ * Functional audit of assumed Maxima builtins in the installed build.
+ * Run:
+ *   sh probes/maxima/probe-builtin-audit.run
+ *
+ * For each candidate, one probe call is evaluated; an UNBOUND function
+ * stays a noun, so `string' shows the call itself (UNBOUND). A bound
+ * function shows its value. Interpretation lives in
+ * docs/pattern-matching-feasibility.md and docs/package-architecture.md.
+ * A Lisp error aborts the batch, so every probe below is chosen to be
+ * side-effect free and non-erroring whether the function is bound or
+ * not (uncaught `throw' would be fatal -- it is last, and always inside
+ * a `catch').
+ *
+ * Stamped 2026-08-17; build branch_5_49_base_796_g60186bb22_dirty
+ * (2026-07-28), SBCL 2.6.7.
+ */
+
+disp(build_info())$
+show(nm, v) := disp(concat(nm, " [", string(v), "]"))$
+
+/* ---- lists & sets ---- */
+show("second", second([a, b, c]))$
+show("rest", rest([a, b, c]))$
+show("last", last([a, b, c]))$
+show("length", length([a, b, c]))$
+show("listp", listp([a]))$
+show("atom", atom(a))$
+show("member", member(b, [a, b]))$
+show("delete", delete(b, [a, b, c]))$
+show("delete-set", delete(b, {a, b, c}))$
+show("adjoin", adjoin(0, {1, 2}))$
+show("reverse", reverse([1, 2, 3]))$
+show("unique", unique([1, 1, 2]))$
+show("sort", sort([3, 1, 2]))$
+show("sublist-range", sublist([a, b, c], {1, 2}))$
+show("sublist-index", sublist([a, b, c], [1, 3]))$
+show("position", position(b, [a, b]))$
+show("index", index(b, [a, b]))$
+show("element", element(2, [1, 2]))$
+show("null", null([1]))$
+show("lconcat", lconcat([1], [2]))$
+show("lappend", lappend([1], [2]))$
+show("setdifference", setdifference({a, b, c}, {b}))$
+show("intersection", intersection({a, b}, {b, c}))$
+
+/* ---- predicates ---- */
+show("is", is(2 > 1))$
+show("integerp", integerp(3/2))$
+show("numberp", numberp(x))$
+show("symbolp", symbolp(x))$
+show("freeof", freeof(x, x^2 + 1))$
+show("boundp", boundp(head))$
+show("functionp", functionp('sin))$
+
+/* ---- expression structure ---- */
+show("head", head(x + 1))$
+show("car", car([1, 2]))$
+show("cdr", cdr([1, 2]))$
+show("part", part(x^2 * y, 1))$
+show("lpart", lpart([1, 2], 1))$
+show("explode", explode("a + b"))$
+
+/* ---- rational / simplification ---- */
+show("ratsimp", ratsimp(x/(x^2-1) + 1/(1-x)))$
+show("rat", rat(1/x + 1/x^2))$
+show("num", num(x/(x^2-1)))$
+show("den", den(x/(x^2-1)))$
+show("denom", denom(x/(x^2-1)))$
+show("together", together(1/x + 1/x^2))$
+show("apart", apart(1/(x*(x+1))))$
+show("expand", expand((x+1)^2))$
+show("factor", factor(x^2 - 1))$
+show("trigsimp", trigsimp(sin(x)^2 + cos(x)^2))$
+show("simplify", simplify(1/(x*(x+1))))$
+show("resimplify", resimplify(x + -x))$
+show("ratp", ratp(x^2 + 1))$
+show("cancellist", cancellist([x, x^2]))$
+
+/* ---- calculus / number / time ---- */
+show("diff", diff(x^3, x))$
+show("mod", mod(7, 3))$
+show("floor", floor(7/2))$
+show("fractpart", fractpart(7/2))$
+show("get_seconds", get_seconds())$
+show("catch_error", catch_error(1/1))$
+
+/* ---- IO / version ---- */
+show("file_namestring", file_namestring())$
+show("build_info", build_info())$
+
+/* ---- throw/catch last (an uncaught throw would abort the batch) ---- */
+show("catch-throw", catch(throw(42), 99))$
+show("catch-throw2", catch(throw(42)))$

@@ -1,0 +1,199 @@
+# probe-builtin-audit output, 2026-08-17
+# Maxima branch_5_49_base_796_g60186bb22_dirty
+batch("probes/maxima/probe-builtin-audit.mac")
+disp(build_info())
+Maxima-version: "branch_5_49_base_796_g60186bb22_dirty"
+Maxima build date: "2026-07-28 18:58:04"
+Host type: "x86_64-pc-linux-gnu"
+Lisp implementation type: "SBCL"
+Lisp implementation version: "2.6.7"
+User dir: "/home/serge/.maxima"
+Temp dir: "/tmp"
+Object dir: "/home/serge/.maxima/binary/branch_5_49_base_796_g60186bb22_dirty/sbcl/2_6_7"
+Frontend: false
+
+show(nm,v):=disp(concat(nm," [",string(v),"]"))
+show("second",second([a,b,c]))
+                                  second [b]
+
+show("rest",rest([a,b,c]))
+                                 rest [[b,c]]
+
+show("last",last([a,b,c]))
+                                   last [c]
+
+show("length",length([a,b,c]))
+                                  length [3]
+
+show("listp",listp([a]))
+                                 listp [true]
+
+show("atom",atom(a))
+                                  atom [true]
+
+show("member",member(b,[a,b]))
+                                 member [true]
+
+show("delete",delete(b,[a,b,c]))
+                                delete [[a,c]]
+
+show("delete-set",delete(b,{a,b,c}))
+                              delete-set [{a,c}]
+
+show("adjoin",adjoin(0,{1,2}))
+                               adjoin [{0,1,2}]
+
+show("reverse",reverse([1,2,3]))
+                               reverse [[3,2,1]]
+
+show("unique",unique([1,1,2]))
+                                unique [[1,2]]
+
+show("sort",sort([3,1,2]))
+                                sort [[1,2,3]]
+
+show("sublist-range",sublist([a,b,c],{1,2}))
+                              sublist-range [[]]
+
+show("sublist-index",sublist([a,b,c],[1,3]))
+                              sublist-index [[]]
+
+show("position",position(b,[a,b]))
+                         position [position(b,[a,b])]
+
+show("index",index(b,[a,b]))
+                            index [index(b,[a,b])]
+
+show("element",element(2,[1,2]))
+                          element [element(2,[1,2])]
+
+show("null",null([1]))
+                               null [null([1])]
+
+show("lconcat",lconcat([1],[2]))
+                          lconcat [lconcat([1],[2])]
+
+show("lappend",lappend([1],[2]))
+                          lappend [lappend([1],[2])]
+
+show("setdifference",setdifference({a,b,c},{b}))
+                             setdifference [{a,c}]
+
+show("intersection",intersection({a,b},{b,c}))
+                              intersection [{b}]
+
+show("is",is(2 > 1))
+                                   is [true]
+
+show("integerp",integerp(3/2))
+                               integerp [false]
+
+show("numberp",numberp(x))
+                                numberp [false]
+
+show("symbolp",symbolp(x))
+                                symbolp [true]
+
+show("freeof",freeof(x,x^2+1))
+                                freeof [false]
+
+show("boundp",boundp(head))
+                             boundp [boundp(head)]
+
+show("functionp",functionp('sin))
+                          functionp [functionp(sin)]
+
+show("head",head(x+1))
+                               head [head(x+1)]
+
+show("car",car([1,2]))
+                               car [car([1,2])]
+
+show("cdr",cdr([1,2]))
+                               cdr [cdr([1,2])]
+
+show("part",part(x^2*y,1))
+                                  part [x^2]
+
+show("lpart",lpart([1,2],1))
+                            lpart [box(1,"[1,2]")]
+
+show("explode",explode("a + b"))
+                          explode [explode("a + b")]
+
+show("ratsimp",ratsimp(x/(x^2-1)+1/(1-x)))
+                            ratsimp [-(1/(x^2-1))]
+
+show("rat",rat(1/x+1/x^2))
+                                rat [(x+1)/x^2]
+
+show("num",num(x/(x^2-1)))
+                                    num [x]
+
+show("den",den(x/(x^2-1)))
+                             den [den(x/(x^2-1))]
+
+show("denom",denom(x/(x^2-1)))
+                                 denom [x^2-1]
+
+show("together",together(1/x+1/x^2))
+                        together [together(1/x+1/x^2)]
+
+show("apart",apart(1/(x*(x+1))))
+                          apart [apart(1/(x*(x+1)))]
+
+show("expand",expand((x+1)^2))
+                              expand [x^2+2*x+1]
+
+show("factor",factor(x^2-1))
+                             factor [(x-1)*(x+1)]
+
+show("trigsimp",trigsimp(sin(x)^2+cos(x)^2))
+                                 trigsimp [1]
+
+show("simplify",simplify(1/(x*(x+1))))
+                       simplify [simplify(1/(x*(x+1)))]
+
+show("resimplify",resimplify(x-x))
+                                resimplify [0]
+
+show("ratp",ratp(x^2+1))
+                                 ratp [false]
+
+show("cancellist",cancellist([x,x^2]))
+                       cancellist [cancellist([x,x^2])]
+
+show("diff",diff(x^3,x))
+                                 diff [3*x^2]
+
+show("mod",mod(7,3))
+                                    mod [1]
+
+show("floor",floor(7/2))
+                                   floor [3]
+
+show("fractpart",fractpart(7/2))
+                          fractpart [fractpart(7/2)]
+
+show("get_seconds",get_seconds())
+                          get_seconds [get_seconds()]
+
+show("catch_error",catch_error(1/1))
+                         catch_error [catch_error(1)]
+
+show("file_namestring",file_namestring())
+                      file_namestring [file_namestring()]
+
+show("build_info",build_info())
+build_info [?%build_info("branch_5_49_base_796_g60186bb22_dirty","2026-07-28 1\
+8:58:04","x86_64-pc-linux-gnu","SBCL","2.6.7","/home/serge/.maxima","/tmp","/h\
+ome/serge/.maxima/binary/branch_5_49_base_796_g60186bb22_dirty/sbcl/2_6_7",fal\
+se,false)]
+
+show("catch-throw",catch(throw(42),99))
+                               catch-throw [42]
+
+show("catch-throw2",catch(throw(42)))
+                               catch-throw2 [42]
+
+       /home/serge/src/maxima-rubi/probes/maxima/probe-builtin-audit.mac
