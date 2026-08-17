@@ -27,6 +27,15 @@ The research reads two reference repositories, cloned locally under
 The pinned commit (full 40-digit hash) of each is recorded in
 `todo/TODO.md`. Claims about Rubi refer to the pinned commits.
 
+## Maxima version
+
+The installed build is a 5.49-series development version; **5.50 is
+expected soon** and brings significant improvements, including
+pattern-matching *speed* (no new pattern-matching *functionality*).
+The project does **not** pin to 5.49 as a target: every measurement
+is stamped with the build it was taken on, and baselines are
+re-measured on upgrade rather than carried over.
+
 ## Looking up Maxima itself
 
 The manual is in the running Maxima, not on the web — consult it before
@@ -72,8 +81,9 @@ Four behaviours worth knowing, all measured here (Maxima 5.49, SBCL):
   committed, re-runnable probe under `probes/` (a Maxima batch script or a
   shell script). A doc section is written when its evidence exists, not
   stubbed ahead of it.
-- Counts and timings are stamped with the date and the Maxima build
-  (the `version()` string plus the installed tree name).
+- Counts and timings are stamped with the date and the Maxima build —
+  obtained from `build_info()` (`version` is unbound in the installed
+  5.49-series development build).
 - "Maxima surely has X" is never a claim: look it up per the section above,
   or write a probe.
 

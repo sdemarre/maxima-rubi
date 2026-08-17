@@ -1,0 +1,50 @@
+/* probes/probe-pattern-facilities.mac — 2026-08-17
+ *
+ * What pattern-matching machinery does the installed Maxima actually
+ * have?  Run:
+ *
+ *   maxima --very-quiet -b probes/probe-pattern-facilities.mac
+ *
+ * Findings stamped 2026-08-17; build per `build_info()`:
+ * branch_5_49_base_796_g60186bb22_dirty (2026-07-28), SBCL 2.6.7;
+ * recorded in
+ * docs/superpowers/specs/2026-08-17-maxima-rubi-research-design.md
+ * section 3 and in todo/t2-pattern-matching.md item 0:
+ *
+ *   - `match` and `matchfree` are unbound in a bare session: the calls
+ *     stay nouns.
+ *   - `matchfix` is bound to something that expects its first argument
+ *     to be a symbol and raises a Lisp type error on a plain
+ *     expression (see below) — not a general expression matcher.
+ *   - There is no manual topic "match". The documented machinery is
+ *     the rule system (manual topic "Functions and Variables for
+ *     Rules and Patterns"), which works, as demonstrated in section 2.
+ */
+
+/* `version` is unbound in this build; `build_info()` is the way. */
+disp(build_info())$
+
+/* --- 1. the expected-but-absent builtins ---------------------------- */
+/* Note: quoting does not stop argument evaluation in this build —
+ * with f : 99, 'f(1+1) displays f(2): `'' quotes the function
+ * symbol, the arguments still evaluate (measured 2026-08-17, see
+ * todo/t2-pattern-matching.md item 0). Harmless here: the question
+ * is whether the CALL evaluates, and a noun answer means the symbol
+ * is unbound. */
+disp('match(sin(x + y), sin(%)))$     /* noun: `match` unbound */
+disp('matchfree(x^2 + 1, %^2 + 1))$   /* noun: `matchfree` unbound */
+/* matchfix, left commented out because it aborts the batch:
+ * the measured error of `matchfix(x^2+1, %^2+1)`:
+ *   Maxima encountered a Lisp error:
+ *     The value ((MPLUS SIMP) 1 ((MEXPT SIMP) $X 2))
+ *     is not of type SYMBOL when binding SYMBOL */
+
+/* --- 2. the real machinery: the rule system ------------------------- */
+/* The manual's own example, verbatim: a named-capture match test with
+ * a predicate condition. `a` matches any nonzero subexpression free
+ * of x, `b` any subexpression free of x, and `x` (undeclared) matches
+ * only the literal x. */
+matchdeclare(a, lambda([e], e # 0 and freeof(x, e)), b, freeof(x))$
+defmatch(linearp, a*x + b)$
+disp(linearp(3*x + 2))$       /* expected [b = 2, a = 3] */
+disp(linearp(x^2 + 2))$       /* expected false: 1 is not free of x */

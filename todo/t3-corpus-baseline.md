@@ -20,6 +20,9 @@ algebraic-section baseline waits for the timeout/format design it establishes)
    "derivative of candidate equals the integrand".
 4. The gap profile: what milestone 1's acceptance set is, and what
    fraction `integrate` already passes today (the uplift baseline).
+5. `sympy_rubi` cross-check: where a corpus expected-answer is in
+   doubt or its normalisation unclear, its answer is an independent
+   oracle.
 
 ## Evidence
 

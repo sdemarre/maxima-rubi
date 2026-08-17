@@ -16,6 +16,9 @@ Depends on: — (drives T2 and T4)
    This is the support-function gap list.
 5. License text verbatim + what a port must carry (attribution etc.).
 6. How does Rubi verify its own answers (derivative check? simplification?)
+7. Rubi-5 state: read `Int111`/`Int121` in `Rubi-5.m` — what does a
+   "compiled" if-then-else integrator look like next to the Rubi-4
+   rules it came from? (Feeds T2 route B and T4.)
 
 ## Evidence
 
