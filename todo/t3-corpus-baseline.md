@@ -26,3 +26,9 @@ algebraic-section baseline waits for the timeout/format design it establishes)
 
 ## Evidence
 
+- 2026-08-17: cloned
+  `https://github.com/RuleBasedIntegration/MaximaSyntaxTestSuite`
+  into `reference/maxima-syntax-test-suite`, pinned commit
+  `60295e21c571ca210ecfbb695f4af99947454adf` (2018-10-25, "Update
+  test suite"). Pin recorded in `todo/TODO.md`.
+

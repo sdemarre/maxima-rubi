@@ -24,3 +24,9 @@ Depends on: — (drives T2 and T4)
 
 (Stamped measurements land here as work proceeds: date, Maxima build string
 where relevant, probe under `probes/` where the measurement is reproducible.)
+
+- 2026-08-17: cloned `https://github.com/RuleBasedIntegration/Rubi`
+  into `reference/rubi`, pinned commit
+  `61e9c18ea248061cd83c67882f7c91a73cef912d` (2024-02-22, "Add
+  appropriate directions for limits for definite integration.").
+  Pin recorded in `todo/TODO.md`.
