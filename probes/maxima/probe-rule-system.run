@@ -1,0 +1,14 @@
+#!/bin/sh
+# probes/maxima/probe-rule-system.run — run the route-A feature matrix.
+#
+#   sh probes/maxima/probe-rule-system.run
+#
+# Output goes to probe-rule-system.out (committed) with a date/build
+# stamp.
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# probe-rule-system output, $(date -u +%F)"
+  maxima --very-quiet -b probes/maxima/probe-rule-system.mac
+} > probes/maxima/probe-rule-system.out
+echo "wrote probes/maxima/probe-rule-system.out"
+grep -c "FAIL" probes/maxima/probe-rule-system.out | sed 's/^/FAIL lines: /'

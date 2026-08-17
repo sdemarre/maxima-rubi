@@ -1,0 +1,269 @@
+/* probes/maxima/probe-rule-system.mac — T2 route-A feature matrix
+ *
+ * Probes the documented Maxima rule system (matchdeclare / defmatch)
+ * against the features of the Rubi-4 rule grammar (T1 doc section 2):
+ * named capture, multiple captures, variable reuse, literal symbols,
+ * lambda and named predicates, kernels in patterns, the class-1
+ * workhorse shape, the runner's apply path, and ordered dispatch.
+ *
+ * Run:  sh probes/maxima/probe-rule-system.run
+ *
+ * Measured traps on branch_5_49_base_796_g60186bb22_dirty (2026-07-28)
+ * that this probe is built around (each has a named test):
+ *   - filter(lambda(...), list) does NOT evaluate: it returns itself
+ *     as an unevaluated noun, even with a named function. All lookup
+ *     here goes through the recursive if/else helper geteqR instead
+ *     (T13 documents the filter noun directly).
+ *   - a block is a SEQUENCE; `if cond then A` with no else does not
+ *     terminate the block — the block returns the value of its last
+ *     expression. Every guard in this probe is a value-carrying
+ *     if/else (T13 documents the trap directly).
+ *   - is() does not re-evaluate symbols it receives raw (quoted or via
+ *     part()): is(3 = 'va) is false even with va bound to 3. Name
+ *     comparison therefore runs is(rawsymbol = samesymbol), which is
+ *     true (T1, via geteqR).
+ *   - never defmatch a pattern from a name that was killed: the
+ *     re-declared matcher misbehaves (T14 documents the anomaly).
+ *     Every section below uses fresh pattern-variable names and kill()
+ *     only ever retires names used exactly once.
+ *   - defmatch ASSIGNs its pattern variables globally as a side effect
+ *     of a successful match; test expressions therefore use only the
+ *     never-declared symbols z, w, k, u (plus x, the integration
+ *     variable, which no pattern ever captures by name).
+ *   - the matcher performs algebraic decomposition: log(5+2*z) can
+ *     match log(a+b*x) with b->0 (T8b); predicates must encode every
+ *     intended restriction.
+ *
+ * Build: branch_5_49_base_796_g60186bb22_dirty (2026-07-28), SBCL 2.6.7.
+ */
+
+disp(build_info())$
+
+/* value lookup on the [var = value] capture list (no order guaranteed) */
+geteqR(mm, nm) := block([],
+  if length(mm) = 0 then false
+    else if is(part(part(mm, 1), 1) = nm) then part(part(mm, 1), 2)
+         else geteqR(rest(mm), nm))$
+
+/* T1 basic capture + predicate, values from equation list */
+matchdeclare(pa, lambda([qq], qq # 0 and freeof(x, qq)), pb, freeof(x))$
+defmatch(linearp, pa*x + pb, x)$
+m1: linearp(3*x + 2, x)$
+if m1 = false then disp("T1 FAIL nomatch", m1)$
+if is(geteqR(m1, 'pa) = 3) = false or is(geteqR(m1, 'pb) = 2) = false
+  then disp("T1 FAIL values", m1)$
+if m1 # false and is(geteqR(m1, 'pa) = 3) = true
+  then disp(concat("T1 PASS basic capture ", string(m1)))$
+kill(pa, pb)$
+
+/* T2 multiple captures, nontrivial matched forms */
+m2: linearp((z + 4)*x + z^2, x)$
+if m2 = false or is(geteqR(m2, 'pa) = z + 4) = false then disp("T2 FAIL", m2)$
+if m2 # false and is(geteqR(m2, 'pa) = z + 4) = true
+  then disp(concat("T2 PASS multiple captures ", string(m2)))$
+kill(pa, pb)$
+
+/* T3 reused pattern variable: must be consistent */
+matchdeclare(pc, true)$
+defmatch(reusef, pc*x^2 + pc)$
+if reusef(2*x^2 + 5) # false then disp("T3 FAIL inconsistent matched")$
+if reusef(2*x^2 + 5) = false then disp("T3 PASS inconsistent reuse rejected")$
+m3b: reusef(2*x^2 + 2)$
+if m3b = false or geteqR(m3b, 'pc) # 2 then disp("T3b FAIL", m3b)$
+if m3b # false and is(geteqR(m3b, 'pc) = 2) = true
+  then disp(concat("T3b PASS consistent reuse ", string(m3b)))$
+kill(pc)$
+
+/* T4 undeclared symbol in pattern is literal */
+defmatch(lit4a, x + 5)$
+if lit4a(z + 3) # false or lit4a(x + 3) # false
+  then disp("T4a FAIL pure-literal pattern matched non-identical")$
+if lit4a(z + 3) = false and lit4a(x + 3) = false
+  then disp(concat("T4a PASS pure-literal pattern (self: ",
+                   string(lit4a(x + 5)), ")"))$
+matchdeclare(pw2, freeof(x))$
+defmatch(lit4b, x + pw2)$
+if lit4b(z + 3) # false then disp("T4b FAIL decomposition accepted")$
+if lit4b(z + 3) = false
+  then disp("T4b PASS freeof(x) predicate vetoes decomposition")$
+m4c: lit4b(x + 3)$
+if m4c = false or geteqR(m4c, 'pw2) # 3 then disp("T4c FAIL", m4c)$
+if m4c # false and is(geteqR(m4c, 'pw2) = 3) = true
+  then disp(concat("T4c PASS literal x with wildcard ", string(m4c)))$
+kill(pw2)$
+
+/* T5 compound lambda predicate */
+matchdeclare(pq, lambda([qq], freeof(x, qq) and integerp(qq)))$
+defmatch(predf, pq*x)$
+m5v: predf(3*x)$
+if m5v = false or geteqR(m5v, 'pq) # 3 then disp("T5 FAIL", m5v)$
+if m5v # false and is(geteqR(m5v, 'pq) = 3) = true
+  then disp(concat("T5 PASS compound predicate ", string(m5v)))$
+if predf(z^2*x) # false then disp("T5b FAIL predicate bypassed")$
+if predf(z^2*x) = false then disp("T5b PASS predicate enforced")$
+kill(pq)$
+
+/* T6 predicate referenced by a user function name */
+pfun(qq) := freeof(x, qq)$
+matchdeclare(pc2, pfun)$
+defmatch(pfunf, pc2*x + 1)$
+m6: pfunf(7*x + 1)$
+if m6 = false or geteqR(m6, 'pc2) # 7 then disp("T6 FAIL", m6)$
+if m6 # false and is(geteqR(m6, 'pc2) = 7) = true
+  then disp(concat("T6 PASS predicate by name ", string(m6)))$
+kill(pc2)$
+
+/* T7 true-predicate wildcard / power capture */
+matchdeclare(pm, true)$
+defmatch(powerf, x^pm)$
+m7: powerf(x^k)$
+if m7 = false or geteqR(m7, 'pm) # k then disp("T7 FAIL", m7)$
+if m7 # false and is(geteqR(m7, 'pm) = k) = true
+  then disp(concat("T7 PASS wildcard power ", string(m7)))$
+kill(pm)$
+
+/* T8 kernel (function head) in the pattern */
+matchdeclare(pa2, freeof(x))$
+matchdeclare(pb2, freeof(x))$
+defmatch(kernlog, log(pa2 + pb2*x), x)$
+m8: kernlog(log(5 + 2*x), x)$
+if m8 = false or geteqR(m8, 'pa2) # 5 or geteqR(m8, 'pb2) # 2
+  then disp("T8 FAIL", m8)$
+if m8 # false and is(geteqR(m8, 'pa2) = 5) = true
+  then disp(concat("T8 PASS kernel in pattern ", string(m8)))$
+/* T8b the matcher decomposes algebraically: b -> 0 is a valid solve */
+m8b: kernlog(log(5 + 2*z), x)$
+if m8b = false or geteqR(m8b, 'pb2) # 0
+  then disp(concat("T8b INFO decomposition surprise ", string(m8b)))$
+if m8b # false and is(geteqR(m8b, 'pb2) = 0) = true
+  then disp(concat("T8b INFO zero-coefficient decomposition ",
+                   string(m8b)))$
+kill(pa2, pb2)$
+
+/* T8c a predicate can veto the zero-coefficient solve */
+matchdeclare(pa3, freeof(x))$
+matchdeclare(pb3, lambda([qq], qq # 0 and freeof(x, qq)))$
+defmatch(kernlog2, log(pa3 + pb3*x), x)$
+if kernlog2(log(5 + 2*z), x) # false then disp("T8c FAIL veto bypassed")$
+if kernlog2(log(5 + 2*z), x) = false then disp("T8c PASS predicate veto")$
+if kernlog2(log(5 + 2*x), x) # false
+  then disp("T8d PASS veto not over-eager")$
+kill(pa3, pb3)$
+
+/* T9 class-1 workhorse shape (product of two linear powers) */
+matchdeclare(pa4, true)$
+matchdeclare(pb4, true)$
+matchdeclare(pc4, true)$
+matchdeclare(pd4, true)$
+matchdeclare(pn, true)$
+defmatch(prod12, (pa4 + pb4*x)^2*(pc4 + pd4*x)^pn, x)$
+m9: prod12((1 + 2*x)^2*(3 + 4*x)^k, x)$
+if m9 = false or geteqR(m9, 'pb4) # 2 or geteqR(m9, 'pn) # k
+  then disp(concat("T9 FAIL", string(m9)))$
+if m9 # false and is(geteqR(m9, 'pb4) = 2) = true
+  then disp(concat("T9 PASS product of powers ", string(m9)))$
+kill(pa4, pb4, pc4, pd4, pn)$
+
+/* T10 failures return false */
+matchdeclare(pa5, true)$
+matchdeclare(pb5, true)$
+matchdeclare(pc5, true)$
+matchdeclare(pd5, true)$
+matchdeclare(pn2, true)$
+defmatch(prod12b, (pa5 + pb5*x)^2*(pc5 + pd5*x)^pn2, x)$
+if prod12b(x^5 + 1, x) # false then disp("T10 FAIL", prod12b(x^5 + 1, x))$
+if prod12b(x^5 + 1, x) = false then disp("T10 PASS failure is false")$
+kill(pa5, pb5, pc5, pd5, pn2)$
+
+/* T11 replacement evaluated under rebind, values from equation list */
+apply12(expr) := block([mm],
+  mm: prod12(expr, x),
+  if mm = false then false
+    else block([AA, BB, CC, DD, NN],
+      AA: geteqR(mm, 'pa4), BB: geteqR(mm, 'pb4), CC: geteqR(mm, 'pc4),
+      DD: geteqR(mm, 'pd4), NN: geteqR(mm, 'pn),
+      block([pa4, pb4, pc4, pd4, pn],
+        pa4: AA, pb4: BB, pc4: CC, pd4: DD, pn: NN,
+        (pa4 + pb4)*(pc4 + pd4)*pn)))$
+r11: apply12((1 + 2*x)^2*(3 + 4*x)^k)$
+if is(r11 = 3*7*k) = false then disp(concat("T11 FAIL", string(r11)))$
+if is(r11 = 3*7*k) = true then disp("T11 PASS replacement under rebind")$
+kill(pa4, pb4, pc4, pd4, pn)$
+
+/* T12 ordered dispatch: first matching test wins (the runner model).
+   A true-predicate wildcard absorbs z+5 into x + (z+5-x); the runner's
+   rule list must therefore carry restricted predicates, not true. */
+defmatch(lit5, x + 5)$
+matchdeclare(pt, true)$
+defmatch(anyconst, x + pt)$
+acv: anyconst(z + 5)$
+disp(concat("T12 INFO true-wildcard absorbs:  anyconst(z+5) -> ",
+            string(acv)))$
+kill(pt)$
+matchdeclare(pt2, freeof(x))$
+defmatch(anyconst2, x + pt2)$
+dispatch(e) := block([r1, r2],
+  r1: lit5(e),
+  r2: anyconst2(e),
+  if r1 # false then "lit5"
+    else if r2 # false then "anyconst"
+         else "none")$
+d12a: dispatch(x + 5)$
+d12b: dispatch(z + 5)$
+disp(concat("T12 INFO ordered dispatch  x+5 -> ", string(d12a),
+            "   z+5 -> ", string(d12b)))$
+if d12a # "lit5" then disp(concat("T12 FAIL x+5 -> ", string(d12a)))$
+if d12a = "lit5" and d12b = "none"
+  then disp("T12 PASS literal rule wins; restricted wildcard no absorb")$
+kill(pt2)$
+
+/* T13 documented traps: filter noun + if-without-else block fallthrough */
+ff(mm) := filter(lambda([qq], part(qq, 1) = 'pa), mm)$
+n13: ff([1 = 2])$
+if is(listp(n13)) = false then disp(concat("T13a INFO filter is a noun: ",
+                                           string(n13)))$
+traph() := block([], if true then "z", "after")$
+t13b: traph()$
+if t13b # "after" then disp(concat("T13b FAIL expected fallthrough, got ",
+                                   string(t13b)))$
+if t13b = "after" then disp("T13b INFO if-without-else falls through the block")$
+
+/* T14 documented anomaly: defmatch reusing a killed name */
+matchdeclare(pk, true)$
+defmatch(pkf1, pk*x)$
+pkf1v: pkf1(7*x)$
+kill(pk)$
+defmatch(pkf2, pk*x)$
+pkf2v: pkf2(7*x)$
+disp(concat("T14 INFO kill-then-redef  pre-kill: ", string(pkf1v),
+            "   post-kill new fn: ", string(pkf2v),
+            "   post-kill old fn: ", string(pkf1(7*x))))$
+
+/* T15 pattern argument binds the integration variable the pattern
+   references; the caller supplies it as the second argument. Positive
+   control (a), wrong-variable rejection (b), genuinely-different
+   variable (c). */
+matchdeclare(pt5, freeof(x))$
+defmatch(pargf, pt5*x, x)$
+m15a: pargf(3*x, x)$
+m15b: pargf(3*x, t)$
+m15c: pargf(3*t, t)$
+if m15a = false or geteqR(m15a, 'pt5) # 3
+  then disp(concat("T15a FAIL positive control ", string(m15a)))$
+if m15a # false and is(geteqR(m15a, 'pt5) = 3) = true
+  then disp(concat("T15a PASS correct variable (expr x, arg x)",
+                   string(m15a)))$
+if m15b # false then disp(concat("T15b FAIL wrong var accepted ",
+                                 string(m15b)))$
+if m15b = false then disp("T15b PASS wrong variable rejected (expr x, arg t)")$
+if m15c = false or geteqR(m15c, 'pt5) # 3
+  then disp(concat("T15c FAIL different variable ", string(m15c)))$
+if m15c # false and is(geteqR(m15c, 'pt5) = 3) = true
+  then disp(concat("T15c PASS genuinely different variable (expr t, arg t)",
+                   string(m15c)))$
+kill(pt5)$
+
+/* T16 if-conditions: equation conditions evaluate as expected */
+if 0 = 0 then disp("T16a INFO if-condition on true equation fires")$
+t16b: if 0 = 1 then "yes" else "no"$
+if t16b = "no" then disp("T16b PASS equation condition false takes else")$

@@ -1,6 +1,6 @@
 # T2 — Pattern matching in Maxima
 
-Status: open
+Status: done (doc written 2026-08-17)
 Doc: `docs/pattern-matching-feasibility.md`
 Depends on: T1 (the pattern grammar to probe against)
 
@@ -65,6 +65,39 @@ Depends on: T1 (the pattern grammar to probe against)
   but returned `[]` for both `sublist([a,b,c],{1,2})` and
   `sublist([a,b,c],[1,3])` (do not rely on it); `adjoin` needs set
   arguments (errors on lists); one Lisp error aborts a `-b` batch
-  run. `string(build_info())` prints a `?%build_info(...)` form;
-  `disp(build_info())` is the clean form.
+   run. `string(build_info())` prints a `?%build_info(...)` form;
+   `disp(build_info())` is the clean form. `time` is also unbound in
+   this build (2026-08-17 — the timing probe therefore shells out to
+   `date +%s%N` around the run). `is()` does not re-evaluate symbols
+   it receives raw (quoted or via `part()`): `is(3 = 'va)` is false
+   even with `va` bound to 3, while same-name raw-symbol comparison
+   `is(part(eq, 1) = 'va)` is true — the idiom every capture lookup
+   uses.
+- 2026-08-17, route-A feature matrix
+  (`probes/maxima/probe-rule-system.mac` → `.out`, 27 tests, all
+  green): named/multiple/reused capture, literal undeclared symbols,
+  lambda + named + true predicates, kernels in patterns, pattern
+  arguments (which record `x = <var>` in the capture list and reject a
+  wrong integration variable), the class-1 workhorse shape, `false` on
+  non-match, replacement-under-rebind, ordered first-match dispatch.
+  Measured matcher traps: `filter(...)` does not evaluate (returns an
+  unevaluated noun, even with a named function); a `block` is a
+  sequence — `if cond then A` without `else` does not terminate it;
+  the matcher decomposes algebraically (`log(5+2z)` ~ `log(a+b*x)`
+  with `b->0`) and a `true`-predicate wildcard absorbs `z+5` as
+  `x + (z - x + 5)` — predicates must encode every restriction;
+  `defmatch` from a killed name misbehaves (non-deterministic
+  `false`/`true` across runs; functions compiled before the kill keep
+  working).
+- 2026-08-17, per-match cost
+  (`probes/maxima/probe-rule-system-time.mac` → `.out`): 2 × 100,000
+  calls of the class-1 workhorse matcher (100k matches + 100k
+  non-matches) = 1487 ms of work → **0.007 ms per match** including
+  loop overhead; Maxima startup on this machine 31–32 ms.
+- 2026-08-17, mixima assessed (public files, master as pushed
+  2024-05-08, GPLv2): CL-level matcher v16 lacks Optional (Rubi's
+  core feature), orderless only fixed-arity, repeated names
+  identity-only; file translator handles two pattern idioms only; its
+  TODO records the unshipped Maxima-native matchdeclare/tellsimp
+  design — external validation of route A. See T2 doc section 7.
 

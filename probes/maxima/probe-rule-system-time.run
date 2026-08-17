@@ -1,0 +1,32 @@
+#!/bin/sh
+# probes/maxima/probe-rule-system-time.run — wall-clock per-match cost of
+# the route-A defmatch machinery (probe-rule-system-time.mac). Shelled
+# timing because the `time` function is unbound in this build.
+#
+#   sh probes/maxima/probe-rule-system-time.run
+cd "$(dirname "$0")/../.." || exit 1
+mac=probes/maxima/probe-rule-system-time.mac
+t1=$(date +%s%N)
+maxima --very-quiet -b /dev/null >/dev/null 2>&1
+t2=$(date +%s%N)
+startup_ms=$(( (t2 - t1) / 1000000 ))
+t1=$(date +%s%N)
+out=$(maxima --very-quiet -b "$mac" 2>&1)
+t2=$(date +%s%N)
+total_ms=$(( (t2 - t1) / 1000000 ))
+{
+  echo "# probe-rule-system-time output, $(date -u +%F)"
+  echo "# maxima startup-only run: ${startup_ms} ms"
+  echo "# looped run (2 x 100000 matches): ${total_ms} ms"
+  echo "$out" | grep -E "^ *(MATCHED|NONMATCHED) " | sed 's/^ *//'
+  python3 - "$startup_ms" "$total_ms" <<'EOF'
+import sys
+startup_ms, total_ms = int(sys.argv[1]), int(sys.argv[2])
+n = 200000  # 2 x 100000 trials
+work_ms = max(total_ms - startup_ms, 0)
+print(f"# work for 200000 matches: {work_ms} ms")
+print(f"# ms per match (both loops, incl. Maxima loop overhead): "
+      f"{work_ms / n:.3f}")
+EOF
+} > probes/maxima/probe-rule-system-time.out
+echo "wrote probes/maxima/probe-rule-system-time.out"
