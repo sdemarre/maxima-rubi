@@ -1,6 +1,6 @@
 # T1 — Rubi anatomy
 
-Status: open
+Status: done (doc written 2026-08-17)
 Doc: `docs/rubi-architecture.md`
 Depends on: — (drives T2 and T4)
 
