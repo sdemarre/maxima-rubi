@@ -130,7 +130,8 @@ of hand-verified integrals pinning the API end to end.
 
 ### Layer B — corpus suite (Python driver)
 
-The class-1 yardstick is the 17,260-integrand corpus section; the
+The class-1 yardstick is the 25,697-integrand corpus section
+(`docs/corpus-baseline.md`); the
 driver is the generalization of T3's `probe-integrate-sample.py`
 (same mechanics, package instead of `integrate`):
 
@@ -228,10 +229,11 @@ The code lives under these, each one earned by a measurement:
   the T4 census) happens at load time and its wall is **not yet
   measured** — the first implementation milestone includes measuring
   it (if load exceeds ~1 minute, the D tail moves to N-only).
-- Test wall: the class-1 corpus suite is ~10 h end to end at T3's
-  measured rate; that is the standing cost of the yardstick, paid a
-  few times per class, not per change. The per-change gate is Layer
-  A (seconds).
+- Test wall: the class-1 corpus suite is ~12.1 h serial-equivalent at
+  T3's measured rate; the full run took 2.2 h wall on 18 parallel
+  workers (T3 §3.4) — the standing cost of the yardstick, paid a few
+  times per class, not per change. The per-change gate is Layer A
+  (seconds).
 - Open (implementation-phase, not research-phase): the recursion cap
   value, the zero-test chain's adequacy against the T3 23-unverified
   sample (the strengthen-the-chain loop of T4 §4), and whether

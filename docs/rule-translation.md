@@ -235,7 +235,7 @@ Manual (finite, enumerable, all in the utility layer — none per rule):
    probes; on a Maxima upgrade re-run `02-support-surface.run` and
    delete whatever became a builtin.
 3. Run the generated class-1 rules on the class-1 corpus section
-   (17,260 integrands); chase divergences file-by-file using the
+   (25,697 integrands); chase divergences file-by-file using the
    corpus-file ≡ Rubi-file key. The 23 unverified answers of T3's
    sample (zero-test chain did not close) are the expected first
    divergences and drive the strengthen-the-chain loop.

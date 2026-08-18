@@ -1,6 +1,6 @@
 # T3 — Corpus and Maxima baseline
 
-Status: open
+Status: done (2026-08-18)
 Doc: `docs/corpus-baseline.md`
 Depends on: — (its sample run starts in parallel with T1; the full
 algebraic-section baseline waits for the timeout/format design it establishes)
@@ -80,4 +80,40 @@ algebraic-section baseline waits for the timeout/format design it establishes)
   "verified" = derivative matches the integrand within the chain,
   corpus expectation differs beyond it (branch/cosmetic); the
   unverified 23 are the chain-strength gap (T3-Q3).
+- 2026-08-18: **full class-1 baseline, 25,697 entries / 40 files** —
+  the earlier "17,260" was a miscalculation (corrected in T2/T4/T5
+  docs). First full run (serial 6 h cap → 7,284; serial resume →
+  13,175; 8-way shard of the tail, 3.28 h wall / 9.75 h
+  serial-eq.) was **invalidated by three template traps** measured
+  that day: noun-expected detection missed the `CannotIntegrate(f, x)`
+  call form; the template's own bindings `f`/`r` (corpus
+  coefficients!) got substituted into re-pasted integrand/expected
+  text, corrupting comparisons (`is(part(r,1) = <re-pasted text>)` →
+  false, `is(part(r,1) = <bound symbol>)` → true, on a genuine noun);
+  and `part`/`length` noun detection false-positives on product
+  answers (`length(5*x)` → 2). Fixes in the committed
+  `probe-integrate-sample.py`: name-prefix noun detection, `mr_`/
+  `MR_` template variables, and the op-string noun detector
+  (`is(string(op(mr_r)) = "integrate")` — measured: `islist`/
+  `isatom` stay unevaluated on the noun, `is(equal(op(r),
+  integrate))` → unknown, `is(5*x = 'integrate(5,x))` → true, so
+  those candidates were rejected).
+- 2026-08-18: **second full run, 18 parallel workers, 2.17 h wall
+  for 12.03 h serial-equivalent (≈5.5×)**; merged by
+  `merge-shards.py` (25,697/25,697 keys, no dupes/missing/extra →
+  canonical `probe-integrate-sample.out`). Final classes: verified
+  11,313, expected 1,485, no-answer 8,297, unverified 3,102, timeout
+  1,260, error 240, unexpected 0. 31/31 corpus non-integrable
+  entries → Maxima noun. Transition vs the buggy run: 620
+  timeout→no-answer, 194 verified→no-answer (corrupted comparisons
+  had hidden the nouns).
+- 2026-08-18: **sharding design error measured** — the driver's
+  `per-file` cap applies to every file in its range, so multi-file
+  ranges can only cap the last file when cap ≥ every intermediate
+  length (first parallel attempt overran one file by 1,708 entries;
+  caught by the merge's dupe check). Valid plan: partial parts get
+  their own single-file range; whole files chain under
+  `per-file` = max length; driver-simulation assertion per segment
+  (planner prints VALID). 16–18 workers on the 24-core box is the
+  sweet spot (per the operator); critical path = slowest file part.
 

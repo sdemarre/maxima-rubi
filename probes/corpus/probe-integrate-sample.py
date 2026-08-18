@@ -21,10 +21,17 @@ Per-integral classification (one CLASS line per integral on stdout):
                parse-time fatality of the integrand/expectation text)
 
 Build notes (5.49-series dev, measured 2026-08-17):
-  * a failed `integrate(f, x)` is a list-structured noun: listp is false but
-    length = 2, part(r,1) = f, part(r,2) = x. freeof(integrate, r) does NOT
-    detect it (the noun carries no `integrate` symbol). isatom(r) on the
-    noun stays unevaluated; atom(r) -> false and is the safe atom guard.
+  * a failed `integrate(f, x)` returns a noun that IS the unevaluated
+    `integrate` call (measured 2026-08-18: string(op(r)) = "integrate",
+    is(r = 'integrate(f, x)) -> true), but its op object compares
+    unknown against the bare symbol (is(equal(op(r), integrate)) ->
+    unknown), so the detector is is(string(op(r)) = "integrate").
+    listp/islist/isatom on the noun stay unevaluated; atom(r) -> false.
+    length(r) = 2 and part(r,1)=f, part(r,2)=x, but part/length cannot
+    tell the noun from a product ANSWER of the form integrand*x
+    (length(5*x) = 2), so part/length must not be used as the detector
+    (see build_text). The 2026-08-17 note claiming the noun carries no
+    `integrate` symbol was superseded by these measurements.
   * `=` no longer auto-evaluates to true/false on non-simplifying equations,
     so every boolean is wrapped in is().
   * the zero-test chain is ratsimp, ratsimp o expand, factor, ratsimp o
@@ -37,7 +44,17 @@ Build notes (5.49-series dev, measured 2026-08-17):
     template carries a pool of `pos` answer lines.
 
 Usage: probe-integrate-sample.py [file-substring] [per-file N] [timeout S]
+        [suite-dir] [start-file-index] [append] [skip-first-entries]
+        [out-file] [stop-file-index]
 Defaults survey "1 Algebraic functions/", 5 entries per file, 30 s cap.
+Phase-2 resume (after a killed/timeouted phase 1): pass the suite dir,
+the 0-based file index to start at (see sorted file list below),
+"append" to continue the same .out, and the number of entries already
+recorded in .out for that first file (resume-info.py prints both); the
+summary section then covers phase 2 only. stop-file-index (exclusive)
+bounds the file range from the other side so several processes can run
+disjoint slices of the file list in parallel, each with its own out
+file (or the same one, appending).
 """
 
 import os
@@ -55,6 +72,11 @@ FILTER = sys.argv[1] if len(sys.argv) > 1 else SECTION + "/"
 PER_FILE = int(sys.argv[2]) if len(sys.argv) > 2 else 5
 TIMEOUT = int(sys.argv[3]) if len(sys.argv) > 3 else 30
 SUITE_DIR = sys.argv[4] if len(sys.argv) > 4 else SUITE
+START_INDEX = int(sys.argv[5]) if len(sys.argv) > 5 else 0
+APPEND = len(sys.argv) > 6 and sys.argv[6] == "append"
+SKIP_FIRST = int(sys.argv[7]) if len(sys.argv) > 7 else 0
+OUT_FILE = sys.argv[8] if len(sys.argv) > 8 else None  # default below
+STOP_INDEX = int(sys.argv[9]) if len(sys.argv) > 9 else None
 
 KNOWN_CLASSES = {
     "expected", "verified", "unverified",
@@ -122,21 +144,35 @@ def extract_entries(path):
 def zero_chain(d_expr):
     """Statement list whose value is 1 iff the zero-test closes."""
     return (
-        f"d: ratsimp({d_expr}), if is(d=0) then 1 "
-        "else (d: ratsimp(expand(d)), if is(d=0) then 1 "
-        "else (d: factor(d), if is(d=0) then 1 "
-        "else (d: ratsimp(factor(d)), if is(d=0) then 1 else 0)))"
+        f"MR_d: ratsimp({d_expr}), if is(MR_d=0) then 1 "
+        "else (MR_d: ratsimp(expand(MR_d)), if is(MR_d=0) then 1 "
+        "else (MR_d: factor(MR_d), if is(MR_d=0) then 1 "
+        "else (MR_d: ratsimp(factor(MR_d)), if is(MR_d=0) then 1 else 0)))"
     )
 
 
 def build_text(f_text, var_text, e_text, e_text2=None):
-    # noun-test value: 1 iff r is a failed-integrate noun [f, x]. atom() is
-    # checked first because length() on an atom is a hard error; atom() must
-    # be used, not isatom() -- isatom() on a noun object stays unevaluated
-    # in this build, which would freeze the whole condition.
-    noun = ("block([L], if atom(r) then 0 else "
-            f"(L: length(r), if is(L=2) and is(part(r,1)={f_text}) and "
-            f"is(part(r,2)={var_text}) then 1 else 0))")
+    # Template variables are mr_/MR_-prefixed and must NOT collide with
+    # corpus symbols: the pasted f_text/e_text text is re-parsed and
+    # re-evaluated in scope of these bindings, so a template name that a
+    # corpus entry also uses (f and r are common coefficients/exponents in
+    # class 1) gets substituted into the pasted text, corrupting the
+    # comparison (measured 2026-08-18: noun r with is(part(r,1)=<f_text>)
+    # -> false while is(part(r,1)=mr_f) -> true).
+    # noun-test value: 1 iff mr_r is a failed-integrate noun [f, x].
+    # atom() is checked first because length() on an atom is a hard error;
+    # atom() must be used, not isatom() -- isatom() on a noun object stays
+    # unevaluated in this build, which would freeze the whole condition.
+    # Detector: string(op(mr_r)) = "integrate". Measured 2026-08-18:
+    # a failed integrate's noun has op printing "integrate" but is NOT the
+    # bare symbol (is(equal(op(r), integrate)) -> unknown), so symbol
+    # comparison fails; string() comparison works. part()/length() are
+    # useless here: length(5*x) = 2 and part match the noun- shape, so a
+    # product answer of the form integrand*x (constant integrands) was
+    # misdetected as a noun. Quoted 'integrate(f_text, x) equality is also
+    # useless: is(5*x = 'integrate(5, x)) -> true.
+    noun = ("block([], if atom(mr_r) then 0 else "
+            "if is(string(op(mr_r)) = \"integrate\") then 1 else 0)")
     # integrate() prompts "Is ... positive or negative?" (asksign) or
     # "Is ... equal to ...?" (askequal), read from a query stream, not
     # stdin. With batch_answers_from_file (set in the --preload file) the
@@ -146,36 +182,42 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # yes/no (generic answer: no); asksign domains accept pos/neg (generic
     # answer: pos). The pool alternates so a mistyped-format line is
     # rejected and the following line still fits the open prompt.
-    head = (f"f: {f_text}$\n"
-            f"r: integrate(f, {var_text})$\n"
+    head = (f"mr_f: {f_text}$\n"
+            f"mr_r: integrate(mr_f, {var_text})$\n"
             + "pos$\n" * 6 + "no$\n" * 6)
-    if e_text.startswith(("Unintegrable[", "CannotIntegrate[")):
+    # corpus noun expectations appear as `CannotIntegrate(f, x)` (Maxima
+    # call form, e.g. class 1.3.2) and as `Unintegrable[...]` (Rubi form,
+    # other sections) -- detect both, by name, not by bracket style.
+    if e_text.startswith(("Unintegrable", "CannotIntegrate")):
         body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
                 f"else disp(concat(\"CLASS unexpected\"))")
     else:
-        ze = zero_chain(f"diff(r - {e_text}, {var_text})")
-        zv = zero_chain(f"diff(r, {var_text}) - f")
+        # e_text is pasted verbatim into this (block-local) scope: it must
+        # not contain template names (mr_f/mr_r/MR_*), see the note above.
+        ze = zero_chain(f"diff(mr_r - {e_text}, {var_text})")
+        zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f")
         if e_text2 is not None:
-            ze2 = zero_chain(f"diff(r - {e_text2}, {var_text})")
+            ze2 = zero_chain(f"diff(mr_r - {e_text2}, {var_text})")
             body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
-                    "else block([d, dv, z, z2, w], z: (" + ze + "), "
-                    "z2: (" + ze2 + "), "
-                    "if is(z=1) or is(z2=1) "
+                    "else block([MR_z, MR_z2, MR_w], MR_z: (" + ze + "), "
+                    "MR_z2: (" + ze2 + "), "
+                    "if is(MR_z=1) or is(MR_z2=1) "
                     "then disp(concat(\"CLASS expected\")) "
-                    "else (w: (" + zv + "), "
-                    "if is(w=1) then disp(concat(\"CLASS verified\")) "
+                    "else (MR_w: (" + zv + "), "
+                    "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
         else:
             body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
-                    "else block([d, dv, z, w], z: (" + ze + "), "
-                    "if is(z=1) then disp(concat(\"CLASS expected\")) "
-                    "else (w: (" + zv + "), "
-                    "if is(w=1) then disp(concat(\"CLASS verified\")) "
+                    "else block([MR_z, MR_w], MR_z: (" + ze + "), "
+                    "if is(MR_z=1) then disp(concat(\"CLASS expected\")) "
+                    "else (MR_w: (" + zv + "), "
+                    "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
     return head + body + "$\n" + "pos$\n" * 6 + "no$\n" * 6
 
 
-def main():
+def file_list():
+    """Sorted (path, relpath) of every .mac matching FILTER."""
     walk_root = os.path.join(SUITE, SECTION) if len(sys.argv) <= 4 else SUITE_DIR
     rel_root = SUITE if len(sys.argv) <= 4 else SUITE_DIR
     files = []
@@ -187,19 +229,29 @@ def main():
                 if FILTER in rel:
                     files.append((p, rel))
     files.sort(key=lambda t: t[1])
+    return files
+
+
+def main():
+    files = file_list()[START_INDEX:STOP_INDEX]
 
     out_lines = [
-        "=== maxima-rubi integrate sample baseline ===",
+        ("=== maxima-rubi integrate sample baseline (phase 2, "
+         f"resume at file index {START_INDEX}) ==="
+         if APPEND else
+         "=== maxima-rubi integrate sample baseline ==="),
         f"date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
     ]
-    r = subprocess.run(
-        ["maxima", "--very-quiet", "--batch-string", "disp(build_info());"],
-        capture_output=True, text=True, timeout=120,
-    )
-    for line in r.stdout.splitlines():
-        line = line.strip()
-        if line.startswith(("Maxima", "Lisp ", "Host ")):
-            out_lines.append(f"maxima: {line}")
+    if not APPEND:
+        r = subprocess.run(
+            ["maxima", "--very-quiet", "--batch-string",
+             "disp(build_info());"],
+            capture_output=True, text=True, timeout=120,
+        )
+        for line in r.stdout.splitlines():
+            line = line.strip()
+            if line.startswith(("Maxima", "Lisp ", "Host ")):
+                out_lines.append(f"maxima: {line}")
     out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
                      f"timeout: {TIMEOUT}s")
     out_lines.append("")
@@ -207,19 +259,29 @@ def main():
     counts = {}
     t_integrate = 0.0
     t0 = time.time()
-    for path, rel in files:
+    out_lines_head = list(out_lines)
+    out_path = (OUT_FILE or os.path.join(ROOT, "probes", "corpus",
+                                         "probe-integrate-sample.out"))
+    outf = open(out_path, "a" if APPEND else "w", encoding="utf-8")
+    outf.write("\n".join(out_lines) + "\n")
+    outf.flush()
+    for fi, (path, rel) in enumerate(files):
         try:
             entries, line_nos = extract_entries(path)
         except (AssertionError, UnicodeDecodeError, IndexError):
             out_lines.append(f"SKIP-BADFILE {rel}")
             continue
-        for idx in range(min(PER_FILE, len(entries))):
+        lo = SKIP_FIRST if (fi == 0 and APPEND) else 0
+        for idx in range(lo, min(PER_FILE, len(entries))):
             els = split_elements(entries[idx][1:-1])
             label = f"{rel} e{idx + 1} L{line_nos[idx]}"
             if len(els) not in (4, 5):
                 counts["error"] = counts.get("error", 0) + 1
                 out_lines.append(f"{'error':14s} t=0.0s {label} "
                                  f"bad-entry-shape({len(els)})")
+                outf.write(f"{'error':14s} t=0.0s {label} "
+                           f"bad-entry-shape({len(els)})\n")
+                outf.flush()
                 continue
             f_text, var_text, _steps, e_text = els[0], els[1], els[2], els[3]
             e_text2 = els[4] if len(els) == 5 else None
@@ -242,6 +304,8 @@ def main():
                 cls = "error"
             counts[cls] = counts.get(cls, 0) + 1
             out_lines.append(f"{cls:14s} t={dt:6.1f}s {label}")
+            outf.write(f"{cls:14s} t={dt:6.1f}s {label}\n")
+            outf.flush()
     out_lines.append("")
     out_lines.append("=== summary ===")
     for k in sorted(counts):
@@ -250,10 +314,9 @@ def main():
     out_lines.append(f"wall time: {time.time() - t0:.1f}s   "
                      f"integrate time: {t_integrate:.1f}s")
 
-    text = "\n".join(out_lines) + "\n"
-    print(text)
-    out_path = os.path.join(ROOT, "probes", "corpus", "probe-integrate-sample.out")
-    open(out_path, "w", encoding="utf-8").write(text)
+    outf.write("\n".join(out_lines[out_lines.index("=== summary ==="):]) + "\n")
+    outf.close()
+    print("\n".join(out_lines[-8:]) + "\n")
 
 
 if __name__ == "__main__":

@@ -250,7 +250,7 @@ rules in Maxima; (2) the matcher capability list is a checklist of
 what a naive CL matcher will still owe Rubi (Optional, identity-vs-
 structural repeated names, orderless); (3) the negative lesson —
 uncompiled brute-force rule scanning per evaluation is not a template
-for "thousands of rules × 17,260 test integrals"; (4) no code transfer
+for "thousands of rules × 25,697 test integrals"; (4) no code transfer
 (GPLv2; and the matcher misses Rubi's core feature anyway).
 
 ## 8. Q5 — go / no-go

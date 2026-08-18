@@ -8,7 +8,7 @@ Status: `open` / `in prog` / `done`.
 |-----|----------------------------------|--------|--------------------------------------------|
 | T1  | Rubi anatomy                     | done   | [t1-rubi-anatomy.md](t1-rubi-anatomy.md)   |
 | T2  | Pattern matching in Maxima       | done   | [t2-pattern-matching.md](t2-pattern-matching.md) |
-| T3  | Corpus and Maxima baseline       | in prog | [t3-corpus-baseline.md](t3-corpus-baseline.md)   |
+| T3  | Corpus and Maxima baseline       | done   | [t3-corpus-baseline.md](t3-corpus-baseline.md)   |
 | T4  | Rule translation (algebraic)     | done   | [t4-rule-translation.md](t4-rule-translation.md) |
 | T5  | Package and harness architecture | done   | [t5-package-architecture.md](t5-package-architecture.md) |
 
