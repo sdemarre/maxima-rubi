@@ -10,7 +10,7 @@ Status: `open` / `in prog` / `done`.
 | T2  | Pattern matching in Maxima       | done   | [t2-pattern-matching.md](t2-pattern-matching.md) |
 | T3  | Corpus and Maxima baseline       | in prog | [t3-corpus-baseline.md](t3-corpus-baseline.md)   |
 | T4  | Rule translation (algebraic)     | done   | [t4-rule-translation.md](t4-rule-translation.md) |
-| T5  | Package and harness architecture | open   | [t5-package-architecture.md](t5-package-architecture.md) |
+| T5  | Package and harness architecture | done   | [t5-package-architecture.md](t5-package-architecture.md) |
 
 Order: T1 first; T3's sample run in parallel with T1; T2 after T1;
 T4 after T1 + T2; T5 last. See the design spec, section 5.

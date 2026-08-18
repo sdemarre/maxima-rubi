@@ -1,6 +1,6 @@
 # T5 — Package and harness architecture
 
-Status: open
+Status: done
 Doc: `docs/package-architecture.md`
 Depends on: T1–T4 (consumes all of them)
 
@@ -21,3 +21,25 @@ Depends on: T1–T4 (consumes all of them)
    quoting conventions) — informed by what T2's probes found to be traps.
 
 ## Evidence
+
+All claims in `docs/package-architecture.md`; the inputs it consumes:
+
+- T2 §3 trap catalog + §4 runner contract + §5 cost
+  (`docs/pattern-matching-feasibility.md`);
+- T4's generated format (T4 §3) and shim/`%mr_` decision (T4 §6);
+- T3's harness mechanics and measurements
+  (`todo/t3-corpus-baseline.md` evidence, the probe docstrings);
+- `~/src/diophantine` read 2026-08-18: `%dio_load_sibling` + witness
+  idiom, `diophantine_verbose`, the `Results:` protocol, the
+  quote-on-both-sides house rule, the single-line `:lisp` constraint;
+- same-session probe (2026-08-18): `?fboundp`/`errcatch`/
+  `load_pathname`(=false under `-b`)/`sconcat` all work in the
+  installed build.
+
+Decisions recorded there: `rubi(f, x)` API with `integrate`
+fall-through noun; flat diophantine-mould layout with no `.lisp` in
+milestone 1; two-layer harness (batch unit suite + per-integral
+subprocess corpus driver, shared `Results:` protocol); ten house
+rules, each trap-cited. Open for the implementation phase: load-time
+`defmatch` wall (first measurement), recursion cap, zero-chain
+strengthening.
