@@ -104,3 +104,17 @@ differentiation-based verification) is specified in
 `docs/package-architecture.md` (T5) once that research is done.
 
 The research phase has no suite; its discipline is the probe convention above.
+
+## Agent skills
+
+### Issue tracker
+
+Local markdown: issues and specs live as files under `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary, label strings equal to role names. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root (neither exists yet; created lazily). See `docs/agents/domain.md`.
