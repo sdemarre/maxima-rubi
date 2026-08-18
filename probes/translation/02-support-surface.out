@@ -1,0 +1,342 @@
+# Maxima support-surface audit for class-1 translation, 2026-08-18
+batch("probes/translation/02-support-surface.mac")
+disp(build_info())
+Maxima-version: "branch_5_49_base_796_g60186bb22_dirty"
+Maxima build date: "2026-07-28 18:58:04"
+Host type: "x86_64-pc-linux-gnu"
+Lisp implementation type: "SBCL"
+Lisp implementation version: "2.6.7"
+User dir: "/home/serge/.maxima"
+Temp dir: "/tmp"
+Object dir: "/home/serge/.maxima/binary/branch_5_49_base_796_g60186bb22_dirty/sbcl/2_6_7"
+Frontend: false
+
+show(nm,v):=disp(concat(nm," [",string(v),"]"))
+show("freeof(FreeQ)",freeof(x,x^2+1))
+                             freeof(FreeQ) [false]
+
+show("integerp(IntegerQ)",integerp(3/2))
+                          integerp(IntegerQ) [false]
+
+show("positivep(PosQ)",positivep(2))
+                        positivep(PosQ) [positivep(2)]
+
+show("negativep(NegQ)",negativep(-2))
+                        negativep(NegQ) [negativep(-2)]
+
+show("zerop(ZeroQ)",zerop(0))
+                            zerop(ZeroQ) [zerop(0)]
+
+show("oddp(OddQ)",oddp(3))
+                               oddp(OddQ) [true]
+
+show("rationalp(RationalQ)",rationalp(3/2))
+                     rationalp(RationalQ) [rationalp(3/2)]
+
+show("fractionp(FractionQ)",fractionp(2))
+                      fractionp(FractionQ) [fractionp(2)]
+
+show("min(Min)",min(2,3))
+                                 min(Min) [2]
+
+show("max(Max)",max(2,3))
+                                 max(Max) [3]
+
+show("not(Not)",not 2 > 1)
+                               not(Not) [false]
+
+show("gt-op(GtQ)",2 > 1)
+                              gt-op(GtQ) [2 > 1]
+
+show("pi",'%pi)
+                                   pi [%pi]
+
+show("e",'%e)
+                                    e [%e]
+
+show("i",'%i)
+                                    i [%i]
+
+show("abs(Abs)",abs(2))
+                                 abs(Abs) [2]
+
+show("sign(Sign)",sign(2))
+                               sign(Sign) [pos]
+
+show("sqrt(Sqrt)",sqrt(4))
+                                sqrt(Sqrt) [2]
+
+show("log(Log)",log(%e))
+                                 log(Log) [1]
+
+show("cos(Cos)",cos(0))
+                                 cos(Cos) [1]
+
+show("sin(Sin)",sin(0))
+                                 sin(Sin) [0]
+
+show("tanh(Tanh)",tanh(0))
+                                tanh(Tanh) [0]
+
+show("sinh(Sinh)",sinh(0))
+                                sinh(Sinh) [0]
+
+show("atan(ArcTan)",atan(1))
+                             atan(ArcTan) [%pi/4]
+
+show("asin(ArcSin)",asin(1/2))
+                             asin(ArcSin) [%pi/6]
+
+show("acos(ArcCos)",acos(1/2))
+                             acos(ArcCos) [%pi/3]
+
+show("acosh(ArcCosh)",acosh(2))
+                           acosh(ArcCosh) [acosh(2)]
+
+show("asinh(ArcSinh)",asinh(1))
+                           asinh(ArcSinh) [asinh(1)]
+
+show("atanh(ArcTanh)",atanh(1/2))
+                          atanh(ArcTanh) [atanh(1/2)]
+
+show("arccosh(ArcCosh-alt)",arccosh(2))
+                       arccosh(ArcCosh-alt) [arccosh(2)]
+
+show("arcsinh(ArcSinh-alt)",arcsinh(1))
+                       arcsinh(ArcSinh-alt) [arcsinh(1)]
+
+show("arctanh(ArcTanh-alt)",arctanh(1/2))
+                      arctanh(ArcTanh-alt) [arctanh(1/2)]
+
+show("diff(D)",diff(x^3,x))
+                                diff(D) [3*x^2]
+
+show("mod(Mod)",mod(7,3))
+                                 mod(Mod) [1]
+
+show("floor(Floor)",floor(7/2))
+                               floor(Floor) [3]
+
+show("truncate(IntPart-alternative)",truncate(-7/2))
+                      truncate(IntPart-alternative) [-3]
+
+show("coefflist(CoefficientList)",coefflist(x^2+x+4,x))
+               coefflist(CoefficientList) [coefflist(x^2+x+4,x)]
+
+show("factor(Factor)",factor(x^2-1))
+                         factor(Factor) [(x-1)*(x+1)]
+
+show("coefficient(Coefficient)",coefficient(x^2+x+4,x,1))
+              coefficient(Coefficient) [coefficient(x^2+x+4,x,1)]
+
+show("num(Numer)",num(x/(x^2-1)))
+                                num(Numer) [x]
+
+show("denom(Denom)",denom(x/(x^2-1)))
+                             denom(Denom) [x^2-1]
+
+show("pquoto(PolynomialQuotiant-by-monomial)",pquoto(x^2+x,x,x))
+          pquoto(PolynomialQuotiant-by-monomial) [pquoto(x^2+x,x,x)]
+
+show("pmodulo(PolynomialRemainder-by-monomial)",pmodulo(x^2+x,x,x))
+         pmodulo(PolynomialRemainder-by-monomial) [pmodulo(x^2+x,x,x)]
+
+show("quo(quotient)",quo(x^2+1,x+1,x))
+                       quo(quotient) [quo(x^2+1,x+1,x)]
+
+show("rem(different-function)",rem('zz_maxima_rubi_probe_sym,zz_prop))
+                        rem(different-function) [false]
+
+show("gcd(GCD)",gcd(x^2*y,x*y^2))
+                                gcd(GCD) [x*y]
+
+show("gcf(PolyGCD-alternative)",gcf(x^2*x+x,x*x))
+                   gcf(PolyGCD-alternative) [gcf(x^3+x,x^2)]
+
+show("expand(Expand)",expand((x+1)^2))
+                          expand(Expand) [x^2+2*x+1]
+
+show("cancel(Cancel)",cancel(x/(x-1)))
+                       cancel(Cancel) [cancel(x/(x-1))]
+
+show("content(RemoveContent)",content(3*x^2+6*x))
+                     content(RemoveContent) [[3,x^2+2*x]]
+
+show("content-var(RemoveContent-var)",content(3*x^2+6*x,x))
+                 content-var(RemoveContent-var) [[3,x^2+2*x]]
+
+show("holdform(Hold)",holdform(sqrt,2))
+                       holdform(Hold) [holdform(sqrt,2)]
+
+show("subst(ReplaceAll-alternative)",subst(x+1,x,y*x))
+                    subst(ReplaceAll-alternative) [(x+1)*y]
+
+show("piecewise(Piecewise)",piecewise([0,x < 0]))
+                  piecewise(Piecewise) [piecewise([0,x < 0])]
+
+show("boole(Boole)",boole(2 > 1))
+                          boole(Boole) [boole(2 > 1)]
+
+show("sum(Sum-different-semantics)",sum(k,k,1,3))
+                       sum(Sum-different-semantics) [6]
+
+show("binomial(Binomial)",binomial(5,2))
+                            binomial(Binomial) [10]
+
+show("rationalize(Rationalize)",rationalize(1/3))
+                        rationalize(Rationalize) [1/3]
+
+show("fullsimplify(FullSimplify)",fullsimplify(x/x))
+                 fullsimplify(FullSimplify) [fullsimplify(1)]
+
+show("rootof(Root-alternative)",rootof(z^2-2,1))
+                  rootof(Root-alternative) [rootof(z^2-2,1)]
+
+show("maxexpt(Expon-helper)",maxexpt(x^3+2*x+1,x))
+                 maxexpt(Expon-helper) [maxexpt(x^3+2*x+1,x)]
+
+show("minexpt(Expon-helper)",minexpt(x^3+2*x,x))
+                  minexpt(Expon-helper) [minexpt(x^3+2*x,x)]
+
+show("pdegree(degree-alternative)",pdegree(x^3+2*x+1,x))
+              pdegree(degree-alternative) [pdegree(x^3+2*x+1,x)]
+
+show("degree(degree)",degree(x^3+2*x+1,x))
+                     degree(degree) [degree(x^3+2*x+1,x)]
+
+show("nodecount(LeafCount)",nodecount(a+b*c^2))
+                   nodecount(LeafCount) [nodecount(b*c^2+a)]
+
+show("ratroot(Rt)",ratroot(3,8))
+                          ratroot(Rt) [ratroot(3,8)]
+
+show("ratroot-rev(Rt-alt)",ratroot(8,3))
+                      ratroot-rev(Rt-alt) [ratroot(8,3)]
+
+show("simp(is-a-flag)",simp)
+                            simp(is-a-flag) [true]
+
+show("ratsimp(Simp-stronger)",ratsimp(x/x))
+                          ratsimp(Simp-stronger) [1]
+
+show("factorterm",factorterm(x^2-1,x))
+                       factorterm [factorterm(x^2-1,x)]
+
+show("radcan",radcan(x+sqrt(x^2-1)))
+                        radcan [sqrt(x-1)*sqrt(x+1)+x]
+
+show("is(PossibleZeroQ-base)",is(1 > 0))
+                         is(PossibleZeroQ-base) [true]
+
+show("ratp(PolynomialQ-helper)",ratp(x^2+1))
+                       ratp(PolynomialQ-helper) [false]
+
+show("ratvar",ratvar(x^2+1))
+                            ratvar [ratvar(x^2+1)]
+
+show("algebraicp(AlgebraicFunctionQ-helper)",algebraicp(sin(x)))
+          algebraicp(AlgebraicFunctionQ-helper) [algebraicp(sin(x))]
+
+show("args(Head-args)",args(sin(x)))
+                             args(Head-args) [[x]]
+
+show("op(Head)",op(x^2+x))
+                                op(Head) ["+"]
+
+show("first(Head-arg)",first([x^2,x]))
+                             first(Head-arg) [x^2]
+
+show("elliptic_f(EllipticF)",elliptic_f(1/4,1/2))
+                  elliptic_f(EllipticF) [elliptic_f(1/4,1/2)]
+
+show("elliptic_e(EllipticE)",elliptic_e(1/4,1/2))
+                  elliptic_e(EllipticE) [elliptic_e(1/4,1/2)]
+
+show("elliptic_pi(EllipticPi)",elliptic_pi(1,1/4,1/2))
+               elliptic_pi(EllipticPi) [elliptic_pi(1,1/4,1/2)]
+
+show("elliptic_k",elliptic_k(1/4))
+                         elliptic_k [elliptic_k(1/4)]
+
+show("hypergeometric-2F1(Hypergeometric2F1)",hypergeometric([1,2],[3],x))
+      hypergeometric-2F1(Hypergeometric2F1) [hypergeometric([1,2],[3],x)]
+
+show("hyp2f1(spell-2)",hyp2f1(1,2,3,x))
+                       hyp2f1(spell-2) [hyp2f1(1,2,3,x)]
+
+show("hypergeom2f1(spell-3)",hypergeom2f1(1,2,3,x))
+                 hypergeom2f1(spell-3) [hypergeom2f1(1,2,3,x)]
+
+show("appellf1(AppellF1)",appellf1(1,1,1,x,y))
+                   appellf1(AppellF1) [appellf1(1,1,1,x,y)]
+
+show("appell_f1(AppellF1-underscore)",appel_f1(1,1,1,x,y))
+             appell_f1(AppellF1-underscore) [appel_f1(1,1,1,x,y)]
+
+show("content-shape",content(6*x^2+3*x,x))
+                          content-shape [[3,2*x^2+x]]
+
+show("degree-pow(degree-of-power)",degree(x^(3/2),x))
+                degree-pow(degree-of-power) [degree(x^(3/2),x)]
+
+show("hypergeometric-2F1-shape",hypergeometric([1,2],[3],x))
+            hypergeometric-2F1-shape [hypergeometric([1,2],[3],x)]
+
+show("truncate-floor-diff",truncate(-7/2)-floor(-7/2))
+                            truncate-floor-diff [1]
+
+show("args-plus",args(x^2+x))
+                              args-plus [[x^2,x]]
+
+show("part-plus-1",part(x^2+x,1))
+                               part-plus-1 [x^2]
+
+show("part-plus-2",part(x^2+x,2))
+                                part-plus-2 [x]
+
+show("part-times-2",part(x^2*y,2))
+                               part-times-2 [y]
+
+show("length-plus",length(x^2+x))
+                                length-plus [2]
+
+show("integerp-symbol",integerp(x))
+                            integerp-symbol [false]
+
+show("sign-symbol(3-valued)",sign(x))
+                          sign-symbol(3-valued) [pnz]
+
+show("is-undecidable(third-value)",is(x > 0))
+                     is-undecidable(third-value) [unknown]
+
+show("together",together(1/x+1/x^2))
+                        together [together(1/x+1/x^2)]
+
+show("simplify",simplify(1/x+1/(x+1)))
+                       simplify [simplify(1/(x+1)+1/x)]
+
+show("stringmatch",stringmatch("a","b"))
+                      stringmatch [stringmatch("a","b")]
+
+show("time",time(x^2))
+                               time [[unknown]]
+
+show("version",version())
+                              version [version()]
+
+show("boundp-itself",boundp('x))
+                           boundp-itself [boundp(x)]
+
+show("functionp-itself",functionp('sin))
+                       functionp-itself [functionp(sin)]
+
+show("head-itself",head(x+1))
+                            head-itself [head(x+1)]
+
+show("explode-itself",explode("a + b"))
+                       explode-itself [explode("a + b")]
+
+show("fractpart-itself",fractpart(7/2))
+                       fractpart-itself [fractpart(7/2)]
+
+     /home/serge/src/maxima-rubi/probes/translation/02-support-surface.mac

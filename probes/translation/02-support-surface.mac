@@ -1,0 +1,168 @@
+/* probes/translation/02-support-surface.mac  (T4 input)
+ *
+ * Support-surface audit of the installed Maxima binary for the
+ * class-1 rule translation (T4). Call-based convention (same as
+ * probe-builtin-audit.mac): a candidate called with in-domain
+ * arguments either evaluates (name is usable) or stays a noun
+ * (name is not usable in this build). `boundp`/`functionp` are
+ * themselves unbound here, so calling is the only reliable test.
+ *
+ * Measured anomaly for this build (and why the manual cannot be
+ * trusted for existence checks here): the embedded manual lists
+ * topics `atanh` (Hyperbolic Arc Tangent) and `elliptic_f`, but in
+ * this binary those calls stay nouns; the source tree at
+ * branch_5_49_base_796_g60186bb22 does not contain the `frob`
+ * macro that trigi.lisp uses to define the inverse-hyperbolic
+ * functions, and has no `coefficient`/`maxexpt` definitions at all.
+ * Interpretation lives in docs/rule-translation.md (S1/S2 tables).
+ *
+ * Sections mirror the census token tiers
+ * (probes/translation/01-class1-syntax-census.py):
+ *   S1  BUILTIN tier: Maxima name claimed for each Rubi builtin (a)
+ *       plus the primitives the B_TIER ports will be built on (b)
+ *   S2  answer-side nouns (elliptic / hypergeometric / Appell)
+ *   S3  semantics spot-checks that a bare noun/value cannot show
+ *   S4  re-confirmations of previously measured unbound names
+ *
+ * Run:  sh probes/translation/02-support-surface.run
+ * Stamped 2026-08-17; binary build branch_5_49_base_796_g60186bb22_dirty
+ * (2026-07-28), SBCL 2.6.7. Every call below is side-effect free and
+ * non-erroring whether or not the name is usable.
+ */
+
+disp(build_info())$
+show(nm, v) := disp(concat(nm, " [", string(v), "]"))$
+
+/* ---- S1a: claimed BUILTIN correspondences ---- */
+show("freeof(FreeQ)", freeof(x, x^2 + 1))$
+show("integerp(IntegerQ)", integerp(3/2))$
+show("positivep(PosQ)", positivep(2))$
+show("negativep(NegQ)", negativep(-2))$
+show("zerop(ZeroQ)", zerop(0))$
+show("oddp(OddQ)", oddp(3))$
+show("rationalp(RationalQ)", rationalp(3/2))$
+show("fractionp(FractionQ)", fractionp(2))$
+show("min(Min)", min(2, 3))$
+show("max(Max)", max(2, 3))$
+show("not(Not)", not(2 > 1))$
+show("gt-op(GtQ)", 2 > 1)$
+show("pi", '%pi)$
+show("e", '%e)$
+show("i", '%i)$
+show("abs(Abs)", abs(2))$
+show("sign(Sign)", sign(2))$
+show("sqrt(Sqrt)", sqrt(4))$
+show("log(Log)", log(%e))$
+show("cos(Cos)", cos(0))$
+show("sin(Sin)", sin(0))$
+show("tanh(Tanh)", tanh(0))$
+show("sinh(Sinh)", sinh(0))$
+show("atan(ArcTan)", atan(1))$
+show("asin(ArcSin)", asin(1/2))$
+show("acos(ArcCos)", acos(1/2))$
+show("acosh(ArcCosh)", acosh(2))$
+show("asinh(ArcSinh)", asinh(1))$
+show("atanh(ArcTanh)", atanh(1/2))$
+show("arccosh(ArcCosh-alt)", arccosh(2))$
+show("arcsinh(ArcSinh-alt)", arcsinh(1))$
+show("arctanh(ArcTanh-alt)", arctanh(1/2))$
+show("diff(D)", diff(x^3, x))$
+show("mod(Mod)", mod(7, 3))$
+show("floor(Floor)", floor(7/2))$
+show("truncate(IntPart-alternative)", truncate(-7/2))$
+show("coefflist(CoefficientList)", coefflist(x^2 + x + 4, x))$
+
+/* ---- S1b: primitives for the ported B_TIER utilities ---- */
+show("factor(Factor)", factor(x^2 - 1))$
+show("coefficient(Coefficient)", coefficient(x^2 + x + 4, x, 1))$
+show("num(Numer)", num(x/(x^2 - 1)))$
+show("denom(Denom)", denom(x/(x^2 - 1)))$
+show("pquoto(PolynomialQuotiant-by-monomial)", pquoto(x^2 + x, x, x))$
+show("pmodulo(PolynomialRemainder-by-monomial)", pmodulo(x^2 + x, x, x))$
+show("quo(quotient)", quo(x^2 + 1, x + 1, x))$
+/* rem IS bound but is a different function (rem(<atom>, <indicator>),
+ * the inverse of `put`; a Lisp error on non-symbol args aborts the
+ * batch, so probe it with a fresh scratch symbol and no prior put
+ * -> false, no side effect); the polynomial-remainder `rem`/`quo` of
+ * stable Maxima are absent from this build (nouns above) */
+show("rem(different-function)", rem('zz_maxima_rubi_probe_sym, zz_prop))$
+show("gcd(GCD)", gcd(x^2*y, x*y^2))$
+show("gcf(PolyGCD-alternative)", gcf(x^2*x + x, x*x))$
+show("expand(Expand)", expand((x + 1)^2))$
+show("cancel(Cancel)", cancel(x/(x - 1)))$
+show("content(RemoveContent)", content(3*x^2 + 6*x))$
+show("content-var(RemoveContent-var)", content(3*x^2 + 6*x, x))$
+show("holdform(Hold)", holdform(sqrt, 2))$
+show("subst(ReplaceAll-alternative)", subst(x + 1, x, y*x))$
+show("piecewise(Piecewise)", piecewise([0, x < 0]))$
+show("boole(Boole)", boole(2 > 1))$
+show("sum(Sum-different-semantics)", sum(k, k, 1, 3))$
+show("binomial(Binomial)", binomial(5, 2))$
+show("rationalize(Rationalize)", rationalize(1/3))$
+show("fullsimplify(FullSimplify)", fullsimplify(x/x))$
+show("rootof(Root-alternative)", rootof(z^2 - 2, 1))$
+show("maxexpt(Expon-helper)", maxexpt(x^3 + 2*x + 1, x))$
+show("minexpt(Expon-helper)", minexpt(x^3 + 2*x, x))$
+show("pdegree(degree-alternative)", pdegree(x^3 + 2*x + 1, x))$
+show("degree(degree)", degree(x^3 + 2*x + 1, x))$
+show("nodecount(LeafCount)", nodecount(a + b*c^2))$
+show("ratroot(Rt)", ratroot(3, 8))$
+show("ratroot-rev(Rt-alt)", ratroot(8, 3))$
+/* simp in this build is a boolean flag, not a function (calling it
+ * is a Lisp error) */
+show("simp(is-a-flag)", simp)$
+show("ratsimp(Simp-stronger)", ratsimp(x/x))$
+show("factorterm", factorterm(x^2 - 1, x))$
+show("radcan", radcan(x + sqrt(x^2 - 1)))$
+show("is(PossibleZeroQ-base)", is(1 > 0))$
+show("ratp(PolynomialQ-helper)", ratp(x^2 + 1))$
+show("ratvar", ratvar(x^2 + 1))$
+show("algebraicp(AlgebraicFunctionQ-helper)", algebraicp(sin(x)))$
+show("args(Head-args)", args(sin(x)))$
+show("op(Head)", op(x^2 + x))$
+show("first(Head-arg)", first([x^2, x]))$
+
+/* ---- S2: answer-side nouns ---- */
+show("elliptic_f(EllipticF)", elliptic_f(1/4, 1/2))$
+show("elliptic_e(EllipticE)", elliptic_e(1/4, 1/2))$
+show("elliptic_pi(EllipticPi)", elliptic_pi(1, 1/4, 1/2))$
+show("elliptic_k", elliptic_k(1/4))$
+show("hypergeometric-2F1(Hypergeometric2F1)", hypergeometric([1, 2], [3], x))$
+show("hyp2f1(spell-2)", hyp2f1(1, 2, 3, x))$
+show("hypergeom2f1(spell-3)", hypergeom2f1(1, 2, 3, x))$
+show("appellf1(AppellF1)", appellf1(1, 1, 1, x, y))$
+show("appell_f1(AppellF1-underscore)", appel_f1(1, 1, 1, x, y))$
+
+/* ---- S3: semantics spot-checks ---- */
+/* Maxima content returns [content, content-free part] */
+show("content-shape", content(6*x^2 + 3*x, x))$
+/* Maxima degree on a non-polynomial: probe with a power */
+show("degree-pow(degree-of-power)", degree(x^(3/2), x))$
+/* Maxima hypergeometric wants list args (warning otherwise): correct
+ * 2F1 form is hypergeometric([a, b], [c], z) */
+show("hypergeometric-2F1-shape", hypergeometric([1, 2], [3], x))$
+/* truncate vs floor on negatives: -3 - -4 = 1 */
+show("truncate-floor-diff", truncate(-7/2) - floor(-7/2))$
+
+/* ---- S5: structural calls the port will rely on (measured the
+ * same session; kept here so the .out is complete) ---- */
+show("args-plus", args(x^2 + x))$
+show("part-plus-1", part(x^2 + x, 1))$
+show("part-plus-2", part(x^2 + x, 2))$
+show("part-times-2", part(x^2 * y, 2))$
+show("length-plus", length(x^2 + x))$
+show("integerp-symbol", integerp(x))$
+show("sign-symbol(3-valued)", sign(x))$
+show("is-undecidable(third-value)", is(x > 0))$
+
+/* ---- S4: re-confirm known-unbound names (regression guard) ---- */
+show("together", together(1/x + 1/x^2))$
+show("simplify", simplify(1/x + 1/(x + 1)))$
+show("stringmatch", stringmatch("a", "b"))$
+show("time", time(x^2))$
+show("version", version())$
+show("boundp-itself", boundp('x))$
+show("functionp-itself", functionp('sin))$
+show("head-itself", head(x + 1))$
+show("explode-itself", explode("a + b"))$
+show("fractpart-itself", fractpart(7/2))$

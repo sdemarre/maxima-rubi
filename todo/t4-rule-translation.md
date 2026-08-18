@@ -1,6 +1,6 @@
 # T4 — Rule translation (algebraic class)
 
-Status: open
+Status: done
 Doc: `docs/rule-translation.md`
 Depends on: T1 (rule grammar + utility inventory), T2 (route decision:
 rule-system/matcher vs if-then-else vs mix, and what each provides)
@@ -20,4 +20,27 @@ rule-system/matcher vs if-then-else vs mix, and what each provides)
    as manually-compiled templates.
 
 ## Evidence
+
+All claims in `docs/rule-translation.md`; re-runnable:
+
+- Q1/Q2 — `sh probes/translation/01-class1-syntax-census.run` (2,710
+  rules / 67 loaded files; 2031 AUTO / 679 = C-tier-predicate rules;
+  37 C-tier tokens; optional histogram; token tiers closed — zero
+  unlisted).
+- Q2 — `sh probes/translation/02-support-surface.run` (call-based;
+  `boundp` is itself unbound so it is not usable for this).
+- Q5 — SymPy port assessed at tag sympy-1.11 (`parsetools/parse.py`
+  read in full; `github.com/sympy/rubi` confirmed); PRs #12978,
+  #13257, #24315; removal noted in the 1.12 release notes.
+
+Findings worth carrying into T5:
+- `is(…)` returns a third value `unknown`; guards must treat it as
+  not-true.
+- Value-position comparisons stay unevaluated (`2 > 1` prints as
+  `2 > 1`); guards must be `is(…)`-wrapped.
+- The installed binary's manual lists names the binary has not bound
+  (`atanh`, `elliptic_f`): manual lookup is not an existence test;
+  the shim list is build-specific and must be re-measured on 5.50.
+- SymPy's port was removed from sympy (2022) as broken — generation
+  was never the hard part; verification against the corpus is.
 

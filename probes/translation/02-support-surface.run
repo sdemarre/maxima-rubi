@@ -1,0 +1,10 @@
+#!/bin/sh
+# probes/translation/02-support-surface.run — T4 support-surface driver.
+#
+#   sh probes/translation/02-support-surface.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# Maxima support-surface audit for class-1 translation, $(date -u +%F)"
+  maxima --very-quiet -b probes/translation/02-support-surface.mac
+} > probes/translation/02-support-surface.out
+echo "wrote probes/translation/02-support-surface.out"
