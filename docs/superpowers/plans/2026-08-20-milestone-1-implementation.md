@@ -1436,13 +1436,16 @@ test_rules_1_1_1_1_behavior() := block([r],
   check("5x^2", rubi(5*x^2, x), 5*x^3/3),
   /* rule 1: 1/x -> log(x) */
   check("1/x", rubi(1/x, x), log(x)),
-  /* rule 4: (a+b x)^m, m # -1 */
-  check("(1+2x)^3", ratsimp(rubi((1 + 2*x)^3, x)), ratsimp((1 + 2*x)^4/12)),
-  /* rule 3: 1/(a+b x) -> log(RemoveContent[a+b x, x])/b */
-  check("1/(a+b x)", ratsimp(rubi(1/(a + b*x), x)), ratsimp(log(a + b*x)/b)),
-  /* rule 5: (a+b u)^m with u linear in x, via Subst + recursion */
-  r : rubi((1 + 2*(3*x))^2, x),
-  check_bool("linear-in-u via Subst", is(ratsimp(r) = ratsimp((1 + 6*x)^3/9))),
+   /* rule 4: (a+b x)^m, m # -1. d/dx[(1+2x)^4/8] = (1+2x)^3 (verified 2026-08-20;
+      the original /12 in this plan was a wrong antiderivative). */
+   check("(1+2x)^3", ratsimp(rubi((1 + 2*x)^3, x)), ratsimp((1 + 2*x)^4/8)),
+   /* rule 3: 1/(a+b x) -> log(RemoveContent[a+b x, x])/b */
+   check("1/(a+b x)", ratsimp(rubi(1/(a + b*x), x)), ratsimp(log(a + b*x)/b)),
+   /* rule 4 again: (1+2*(3x))^2 simplifies to (1+6x)^2 (linear in x), so rule 4
+      handles it (NOT rule 5 — rule 5's (a+b*u)^m pattern is dead in this build,
+      shadowed by rule 4; see ledger F1). d/dx[(1+6x)^3/18] = (1+6x)^2. */
+   r : rubi((1 + 2*(3*x))^2, x),
+   check_bool("linear base (1+6x)^2", is(ratsimp(r) = ratsimp((1 + 6*x)^3/18))),
   /* NeQ[m, -1]: the m = -1 case must NOT take the power rule (falls to 1/x) */
   check_bool("NeQ guard honored", is(rubi(1/x, x) = log(x))),
   true
