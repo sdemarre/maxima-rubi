@@ -441,8 +441,12 @@ rubi(f, x) := mr_int(f, x)$
  * is(apply(witness, []) = true) is true iff the sibling fully loaded. */
 %mr_load_sibling(fname, witness) := block([dir, ok, w],
   dir : if load_pathname = false then "" else pathname_directory(load_pathname),
+  /* errcatch returns [] on SUCCESS, [info] on failure — so the by-name
+     fallback fires only when the sibling-dir load FAILED. When dir is ""
+     (batched) the first load already IS load(fname); the fallback is then a
+     harmless retry. */
   ok : errcatch(load(sconcat(dir, fname))),
-  if ok = [] then ok : errcatch(load(fname)),
+  if ok # [] then ok : errcatch(load(fname)),
   w : apply(witness, []),
   if is(w = true) = false then
     error("maxima_rubi: could not load the sibling file ", fname,
