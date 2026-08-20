@@ -481,7 +481,7 @@ Append to `test_maxima_rubi.mac` before `run_all_tests()`:
 ```
 load("maxima_rubi.mac")$
 
-test_load_and_api() := block([r],
+test_load_and_api() := block([r, saved_table],
   print("--- load + API fall-through ---"),
   check_bool("loader witness survived", is(mr_witness_maxima_rubi() = true)),
   /* no rules loaded yet: every call falls through to Maxima's integrate */
@@ -493,11 +493,13 @@ test_load_and_api() := block([r],
              is(atom(r) = false) and is(string(op(r)) = "integrate")),
   /* noun forms are distinct from the fall-through noun */
   check_bool("mr_unintegrable is a noun", is(mr_unintegrable(f, x) = 'unintegrable[f, x])),
-  /* depth cap: a recursive rule that never shrinks must return the noun,
-     not overflow (recursion mechanics are Task 3; here only the cap path) */
+  /* empty table -> fall-through. Save/restore the table so a later test
+     (Task 3+) is not run against a wiped table (measured landmine 2026-08-20). */
+  saved_table : mr_rule_table,
   mr_rule_table : [],
   check_bool("empty table -> noun", is(string(op(rubi(1/x, x))) = "integrate")
              or is(rubi(1/x, x) = log(x))),
+  mr_rule_table : saved_table,
   true
 )$
 ```
@@ -649,25 +651,36 @@ test_runner() := block([r, sd, st],
   /* bare x (= x^1) does NOT match a*x^m (Power head dropped) -> fall-through
      to Maxima's own answer; documents the Power-optional structural case */
   check("power x (fall-through)", rubi(x, x), x^2/2),
-  /* Rule B: recursion re-dispatches onto the reduced integrand; the reduced
-     1/(3-12x^2) matches no loaded rule, so it falls through to integrate */
-  r : rubi(1/((1 + 2*x)*(3 - 6*x)), x),
-  check_bool("recursion re-dispatches",
-             is(r = integrate(1/(3 - 12*x^2), x))),
+   /* Rule B, end-to-end: rubi() on the product form yields the reduced-form
+      integral. NOTE this check alone is VACUOUS — integrate of the original
+      1/((1+2x)(3-6x)) and of the reduced 1/(3-12x^2) are equal on this build
+      (both log(2x+1)/12 - log(2x-1)/12, measured 2026-08-20), so it can't tell
+      a firing rule from a fall-through. The firing assertions below fix that. */
+   r : rubi(1/((1 + 2*x)*(3 - 6*x)), x),
+   check_bool("recursion re-dispatches (end-to-end)",
+              is(r = integrate(1/(3 - 12*x^2), x))),
+   /* direct firing assertions on the rec rule (non-vacuous): prove it actually
+      fires on the product form (match + cond + repl) and rejects a non-match. */
+   check_bool("rec rule fires on 1/((1+2x)(3-6x))",
+              is(_mr_rule_t3_rec(1/((1 + 2*x)*(3 - 6*x)), x) # false)),
+   check_bool("rec rule rejects x^2", is(_mr_rule_t3_rec(x^2, x) = false)),
   /* no rule fires -> Maxima's own answer (fall-through, not a package noun) */
   check_bool("no-match -> fall-through",
              is(rubi(x + sin(x), x) = x^2/2 - cos(x))
              or is(string(op(rubi(x + sin(x), x))) = "integrate")),
-  /* depth cap: a runaway self-recursive rule must return the fall-through
-     noun, not stack-overflow. exp(x^2) is Maxima's own noun. */
-  sd : %mr_max_depth, st : mr_rule_table,
-  %mr_max_depth : 8,
-  mr_rule_table : [ _mr_rule_t3_selfrec ],
-  r : rubi(exp(x^2), x),
-  check_bool("runaway recursion -> noun, not overflow",
-             is(string(op(r)) = "integrate")),
-  %mr_max_depth : sd,
-  mr_rule_table : st,
+   /* depth cap: a runaway self-recursive rule must hit the cap and return
+      Maxima's own integrate(f,x) result — not stack-overflow or hang.
+      exp(x^2) is used because on this build integrate solves it to an erf
+      closed form (NOT a noun — measured 2026-08-20); the assertion accepts
+      either the integrate result or a noun (other builds). */
+   sd : %mr_max_depth, st : mr_rule_table,
+   %mr_max_depth : 8,
+   mr_rule_table : [ _mr_rule_t3_selfrec ],
+   r : rubi(exp(x^2), x),
+   check_bool("runaway recursion -> cap result, not overflow",
+              is(r = integrate(exp(x^2), x)) or is(string(op(r)) = "integrate")),
+   %mr_max_depth : sd,
+   mr_rule_table : st,
   /* verbose flag prints the rule identity on fire (T5 §1) */
   rubi_verbose : true,
   rubi(x^3, x),
