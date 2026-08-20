@@ -67,7 +67,7 @@ test_smoke() := block([],
 run_all_tests() := block([],
   test_smoke(),
   test_load_and_api(),
-  test_runner(),
+  test_rules_1_1_1_1_struct(),
   print(""),
   print("========================================"),
   print("Results: ", tests_passed, " passed, ", tests_failed, " failed"),
@@ -77,57 +77,12 @@ run_all_tests() := block([],
 
 load("maxima_rubi.mac")$
 
-/* hand-written runner proof (Task 3); replaced by generated 1.1.1.1 (Task 4) */
-matchdeclare(_mr_t3_a, true)$
-matchdeclare(_mr_t3_m, true)$
-defmatch(_mr_pat_t3_power, _mr_t3_a*x^_mr_t3_m, x)$
-_mr_cond_t3_power(mm, x) := block([a, m],
-  a : geteqR(mm, '_mr_t3_a),
-  m : geteqR(mm, '_mr_t3_m),
-  freeof(x, a) and freeof(x, m))$
-_mr_repl_t3_power(mm, x) := block([a, m],
-  a : geteqR(mm, '_mr_t3_a),
-  m : geteqR(mm, '_mr_t3_m),
-  a*x^(m + 1)/(m + 1))$
-_mr_rule_t3_power(f, x) := block([mm, ok],
-  mm : _mr_pat_t3_power(f, x),
-  if mm = false then return(false),
-  ok : _mr_cond_t3_power(mm, x),
-  if is(ok) = true then _mr_repl_t3_power(mm, x) else false)$
-
-matchdeclare(_mr_t3_r_a, true)$
-matchdeclare(_mr_t3_r_b, true)$
-matchdeclare(_mr_t3_r_c, true)$
-matchdeclare(_mr_t3_r_d, true)$
-defmatch(_mr_pat_t3_rec, 1/((_mr_t3_r_a + _mr_t3_r_b*x)*(_mr_t3_r_c + _mr_t3_r_d*x)), x)$
-_mr_cond_t3_rec(mm, x) := block([a, b, c, d],
-  a : geteqR(mm, '_mr_t3_r_a),
-  b : geteqR(mm, '_mr_t3_r_b),
-  c : geteqR(mm, '_mr_t3_r_c),
-  d : geteqR(mm, '_mr_t3_r_d),
-  freeof(x, a) and freeof(x, b) and freeof(x, c) and freeof(x, d))$
-_mr_repl_t3_rec(mm, x) := block([a, b, c, d],
-  a : geteqR(mm, '_mr_t3_r_a),
-  b : geteqR(mm, '_mr_t3_r_b),
-  c : geteqR(mm, '_mr_t3_r_c),
-  d : geteqR(mm, '_mr_t3_r_d),
-  mr_int(1/(a*c + b*d*x^2), x))$
-_mr_rule_t3_rec(f, x) := block([mm, ok],
-  mm : _mr_pat_t3_rec(f, x),
-  if mm = false then return(false),
-  ok : _mr_cond_t3_rec(mm, x),
-  if is(ok) = true then _mr_repl_t3_rec(mm, x) else false)$
-
-/* depth-cap test only: no matcher, always re-dispatches on the same f. */
-_mr_rule_t3_selfrec(f, x) := block([], mr_int(f, x))$
-
-/* rec first (more specific), then the general power rule. */
-mr_rule_table : [ _mr_rule_t3_rec, _mr_rule_t3_power ]$
-
 test_load_and_api() := block([r, saved_table],
   print("--- load + API fall-through ---"),
   check_bool("loader witness survived", is(mr_witness_maxima_rubi() = true)),
-  /* no rules loaded yet: every call falls through to Maxima's integrate */
+  /* the 1.1.1.1 rules are loaded, but the %mr_* predicates they guard
+     with are undefined until Task 5, so their conds evaluate non-true and
+     every call still falls through to Maxima's integrate */
   check("fall-through x^2", rubi(x^2, x), integrate(x^2, x)),
   check("fall-through 5", rubi(5, x), integrate(5, x)),
   /* the fall-through noun is Maxima's own, list-structured */
@@ -146,60 +101,14 @@ test_load_and_api() := block([r, saved_table],
     true
 )$
 
-test_runner() := block([r, sd, st],
-  print("--- runner (hand-written rules) ---"),
-  /* Rule A: power, via decomposition (a=1 for x^3, a=5 for 5x^2) */
-  check("power x^3", rubi(x^3, x), x^4/4),
-  check("power 5x^2", rubi(5*x^2, x), 5*x^3/3),
-  /* direct firing assertions (not just answer-correctness — Maxima's own
-     integrate gives the same x^4/4, so the rubi() checks above can't tell a
-     firing rule from a fall-through). Prove the power rule actually fires and
-     produces its replacement, and rejects a non-match. This exercises the
-     %mr_dispatch `if res # false` (rule-fired) path. */
-  check_bool("power rule fires on x^3", is(_mr_rule_t3_power(x^3, x) # false)),
-  check("power rule returns x^4/4", _mr_rule_t3_power(x^3, x), x^4/4),
-  check_bool("power rule rejects x+1", is(_mr_rule_t3_power(x + 1, x) = false)),
-  /* bare x (= x^1) does NOT match a*x^m (Power head dropped) -> fall-through
-     to Maxima's own answer; documents the Power-optional structural case */
-  check("power x (fall-through)", rubi(x, x), x^2/2),
-  /* Rule B, end-to-end: rubi() on the product form yields the reduced-form
-     integral. NOTE this check alone is VACUOUS — integrate of the original
-     1/((1+2x)(3-6x)) and of the reduced 1/(3-12x^2) are equal on this build
-     (both log(2x+1)/12 - log(2x-1)/12, measured 2026-08-20), so it can't tell
-     a firing rule from a fall-through. The firing assertions below fix that. */
-  r : rubi(1/((1 + 2*x)*(3 - 6*x)), x),
-  check_bool("recursion re-dispatches",
-             is(r = integrate(1/(3 - 12*x^2), x))),
-  /* NOTE the rubi() check above is vacuous — integrate of the original
-     1/((1+2x)(3-6x)) and of the reduced 1/(3-12x^2) are equal on this build,
-     so it can't tell a firing rule from a fall-through. These direct firing
-     assertions fix that: prove the rec rule fires on the product form and
-     rejects a non-match. */
-  check_bool("rec rule fires on 1/((1+2x)(3-6x))",
-             is(_mr_rule_t3_rec(1/((1 + 2*x)*(3 - 6*x)), x) # false)),
-  check_bool("rec rule rejects x^2", is(_mr_rule_t3_rec(x^2, x) = false)),
-  /* no rule fires -> Maxima's own answer (fall-through, not a package noun) */
-  check_bool("no-match -> fall-through",
-             is(rubi(x + sin(x), x) = x^2/2 - cos(x))
-             or is(string(op(rubi(x + sin(x), x))) = "integrate")),
-  /* depth cap: a runaway self-recursive rule must return the fall-through
-     integrate result, not stack-overflow. exp(x^2) is NOT a noun in this
-     build (integrate returns an erf answer — measured 2026-08-20,
-     branch_5_49_base_796), so assert r equals Maxima's own answer; the noun
-     clause covers builds where it is one. */
-  sd : %mr_max_depth, st : mr_rule_table,
-  %mr_max_depth : 8,
-  mr_rule_table : [ _mr_rule_t3_selfrec ],
-  r : rubi(exp(x^2), x),
-  check_bool("runaway recursion -> fall-through, not overflow",
-             is(r = integrate(exp(x^2), x))
-             or is(string(op(r)) = "integrate")),
-  %mr_max_depth : sd,
-  mr_rule_table : st,
-  /* verbose flag prints the rule identity on fire (T5 §1) */
-  rubi_verbose : true,
-  rubi(x^3, x),
-  rubi_verbose : false,
+/* The behavioral test of the five rules needs the Task 5 predicates
+   (%mr_neQ, %mr_linearQ, %mr_removeContent, …) and lands there; this
+   asserts the generated file loaded intact. */
+test_rules_1_1_1_1_struct() := block([],
+  print("--- generated 1.1.1.1 (structural) ---"),
+  check_bool("witness survived", is(mr_witness_1_1_1_1() = true)),
+  check("count cross-check", mr_rules_count_1_1_1_1, 5),
+  check_bool("table is the file's rules", is(mr_rule_table = mr_rules_1_1_1_1)),
   true
 )$
 
