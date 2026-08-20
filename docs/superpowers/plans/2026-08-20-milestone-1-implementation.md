@@ -747,11 +747,15 @@ Generator algorithm (per T4 §4, steps 1–5):
      else `true`).
    **Drop the `.` from optionals** (plain all-slots-present pattern — the
    matcher's decomposition fills the Plus/Times identity defaults, measured
-   2026-08-20), **except** an optional Power exponent `u_^m_.`: the Power
-   head is dropped when the exponent is 1, which decomposition cannot fill,
-   so the emitter D-duplicates that one slot — emit a second matcher with the
-   exponent removed and `m` bound to `1` (see `power_dups`). Translate the
-   head `Int[expr, x_Symbol]` to the `(f, x)` call shape.
+   2026-08-20). The emitter emits the PLAIN pattern only. For an optional
+   Power exponent `u_^m_.`, the Power head is dropped when the exponent is 1,
+   which decomposition cannot fill; the bare-exponent-1 case therefore falls
+   through to `integrate` (correct answer, not via the rule) — a coverage gap,
+   not a correctness bug. The Power-optional D-duplication (`power_dups`: a
+   second matcher with the exponent removed and `m` bound to 1) is DEFERRED to
+   Task 9's divergence loop, which adds it where the corpus shows the gap
+   (Architecture note). Translate the head `Int[expr, x_Symbol]` to the `(f, x)`
+   call shape.
 3. Conditions: split on top-level `&&`; each atom through the translation
    table (`FreeQ[{a,b}, x]` → `freeof(x, a) and freeof(x, b)`;
    `EqQ`/`NeQ` → `%mr_eqQ`/`%mr_neQ`; comparisons → `is(…)`); emit as the
