@@ -1485,6 +1485,41 @@ git commit -m "feat: predicate cluster 1 + clone-gap eq/neQ + first behavioral 1
   mr_rules_1_1_1_2 concat …`; the **measured `defmatch` load wall** (the
   first implementation milestone includes measuring it — T5 §5).
 
+- [ ] **Step 0 (PREREQ — the F2 blocker from the Task 5 review): PolyQ overload dispatch**
+
+The generator's table maps ALL `PolyQ` arities 1:1 to the 2-arg `%mr_polyQ`,
+which is wrong for two of the three real shapes in class 1 (measured in the
+Task 5 review):
+- `PolyQ[u, x]` (2-arg, Symbol) → `%mr_polyQ(u, x)` — already correct.
+- `PolyQ[u, x, n]` (3-arg, Symbol) → must become `%mr_polyDegQ(u, x, n)`
+  (already ported + correct after the Task 5 Bug B fix). ~82–100 uses.
+- `PolyQ[u, x^v]` / `PolyQ[u, x^v, n]` (power-form, ~100 2-arg uses, e.g.
+  `PolyQ[Pq, x^(n/2)]`) → a SILENT semantic error today: `%mr_polyQ(u, x^v)`
+  treats `x^v` as the variable, so `PolyQ[x^4+1, x^2]` → false where Rubi →
+  true, flipping negated guards (`Not[PolyQ[…,x^(n/2)]]` in 1.1.3.7.m:41,
+  1.1.3.8.m:21) into wrong-answer paths.
+
+Fix, in this order:
+1. **Port the power-form predicate** into `maxima_rubi_utils.mac` with unit
+   probes (TDD, red→green), reusing the term walkers:
+   - `%mr_polyPowerQ(u, x, v)` — is `u` a polynomial in `x^v`? True iff
+     `expand(u)` has no `x` in any denominator and every term's `x`-exponent
+     (via `%mr_term_xexp`) is a non-negative multiple of `v`.
+   - `%mr_polyDegPowerQ(u, x, v, n)` — `%mr_polyPowerQ(u, x, v)` and the
+     maximum `k/v` (over terms) is `<= n`.
+   Unit probes (Rubi-correct): `polyPowerQ(x^4+1, x, 2)=true`,
+   `polyPowerQ(x^3+1, x, 2)=false`, `polyPowerQ(1/x, x, 2)=false` (denominator),
+   `polyDegPowerQ(x^4+1, x, 2, 2)=true`, `polyDegPowerQ(x^4+1, x, 2, 1)=false`.
+2. **Wire the generator dispatch** in `generate_class1.py`: at translation time
+   the arg count and the second-arg head are known — `(u, x)` → `%mr_polyQ`,
+   `(u, x, n)` → `%mr_polyDegQ`, `(u, x^v[, n])` → `%mr_polyPowerQ` /
+   `%mr_polyDegPowerQ`. (A head that is `x` with a Power argument is the
+   power-form; a bare `x` is the Symbol form.)
+3. **Verify**: a throwaway `.m` with all four `PolyQ` shapes generates the four
+   distinct calls (no silent mis-emit); 1.1.1.1 regenerates byte-identical (it
+   has no `PolyQ`). Do not weaken the loud failure — a shape you cannot map is a
+   `GenError`, not a pass-through.
+
 - [ ] **Step 1: Extend the generator to all 67 files**
 
 Run: `python3 generator/generate_class1.py`
