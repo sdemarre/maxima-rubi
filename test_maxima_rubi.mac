@@ -124,7 +124,7 @@ _mr_rule_t3_selfrec(f, x) := block([], mr_int(f, x))$
 /* rec first (more specific), then the general power rule. */
 mr_rule_table : [ _mr_rule_t3_rec, _mr_rule_t3_power ]$
 
-test_load_and_api() := block([r],
+test_load_and_api() := block([r, saved_table],
   print("--- load + API fall-through ---"),
   check_bool("loader witness survived", is(mr_witness_maxima_rubi() = true)),
   /* no rules loaded yet: every call falls through to Maxima's integrate */
@@ -136,19 +136,18 @@ test_load_and_api() := block([r],
              is(atom(r) = false) and is(string(op(r)) = "integrate")),
   /* noun forms are distinct from the fall-through noun */
   check_bool("mr_unintegrable is a noun", is(mr_unintegrable(f, x) = 'unintegrable[f, x])),
-  /* depth cap: a recursive rule that never shrinks must return the noun,
-     not overflow (recursion mechanics are Task 3; here only the cap path) */
+  /* empty table -> fall-through. Save/restore the table so a later test
+     (Task 3+) is not run against a wiped table (measured landmine 2026-08-20). */
+  saved_table : mr_rule_table,
   mr_rule_table : [],
   check_bool("empty table -> noun", is(string(op(rubi(1/x, x))) = "integrate")
              or is(rubi(1/x, x) = log(x))),
-   true
+  mr_rule_table : saved_table,
+    true
 )$
 
 test_runner() := block([r, sd, st],
   print("--- runner (hand-written rules) ---"),
-  /* test_load_and_api leaves mr_rule_table empty; restore the Task 3 table so
-     the dispatch/recursion checks below run against it */
-  mr_rule_table : [ _mr_rule_t3_rec, _mr_rule_t3_power ],
   /* Rule A: power, via decomposition (a=1 for x^3, a=5 for 5x^2) */
   check("power x^3", rubi(x^3, x), x^4/4),
   check("power 5x^2", rubi(5*x^2, x), 5*x^3/3),
@@ -163,11 +162,22 @@ test_runner() := block([r, sd, st],
   /* bare x (= x^1) does NOT match a*x^m (Power head dropped) -> fall-through
      to Maxima's own answer; documents the Power-optional structural case */
   check("power x (fall-through)", rubi(x, x), x^2/2),
-  /* Rule B: recursion re-dispatches onto the reduced integrand; the reduced
-     1/(3-12x^2) matches no loaded rule, so it falls through to integrate */
+  /* Rule B, end-to-end: rubi() on the product form yields the reduced-form
+     integral. NOTE this check alone is VACUOUS — integrate of the original
+     1/((1+2x)(3-6x)) and of the reduced 1/(3-12x^2) are equal on this build
+     (both log(2x+1)/12 - log(2x-1)/12, measured 2026-08-20), so it can't tell
+     a firing rule from a fall-through. The firing assertions below fix that. */
   r : rubi(1/((1 + 2*x)*(3 - 6*x)), x),
   check_bool("recursion re-dispatches",
              is(r = integrate(1/(3 - 12*x^2), x))),
+  /* NOTE the rubi() check above is vacuous — integrate of the original
+     1/((1+2x)(3-6x)) and of the reduced 1/(3-12x^2) are equal on this build,
+     so it can't tell a firing rule from a fall-through. These direct firing
+     assertions fix that: prove the rec rule fires on the product form and
+     rejects a non-match. */
+  check_bool("rec rule fires on 1/((1+2x)(3-6x))",
+             is(_mr_rule_t3_rec(1/((1 + 2*x)*(3 - 6*x)), x) # false)),
+  check_bool("rec rule rejects x^2", is(_mr_rule_t3_rec(x^2, x) = false)),
   /* no rule fires -> Maxima's own answer (fall-through, not a package noun) */
   check_bool("no-match -> fall-through",
              is(rubi(x + sin(x), x) = x^2/2 - cos(x))
