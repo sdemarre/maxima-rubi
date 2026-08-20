@@ -1,0 +1,162 @@
+#!/bin/sh
+# probes/load_wall/probe-load-wall.run — T6: the class-1 load wall and
+# the defmatch budget (T5 §5 open item 1).
+#
+#   sh probes/load_wall/probe-load-wall.run
+#
+# MEASURED 2026-08-20 (build branch_5_49_base_796_g60186bb22_dirty):
+# this build CANNOT hold all 2710 class-1 patterns in one process. The
+# probe records, on every run:
+#   1. the full load (mr_load_class1_all) — expected to DIE with SBCL's
+#      fatal "Thread local storage exhausted" (file 8 of the load list
+#      takes the cumulative total from 294 to 361 rules);
+#   2. per-file parse + witness, each file in its own process (all 67
+#      must pass — this is the parse/witness verification of the
+#      generated files on this build);
+#   3. the plain-pattern budget bounds: 1200 defmatch (expected to
+#      load) and 1600 (expected to die);
+#   4. unload("...") releases the budget (4 x 1200 with unloads,
+#      expected to load);
+#   5. the in-process wall for the largest safe Rubi-order prefix
+#      (files 1-7, 294 rules) — T5's cost-per-rule basis;
+#   6. the wall's upper bound: prefix 8 (361 cumulative) in-process,
+#      expected to DIE — pins the wall at file 8 of the load list.
+# A part failing its expectation means the budget moved (e.g. a build
+# upgrade): re-measure and update the docs.
+cd "$(dirname "$0")/../.." || exit 1
+OUT=probes/load_wall/probe-load-wall.out
+TMPD=$(mktemp -d)
+trap 'rm -rf "$TMPD"' EXIT
+fail=0
+
+{
+  echo "# class-1 load wall + defmatch budget, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  echo
+
+  echo "=== 1. full class-1 load (67 files, 2710 rules) — expected FATAL ==="
+  maxima --very-quiet -b probes/load_wall/probe-load-wall-full.mac \
+    > "$TMPD/full.log" 2>&1
+  rc=$?
+  if [ $rc -eq 0 ]; then
+    echo "full load: UNEXPECTED SUCCESS (the budget moved — re-measure)"
+    fail=1
+  else
+    echo "full load: FATAL (exit $rc) as expected on this build"
+    grep -h "Thread local storage exhausted" "$TMPD/full.log" \
+      | head -1 | sed 's/^/  /'
+  fi
+  echo
+
+  echo "=== 2. per-file parse + witness (one process per file) ==="
+  for f in rules/class1/*.mac; do
+    k=$(basename "$f" .mac)
+    {
+      echo 'load("maxima_rubi.mac");'
+      echo 't0 : elapsed_real_time();'
+      printf "%%mr_load_sibling(\"rules/class1/%s.mac\", 'mr_witness_%s);\n" "$k" "$k"
+      echo 'disp(float(elapsed_real_time() - t0));'
+    } > "$TMPD/batch.mac"
+    maxima --very-quiet -b "$TMPD/batch.mac" > "$TMPD/one.log" 2>&1
+  rc=$?
+    wall=$(grep -oE "^ *[0-9]+\.[0-9]+" "$TMPD/one.log" | tail -1 | tr -d ' ')
+    if [ $rc -ne 0 ] || [ -z "$wall" ]; then
+      echo "  $k: FAIL (exit $rc)"
+      grep -h "error\|Error" "$TMPD/one.log" | head -2 | sed 's/^/    /'
+      fail=1
+    else
+      echo "  $k: ok (${wall}s)"
+    fi
+  done
+  echo
+
+  echo "=== 3. plain-pattern defmatch budget (pa+pb*x, freeof(x) declares) ==="
+  for n in 1200 1600; do
+    python3 - "$n" > "$TMPD/pat.mac" <<'PYEOF'
+import sys
+n = int(sys.argv[1])
+print("\n".join(
+    f"matchdeclare(pa{i}, freeof(x))$ matchdeclare(pb{i}, freeof(x))"
+    f"$ defmatch(pat{i}, pa{i}+pb{i}*x, x)$" for i in range(n)))
+PYEOF
+    maxima --very-quiet -b "$TMPD/pat.mac" > "$TMPD/pat.log" 2>&1
+  rc=$?
+    if [ $rc -eq 0 ]; then
+      echo "  $n plain patterns: loaded (budget > $n)"
+      [ "$n" = "1200" ] || { echo "  UNEXPECTED: 1600 loaded — budget moved"; fail=1; }
+    else
+      echo "  $n plain patterns: FATAL (budget < $n)"
+      [ "$n" = "1600" ] || { echo "  UNEXPECTED: 1200 died — budget shrank"; fail=1; }
+    fi
+  done
+  echo
+  echo "=== 4. unload releases the budget (4 x 1200 with unloads) ==="
+  python3 - 1200 > "$TMPD/pat.mac" <<'PYEOF'
+import sys
+n = int(sys.argv[1])
+print("\n".join(
+    f"matchdeclare(pa{i}, freeof(x))$ matchdeclare(pb{i}, freeof(x))"
+    f"$ defmatch(pat{i}, pa{i}+pb{i}*x, x)$" for i in range(n)))
+PYEOF
+  maxima --very-quiet --batch-string='load("'"$TMPD"'/pat.mac"); disp("b1"); unload("'"$TMPD"'/pat.mac"); load("'"$TMPD"'/pat.mac"); disp("b2"); unload("'"$TMPD"'/pat.mac"); load("'"$TMPD"'/pat.mac"); disp("b3"); unload("'"$TMPD"'/pat.mac"); load("'"$TMPD"'/pat.mac"); disp("b4");' \
+    > "$TMPD/unl.log" 2>&1
+  rc=$?
+  if [ $rc -eq 0 ] && grep -q "b4" "$TMPD/unl.log"; then
+    echo "  4 x 1200 with unloads: all loaded (unload releases the budget)"
+  else
+    echo "  4 x 1200 with unloads: FAILED (exit $rc) — unload does NOT release"
+    fail=1
+  fi
+  echo
+
+  echo "=== 5. in-process wall, largest safe prefix (files 1-7, 294 rules) ==="
+  maxima --very-quiet -b probes/load_wall/probe-load-wall.mac \
+    > "$TMPD/pre.log" 2>&1
+  rc=$?
+  # strip the echoed input lines (batch mode echoes statements); keep
+  # the defmatch progress lines, the disp results, build_info
+  grep -vE '^[[:space:]]*(t0|t1|load\("|%mr_load_sibling|disp\("|build_info\(\))' \
+    "$TMPD/pre.log" | sed 's/^/  /'
+  # rc alone is NOT enough: this build's batch mode continues after a
+  # syntax error and still exits 0 (measured 2026-08-20) — so verify the
+  # wall disp actually ran and reported the expected rule total, via the
+  # single-line PREFIX_TOTAL= marker (disp splits its items over extra
+  # blank lines, which breaks label+value line parsing).
+  total=$(grep -oE "PREFIX_TOTAL=[0-9]+" "$TMPD/pre.log" | grep -oE "[0-9]+" | head -1)
+  if [ $rc -ne 0 ] || [ "$total" != "294" ]; then
+    echo "  prefix load FAILED (rc $rc, total '$total' — budget shrank or probe broke; re-measure)"
+    fail=1
+  else
+    echo "  prefix 7 files / 294 rules: loaded (wall lower bound holds)"
+  fi
+  echo
+
+  echo "=== 6. wall upper bound: prefix 8 (361 cumulative) — expected FATAL ==="
+  {
+    echo 'load("maxima_rubi.mac");'
+    for k in 1_1_1_1 1_1_1_2 1_1_1_3 1_1_1_4 1_1_2_1 1_1_2_2 \
+             1_1_2_3 1_1_2_4; do
+      printf "%%mr_load_sibling(\"rules/class1/%s.mac\", 'mr_witness_%s);\n" \
+        "$k" "$k"
+    done
+  } > "$TMPD/p8.mac"
+  maxima --very-quiet -b "$TMPD/p8.mac" > "$TMPD/p8.log" 2>&1
+  rc=$?
+  if [ $rc -eq 0 ]; then
+    echo "  prefix 8: UNEXPECTED SUCCESS (the budget moved — re-measure)"
+    fail=1
+  else
+    echo "  prefix 8 (361 rules): FATAL (exit $rc) as expected"
+    grep -h "Thread local storage exhausted" "$TMPD/p8.log" \
+      | head -1 | sed 's/^/  /'
+  fi
+  echo
+  if [ $fail -eq 0 ]; then
+    echo "VERDICT: all parts as expected on this build (full load is FATAL;"
+    echo "the loadable prefix is 7 files / 294 rules; file 8 at 361 dies)"
+  else
+    echo "VERDICT: DEVIATION — a part did not match its expectation"
+  fi
+} > "$OUT"
+echo "wrote $OUT"
+[ $fail -eq 0 ]

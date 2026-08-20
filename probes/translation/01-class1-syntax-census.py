@@ -22,10 +22,11 @@ What it measures (claims recorded in docs/rule-translation.md):
   5. Per-file distribution of the manual bucket (the hand-port file
      list).
 
-Token extraction is deliberately crude (CamelCase name followed by '['):
-it is a census of what the translation script must recognize, not a
-parser. The rule-run parser (column-0 'Int[' to blank line) is the same
-convention as 01-inventory, whose totals it must reproduce.
+ Token extraction is deliberately crude (CamelCase name followed by '['):
+ it is a census of what the translation script must recognize, not a
+ parser. The rule-run parser (column-0 'Int[' to blank line, with the
+ dangling-':=' interior-blank exception — see rule_runs) is the same
+ convention as 01-inventory, whose totals it must reproduce.
 """
 
 import importlib.util
@@ -45,7 +46,10 @@ parse_load_rules = _inv.parse_load_rules
 
 
 def rule_runs(src_stripped):
-    """Same rule-run convention as 01-inventory.count_rules."""
+    """Same rule-run convention as 01-inventory.count_rules: a blank line
+    terminates a run, EXCEPT a run that still ends in a dangling ':='
+    (a comment-only line between the ':=' and the rhs — 4 class-1 rules;
+    see count_rules' docstring)."""
     lines = src_stripped.split("\n")
     runs = []
     cur = None
@@ -55,7 +59,7 @@ def rule_runs(src_stripped):
                 runs.append(cur)
             cur = [line]
         elif cur is not None:
-            if line.strip() == "":
+            if line.strip() == "" and not "\n".join(cur).rstrip().endswith(":="):
                 runs.append(cur)
                 cur = None
             else:

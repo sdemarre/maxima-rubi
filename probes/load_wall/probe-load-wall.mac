@@ -1,0 +1,26 @@
+/* probes/load_wall/probe-load-wall.mac — the in-process wall for the
+ * largest Rubi-order PREFIX of class 1 this build can hold in one
+ * process: files 1-7 (294 rules — measured 2026-08-20; file 8 takes
+ * the cumulative total to 361 and dies, see probe-load-wall-full.mac
+ * / probe-load-wall.out).
+ *
+ * maxima_rubi.mac's eager core already loads file 1 (5 rules); this
+ * times that plus files 2-7. The number is T5's cost-per-rule basis:
+ * 294 rules in N s is the measured load rate on this build. */
+t0 : elapsed_real_time()$
+load("maxima_rubi.mac")$
+%mr_load_sibling("rules/class1/1_1_1_2.mac", 'mr_witness_1_1_1_2)$
+%mr_load_sibling("rules/class1/1_1_1_3.mac", 'mr_witness_1_1_1_3)$
+%mr_load_sibling("rules/class1/1_1_1_4.mac", 'mr_witness_1_1_1_4)$
+%mr_load_sibling("rules/class1/1_1_2_1.mac", 'mr_witness_1_1_2_1)$
+%mr_load_sibling("rules/class1/1_1_2_2.mac", 'mr_witness_1_1_2_2)$
+%mr_load_sibling("rules/class1/1_1_2_3.mac", 'mr_witness_1_1_2_3)$
+t1 : elapsed_real_time()$
+tot : length(mr_rules_1_1_1_1) + length(mr_rules_1_1_1_2)
+     + length(mr_rules_1_1_1_3) + length(mr_rules_1_1_1_4)
+     + length(mr_rules_1_1_2_1) + length(mr_rules_1_1_2_2)
+     + length(mr_rules_1_1_2_3)$
+disp("prefix wall (s), 7 files / 294 rules: ", float(t1 - t0))$
+disp("prefix rule total: ", tot)$
+disp(concat("PREFIX_TOTAL=", string(tot)))$
+build_info();

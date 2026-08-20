@@ -1,0 +1,139 @@
+# class-1 load wall + defmatch budget, 2026-08-20
+# Maxima branch_5_49_base_796_g60186bb22_dirty
+
+=== 1. full class-1 load (67 files, 2710 rules) — expected FATAL ===
+full load: FATAL (exit 1) as expected on this build
+  Thread local storage exhausted.
+
+=== 2. per-file parse + witness (one process per file) ===
+  1_1_1_1: ok (0.006999999999999999s)
+  1_1_1_2: ok (0.082002s)
+  1_1_1_3: ok (0.172004s)
+  1_1_1_4: ok (0.138004s)
+  1_1_1_5: ok (0.018001000000000003s)
+  1_1_1_6: ok (0.024001s)
+  1_1_1_7: ok (0.065001s)
+  1_1_2_1: ok (0.048001s)
+  1_1_2_10: ok (0.009999999999999995s)
+  1_1_2_11: ok (0.031001s)
+  1_1_2_12: ok (0.033001s)
+  1_1_2_13: ok (0.018001000000000003s)
+  1_1_2_14: ok (0.009000000000000001s)
+  1_1_2_2: ok (0.090002s)
+  1_1_2_3: ok (0.10300300000000001s)
+  1_1_2_4: ok (0.144003s)
+  1_1_2_5: ok (0.075002s)
+  1_1_2_6: ok (0.053001000000000006s)
+  1_1_2_7: ok (0.10800200000000001s)
+  1_1_2_8: ok (0.244005s)
+  1_1_2_9: ok (0.25800599999999996s)
+  1_1_3_1: ok (0.036s)
+  1_1_3_2: ok (0.031s)
+  1_1_3_3: ok (0.10900199999999999s)
+  1_1_3_4: ok (0.176004s)
+  1_1_3_5: ok (0.098003s)
+  1_1_3_6: ok (0.085002s)
+  1_1_3_7: ok (0.032s)
+  1_1_3_8: ok (0.065002s)
+  1_1_4_1: ok (0.019000999999999997s)
+  1_1_4_2: ok (0.043001s)
+  1_1_4_3: ok (0.026001000000000003s)
+  1_1_4_4: ok (0.021001s)
+  1_2_1_1: ok (0.033s)
+  1_2_1_2: ok (0.24800599999999998s)
+  1_2_1_3: ok (0.294006s)
+  1_2_1_4: ok (0.08300199999999999s)
+  1_2_1_5: ok (0.130003s)
+  1_2_1_6: ok (0.009000000000000001s)
+  1_2_1_7: ok (0.08400200000000001s)
+  1_2_1_8: ok (0.011000000000000003s)
+  1_2_1_9: ok (0.08300199999999999s)
+  1_2_2_1: ok (0.034001s)
+  1_2_2_2: ok (0.06800199999999999s)
+  1_2_2_3: ok (0.166004s)
+  1_2_2_4: ok (0.21900499999999998s)
+  1_2_2_5: ok (0.018001000000000003s)
+  1_2_2_6: ok (0.018001000000000003s)
+  1_2_2_7: ok (0.093003s)
+  1_2_2_8: ok (0.042001s)
+  1_2_3_1: ok (0.018001000000000003s)
+  1_2_3_2: ok (0.080002s)
+  1_2_3_3: ok (0.135003s)
+  1_2_3_4: ok (0.034s)
+  1_2_3_5: ok (0.042001s)
+  1_2_3_6: ok (0.058001s)
+  1_2_4_1: ok (0.009000000000000001s)
+  1_2_4_2: ok (0.019000999999999997s)
+  1_2_4_3: ok (0.006999999999999999s)
+  1_2_4_4: ok (0.017001000000000002s)
+  1_3_1: ok (0.041000999999999996s)
+  1_3_2: ok (0.043001s)
+  1_3_3: ok (0.025000999999999995s)
+  1_3_4: ok (0.036001000000000005s)
+  1_4_1: ok (0.115003s)
+  1_4_2: ok (0.056000999999999995s)
+  1_4_3: ok (0.032s)
+
+=== 3. plain-pattern defmatch budget (pa+pb*x, freeof(x) declares) ===
+  1200 plain patterns: loaded (budget > 1200)
+  1600 plain patterns: FATAL (budget < 1600)
+
+=== 4. unload releases the budget (4 x 1200 with unloads) ===
+  4 x 1200 with unloads: all loaded (unload releases the budget)
+
+=== 5. in-process wall, largest safe prefix (files 1-7, 294 rules) ===
+  batch("probes/load_wall/probe-load-wall.mac")
+  defmatch: _mr_1_1_1_1_r5_u _mr_1_1_1_1_r5_b
+           will be matched uniquely since sub-parts would otherwise be ambiguous.
+  defmatch: _mr_1_1_1_2_r40_u _mr_1_1_1_2_r40_b
+           will be matched uniquely since sub-parts would otherwise be ambiguous.
+  defmatch: _mr_1_1_1_3_r73_u _mr_1_1_1_3_r73_b
+           will be matched uniquely since sub-parts would otherwise be ambiguous.
+  defmatch: _mr_1_1_1_4_r43_u _mr_1_1_1_4_r43_b
+           will be matched uniquely since sub-parts would otherwise be ambiguous.
+                             _mr_1_1_2_1_r33_n
+  defmatch: _mr_1_1_2_1_r33_v                  _mr_1_1_2_1_r33_b
+           will be matched uniquely since sub-parts would otherwise be ambiguous.
+             _mr_1_1_2_3_r2_n
+  defmatch: x                 _mr_1_1_2_3_r2_b
+           will be matched uniquely since sub-parts would otherwise be ambiguous.
+             _mr_1_1_2_3_r3_n
+  defmatch: x                 _mr_1_1_2_3_r3_b
+           will be matched uniquely since sub-parts would otherwise be ambiguous.
+             _mr_1_1_2_3_r4_n
+  defmatch: x                 _mr_1_1_2_3_r4_b
+           will be matched uniquely since sub-parts would otherwise be ambiguous.
+  tot:length(mr_rules_1_1_1_1)+length(mr_rules_1_1_1_2)+length(mr_rules_1_1_1_3)
+                              +length(mr_rules_1_1_1_4)+length(mr_rules_1_1_2_1)
+                              +length(mr_rules_1_1_2_2)+length(mr_rules_1_1_2_3)
+                      prefix wall (s), 7 files / 294 rules: 
+  
+                                     0.597013
+  
+                                prefix rule total: 
+  
+                                        294
+  
+  disp(concat("PREFIX_TOTAL=",string(tot)))
+                                 PREFIX_TOTAL=294
+  
+   
+  Maxima-version: "branch_5_49_base_796_g60186bb22_dirty"
+  Maxima build date: "2026-07-28 18:58:04"
+  Host type: "x86_64-pc-linux-gnu"
+  Lisp implementation type: "SBCL"
+  Lisp implementation version: "2.6.7"
+  User dir: "/home/serge/.maxima"
+  Temp dir: "/tmp"
+  Object dir: "/home/serge/.maxima/binary/branch_5_49_base_796_g60186bb22_dirty/sbcl/2_6_7"
+  Frontend: false
+   /home/serge/src/maxima-rubi/.worktrees/milestone-1/probes/load_wall/probe-loa\
+  d-wall.mac
+  prefix 7 files / 294 rules: loaded (wall lower bound holds)
+
+=== 6. wall upper bound: prefix 8 (361 cumulative) — expected FATAL ===
+  prefix 8 (361 rules): FATAL (exit 1) as expected
+  Thread local storage exhausted.
+
+VERDICT: all parts as expected on this build (full load is FATAL;
+the loadable prefix is 7 files / 294 rules; file 8 at 361 dies)

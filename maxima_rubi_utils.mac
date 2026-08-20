@@ -5,6 +5,11 @@
 
 rubi_verbose : false$
 
+/* Port of ShowStepRoutines.m :3  SimplifyFlag = True; — the class-1
+ * rule 1.4.1's ShowStep guard references it; the default is on, and
+ * the harness never switches it. */
+mr_simplify_flag : true$
+
 /* Capture lookup on the [var = value] equation list (order unspecified,
  * measured T2 §3.6). Quoted symbol on both sides (house rule 1). */
 geteqR(mm, nm) := block([],
@@ -340,6 +345,69 @@ rubi(f, x) := mr_int(f, x)$
   v : %mr_together(u),
   %mr_polyQ(v, x) and %mr_eqQ(%mr_degree(v, x), n)
     and %mr_neQ(%mr_coeff(v, x, n), 0))$
+
+/* ---- PolyQ power forms (Task 6 Step 0) ------------------------------
+ * Rubi :512/:522/:533  PolyQ[u, x^n] / PolyQ[u, x^v] / PolyQ[u, x^v, n].
+ * The base is an EXPRESSION B (x, or a capture value such as a + b*x —
+ * the class-1 uses PolyQ[Pq, v^n] pass the capture v as base): u is a
+ * polynomial in B^v iff, with t a fresh symbol,
+ *   r = expand(subst(t, B, u))
+ * has no t in any denominator and every term is a t-monomial whose t-
+ * exponent k is a non-negative multiple of v. For B = x this is exactly
+ * the brief's contract (no x in a denominator, every term's x-exponent
+ * a non-negative multiple of v). DEVIATION (documented, brief-pinned):
+ * the degree form uses max k/v <= n; Rubi :533 instead uses the exact
+ * degree EqQ[Expon[u,x^v],n] && NeQ[Coeff[u,x^v,n],0] — the < n
+ * over-fire is the harness derivative check's to catch. */
+%mr_polyPowerQ(u, B, v) := block([t, r, i, term, k, ok],
+  t : gensym("mrp"),
+  r : expand(subst(t, B, u)),
+  if is(freeof(t, denom(r))) = false then false
+  else if not numberp(v) or v < 0 then false
+  else (
+    if v = 0 then is(freeof(t, r))
+    else (
+      /* %mr_term_xexp returns false (never negative) on a term that is
+         not a pure non-negative power of the variable, so k >= 0 holds
+         whenever k # false */
+      ok : true,
+      if atom(r) then (
+        k : %mr_term_xexp(r, t),
+        if k = false or not integerp(k/v) then ok : false
+      )
+      else (
+        for i : 1 thru length(r) do (
+          term : part(r, i),
+          k : %mr_term_xexp(term, t),
+          if k = false or not integerp(k/v) then ok : false
+        )
+      ),
+      ok
+    )
+  ))$
+
+%mr_polyDegPowerQ(u, B, v, n) := block([t, r, i, term, k, d],
+  if is(%mr_polyPowerQ(u, B, v)) = false then false
+  else (
+    /* recompute r identically to %mr_polyPowerQ and take the maximum
+       k/v (the degree in B^v); a non-monomial term cannot occur here
+       (polyPowerQ true), so k # false for every term */
+    t : gensym("mrp"),
+    r : expand(subst(t, B, u)),
+    d : 0,
+    if atom(r) then (
+      k : %mr_term_xexp(r, t),
+      if k # false and k/v > d then d : k/v
+    )
+    else (
+      for i : 1 thru length(r) do (
+        term : part(r, i),
+        k : %mr_term_xexp(term, t),
+        if k # false and k/v > d then d : k/v
+      )
+    ),
+    is(d <= n)
+  ))$
 
 /* Rubi :1373  LinearQ[u,x] := PolyQ[u,x,1] (list form dropped — no
    list-valued integrands in the emitted conds) */

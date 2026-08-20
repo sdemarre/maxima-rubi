@@ -71,6 +71,7 @@ run_all_tests() := block([],
   test_rules_1_1_1_1_struct(),
   test_pred_cluster1(),
   test_rules_1_1_1_1_behavior(),
+  test_census(),
   print(""),
   print("========================================"),
   print("Results: ", tests_passed, " passed, ", tests_failed, " failed"),
@@ -159,6 +160,21 @@ test_pred_cluster1() := block([],
   /* totality: a non-polynomial returns the -1 sentinel, never a boolean */
   check_bool("degree 1/x (total)", is(%mr_degree(1/x, x) = -1)),
   check_bool("polyDegQ x^2+x deg 2", %mr_polyDegQ(x^2 + x, x, 2)),
+  /* %mr_polyPowerQ / %mr_polyDegPowerQ (Task 6 Step 0 — Rubi's PolyQ
+     power forms, IntegrationUtilityFunctions.m :512/:522/:532). The base
+     is an EXPRESSION (x or a capture such as a + b*x): u is a polynomial
+     in base^v iff expand(subst(t, base, u)) is a t-polynomial whose term
+     exponents are all non-negative multiples of v. */
+  check_bool("polyPowerQ x^4+1 in x^2", %mr_polyPowerQ(x^4 + 1, x, 2)),
+  check_not("polyPowerQ x^3+1 in x^2", %mr_polyPowerQ(x^3 + 1, x, 2)),
+  check_not("polyPowerQ 1/x in x^2", %mr_polyPowerQ(1/x, x, 2)),
+  check_bool("polyPowerQ 5 in x^2", %mr_polyPowerQ(5, x, 2)),
+  check_bool("polyPowerQ (x^2+1)^2 in x^2", %mr_polyPowerQ((x^2 + 1)^2, x, 2)),
+  check_not("polyPowerQ sin(x)+x^4 in x^2", %mr_polyPowerQ(sin(x) + x^4, x, 2)),
+  check_bool("polyPowerQ capture base 1+v^4 in v^2", %mr_polyPowerQ(1 + (a + b*x)^4, a + b*x, 2)),
+  check_not("polyPowerQ capture base 1+v^3 in v^2", %mr_polyPowerQ(1 + (a + b*x)^3, a + b*x, 2)),
+  check_bool("polyDegPowerQ x^4+1 in x^2 deg 2", %mr_polyDegPowerQ(x^4 + 1, x, 2, 2)),
+  check_not("polyDegPowerQ x^4+1 in x^2 deg 1", %mr_polyDegPowerQ(x^4 + 1, x, 2, 1)),
   check_bool("linearQ x", %mr_linearQ(x, x)),
   check_bool("linearQ x+1", %mr_linearQ(x + 1, x)),
   check_bool("linearQ a+x", %mr_linearQ(a + x, x)),
@@ -219,7 +235,30 @@ test_rules_1_1_1_1_behavior() := block([r],
    r : rubi((1 + 2*(3*x))^2, x),
    check_bool("linear base (1+6x)^2", is(ratsimp(r) = ratsimp((1 + 6*x)^3/18))),
   /* NeQ[m, -1]: the m = -1 case must NOT take the power rule (falls to 1/x) */
-  check_bool("NeQ guard honored", is(rubi(1/x, x) = log(x))),
+   check_bool("NeQ guard honored", is(rubi(1/x, x) = log(x))),
+   true
+)$
+
+/* Census cross-check (T6 Step 4). BRIEF DEVIATION (measured 2026-08-20,
+   probes/load_wall/probe-load-wall.out, build
+   branch_5_49_base_796_g60186bb22_dirty): the brief's global check
+   (length(mr_rule_table) = 2710) cannot run in-process on this build —
+   the defmatch budget is exhausted partway through file 8 of 67, so
+   2710 patterns cannot be held in one process. The global cross-check
+   lives in the static probe probes/census/01-generation-vs-inventory
+   (generator per-file counts vs the T1 inventory, all 67 files, total
+   2710). Here: the loadable spot checks — 1.1.1.2 (count 40, the T1
+   inventory per-file number) loaded with the table saved/restored,
+   plus the core count re-verified. */
+test_census() := block([saved_table],
+  print("--- census cross-check (loadable subset; see docstring) ---"),
+  saved_table : mr_rule_table,
+  %mr_load_sibling("rules/class1/1_1_1_2.mac", 'mr_witness_1_1_1_2),
+  check("1.1.1.2 count = 40 (T1 inventory)", mr_rules_count_1_1_1_2, 40),
+  check_bool("1.1.1.2 witness survived", is(mr_witness_1_1_1_2() = true)),
+  check("core 1.1.1.1 count still 5", mr_rules_count_1_1_1_1, 5),
+  check("table (saved core) length 5", length(saved_table), 5),
+  mr_rule_table : saved_table,
   true
 )$
 

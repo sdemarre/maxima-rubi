@@ -1,0 +1,15 @@
+/* probes/load_wall/probe-load-wall-full.mac — the full class-1 load
+ * (all 67 files, 2710 rules) in one process.
+ *
+ * MEASURED 2026-08-20, build branch_5_49_base_796_g60186bb22_dirty:
+ * this DIES with SBCL's fatal "Thread local storage exhausted" at file
+ * 8 of the load list (1_1_2_4; the cumulative total goes 294 -> 361
+ * rules there — the process-level defmatch budget, between 1200 and
+ * 1600 plain patterns, i.e. a real class-1 rule costs between about
+ * 3.3 and about 5.4 of them, is exhausted before the load finishes).
+ * The fatal error is uncatchable (errcatch does not see it). The
+ * .run driver EXPECTS a non-zero exit and records the last lines;
+ * a zero exit would mean the budget moved (re-measure everything). */
+load("maxima_rubi.mac");
+mr_load_class1_all();
+disp("full load ok (budget moved — re-measure)");

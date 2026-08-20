@@ -6,7 +6,7 @@ RENAME = {
     # present
     "FreeQ": "freeof",            # arg order flips: FreeQ[e, x] -> freeof(x, e)
     "IntegerQ": "integerp", "OddQ": "oddp", "Not": "not",
-    "Sqrt": "sqrt", "Log": "log", "D": "diff", "ReplaceAll": "subst",
+    "Sqrt": "sqrt", "Log": "log", "D": "diff",
     "ArcTan": "atan", "ArcSin": "asin", "ArcCos": "acos",
     "Denominator": "denom", "Numerator": "num", "Denom": "denom", "Numer": "num",
     "GCD": "gcd", "Mod": "mod", "Floor": "floor", "Factor": "factor",
@@ -18,7 +18,10 @@ RENAME = {
     # ports (Rubi utilities, Task 4/5/7)
     "EqQ": "%mr_eqQ", "NeQ": "%mr_neQ", "PossibleZeroQ": "%mr_possible_zeroQ",
     "Coeff": "%mr_coeff", "Coefficient": "%mr_coeff",
-    "PolyQ": "%mr_polyQ", "LinearQ": "%mr_linearQ", "QuadraticQ": "%mr_quadraticQ",
+    # PolyQ is emitter-dispatched (Task 6 Step 0 / F2): (u,x)/(u,x,n)/(u,x^v
+    # [,(n)]) -> %mr_polyQ/%mr_polyDegQ/%mr_polyPowerQ/%mr_polyDegPowerQ —
+    # a 1:1 rename would silently treat the power form as a variable.
+    "LinearQ": "%mr_linearQ", "QuadraticQ": "%mr_quadraticQ",
     "TrinomialQ": "%mr_trinomialQ", "BinomialQ": "%mr_binomialQ",
     "IntLinearQ": "%mr_intLinearQ", "IntBinomialQ": "%mr_intBinomialQ",
     "IntQuadraticQ": "%mr_intQuadraticQ",
@@ -55,6 +58,12 @@ RENAME = {
     "LinearPairQ": "%mr_linearPairQ", "PseudoBinomialPairQ": "%mr_pseudoBinomialPairQ",
     "InverseFunctionQ": "%mr_inverseFunctionQ",
     "AlgebraicFunctionQ": "%mr_algebraicFunctionQ",
+    # added by the Task 6 full-class closure check (the four heads the
+    # census tier table missed in class 1):
+    "PolynomialQ": "%mr_polynomialQ",   # C-tier port, Task 7
+    "FractionalPart": "%mr_fracPart",   # Mathematica builtin = FracPart
+    "IntegerPart": "%mr_intPart",       # Mathematica builtin = IntPart
+    "SimplifyFlag": "mr_simplify_flag", # ShowStepRoutines.m :3 global (utils)
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.
@@ -64,7 +73,8 @@ RESTRUCTURE = {
     "Int": "mr_int",              # Int[smaller, x] -> mr_int(smaller, x)
     "Unintegrable": "noun", "CannotIntegrate": "noun",   # -> mr_unintegrable
     "IntHide": "mr_int",
-    "Sum": "mr_sum",
+    # Sum is emitter-dispatched (Task 6 E5): mr_sum(fun, var, lo, hi) is
+    # 4-arg; Rubi's iterator {var, lo, hi} must be split, not renamed 1:1.
     "With": "block", "Module": "block",
     "If": "if",
     "EllipticF": "mr_elliptic_f", "EllipticE": "mr_elliptic_e",
@@ -72,8 +82,12 @@ RESTRUCTURE = {
     "Hypergeometric2F1": "hypergeometric",   # list-form args
     "AppellF1": "mr_appellf1",
     "Root": "%mr_root", "Hold": "%mr_hold", "Boole": "if",
-    "Integrate": "integrate", "ShowStep": "drop",
-    "Pi": "Pi", "E": "E", "I": "I", "Abs": "abs",
+    # ShowStep is emitter-dispatched (Task 6 E4): it values to its 4th arg
+    # (ReleaseHold[rhs]), which the handler emits — a "drop" would leave
+    # a noun. Pi/E/I are constants mapped in translate_token (%pi/%e/%i),
+    # not heads.
+    "Integrate": "integrate",
+    "Abs": "abs",
     "Sinh": "sinh", "Tanh": "tanh", "Csc": "csc", "Sec": "sec",
     "Piecewise": "mr_piecewise", "Min": "min", "Max": "max",
     "CoefficientList": "%mr_coefficientList",

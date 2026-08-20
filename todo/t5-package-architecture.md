@@ -32,14 +32,24 @@ All claims in `docs/package-architecture.md`; the inputs it consumes:
 - `~/src/diophantine` read 2026-08-18: `%dio_load_sibling` + witness
   idiom, `diophantine_verbose`, the `Results:` protocol, the
   quote-on-both-sides house rule, the single-line `:lisp` constraint;
-- same-session probe (2026-08-18): `?fboundp`/`errcatch`/
-  `load_pathname`(=false under `-b`)/`sconcat` all work in the
-  installed build.
+- same-session probe (2026-08-18): `?fboundp`/`errcatch`/`sconcat`
+  all work in the installed build; `load_pathname` re-measured
+  2026-08-20 (probes/maxima/probe-load-pathname.out): it is the file
+  currently executing — the loaded file inside `load()` (resolved
+  absolute path), the BATCH file at top level, false under
+  `--batch-string` — so the loader captures the library dir at
+  definition time, not call time.
 
 Decisions recorded there: `rubi(f, x)` API with `integrate`
 fall-through noun; flat diophantine-mould layout with no `.lisp` in
 milestone 1; two-layer harness (batch unit suite + per-integral
 subprocess corpus driver, shared `Results:` protocol); ten house
-rules, each trap-cited. Open for the implementation phase: load-time
-`defmatch` wall (first measurement), recursion cap, zero-chain
-strengthening.
+rules, each trap-cited. Open for the implementation phase: recursion
+cap, zero-chain strengthening. The load-time `defmatch` wall was
+measured 2026-08-20 (probes/load_wall/probe-load-wall.out): a hard
+process-level pattern budget (1200-1600 plain patterns), not a timing
+issue — the full class-1 load (2710 rules) cannot be held in one
+process on this build (files 1-7 / 294 rules load; file 8 / 361 dies
+with SBCL's fatal "Thread local storage exhausted"); `unload()`
+releases the budget; `mr_load_class1_all()` exists but the loader does
+not call it on this build.

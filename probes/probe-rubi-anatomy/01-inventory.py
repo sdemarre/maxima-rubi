@@ -32,13 +32,38 @@ from pathlib import Path
 
 
 def strip_comments(src):
-    """Remove (* ... *) comments (non-nested), preserving newlines."""
+    """Remove (* ... *) comments, preserving newlines.
+
+    FIX (2026-08-20, Task 6): NESTED, per Mathematica's comment
+    semantics — a `(*` inside a comment raises the depth; the comment
+    ends at the matching `*)`. The old non-nested scan (first `*)`
+    wins) left a live-text tail whenever a comment contained its own
+    `(* ... *)` (one class-1 file does: 1.1.1.3's commented-out rule
+    carries an inner comment), which glued comment debris onto the
+    preceding rule. Measured 2026-08-20: the per-file rule counts and
+    the 2710 total are UNCHANGED by the fix (debris never started a
+    new run); the census token histograms shed the debris tokens."""
     out = []
-    i, n = 0, len(src)
+    i, n, depth = 0, len(src), 0
     while i < n:
-        if src.startswith("(*", i):
-            j = src.find("*)", i + 2)
-            j = n if j == -1 else j + 2
+        if depth > 0:
+            if src.startswith("(*", i):
+                depth += 1; i += 2
+            elif src.startswith("*)", i):
+                depth -= 1; i += 2
+            else:
+                out.append("\n" if src[i] == "\n" else " ")
+                i += 1
+        elif src.startswith("(*", i):
+            j = i + 2
+            depth = 1
+            while j < n and depth > 0:
+                if src.startswith("(*", j):
+                    depth += 1; j += 2
+                elif src.startswith("*)", j):
+                    depth -= 1; j += 2
+                else:
+                    j += 1
             out.append("\n" * src.count("\n", i, j))
             i = j
         else:
@@ -90,7 +115,13 @@ def count_rules(src_stripped):
 
     Returns (rules, with_cond, rhs_int, rhs_subst). A rule run is the
     sequence of lines from a column-0 'Int[' line to the next column-0
-    'Int[' line or blank line.
+    'Int[' line or blank line — EXCEPT a blank line does not terminate a
+    run that still ends in a dangling ':=': a comment-only line (e.g.
+    1.1.2.1 :93 — 4 class-1 rules) may sit between the ':=' and the rhs,
+    and stripping the comment leaves a blank that would otherwise cut the
+    run short and silently drop the rhs/cond lines. A complete rule never
+    ends in ':=', so this cannot swallow the scaffolding that follows a
+    complete rule (the If[TrueQ[$LoadShowSteps]] block in 1.4.1).
     """
     lines = src_stripped.split("\n")
     runs = []
@@ -101,7 +132,7 @@ def count_rules(src_stripped):
                 runs.append(cur)
             cur = [line]
         elif cur is not None:
-            if line.strip() == "":
+            if line.strip() == "" and not "\n".join(cur).rstrip().endswith(":="):
                 runs.append(cur)
                 cur = None
             else:

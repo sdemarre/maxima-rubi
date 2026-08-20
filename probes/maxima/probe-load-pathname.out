@@ -1,0 +1,21 @@
+# probe-load-pathname output, 2026-08-20
+# Maxima branch_5_49_base_796_g60186bb22_dirty
+batch("/tmp/tmp.JBdoeSk1LK/outer_lp.mac")
+disp(concat("batch top level      : ",string(load_pathname)))
+           batch top level      : "/tmp/tmp.JBdoeSk1LK/outer_lp.mac"
+
+load("/tmp/tmp.JBdoeSk1LK/inner_lp.mac")
+          inside load()ed file   : "/tmp/tmp.JBdoeSk1LK/inner_lp.mac"
+
+load(".tmp_mr_inner_lp.mac")
+inside load()ed file   : "/home/serge/src/maxima-rubi/.worktrees/milestone-1/.\
+tmp_mr_inner_lp.mac"
+
+disp(concat("after load returned  : ",string(load_pathname)))
+           after load returned  : "/tmp/tmp.JBdoeSk1LK/outer_lp.mac"
+
+quit()
+
+disp(concat("batch-string level     : ",string(load_pathname)))
+                        batch-string level     : false
+

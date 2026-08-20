@@ -1,0 +1,31 @@
+#!/bin/sh
+# Run the load_pathname-contexts probe (from repo root):
+#   sh probes/maxima/probe-load-pathname.run
+# Output is redirected to probe-load-pathname.out with a date/build
+# stamp and committed (measured-claims discipline).
+cd "$(dirname "$0")/../.." || exit 1
+TMPD=$(mktemp -d)
+RELIN=".tmp_mr_inner_lp.mac"
+trap 'rm -rf "$TMPD" "$RELIN"' EXIT
+{
+  echo "# probe-load-pathname output, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  # inner file: prints what load_pathname points at while IT executes
+  printf 'disp(concat("inside load()ed file   : ", string(load_pathname)))$\n' \
+    > "$TMPD/inner_lp.mac"
+  cp "$TMPD/inner_lp.mac" "$RELIN"
+  # outer batch: top level, two load() contexts, post-load top level
+  {
+    echo 'disp(concat("batch top level      : ", string(load_pathname)))$'
+    echo "load(\"$TMPD/inner_lp.mac\")$"
+    echo "load(\"$RELIN\")$"
+    echo 'disp(concat("after load returned  : ", string(load_pathname)))$'
+    echo 'quit();'
+  } > "$TMPD/outer_lp.mac"
+  maxima --very-quiet -b "$TMPD/outer_lp.mac"
+  echo
+  # batch-string context: no file at all
+  maxima --very-quiet --batch-string \
+    'disp(concat("batch-string level     : ", string(load_pathname)))$'
+} > probes/maxima/probe-load-pathname.out
+echo "wrote probes/maxima/probe-load-pathname.out"
