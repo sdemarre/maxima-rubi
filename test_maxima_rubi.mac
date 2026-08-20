@@ -69,6 +69,8 @@ run_all_tests() := block([],
   test_load_and_api(),
   test_dispatch(),
   test_rules_1_1_1_1_struct(),
+  test_pred_cluster1(),
+  test_rules_1_1_1_1_behavior(),
   print(""),
   print("========================================"),
   print("Results: ", tests_passed, " passed, ", tests_failed, " failed"),
@@ -131,6 +133,78 @@ test_rules_1_1_1_1_struct() := block([],
   check_bool("witness survived", is(mr_witness_1_1_1_1() = true)),
   check("count cross-check", mr_rules_count_1_1_1_1, 5),
   check_bool("table is the file's rules", is(mr_rule_table = mr_rules_1_1_1_1)),
+  true
+)$
+
+test_pred_cluster1() := block([],
+  print("--- predicate cluster 1 ---"),
+  /* %mr_coeff: Maxima's coefficient is a noun here; %mr_coeff works */
+  check("coeff x^2+2x+1", %mr_coeff(x^2 + 2*x + 1, x, 1), 2),
+  check("coeff 3x", %mr_coeff(3*x, x, 1), 3),
+  check("coeff missing", %mr_coeff(3*x, x, 2), 0),
+  /* %mr_polyQ / %mr_linearQ: degree tests */
+  check_bool("polyQ x^2+x", %mr_polyQ(x^2 + x, x)),
+  check_not("polyQ 1/x", %mr_polyQ(1/x, x)),
+  check_bool("linearQ a+b x", %mr_linearQ(a + b*x, x)),
+  check_not("linearQ x^2", %mr_linearQ(x^2, x)),
+  /* %mr_removeContent: strips the x-free content factor */
+  check("removeContent 3(x+1)", ratsimp(%mr_removeContent(3*(x + 1), x)), x + 1),
+  /* %mr_sign / posQ / negQ: the pos/neg/pnz mapping */
+  check("sign pos", %mr_sign(3), 1),
+  check("sign neg", %mr_sign(-3), -1),
+  check("sign zero", %mr_sign(0), 0),
+  check_bool("posQ a (undecidable -> false)", not %mr_posQ(a)),
+  check_bool("posQ 3", %mr_posQ(3)),
+  /* %mr_subst: Rubi's back-substitution (Subst[ans, x, u]) */
+  check("subst", ratsimp(%mr_subst(x^2/2, x, 2*y)), ratsimp(2*y^2)),
+  /* clone-gap equality pair (derived from usage — see clone-gap note) */
+  check_bool("possible_zero 0", %mr_possible_zeroQ(0)),
+  check_bool("possible_zero (x-x)", %mr_possible_zeroQ(x - x)),
+  check_not("possible_zero 5", %mr_possible_zeroQ(5)),
+  check_bool("possible_zero a (undecidable)", %mr_possible_zeroQ(a)),
+  check_bool("neQ 1 2", %mr_neQ(1, 2)),
+  check_not("neQ 1 1", %mr_neQ(1, 1)),
+  check_bool("neQ a b (undecidable -> loose true)", %mr_neQ(a, b)),
+  check_bool("eqQ a a", %mr_eqQ(a, a)),
+  check_not("eqQ 1 2", %mr_eqQ(1, 2)),
+  true
+)$
+
+test_rules_1_1_1_1_behavior() := block([r],
+  print("--- generated 1.1.1.1 (behavioral) ---"),
+  /* rule 2: the power rule x^m (m free of x, m # -1) */
+  check("x^3", rubi(x^3, x), x^4/4),
+  check("5x^2", rubi(5*x^2, x), 5*x^3/3),
+  /* rule 1: 1/x -> log(x) */
+  check("1/x", rubi(1/x, x), log(x)),
+  /* rule 4: (a+b x)^m, m # -1. BRIEF DEVIATION (measured 2026-08-20):
+     the brief's expected (1+2x)^4/12 is not an antiderivative —
+     ratsimp(diff((1+2x)^4/12, x) - (1+2x)^3)
+       = -((8*x^3+12*x^2+6*x+1)/3) # 0,
+     while (1+2x)^4/8 closes (diff - integrand -> 0) and equals
+     Maxima's own integrate up to a constant. Expected fixed to /8
+     (the value rule 4 emits: (a+b x)^(m+1)/(b (m+1))). */
+  check("(1+2x)^3", ratsimp(rubi((1 + 2*x)^3, x)), ratsimp((1 + 2*x)^4/8)),
+  /* rule 3: 1/(a+b x) -> log(RemoveContent[a+b x, x])/b */
+  check("1/(a+b x)", ratsimp(rubi(1/(a + b*x), x)), ratsimp(log(a + b*x)/b)),
+  /* rule 5 shape (a+b u)^m, u linear in x. MEASURED (2026-08-20):
+     (1 + 2*(3*x))^2 auto-simplifies to (1 + 6*x)^2, which rule 4
+     matches directly — and the emitted rule-5 pattern
+     (a + b*u)^m (a product of two pattern variables) matches NOTHING
+     in this Maxima build (defmatch warning: "will be matched uniquely
+     since sub-parts would otherwise be ambiguous"; all probe inputs
+     -> false). So this input exercises rule 4, and rule 5 / the
+     %mr_subst-via-rule path is NOT exercised end-to-end here
+     (%mr_subst itself has a unit probe above). Generator/matcher
+     finding — see task-5 report.
+     BRIEF DEVIATION (measured): the brief's expected (1+6x)^3/9 is not
+     an antiderivative — ratsimp(diff((1+6x)^3/9, x) - (1+6x)^2)
+       = 36*x^2+12*x+1 # 0,
+     while (1+6x)^3/18 closes to 0. Expected fixed to /18. */
+  r : rubi((1 + 2*(3*x))^2, x),
+  check_bool("linear-in-u via Subst", is(ratsimp(r) = ratsimp((1 + 6*x)^3/18))),
+  /* NeQ[m, -1]: the m = -1 case must NOT take the power rule (falls to 1/x) */
+  check_bool("NeQ guard honored", is(rubi(1/x, x) = log(x))),
   true
 )$
 
