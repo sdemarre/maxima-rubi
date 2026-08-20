@@ -47,9 +47,45 @@ Task 5: complete (commits 8528996..2c65051, review clean after 1 fix — spec �
     fall-through always yields the right answer in 1.1.1.x). Coverage/redundancy
     gap + Subst path untested end-to-end. Track for Task 6/9; re-measure on 5.50.
   - F3 (plan's /12,/9 antiderivatives were wrong): corrected to /8,/18 (verified).
+Task 6: complete (commits 1a85498..0ac99b5, pending review)
+  - Full-class generation: 67 files, 2710 rules, every per-file count equal to
+    the T1 inventory (static cross-check probes/census/01-generation-vs-
+    inventory, no Maxima). Emitter dispatch E1-E5/E10/E11 closed the shapes
+    the census tier table could not represent 1:1 (rule-list ReplaceAll ->
+    equation-list subst, the 3-arg list form being a silent no-op; ShowStep
+    -> 4th arg; Sum -> 4-arg mr_sum; MatchQ RAW args in the fresh-marker
+    scope; digit/paren join — 2(x+1) and (x+1)2 are parse errors).
+  - Load wall measured (T5 §5): a hard process-level defmatch BUDGET, not a
+    timing problem — 1200 plain patterns load / 1600 FATAL; class-1 load
+    list files 1-7 (294 rules) load / file 8 (361) dies with SBCL's fatal
+    "Thread local storage exhausted" (errcatch cannot catch it); unload()
+    releases the budget. The loader does NOT call mr_load_class1_all()
+    (it exists for a build with the headroom); eager core = utils + 1.1.1.1.
+    Probe: probes/load_wall/probe-load-wall.run (6 parts, self-flagging).
+  - Fixed both rule-run parsers (01-inventory + 01-class1-syntax-census): a
+    comment-only line between := and the rhs silently dropped 5 rule bodies
+    (4 class-1 + 1 class-9); dangling-:= exception; evidence regenerated
+    (class-1 cond 2705->2709, rule totals unchanged 2710/67).
+  - %mr_load_sibling read load_pathname at CALL time (top level = the batch
+    file, not the library — measured probes/maxima/probe-load-pathname.out)
+    -> spurious file_search1 miss per sibling + fallback reliance. Now
+    %mr_lib_dir captured at definition time; suite run has zero file_search1.
+  - Brief deviations, all measurement-forced and recorded in the report:
+    D1 full load list wrapped in the uncalled mr_load_class1_all(); D2 table
+    assembly flatten([...]) (list concat is a hard error in this build); D3
+    the ~1-minute decision gate moot (budget, not time); D4 test_census is
+    the loadable subset (1.1.1.2 count 40 = T1 number, witness, restore)
+    with the global 2710 check in the static census probe.
+  - Suite 71/0; per-file parse+witness 67/67 (one process per file).
 
 ## Minor findings (triage at final whole-branch review)
 
+- [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
+  continuation lines of the multi-line disp INPUT (+length(mr_rules_...)
+  lines) leak into the .out because the input-echo filter only strips the
+  first line of a wrapped statement. Cosmetic — the machine-readable
+  PREFIX_TOTAL= marker is the authoritative value and is what the verdict
+  checks.
 - [Task 1] test_maxima_rubi.mac: Results line is not literally the last output
   before quit() — the closing `====` and the printed `run_all_tests()` return
   value (`0 = 0`) follow it. Plan-mandated (the brief's code returns
