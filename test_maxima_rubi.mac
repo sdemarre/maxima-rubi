@@ -67,6 +67,7 @@ test_smoke() := block([],
 run_all_tests() := block([],
   test_smoke(),
   test_load_and_api(),
+  test_dispatch(),
   test_rules_1_1_1_1_struct(),
   print(""),
   print("========================================"),
@@ -99,6 +100,27 @@ test_load_and_api() := block([r, saved_table],
              or is(rubi(1/x, x) = log(x))),
   mr_rule_table : saved_table,
     true
+)$
+
+/* Non-vacuous dispatch regression test (guards the loop-level-return bug):
+   %mr_dispatch must return the FIRING rule's result, not false. Uses
+   controlled lambda rules so the result does not depend on any answer
+   coinciding with Maxima's own integrate. */
+test_dispatch() := block([saved_table],
+  print("--- dispatch mechanism (non-vacuous) ---"),
+  check("dispatch returns firing rule's result",
+        %mr_dispatch(x^2, x, [lambda([f, x], false), lambda([f, x], 42)], 1), 42),
+  check("dispatch returns false when no rule fires",
+        %mr_dispatch(x^2, x, [lambda([f, x], false)], 1), false),
+  check("dispatch: first firing rule wins (order)",
+        %mr_dispatch(x^2, x, [lambda([f, x], 42), lambda([f, x], false)], 1), 42),
+  /* end-to-end: rubi() must return the firing rule's result, not the
+     fall-through (integrate(x^7,x) = x^8/8, not 99) — save/restore the table */
+  saved_table : mr_rule_table,
+  mr_rule_table : [lambda([f, x], if f = x^7 then 99 else false)],
+  check("rubi uses the table (end-to-end, not fall-through)", rubi(x^7, x), 99),
+  mr_rule_table : saved_table,
+  true
 )$
 
 /* The behavioral test of the five rules needs the Task 5 predicates

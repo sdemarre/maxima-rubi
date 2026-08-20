@@ -29,17 +29,25 @@ mr_sum(fun, var, lo, hi) := 'mr_sum[fun, var, lo, hi]$
 /* Ordered first-match-wins whole-expression dispatch (T2 §4.2). rl is a
  * list of rule functions r(f, x) -> replacement | false. The parameter is
  * named rl, never rules (protected symbol, measured 2026-08-20). */
-%mr_dispatch(f, x, rl, depth) := block([i, r, res],
+/* MEASURED Maxima gotcha (2026-08-20): a `return(value)` inside a `for` loop
+   does NOT return from the enclosing block in this build — it is loop-level,
+   so the block fell through to the trailing `false` and dispatch ALWAYS
+   returned false (rubi() was a silent pass-through to integrate). The fix:
+   track the firing result in `ans`, use a BARE `return()` to break the `for`
+   loop, and return `ans` after the loop. */
+%mr_dispatch(f, x, rl, depth) := block([i, r, res, ans],
+  ans : false,
   for i : 1 thru length(rl) do (
     r : part(rl, i),
     res : apply(r, [f, x]),
     if res # false then (
       if rubi_verbose then
         print("rubi: rule ", string(r), " fired on ", string(f)),
-      return(res)
+      ans : res,
+      return()
     )
   ),
-  false)$
+  ans)$
 
 /* The recursion counter increments on the way in and decrements on the way
  * out, so nested mr_int calls share one depth budget. A runaway replacement
