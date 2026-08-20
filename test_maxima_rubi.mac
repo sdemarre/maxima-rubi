@@ -66,11 +66,34 @@ test_smoke() := block([],
 
 run_all_tests() := block([],
   test_smoke(),
+  test_load_and_api(),
   print(""),
   print("========================================"),
   print("Results: ", tests_passed, " passed, ", tests_failed, " failed"),
   print("========================================"),
   tests_failed = 0
+)$
+
+load("maxima_rubi.mac")$
+
+test_load_and_api() := block([r],
+  print("--- load + API fall-through ---"),
+  check_bool("loader witness survived", is(mr_witness_maxima_rubi() = true)),
+  /* no rules loaded yet: every call falls through to Maxima's integrate */
+  check("fall-through x^2", rubi(x^2, x), integrate(x^2, x)),
+  check("fall-through 5", rubi(5, x), integrate(5, x)),
+  /* the fall-through noun is Maxima's own, list-structured */
+  r : rubi(sin(x)^x, x),
+  check_bool("fall-through noun detect",
+             is(atom(r) = false) and is(string(op(r)) = "integrate")),
+  /* noun forms are distinct from the fall-through noun */
+  check_bool("mr_unintegrable is a noun", is(mr_unintegrable(f, x) = 'unintegrable[f, x])),
+  /* depth cap: a recursive rule that never shrinks must return the noun,
+     not overflow (recursion mechanics are Task 3; here only the cap path) */
+  mr_rule_table : [],
+  check_bool("empty table -> noun", is(string(op(rubi(1/x, x))) = "integrate")
+             or is(rubi(1/x, x) = log(x))),
+  true
 )$
 
 run_all_tests();

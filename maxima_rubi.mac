@@ -1,0 +1,34 @@
+/* maxima_rubi.mac — public loader (diophantine mould, T5 §2).
+ *
+ * Four load paths must work: by full path (load_pathname set), from the
+ * directory, via file_search push, batched (load_pathname false). The
+ * witness check is the point: a missed or truncated sibling load must fail
+ * loudly here, not silently later.
+ *
+ * Witness idiom for .mac siblings (measured 2026-08-20): ?fboundp only
+ * sees Lisp functions, so the witness is a Maxima FUNCTION defined at the
+ * end of the sibling; an undefined function call stays a noun, so
+ * is(apply(witness, []) = true) is true iff the sibling fully loaded. */
+%mr_load_sibling(fname, witness) := block([dir, ok, w],
+  dir : if load_pathname = false then "" else pathname_directory(load_pathname),
+  /* errcatch returns [] on SUCCESS, [info] on failure — so the by-name
+     fallback fires only when the sibling-dir load FAILED. When dir is ""
+     (batched) the first load already IS load(fname); the fallback is then a
+     harmless retry. */
+  ok : errcatch(load(sconcat(dir, fname))),
+  if ok # [] then ok : errcatch(load(fname)),
+  w : apply(witness, []),
+  if is(w = true) = false then
+    error("maxima_rubi: could not load the sibling file ", fname,
+          " (witness ", string(witness), " did not return true; the load ",
+          "missed or truncated). Make it findable: (1) load this library ",
+          "by full path, (2) run from its directory, (3) push its dir onto ",
+          "file_search_maxima, or (4) install under ~/.maxima/."))$
+
+%mr_load_sibling("maxima_rubi_utils.mac", 'mr_witness_utils)$
+
+/* Generated rule files, Rubi LoadRules order (the generator emits this
+ * list; one line per file). Empty until Task 4/6. */
+mr_rule_table : []$
+
+mr_witness_maxima_rubi() := true$

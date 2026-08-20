@@ -1,0 +1,61 @@
+/* maxima_rubi_utils.mac — runner + noun forms + (later) shims and ported
+ * predicates. Loaded by maxima_rubi.mac. House rules: AGENTS.md + T5 §4;
+ * the measured traps of T2 §3 are the reason for %mr_b, the block-local
+ * rebind in the rule shape, and the never-kill naming policy. */
+
+rubi_verbose : false$
+
+/* Capture lookup on the [var = value] equation list (order unspecified,
+ * measured T2 §3.6). Quoted symbol on both sides (house rule 1). */
+geteqR(mm, nm) := block([],
+  if length(mm) = 0 then false
+    else if is(part(part(mm, 1), 1) = nm) then part(part(mm, 1), 2)
+         else geteqR(rest(mm), nm))$
+
+/* Boolean resolver (house rule 2): is()'s third value unknown is not true. */
+%mr_b(e) := block([v],
+  v : is(e),
+  if v = true then true else false)$
+
+/* Package noun forms (house rule 10 — distinct from the fall-through
+ * integrate noun and from corpus-expected nouns). */
+mr_unintegrable(f, x) := 'unintegrable[f, x]$
+mr_sum(fun, var, lo, hi) := 'mr_sum[fun, var, lo, hi]$
+
+/* Recursion cap (T5 §1 candidate; re-tuned in Task 9). A runaway
+ * replacement becomes the fall-through noun, not a stack overflow. */
+%mr_max_depth : 16$
+
+/* Ordered first-match-wins whole-expression dispatch (T2 §4.2). rl is a
+ * list of rule functions r(f, x) -> replacement | false. The parameter is
+ * named rl, never rules (protected symbol, measured 2026-08-20). */
+%mr_dispatch(f, x, rl, depth) := block([i, r, res],
+  for i : 1 thru length(rl) do (
+    r : part(rl, i),
+    res : apply(r, [f, x]),
+    if res # false then (
+      if rubi_verbose then
+        print("rubi: rule ", string(r), " fired on ", string(f)),
+      return(res)
+    )
+  ),
+  false)$
+
+/* The recursion counter increments on the way in and decrements on the way
+ * out, so nested mr_int calls share one depth budget. A runaway replacement
+ * becomes the fall-through noun, not a stack overflow. */
+depth_level : 0$
+
+mr_int(f, x) := block([ans],
+  depth_level : depth_level + 1,
+  if depth_level > %mr_max_depth then (
+    depth_level : depth_level - 1,
+    return(integrate(f, x))
+  ),
+  ans : %mr_dispatch(f, x, mr_rule_table, depth_level),
+  depth_level : depth_level - 1,
+  if ans = false then integrate(f, x) else ans)$
+
+rubi(f, x) := mr_int(f, x)$
+
+mr_witness_utils() := true$
