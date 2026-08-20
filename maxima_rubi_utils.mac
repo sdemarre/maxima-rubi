@@ -206,13 +206,25 @@ rubi(f, x) := mr_int(f, x)$
     ),
     if ok then p else false
   )
+  elseif op(t) = "^" then (
+    /* a bare-power term (x^2 as a WHOLE term after expand): a pure
+       x-power only for base x with a positive integer exponent —
+       x^(-1) is 1/x (a fraction), and x^(1/2)/x^a are not polynomial
+       powers (review fix 2026-08-20, bug B) */
+    if is(part(t, 1) = x) and integerp(part(t, 2)) and part(t, 2) > 0
+      then part(t, 2) else false
+  )
   else false)$
 
 /* the x-free coefficient of x^n in one monomial term (caller ensures
    %mr_term_xexp(t, x) = n) */
 %mr_term_coeff(t, x, n) := block([i, f, c],
   if atom(t) then (
-    if n = 0 then t else 0
+    /* the atom being x itself has coefficient 1 at n = 1 (the atom
+       branch of %mr_term_xexp already knows x has exponent 1 — mirror
+       it here; review fix 2026-08-20, bug A) */
+    if is(t = x) then (if n = 1 then 1 else 0)
+    else (if n = 0 then t else 0)
   )
   elseif op(t) = "-" then -%mr_term_coeff(part(t, 1), x, n)
   elseif op(t) = "*" then (
@@ -224,6 +236,11 @@ rubi(f, x) := mr_int(f, x)$
       elseif op(f) = "^" and is(part(f, 1) = x) then n : n - part(f, 2)
     ),
     c
+  )
+  elseif op(t) = "^" then (
+    /* a bare-power term x^n: coefficient 1 (the caller ensures
+       %mr_term_xexp(t, x) = n, so t is a pure x-power with exponent n) */
+    1
   )
   else 0)$
 
@@ -248,20 +265,26 @@ rubi(f, x) := mr_int(f, x)$
   ))$
 
 /* degree in x of a (confirmed) polynomial; degree(0) := 0 by contract
-   (the 3-arg PolyQ's NeQ[Coeff[...],0] guard is what rejects 0) */
+   (the 3-arg PolyQ's NeQ[Coeff[...],0] guard is what rejects 0).
+   TOTAL (review fix 2026-08-20, bug B): never leaks a boolean — a term
+   that is not a pure x-power (fraction, fractional/symbolic power, x
+   inside a function) contributes the sentinel -1, so a non-polynomial
+   whole yields -1 (Mathematica Degree parity: Degree[1/x, x] -> -1) */
 %mr_degree(u, x) := block([e, i, d, p],
   e : expand(u),
   if is(e = 0) then 0
   elseif atom(e) then %mr_term_xexp(e, x)
   elseif op(e) = "+" then (
-    d : 0,
+    d : -1,
     for i : 1 thru length(e) do (
       p : %mr_term_xexp(part(e, i), x),
       if p # false and p > d then d : p
     ),
     d
   )
-  else %mr_term_xexp(e, x))$
+  else (
+    p : %mr_term_xexp(e, x),
+    if p # false then p else -1))$
 
 /* ---- PolyQ / LinearQ ------------------------------------------------
  * Maxima has no function overloading and no ... rest args in this
