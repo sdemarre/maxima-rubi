@@ -47,7 +47,29 @@ Task 5: complete (commits 8528996..2c65051, review clean after 1 fix — spec �
     fall-through always yields the right answer in 1.1.1.x). Coverage/redundancy
     gap + Subst path untested end-to-end. Track for Task 6/9; re-measure on 5.50.
   - F3 (plan's /12,/9 antiderivatives were wrong): corrected to /8,/18 (verified).
-Task 6: complete (commits 1a85498..0ac99b5, pending review)
+Task 6: complete (commits 1a85498..0ac99b5, review Approved with 4 Important findings)
+  - REVIEW OUTCOME: spec ✅, quality Approved. 4 Important findings:
+    (1) PLAN-LEVEL / HUMAN DECISION — the load wall breaks the plan's core
+      assumption (all 2710 in one process). (2) report mis-describes the C-tier
+      handoff: 182 rules FIRE with noun-laden answers (repl has a pending C-tier
+      noun, cond fully bound), not "decline" (only the 110 cond-pending rules
+      decline) — wording fix pending. (3) static census re-parses Rubi SOURCE,
+      never reads the committed .mac files (a corrupted generated file would
+      pass) — harden pending. (4) %mr_polyDegPowerQ uses '<= n' (plan-pinned) but
+      Rubi :533 needs EXACT degree (15 class-1 rules over-fire) — human chose
+      "fix to exact degree", pending.
+  - LOAD WALL RE-PROBED ON 5.50.0 (released, installed /home/serge/local/bin/maxima,
+    source ~/src/external/maxima): cap UNCHANGED (1200 load / 1600 die; prefix 7
+    files/294 rules load, file 8/361 FATAL). 5.50's matcher-speed gains do NOT
+    raise the TLS cap. .out re-stamped 5.50.0.
+  - HUMAN DECISION (2026-08-20): SDD execution PAUSED after Task 6. A SEPARATE
+    session will investigate handling the load wall — Direction 1 "fix" the
+    matching tools for SBCL (reduce per-rule special-var cost / raise the cap),
+    or Direction 2 the "large if-then-else" strategy (Rubi 5: compile the rules
+    into 42 Int*nnn if-then-else functions, no pattern matching -> no defmatch
+    special vars -> no TLS cap). Handover doc: /tmp/opencode/handoff-2026-08-20-
+    maxima-rubi-load-wall.md. Tasks 7-10 are BLOCKED on that decision (Direction 2
+    would re-architect the runner + generator output).
   - Full-class generation: 67 files, 2710 rules, every per-file count equal to
     the T1 inventory (static cross-check probes/census/01-generation-vs-
     inventory, no Maxima). Emitter dispatch E1-E5/E10/E11 closed the shapes
