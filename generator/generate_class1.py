@@ -54,13 +54,6 @@ def key_of(rel_m):
     num = base.split(" ")[0]
     return num.replace(".", "_")
 
-def m2m(tok):
-    """Mathematica head -> Maxima head for the pattern/replacement text."""
-    return {"Int": "mr_int", "Sqrt": "sqrt", "Log": "log",
-            "ArcTan": "atan", "ArcSin": "asin", "ArcCos": "acos",
-            "ArcTanh": "mr_atanh", "ArcSinh": "mr_asinh",
-            "ArcCosh": "mr_acosh"}.get(tok, tok)
-
 def cap_name(key, n, v):
     """The pattern-variable name for capture v of rule n of file key:
     `_mr_<key>_r<n>_v` (the brief's naming; pattern-variable status comes
@@ -163,7 +156,9 @@ def drop_optionals(text, varset):
 
 def translate_token(tok, key, n, varset):
     """A bare identifier -> renamed capture / table name / itself.
-    Raises on a head token the table does not list (loud failure)."""
+    Unknown tokens pass through here (legit constants/renamed vars in atom
+    position); an unlisted HEAD is rejected loudly at the emit_head
+    boundary, not here."""
     if tok in varset:
         return cap_name(key, n, tok)
     if tok in ("x", "Pi", "E", "I"):
@@ -234,6 +229,16 @@ def emit_head(head, arglist, key, n, varset):
         fn = {"EllipticF": "mr_elliptic_f", "EllipticE": "mr_elliptic_e",
               "EllipticPi": "mr_elliptic_pi"}[head]
         return f"{fn}({', '.join(arglist)})"
+    # A head absent from the table is a census miss: fail LOUDLY, never emit
+    # a bare Maxima noun FooQ(...) — that makes is(ok) = true perpetually
+    # false (a silently dead rule) or a silently noun-laden wrong answer.
+    # The atom-position pass-through (translate_atom) is a separate,
+    # legitimate path for constants/renamed vars, so the check lives here at
+    # the head boundary, not in translate_token.
+    if (head not in RENAME and head not in RESTRUCTURE
+            and head not in ("x", "Pi", "E", "I")):
+        raise GenError(f"{key} r{n}: unlisted head {head!r} — extend the "
+                       f"translation table (T4 §2) before generating")
     name = translate_token(head, key, n, varset)
     # FIX F2: Maxima function calls use parentheses; the brief emitted the
     # Mathematica bracket form name[args], which is a parse error / noun
