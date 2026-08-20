@@ -638,6 +638,14 @@ test_runner() := block([r, sd, st],
   /* Rule A: power, via decomposition (a=1 for x^3, a=5 for 5x^2) */
   check("power x^3", rubi(x^3, x), x^4/4),
   check("power 5x^2", rubi(5*x^2, x), 5*x^3/3),
+  /* direct firing assertions (not just answer-correctness — Maxima's own
+     integrate gives the same x^4/4, so the rubi() checks above can't tell a
+     firing rule from a fall-through). Prove the power rule actually fires and
+     produces its replacement, and rejects a non-match. This exercises the
+     %mr_dispatch `if res # false` (rule-fired) path. */
+  check_bool("power rule fires on x^3", is(_mr_rule_t3_power(x^3, x) # false)),
+  check("power rule returns x^4/4", _mr_rule_t3_power(x^3, x), x^4/4),
+  check_bool("power rule rejects x+1", is(_mr_rule_t3_power(x + 1, x) = false)),
   /* bare x (= x^1) does NOT match a*x^m (Power head dropped) -> fall-through
      to Maxima's own answer; documents the Power-optional structural case */
   check("power x (fall-through)", rubi(x, x), x^2/2),
