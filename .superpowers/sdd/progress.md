@@ -8,6 +8,11 @@ Merge base (master): 6754be9
 
 Task 1: complete (commits 6754be9..ca98e3b, review clean — spec ✅, quality Approved)
 Task 2: complete (commits c55cfba..f36d978, review clean after 1 fix — spec ✅, quality Approved)
+  - Fixed during review: loader by-name fallback was inverted for this build
+    (errcatch returns [RESULT] on success, [] on error — measured in
+    probes/maxima/probe-errcatch-semantics.*). Now `if ok = []` (fire on error).
+  - 9/9 + no file_search warning corroborated by report's verbatim output; batched
+    path (load_pathname=false) untested — see Minor below.
 Task 3: complete (commits 7781cee..c17c482, review clean after 1 fix — spec ✅, quality Approved)
   - Fixed during review: the "recursion re-dispatches" rubi() check was vacuous
     (integrate of the original and reduced integrand are equal on this build).
@@ -29,11 +34,19 @@ Task 4: complete (commits 535dc07..8528996, review clean after 2 fixes — spec 
     Fixed: emit_head fallback raises GenError naming file/rule/head for a head
     not in RENAME ∪ RESTRUCTURE ∪ {x,Pi,E,I}; atom pass-through preserved; dead
     m2m() deleted.
-  - Fixed during review: loader by-name fallback was inverted for this build
-    (errcatch returns [RESULT] on success, [] on error — measured in
-    probes/maxima/probe-errcatch-semantics.*). Now `if ok = []` (fire on error).
-  - ⚠️ resolved: 9/9 + no file_search warning corroborated by report's verbatim
-    output; batched path (load_pathname=false) is untested — see Minor below.
+Task 5: complete (commits 8528996..2c65051, review clean after 1 fix — spec ✅, quality Approved)
+  - Fixed during review: two systematic term-walker mistranslations (wrong-answer
+    paths in class 1) — Bug B: %mr_term_xexp dropped bare-power monomial terms
+    (x^2 after expand fell to else false) -> coeff/degree/polyDegQ wrong on monic
+    leading terms, and %mr_degree leaked a boolean; Bug A: %mr_term_coeff dropped
+    the bare-x term at n=1 -> linearQ(x+1,x)=false (Rubi: true). Fixed + 10 monic-
+    term probes added. Also corrected a false "measured" claim in the report and a
+    stale test name.
+  - F1 (rule 5 (a+b*u)^m pattern dead — rule 4 shadows it): confirmed real,
+    correctness-HARMLESS (both rules give the identical antiderivative; rule 4 or
+    fall-through always yields the right answer in 1.1.1.x). Coverage/redundancy
+    gap + Subst path untested end-to-end. Track for Task 6/9; re-measure on 5.50.
+  - F3 (plan's /12,/9 antiderivatives were wrong): corrected to /8,/18 (verified).
 
 ## Minor findings (triage at final whole-branch review)
 
@@ -101,3 +114,29 @@ Task 4: complete (commits 535dc07..8528996, review clean after 2 fixes — spec 
   the current call graph (harmless guard); `"Power"/"Plus"/"Times"` map to
   non-callable infix names (a noun call if ever written as an explicit head).
   Pre-existing brief-mandated table content; no 1.1.1.1 rule affected. Note only.
+- [Task 5] Bug C: `%mr_termPower` (maxima_rubi_utils.mac:369) sign-strip guard is
+  `not atom(t) and op(t) = "-"`, but `atom(-2)=true` in this build, so numeric
+  signs are never stripped: termPower(-2,x)=[-2,1,1]. Consequence:
+  removeContent(2x-2)=2x-2 (Rubi: 1-x). Masked in class 1 (consumed inside
+  Log/b, a residual content is an additive constant). Fix: strip sign for any
+  t with op(t)="-" (guard op per atom-first rule), or implement the source's
+  a+b==0 integer pattern.
+- [Task 5] Inaccurate deviation notes at maxima_rubi_utils.mac:406-414 (claim the
+  .m pattern "matches a numeric base hiding in an integer"; it does not — Rubi's
+  RemoveContent[4+2x,x] also returns input unchanged). Cosmetic; correct the note.
+- [Task 5] `%mr_together` idiom (maxima_rubi_utils.mac:138-141) is behaviorally
+  correct (verified on 9 inputs incl. cancellation) but cryptic — add one comment
+  stating the measured rat-object shape so a future reader doesn't "simplify" it.
+- [Task 5] Minor DRY: %mr_polyDegQ re-runs %mr_together on an already-together'd
+  v; %mr_negQ's final `is(v)=true` coercion is redundant (operands already bool).
+- [Task 5] FORWARD NOTE for Task 6 (F2, under-scoped in the report): the
+  generator table maps ALL PolyQ arities 1:1 to the 2-arg %mr_polyQ. Beyond the
+  3-arg Symbol form (~82-100 uses -> should map to %mr_polyDegQ, now correct after
+  Bug B), there are ~100 TWO-ARG power-form uses `PolyQ[Pq, x^v]` (e.g. x^(n/2))
+  that are a SILENT semantic error: %mr_polyQ(u, x^v) treats x^v as the variable
+  -> PolyQ[x^4+1, x^2] -> false where Rubi -> true, flipping negated guards
+  (Not[PolyQ[..., x^(n/2)]] in 1.1.3.7.m:41, 1.1.3.8.m:21) into wrong-answer paths.
+  Task 6 FIRST STEP must add generator-side PolyQ overload dispatch:
+  (u,x)->%mr_polyQ, (u,x,n)->%mr_polyDegQ, (u,x^v[,n])->a power-form port
+  (polynomial in x^v) or an explicit loud generation error. MUST land before the
+  67-file generation.
