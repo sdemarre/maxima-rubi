@@ -1,4 +1,4 @@
-# class-1 load wall + defmatch budget, 2026-08-20
+# class-1 load wall + defmatch budget, 2026-08-22
 # Maxima 5.50.0
 
 === 1. full class-1 load (67 files, 2710 rules) — expected FATAL ===
@@ -6,73 +6,85 @@ full load: FATAL (exit 1) as expected on this build
   Thread local storage exhausted.
 
 === 2. per-file parse + witness (one process per file) ===
-  1_1_1_1: ok (0.006999999999999999s)
-  1_1_1_2: ok (0.10100200000000001s)
-  1_1_1_3: ok (0.172004s)
-  1_1_1_4: ok (0.165003s)
-  1_1_1_5: ok (0.018000000000000002s)
-  1_1_1_6: ok (0.025001000000000002s)
-  1_1_1_7: ok (0.065001s)
-  1_1_2_1: ok (0.050001000000000004s)
-  1_1_2_10: ok (0.007999999999999997s)
-  1_1_2_11: ok (0.018s)
-  1_1_2_12: ok (0.034001s)
-  1_1_2_13: ok (0.015000000000000003s)
-  1_1_2_14: ok (0.010000000000000002s)
+  1_1_1_1: ok (0.006999999999999996s)
+  1_1_1_2: ok (0.079002s)
+  1_1_1_3: ok (0.16900300000000001s)
+  1_1_1_4: ok (0.131002s)
+  1_1_1_5: ok (0.016s)
+  1_1_1_6: ok (0.020000000000000004s)
+  1_1_1_7: ok (0.066001s)
+  1_1_2_1: ok (0.046001s)
+  1_1_2_10: ok (0.009999999999999998s)
+  1_1_2_11: ok (0.019000000000000003s)
+  1_1_2_12: ok (0.036002000000000006s)
+  1_1_2_13: ok (0.016999999999999998s)
+  1_1_2_14: ok (0.008000000000000004s)
   1_1_2_2: ok (0.065001s)
-  1_1_2_3: ok (0.093002s)
-  1_1_2_4: ok (0.13800300000000001s)
-  1_1_2_5: ok (0.07100100000000001s)
-  1_1_2_6: ok (0.051001000000000005s)
-  1_1_2_7: ok (0.11300299999999999s)
-  1_1_2_8: ok (0.223004s)
-  1_1_2_9: ok (0.236005s)
-  1_1_3_1: ok (0.027s)
-  1_1_3_2: ok (0.029s)
-  1_1_3_3: ok (0.10600300000000001s)
-  1_1_3_4: ok (0.203004s)
-  1_1_3_5: ok (0.079002s)
-  1_1_3_6: ok (0.068001s)
-  1_1_3_7: ok (0.028s)
-  1_1_3_8: ok (0.057000999999999996s)
-  1_1_4_1: ok (0.019s)
-  1_1_4_2: ok (0.042001s)
-  1_1_4_3: ok (0.027001s)
-  1_1_4_4: ok (0.021s)
-  1_2_1_1: ok (0.035s)
-  1_2_1_2: ok (0.232005s)
-  1_2_1_3: ok (0.253005s)
-  1_2_1_4: ok (0.078002s)
-  1_2_1_5: ok (0.122002s)
+  1_1_2_3: ok (0.11000199999999999s)
+  1_1_2_4: ok (0.146002s)
+  1_1_2_5: ok (0.067001s)
+  1_1_2_6: ok (0.059001s)
+  1_1_2_7: ok (0.116002s)
+  1_1_2_8: ok (0.24000400000000002s)
+  1_1_2_9: ok (0.24300400000000003s)
+  1_1_3_1: FAIL (exit 0)
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_1_3_1.mac:178:190:incorrect syntax: = is not a prefix operator
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_1_3_1.mac:178:190:incorrect syntax: = is not a prefix operator
+  1_1_3_2: FAIL (exit 0)
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_1_3_2.mac:652:373:incorrect syntax: Missing )
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_1_3_2.mac:652:373:incorrect syntax: Missing )
+  1_1_3_3: ok (0.128003s)
+  1_1_3_4: ok (0.180003s)
+  1_1_3_5: ok (0.113002s)
+  1_1_3_6: ok (0.081001s)
+  1_1_3_7: FAIL (exit 0)
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_1_3_7.mac:91:63:incorrect syntax: = is not a prefix operator
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_1_3_7.mac:91:63:incorrect syntax: = is not a prefix operator
+  1_1_3_8: ok (0.062001s)
+  1_1_4_1: ok (0.02s)
+  1_1_4_2: ok (0.04200100000000001s)
+  1_1_4_3: ok (0.023999999999999997s)
+  1_1_4_4: ok (0.023s)
+  1_2_1_1: FAIL (exit 0)
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_2_1_1.mac:259:140:incorrect syntax: Found LOGICAL expression where ALGEBRAIC expression expected
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_2_1_1.mac:259:140:incorrect syntax: Found LOGICAL expression where ALGEBRAIC expression expected
+  1_2_1_2: ok (0.250004s)
+  1_2_1_3: ok (0.26800399999999996s)
+  1_2_1_4: ok (0.078001s)
+  1_2_1_5: ok (0.156003s)
   1_2_1_6: ok (0.008s)
-  1_2_1_7: ok (0.082002s)
-  1_2_1_8: ok (0.009999999999999998s)
+  1_2_1_7: ok (0.079001s)
+  1_2_1_8: ok (0.010000000000000002s)
   1_2_1_9: ok (0.068001s)
   1_2_2_1: ok (0.030001s)
-  1_2_2_2: ok (0.063001s)
-  1_2_2_3: ok (0.163003s)
-  1_2_2_4: ok (0.206004s)
-  1_2_2_5: ok (0.013999999999999999s)
-  1_2_2_6: ok (0.019s)
-  1_2_2_7: ok (0.094002s)
-  1_2_2_8: ok (0.03900100000000001s)
-  1_2_3_1: ok (0.016999999999999998s)
-  1_2_3_2: ok (0.065001s)
-  1_2_3_3: ok (0.137003s)
-  1_2_3_4: ok (0.026s)
-  1_2_3_5: ok (0.043002s)
-  1_2_3_6: ok (0.056000999999999995s)
-  1_2_4_1: ok (0.007000000000000003s)
+  1_2_2_2: ok (0.067001s)
+  1_2_2_3: ok (0.166003s)
+  1_2_2_4: ok (0.209004s)
+  1_2_2_5: ok (0.017s)
+  1_2_2_6: ok (0.018000000000000002s)
+  1_2_2_7: ok (0.092001s)
+  1_2_2_8: ok (0.03800100000000001s)
+  1_2_3_1: ok (0.015999999999999997s)
+  1_2_3_2: ok (0.073001s)
+  1_2_3_3: ok (0.122002s)
+  1_2_3_4: FAIL (exit 0)
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_2_3_4.mac:1289:533:incorrect syntax: _mr_1_2_3_4_r57_n is not an infix operator
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_2_3_4.mac:1289:533:incorrect syntax: _mr_1_2_3_4_r57_n is not an infix operator
+  1_2_3_5: ok (0.047001s)
+  1_2_3_6: ok (0.052001000000000006s)
+  1_2_4_1: ok (0.006999999999999996s)
   1_2_4_2: ok (0.016999999999999998s)
-  1_2_4_3: ok (0.005999999999999998s)
-  1_2_4_4: ok (0.017999999999999995s)
-  1_3_1: ok (0.04200100000000001s)
+  1_2_4_3: ok (0.006999999999999996s)
+  1_2_4_4: ok (0.017s)
+  1_3_1: ok (0.036001000000000005s)
   1_3_2: ok (0.03800100000000001s)
-  1_3_3: ok (0.024000999999999998s)
-  1_3_4: ok (0.034001s)
-  1_4_1: ok (0.10200200000000001s)
-  1_4_2: ok (0.047001s)
-  1_4_3: ok (0.025s)
+  1_3_3: ok (0.023999999999999997s)
+  1_3_4: ok (0.036001000000000005s)
+  1_4_1: ok (0.121003s)
+  1_4_2: ok (0.051001000000000005s)
+  1_4_3: FAIL (exit 0)
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_4_3.mac:319:98:incorrect syntax: sqrt is not an infix operator
+    /home/serge/src/maxima-rubi/.worktrees/milestone-1/rules/class1/1_4_3.mac:319:98:incorrect syntax: sqrt is not an infix operator
 
 === 3. plain-pattern defmatch budget (pa+pb*x, freeof(x) declares) ===
   1200 plain patterns: loaded (budget > 1200)
@@ -108,7 +120,7 @@ full load: FATAL (exit 1) as expected on this build
                               +length(mr_rules_1_1_2_2)+length(mr_rules_1_1_2_3)
                       prefix wall (s), 7 files / 294 rules: 
   
-                                     0.522011
+                                     0.690012
   
                                 prefix rule total: 
   
@@ -135,5 +147,4 @@ full load: FATAL (exit 1) as expected on this build
   prefix 8 (361 rules): FATAL (exit 1) as expected
   Thread local storage exhausted.
 
-VERDICT: all parts as expected on this build (full load is FATAL;
-the loadable prefix is 7 files / 294 rules; file 8 at 361 dies)
+VERDICT: DEVIATION — a part did not match its expectation

@@ -4,15 +4,22 @@
 #
 #   sh probes/load_wall/probe-load-wall.run
 #
-# MEASURED 2026-08-20 (build branch_5_49_base_796_g60186bb22_dirty):
-# this build CANNOT hold all 2710 class-1 patterns in one process. The
-# probe records, on every run:
+# MEASURED 2026-08-20 (build branch_5_49_base_796_g60186bb22_dirty),
+# re-measured 2026-08-22 on Maxima 5.50.0 (identical wall): this build
+# CANNOT hold all 2710 class-1 patterns in one process AT THE DEFAULT
+# --tls-limit (~4098 special vars — probe-tls-calibration.run); the
+# project standard is to run rule-loading processes with
+# -X "--tls-limit 100000" (AGENTS.md), at which the full class-1 load
+# succeeds (probe-load-curve.run). The probe (deliberately at the
+# default limit) records, on every run:
 #   1. the full load (mr_load_class1_all) — expected to DIE with SBCL's
 #      fatal "Thread local storage exhausted" (file 8 of the load list
 #      takes the cumulative total from 294 to 361 rules);
-#   2. per-file parse + witness, each file in its own process (all 67
-#      must pass — this is the parse/witness verification of the
-#      generated files on this build);
+#   2. per-file parse + witness, each file in its own process — this is
+#      the parse/witness verification of the generated files on this
+#      build (parse-error-aware check since 2026-08-22; as of that date
+#      6 of 67 files fail — probe-parse-sweep.run — so part 2 reports
+#      DEVIATION until the generator fix lands);
 #   3. the plain-pattern budget bounds: 1200 defmatch (expected to
 #      load) and 1600 (expected to die);
 #   4. unload("...") releases the budget (4 x 1200 with unloads,
@@ -60,9 +67,13 @@ fail=0
     maxima --very-quiet -b "$TMPD/batch.mac" > "$TMPD/one.log" 2>&1
   rc=$?
     wall=$(grep -oE "^ *[0-9]+\.[0-9]+" "$TMPD/one.log" | tail -1 | tr -d ' ')
-    if [ $rc -ne 0 ] || [ -z "$wall" ]; then
+    # rc + printed number is NOT enough: batch mode continues after a
+    # mid-file syntax error and still exits 0 (measured 2026-08-20), so
+    # a parse-broken file used to report "ok" (false positive; 6 of 67
+    # files were affected as of 2026-08-22 — see probe-parse-sweep.run).
+    if [ $rc -ne 0 ] || [ -z "$wall" ] || grep -q "incorrect syntax\|could not load\|Thread local storage" "$TMPD/one.log"; then
       echo "  $k: FAIL (exit $rc)"
-      grep -h "error\|Error" "$TMPD/one.log" | head -2 | sed 's/^/    /'
+      grep -h "incorrect syntax\|could not load\|error\|Error" "$TMPD/one.log" | head -2 | sed 's/^/    /'
       fail=1
     else
       echo "  $k: ok (${wall}s)"

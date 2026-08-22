@@ -1,0 +1,149 @@
+#!/bin/sh
+# probes/load_wall/probe-tls-calibration.run — TLS unit calibration and
+# the default-limit boundary (companion to probe-load-wall.run).
+#
+#   sh probes/load_wall/probe-tls-calibration.run
+#
+# Background: each defmatch/matchdeclare pattern variable is an SBCL
+# special (dynamic) variable that consumes one thread-local-storage
+# slot; exhausting the per-process slot pool is the uncatchable
+# "Thread local storage exhausted" FATAL behind the class-1 load wall.
+# The pool size is SBCL's --tls-limit (special-var count); the installed
+# maxima.core has a value baked in at save time.
+#
+# MEASURED 2026-08-22 (Maxima 5.50.0, SBCL 2.6.7):
+#   * the water level (sb-vm::*free-tls-index*, masked) of a FRESH
+#     maxima process: 8516 index units (includes the thread-struct base
+#     plus maxima's own startup special vars);
+#   * 500 plain patterns (each = 2 matchdeclared vars + 1 defmatch)
+#     cost 8000 index units -> 8 units per special var (16 bytes/slot,
+#     2-byte index units);
+#   * the default-limit plain-pattern boundary: 1516 patterns load,
+#     1517 FATALs -> the installed core's limit is ~4097-4098 special
+#     vars (the SBCL C default of 4096, as baked at core save).
+#
+# This probe re-measures, on every run:
+#   A. the fresh-process water level W0 and the units per plain pattern
+#      (500 patterns in one process);
+#   B. the default-limit plain-pattern boundary (binary search in
+#      separate processes) -> the baked-in limit in special vars;
+#   C. self-flags if units/var moved off 8 or the baked limit moved off
+#      ~4098 (a build change: re-measure and update the docs).
+cd "$(dirname "$0")/../.." || exit 1
+OUT=probes/load_wall/probe-tls-calibration.out
+TMPD=$(mktemp -d)
+trap 'rm -rf "$TMPD"' EXIT
+fail=0
+
+# The TLS water-level mark: a one-line lisp function, defined per
+# process. Mechanics (measured 2026-08-22): :lisp lines are read all-
+# first by the CL reader in the CURRENT lisp package (maxima's reader
+# hijacks load/read/open, but not the :lisp line itself); switching the
+# package with (setf *package* ...) affects LATER lines only.
+MARK_DEFS=':lisp (setf *package* (cl:find-package :cl))
+:lisp (defun %mr-tls-mark (label) (let ((idx (logand (symbol-value (find-symbol "*FREE-TLS-INDEX*" (find-package :sb-vm))) most-positive-fixnum))) (format t "TLSMARK ~A ~A~%" label idx)))
+:lisp (export '"'"'(%mr-tls-mark))'
+
+{
+  echo "# TLS calibration (units per special var + default-limit boundary), $(date -u +%F)"
+  echo "# $(maxima --version)"
+  echo
+
+  echo "=== A. fresh-process water level + units per plain pattern ==="
+  {
+    echo "$MARK_DEFS"
+    echo ':lisp (cl:%mr-tls-mark "a0")'
+    echo 'build_info();'
+    echo 'quit;'
+  } > "$TMPD/a0.mac"
+  maxima --very-quiet -b "$TMPD/a0.mac" > "$TMPD/a0.log" 2>&1
+  W0=$(grep -oE "TLSMARK a0 [0-9]+" "$TMPD/a0.log" | grep -oE "[0-9]+$")
+  if [ -z "$W0" ]; then
+    echo "  a0 mark MISSING (probe broken or build changed)"; fail=1
+  else
+    echo "  fresh-process water level W0 = $W0 units"
+  fi
+  grep -h "Maxima-version\|Maxima build date\|Lisp implementation version" "$TMPD/a0.log" | sed 's/^/  /'
+
+  python3 - "$TMPD/a1.mac" 500 <<'PYEOF'
+import sys
+path, n = sys.argv[1], int(sys.argv[2])
+L = []
+L.append(':lisp (setf *package* (cl:find-package :cl))')
+L.append(':lisp (defun %mr-tls-mark (label) (let ((idx (logand (symbol-value (find-symbol "*FREE-TLS-INDEX*" (find-package :sb-vm))) most-positive-fixnum))) (format t "TLSMARK ~A ~A~%" label idx)))')
+L.append(":lisp (export '(%mr-tls-mark))")
+L.append(':lisp (cl:%mr-tls-mark "c0")')
+for i in range(n):
+    L.append(f"matchdeclare(pa{i}, freeof(x))$ matchdeclare(pb{i}, freeof(x))$ defmatch(pat{i}, pa{i}+pb{i}*x, x)$")
+L.append(f':lisp (cl:%mr-tls-mark "c{n}")')
+L.append('quit;')
+open(path, "w").write("\n".join(L) + "\n")
+PYEOF
+  maxima --very-quiet -b "$TMPD/a1.mac" > "$TMPD/a1.log" 2>&1
+  rc=$?
+  C0=$(grep -oE "TLSMARK c0 [0-9]+" "$TMPD/a1.log" | grep -oE "[0-9]+$")
+  C500=$(grep -oE "TLSMARK c500 [0-9]+" "$TMPD/a1.log" | grep -oE "[0-9]+$")
+  if [ $rc -ne 0 ] || [ -z "$C0" ] || [ -z "$C500" ]; then
+    echo "  500-pattern run FAILED (exit $rc) — re-measure"; fail=1
+  else
+    UP=$(python3 -c "print((($C500) - ($C0)) / 500)")
+    UV=$(python3 -c "print((($C500) - ($C0)) / 1000)")
+    echo "  500 patterns: $C0 -> $C500 (delta $((C500 - C0)) units)"
+    echo "  units per plain pattern (2 vars + 1 defmatch) = $UP"
+    echo "  units per special var = $UV"
+    if [ "$UV" != "8.0" ]; then
+      echo "  DEVIATION: units per special var moved off 8 (build changed — re-measure)"; fail=1
+    fi
+  fi
+  echo
+
+  echo "=== B. default-limit plain-pattern boundary (binary search) ==="
+  # patterns(n) generator + fit test in one process each
+  genpat() {
+    python3 - "$TMPD/pat.mac" "$1" <<'PYEOF'
+import sys
+path, n = sys.argv[1], sys.argv[2]
+print("\n".join(
+    f"matchdeclare(pa{i}, freeof(x))$ matchdeclare(pb{i}, freeof(x))"
+    f"$ defmatch(pat{i}, pa{i}+pb{i}*x, x)$" for i in range(int(n))))
+PYEOF
+  }
+  fits() {
+    genpat "$1" > "$TMPD/pat.mac"
+    maxima --very-quiet -b "$TMPD/pat.mac" > "$TMPD/pat.log" 2>&1
+  }
+  fits 2000
+  if [ $? -eq 0 ]; then
+    echo "  DEVIATION: 2000 patterns load — the baked limit grew; re-measure"; fail=1
+    NSTAR=2000
+  else
+    lo=0; hi=2000
+    while [ $((hi - lo)) -gt 1 ]; do
+      mid=$(( (lo + hi) / 2 ))
+      if fits $mid; then lo=$mid; else hi=$mid; fi
+    done
+    NSTAR=$lo
+    echo "  boundary: $NSTAR patterns load, $((NSTAR + 1)) FATALs"
+  fi
+  if [ -n "$W0" ] && [ -n "$UP" ]; then
+    python3 - "$W0" "$UP" "$NSTAR" <<'PYEOF'
+import sys
+w0, up, nstar = float(sys.argv[1]), float(sys.argv[2]), int(sys.argv[3])
+lo = (w0 + nstar * up) / 8.0
+hi = (w0 + (nstar + 1) * up) / 8.0
+print(f"  baked-in limit (special vars): in [{lo:.0f}, {hi:.0f})")
+if not (4090.0 <= lo and hi <= 4110.0):
+    print("  DEVIATION: baked-in limit moved off ~4098 (build changed — re-measure)")
+    sys.exit(3)
+PYEOF
+    [ $? -eq 0 ] || fail=1
+  fi
+  echo
+  if [ $fail -eq 0 ]; then
+    echo "VERDICT: calibration as expected on this build (8 units/var; baked limit ~4098)"
+  else
+    echo "VERDICT: DEVIATION — a part did not match its expectation"
+  fi
+} > "$OUT"
+echo "wrote $OUT"
+[ $fail -eq 0 ]
