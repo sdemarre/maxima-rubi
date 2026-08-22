@@ -355,10 +355,11 @@ rubi(f, x) := mr_int(f, x)$
  * has no t in any denominator and every term is a t-monomial whose t-
  * exponent k is a non-negative multiple of v. For B = x this is exactly
  * the brief's contract (no x in a denominator, every term's x-exponent
- * a non-negative multiple of v). DEVIATION (documented, brief-pinned):
- * the degree form uses max k/v <= n; Rubi :533 instead uses the exact
- * degree EqQ[Expon[u,x^v],n] && NeQ[Coeff[u,x^v,n],0] — the < n
- * over-fire is the harness derivative check's to catch. */
+ * a non-negative multiple of v). The degree form matches Rubi :533
+ * exactly: EqQ[Expon[u,x^v],n] is max k/v = n (strict). The
+ * NeQ[Coeff[u,x^v,n],0] clause is subsumed — when d = n some term has
+ * k/v = n, and its coefficient is structurally nonzero after expand
+ * (a zero coefficient would drop the term). */
 %mr_polyPowerQ(u, B, v) := block([t, r, i, term, k, ok],
   t : gensym("mrp"),
   r : expand(subst(t, B, u)),
@@ -406,7 +407,7 @@ rubi(f, x) := mr_int(f, x)$
         if k # false and k/v > d then d : k/v
       )
     ),
-    is(d <= n)
+    is(d = n)
   ))$
 
 /* Rubi :1373  LinearQ[u,x] := PolyQ[u,x,1] (list form dropped — no

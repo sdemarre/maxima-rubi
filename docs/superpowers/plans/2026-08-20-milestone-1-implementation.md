@@ -1505,11 +1505,16 @@ Fix, in this order:
    - `%mr_polyPowerQ(u, x, v)` — is `u` a polynomial in `x^v`? True iff
      `expand(u)` has no `x` in any denominator and every term's `x`-exponent
      (via `%mr_term_xexp`) is a non-negative multiple of `v`.
-   - `%mr_polyDegPowerQ(u, x, v, n)` — `%mr_polyPowerQ(u, x, v)` and the
-     maximum `k/v` (over terms) is `<= n`.
-   Unit probes (Rubi-correct): `polyPowerQ(x^4+1, x, 2)=true`,
-   `polyPowerQ(x^3+1, x, 2)=false`, `polyPowerQ(1/x, x, 2)=false` (denominator),
-   `polyDegPowerQ(x^4+1, x, 2, 2)=true`, `polyDegPowerQ(x^4+1, x, 2, 1)=false`.
+    - `%mr_polyDegPowerQ(u, x, v, n)` — `%mr_polyPowerQ(u, x, v)` and the
+      maximum `k/v` (over terms) is `= n` — EXACT degree (Rubi :533
+      `EqQ[Expon[u,x^v],n]`). DECISION 2026-08-23 (Task-6 review finding 4,
+      human): the original `<= n` pin was wrong — it made 15 class-1 rules
+      over-fire on integrands of degree < n; utils + suite probes fixed.
+    Unit probes (Rubi-correct): `polyPowerQ(x^4+1, x, 2)=true`,
+    `polyPowerQ(x^3+1, x, 2)=false`, `polyPowerQ(1/x, x, 2)=false` (denominator),
+    `polyDegPowerQ(x^4+1, x, 2, 2)=true`, `polyDegPowerQ(x^4+1, x, 2, 1)=false`,
+    `polyDegPowerQ(x^2+1, x, 2, 2)=false` (degree 1 < 2 — the exact-degree
+    over-fire case).
 2. **Wire the generator dispatch** in `generate_class1.py`: at translation time
    the arg count and the second-arg head are known — `(u, x)` → `%mr_polyQ`,
    `(u, x, n)` → `%mr_polyDegQ`, `(u, x^v[, n])` → `%mr_polyPowerQ` /

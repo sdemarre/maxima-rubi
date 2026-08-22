@@ -175,6 +175,10 @@ test_pred_cluster1() := block([],
   check_not("polyPowerQ capture base 1+v^3 in v^2", %mr_polyPowerQ(1 + (a + b*x)^3, a + b*x, 2)),
   check_bool("polyDegPowerQ x^4+1 in x^2 deg 2", %mr_polyDegPowerQ(x^4 + 1, x, 2, 2)),
   check_not("polyDegPowerQ x^4+1 in x^2 deg 1", %mr_polyDegPowerQ(x^4 + 1, x, 2, 1)),
+  /* exact degree (Rubi :533 EqQ[Expon,n]): degree strictly less than n is
+     false — the <= n over-fire (15 class-1 rules) */
+  check_not("polyDegPowerQ x^2+1 in x^2 deg 2 (deg 1 < 2)", %mr_polyDegPowerQ(x^2 + 1, x, 2, 2)),
+  check_not("polyDegPowerQ x^2+1 in x^2 deg 5 (deg 1 < 5)", %mr_polyDegPowerQ(x^2 + 1, x, 2, 5)),
   check_bool("linearQ x", %mr_linearQ(x, x)),
   check_bool("linearQ x+1", %mr_linearQ(x + 1, x)),
   check_bool("linearQ a+x", %mr_linearQ(a + x, x)),
