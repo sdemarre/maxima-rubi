@@ -2,15 +2,9 @@
 # Maxima 5.50.0
 
 === 0. parse sweep (files to skip) ===
-  skip 1_1_3_1 (parse-broken)
-  skip 1_1_3_2 (parse-broken)
-  skip 1_1_3_7 (parse-broken)
-  skip 1_2_1_1 (parse-broken)
-  skip 1_2_3_4 (parse-broken)
-  skip 1_4_3 (parse-broken)
 
 === 1. curve at --tls-limit 100000 ===
-loaded 60 files after the core's file 1
+loaded 66 files after the core's file 1
   curve run clean
   Maxima-version: "5.50.0"
   Maxima build date: "2026-08-20 21:36:22"
@@ -18,14 +12,14 @@ loaded 60 files after the core's file 1
 
 === 2. analysis ===
   fresh-process water level: 8516 units; core (loader + file 1): 19 vars
-  measured: 2269 rules (67 - 6 broken files minus the core's file 1)
+  measured: 2705 rules (67 - 0 broken files minus the core's file 1)
   per-file vars/rule: min 1.00, max 17.00
-  mean cost c = 9.64 vars/rule
-  broken files (6): ['1_1_3_1', '1_1_3_2', '1_1_3_7', '1_2_1_1', '1_2_3_4', '1_4_3'] = 436 rules (estimated at c)
+  mean cost c = 9.35 vars/rule
+  broken files (0): [] = 0 rules (estimated at c)
 
-  class 1 (generated): 2710 rules ~ 26117 vars -> --tls-limit >= 27182
-  always-loaded layer (class 1 + 9.2 + 9.3): 2805 rules ~ 27033 vars -> --tls-limit >= 28097
-  ALL loaded Rubi classes (T1; 2-9 at class-1 mean): 7432 rules ~ 71624 vars -> --tls-limit >= 72689
+  class 1 (generated): 2710 rules ~ 25344 vars -> --tls-limit >= 26408
+  always-loaded layer (class 1 + 9.2 + 9.3): 2805 rules ~ 26232 vars -> --tls-limit >= 27297
+  ALL loaded Rubi classes (T1; 2-9 at class-1 mean): 7432 rules ~ 69504 vars -> --tls-limit >= 70568
   cross-check: default-limit death predicted inside 1_1_2_4 (cumulative ~361)
   (probe-load-wall pins the measured band: files 1-7 / 294 rules load,
    file 8 at 361 cumulative dies — the prediction must sit inside it)

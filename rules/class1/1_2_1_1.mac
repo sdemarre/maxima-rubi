@@ -256,7 +256,7 @@ matchdeclare(_mr_1_2_1_1_r16_p, true)$
 defmatch(_mr_pat_1_2_1_1_r16, (_mr_1_2_1_1_r16_b*x+ _mr_1_2_1_1_r16_c*x^2)^_mr_1_2_1_1_r16_p, x)$
 _mr_cond_1_2_1_1_r16(mm, x) := block([_mr_1_2_1_1_r16_b, _mr_1_2_1_1_r16_c, _mr_1_2_1_1_r16_p],
   _mr_1_2_1_1_r16_b : geteqR(mm, '_mr_1_2_1_1_r16_b), _mr_1_2_1_1_r16_c : geteqR(mm, '_mr_1_2_1_1_r16_c), _mr_1_2_1_1_r16_p : geteqR(mm, '_mr_1_2_1_1_r16_p),
-  freeof(x, _mr_1_2_1_1_r16_b) and freeof(x, _mr_1_2_1_1_r16_c)  and  %mr_rationalQ(_mr_1_2_1_1_r16_p)  and  3 <= denom(_mr_1_2_1_1_r16_p) <= 4)$
+  freeof(x, _mr_1_2_1_1_r16_b) and freeof(x, _mr_1_2_1_1_r16_c)  and  %mr_rationalQ(_mr_1_2_1_1_r16_p)  and is(3 <= denom(_mr_1_2_1_1_r16_p)) and is(denom(_mr_1_2_1_1_r16_p) <= 4))$
 _mr_repl_1_2_1_1_r16(mm, x) := block([_mr_1_2_1_1_r16_b, _mr_1_2_1_1_r16_c, _mr_1_2_1_1_r16_p],
   _mr_1_2_1_1_r16_b : geteqR(mm, '_mr_1_2_1_1_r16_b), _mr_1_2_1_1_r16_c : geteqR(mm, '_mr_1_2_1_1_r16_c), _mr_1_2_1_1_r16_p : geteqR(mm, '_mr_1_2_1_1_r16_p),
   (_mr_1_2_1_1_r16_b*x + _mr_1_2_1_1_r16_c*x^2)^_mr_1_2_1_1_r16_p/(-_mr_1_2_1_1_r16_c*(_mr_1_2_1_1_r16_b*x + _mr_1_2_1_1_r16_c*x^2)/(_mr_1_2_1_1_r16_b^2))^_mr_1_2_1_1_r16_p* mr_int((-_mr_1_2_1_1_r16_c*x/_mr_1_2_1_1_r16_b - _mr_1_2_1_1_r16_c^2*x^2/_mr_1_2_1_1_r16_b^2)^_mr_1_2_1_1_r16_p, x))$
@@ -276,7 +276,7 @@ _mr_cond_1_2_1_1_r17(mm, x) := block([_mr_1_2_1_1_r17_a, _mr_1_2_1_1_r17_b, _mr_
   freeof(x, _mr_1_2_1_1_r17_a) and freeof(x, _mr_1_2_1_1_r17_b) and freeof(x, _mr_1_2_1_1_r17_c)  and  %mr_neQ(_mr_1_2_1_1_r17_b^2 - 4*_mr_1_2_1_1_r17_a*_mr_1_2_1_1_r17_c, 0)  and  %mr_rationalQ(_mr_1_2_1_1_r17_p))$
 _mr_repl_1_2_1_1_r17(mm, x) := block([_mr_1_2_1_1_r17_a, _mr_1_2_1_1_r17_b, _mr_1_2_1_1_r17_c, _mr_1_2_1_1_r17_p],
   _mr_1_2_1_1_r17_a : geteqR(mm, '_mr_1_2_1_1_r17_a), _mr_1_2_1_1_r17_b : geteqR(mm, '_mr_1_2_1_1_r17_b), _mr_1_2_1_1_r17_c : geteqR(mm, '_mr_1_2_1_1_r17_c), _mr_1_2_1_1_r17_p : geteqR(mm, '_mr_1_2_1_1_r17_p),
-  block([d], d : denom(_mr_1_2_1_1_r17_p), (if is(3 <= d <= 4) = true then d*sqrt((_mr_1_2_1_1_r17_b + 2*_mr_1_2_1_1_r17_c*x)^2)/(_mr_1_2_1_1_r17_b + 2*_mr_1_2_1_1_r17_c*x)* %mr_subst(mr_int(x^(d*(_mr_1_2_1_1_r17_p + 1) - 1)/sqrt(_mr_1_2_1_1_r17_b^2 - 4*_mr_1_2_1_1_r17_a*_mr_1_2_1_1_r17_c + 4*_mr_1_2_1_1_r17_c*x^d), x), x, (_mr_1_2_1_1_r17_a + _mr_1_2_1_1_r17_b*x + _mr_1_2_1_1_r17_c*x^2)^(1/d)) else false)))$
+  block([d], d : denom(_mr_1_2_1_1_r17_p), (if is(is(3 <= d) and is(d <= 4)) = true then d*sqrt((_mr_1_2_1_1_r17_b + 2*_mr_1_2_1_1_r17_c*x)^2)/(_mr_1_2_1_1_r17_b + 2*_mr_1_2_1_1_r17_c*x)* %mr_subst(mr_int(x^(d*(_mr_1_2_1_1_r17_p + 1) - 1)/sqrt(_mr_1_2_1_1_r17_b^2 - 4*_mr_1_2_1_1_r17_a*_mr_1_2_1_1_r17_c + 4*_mr_1_2_1_1_r17_c*x^d), x), x, (_mr_1_2_1_1_r17_a + _mr_1_2_1_1_r17_b*x + _mr_1_2_1_1_r17_c*x^2)^(1/d)) else false)))$
 _mr_rule_1_2_1_1_r17(f, x) := block([mm, ok],
   mm : _mr_pat_1_2_1_1_r17(f, x),
   if mm = false then return(false),

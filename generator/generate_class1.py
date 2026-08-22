@@ -66,17 +66,67 @@ _IDCH = ("0123456789abcdefghijklmnopqrstuvwxyz"
          "ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 _IDSTART = ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 
+_GAP_WORDS = {"and", "or", "then", "else", "do", "if", "return",
+              "block", "in", "for", "while", "true", "false"}
+
+def _gap_join(out, t):
+    """FIX P4: a whitespace gap between two expression terminals in Rubi
+    source is juxtaposition; Maxima reads it as a parse error or a
+    SILENT noun call (measured 2026-08-22, Maxima 5.50.0, one batch run
+    per form):
+      `2 n` `f1 g1` `x 2` `%pi 2` `2 (x+1)` `(x) 2` `(x) z`  -> parse error
+      `n (2*n+1)` `x (y)`  -> noun call: n(2 n + 1) / x(y)
+      `(x) (y)`            -> the only legal spaced form (a product)
+    So a gap whose both sides are expression terminals becomes an
+    explicit `*`; the single exception, `)`/`]` followed by `(`, keeps
+    its space. A Maxima word on either side of the gap (and/or/...)
+    keeps the space — the walk emits ` and ` / ` or ` as one token with
+    embedded spaces, and True/False translate to true/false. The walk
+    keeps source spacing as tokens, so this sees every gap at every
+    bracket depth."""
+    left = out.rstrip()
+    if not left:
+        return t
+    right = t.lstrip()
+    if not right:
+        return t
+    li = len(left) - 1
+    while li > 0 and left[li-1] in _IDCH:
+        li -= 1
+    if left[li:] in _GAP_WORDS:
+        return t
+    ri = 0
+    while ri + 1 < len(right) and right[ri+1] in _IDCH:
+        ri += 1
+    if right[:ri+1] in _GAP_WORDS:
+        return t
+    L, R = left[-1], right[0]
+    if L.isdigit():
+        if R in _IDSTART or R == "(" or R == "%":
+            return "*" + right
+        return t
+    if L in _IDCH:
+        if R in _IDSTART or R.isdigit() or R == "(" or R == "%":
+            return "*" + right
+        return t
+    if L in ")]" and (R in _IDSTART or R.isdigit() or R == "%"):
+        return "*" + right
+    return t
+
 def _join_tokens(tokens):
     """Join the atom-walk tokens into one Maxima expression.
 
     FIX F6: the brief's `" ".join(out)` put a space between EVERY token
     (single characters included): `1/x` -> `1 / x`, a decimal `1.5` ->
     `1 . 5` (a Maxima parse error). Concatenate by default — the original
-    spacing survives as tokens where it was not consumed by a marker — and
-    insert a space only where gluing would (a) merge two identifiers into
-    one, (b) turn `x (…)`-style juxtaposition into a call, or (c) turn
-    `(…) x` / `[…] x` into a parse error / noun form. A NUMBER next to an
-    open paren, or a close next to a number, needs an explicit * instead
+    spacing survives as tokens where it was not consumed by a marker —
+    and insert a space only where gluing would merge two identifiers
+    into one. Juxtaposition (a value terminal on both sides of a token
+    boundary) needs an explicit `*`: a spaced gap goes through
+    _gap_join (FIX P4), and the no-space cases — `x(…)` (a spaced form
+    is a SILENT noun call, measured 2026-08-22, not a juxtaposition) and
+    `…)x` (measured parse error) — get `*` directly. A NUMBER next to an
+    open paren, or a close next to a number, needs an explicit * too
     (`2(x+1)` and `(x+1)2` are both Maxima parse errors, measured
     2026-08-20); digit-digit glue (one number: `12`).
     """
@@ -87,18 +137,25 @@ def _join_tokens(tokens):
         if not out:
             out = t
         elif out[-1] == " " or t[0] == " ":
-            out += t
+            rep = _gap_join(out, t)
+            if rep != t:
+                # a * was inserted: drop the gap's own space(s)
+                out = out.rstrip(" ") + rep
+            else:
+                out += t
         else:
             a, b = out[-1], t[0]
             if a in _IDSTART and b in _IDCH:
                 # merging two identifiers: `a` `b` -> `a b`
                 out += " " + t
             elif a in _IDSTART and b in "([":
-                # juxtaposition must not become a call: `x (…) -> `x (…)
-                out += " " + t
+                # juxtaposition: `x (…)` spaced is a silent noun call in
+                # Maxima (measured 2026-08-22) — emit an explicit *.
+                out += "*" + t
             elif a in ")]" and b in _IDSTART:
-                # juxtaposition after a close: `(...) a`
-                out += " " + t
+                # juxtaposition after a close: `(...)a` -> `...*a`
+                # (the spaced form is a measured parse error).
+                out += "*" + t
             elif a.isdigit() and b in "([":
                 # FIX: `2 (x+1)` and `2(x+1)` are BOTH Maxima parse errors
                 # (measured 2026-08-20) — a number next to an open
@@ -379,6 +436,16 @@ def translate_atom(s, ctx):
             out.append(" and "); i += 2; continue
         if s[i:i+2] == "||":
             out.append(" or "); i += 2; continue
+        # FIX P1: this build's parser rejects `==` in EVERY position
+        # (measured 2026-08-22, Maxima 5.50.0: even `1 == 1` is
+        # "incorrect syntax: = is not a prefix operator"). `=` carries the
+        # syntactic-equality semantics `==` had classically — is(a = b) ->
+        # true/false, never unknown (manual entry for `=`, value-probed) —
+        # and mixes with and/or correctly: `n = 2 and q` values as
+        # (n = 2) and q. Translate `==` to `=`. (This build's negation is
+        # `#`, not `#=`; no class-1 source uses `#=`, so no mapping yet.)
+        if s[i:i+2] == "==":
+            out.append("="); i += 2; continue
         ch = s[i]
         # FIX F7: Mathematica list braces are Maxima brackets.
         if ch == "{":
@@ -399,7 +466,145 @@ def translate_atom(s, ctx):
                 out.append(s[i:t2+1]); i = t2 + 1; continue
             out.append(ch); i += 1; continue
         out.append(ch); i += 1
-    return _join_tokens(out)
+    return _expand_chains(_join_tokens(out))
+
+def _expand_chains(s):
+    """FIX P3: expand raw relational chains (`3 <= d <= 4`) — Maxima has
+    no chained comparison (measured 2026-08-22: "Found LOGICAL expression
+    where ALGEBRAIC expression expected"). Rubi's own chain semantics are
+    conjunctive (LtQ[u,v,w] := LtQ[u,v] && LtQ[v,w], Rubi :468-:470), and
+    the 3-arg CMP_OPS path already emits the same shape, so a k-op chain
+    P0 op1 P1 ... opk Pk becomes
+    is(P0 op1 P1) and is(P1 op2 P2) and ... and is(P(k-1) opk Pk).
+    A lone comparison is untouched (a raw `a <= b` is a legal Maxima
+    relation the rule runner's is(ok) evaluates). Runs at the end of
+    translate_atom, at every bracket depth (recurses into groups). The
+    operators seen in translated text are = <= >= < > (`==` is already
+    folded to `=` by the walk); a `;`/`,`/`and`/`or` between two ops ends
+    the chain. Class-1 sites: 1.2.1.1 r16 (cond) and r17 (inner /; cond)."""
+    out = []
+    i = 0
+    n = len(s)
+    while i < n:
+        ch = s[i]
+        if ch in "([{":
+            depth, j = 1, i + 1
+            while j < n and depth:
+                if s[j] in "([{":
+                    depth += 1
+                elif s[j] in ")]}":
+                    depth -= 1
+                j += 1
+            out.append(ch + _expand_chains(s[i+1:j-1]) + s[j-1])
+            i = j
+            continue
+        out.append(ch)
+        i += 1
+    s = "".join(out)
+    # Partition the depth-0 text into a complete item sequence: relational
+    # ops, chain terminators (';', ',', ' and ', ' or '), and the term runs
+    # between them. A chain is a run  TERM OP TERM OP ... OP TERM  with
+    # 2+ ops (k ops -> k+1 terms); spans never overlap, so forward
+    # rewriting is position-stable within the scan.
+    items = []
+    i = 0
+    n = len(s)
+    depth = 0
+    cur = None
+    while i < n:
+        ch = s[i]
+        if ch in "([{":
+            depth += 1
+            if cur is None:
+                cur = i
+            i += 1
+            continue
+        if ch in ")]}":
+            depth -= 1
+            if cur is None:
+                cur = i
+            i += 1
+            continue
+        if depth == 0:
+            two = s[i:i+2]
+            hit = None
+            if two in ("==", "#=", "<=", ">="):
+                hit = (i, i + 2, "op")
+            elif ch in "<>=" and s[i-1:i] != ":":
+                hit = (i, i + 1, "op")
+            elif ch in ";,":
+                hit = (i, i + 1, "stop")
+            elif ch == "a" and i > 0 and s[i-1] == " " and s[i:i+3] == "and" \
+                    and s[i+3:i+4] == " ":
+                hit = (i - 1, i + 4, "stop")
+            elif ch == "o" and i > 0 and s[i-1] == " " and s[i:i+2] == "or" \
+                    and s[i+2:i+3] == " ":
+                hit = (i - 1, i + 3, "stop")
+            if hit is not None:
+                if cur is not None:
+                    items.append([cur, hit[0], "term"])
+                    cur = None
+                items.append([hit[0], hit[1], hit[2]])
+                i = hit[1]
+                continue
+        if cur is None:
+            cur = i
+        i += 1
+    if cur is not None:
+        items.append([cur, n, "term"])
+    i = 0
+    while i + 3 < len(items):
+        if items[i][2] == "term" and items[i+1][2] == "op":
+            k = 1
+            while i + 2*k + 1 < len(items) \
+                    and items[i + 2*k + 1][2] == "op":
+                k += 1
+            if k >= 2 and items[i + 2*k][2] == "term":
+                parts = [items[i + 2*t] for t in range(k + 1)]
+                ops = [items[i + 2*t + 1] for t in range(k)]
+                seg = " and ".join(
+                    "is(" + s[parts[t][0]:parts[t][1]].strip()
+                    + " " + s[ops[t][0]:ops[t][1]]
+                    + " " + s[parts[t+1][0]:parts[t+1][1]].strip() + ")"
+                    for t in range(k))
+                s = s[:parts[0][0]] + seg + s[parts[-1][1]:]
+                i += 2 * k
+                continue
+        i += 1
+    return s
+
+def _maxima_stmts(body):
+    """Top-level statement syntax of a Rubi With/Module body -> Maxima
+    block syntax. Measured 2026-08-22 (Maxima 5.50.0):
+    * a top-level ';' is a parse error in a block ("incorrect syntax:
+      Missing )" at the ';' — block statements separate with ',');
+    * a 'v = e' statement values to a discarded equation — the local is
+      never bound (block([u], u = 5, u) -> unbound u); only ':' assigns.
+    The 8 class-1 bodies (1.1.3.1 r13/14/21/22, 1.1.3.2 r35-38) are the
+    'u = Int[...]; <expr>' shape. The caller splits the inner '/;'
+    conditional FIRST, so no '/;' reaches here. A source 'v == e'
+    statement arrives already folded to 'v = e' by the walk and is
+    treated like any other statement (the local would be bound to the
+    comparison result); no such statement occurs in class 1."""
+    out, depth = [], 0
+    for ch in body:
+        if ch in "[({":
+            depth += 1
+            out.append(ch)
+        elif ch in ")]}":
+            depth -= 1
+            out.append(ch)
+        elif ch == ";" and depth == 0:
+            out.append(",")
+        else:
+            out.append(ch)
+    segs = []
+    for seg in split_top("".join(out), ","):
+        m = re.match(r"\s*([A-Za-z][A-Za-z0-9_]*)\s*=(?!=)", seg)
+        if m:
+            seg = m.group(1) + " :" + seg[m.end():]
+        segs.append(seg)
+    return ", ".join(segs)
 
 def power_dups(pattern, key, n, varset):
     """Return the list of pattern texts to emit for one rule: the plain
@@ -583,7 +788,13 @@ def emit_head(head, arglist, ctx):
                          lambda i, ch: ch == "/" and body[i+1] == ";")
         if last >= 0:
             inner, inner_cond = body[:last].strip(), body[last+2:].strip()
+            # FIX P2/P5: statement syntax (';' / 'v = e') -> block
+            # syntax (',' / 'v : e'); the '/;' is consumed by the split
+            # above, so its ';' never reaches _maxima_stmts.
+            inner = _maxima_stmts(inner)
             body = f"(if is({inner_cond}) = true then {inner} else false)"
+        else:
+            body = _maxima_stmts(body)
         lead = ", ".join(assigns) + ", " if assigns else ""
         return f"block([{', '.join(locals_)}], {lead}{body})"
     if head == "If":
