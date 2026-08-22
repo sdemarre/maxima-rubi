@@ -100,6 +100,59 @@ Task 6: complete (commits 1a85498..0ac99b5, review Approved with 4 Important fin
     with the global 2710 check in the static census probe.
   - Suite 71/0; per-file parse+witness 67/67 (one process per file).
 
+## Work item: class-1 parse fixes (post-Task 6, pre-Task 9; 2026-08-22)
+
+Ticket: .scratch/class1-parse-fixes/issues/01-generator-parse-defects.md.
+The parse sweep (probe-parse-sweep, 5.50.0) found 6 of 67 files
+parse-broken; the sweep stops at the first error per file, so root-cause
+work found FIVE generator defects, each measured with a repro:
+  RC1 `==` untranslated — this build's parser rejects `==` in every
+    position (even `1 == 1`); `=` now HAS the syntactic-equality
+    semantics (is() -> true/false, never unknown — manual entry + value
+    probes). 4 rules (1.1.3.1 r11 x2, 1.1.3.7 r5, r38). Fix: walk emits
+    `=` for `==`. (`#=` absent from class 1; this build's negation is `#`.)
+  RC2 `;` in With/Module bodies — Maxima block statements separate with
+    `,`, not `;` (measured: "Missing )" at the `;` — the 1.1.3.2 r35
+    error). Exactly 8 rules (a first census pass counted the `/;` of
+    inner conditionals and over-reported 185): 1.1.3.1 r13/14/21/22,
+    1.1.3.2 r35-38 — the same 8 bodies as RC5.
+  RC3 raw comparison chains `3 <= d <= 4` — Maxima has no chaining
+    (measured: LOGICAL/ALGEBRAIC error). 2 rules (1.2.1.1 r16 cond, r17
+    rhs). Expand to `is(a op b) and is(b op c)` per the existing 3-arg
+    CMP_OPS convention (Rubi's own LtQ chain def is conjunctive).
+  RC4 whitespace juxtaposition (`2 n`, `f Sqrt[v]`, `(x)^m (y)^q`,
+    `n (2*p+1)`) — Mathematica implicit multiply; Maxima needs `*`.
+    ~15 rules (1.2.3.4, 1.2.2.4, 1.4.3 r16 lhs pattern). No-space
+    juxtapositions: NONE in class 1 (earlier census hits were cond+rhs
+    concatenation artifacts).
+  RC5 `u = Int[...]` body statements (8 rules: 1.1.3.1 r13/14/21/22,
+    1.1.3.2 r35-38) — Maxima block `=` does not assign (measured: local
+    left unbound, body computes on the global) — semantic, invisible to
+    the parse sweep. Fix: top-level body `v = e` -> `v : e`.
+Acceptance: parse sweep 0 fails; load curve clean 67-file run (2,710
+measured); suite 71/0; regeneration diff touches only the five patterns.
+NOTE: the Task 6 "per-file parse+witness 67/67" above is the known
+probe-load-wall part-2 false positive, superseded by probe-parse-sweep.
+
+RESOLVED 2026-08-22 (same session, ticket resolved): all five fixed in
+generate_class1.py — RC1 walk emits `=` for `==`; RC2/RC5 `_maxima_stmts`
+(top-level `;`->`,`, body `v = e` -> `v : e`) in the With/Module handler;
+RC3 `_expand_chains` (raw `a op b op c` -> `is(a op b) and is(b op c)`,
+any bracket depth) at the end of translate_atom; RC4 `_gap_join` in
+_join_tokens (whitespace gap between expression terminals -> `*`) plus the
+F6 no-space branches `x(…` and `…)ident` now emit `*` instead of a space.
+Regenerated: the diff touches ONLY the 7 expected files (1.1.3.1, 1.1.3.2,
+1.1.3.7, 1.2.1.1, 1.2.2.4, 1.2.3.4, 1.4.3 — 28 rule lines); the other 60
+files byte-identical. Gates green: parse sweep 67/67 clean; load curve
+clean (2,710 rules, c = 9.35 vars/rule, no broken files); suite 71/0.
+New measured finding driving the RC4 rule set (one batch run per form,
+5.50.0): a spaced `ident (…)` in Maxima is a SILENT noun call (`x (y)`
+reads `x(y)`) — F6's space insertion for that case was semantically wrong,
+not merely conservative; `) ident`, `) digit`, `digit (…`, `ident digit`,
+`digit ident`, `ident ident` are parse errors; the ONLY legal spaced
+juxtaposition is `) (…` — hence `*` for every terminal-terminal gap
+except `)`/`]`-`(`, with a word guard (and/or/…) on both sides of the gap.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
