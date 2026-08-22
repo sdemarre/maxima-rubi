@@ -1015,8 +1015,9 @@ def emit_file(rel_m, runs):
                            f"(lhs {lhs[:60]!r})") from ex
         if util_lines:
             body.append("/* Inline Rubi utility definition (C-tier; ported in Task 7")
-            body.append(" * as the %mr_* predicate this rule's cond calls, which is a")
-            body.append(" * noun until then — the rule declines, as C-tier rules do):")
+            body.append(" * as the corresponding %mr_* predicate). Until then, any")
+            body.append(" * rule calling it either declines (call in a cond) or")
+            body.append(" * returns a noun-laden answer (call in a repl):")
             for ln in util_lines:
                 body.append(f" * {ln.strip()}")
             body.append(" */")

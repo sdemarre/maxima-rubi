@@ -727,8 +727,9 @@ _mr_rule_1_1_1_2_r40(f, x) := block([mm, ok],
   ok : _mr_cond_1_1_1_2_r40(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_2_r40(mm, x) else false)$
 /* Inline Rubi utility definition (C-tier; ported in Task 7
- * as the %mr_* predicate this rule's cond calls, which is a
- * noun until then — the rule declines, as C-tier rules do):
+ * as the corresponding %mr_* predicate). Until then, any
+ * rule calling it either declines (call in a cond) or
+ * returns a noun-laden answer (call in a repl):
  * IntLinearQ[a_, b_, c_, d_, m_, n_, x_] := IGtQ[m, 0] || IGtQ[n, 0] || IntegersQ[3*m, 3*n] || IntegersQ[4*m, 4*n] || IntegersQ[2*m, 6*n] || IntegersQ[6*m, 2*n] || ILtQ[m + n, -1] || IntegerQ[m + n] && RationalQ[m]
  */
 

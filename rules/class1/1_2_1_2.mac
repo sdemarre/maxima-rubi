@@ -2596,8 +2596,9 @@ _mr_rule_1_2_1_2_r137(f, x) := block([mm, ok],
   ok : _mr_cond_1_2_1_2_r137(mm, x),
   if is(ok) = true then _mr_repl_1_2_1_2_r137(mm, x) else false)$
 /* Inline Rubi utility definition (C-tier; ported in Task 7
- * as the %mr_* predicate this rule's cond calls, which is a
- * noun until then — the rule declines, as C-tier rules do):
+ * as the corresponding %mr_* predicate). Until then, any
+ * rule calling it either declines (call in a cond) or
+ * returns a noun-laden answer (call in a repl):
  * IntQuadraticQ[a_, b_, c_, d_, e_, m_, p_, x_] := IntegerQ[p] || IGtQ[m, 0] || IntegersQ[2*m, 2*p] || IntegersQ[m, 4*p] || IntegersQ[m, p + 1/3] && (EqQ[c^2*d^2 - b*c*d*e + b^2*e^2 - 3*a*c*e^2, 0] || EqQ[c^2*d^2 - b*c*d*e - 2*b^2*e^2 + 9*a*c*e^2, 0])
  */
 

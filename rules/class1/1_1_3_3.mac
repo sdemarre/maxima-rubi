@@ -1201,8 +1201,9 @@ _mr_rule_1_1_3_3_r65(f, x) := block([mm, ok],
   ok : _mr_cond_1_1_3_3_r65(mm, x),
   if is(ok) = true then _mr_repl_1_1_3_3_r65(mm, x) else false)$
 /* Inline Rubi utility definition (C-tier; ported in Task 7
- * as the %mr_* predicate this rule's cond calls, which is a
- * noun until then — the rule declines, as C-tier rules do):
+ * as the corresponding %mr_* predicate). Until then, any
+ * rule calling it either declines (call in a cond) or
+ * returns a noun-laden answer (call in a repl):
  * IntBinomialQ[a_, b_, c_, d_, n_, p_, q_, x_Symbol] := IntegersQ[p, q] || IGtQ[p, 0] || IGtQ[q, 0] || (EqQ[n, 2] || EqQ[n, 4]) && (IntegersQ[p, 4*q] || IntegersQ[4*p, q]) || EqQ[n, 2] && (IntegersQ[2*p, 2*q] || IntegersQ[3*p, q] && EqQ[b*c + 3*a*d, 0] || IntegersQ[p, 3*q] && EqQ[3*b*c + a*d, 0]) || EqQ[n, 3] && (IntegersQ[p + 1/3, q] || IntegersQ[q + 1/3, p]) || EqQ[n, 3] && (IntegersQ[p + 2/3, q] || IntegersQ[q + 2/3, p]) && EqQ[b*c + a*d, 0]
  */
 
