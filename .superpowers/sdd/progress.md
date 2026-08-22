@@ -153,6 +153,57 @@ not merely conservative; `) ident`, `) digit`, `digit (…`, `ident digit`,
 juxtaposition is `) (…` — hence `*` for every terminal-terminal gap
 except `)`/`]`-`(`, with a word guard (and/or/…) on both sides of the gap.
 
+## Work item: Task-6 review fixes (2026-08-23)
+
+The three pending "Important findings" of the Task 6 review
+(above, findings (2), (3), (4)). HUMAN DECISION (2026-08-23): fix all
+three before resuming Task 7.
+
+- (4) `%mr_polyDegPowerQ` `<= n` over-fire — FIXED (exact degree). Rubi
+  IntegrationUtilityFunctions.m:532-533: `PolyQ[u_,x_^v_,n_] :=
+  PolyQ[u,x^v] && EqQ[Expon[u,x^v],n] && NeQ[Coeff[u,x^v,n],0]` — EXACT
+  degree. The `NeQ[Coeff]` clause is subsumed: d = n means some term has
+  k/v = n, and its coefficient is structurally nonzero after expand (a
+  zero coefficient would drop the term). Fix: `is(d <= n)` -> `is(d = n)`
+  in maxima_rubi_utils.mac (the old "DEVIATION (brief-pinned)" comment
+  now records the exact match). TDD: 2 new suite probes RED first
+  (`polyDegPowerQ(x^2+1, x, 2, 2)` and `..., 5)` — degree 1 < n — must be
+  false; under `<= n` they passed, so 71/2 red) -> green, suite 73/0.
+  The 15   over-firing rules verified by grep of the committed .mac (1_2_2_7
+  x10, 1_2_3_5 x2, 1_1_3_7 / 1_3_4 / 1_4_3 x1 each); none are in the
+  eager core (utils + 1_1_1_1), so no suite rule behavior changed. The
+  plan's `<= n` pin is corrected in place with the decision note.
+
+- (3) static census never read the committed .mac — FIXED.
+  probes/census/01-generation-vs-inventory.py gains the committed
+  half: per file, the defmatch(_mr_pat_<key>_r<N> indices must be
+  exactly 1..count (catches missing/empty files, dropped rules,
+  duplicated or gapped indices); total committed = 2710. Negative
+  tests before restore: deleting r2's defmatch in 1_4_3.mac ->
+  "count mismatch 1_4_3: committed 59 != generator 60", rc=1; renaming
+  r2's defmatch to r1 -> "index anomaly 1_4_3: [1, 1, 3, ...]", rc=1;
+  restore -> VERDICT OK.
+
+- (2) Task-6 report C-tier handoff wording — FIXED, with a deeper
+  finding. The report's "the conds call the %mr_* nouns, so those
+  rules decline" (and the same claim in the generator's provenance
+  comment template) is wrong: the inline def is trailing boilerplate
+  AFTER the rule's `/;` cond — the host rule's cond does not call the
+  defined predicate (verified against the source; 1.1.3.2 r109's cond
+  is FreeQ && EqQ && Not[IntegerQ]). Measured per-rule on the 5
+  inline-def runs: only 1_1_3_3 r65 declines (pending %mr_integersQ +
+  %mr_pseudoBinomialPairQ in cond); 1_1_3_2 r109 / 1_1_3_4 r84 fire
+  with a noun-laden answer (%mr_fracPart, + %mr_intPart); 1_1_1_2 r40
+  / 1_2_1_2 r137 have no pending names at all. Fix: report corrected
+  at all three spots; generator template now states both outcomes
+  (regenerated diff = 5 files, comment lines only); NEW probe
+  probes/census/02-pending-noun-surface (committed method, the 110/182
+  review split is unreproducible — no method documented, and the 7
+  parse-fix files regenerated after the review): on the committed
+  files, C-tier scope (34 unported C_TIER predicates) = 292 decline /
+  21 fire-noun / 11 both / 2397 clean; full pending surface (63
+  names) = 496 decline / 852 fire-noun / 1362 clean.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
