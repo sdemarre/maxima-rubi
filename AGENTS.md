@@ -36,6 +36,20 @@ The project does **not** pin to 5.49 as a target: every measurement
 is stamped with the build it was taken on, and baselines are
 re-measured on upgrade rather than carried over.
 
+## Loading rule files: the TLS limit
+
+The SBCL special-variable pool is a hard per-process cap: creating a
+`defmatch`/`matchdeclare` slot beyond it is the **uncatchable** FATAL
+"Thread local storage exhausted". The installed core's baked-in limit is
+~4098 special vars (`probes/load_wall/probe-tls-calibration.out`), and a
+generated class-1 rule costs ~9.6 of them on average
+(`probes/load_wall/probe-load-curve.out`) — the default limit holds only
+~310 class-1 rules. **Any maxima process that loads rule files must be
+run with `-X "--tls-limit 100000"`** (user decision 2026-08-22). The flag
+takes two argv tokens — not `--tls-limit=N`. 100000 covers the full
+loaded Rubi set (7,432 rules, T1 count) at ~1.4x headroom; the probes
+above self-flag if the build moves.
+
 ## Looking up Maxima itself
 
 The manual is in the running Maxima, not on the web — consult it before
