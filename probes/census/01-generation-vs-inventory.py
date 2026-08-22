@@ -7,11 +7,16 @@ Run from the repo root:
 What it measures: that the generator's per-file rule counts (the rule-run
 parser applied to the Rubi source, exactly as the generator emits the
 files) equal the T1 inventory's per-file counts for all 67 class-1 files,
-and that the total is 2710. Static — no Maxima — because the installed
-build cannot hold the 2710 patterns in one process to check them there
-(measured 2026-08-20, probes/load_wall/probe-load-wall.out); the in-suite
-test_census checks the loadable subset instead. Exits nonzero on any
-mismatch (a broken generation must fail the probe, not just the diff).
+that the total is 2710, and — the committed-output half (Task-6 review
+finding 3: the source-only check let a corrupted generated file pass) —
+that each committed rules/class1/<key>.mac exists and its
+defmatch(_mr_pat_<key>_r<N> indices are exactly 1..count, so a missing,
+empty, duplicated, or gap-having generated file fails the probe. Static
+— no Maxima — because the installed build cannot hold the 2710 patterns
+in one process to check them there (measured 2026-08-20,
+probes/load_wall/probe-load-wall.out); the in-suite test_census checks
+the loadable subset instead. Exits nonzero on any mismatch (a broken
+generation must fail the probe, not just the diff).
 """
 
 import importlib.util
@@ -21,6 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 INV_OUT = ROOT / "probes" / "probe-rubi-anatomy" / "01-inventory.out"
+RULES_DIR = ROOT / "rules" / "class1"
 
 
 def _load(name, rel):
@@ -92,9 +98,34 @@ def main():
     print(f"total: generator {total_g}, inventory {total_i}, expected 2710")
     if total_g != 2710 or total_i != 2710:
         bad += 1
+
+    # Committed-output half: the generated files must carry exactly the
+    # counted rules (defmatch indices 1..count, no dupes, no gaps).
+    committed = {}
+    for key, count in gen_counts.items():
+        path = RULES_DIR / f"{key}.mac"
+        if not path.is_file():
+            print(f"missing file {path.relative_to(ROOT)}")
+            bad += 1
+            continue
+        idx = [int(m) for m in re.findall(
+            r"^defmatch\(_mr_pat_" + re.escape(key) + r"_r(\d+),",
+            path.read_text(), re.M)]
+        committed[key] = len(idx)
+        if len(idx) != count:
+            print(f"count mismatch {key}: committed {len(idx)} "
+                  f"!= generator {count}")
+            bad += 1
+        elif sorted(idx) != list(range(1, count + 1)):
+            print(f"index anomaly {key}: {sorted(idx)} is not 1..{count}")
+            bad += 1
+    total_c = sum(committed.values())
+    print(f"committed: {len(committed)} files, {total_c} rules")
+    if len(committed) != len(gen_counts) or total_c != 2710:
+        bad += 1
     print("VERDICT:", "MISMATCH" if bad else
           f"OK ({len(gen_counts)} files, {total_g} rules, all per-file "
-          "counts equal)")
+          "counts equal; committed .mac carry exactly 1..N each)")
     return 1 if bad else 0
 
 
