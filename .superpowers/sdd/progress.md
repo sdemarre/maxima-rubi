@@ -219,6 +219,96 @@ any future `PolyQ[u, x^v, n]` port must keep rejecting u = 0;
 (rides on parse sweep / witness / suite / regeneration diffs);
 (d) captured-base exactness probe added (production call-site shape).
 
+## Task 7 (7a): C-tier predicates — in progress
+
+Resumed 2026-08-23 after the Task-6 review fixes. Cluster order per
+plan (A foundations, B int-family, C sum/simpler, D binom/quad/trinom+
+match+degree, E generalized*, F pairs/split/misc).
+
+- Cluster A1 — numeric predicates — DONE (commit 23ef9a7).
+  %mr_integersQ (Rubi :70), %mr_fractionQ (:87) new; %mr_rationalQ (:97)
+  fixed two silent bugs: the committed "/"-only test missed negative
+  rationals (MEASURED op(-1/2) = "-", num/denom see through) and
+  answered false on the 49 list-form calls the generator emits
+  (generate_class1.py:877-884 list-packing branch — silent dead rules).
+  Ports accept scalar-or-list per the generator contract; the list gate
+  is op(u) = "[" (MEASURED: the list op is the string "[" in 5.50.0).
+  14 new probes; suite 96/0.
+- Cluster A2 — structural predicates — DONE (commit 610d6ed).
+  %mr_polynomialQ (STRICT Mathematica port — no cancellation; dedicated
+  %mr_polystrictQ walker whose only difference from %mr_polyformQ is the
+  quotient branch: x-free denominator + polynomial numerator at any
+  depth. MEASURED: this build keeps (x^2+x)/(x+1) as a "/" node while
+  rat() cancels it, and does NOT auto-combine x/2+1 — so %mr_polyQ
+  over-accepts and %mr_polyformQ under-accepts that shape), %mr_atomQ
+  (= atom), %mr_monomialQ (Rubi :1391 usage semantics a*x^n, n!=0, a!=0;
+  bare x and x^k are monomials via the .m optional pattern args;
+  documented deviation: lone x^a with symbolic a is true here, false in
+  the .m MatchQ — unreachable at the PolyQ-guarded call sites),
+  %mr_leafCount (head counts as a leaf: LeafCount[1+x] = 3).
+  30 new probes; suite 125/0.
+- MEASURED 5.50.0 traps reused here: op()/length() are hard errors on
+  atoms (walk tests atom() first — the %mr_monomialQ "*" branch hit it
+  on 5*x^3 before the fix); a non-atom is not a list (the "/" node of
+  1/2 misread as a 2-element list in the first draft of
+  %mr_integersQ — gated on op = "[").
+- Cluster A3 — %mr_matchQ structural matcher — DONE (commit e2c3895).
+  The custom matcher for the 17 class-1 MatchQ call sites (matchq is
+  a NOUN in this build, measured 2026-08-20).
+  SCOPE DEVIATION (justified): the task-7 brief's file list was
+  utils + tests only, but the MatchQ cond-holding fix is impossible
+  there — Maxima evaluates call arguments eagerly (subst(val, m,
+  integerp(m)) -> false: integerp runs before the subst), this
+  build's ev() does NOT strip quotes (ev('integerp(2)) stays quoted;
+  is('expr) -> unknown, and `if unknown then` stays unevaluated), CL
+  macros are bypassed (Maxima dispatches its own function table), and
+  marker values cannot survive integerp. Fix: the generator emits the
+  cond as lambda([%mr_mqb], <cond with each marker m rewritten to
+  %mr_mk(m, %mr_mqb)>) — a named lookup decouples marker ordering;
+  the closure env resolves outer rule captures (a, b, n, ...).
+  Verified pre-change: generator output == committed rules
+  byte-for-byte (diff -rq rc 0), so the regeneration is
+  count-invariant — exactly 9 files / 17 matchQ lines differ, 0
+  MISMATCH.
+  Semantics: flat partition over the expression's factors with
+  COMMUTATIVE matching — every permutation of the pattern factors
+  (stored order first), because Maxima's canonical factor order
+  disagrees with the pattern's once long _mr_ marker names are
+  involved (MEASURED: x^m*u stores [u, x^m] — a symbolic-exponent
+  power sorts AFTER a bare symbol — while x^3*y stores [x^3, y];
+  the stored-order partition therefore missed x^3*y = x^m*u).
+  Non-empty groups before the empty (Optional) one — the Mathematica
+  preference; gives the Rubi-faithful a=c, b=d, v=y binding at the
+  1.3.4 site (empty-first bound a=0, b=1, v=c+d*y). Empty group =
+  factor ABSENT: marker -> group identity, power with marker exponent
+  -> exponent := 1 with the base SKIPPED (a literal power cannot be
+  absent) — a shared "match the identity value" path wrongly demanded
+  base <-> 1 and killed the x^2+x^3 = x^m*u match.
+  KNOWN LIMITATION (documented in the code): the cond is not threaded
+  through the partition backtracking — the first successful binding
+  decides. No class-1 site exercises this: at the integerp(m) guard
+  sites every structural binding of a polyQ-polynomial gives an
+  integer m (exponents of x in a polynomial are integers; the
+  powerless/absent routes bind m := 1).
+  MEASURED 5.50.0 traps added (all 2026-08-23): string = / # NEVER
+  evaluate standalone (stay equations; evaluate only inside if/and/or/
+  is()) — every string comparison is an is(... = ...) in a boolean
+  context; length(string) is a hard Lisp error (the marker-name
+  length is an errcatch'd char scan + member() memo, one swallowed
+  error line per distinct symbol); break does not take effect inside
+  a comma-sequence while body (the suite hang); member(s, list)
+  returns a boolean; substring(s,a,b) is END-EXCLUSIVE (start > length
+  errors, start <= length clamps); `if <pending relation>` takes the
+  ELSE branch while `if unknown` stays unevaluated (the cond = true
+  guard in %mr_matchQ relies on the former: true = true -> true,
+  lambda = true -> pending -> else).
+  24 new probes; suite 149/0.
+- NEXT: cluster B — intLinearQ/intQuadraticQ/intBinomialQ (the
+  defmfun arity dispatch in maxima_rubi_dispatch.lisp, drafted
+  untracked; ground truth: %mr_integersQ 1-arg only, %mr_binomialQ
+  2/3-arg no 4-arg, %mr_intBinomialQ {7,8,10} the only true
+  multi-arity dispatcher; 1_1_1_2 calls %mr_intLinearQ 4x).
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
