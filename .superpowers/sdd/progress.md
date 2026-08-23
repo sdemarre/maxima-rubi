@@ -508,8 +508,21 @@ match+degree, E generalized*, F pairs/split/misc).
       branches, the RationalFunctionExpand factor split) — they are not
       reached by the Layer A surface and are revisited if the Layer B
       corpus reaches them.
-    - NEXT: Task 8 — Layer B, the corpus driver + 1.1.1.2 smoke
-      (test/corpus_class1_driver.py + test/mr_preload.mac).
+    - Task 8 — Layer B corpus driver + 1.1.1.2 smoke — DONE (commit
+      99624d8). test/corpus_class1_driver.py + test/mr_preload.mac; the
+      driver runs rubi() in place of integrate() with the T3 per-
+      subprocess noun/zero-chain mechanics, --tls-limit 100000, and the
+      T5 verdict mapping. The 1.1.1.2 first-20 smoke is 20/20 after
+      triaging three first-contact FAILs: (1) the generator's powered-
+      form Coeff (4-arg %mr_coeff) and Expon (3-arg %mr_expon) readings
+      were missing; (2) %mr_degree did not see x-free algebraic
+      constants (e.g. %pi/sqrt(16-%e^2)) as degree 0; (3)
+      1_2_3_5_r20 needed an n # 0 guard against Maxima's degenerate
+      constant-denominator binding (local guard, pending generator
+      backport). Layer A 511/0; gates clean.
+    - NEXT: Task 9 — full class-1 run + divergence loop + acceptance
+      (recursion-cap tuning, the 18-shard 25,697-entry run, the
+      file-by-file FAIL chase, docs/corpus-baseline-uplift.md).
 
 ## Minor findings (triage at final whole-branch review)
 
