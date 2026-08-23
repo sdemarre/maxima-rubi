@@ -77,6 +77,7 @@ run_all_tests() := block([],
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
+  test_cluster_f_predicates(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -932,6 +933,87 @@ test_structural_predicates() := block([],
     check_not("gtM list, one not",
               %mr_generalizedTrinomialMatchQ(
                 [x + x^2 + x^3, x + x^2 + x^4], x)),
+    true
+   )$
+
+  test_cluster_f_predicates() := block([],
+    print("--- cluster F predicates ---"),
+    /* linearPairQ (Rubi :1387) */
+    check_bool("lP parallel",
+               %mr_linearPairQ(2*x + 1, 4*x + 2, x)),
+    check_bool("lP v = x is allowed",
+               %mr_linearPairQ(2*x, x, x)),
+    check_not("lP u = x is excluded (NeQ[u,x])",
+              %mr_linearPairQ(x, 2*x, x)),
+    check_not("lP not parallel",
+              %mr_linearPairQ(2*x + 1, 3*x + 4, x)),
+    check_not("lP nonlinear",
+              %mr_linearPairQ(x^2 + 1, 2*x^2 + 2, x)),
+    /* perfectSquareQ — clone-gap predicate (no .m definition in the
+       pinned clone); the class-1 usage is on numeric discriminants, so
+       the port is a factor-exponent square test */
+    check_bool("pS 4", %mr_perfectSquareQ(4)),
+    check_bool("pS 9/4", %mr_perfectSquareQ(9/4)),
+    check_bool("pS a^2", %mr_perfectSquareQ(a^2)),
+    check_bool("pS (a+b)^2", %mr_perfectSquareQ((a + b)^2)),
+    check_bool("pS pi^2", %mr_perfectSquareQ(%pi^2)),
+    check_not("pS 2", %mr_perfectSquareQ(2)),
+    check_not("pS -4", %mr_perfectSquareQ(-4)),
+    check_not("pS a^2+b^2", %mr_perfectSquareQ(a^2 + b^2)),
+    /* rationalFunctionQ (Rubi :1578) */
+    check_bool("rFQ poly", %mr_rationalFunctionQ(x^2 + 1, x)),
+    check_bool("rFQ quotient", %mr_rationalFunctionQ(1/x, x)),
+    check_bool("rFQ power/quotient mix",
+               %mr_rationalFunctionQ(x^2/(x + 1), x)),
+    check_bool("rFQ param coefficient", %mr_rationalFunctionQ(a*x + b, x)),
+    check_not("rFQ sqrt", %mr_rationalFunctionQ(1/sqrt(x), x)),
+    check_not("rFQ sin", %mr_rationalFunctionQ(sin(x), x)),
+    check_not("rFQ x^x", %mr_rationalFunctionQ(x^x, x)),
+    /* splitProduct (Rubi :7658) with the class-1 SumBaseQ argument */
+    check("sp sum factor",
+          %mr_splitProduct('SumBaseQ, a*(x + 1)), [x + 1, a]),
+    check("sp bare sum",
+          %mr_splitProduct('SumBaseQ, x + 1), [x + 1, 1]),
+    check("sp negative product",
+          %mr_splitProduct('SumBaseQ, -a*(x + 1)), [x + 1, -a]),
+    check_not("sp no sum factor",
+              %mr_splitProduct('SumBaseQ, a*b)),
+    /* pseudoBinomialPairQ (Rubi :1507) — both bases
+       a + b*(c + d*x)^n with the same [c, d, n] tail */
+    check("pBp parts",
+          %mr_pseudoBinomial_parts(x^3 + 3*x^2 + 3*x + 2, x),
+          [1, 1, 1, 1, 3]),
+    check_bool("pBQ same tail",
+               %mr_pseudoBinomialPairQ(
+                 x^3 + 3*x^2 + 3*x + 2,
+                 x^3 + 3*x^2 + 3*x + 3, x)),
+    check_not("pBQ different n",
+              %mr_pseudoBinomialPairQ(
+                x^3 + 3*x^2 + 3*x + 2,
+                x^4 + 4*x^3 + 6*x^2 + 4*x + 3, x)),
+    check_not("pBQ non-polynomial",
+              %mr_pseudoBinomialPairQ(x^3 + 1/x, x^3 + 1/x, x)),
+    /* inverseFunctionQ (Rubi :303) */
+    check_bool("iFQ log", %mr_inverseFunctionQ(log(x))),
+    check_bool("iFQ asin", %mr_inverseFunctionQ(asin(x))),
+    check_bool("iFQ atan one-arg", %mr_inverseFunctionQ(atan(x))),
+    check_not("iFQ atan2 (two-arg inverse trig)",
+              %mr_inverseFunctionQ(atan2(y, x))),
+    check_bool("iFQ asinh", %mr_inverseFunctionQ(asinh(x))),
+    check_not("iFQ sin", %mr_inverseFunctionQ(sin(x))),
+    check_not("iFQ x", %mr_inverseFunctionQ(x)),
+    /* algebraicFunctionQ (Rubi :1681, flag = false) */
+    check_bool("aFQ x", %mr_algebraicFunctionQ(x, x)),
+    check_bool("aFQ sqrt", %mr_algebraicFunctionQ(sqrt(x), x)),
+    check_bool("aFQ 1/sqrt", %mr_algebraicFunctionQ(1/sqrt(x), x)),
+    check_bool("aFQ rational power",
+               %mr_algebraicFunctionQ((x + 1)^(1/3), x)),
+    check_bool("aFQ sum", %mr_algebraicFunctionQ(x + sqrt(x), x)),
+    check_bool("aFQ list",
+               %mr_algebraicFunctionQ([sqrt(x), x^2], x)),
+    check_not("aFQ x^x", %mr_algebraicFunctionQ(x^x, x)),
+    check_not("aFQ sin", %mr_algebraicFunctionQ(sin(x), x)),
+    check_not("aFQ log", %mr_algebraicFunctionQ(log(x), x)),
     true
    )$
 

@@ -2457,4 +2457,230 @@ rubi(f, x) := mr_int(f, x)$
   r : subst(v, x, u),
   %mr_simp(r))$
 
+/* ===================== predicate cluster F (Task 7a) ====================
+ * LinearPairQ / PerfectSquareQ / RationalFunctionQ / SplitProduct /
+ * PseudoBinomialPairQ / InverseFunctionQ / AlgebraicFunctionQ. Each cites
+ * its .m source line; PerfectSquareQ is a clone-gap predicate (referenced
+ * by class-1 rules but defined nowhere in the pinned clone). */
+
+/* Rubi :1387  LinearPairQ[u, v, x] — both linear in x, u not the bare
+   variable, and the two slope/offset pairs proportional. The .m guard is
+   NeQ[u, x] (u only, not v); the port keeps that asymmetry. */
+%mr_linearPairQ(u, v, x) := block([],
+  %mr_linearQ(u, x) and %mr_linearQ(v, x) and %mr_neQ(u, x)
+    and %mr_eqQ(
+      %mr_coeff(u, x, 0)*%mr_coeff(v, x, 1)
+        - %mr_coeff(u, x, 1)*%mr_coeff(v, x, 0), 0))$
+
+/* Clone-gap predicate (no .m definition in the pinned clone). The class-1
+   uses are PerfectSquareQ[b^2 - 4*a*c] and PerfectSquareQ[a^2 + b^2] on
+   x-free constants, so the port is a factor-exponent square test: after
+   factor(), every factor's exponent is an even integer (a quotient needs
+   both sides square; a negative content is not a real square). Exact
+   rationals are a special case: this build's factor(9/4) stays the
+   rational 9/4, so the numerator and denominator are tested as integer
+   squares. */
+%mr_integer_squareQ(n) := block([r],
+  if n < 0 then false
+  else if n = 0 or n = 1 then true
+  else (
+    r : sqrt(n),
+    integerp(r) and is(r^2 = n)))$
+
+%mr_perfectSquareQ_factor(e) := block([i, ok],
+  if is(e = 0) then true
+  else if is(e = 1) then true
+  else if atom(e) then false
+  else if op(e) = "-" then false
+  else if op(e) = "*" then (
+    ok : true,
+    for i : 1 thru length(e) do
+      if %mr_perfectSquareQ_factor(part(e, i)) = false then ok : false,
+    ok
+  )
+  else if op(e) = "/"
+    and numberp(part(e, 1)) and numberp(part(e, 2))
+  then %mr_integer_squareQ(abs(part(e, 1)))
+       and %mr_integer_squareQ(part(e, 2))
+  else if op(e) = "/"
+  then %mr_perfectSquareQ_factor(part(e, 1))
+       and %mr_perfectSquareQ_factor(part(e, 2))
+  else if op(e) = "^"
+  then integerp(part(e, 2)) and evenp(part(e, 2))
+  else false)$
+
+%mr_perfectSquareQ(u) := block([f],
+  u : ratsimp(u),
+  if is(u = 0) then true
+  else (
+    f : factor(u),
+    if atom(f) then is(f = 1)
+    else %mr_perfectSquareQ_factor(f)))$
+
+/* Rubi :1578  RationalFunctionQ[u, x]. Maxima stores x^(-1) as a "/" node
+   and x^(1/2) as a 'sqrt node, so the IntegerPowerQ branch reads "/" as a
+   rational step and rejects 'sqrt (and every other function head). */
+%mr_rationalFunctionQ(u, x) := block([i, ok],
+  if %mr_atomQ(u) or freeof(x, u) then true
+  else if op(u) = "/"
+  then %mr_rationalFunctionQ(part(u, 1), x)
+       and %mr_rationalFunctionQ(part(u, 2), x)
+  else if op(u) = "-"
+  then %mr_rationalFunctionQ(part(u, 1), x)
+  else if op(u) = "^"
+  then %mr_rationalFunctionQ(part(u, 1), x) and integerp(part(u, 2))
+  else if op(u) = "*" or op(u) = "+" then (
+    ok : true,
+    for i : 1 thru length(u) do
+      if %mr_rationalFunctionQ(part(u, i), x) = false then ok : false,
+    ok
+  )
+  else false)$
+
+/* Rubi :7617  SumBaseQ[u] — a sum, or a sum raised to an odd power. The
+   generated class-1 call passes the bare Rubi name as the SplitProduct
+   function argument (Maxima has no first-class Rubi predicates here), so
+   %mr_split_call special-cases that one name. */
+%mr_sumBaseQ(u) := block([],
+  if not atom(u) and op(u) = "+" then true
+  else if not atom(u) and op(u) = "^"
+    and integerp(part(u, 2)) and oddp(part(u, 2))
+    and %mr_sumBaseQ(part(u, 1))
+  then true
+  else false)$
+
+%mr_split_call(func, v) := block([],
+  if atom(func) and is(func = 'SumBaseQ)
+  then %mr_sumBaseQ(v)
+  else apply(func, [v]))$
+
+%mr_parts_list(e) := block([i, L],
+  L : [],
+  for i : 1 thru length(e) do
+    L : append(L, [part(e, i)]),
+  L)$
+
+%mr_product_factors(u) := block([L],
+  if atom(u) then [u]
+  else if op(u) = "-" then append([-1], %mr_product_factors(part(u, 1)))
+  else if op(u) = "*" then %mr_parts_list(u)
+  else [u])$
+
+%mr_product_from_list(L) := block([p, i],
+  p : 1,
+  for i : 1 thru length(L) do
+    p : p*part(L, i),
+  p)$
+
+/* Rubi :7658  SplitProduct[func, u] — the first factor v of u with
+   func[v] true, as [v, u/v]; false when no factor qualifies. A unary minus
+   is read as the leading -1 factor (Mathematica's Times[-1, ...]). */
+%mr_splitProduct_aux(func, u) := block([F, p, r],
+  F : %mr_product_factors(u),
+  if length(F) > 1 then (
+    if %mr_split_call(func, part(F, 1)) = true
+    then [part(F, 1), %mr_product_from_list(rest(F))]
+    else (
+      p : %mr_product_from_list(rest(F)),
+      r : %mr_splitProduct_aux(func, p),
+      if r # false
+      then [part(r, 1), part(F, 1)*part(r, 2)]
+      else false
+    )
+  )
+  else if %mr_split_call(func, u) = true then [u, 1]
+  else false)$
+
+%mr_splitProduct(func, u) := %mr_splitProduct_aux(func, u)$
+
+/* Local real-root form for PseudoBinomialParts. This is deliberately NOT
+   the public %mr_rt port (a later cluster): it only supplies the [c, d, n]
+   tail that PseudoBinomialPairQ compares. */
+%mr_pseudoRoot(u, n) := block([],
+  if n = 2 then sqrt(u)
+  else if oddp(n) and is(u < 0) then -(-u)^(1/n)
+  else u^(1/n))$
+
+/* Rubi :1524  PseudoBinomialParts[u, x] — [a, 1, c, d, n] iff u is a
+   polynomial of degree n > 2 of the form a + b*(c + d*x)^n with a, b
+   nonzero. Expon is read by %mr_degree under the %mr_polynomialQ gate
+   (the only form this helper accepts). */
+%mr_pseudoBinomial_parts(u, x) := block([n, d, c, a],
+  if %mr_polynomialQ(u, x) then (
+    n : %mr_degree(u, x),
+    if is(n > 2) then (
+      d : %mr_pseudoRoot(%mr_coeff(u, x, n), n),
+      c : %mr_coeff(u, x, n - 1)/(n*d^(n - 1)),
+      a : %mr_simp(u - expand((c + d*x)^n)),
+      if %mr_neQ(a, 0) and freeof(x, a)
+      then [a, 1, c, d, n]
+      else false
+    )
+    else false
+  )
+  else false)$
+
+/* Rubi :1507  PseudoBinomialPairQ[u, v, x] — both have PseudoBinomialParts
+   and the same [c, d, n] tail. The .m uses IdentityQ on the tail; the port
+   keeps the exact-structure reading (loose %mr_eqQ would over-accept
+   distinct symbolic constants). */
+%mr_pseudoBinomialPairQ(u, v, x) := block([l1, l2],
+  l1 : %mr_pseudoBinomial_parts(u, x),
+  if l1 = false then false
+  else (
+    l2 : %mr_pseudoBinomial_parts(v, x),
+    if l2 = false then false
+    else %mr_b(part(l1, 3) = part(l2, 3))
+         and %mr_b(part(l1, 4) = part(l2, 4))
+         and %mr_b(part(l1, 5) = part(l2, 5))
+  ))$
+
+/* Rubi :303  InverseFunctionQ[u]. The Maxima head set follows the .m
+   $InverseTrigFunctions / $InverseHyperbolicFunctions lists; the two-arg
+   inverse tangent is atan2 (absent from the one-arg list, so the .m
+   Length[u] <= 1 gate is met structurally). */
+%mr_inverseFunctionQ(u) := block([v],
+  v : if %mr_atomQ(u) then u else op(u),
+  if is(v = 'log) then true
+  else if not %mr_atomQ(u) and length(u) <= 1
+    and member(v, ['asin, 'acos, 'atan, 'acot, 'asec, 'acsc]) # false
+  then true
+  else if not %mr_atomQ(u)
+    and member(v, ['asinh, 'acosh, 'atanh, 'acoth, 'asech, 'acsch]) # false
+  then true
+  else if not %mr_atomQ(u)
+    and (is(v = 'mod) or is(v = 'polylog) or is(v = 'productlog))
+  then true
+  else false)$
+
+/* Rubi :1681  AlgebraicFunctionQ[u, x, flag_ = False]. The generated
+   class-1 call is the 2-arg form, so flag is false: a power counts only
+   with an explicit rational exponent (the 'sqrt node is the collapsed
+   1/2 power). */
+%mr_algebraicFunctionQ(u, x) := block([i, ok],
+  if %mr_atomQ(u) or freeof(x, u) then true
+  else if op(u) = "/"
+  then %mr_algebraicFunctionQ(part(u, 1), x)
+       and %mr_algebraicFunctionQ(part(u, 2), x)
+  else if op(u) = "-"
+  then %mr_algebraicFunctionQ(part(u, 1), x)
+  else if op(u) = "^"
+  then %mr_algebraicFunctionQ(part(u, 1), x)
+       and %mr_rationalQ(part(u, 2))
+  else if op(u) = 'sqrt
+  then %mr_algebraicFunctionQ(part(u, 1), x)
+  else if op(u) = "*" or op(u) = "+" then (
+    ok : true,
+    for i : 1 thru length(u) do
+      if %mr_algebraicFunctionQ(part(u, i), x) = false then ok : false,
+    ok
+  )
+  else if op(u) = "[" then (
+    ok : true,
+    for i : 1 thru length(u) do
+      if %mr_algebraicFunctionQ(part(u, i), x) = false then ok : false,
+    ok
+  )
+  else false)$
+
 mr_witness_utils() := true$
