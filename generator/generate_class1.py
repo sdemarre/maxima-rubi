@@ -702,7 +702,18 @@ def _emit_matchq(arglist, ctx):
     the pattern UNQUOTED so computed parts (renamed outer captures)
     evaluate at call time while the pattern vars stay literal (a bare
     symbol not matchdeclare'd in the active pattern is a literal in
-    Maxima). Task 7 ports %mr_matchQ. FIX E7."""
+    Maxima), and the cond as a LAMBDA over the binding list:
+    lambda([%mr_mqb], <cond with each marker m rewritten to
+    %mr_mk(m, %mr_mqb)>). Maxima evaluates call arguments eagerly, so
+    an unquoted cond would evaluate its marker-dependent parts
+    (IntegerQ[m], m > 1, FreeQ[m, x]) on the unbound marker symbols
+    before the match; a quote does not help either — this build's ev()
+    does not strip quotes (measured 2026-08-23, task 7a A3). A lambda
+    body is held until called and keeps the lexical environment, so
+    the cond's outer-capture references resolve when the matcher calls
+    it with the binding list. Named lookups (%mr_mk) keep the marker
+    order decoupled between generator and matcher. Task 7 ports
+    %mr_matchQ. FIX E7."""
     key, n = ctx["key"], ctx["n"]
     if len(arglist) != 2:
         raise GenError(f"{key} r{n}: MatchQ arity {len(arglist)}")
@@ -727,10 +738,20 @@ def _emit_matchq(arglist, ctx):
     ctx["markers"] = mark
     try:
         pat_txt = translate(pat, ctx)
-        cond_txt = translate(mcond, ctx) if mcond else "true"
+        cond_txt = translate(mcond, ctx) if mcond else ""
     finally:
         ctx["markers"] = saved
-    return f"%mr_matchQ({u_txt}, {pat_txt}, {cond_txt})"
+    if not cond_txt:
+        cond_emit = "true"
+    else:
+        # rewrite each marker to a named lookup in the binding list the
+        # matcher passes; \b...\b guards the prefix-collision case
+        # (one marker name beginning with another, e.g. Q vs Qx)
+        for m in mark.values():
+            cond_txt = re.sub(rf"\b{re.escape(m)}\b",
+                              f"%mr_mk({m}, %mr_mqb)", cond_txt)
+        cond_emit = f"lambda([%mr_mqb], {cond_txt})"
+    return f"%mr_matchQ({u_txt}, {pat_txt}, {cond_emit})"
 
 def emit_head(head, arglist, ctx):
     """Special forms first, then a plain renamed head(arglist)."""

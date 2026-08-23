@@ -335,6 +335,326 @@ rubi(f, x) := mr_int(f, x)$
       s : s + %mr_leafCount(part(e, i)),
     s))$
 
+/* ---- MatchQ structural matcher (Task 7a cluster A3) ------------------
+ * Rubi's MatchQ[u, pattern /; cond] (Mathematica builtin). matchq is a
+ * NOUN in this build (measured 2026-08-20), so the matcher is custom.
+ * Contract (generate_class1.py _emit_matchq, FIX E7): the generator
+ * emits the uniform 3-arg call %mr_matchQ(u, pattern, cond) with the
+ * pattern UNQUOTED — its pattern variables are fresh marker atoms
+ * _mr_<key>_r<n>mq<k>_<v> (mints per file/rule/occurrence/var), which
+ * stay literal at call time (a bare symbol not matchdeclare'd in an
+ * active defmatch pattern is just a symbol), while computed parts
+ * (renamed outer captures, %mr_expon results) evaluate to values.
+ *
+ * Matching semantics (the operational reading of the 17 class-1 call
+ * sites; DEVIATION documented where the .m MatchQ corner is
+ * unmeasurable without Mathematica):
+ *  - a marker atom matches ANY sub-expression and binds it;
+ *  - a literal atom (x, a number, a capture value) must be =-equal
+ *    (this build's is(a = b) is true/false, never unknown — RC1);
+ *  - a "*" (or "+") pattern matches its expression by FLAT PARTITION:
+ *    the expression's factors (a power-less single term counts as one
+ *    factor) are split into consecutive groups, one per pattern
+ *    factor. Times/Plus are commutative and Maxima stores each side in
+ *    its own canonical factor order (measured 2026-08-23: x^m*u
+ *    stores [u, x^m] — a symbolic-exponent power sorts after a bare
+ *    symbol — while x^3*y stores [x^3, y]), so EVERY permutation of
+ *    the pattern factors is tried (the stored order first) — the
+ *    Rubi/Mathematica orderless reading;
+ *  - NON-EMPTY groups are tried before the empty one (the Mathematica
+ *    preference: a real factor before the Optional fallback — this is
+ *    what gives the Rubi-faithful a=c, b=d, v=y binding at the 1.3.4
+ *    site instead of a=0, b=1, v=c+d*y);
+ *  - an EMPTY group means the pattern factor is absent (the .m
+ *    optional reading, a_./u_./r_.): a marker takes the group
+ *    identity (1 for "*", 0 for "+"); a power with a marker exponent
+ *    records the Optional default (exponent := 1) and skips its base;
+ *    a literal or literal-power factor CANNOT be absent;
+ *  - a "^" pattern against a power-less (real) expression takes the
+ *    expression as base with exponent 1 (Maxima drops ^1 — the
+ *    optional-r_. reading), binding a marker exponent to 1;
+ *  - a marker re-occurring in one pattern must bind consistently.
+ * On a successful match the cond — emitted by the generator as
+ * lambda([%mr_mqb], <cond with each marker rewritten to a %mr_mk(m,
+ * %mr_mqb) lookup>) or bare true — is called with the binding list
+ * (Maxima evaluates call arguments eagerly and this build's ev() does
+ * not strip quotes, so a plain or quoted cond cannot be held —
+ * measured 2026-08-23); the match stands iff the result is true
+ * (false, an error, or a cond that is not true — a pending predicate
+ * noun — fails closed, the existing pending-noun contract). KNOWN
+ * LIMITATION: the cond is not threaded through the partition
+ * backtracking — the FIRST successful binding decides, so a cond that
+ * fails on the first binding but would pass on a later one is a false
+ * negative (no class-1 site exercises this: at the integerp(m) guard
+ * sites every structural binding of a polyQ-polynomial gives an
+ * integer m). */
+
+/* a pattern marker: an atom the generator minted for a MatchQ pattern
+ * variable — name shape _mr_<key>_r<n>mq<k>_<v> (generate_class1.py
+ * _emit_matchq). Distinguishes markers from rule captures
+ * (_mr_<key>_r<n>_<v> — no "mq") and pattern literals (x, numbers,
+ * computed values). The "mq" of a real marker is flanked by DIGITS
+ * (the rule number n before, the occurrence k after); a capture can
+ * never have that (the char before its var name is always "_").
+ *
+ * This build's string surface is thin and hostile (measured 2026-08-23):
+ * stringposition / stringmatch / char / stringlength are NOUNS;
+ * length() on a string is a hard Lisp error ("not of type LIST");
+ * = / # on strings NEVER evaluate on their own — they stay equations
+ * outside boolean contexts (if / and / or / is(), where they do
+ * evaluate); substring(s, a, b) is END-EXCLUSIVE. So: the length is a
+ * char scan that stops on the substring out-of-range error, and every
+ * string comparison is an is(... = ...) inside a boolean context. */
+%mr_digit1Q(c1) := is(c1 = "0") or is(c1 = "1") or is(c1 = "2")
+  or is(c1 = "3") or is(c1 = "4") or is(c1 = "5")
+  or is(c1 = "6") or is(c1 = "7") or is(c1 = "8") or is(c1 = "9")$
+
+/* the char window at i..i+2 of ss (1-based) is <digit>"mq"<digit> */
+%mr_mq_hit(ss, i) := block([],
+  if not is(substring(ss, i + 1, i + 3) = "mq") then false
+  else if %mr_digit1Q(substring(ss, i, i + 1))
+    and %mr_digit1Q(substring(ss, i + 3, i + 4))
+  then true else false)$
+
+/* memo: the same atoms (x, the markers, the captures) are re-tested on
+ * every rule application — member() in this build returns a boolean
+ * (true/false, not the sublist — measured 2026-08-23), so two lists
+ * give a value cache. */
+%mr_marker_yes : []$
+%mr_marker_no : []$
+
+%mr_isMQMarker(s) := block([r],
+  if not atom(s) or numberp(s) then false
+  else if member(s, %mr_marker_yes) then true
+  else if member(s, %mr_marker_no) then false
+  else (
+    r : %mr_isMQMarker_name(s),
+    if r then %mr_marker_yes : append(%mr_marker_yes, [s])
+    else %mr_marker_no : append(%mr_marker_no, [s]),
+    r))$
+
+/* the actual name test. The length is a predicate scan — break does
+ * not take effect inside a comma-sequence while body in this build
+ * (measured 2026-08-23); the scan's final out-of-range probe prints
+ * one swallowed error line per DISTINCT symbol (the memo absorbs the
+ * repeats). substring(start > length) errors; start <= length clamps,
+ * so the prefix probe below can never error on a non-empty name. */
+%mr_isMQMarker_name(s) := block([ss, i, L],
+  ss : string(s),
+  i : 1,
+  while length(errcatch(substring(ss, i, i + 1))) = 1 do i : i + 1,
+  L : i - 1,
+  if L < 4 then false
+  else if not is(substring(ss, 1, 5) = "_mr_") then false
+  else (
+    i : 1,
+    while i <= L - 3 and not %mr_mq_hit(ss, i) do i : i + 1,
+    is(i <= L - 3)))$
+
+/* bind a marker to a value in the binding list [marker = value, ...];
+ * a re-bound marker must agree. false on conflict. (No return() inside
+ * loops — loop-level return landmine, task 4 F1.) */
+%mr_mq_bind(B, m, v) := block([i, found],
+  i : 1, found : false,
+  while i <= length(B) and not found do (
+    if is(part(part(B, i), 1) = m) then found : true
+    else i : i + 1
+  ),
+  if found then is(part(part(B, i), 2) = v) and B
+  else append(B, [m = v]))$
+
+/* match two sub-patterns in sequence, threading the bindings. Success
+ * values are always binding lists (a list is non-atom; false is the
+ * only atom a match returns — = / # on lists never evaluate on their
+ * own in this build, so success is tested with atom()). */
+%mr_mq_seq(P1, E1, P2, E2, B) := block([b],
+  b : %mr_mq_match(P1, E1, B),
+  if atom(b) then false
+  else %mr_mq_match(P2, E2, b))$
+
+/* match pattern factor P against an ABSENT group — the empty
+ * partition group, the Optional u_. reading: the factor is simply not
+ * there. NOT the powerless rule in %mr_mq_match (a real E with no
+ * power, where the base must still match): here the base is skipped.
+ * A marker takes the group identity (1 for "*", 0 for "+"); a literal
+ * must already BE the identity; a power with a marker exponent records
+ * the Optional default (exponent := 1); a nested same-op sub-pattern
+ * must itself be absent factor by factor. A sub-pattern with a literal
+ * part (g_*x^2) cannot be absent — the literal has no default. */
+%mr_mq_absent(P, opname, B) := block([id],
+  id : if opname = "*" then 1 else 0,
+  if atom(P) then (
+    if %mr_isMQMarker(P) then %mr_mq_bind(B, P, id)
+    else if is(P = id) then B else false
+  )
+  elseif op(P) = "^" then (
+    if %mr_isMQMarker(part(P, 2)) then %mr_mq_bind(B, part(P, 2), 1)
+    else false
+  )
+  elseif op(P) = opname then %mr_mq_absent_seq(P, 1, opname, B)
+  else false)$
+
+%mr_mq_absent_seq(P, i, opname, B) := block([b],
+  if i > length(P) then B
+  else (
+    b : %mr_mq_absent(part(P, i), opname, B),
+    if atom(b) then false
+    else %mr_mq_absent_seq(P, i + 1, opname, b)))$
+
+/* the product (or sum) of ef factors j..k-1; the empty group is the
+ * group identity (1 for "*", 0 for "+") */
+%mr_mq_group(ef, j, k, opname) := block([i, v],
+  if k = j then (if opname = "*" then 1 else 0)
+  else (
+    v : part(ef, j),
+    for i : j + 1 thru k - 1 do
+      v : if opname = "*" then v * part(ef, i) else v + part(ef, i),
+    v))$
+
+/* insert h at position i of list L (1..length(L) + 1) */
+%mr_perm_insert(h, L, i) := block([j, out],
+  out : [],
+  for j : 1 thru i - 1 do out : append(out, [part(L, j)]),
+  out : append(out, [h]),
+  for j : i thru length(L) do out : append(out, [part(L, j)]),
+  out)$
+
+/* all permutations of L, the identity (stored) order first —
+ * insert first(L) at every position of each permutation of rest(L);
+ * n is tiny (the class-1 patterns carry at most ~5 factors), so the
+ * plain n! enumeration is fine */
+%mr_perm(L) := block([P, i, j, R],
+  if length(L) <= 1 then [L]
+  else (
+    P : %mr_perm(rest(L)),
+    R : [],
+    for i : 1 thru length(P) do
+      for j : 1 thru length(L) do
+        R : append(R, [%mr_perm_insert(first(L), part(P, i), j)]),
+    R))$
+
+/* pattern factors pf[i..] vs expression factors ef[j..]: a consecutive
+ * partition, backtracking over the group sizes. Non-empty groups are
+ * tried first and the empty (Optional-identity) group LAST: that is
+ * the Mathematica preference (a real factor before the Optional
+ * fallback), and it is what gives the Rubi-faithful binding at the
+ * 1.3.4 site — a_ + b_*v_ vs c + d*y binds a=c, b=d, v=y, not
+ * a=0, b=1, v=c+d*y. Success values are binding lists (non-atom);
+ * false is the only atom a match returns, so the loop tests success
+ * with atom() (= / # on lists never evaluate on their own in this
+ * build — measured 2026-08-23). */
+%mr_mq_part(pf, i, ef, j, B, opname) := block([k, b, res],
+  if i > length(pf) then (if is(j = length(ef) + 1) then B else false)
+  else (
+    res : false, k : j + 1,
+    while atom(res) and k <= length(ef) + 1 do (
+      b : %mr_mq_match(part(pf, i), %mr_mq_group(ef, j, k, opname), B),
+      if atom(b) then k : k + 1
+      else (
+        res : %mr_mq_part(pf, i + 1, ef, k, b, opname),
+        if atom(res) then k : k + 1
+      )),
+    if atom(res) then (
+      b : %mr_mq_absent(part(pf, i), opname, B),
+      if atom(b) then false else %mr_mq_part(pf, i + 1, ef, j, b, opname)
+    ) else res))$
+
+/* flat "*" / "+" match: the expression's factors (a non-flat single
+ * term is one factor) partitioned over the pattern's factors.
+ * Times and Plus are commutative, and Maxima stores each side in its
+ * own canonical factor order — measured 2026-08-23: x^m*u stores as
+ * [u, x^m] (a symbolic-exponent power sorts AFTER a bare symbol)
+ * while x^3*y stores as [x^3, y] — so a stored-order partition
+ * depends on where the long _mr_ marker names happen to sort, and
+ * misses matches the Rubi (Mathematica) orderless matcher finds
+ * (x^3*y vs x^m*u must match with m=3, u=y). Try every permutation
+ * of the pattern factors, the stored (identity) order first. */
+%mr_mq_flat(P, E, B, opname) := block([ef, i, pf, perm, r],
+  pf : [],
+  for i : 1 thru length(P) do pf : append(pf, [part(P, i)]),
+  if (opname = "*" and (atom(E) or not is(op(E) = "*")))
+    or (opname = "+" and (atom(E) or not is(op(E) = "+")))
+  then ef : [E]
+  else (
+    ef : [],
+    for i : 1 thru length(E) do ef : append(ef, [part(E, i)])
+  ),
+  r : false,
+  for perm in %mr_perm(pf) do
+    if atom(r) then
+      r : %mr_mq_part(perm, 1, ef, 1, B, opname),
+  r)$
+
+%mr_mq_match(P, E, B) := block([],
+  if atom(P) then (
+    if %mr_isMQMarker(P) then %mr_mq_bind(B, P, E)
+    else if is(P = E) then B else false
+  )
+  elseif op(P) = "*" then %mr_mq_flat(P, E, B, "*")
+  elseif op(P) = "+" then %mr_mq_flat(P, E, B, "+")
+  elseif op(P) = "^" then (
+    if not atom(E) and op(E) = "^" then
+      %mr_mq_seq(part(P, 1), part(E, 1), part(P, 2), part(E, 2), B)
+    else (
+      /* power-less E = exponent 1 (Maxima drops ^1): a literal 1
+         exponent or a marker exponent (which binds 1 — the .m
+         optional r_. reading) */
+      if is(part(P, 2) = 1) then
+        %mr_mq_match(part(P, 1), E, B)
+      elseif %mr_isMQMarker(part(P, 2)) then
+        block([b],
+          b : %mr_mq_bind(B, part(P, 2), 1),
+          if atom(b) then false
+          else %mr_mq_match(part(P, 1), E, b))
+      else false
+    )
+  )
+  else false)$
+
+/* lookup a marker's bound value in the binding list
+ * [m1 = v1, m2 = v2, ...]; false if absent (a cond that references
+ * an unmatched marker fails closed) */
+%mr_mk(m, B) := block([i, r, found],
+  i : 1, r : false, found : false,
+  while i <= length(B) and not found do
+    if is(part(part(B, i), 1) = m) then block([],
+      r : part(part(B, i), 2), found : true)
+    else i : i + 1,
+  r)$
+
+/* Rubi's MatchQ[u, pattern /; cond] — the public 3-arg form the
+ * generator emits (FIX E7). Maxima evaluates call arguments eagerly,
+ * so the generator emits a non-empty cond as a LAMBDA taking the
+ * binding list: lambda([%mr_mqb], <cond with each marker m rewritten
+ * to %mr_mk(m, %mr_mqb)>); an empty cond is bare true. The lambda
+ * body is held until called (measured 2026-08-23, task 7a A3: an
+ * unquoted cond evaluates its marker-dependent parts — integerp(m),
+ * is(m > 1), freeof(x, m) — on the unbound marker symbols before the
+ * match; and this build's ev() does not strip quotes, so the
+ * quote-based variant is dead). The closure also preserves the
+ * lexical environment, so the cond's references to the OUTER rule
+ * captures (a, b, n, ...) resolve to the cond function's locals at
+ * call time. On a successful match the closure is called with the
+ * binding list; false on no match, on a closure error, or a cond that
+ * is not true (unknown / a pending predicate noun fails closed — the
+ * existing pending-noun contract). No marker ordering is coupled
+ * between generator and matcher: every marker reference is a named
+ * lookup, not a positional argument.
+ *
+ * The cond = true guard is measured (2026-08-23): true = true
+ * evaluates to true, while a lambda = true stays a pending relation,
+ * which Maxima's if treats as false — so the bare-true and closure
+ * cases split without is() (is(lambda = true) would risk unknown). */
+%mr_matchQ(u, pattern, cond) := block([b, r],
+  b : %mr_mq_match(pattern, u, []),
+  if atom(b) then false
+  else if cond = true then true
+  else (
+    r : errcatch(cond(b)),
+    if r = [] then false
+    else if is(first(r)) = true then true
+    else false))$
+
 /* ---- coefficient / degree machinery --------------------------------
  * Maxima's coefficient/degree/maxexpt are NOUNS in this build (T4 §6,
  * re-measured 2026-08-20), so %mr_coeff and the degree-based %mr_polyQ

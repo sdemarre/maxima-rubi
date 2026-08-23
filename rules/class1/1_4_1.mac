@@ -70,7 +70,7 @@ matchdeclare(_mr_1_4_1_r4_u, true)$
 defmatch(_mr_pat_1_4_1_r4, _mr_1_4_1_r4_u*_mr_1_4_1_r4_Px, x)$
 _mr_cond_1_4_1_r4(mm, x) := block([_mr_1_4_1_r4_Px, _mr_1_4_1_r4_u],
   _mr_1_4_1_r4_Px : geteqR(mm, '_mr_1_4_1_r4_Px), _mr_1_4_1_r4_u : geteqR(mm, '_mr_1_4_1_r4_u),
-  %mr_polyQ(_mr_1_4_1_r4_Px, x)  and  is(%mr_expon(_mr_1_4_1_r4_Px, x) > 1)  and  %mr_neQ(%mr_coeff(_mr_1_4_1_r4_Px, x, 0), 0)  and  not(%mr_matchQ(_mr_1_4_1_r4_Px, _mr_1_4_1_r4mq1_a*_mr_1_4_1_r4mq1_v^%mr_expon(_mr_1_4_1_r4_Px, x), freeof(x, _mr_1_4_1_r4mq1_a)  and  %mr_linearQ(_mr_1_4_1_r4mq1_v, x))))$
+  %mr_polyQ(_mr_1_4_1_r4_Px, x)  and  is(%mr_expon(_mr_1_4_1_r4_Px, x) > 1)  and  %mr_neQ(%mr_coeff(_mr_1_4_1_r4_Px, x, 0), 0)  and  not(%mr_matchQ(_mr_1_4_1_r4_Px, _mr_1_4_1_r4mq1_a*_mr_1_4_1_r4mq1_v^%mr_expon(_mr_1_4_1_r4_Px, x), lambda([%mr_mqb], freeof(x, %mr_mk(_mr_1_4_1_r4mq1_a, %mr_mqb))  and  %mr_linearQ(%mr_mk(_mr_1_4_1_r4mq1_v, %mr_mqb), x)))))$
 _mr_repl_1_4_1_r4(mm, x) := block([_mr_1_4_1_r4_Px, _mr_1_4_1_r4_u],
   _mr_1_4_1_r4_Px : geteqR(mm, '_mr_1_4_1_r4_Px), _mr_1_4_1_r4_u : geteqR(mm, '_mr_1_4_1_r4_u),
   block([a, b], a : %mr_rt(%mr_coeff(_mr_1_4_1_r4_Px, x, 0), %mr_expon(_mr_1_4_1_r4_Px, x)), b : %mr_rt(%mr_coeff(_mr_1_4_1_r4_Px, x, %mr_expon(_mr_1_4_1_r4_Px, x)), %mr_expon(_mr_1_4_1_r4_Px, x)), (if is(%mr_eqQ(_mr_1_4_1_r4_Px, (a+b*x)^%mr_expon(_mr_1_4_1_r4_Px, x))) = true then mr_int(_mr_1_4_1_r4_u*(a+b*x)^%mr_expon(_mr_1_4_1_r4_Px, x), x) else false)))$
@@ -146,7 +146,7 @@ matchdeclare(_mr_1_4_1_r9_u, true)$
 defmatch(_mr_pat_1_4_1_r9, (_mr_1_4_1_r9_c*x)^_mr_1_4_1_r9_m*_mr_1_4_1_r9_u, x)$
 _mr_cond_1_4_1_r9(mm, x) := block([_mr_1_4_1_r9_c, _mr_1_4_1_r9_m, _mr_1_4_1_r9_u],
   _mr_1_4_1_r9_c : geteqR(mm, '_mr_1_4_1_r9_c), _mr_1_4_1_r9_m : geteqR(mm, '_mr_1_4_1_r9_m), _mr_1_4_1_r9_u : geteqR(mm, '_mr_1_4_1_r9_u),
-  freeof(x, _mr_1_4_1_r9_c) and freeof(x, _mr_1_4_1_r9_m)  and  %mr_sumQ(_mr_1_4_1_r9_u)  and  not(%mr_linearQ(_mr_1_4_1_r9_u, x))  and  not(%mr_matchQ(_mr_1_4_1_r9_u, _mr_1_4_1_r9mq1_a+_mr_1_4_1_r9mq1_b*_mr_1_4_1_r9mq1_v, freeof(x, _mr_1_4_1_r9mq1_a) and freeof(x, _mr_1_4_1_r9mq1_b)  and  %mr_inverseFunctionQ(_mr_1_4_1_r9mq1_v))))$
+  freeof(x, _mr_1_4_1_r9_c) and freeof(x, _mr_1_4_1_r9_m)  and  %mr_sumQ(_mr_1_4_1_r9_u)  and  not(%mr_linearQ(_mr_1_4_1_r9_u, x))  and  not(%mr_matchQ(_mr_1_4_1_r9_u, _mr_1_4_1_r9mq1_a+_mr_1_4_1_r9mq1_b*_mr_1_4_1_r9mq1_v, lambda([%mr_mqb], freeof(x, %mr_mk(_mr_1_4_1_r9mq1_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_1_4_1_r9mq1_b, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_1_4_1_r9mq1_v, %mr_mqb))))))$
 _mr_repl_1_4_1_r9(mm, x) := block([_mr_1_4_1_r9_c, _mr_1_4_1_r9_m, _mr_1_4_1_r9_u],
   _mr_1_4_1_r9_c : geteqR(mm, '_mr_1_4_1_r9_c), _mr_1_4_1_r9_m : geteqR(mm, '_mr_1_4_1_r9_m), _mr_1_4_1_r9_u : geteqR(mm, '_mr_1_4_1_r9_u),
   mr_int(%mr_expandIntegrand((_mr_1_4_1_r9_c*x)^_mr_1_4_1_r9_m*_mr_1_4_1_r9_u, x), x))$
@@ -293,7 +293,7 @@ defmatch(_mr_pat_1_4_1_r16, _mr_1_4_1_r16_Px*(_mr_1_4_1_r16_a+_mr_1_4_1_r16_b*x^
 _mr_cond_1_4_1_r16(mm, x) := block([_mr_1_4_1_r16_Px, _mr_1_4_1_r16_a, _mr_1_4_1_r16_b, _mr_1_4_1_r16_n, _mr_1_4_1_r16_p],
   _mr_1_4_1_r16_Px : geteqR(mm, '_mr_1_4_1_r16_Px), _mr_1_4_1_r16_a : geteqR(mm, '_mr_1_4_1_r16_a), _mr_1_4_1_r16_b : geteqR(mm, '_mr_1_4_1_r16_b), _mr_1_4_1_r16_n : geteqR(mm, '_mr_1_4_1_r16_n), _mr_1_4_1_r16_p : geteqR(mm, '_mr_1_4_1_r16_p),
   freeof(x, _mr_1_4_1_r16_a) and freeof(x, _mr_1_4_1_r16_b)  and  %mr_polyQ(_mr_1_4_1_r16_Px, x)  and  is(_mr_1_4_1_r16_p > 1)  and  is(_mr_1_4_1_r16_n > 1)  and  %mr_neQ(%mr_coeff(_mr_1_4_1_r16_Px, x, _mr_1_4_1_r16_n-1), 0)  and  %mr_neQ(_mr_1_4_1_r16_Px, %mr_coeff(_mr_1_4_1_r16_Px, x, _mr_1_4_1_r16_n-1)*x^(_mr_1_4_1_r16_n-1))  and  
-  not(%mr_matchQ(_mr_1_4_1_r16_Px, _mr_1_4_1_r16mq1_Qx*(_mr_1_4_1_r16mq1_c+_mr_1_4_1_r16mq1_d*x^_mr_1_4_1_r16mq1_m)^_mr_1_4_1_r16mq1_q, freeof(x, _mr_1_4_1_r16mq1_c) and freeof(x, _mr_1_4_1_r16mq1_d)  and  %mr_polyQ(_mr_1_4_1_r16mq1_Qx, x)  and  is(_mr_1_4_1_r16mq1_q > 1)  and  is(_mr_1_4_1_r16mq1_m > 1)  and  %mr_neQ(%mr_coeff(_mr_1_4_1_r16mq1_Qx*(_mr_1_4_1_r16_a+_mr_1_4_1_r16_b*x^_mr_1_4_1_r16_n)^_mr_1_4_1_r16_p, x, _mr_1_4_1_r16mq1_m-1), 0)  and  is(_mr_1_4_1_r16mq1_m*_mr_1_4_1_r16mq1_q > _mr_1_4_1_r16_n*_mr_1_4_1_r16_p))))$
+  not(%mr_matchQ(_mr_1_4_1_r16_Px, _mr_1_4_1_r16mq1_Qx*(_mr_1_4_1_r16mq1_c+_mr_1_4_1_r16mq1_d*x^_mr_1_4_1_r16mq1_m)^_mr_1_4_1_r16mq1_q, lambda([%mr_mqb], freeof(x, %mr_mk(_mr_1_4_1_r16mq1_c, %mr_mqb)) and freeof(x, %mr_mk(_mr_1_4_1_r16mq1_d, %mr_mqb))  and  %mr_polyQ(%mr_mk(_mr_1_4_1_r16mq1_Qx, %mr_mqb), x)  and  is(%mr_mk(_mr_1_4_1_r16mq1_q, %mr_mqb) > 1)  and  is(%mr_mk(_mr_1_4_1_r16mq1_m, %mr_mqb) > 1)  and  %mr_neQ(%mr_coeff(%mr_mk(_mr_1_4_1_r16mq1_Qx, %mr_mqb)*(_mr_1_4_1_r16_a+_mr_1_4_1_r16_b*x^_mr_1_4_1_r16_n)^_mr_1_4_1_r16_p, x, %mr_mk(_mr_1_4_1_r16mq1_m, %mr_mqb)-1), 0)  and  is(%mr_mk(_mr_1_4_1_r16mq1_m, %mr_mqb)*%mr_mk(_mr_1_4_1_r16mq1_q, %mr_mqb) > _mr_1_4_1_r16_n*_mr_1_4_1_r16_p)))))$
 _mr_repl_1_4_1_r16(mm, x) := block([_mr_1_4_1_r16_Px, _mr_1_4_1_r16_a, _mr_1_4_1_r16_b, _mr_1_4_1_r16_n, _mr_1_4_1_r16_p],
   _mr_1_4_1_r16_Px : geteqR(mm, '_mr_1_4_1_r16_Px), _mr_1_4_1_r16_a : geteqR(mm, '_mr_1_4_1_r16_a), _mr_1_4_1_r16_b : geteqR(mm, '_mr_1_4_1_r16_b), _mr_1_4_1_r16_n : geteqR(mm, '_mr_1_4_1_r16_n), _mr_1_4_1_r16_p : geteqR(mm, '_mr_1_4_1_r16_p),
   %mr_coeff(_mr_1_4_1_r16_Px, x, _mr_1_4_1_r16_n-1)*(_mr_1_4_1_r16_a+_mr_1_4_1_r16_b*x^_mr_1_4_1_r16_n)^(_mr_1_4_1_r16_p+1)/(_mr_1_4_1_r16_b*_mr_1_4_1_r16_n*(_mr_1_4_1_r16_p+1)) + 
@@ -1371,7 +1371,7 @@ matchdeclare(_mr_1_4_1_r68_u, true)$
 defmatch(_mr_pat_1_4_1_r68, _mr_1_4_1_r68_u*_mr_1_4_1_r68_Px, x)$
 _mr_cond_1_4_1_r68(mm, x) := block([_mr_1_4_1_r68_Px, _mr_1_4_1_r68_u],
   _mr_1_4_1_r68_Px : geteqR(mm, '_mr_1_4_1_r68_Px), _mr_1_4_1_r68_u : geteqR(mm, '_mr_1_4_1_r68_u),
-  %mr_polyPowerQ(_mr_1_4_1_r68_Px, x, 2)  and  is(%mr_expon(_mr_1_4_1_r68_Px, x, 2) > 1)  and  %mr_neQ(%mr_coeff(_mr_1_4_1_r68_Px, x, 2, 0), 0)  and  not(%mr_matchQ(_mr_1_4_1_r68_Px, _mr_1_4_1_r68mq1_a*_mr_1_4_1_r68mq1_v^%mr_expon(_mr_1_4_1_r68_Px, x, 2), freeof(x, _mr_1_4_1_r68mq1_a)  and  %mr_binomialQ(_mr_1_4_1_r68mq1_v, x, 2))))$
+  %mr_polyPowerQ(_mr_1_4_1_r68_Px, x, 2)  and  is(%mr_expon(_mr_1_4_1_r68_Px, x, 2) > 1)  and  %mr_neQ(%mr_coeff(_mr_1_4_1_r68_Px, x, 2, 0), 0)  and  not(%mr_matchQ(_mr_1_4_1_r68_Px, _mr_1_4_1_r68mq1_a*_mr_1_4_1_r68mq1_v^%mr_expon(_mr_1_4_1_r68_Px, x, 2), lambda([%mr_mqb], freeof(x, %mr_mk(_mr_1_4_1_r68mq1_a, %mr_mqb))  and  %mr_binomialQ(%mr_mk(_mr_1_4_1_r68mq1_v, %mr_mqb), x, 2)))))$
 _mr_repl_1_4_1_r68(mm, x) := block([_mr_1_4_1_r68_Px, _mr_1_4_1_r68_u],
   _mr_1_4_1_r68_Px : geteqR(mm, '_mr_1_4_1_r68_Px), _mr_1_4_1_r68_u : geteqR(mm, '_mr_1_4_1_r68_u),
   block([a, b], a : %mr_rt(%mr_coeff(_mr_1_4_1_r68_Px, x, 2, 0), %mr_expon(_mr_1_4_1_r68_Px, x, 2)), b : %mr_rt(%mr_coeff(_mr_1_4_1_r68_Px, x, 2, %mr_expon(_mr_1_4_1_r68_Px, x, 2)), %mr_expon(_mr_1_4_1_r68_Px, x, 2)), (if is(%mr_eqQ(_mr_1_4_1_r68_Px, (a+b*x^2)^%mr_expon(_mr_1_4_1_r68_Px, x, 2))) = true then mr_int(_mr_1_4_1_r68_u*(a+b*x^2)^%mr_expon(_mr_1_4_1_r68_Px, x, 2), x) else false)))$
