@@ -359,7 +359,8 @@ rubi(f, x) := mr_int(f, x)$
  * exactly: EqQ[Expon[u,x^v],n] is max k/v = n (strict). The
  * NeQ[Coeff[u,x^v,n],0] clause is subsumed — when d = n some term has
  * k/v = n, and its coefficient is structurally nonzero after expand
- * (a zero coefficient would drop the term). */
+ * (a zero coefficient would drop the term). u = 0 is rejected by
+ * guard (Rubi's Expon[0,x^v] is -Infinity, so no degree form holds). */
 %mr_polyPowerQ(u, B, v) := block([t, r, i, term, k, ok],
   t : gensym("mrp"),
   r : expand(subst(t, B, u)),
@@ -393,22 +394,28 @@ rubi(f, x) := mr_int(f, x)$
     /* recompute r identically to %mr_polyPowerQ and take the maximum
        k/v (the degree in B^v); a non-monomial term cannot occur here
        (polyPowerQ true), so k # false for every term */
-    t : gensym("mrp"),
-    r : expand(subst(t, B, u)),
-    d : 0,
-    if atom(r) then (
-      k : %mr_term_xexp(r, t),
-      if k # false and k/v > d then d : k/v
-    )
-    else (
-      for i : 1 thru length(r) do (
-        term : part(r, i),
-        k : %mr_term_xexp(term, t),
-        if k # false and k/v > d then d : k/v
-      )
-    ),
-    is(d = n)
-  ))$
+     t : gensym("mrp"),
+     r : expand(subst(t, B, u)),
+     /* u = 0: Rubi's Expon[0, x^v] is -Infinity, so no degree form
+        holds (the atom-0 term would read as a degree-0 monomial and
+        over-fire at n = 0) */
+     if is(r = 0) = true then false
+     else (
+       d : 0,
+       if atom(r) then (
+         k : %mr_term_xexp(r, t),
+         if k # false and k/v > d then d : k/v
+       )
+       else (
+         for i : 1 thru length(r) do (
+           term : part(r, i),
+           k : %mr_term_xexp(term, t),
+           if k # false and k/v > d then d : k/v
+         )
+       ),
+       is(d = n)
+     )
+   ))$
 
 /* Rubi :1373  LinearQ[u,x] := PolyQ[u,x,1] (list form dropped — no
    list-valued integrands in the emitted conds) */

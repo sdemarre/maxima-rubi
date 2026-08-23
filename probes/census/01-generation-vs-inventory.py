@@ -11,7 +11,11 @@ that the total is 2710, and — the committed-output half (Task-6 review
 finding 3: the source-only check let a corrupted generated file pass) —
 that each committed rules/class1/<key>.mac exists and its
 defmatch(_mr_pat_<key>_r<N> indices are exactly 1..count, so a missing,
-empty, duplicated, or gap-having generated file fails the probe. Static
+empty, duplicated, or gap-having generated file fails the probe.
+CONTENT integrity of a rule body (pattern/cond/repl text with intact
+indices) is OUT of scope here — it rides on the parse sweep
+(probes/load_wall/probe-parse-sweep), the per-file witness, the suite,
+and regeneration diffs. Static
 — no Maxima — because the installed build cannot hold the 2710 patterns
 in one process to check them there (measured 2026-08-20,
 probes/load_wall/probe-load-wall.out); the in-suite test_census checks

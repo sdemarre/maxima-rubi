@@ -125,9 +125,10 @@ def main():
     for label, pset in (("C-tier", ctier), ("full", pending)):
         s, per = classify(rules, pset)
         decline, fire = s["cond"] + s["both"], s["repl"]
-        print(f"[{label}] decline(cond) {decline} | "
+        print(f"[{label}] decline(cond, incl. both) {decline} | "
               f"fire-noun(repl-only) {s['repl']} | both {s['both']} | "
-              f"clean {s['clean']}")
+              f"clean {s['clean']}  "
+              f"(cond-only {s['cond']}; columns overlap on 'both')")
         print(f"[{label}] top names: "
               + ", ".join(f"{n} {k}" for n, k in sorted(
                   per.items(), key=lambda kv: -kv[1])[:10]))

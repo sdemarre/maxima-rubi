@@ -204,6 +204,21 @@ three before resuming Task 7.
   21 fire-noun / 11 both / 2397 clean; full pending surface (63
   names) = 496 decline / 852 fire-noun / 1362 clean.
 
+REVIEW (2026-08-23, c25cb85..ef13464): verdict READY, no Critical /
+Important; all four ledger numbers and the "verified against the
+source" claims independently reproduced. Four Minors, all applied:
+(a) probe 02's "both" column double-counted in the printed total —
+relabeled `decline(cond, incl. both)` + cond-only printed, .out
+re-stamped; (b) `%mr_polyDegPowerQ(0, x, v, 0)` was true, Rubi false
+(Expon[0,·] = -Infinity; the atom-0 term read as a degree-0 monomial)
+— pre-existing (the `<=` code had it too), unreachable from the 15
+call sites (n literal 2/3), but fixed with a red probe: `is(r = 0) =
+true -> false` guard + zero-poly and captured-base probes, suite 76/0;
+any future `PolyQ[u, x^v, n]` port must keep rejecting u = 0;
+(c) probe 01 docstring now states content integrity is OUT of scope
+(rides on parse sweep / witness / suite / regeneration diffs);
+(d) captured-base exactness probe added (production call-site shape).
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
