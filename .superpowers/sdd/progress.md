@@ -436,9 +436,25 @@ match+degree, E generalized*, F pairs/split/misc).
     generalized (the .m PolyQ/Expon case carries NeQ[q,0]); the x^m
     shift of an ordinary trinomial is what generalizes it. 45 new
     probes; suite 376/0.
-  - NEXT: cluster F — linearPairQ (10), perfectSquareQ (3),
-    rationalFunctionQ (3), splitProduct (2), pseudoBinomialPairQ (2),
-    inverseFunctionQ (1), algebraicFunctionQ (1).
+   - Cluster F — remaining C-tier condition predicates — DONE (commit
+     b1bf223). %mr_linearPairQ (:1387),
+     %mr_rationalFunctionQ (:1578), %mr_splitProduct (:7658) with
+     %mr_sumBaseQ (:7617) special-cased for the bare `SumBaseQ` name the
+     generator emits, %mr_pseudoBinomialPairQ (:1507) over
+     %mr_pseudoBinomial_parts (:1524), %mr_inverseFunctionQ (:303),
+     %mr_algebraicFunctionQ (:1681), and the clone-gap
+     %mr_perfectSquareQ (referenced by class-1 rules but defined nowhere
+     in the pinned clone — ported as a factor-exponent square test with
+     the exact-rational corner; this build's factor(9/4) stays 9/4, so
+     exact rationals are tested by integer numerator/denominator
+     squares). PseudoBinomialParts reads Expon through %mr_degree under
+     the %mr_polynomialQ gate and uses a local %mr_pseudoRoot rather than
+     the still-unported public %mr_rt; PairQ keeps the .m IdentityQ tail
+     reading (loose %mr_eqQ would over-accept distinct symbolic
+     constants). 44 new probes; suite 420/0.
+   - NEXT: cluster G — the B-tier shim layer, starting with the
+     highest-usage pending names: rt (344 uses), expandToSum (230),
+     fracPart (181), expon (133), intPart (121).
 
 ## Minor findings (triage at final whole-branch review)
 
