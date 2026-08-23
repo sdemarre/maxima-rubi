@@ -173,12 +173,67 @@ rubi(f, x) := mr_int(f, x)$
   v : (not %mr_posQ(e)) and %mr_neQ(e, 0),
   if is(v) = true then true else false)$
 
-/* RationalQ (pulled forward from the Task 7 table slot — the
- * RemoveContentAux guard needs it): rationalp is a NOUN in this build
- * (measured, 02-support-surface S1a + re-measured 2026-08-20). */
-%mr_rationalQ(e) := block([],
+/* ---- explicit-number predicates (Task 7a) ----------------------------
+ * Rubi's IntegerQ/FractionQ/IntegersQ/RationalQ test EXPLICIT numbers
+ * (Head === Integer / Rational — a captured symbolic expression is
+ * never "explicit" no matter what it could become). Maxima keeps
+ * rationals in reduced form, so the structural test for an explicit
+ * rational is op = "/" with integer num/denom — plus the "-" wrapper,
+ * because MEASURED (2026-08-23) a negative rational is op "-" in this
+ * build (op(-1/2) = "-", num(-1/2) = -1, denom = 2). rationalp is a
+ * NOUN in this build (measured, 02-support-surface S1a).
+ *
+ * Call shape (generate_class1.py :877-884): the generator emits a 1-arg
+ * call — the scalar for one Rubi arg, a LIST for several (Rubi's
+ * IntegersQ[u__]/RationalQ[u__] are variadic) — so the ports accept
+ * scalar-or-list. FractionQ is NOT in the list-packing branch: its 83
+ * class-1 uses are all scalar. */
+
+/* scalar half of %mr_rationalQ — one explicit integer or fraction */
+%mr_rationalQ_scalar(e) := block([],
   if integerp(e) then true
-  else if not atom(e) and op(e) = "/"
+  else if not atom(e) and (op(e) = "/" or op(e) = "-")
+    and integerp(num(e)) and integerp(denom(e))
+    then true else false)$
+
+/* Rubi :97  RationalQ[u__]. Task 7a update: the committed 1-arg port
+ * answered false on the LIST calls the generator emits (49 class-1
+ * sites — silent dead rules) and on negative rationals (the "/"-only
+ * test missed the "-" wrapper); both fixed here. */
+%mr_rationalQ(e) := block([i, v],
+  if atom(e) then %mr_rationalQ_scalar(e)
+  /* a non-list non-atom (x/2, sqrt(1/2), ...) takes the scalar test —
+     the list walk must not misread a "/" node's num/denom as elements.
+     MEASURED (2026-08-23): the list op is the string "[" (not "list"). */
+  else if op(e) = "[" then (
+    v : true,
+    for i : 1 thru length(e) do
+      if %mr_rationalQ_scalar(part(e, i)) = false then v : false,
+    v
+  )
+  else %mr_rationalQ_scalar(e))$
+
+/* Rubi :70  IntegersQ[u__] — all args explicit integers */
+%mr_integersQ(u) := block([i, v],
+  if atom(u) then integerp(u)
+  else if op(u) = "[" then (
+    if length(u) = 0 then false
+    else (
+      v : true,
+      for i : 1 thru length(u) do
+        if integerp(part(u, i)) = false then v : false,
+      v)
+  )
+  else false)$
+
+/* Rubi :87  FractionQ[u__] — all args explicit PROPER fractions
+ * (Rational head, not Integer): a reduced rational in this build is a
+ * "/" or "-" node with integer num/denom and is never an integer, so
+ * the explicit-rational test minus integerp IS the proper-fraction
+ * test. */
+%mr_fractionQ(e) := block([],
+  if integerp(e) then false
+  else if not atom(e) and (op(e) = "/" or op(e) = "-")
     and integerp(num(e)) and integerp(denom(e))
     then true else false)$
 

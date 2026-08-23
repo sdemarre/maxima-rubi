@@ -70,6 +70,7 @@ run_all_tests() := block([],
   test_dispatch(),
   test_rules_1_1_1_1_struct(),
   test_pred_cluster1(),
+  test_numeric_predicates(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -207,10 +208,41 @@ test_pred_cluster1() := block([],
   check_bool("neQ 1 2", %mr_neQ(1, 2)),
   check_not("neQ 1 1", %mr_neQ(1, 1)),
   check_bool("neQ a b (undecidable -> loose true)", %mr_neQ(a, b)),
-  check_bool("eqQ a a", %mr_eqQ(a, a)),
-  check_not("eqQ 1 2", %mr_eqQ(1, 2)),
+   check_bool("eqQ a a", %mr_eqQ(a, a)),
+   check_not("eqQ 1 2", %mr_eqQ(1, 2)),
+   true
+ )$
+
+/* Task 7a cluster A1 — the explicit-number predicates (Rubi :70 IntegersQ,
+   :87 FractionQ, :97 RationalQ). The generator emits 1-arg calls: scalar
+   for one Rubi arg, a LIST for several (generate_class1.py :877-884), so
+   the ports accept both shapes. Negative rationals are "-" nodes in this
+   build (measured 2026-08-23: op(-1/2) = "-"), which the committed
+   "/"-only %mr_rationalQ missed. */
+test_numeric_predicates() := block([],
+  print("--- numeric predicates (integersQ/fractionQ/rationalQ) ---"),
+  check_bool("integersQ 3", %mr_integersQ(3)),
+  check_bool("integersQ -5", %mr_integersQ(-5)),
+  check_bool("integersQ [2, -5]", %mr_integersQ([2, -5])),
+  check_not("integersQ 1/2", %mr_integersQ(1/2)),
+  check_not("integersQ x", %mr_integersQ(x)),
+  check_not("integersQ [2, x]", %mr_integersQ([2, x])),
+  check_not("integersQ [1/2, 3]", %mr_integersQ([1/2, 3])),
+  check_bool("fractionQ 1/2", %mr_fractionQ(1/2)),
+  check_bool("fractionQ -1/2", %mr_fractionQ(-1/2)),
+  check_not("fractionQ 2", %mr_fractionQ(2)),
+  check_not("fractionQ 1", %mr_fractionQ(1)),
+  check_not("fractionQ x", %mr_fractionQ(x)),
+  check_bool("rationalQ 3", %mr_rationalQ(3)),
+  check_bool("rationalQ 1/2", %mr_rationalQ(1/2)),
+  check_bool("rationalQ -1/2", %mr_rationalQ(-1/2)),
+  check_not("rationalQ x", %mr_rationalQ(x)),
+  check_not("rationalQ (m+1)/2", %mr_rationalQ((m + 1)/2)),
+  check_bool("rationalQ [1/2, 3]", %mr_rationalQ([1/2, 3])),
+  check_not("rationalQ [x, 3]", %mr_rationalQ([x, 3])),
+  check_not("rationalQ [(m+1)/2, 3]", %mr_rationalQ([(m + 1)/2, 3])),
   true
-)$
+ )$
 
 test_rules_1_1_1_1_behavior() := block([r],
   print("--- generated 1.1.1.1 (behavioral) ---"),
