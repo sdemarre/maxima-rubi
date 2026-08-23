@@ -3307,4 +3307,173 @@ rubi(f, x) := mr_int(f, x)$
    NonrationalFunctionFactors split is deferred). */
 %mr_rationalFunctionExpand(u, x) := %mr_expandIntegrand2(u, x)$
 
+/* ---- cluster K: the last B-tier names --------------------------------
+ * Root is the rational reading of the Mathematica Root object (the
+ * k-th root, in ascending real-part order, when it is an explicit
+ * rational). IntSum / IntTerm are the .m definitions (:7694/:7699) over
+ * the already-ported FreeFactors / NonfreeFactors / RemoveContent
+ * surface. Hold is the ShowStep wrapper — identity outside the
+ * (unported) ShowStep machinery. */
+
+%mr_freeTerms(u, x) := block([],
+  if %mr_sumQ(u)
+  then apply("+", map(
+    lambda([z], if freeof(x, z) then z else 0), %mr_parts_list(u)))
+  else if freeof(x, u) then u else 0)$
+
+%mr_nonfreeTerms(u, x) := block([],
+  if %mr_sumQ(u)
+  then apply("+", map(
+    lambda([z], if freeof(x, z) then 0 else z), %mr_parts_list(u)))
+  else if freeof(x, u) then 0 else u)$
+
+%mr_intTerm_linear_at(F, i, x, mode) :=
+  block([f, base, m, R, j, rest],
+    f : part(F, i),
+    if mode = "power" then (
+      if not atom(f) and op(f) = "^" then (
+        base : part(f, 1),
+        m : part(f, 2),
+        if %mr_linearQ(base, x) and freeof(x, m)
+        then (
+          R : [],
+          for j : 1 thru length(F) do
+            if j # i then R : append(R, [part(F, j)]),
+          rest : %mr_product_from_list(R),
+          if freeof(x, rest) then [rest, base, m] else false
+        )
+        else false
+      )
+      else false
+    )
+    else (
+      if not atom(f) and op(f) # "^" and %mr_linearQ(f, x)
+      then (
+        R : [],
+        for j : 1 thru length(F) do
+          if j # i then R : append(R, [part(F, j)]),
+        rest : %mr_product_from_list(R),
+        if freeof(x, rest) then [rest, f, 1] else false
+      )
+      else false
+    ))$
+
+/* c*v^m (v linear in x, c and m free of x) as [c, v, m], or false. A
+   quotient is read as the negative-power form (Maxima stores c/v^m as
+   a / node, not a ProductQ). */
+%mr_intTerm_linear(u, x) := block([F, i, r, num, den],
+  if not atom(u) and op(u) = "/" then (
+    num : part(u, 1),
+    den : part(u, 2),
+    if freeof(x, num)
+    then (
+      if %mr_linearQ(den, x) then [num, den, -1]
+      else if not atom(den) and op(den) = "^"
+        and %mr_linearQ(part(den, 1), x)
+        and freeof(x, part(den, 2))
+      then [num, part(den, 1), -part(den, 2)]
+      else false
+    )
+    else false
+  )
+  else (
+    F : %mr_product_factors(u),
+    r : false,
+    for i : 1 thru length(F) do
+      if r = false then
+        r : %mr_intTerm_linear_at(F, i, x, "power"),
+    if r # false then r
+    else (
+      for i : 1 thru length(F) do
+        if r = false then
+          r : %mr_intTerm_linear_at(F, i, x, "bare"),
+      r
+    )
+  ))$
+
+/* Rubi :7699  IntTerm[u, x] */
+%mr_intTerm(u, x) := block([L, c, base, m, u1, ff, nf],
+  if %mr_sumQ(u)
+  then apply("+", map(lambda([z], %mr_intTerm(z, x)),
+    %mr_parts_list(u)))
+  else (
+    L : %mr_intTerm_linear(u, x),
+    if L # false
+    then (
+      c : part(L, 1),
+      base : part(L, 2),
+      m : part(L, 3),
+      u1 : %mr_cancel(base),
+      if is(m = -1)
+      then c*log(%mr_removeContent(u1, x))/%mr_coeff(u1, x, 1)
+      else if is(m = 1) and %mr_eqQ(c, 1) and %mr_sumQ(u1)
+      then %mr_intSum(u1, x)
+      else c*u1^(m + 1)/(%mr_coeff(u1, x, 1)*(m + 1))
+    )
+    else (
+      ff : %mr_freeFactors(u, x),
+      nf : %mr_nonfreeFactors(u, x),
+      ff*mr_int(nf, x)
+    )
+  ))$
+
+/* Rubi :7694  IntSum[u, x] */
+%mr_intSum(u, x) :=
+  %mr_freeTerms(u, x)*x + %mr_intTerm(%mr_nonfreeTerms(u, x), x)$
+
+/* The rational-root reading of the Mathematica Root object: the k-th
+   root of an explicit-rational polynomial (ascending, with multiplicity)
+   when it is an explicit rational, else false (the rule declines). */
+%mr_root_roots(e, var, acc) := block([base, exp, i],
+  if atom(e) then acc
+  else if numberp(e) then acc
+  else if op(e) = "^" then (
+    base : part(e, 1),
+    exp : part(e, 2),
+    if integerp(exp) and is(exp > 0)
+    then (
+      for i : 1 thru exp do
+        acc : %mr_root_roots(base, var, acc),
+      acc
+    )
+    else acc
+  )
+  else if op(e) = "*" then (
+    for i : 1 thru length(e) do
+      acc : %mr_root_roots(part(e, i), var, acc),
+    acc
+  )
+  else if %mr_polynomialQ(e, var) and is(%mr_degree(e, var) = 1)
+  then append(acc,
+    [-%mr_coeff(e, var, 0)/%mr_coeff(e, var, 1)])
+  else acc)$
+
+%mr_root(poly, k) := block([d, i, ok, r, roots],
+  if integerp(k) and %mr_polynomialQ(poly, x)
+  then (
+    d : %mr_degree(poly, x),
+    ok : true,
+    for i : 0 thru d do
+      if not %mr_rationalQ(%mr_coeff(poly, x, i)) then ok : false,
+    if ok
+    then (
+      r : errcatch(factor(poly)),
+      if is(r = []) then false
+      else (
+        roots : %mr_root_roots(part(r, 1), x, []),
+        roots : sort(roots),
+        if length(roots) >= k
+          and %mr_rationalQ(part(roots, k))
+        then part(roots, k)
+        else false
+      )
+    )
+    else false
+  )
+  else false)$
+
+/* Rubi's ShowStep Hold wrapper — identity outside the (unported)
+   ShowStep machinery. */
+%mr_hold(u) := u$
+
 mr_witness_utils() := true$

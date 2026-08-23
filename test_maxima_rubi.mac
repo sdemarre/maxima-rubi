@@ -82,6 +82,7 @@ run_all_tests() := block([],
   test_cluster_h_shims(),
   test_cluster_i_expandIntegrand(),
   test_cluster_j_shims(),
+  test_cluster_k_shims(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -1164,6 +1165,41 @@ test_structural_predicates() := block([],
     check("rFE linear product",
           %mr_rationalFunctionExpand(x*(x + 1)^2, x),
           (x + 1)^3 - (x + 1)^2),
+    true
+   )$
+
+  test_cluster_k_shims() := block([],
+    print("--- cluster K shims ---"),
+    /* root — the rational k-th root of an explicit-rational polynomial
+       (the Mathematica Root object, reduced to the rational reading) */
+    check("root k=1",
+          %mr_root(x^3 - 6*x^2 + 11*x - 6, 1), 1),
+    check("root k=2",
+          %mr_root(x^3 - 6*x^2 + 11*x - 6, 2), 2),
+    check("root k=3",
+          %mr_root(x^3 - 6*x^2 + 11*x - 6, 3), 3),
+    check("root non-monic",
+          %mr_root(2*x^3 - 3*x^2 - 2*x + 3, 3), 3/2),
+    check("root none",
+          %mr_root(x^3 - 2, 1), false),
+    check("root out of range",
+          %mr_root(x - 1, 2), false),
+    /* intSum / intTerm */
+    check("intSum const", %mr_intSum(3, x), 3*x),
+    check("intSum sum", %mr_intSum(x + 1, x), x^2/2 + x),
+    check("intSum linear", %mr_intSum(2*x + 1, x), x^2 + x),
+    check("intSum power", %mr_intSum((x + 1)^2, x), (x + 1)^3/3),
+    check("intSum const power",
+          %mr_intSum(2*(x + 1)^2, x), 2*(x + 1)^3/3),
+    check("intSum -1 power", %mr_intSum(1/(x + 1), x), log(x + 1)),
+    check("intSum const -1 power",
+          %mr_intSum(2/(x + 1), x), 2*log(x + 1)),
+    check("intSum content -1 power",
+          %mr_intSum(1/(2*x + 2), x), log(x + 1)/2),
+    check("intSum fallback",
+          %mr_intSum(x*(x + 1), x), (2*x^3 + 3*x^2)/6),
+    /* hold — the ShowStep wrapper, identity outside ShowStep */
+    check("hold", %mr_hold(1 + 1), 2),
     true
    )$
 
