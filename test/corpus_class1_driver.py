@@ -222,8 +222,9 @@ def main():
         except (AssertionError, UnicodeDecodeError, IndexError):
             out_lines.append(f"SKIP-BADFILE {rel}")
             continue
-        lo = SKIP_FIRST if (fi == 0 and APPEND) else 0
-        for idx in range(lo, min(PER_FILE, len(entries))):
+        lo = SKIP_FIRST if fi == 0 else 0
+        hi = min(lo + PER_FILE, len(entries))
+        for idx in range(lo, hi):
             els = split_elements(entries[idx][1:-1])
             label = f"{rel} e{idx + 1} L{line_nos[idx]}"
             if len(els) not in (4, 5):
