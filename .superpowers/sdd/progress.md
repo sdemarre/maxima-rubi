@@ -471,13 +471,21 @@ match+degree, E generalized*, F pairs/split/misc).
       %mr_polynomialQ pair), and the unbound inverse-hyperbolic log
       shims %mr_atanh / %mr_asinh / %mr_acosh. 11 new probes; suite
       463/0.
-    - NEXT: cluster I — expandIntegrand (203 uses) and its helper
-      surface (DistributeOverTerms / NonfreeTerms / FreeTerms /
-      MergeMonomials / ExpandLinearProduct / ExpandExpression /
-      SimplifyTerm / CollectRecipTerms), then the remaining B-tier
-      names (cancel, substFor, substPower, polyGCD,
-      rationalFunctionExpand, normalizePseudoBinomial, dist, intSum,
-      root, hold, coefficientList).
+    - Cluster I — ExpandIntegrand algebraic surface — DONE (commit
+      5b0e274). The class-1 surface of the 203-use ExpandIntegrand:
+      positive-integer powers of sums expand, polynomial * (a+b*x)^m
+      is kept in linear-power form by %mr_expandLinearProduct (over
+      %mr_coefficientList in the shifted variable (x-a)/b), and the
+      3-arg form distributes over the expanded v without expanding the
+      power factors. The .m's log/trig/smart-apart branches
+      (ExpandExpression / SmartApart, CollectRecipTerms /
+      CollectReciprocals, the F^u and Log rules, the special
+      MergeMonomials bases, SimplifyTerm / NormalizeIntegrand /
+      UnifySum) are deferred and the fallback is plain expand(). 9 new
+      probes; suite 472/0.
+    - NEXT: cluster J — the remaining B-tier shims by class-1 usage:
+      substFor (15), dist (8), normalizePseudoBinomial (4), cancel
+      (2), polyGCD (2), rationalFunctionExpand (2).
 
 ## Minor findings (triage at final whole-branch review)
 
