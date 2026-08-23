@@ -3054,4 +3054,151 @@ rubi(f, x) := mr_int(f, x)$
    sqrt(0) corner. */
 %mr_acosh(u) := log(u + sqrt(u - 1)*sqrt(u + 1))$
 
+/* ---- cluster I: the algebraic surface of ExpandIntegrand ------------
+ * The .m's ExpandIntegrand is a large pattern set (log/trig/smart-apart
+ * branches included); this port is the ALGEBRAIC surface the class-1
+ * call sites need:
+ *   - a positive-integer power of a sum expands,
+ *   - polynomial * (a+b*x)^m is kept in linear-power form by
+ *     ExpandLinearProduct (the .m's u_*(a+b*x)^m rule),
+ *   - the 3-arg form distributes over the expanded v without expanding
+ *     the power factors (the DistributeOverTerms / MergeMonomials
+ *     surface). The remaining .m branches (CollectRecipTerms,
+ *     ExpandExpression / SmartApart, the F^u and Log rules) are NOT
+ *     ported here; the fallback is plain expand(). */
+
+%mr_coefficientList(u, x) := block([d, i, L],
+  if %mr_polynomialQ(u, x) then (
+    d : %mr_degree(u, x),
+    L : [],
+    for i : 0 thru d do
+      L : append(L, [%mr_coeff(u, x, i)]),
+    L
+  )
+  else false)$
+
+/* Rubi :4023  ExpandLinearProduct[v, u, a, b, x] — v*u as a sum of
+   c*v*(a+b*x)^n terms (u read in the shifted variable (x-a)/b). */
+%mr_expandLinearProduct(v, u, a, b, x) := block([w, L, s, i],
+  if freeof(x, a) and freeof(x, b) and %mr_neQ(b, 0)
+    and %mr_polynomialQ(u, x)
+  then (
+    w : subst((x - a)/b, x, u),
+    L : %mr_coefficientList(w, x),
+    if atom(L) then false
+    else (
+      s : 0,
+      for i : 1 thru length(L) do
+        s : s + v*part(L, i)*(a + b*x)^(i - 1),
+      s
+    )
+  )
+  else false)$
+
+/* A positive-integer power of a sum (the .m's u_^p_. rule with
+   SumQ[u] && IGtQ[p,0]). */
+%mr_ei_pos_power_sum(u, x) :=
+  not atom(u) and op(u) = "^"
+  and %mr_sumQ(part(u, 1))
+  and integerp(part(u, 2))
+  and is(part(u, 2) > 0)$
+
+/* The linear-power factor of a product at position i, as
+   [power, a, b, rest] or false. mode "power" reads an actual
+   (a+b*x)^m node; mode "bare" reads a bare linear factor (the .m's
+   m_. default — a Power is preferred over the bare reading). MEASURED
+   2026-08-23: return() does not escape a for-loop body in this build,
+   so the scan is a flag loop over this helper. */
+%mr_ei_linear_power_at(F, i, x, mode) :=
+  block([f, base, L, R, j, rest],
+    f : part(F, i),
+    if mode = "power" then (
+      if not atom(f) and op(f) = "^" then (
+        base : part(f, 1),
+        if %mr_linearQ(base, x) then (
+          L : %mr_binomial_parts(base, x),
+          if not atom(L) and is(part(L, 3) = 1)
+            and %mr_neQ(part(L, 2), 0)
+          then (
+            R : [],
+            for j : 1 thru length(F) do
+              if j # i then R : append(R, [part(F, j)]),
+            rest : %mr_product_from_list(R),
+            if %mr_polynomialQ(rest, x)
+            then [f, part(L, 1), part(L, 2), rest]
+            else false
+          )
+          else false
+        )
+        else false
+      )
+      else false
+    )
+    else (
+      if not atom(f) and op(f) # "^" then (
+        base : f,
+        if %mr_linearQ(base, x) then (
+          L : %mr_binomial_parts(base, x),
+          if not atom(L) and is(part(L, 3) = 1)
+            and %mr_neQ(part(L, 2), 0)
+          then (
+            R : [],
+            for j : 1 thru length(F) do
+              if j # i then R : append(R, [part(F, j)]),
+            rest : %mr_product_from_list(R),
+            if %mr_polynomialQ(rest, x)
+            then [f, part(L, 1), part(L, 2), rest]
+            else false
+          )
+          else false
+        )
+        else false
+      )
+      else false
+    ))$
+
+/* The linear-power factor of a product, as [power, a, b, rest]: an
+   actual (a+b*x)^m node is preferred over a bare linear factor (the
+   .m's (a+b*x)^m_. pattern matches a Power first in the class-1 term
+   order). */
+%mr_ei_linear_power(u, x) := block([F, i, r],
+  F : %mr_product_factors(u),
+  r : false,
+  for i : 1 thru length(F) do
+    if r = false then
+      r : %mr_ei_linear_power_at(F, i, x, "power"),
+  if r # false then r
+  else (
+    for i : 1 thru length(F) do
+      if r = false then
+        r : %mr_ei_linear_power_at(F, i, x, "bare"),
+    r
+  ))$
+
+/* Distribute u over a sum v term-by-term WITHOUT expanding the terms
+   (the MergeMonomials surface: a plain product is left as a product). */
+%mr_ei_distribute(u, v, x) := block([],
+  if not atom(v) and op(v) = "+"
+  then apply("+", map(lambda([z], u*z), %mr_parts_list(v)))
+  else u*v)$
+
+%mr_expandIntegrand2(u, x) := block([L],
+  if %mr_ei_pos_power_sum(u, x)
+  then expand(u)
+  else (
+    L : %mr_ei_linear_power(u, x),
+    if L # false
+    then %mr_expandLinearProduct(
+      part(L, 1), part(L, 4), part(L, 2), part(L, 3), x)
+    else expand(u)
+  ))$
+
+%mr_expandIntegrand3(u, v, x) :=
+  %mr_ei_distribute(u, %mr_expandIntegrand2(v, x), x)$
+
+%mr_expandIntegrand : lambda([a, b, [c]],
+  if length(c) = 0
+  then %mr_expandIntegrand2(a, b)
+  else %mr_expandIntegrand3(a, b, part(c, 1)))$
+
 mr_witness_utils() := true$
