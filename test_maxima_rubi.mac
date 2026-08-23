@@ -71,6 +71,7 @@ run_all_tests() := block([],
   test_rules_1_1_1_1_struct(),
   test_pred_cluster1(),
   test_numeric_predicates(),
+  test_structural_predicates(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -241,6 +242,50 @@ test_numeric_predicates() := block([],
   check_bool("rationalQ [1/2, 3]", %mr_rationalQ([1/2, 3])),
   check_not("rationalQ [x, 3]", %mr_rationalQ([x, 3])),
   check_not("rationalQ [(m+1)/2, 3]", %mr_rationalQ([(m + 1)/2, 3])),
+  true
+ )$
+
+/* Task 7a cluster A2 — the structural shape predicates (PolynomialQ /
+   AtomQ / MonomialQ / LeafCount). PolynomialQ is the STRICT port
+   (Mathematica semantics: no cancellation — (x^2+x)/(x+1) is not a
+   polynomial even though rat() cancels it to x, measured 2026-08-23),
+   in contrast to %mr_polyQ (Rubi's PolyQ) which takes the Together
+   route. MonomialQ is the .m usage semantics (a*x^n, n!=0, a!=0 —
+   bare x and bare x^k are monomials). LeafCount counts the head as a
+   leaf (Mathematica: LeafCount[1+x] = 3). */
+test_structural_predicates() := block([],
+  print("--- structural predicates (polynomialQ/atomQ/monomialQ/leafCount) ---"),
+  check_bool("polynomialQ x^2+x", %mr_polynomialQ(x^2 + x, x)),
+  check_bool("polynomialQ x/2", %mr_polynomialQ(x/2, x)),
+  check_bool("polynomialQ 5", %mr_polynomialQ(5, x)),
+  check_not("polynomialQ 1/x", %mr_polynomialQ(1/x, x)),
+  check_not("polynomialQ (x^2+x)/(x+1)", %mr_polynomialQ((x^2 + x)/(x + 1), x)),
+  check_not("polynomialQ x+sqrt(x)", %mr_polynomialQ(x + sqrt(x), x)),
+  /* quotients with x-free denominators ARE polynomials, at any depth
+     (Maxima does not auto-combine x/2 + 1 — measured 2026-08-23) */
+  check_bool("polynomialQ x/2+1", %mr_polynomialQ(x/2 + 1, x)),
+  check_bool("polynomialQ x*y/2+1", %mr_polynomialQ(x*y/2 + 1, x)),
+  check_bool("polynomialQ (x+1)/(y+2)", %mr_polynomialQ((x + 1)/(y + 2), x)),
+  check_bool("atomQ x", %mr_atomQ(x)),
+  check_bool("atomQ 3", %mr_atomQ(3)),
+  check_not("atomQ x+1", %mr_atomQ(x + 1)),
+  check_not("atomQ [1,2]", %mr_atomQ([1, 2])),
+  check_bool("monomialQ x", %mr_monomialQ(x, x)),
+  check_bool("monomialQ x^2", %mr_monomialQ(x^2, x)),
+  check_bool("monomialQ 5*x^3", %mr_monomialQ(5*x^3, x)),
+  check_bool("monomialQ x*y", %mr_monomialQ(x*y, x)),
+  check_bool("monomialQ -3*x", %mr_monomialQ(-3*x, x)),
+  check_not("monomialQ 5", %mr_monomialQ(5, x)),
+  check_not("monomialQ 3*x+1", %mr_monomialQ(3*x + 1, x)),
+  check_not("monomialQ x^2+x", %mr_monomialQ(x^2 + x, x)),
+  check_bool("monomialQ x*y^2 (a=y^2, n=1)", %mr_monomialQ(x*y^2, x)),
+  check_not("monomialQ (x+1)^2", %mr_monomialQ((x + 1)^2, x)),
+  check_not("monomialQ x^(1/x)", %mr_monomialQ(x^(1/x), x)),
+  check("leafCount x", %mr_leafCount(x), 1),
+  check("leafCount 1+x", %mr_leafCount(1 + x), 3),
+  check("leafCount f(x)", %mr_leafCount(f(x)), 2),
+  check("leafCount x^2", %mr_leafCount(x^2), 3),
+  check("leafCount a+b*x", %mr_leafCount(a + b*x), 5),
   true
  )$
 
