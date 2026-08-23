@@ -908,14 +908,366 @@ rubi(f, x) := mr_int(f, x)$
   or is(n = 3)
      and (%mr_integersQ([m, q, 3*p]) or %mr_integersQ([m, p, 3*q]))
      and %mr_eqQ(b*c + a*d, 0)
-  or is(n = 3)
-     and (%mr_integersQ([(m + 2)/3, p + 2/3, q])
-          or %mr_integersQ([(m + 2)/3, q + 2/3, p]))
-  or is(n = 3)
-     and (%mr_integersQ([m/3, p + 1/3, q])
-          or %mr_integersQ([m/3, q + 1/3, p]))$
+   or is(n = 3)
+      and (%mr_integersQ([(m + 2)/3, p + 2/3, q])
+           or %mr_integersQ([m/3, q + 1/3, p]))$
 
-/* ---- coefficient / degree machinery --------------------------------
+ /* ---- sum / simpler predicates (Task 7a cluster C) -------------------
+  * SumQ (:176) · SumSimplerQ (:774) + SumSimplerAuxQ (:784, the three
+  * .m definitions: split-v, split-u, base) · SimplerQ (:677) ·
+  * SimplerSqrtQ (:732) · NiceSqrtQ (:647) · FractionalPowerFactorQ
+  * (:658 — the NiceSqrtQ dependency, pulled forward from cluster F) ·
+  * NumericFactor (:1096) / NonnumericFactors (:1125) + the rest-of-sum
+  * helper the SumSimplerAuxQ splits need.
+  *
+  * 5.50.0 representation traps pinned here (measured 2026-08-23):
+  *  - is() returns the SYMBOL unknown for an undecidable relation and
+  *    `if <unknown>` stays unevaluated — every relation is therefore
+  *    `is(a op b) = true` (the bare `(a op b) = true` is NOT evaluated:
+  *    it stays an equation);
+  *  - complexp is a NOUN; the only atomic complex value is %i (-%i is
+  *    a unary "-" node, not an atom) — the "Head === Complex" test is
+  *    is(u = %i) plus its unary-minus form;
+  *  - numberp covers exactly the real explicit numbers (integers,
+  *    rationals — 1/2 is a "/" node and numberp is TRUE — and floats);
+  *    %i / %pi / E / %inf are not numberp, and neither is a symbol;
+  *  - sqrt normalizes aggressively where Mathematica holds:
+  *    sqrt(x^2) -> abs(x) (Rubi: Sqrt[x^2] stays a power — the
+  *    FractionalPowerFactorQ/niceSqrtQ x^2 probes pin the divergence),
+  *    sqrt(2*x) -> sqrt(2)*sqrt(x), sqrt(1/(2*x)) ->
+  *    1/(sqrt(2)*sqrt(x)), x^(1/2) -> a 'sqrt node, x^(-1/2) ->
+  *    1/sqrt(x). Hence FractionalPowerFactorQ carries 'sqrt, "/" and
+  *    unary "-" branches (the .m PowerQ branch alone cannot see the
+  *    Maxima shapes);
+  *  - Map[f, expr] keeps a non-list head in Mathematica — the
+  *    NumericFactor/NonnumericFactors product branches are for-loops
+  *    over the parts;
+  *  - SimplerSqrtQ's LtQ sign tests stay pending on symbolic args in
+  *    Rubi (the whole If declines, the rule does not fire) — the port
+  *    reproduces the decline by answering false (never true) when
+  *    either sign is unknown;
+  *  - NumericFactor/NonnumericFactors sum branches take the .m's GCD
+  *    fallback path; the LeafCount<50 ContentFactor kludge is omitted
+  *    (a sum only reaches them through a product-of-sums inside a
+  *    captured exponent — no class-1 corpus site has one), and the
+  *    rational-denominator corner of the power branch (Maxima stores
+  *    (1/2)^(1/2) as 1/sqrt(2), a "/" node the .m sees as the power
+  *    2^(-1/2)) is unreachable at the 36 call sites (v is always an
+  *    integer constant, u a symbol/number/monomial/integer-power).
+  */
+
+ /* Rubi :176  SumQ[_Plus] = True; SumQ[_] = False. A Maxima "+" node
+    always has >= 2 parts (Mathematica's Plus flattens single terms). */
+ %mr_sumQ(u) := block([],
+   if atom(u) then false else is(op(u) = "+"))$
+
+ /* NumberQ (Mathematica builtin) — explicit numbers only. numberp
+    covers the reals (integer/rational/float, incl. the non-atom "/"
+    node); %pi/E/symbols are not numbers (NumberQ[Pi] is false in
+    Mathematica too); the complex forms are %i, -%i, a + b*i with both
+    parts explicit reals. */
+ %mr_numberQ(u) := block([],
+   if numberp(u) then true
+   else if is(u = %i) then true
+   else if atom(u) then false
+   else if is(op(u) = "-") then is(part(u, 1) = %i)
+   else if is(op(u) = "+")
+    then numberp(realpart(u)) and numberp(imagpart(u))
+     and is(imagpart(u) # 0)
+   else false)$
+
+ /* ComplexNumberQ (Mathematica builtin) — an explicit complex with a
+    nonzero imaginary part. complexp is a noun in this build. */
+ %mr_complexNumberQ(u) := block([],
+   if is(u = %i) then true
+   else if atom(u) then false
+   else if is(op(u) = "-") then is(part(u, 1) = %i)
+   else if numberp(u) then is(imagpart(u) # 0) = true
+   else if is(op(u) = "+")
+    then numberp(realpart(u)) and numberp(imagpart(u))
+     and is(imagpart(u) # 0) = true
+   else false)$
+
+ /* OrderedQ[{u, v}] — u and v in canonical order. Maxima has no
+    canonical-order predicate; sort() is a total canonical order here
+    (numbers first, %pi before bare symbols, x before 2*x — measured
+    2026-08-23). DEVIATION: Maxima's order is not Mathematica's
+    Ordering, but SimplerQ/SimplerSqrtQ only use it as a total-order
+    tie-breaker, which any consistent total order satisfies. sort()
+    failure (errcatch -> []) fails closed. */
+ %mr_orderedQ(u, v) := block([s],
+   s : errcatch(sort([u, v])),
+   if is(s = []) then false
+   else is(part(s, 1) = [u, v]))$
+
+ /* Rest[u] for a sum — Maxima has no Rest; the sum of parts 2..n. A
+    one-part "sum" cannot occur ("+" nodes have >= 2 parts). */
+ %mr_rest_sum(u) := block([i, n, lst],
+   n : length(u),
+   if is(n = 1) then part(u, 1)
+   else (
+     lst : [],
+     for i : 2 thru n do lst : append(lst, [part(u, i)]),
+     apply("+", lst)))$
+
+ /* Rubi :1096  NumericFactor[u] — the real numeric factor. */
+ %mr_numericFactor(u) := block([i, n, r, b, ex],
+   if %mr_numberQ(u) then (
+     if is(imagpart(u) = 0) then u
+     else if is(realpart(u) = 0) then imagpart(u)
+     else 1
+   )
+   /* a non-numeric atom (a symbol) has no numeric factor — the .m's
+      final else */
+   else if atom(u) then 1
+   else if is(op(u) = "^") or is(op(u) = 'sqrt) then (
+     b : part(u, 1),
+     ex : if is(op(u) = 'sqrt) then 1/2 else part(u, 2),
+     if %mr_rationalQ(b) and %mr_fractionQ(ex)
+     then (
+       if is(ex > 0) = true then 1/denom(b) else 1/denom(1/b)
+     )
+     else 1
+   )
+   else if is(op(u) = "*") then (
+     n : length(u),
+     r : 1,
+     for i : 1 thru n do r : r * %mr_numericFactor(part(u, i)),
+     r
+   )
+   /* a unary minus wraps the (non-numeric) product: the .m reads it as
+      a product with a -1 factor, whose NumericFactor is -1 */
+   else if is(op(u) = "-") then -%mr_numericFactor(part(u, 1))
+   else if %mr_sumQ(u) then
+     block([m, nst],
+       m : %mr_numericFactor(part(u, 1)),
+       nst : %mr_numericFactor(%mr_rest_sum(u)),
+       if is(m < 0) = true and is(nst < 0) = true
+       then -gcd(-m, -nst) else gcd(m, nst))
+   else 1)$
+
+ /* Rubi :1125  NonnumericFactors[u] — the product of the factors that
+    are not real numbers. The .m's GCD-path sum shape keeps the Plus
+    head (a sum of term/NF[u] — Map preserves non-list heads). */
+ %mr_nonnumericFactors(u) := block([i, n, r, d, lst],
+   if %mr_numberQ(u) then (
+     if is(imagpart(u) = 0) then 1
+     else if is(realpart(u) = 0) then %i
+     else u
+   )
+   /* a non-numeric atom (a symbol) is its own nonnumeric factor */
+   else if atom(u) then u
+   /* a unary minus wraps the product: the .m's -1 factor has
+      NonnumericFactors 1, so the nonnumeric factors pass through */
+   else if is(op(u) = "-") then %mr_nonnumericFactors(part(u, 1))
+   else if is(op(u) = "^") or is(op(u) = 'sqrt) then (
+     if %mr_rationalQ(part(u, 1))
+    and %mr_fractionQ(if is(op(u) = 'sqrt) then 1/2 else part(u, 2))
+     then u / %mr_numericFactor(u)
+     else u
+   )
+   else if is(op(u) = "*") then (
+     n : length(u),
+     r : 1,
+     for i : 1 thru n do r : r * %mr_nonnumericFactors(part(u, i)),
+     r
+   )
+   else if %mr_sumQ(u) then (
+     d : %mr_numericFactor(u),
+     lst : [],
+     n : length(u),
+     for i : 1 thru n do lst : append(lst, [part(u, i)/d]),
+     apply("+", lst)
+   )
+   else u)$
+
+ /* Rubi :658  FractionalPowerFactorQ — a factor is a complex constant
+    or a fractional power. The 'sqrt / "/" / "-" branches are the Maxima
+    shape adaptations (see the section note). */
+ %mr_fractionalPowerFactorQ(u) := block([i, n, r],
+   if atom(u) then is(u = %i)
+   else if is(op(u) = "^") then %mr_fractionQ(part(u, 2))
+   else if is(op(u) = 'sqrt) then true
+   else if is(op(u) = "*") then (
+     n : length(u),
+     i : 0,
+     r : false,
+     while is(r = false) and i < n do (
+       i : i + 1,
+       r : %mr_fractionalPowerFactorQ(part(u, i))),
+     r
+   )
+   else if is(op(u) = "/")
+    then %mr_fractionalPowerFactorQ(num(u))
+     or %mr_fractionalPowerFactorQ(denom(u))
+   else if is(op(u) = "-") then %mr_fractionalPowerFactorQ(part(u, 1))
+   else false)$
+
+ /* Rubi :647  NiceSqrtQ — positive rational, or a squareroot without
+    fractional-power / complex factors. Rt[u, 2] is sqrt(u) here;
+    sqrt(x^2) -> abs(x) is the documented divergence corner (Rubi says
+    false for x^2, the port says true — unreachable at the class-1
+    discriminant sites). */
+ %mr_niceSqrtQ(u) := block([],
+   /* u is an explicit rational here — decidable, clean boolean */
+   if %mr_rationalQ(u) then is(u > 0)
+   else not(%mr_fractionalPowerFactorQ(sqrt(u))))$
+
+ /* the SimplerQ part scan — Catch[Do[If[eq, Null, Throw[SimplerQ]]];
+    False]: SimplerQ of the FIRST differing part pair, false if none
+    (a return()/break() is loop-scoped in this build — the Task 4 trap —
+    hence the found-flag while loop). */
+ %mr_simplerQ_scan(u, v) := block([i, n, r, found],
+   n : length(u),
+   i : 0,
+   r : false,
+   found : false,
+   while is(found = false) and i < n do (
+     i : i + 1,
+     if is(part(u, i) = part(v, i)) = false then (
+       r : %mr_simplerQ(part(u, i), part(v, i)),
+       found : true)),
+   r)$
+
+ /* Rubi :677  SimplerQ[u, v] — the structural simplicity order. The
+    Re/Im, ComplexNumberQ, NumberQ, OrderedQ readings are the Maxima
+    stand-ins pinned in the section note. */
+ %mr_simplerQ(u, v) := block([],
+   if integerp(u) then (
+     if integerp(v) then (
+       if is(u = v) then false
+       /* value position: u, v are concrete integers, so the comparison
+          is decidable — return the clean boolean (is(X) = true would
+          leak the equation false = true on a false answer). */
+       else if is(u = -v) then is(v < 0)
+       else is(abs(u) < abs(v))
+     )
+     else true
+   )
+   else if integerp(v) then false
+   else if %mr_fractionQ(u) then (
+     if %mr_fractionQ(v) then (
+       if is(denom(u) = denom(v))
+       then %mr_simplerQ(num(u), num(v))
+       else is(denom(u) < denom(v))
+     )
+     else true
+   )
+   else if %mr_fractionQ(v) then false
+   else if is(realpart(u) = 0) and is(realpart(v) = 0)
+    then %mr_simplerQ(imagpart(u), imagpart(v))
+   else if %mr_complexNumberQ(u) then (
+     if %mr_complexNumberQ(v) then (
+       if is(realpart(u) = realpart(v))
+       then %mr_simplerQ(imagpart(u), imagpart(v))
+       else %mr_simplerQ(realpart(u), realpart(v))
+     )
+     else false
+   )
+   else if %mr_numberQ(u) then (
+     if %mr_numberQ(v) then %mr_orderedQ(u, v) else true
+   )
+   else if %mr_numberQ(v) then false
+   else if atom(u) then (
+     if atom(v) then %mr_orderedQ(u, v) else true
+   )
+   else if atom(v) then false
+   else if is(op(u) = op(v)) then (
+     if is(length(u) = length(v)) then (
+       if is(%mr_leafCount(u) = %mr_leafCount(v))
+       then %mr_simplerQ_scan(u, v)
+       /* leafcounts are concrete integers — decidable */
+       else is(%mr_leafCount(u) < %mr_leafCount(v))
+     )
+     else is(length(u) < length(v))
+   )
+   else (
+     if is(%mr_leafCount(u) = %mr_leafCount(v))
+     then not(%mr_orderedQ(v, u))
+     else is(%mr_leafCount(u) < %mr_leafCount(v))))$
+
+ /* Rubi :732  SimplerSqrtQ[u, v] — Rt[u,2] simpler than Rt[v,2]. The
+    pending-sign decline (Rubi's If unevaluated on undecidable LtQ) is
+    reproduced by the unknown guard: undecidable sign -> false. */
+ %mr_simplerSqrtQ(u, v) := block([sqrtu, sqrtv, zu, zv],
+   zu : is(u < 0),
+   zv : is(v < 0),
+   if is(zv = true) and is(zu = false) then true
+   else if is(zu = true) and is(zv = false) then false
+   else if is(zv = 'unknown) or is(zu = 'unknown) then false
+   else (
+     sqrtu : sqrt(u),
+     sqrtv : sqrt(v),
+     if integerp(sqrtu) then (
+       /* concrete integers / rationals / integer leafcounts — the
+          comparisons are decidable, so a clean boolean is returned
+          (the .m's PosQ[u]&&PosQ[v] branch is the BARE LeafCount
+          comparison: a tie answers false, no OrderedQ tiebreak) */
+       if integerp(sqrtv) then is(sqrtu < sqrtv) else true
+     )
+     else if integerp(sqrtv) then false
+     else if %mr_rationalQ(sqrtu) then (
+       if %mr_rationalQ(sqrtv) then is(sqrtu < sqrtv)
+       else true
+     )
+     else if %mr_rationalQ(sqrtv) then false
+     else if %mr_posQ(u) then (
+       if %mr_posQ(v)
+       then is(%mr_leafCount(sqrtu) < %mr_leafCount(sqrtv))
+       else true
+     )
+     else if %mr_posQ(v) then false
+     else if is(%mr_leafCount(sqrtu) < %mr_leafCount(sqrtv)) = true
+      then true
+     else if is(%mr_leafCount(sqrtv) < %mr_leafCount(sqrtu)) = true
+      then false
+     else not(%mr_orderedQ(v, u))))$
+
+ /* Rubi :784  SumSimplerAuxQ — the three .m definitions in dispatch
+    order: v a sum -> AND over v's terms (rational or aux(u, term)); u
+    a sum -> OR over u's terms; base -> v # 0, equal NonnumericFactors,
+    NF[u]/NF[v] < -1/2 (or = -1/2 with NF[u] < 0). */
+ %mr_sumSimplerAuxQ(u, v) := block([i, n, r, m, nf],
+   if %mr_sumQ(v) then (
+     r : true,
+     i : 0,
+     n : length(v),
+     while is(r = true) and i < n do (
+       i : i + 1,
+       if not(%mr_rationalQ(part(v, i)))
+       and not(%mr_sumSimplerAuxQ(u, part(v, i)))
+       then r : false),
+     r
+   )
+   else if %mr_sumQ(u) then (
+     r : false,
+     i : 0,
+     n : length(u),
+     while is(r = false) and i < n do (
+       i : i + 1,
+       if is(%mr_sumSimplerAuxQ(part(u, i), v) = true) then r : true),
+     r
+   )
+   else (
+     m : %mr_numericFactor(u),
+     nf : %mr_numericFactor(v),
+     if is(v # 0) = true
+    and is(%mr_nonnumericFactors(u) = %mr_nonnumericFactors(v)) = true
+    and (is(m/nf < -1/2) = true
+    or (is(m/nf = -1/2) = true and is(m < 0) = true))
+     then true else false))$
+
+ /* Rubi :774  SumSimplerQ[u, v] — is u + v simpler than u. The 36
+    class-1 sites pass (exponent-parameter, integer-constant). */
+ %mr_sumSimplerQ(u, v) := block([],
+   if %mr_rationalQ(u) and %mr_rationalQ(v) then (
+     if is(v = 0) then false
+     else if is(v > 0) = true then is(u < -1) = true
+     else is(u >= -v) = true
+   )
+   else %mr_sumSimplerAuxQ(expand(u), expand(v)))$
+
+ /* ---- coefficient / degree machinery --------------------------------
  * Maxima's coefficient/degree/maxexpt are NOUNS in this build (T4 §6,
  * re-measured 2026-08-20), so %mr_coeff and the degree-based %mr_polyQ
  * are implemented over the term structure of the expanded numerator
