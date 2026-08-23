@@ -376,12 +376,42 @@ match+degree, E generalized*, F pairs/split/misc).
   the .m's GCD fallback kept — a sum only reaches them through a
   product-of-sums inside a captured exponent (no class-1 site).
   75 new probes; suite 265/0.
-- NEXT: cluster D — trinomialQ (17), linearMatchQ (15),
-  binomialMatchQ (15), quadraticQ (10), quadraticMatchQ (10),
-  trinomialMatchQ (7), binomialDegree (6). E = the six generalized*
-  (4/4/2/2/2/1); F = linearPairQ (10), perfectSquareQ (3),
-  rationalFunctionQ (3), splitProduct (2), pseudoBinomialPairQ (2),
-  inverseFunctionQ (1), algebraicFunctionQ (1).
+ - Cluster D — trinomial/quadratic/binomial-degree — DONE (commit
+   8ad11d4). %mr_quadraticQ (:1380), %mr_binomialDegree (:846),
+   %mr_trinomial_parts (:929) + %mr_trinomialQ (:568),
+   %mr_linearMatchQ (:1420), %mr_quadraticMatchQ (:1427),
+   %mr_binomialMatchQ (:1444), %mr_trinomialMatchQ (:1458), plus the
+   unary "-" branch in %mr_binomial_parts the TrinomialParts sum
+   branch needs. Line ports; the .m Drop-chain laxness and the :994
+   b-slot typo are ported as written (pinned). The cluster D work
+   exposed the %mr_matchQ first-binding limitation: the cond was
+   evaluated once on the FIRST structural binding, so (a)
+   TrinomialMatchQ's stored-order binding (c/n on the highest term,
+   b/j on the next) failed j = 2*n and the n/j-swapped permutation was
+   never tried, and (b) a bare x^n term bound the coefficient marker
+   to the whole power (b = x^n, n = 1), the freeof cond failed, and
+   the b = 1 / real-n binding was never tried. ROOT CAUSE FIX in the
+   matcher: a non-trivial cond now threads through the structural
+   search — explicit ["final"]/["match"]/["part"] continuations in
+   %mr_mq_search / %mr_mq_flat_search / %mr_mq_part_search — and the
+   match stands iff SOME structural binding makes the cond true; the
+   cond = true fast path keeps the old first-success %mr_mq_match.
+   MEASURED 2026-08-23: Maxima lambdas do NOT capture the local
+   variables of the creating function (a lambda body sees the
+   caller's / global P/E, not the creator's), so the continuation is
+   an explicit list, not a closure. The trinomialMatchQ pattern uses
+   the .m marker letters (b with x^n, c with x^j); the orderless
+   partition search makes the stored term order non-load-bearing.
+   REMAINING DIVERGENCE (documented, unreachable at the class-1 call
+   sites): the matcher's absent rule cannot delete a product/sum
+   factor containing a literal (b_*x, c_*x^2) as a whole via its
+   optional coefficient — linearMatchQ 1+x^2, quadraticMatchQ 1+2x,
+   trinomialMatchQ 1+2x stay port-false where the .m answers true.
+   66 new probes; suite 331/0.
+ - NEXT: cluster E — the six generalized* (4/4/2/2/2/1). F =
+   linearPairQ (10), perfectSquareQ (3), rationalFunctionQ (3),
+   splitProduct (2), pseudoBinomialPairQ (2), inverseFunctionQ (1),
+   algebraicFunctionQ (1).
 
 ## Minor findings (triage at final whole-branch review)
 
