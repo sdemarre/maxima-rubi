@@ -101,6 +101,12 @@ rubi(f, x) := mr_int(f, x)$
   if atom(e) then (
     if %mr_isVarSym(e) then [e] else []
   )
+  /* MEASURED (2026-08-23): a rational is NOT an atom, and a negative
+     rational has length 2 but only ONE part (the unary-minus quirk) —
+     numberp is the exact-number guard, and op "-" recurses on its
+     operand before the parts loop. */
+  else if numberp(e) then []
+  else if op(e) = "-" then %mr_symbols(part(e, 1))
   else (
     lst : [],
     for i : 1 thru length(e) do
@@ -2682,5 +2688,328 @@ rubi(f, x) := mr_int(f, x)$
     ok
   )
   else false)$
+
+/* ---- cluster G: the first B-tier shims -------------------------------
+ * Rt (:7513/:7549) · Expon (:1239) · ExpandToSum (:3329/:3343) ·
+ * IntPart (:2952) · FracPart (:2969).
+ *
+ * 5.50.0 representation traps pinned here (measured 2026-08-23):
+ *  - lambda([a, b, [c]], ...) is this build's variable-arity form;
+ *    generated rules call ExpandToSum with 2 and 3 args under one name;
+ *  - the .m's TogetherSimplify is NOT ported into %mr_rt: Maxima's
+ *    ratsimp/factor expand or factor the argument ((a+b)^2 ->
+ *    a^2+2*a*b+b^2, x^2-1 -> (x-1)*(x+1)), destroying the PowerQ /
+ *    non-product reading. The port feeds the argument to RtAux as stored;
+ *  - Maxima's sign() answers pz for a^2, so the .m's LtQ[#,0] split is
+ *    the strict is(# < 0) reading (Rubi's PosQ/NegQ remain sign-based). */
+
+%mr_sum_from_list(L) := block([s, i],
+  s : 0,
+  for i : 1 thru length(L) do
+    s : s + part(L, i),
+  s)$
+
+%mr_rt_power_parts(u) := block([],
+  if not atom(u) and op(u) = "^"
+  then [part(u, 1), part(u, 2)]
+  else if not atom(u) and op(u) = 'sqrt
+  /* the collapsed 1/2 power node (see the %mr_binomial_parts note) */
+  then [part(u, 1), 1/2]
+  else false)$
+
+%mr_rt_powerQ(u) := not atom(%mr_rt_power_parts(u))$
+
+%mr_rt_power_base(u) := part(%mr_rt_power_parts(u), 1)$
+
+%mr_rt_power_exp(u) := part(%mr_rt_power_parts(u), 2)$
+
+/* the .m's LtQ[#,0] — strict, unknown -> false (NOT Rubi's NegQ) */
+%mr_rt_ltQ(u) := is(u < 0) = true$
+
+/* Rubi :7612  AtomBaseQ[u] */
+%mr_rt_atomBaseQ(u) := block([],
+  if %mr_atomQ(u) then true
+  else if %mr_rt_powerQ(u) then block([e],
+    e : %mr_rt_power_exp(u),
+    integerp(e) and oddp(e)
+    and %mr_rt_atomBaseQ(%mr_rt_power_base(u)))
+  else false)$
+
+/* Rubi :7622  NegSumBaseQ[u] */
+%mr_rt_negSumBaseQ(u) := block([],
+  if not atom(u) and op(u) = "+"
+  then %mr_negQ(part(u, 1))
+  else if %mr_rt_powerQ(u) then block([e],
+    e : %mr_rt_power_exp(u),
+    integerp(e) and oddp(e)
+    and %mr_rt_negSumBaseQ(%mr_rt_power_base(u)))
+  else false)$
+
+/* Rubi :7627  AllNegTermQ[u] */
+%mr_rt_allNegTermQ(u) := block([],
+  if %mr_rt_powerQ(u) then block([e],
+    e : %mr_rt_power_exp(u),
+    if integerp(e) and oddp(e)
+    then %mr_rt_allNegTermQ(%mr_rt_power_base(u))
+    else false)
+  else if not atom(u) and op(u) = "+"
+  then %mr_negQ(part(u, 1)) and %mr_rt_allNegTermQ(rest(u))
+  else %mr_negQ(u))$
+
+/* Rubi :7636  SomeNegTermQ[u] */
+%mr_rt_someNegTermQ(u) := block([],
+  if %mr_rt_powerQ(u) then block([e],
+    e : %mr_rt_power_exp(u),
+    if integerp(e) and oddp(e)
+    then %mr_rt_someNegTermQ(%mr_rt_power_base(u))
+    else false)
+  else if not atom(u) and op(u) = "+"
+  then %mr_negQ(part(u, 1)) or %mr_rt_someNegTermQ(rest(u))
+  else %mr_negQ(u))$
+
+/* Rubi :7676  SplitSum[func, u] — the first TERM v of u for which
+   func[v] is nonatomic, as [func[v], u-v]; false otherwise. rest() of a
+   Maxima sum is the remaining sum (or the last atom), matching the .m
+   Rest[u] reading. */
+%mr_splitSum_aux(func, u) := block([r],
+  if not atom(u) and op(u) = "+" then (
+    r : apply(func, [part(u, 1)]),
+    if not atom(r)
+    then [r, rest(u)]
+    else (
+      r : %mr_splitSum_aux(func, rest(u)),
+      if r # false
+      then [part(r, 1), part(u, 1) + part(r, 2)]
+      else false
+    )
+  )
+  else (
+    r : apply(func, [u]),
+    if not atom(r) then [r, 0] else false
+  ))$
+
+%mr_splitSum(func, u) := %mr_splitSum_aux(func, u)$
+
+/* Rubi :7649  TrigSquareQ[u] — Sin[z]^2 or Cos[z]^2 */
+%mr_trigSquareQ(u) := block([b],
+  if %mr_rt_powerQ(u) and is(%mr_rt_power_exp(u) = 2)
+  then (
+    b : %mr_rt_power_base(u),
+    not atom(b) and (is(op(b) = 'sin) or is(op(b) = 'cos))
+  )
+  else false)$
+
+/* Rubi :7530  TrigSquare[u] — a-a*Sin[z]^2 -> a*Cos[z]^2 (and the Cos
+   twin); false when the non-trig parts do not cancel. */
+%mr_trigSquare(u) := block([lst, tr, z],
+  if not atom(u) and op(u) = "+" then (
+    lst : %mr_splitSum(
+      lambda([z],
+        %mr_splitProduct(lambda([w], %mr_trigSquareQ(w)), z)),
+      u),
+    if lst # false
+      and %mr_eqQ(part(part(lst, 1), 2) + part(lst, 2), 0)
+    then (
+      tr : part(part(part(lst, 1), 1), 1),
+      if is(op(tr) = 'sin)
+      then part(lst, 2)*cos(part(tr, 1))^2
+      else part(lst, 2)*sin(part(tr, 1))^2
+    )
+    else false
+  )
+  else false)$
+
+/* Rubi :7549  RtAux[u, n] — the structural nth-root split. See the
+   cluster note on the omitted TogetherSimplify. */
+%mr_rt_aux(u, n) := block([F, lst, v, Fv, p, i],
+  F : %mr_product_factors(u),
+  if %mr_rt_powerQ(u)
+  then %mr_rt_power_base(u)^(%mr_rt_power_exp(u)/n)
+  else if length(F) > 1 then (
+    lst : %mr_splitProduct(lambda([z], %mr_posQ(z)), u),
+    if lst # false
+    then %mr_rt_aux(part(lst, 1), n)*%mr_rt_aux(part(lst, 2), n)
+    else (
+      lst : %mr_splitProduct(lambda([z], %mr_rt_ltQ(z)), u),
+      if lst # false then (
+        if %mr_eqQ(part(lst, 1), -1) then (
+          v : part(lst, 2),
+          if %mr_rt_powerQ(v) and is(%mr_rt_power_exp(v) < 0)
+          then 1/%mr_rt_aux(
+            -%mr_rt_power_base(v)^(-%mr_rt_power_exp(v)), n)
+          else (
+            Fv : %mr_product_factors(v),
+            if length(Fv) > 1 then (
+              if %mr_splitProduct(
+                    lambda([z], %mr_sumBaseQ(z)), v) # false
+              then (
+                lst : %mr_splitProduct(
+                  lambda([z], %mr_rt_allNegTermQ(z)), v),
+                if lst # false
+                then %mr_rt_aux(-part(lst, 1), n)
+                     *%mr_rt_aux(part(lst, 2), n)
+                else (
+                  lst : %mr_splitProduct(
+                    lambda([z], %mr_rt_negSumBaseQ(z)), v),
+                  if lst # false
+                  then %mr_rt_aux(-part(lst, 1), n)
+                       *%mr_rt_aux(part(lst, 2), n)
+                  else (
+                    lst : %mr_splitProduct(
+                      lambda([z], %mr_rt_someNegTermQ(z)), v),
+                    if lst # false
+                    then %mr_rt_aux(-part(lst, 1), n)
+                         *%mr_rt_aux(part(lst, 2), n)
+                    else (
+                      lst : %mr_splitProduct(
+                        lambda([z], %mr_sumBaseQ(z)), v),
+                      %mr_rt_aux(-part(lst, 1), n)
+                           *%mr_rt_aux(part(lst, 2), n)
+                    )
+                  )
+                )
+              )
+              else (
+                lst : %mr_splitProduct(
+                  lambda([z], %mr_rt_atomBaseQ(z)), v),
+                if lst # false
+                then %mr_rt_aux(-part(lst, 1), n)
+                     *%mr_rt_aux(part(lst, 2), n)
+                else %mr_rt_aux(-part(Fv, 1), n)
+                     *%mr_rt_aux(%mr_product_from_list(rest(Fv)), n)
+              )
+            )
+            else if oddp(n) then -%mr_rt_aux(v, n)
+            else u^(1/n)
+          )
+        )
+        else %mr_rt_aux(-part(lst, 1), n)
+             *%mr_rt_aux(-part(lst, 2), n)
+      )
+      else (
+        lst : %mr_splitProduct(
+          lambda([z], %mr_rt_allNegTermQ(z)), u),
+        if lst # false
+          and %mr_splitProduct(
+                lambda([z], %mr_sumBaseQ(z)), part(lst, 2)) # false
+        then %mr_rt_aux(-part(lst, 1), n)
+             *%mr_rt_aux(-part(lst, 2), n)
+        else (
+          lst : %mr_splitProduct(
+            lambda([z], %mr_rt_negSumBaseQ(z)), u),
+          if lst # false
+            and %mr_splitProduct(
+                  lambda([z], %mr_rt_negSumBaseQ(z)),
+                  part(lst, 2)) # false
+          then %mr_rt_aux(-part(lst, 1), n)
+               *%mr_rt_aux(-part(lst, 2), n)
+          else (
+            p : 1,
+            for i : 1 thru length(F) do
+              p : p*%mr_rt_aux(part(F, i), n),
+            p
+          )
+        )
+      )
+    )
+  )
+  else (
+    lst : %mr_trigSquare(u),
+    if lst # false then %mr_rt_aux(lst, n)
+    else if oddp(n) and %mr_rt_ltQ(u) then -%mr_rt_aux(-u, n)
+    else if oddp(n) and %mr_negQ(u) and %mr_posQ(-u)
+    then -%mr_rt_aux(-u, n)
+    else u^(1/n)
+  ))$
+
+/* Rubi :7513  Rt[u, n] — the simplest nth root of u. */
+%mr_rt(u, n) := %mr_rt_aux(u, n)$
+
+/* Rubi :1239  Expon[expr, form] := Exponent[Together[expr], form].
+   The 3-arg form is declared (the generator's Expon mapping allows it)
+   but fails closed: no class-1 call site uses the exponent-list form. */
+%mr_expon2(u, x) := %mr_degree(%mr_together(u), x)$
+
+%mr_expon : lambda([u, form, [h]],
+  if length(h) = 0 then %mr_expon2(u, form) else false)$
+
+/* Rubi :3343  ExpandToSum[u, x] — u expanded into a sum of monomials of
+   x. The .m's Simp is NOT %mr_simp here: %mr_simp factors (the cluster's
+   whole point is the MONOMIAL-SUM shape, so (x+1)^2 must stay
+   x^2+2*x+1). Rubi :3329  ExpandToSum[u, v, x] is the distribute form. */
+%mr_expandToSum2(u, x) := block([L],
+  if %mr_polyQ(u, x) then expand(u)
+  else if %mr_binomialQ(u, x) then (
+    L : %mr_binomial_parts(u, x),
+    if atom(L) then expand(u)
+    else part(L, 1) + part(L, 2)*x^part(L, 3)
+  )
+  else if %mr_trinomialQ(u, x) then (
+    L : %mr_trinomial_parts(u, x),
+    if atom(L) then expand(u)
+    else part(L, 1) + part(L, 2)*x^part(L, 4)
+         + part(L, 3)*x^(2*part(L, 4))
+  )
+  else if %mr_generalizedBinomialQ(u, x) then (
+    L : %mr_generalizedBinomial_parts(u, x),
+    if atom(L) then expand(u)
+    else part(L, 1)*x^part(L, 4) + part(L, 2)*x^part(L, 3)
+  )
+  else if %mr_generalizedTrinomialQ(u, x) then (
+    L : %mr_generalizedTrinomial_parts(u, x),
+    if atom(L) then expand(u)
+    else part(L, 1)*x^part(L, 5) + part(L, 2)*x^part(L, 4)
+         + part(L, 3)*x^expand(2*part(L, 4) - part(L, 5))
+  )
+  else expand(u))$
+
+%mr_expandToSum : lambda([a, b, [c]],
+  if length(c) = 0
+  then %mr_expandToSum2(a, b)
+  else expand(a*%mr_expandToSum2(b, part(c, 1))))$
+
+/* Rubi :2952  IntPart[u, n_ = 1] — the sum of the integer terms of u.
+   The m_*u_ arm absorbs an EXPLICIT rational leading factor into n;
+   IntegerPart is the floor reading (IntPart + FracPart = u). */
+%mr_intPart_aux(u, n) := block([F, m],
+  if not atom(u) and (op(u) = "*" or op(u) = "-")
+  then (
+    F : %mr_product_factors(u),
+    m : part(F, 1),
+    if length(F) > 1 and %mr_rationalQ(m)
+    then %mr_intPart_aux(%mr_product_from_list(rest(F)), m*n)
+    else 0
+  )
+  else if %mr_rationalQ(u) then floor(n*u)
+  else if not atom(u) and op(u) = "+"
+  then apply("+", map(
+    lambda([z], %mr_intPart_aux(z, n)), %mr_parts_list(u)))
+  else 0)$
+
+%mr_intPart : lambda([u, [n]],
+  %mr_intPart_aux(u, if length(n) = 0 then 1 else part(n, 1)))$
+
+/* Rubi :2969  FracPart[u, n_ = 1] — the sum of the non-integer terms of
+   u (FractionalPart is the floor complement, so FracPart[-3/2] = 1/2). */
+%mr_fracPart_aux(u, n) := block([F, m, r],
+  if not atom(u) and (op(u) = "*" or op(u) = "-")
+  then (
+    F : %mr_product_factors(u),
+    m : part(F, 1),
+    if length(F) > 1 and %mr_rationalQ(m)
+    then %mr_fracPart_aux(%mr_product_from_list(rest(F)), m*n)
+    else n*u
+  )
+  else if %mr_rationalQ(u) then (
+    r : n*u,
+    r - floor(r)
+  )
+  else if not atom(u) and op(u) = "+"
+  then apply("+", map(
+    lambda([z], %mr_fracPart_aux(z, n)), %mr_parts_list(u)))
+  else n*u)$
+
+%mr_fracPart : lambda([u, [n]],
+  %mr_fracPart_aux(u, if length(n) = 0 then 1 else part(n, 1)))$
 
 mr_witness_utils() := true$
