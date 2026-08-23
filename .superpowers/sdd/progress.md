@@ -303,11 +303,44 @@ match+degree, E generalized*, F pairs/split/misc).
   guard in %mr_matchQ relies on the former: true = true -> true,
   lambda = true -> pending -> else).
   24 new probes; suite 149/0.
-- NEXT: cluster B — intLinearQ/intQuadraticQ/intBinomialQ (the
-  defmfun arity dispatch in maxima_rubi_dispatch.lisp, drafted
-  untracked; ground truth: %mr_integersQ 1-arg only, %mr_binomialQ
-  2/3-arg no 4-arg, %mr_intBinomialQ {7,8,10} the only true
-  multi-arity dispatcher; 1_1_1_2 calls %mr_intLinearQ 4x).
+- Cluster B — int-family + binomial — DONE (commit 7d08ae3).
+  %mr_intLinearQ (Rubi 1.1.1.2:44), %mr_intQuadraticQ (1.2.1.2:151),
+  %mr_intBinomialQ 7/8/10-arg (1.1.3.2:118 / 1.1.3.3:73 / 1.1.3.4:89),
+  %mr_binomialQ 2/3-arg + %mr_binomial_parts (BinomialQ :549,
+  BinomialParts :851) — line-ported integrability guards. The class-1
+  arity census (2026-08-23) shows binomialQ 2/3 (40/1) and intBinomialQ
+  7/8/10 (21/10/44) as the only multi-arity names: new
+  maxima_rubi_dispatch.lisp defmfun dispatchers re-dispatch onto the
+  fixed-arity := bodies (named <name><arity>); maxima_rubi.mac loads
+  the .lisp via %mr_load_sibling with a witness that CALLS the
+  dispatched names (missed load leaves them nouns). The draft integersQ
+  dispatcher dropped (census: 1-arg only).
+  MEASURED 5.50.0 traps added (all 2026-08-23): op() hard-errors on
+  ATOMS (symbols included — atom-gate before every op()); op() returns
+  the SYMBOL 'sqrt for the sqrt head while special heads (^,+,*,/,-,[)
+  stay strings (the first draft's string compare never matched);
+  x^(1/2) collapses to a sqrt node (Mathematica stores it as x^(1/2))
+  while x^(3/2) stays a power; 1/x stores as a "/" node, not x^(-1) —
+  the power branch accepts the num = 1 reciprocal shape [0,1,-k]
+  (documented deviation: c/x is one "/" node here, unreachable at the
+  call sites); 3/0 hard-errors where Mathematica's Infinity answers
+  false — the IntBinomialQ7 (m+1)/n disjunct is guarded on n # 0.
+  41 new probes (13 binomialQ / 5 intLinearQ / 6 intQuadraticQ /
+  6 intBinomialQ7 / 4 intBinomialQ8 / 6 intBinomialQ10 + the witness);
+  suite 190/0.
+  NOTE for the final census re-run: probes/census/02's defined_names()
+  reads only the .mac files — the .lisp defmfun names stay "pending"
+  in its output; extend it to parse defmfun from
+  maxima_rubi_dispatch.lisp before re-stamping (else binomialQ /
+  intBinomialQ / intLinearQ / intQuadraticQ still count as pending).
+- NEXT: cluster C — sum/simpler: %mr_sumSimplerQ (36 uses),
+  %mr_simplerQ (28), %mr_simplerSqrtQ (24), %mr_niceSqrtQ (15),
+  %mr_sumQ (12). Remaining C-tier map: D = trinomialQ/linearMatchQ/
+  binomialMatchQ/quadraticQ/quadraticMatchQ/trinomialMatchQ/
+  binomialDegree (17/15/15/10/10/7/6); E = the six generalized*
+  (4/4/2/2/2/1); F = fractionalPowerFactorQ/linearPairQ/
+  perfectSquareQ/rationalFunctionQ/splitProduct/pseudoBinomialPairQ/
+  inverseFunctionQ/algebraicFunctionQ (6/10/3/3/2/2/1/1).
 
 ## Minor findings (triage at final whole-branch review)
 
