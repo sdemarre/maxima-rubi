@@ -559,6 +559,48 @@ rubi(f, x) := mr_int(f, x)$
       if atom(b) then false else %mr_mq_part(pf, i + 1, ef, j, b, opname)
     ) else res))$
 
+/* the expression's flat factors for a "*" / "+" match. A non-flat
+ * single term is one factor; the ONE extra Maxima-surface expansion
+ * (cluster E, measured 2026-08-23): a unary-minus term (-x, -x^2,
+ * -(a+b)) is Mathematica's Times[-1, ...], so against a TIMES pattern
+ * it splits into the factors [-1, <subterm>] — that is what lets the
+ * a_*x^q summand pattern bind a = -1 on a negative sum term (the
+ * generic matcher otherwise sees the "-" node as one indivisible
+ * factor). The "+" side is left as is: a negative SUM TERM is still
+ * one sum term, and the product pattern matched against that term
+ * takes the "*" branch above. */
+%mr_mq_flat_ef(opname, E) := block([i, ef],
+  ef : [],
+  if opname = "*" then (
+    if not atom(E) and is(op(E) = "-") then (
+      ef : append(ef, [-1]),
+      ef : append(ef, [part(E, 1)])
+    )
+    else if atom(E) or not is(op(E) = "*") then ef : append(ef, [E])
+    else for i : 1 thru length(E) do
+      ef : append(ef, [part(E, i)])
+  )
+  else (
+    if atom(E) or not is(op(E) = "+") then ef : append(ef, [E])
+    else for i : 1 thru length(E) do
+      ef : append(ef, [part(E, i)])
+  ),
+  ef)$
+
+/* a power-shaped expression as [base, exponent]: a "^" node as is, or
+ * the collapsed sqrt node (Maxima stores x^(1/2) as 'sqrt(x) — the
+ * op is the SYMBOL 'sqrt, measured in the cluster-B note) as exponent
+ * 1/2. false otherwise. This is what lets a x^q_ pattern term match
+ * the stored sqrt(x) shape (cluster E: the generalized-binomial
+ * fractional-exponent probes). */
+%mr_mq_power_exp(E) := block([],
+  if not atom(E) then (
+    if is(op(E) = "^") then [part(E, 1), part(E, 2)]
+    else if is(op(E) = 'sqrt) then [part(E, 1), 1/2]
+    else false
+  )
+  else false)$
+
 /* flat "*" / "+" match: the expression's factors (a non-flat single
  * term is one factor) partitioned over the pattern's factors.
  * Times and Plus are commutative, and Maxima stores each side in its
@@ -572,20 +614,14 @@ rubi(f, x) := mr_int(f, x)$
 %mr_mq_flat(P, E, B, opname) := block([ef, i, pf, perm, r],
   pf : [],
   for i : 1 thru length(P) do pf : append(pf, [part(P, i)]),
-  if (opname = "*" and (atom(E) or not is(op(E) = "*")))
-    or (opname = "+" and (atom(E) or not is(op(E) = "+")))
-  then ef : [E]
-  else (
-    ef : [],
-    for i : 1 thru length(E) do ef : append(ef, [part(E, i)])
-  ),
+  ef : %mr_mq_flat_ef(opname, E),
   r : false,
   for perm in %mr_perm(pf) do
     if atom(r) then
       r : %mr_mq_part(perm, 1, ef, 1, B, opname),
   r)$
 
-%mr_mq_match(P, E, B) := block([],
+%mr_mq_match(P, E, B) := block([PE],
   if atom(P) then (
     if %mr_isMQMarker(P) then %mr_mq_bind(B, P, E)
     else if is(P = E) then B else false
@@ -593,8 +629,9 @@ rubi(f, x) := mr_int(f, x)$
   elseif op(P) = "*" then %mr_mq_flat(P, E, B, "*")
   elseif op(P) = "+" then %mr_mq_flat(P, E, B, "+")
   elseif op(P) = "^" then (
-    if not atom(E) and op(E) = "^" then
-      %mr_mq_seq(part(P, 1), part(E, 1), part(P, 2), part(E, 2), B)
+    PE : %mr_mq_power_exp(E),
+    if not atom(PE) then
+      %mr_mq_seq(part(P, 1), part(PE, 1), part(P, 2), part(PE, 2), B)
     else (
       /* power-less E = exponent 1 (Maxima drops ^1): a literal 1
          exponent or a marker exponent (which binds 1 — the .m
@@ -684,7 +721,7 @@ rubi(f, x) := mr_int(f, x)$
  * succeed. The first-success %mr_mq_match family above is kept for the
  * cond = true fast path; this is the Rubi MatchQ[u, pat /; cond]
  * semantics where the cond participates in the backtracking. */
-%mr_mq_search(P, E, B, G) := block([],
+%mr_mq_search(P, E, B, G) := block([PE],
   if atom(P) then (
     if %mr_isMQMarker(P) then
       block([b],
@@ -697,9 +734,10 @@ rubi(f, x) := mr_int(f, x)$
   elseif op(P) = "*" then %mr_mq_flat_search(P, E, B, "*", G)
   elseif op(P) = "+" then %mr_mq_flat_search(P, E, B, "+", G)
   elseif op(P) = "^" then (
-    if not atom(E) and op(E) = "^" then
-      %mr_mq_search(part(P, 1), part(E, 1), B,
-        ["match", part(P, 2), part(E, 2), G]
+    PE : %mr_mq_power_exp(E),
+    if not atom(PE) then
+      %mr_mq_search(part(P, 1), part(PE, 1), B,
+        ["match", part(P, 2), part(PE, 2), G]
       )
     else (
       if is(part(P, 2) = 1) then
@@ -718,13 +756,7 @@ rubi(f, x) := mr_int(f, x)$
 %mr_mq_flat_search(P, E, B, opname, G) := block([ef, i, pf, perm, r],
   pf : [],
   for i : 1 thru length(P) do pf : append(pf, [part(P, i)]),
-  if (opname = "*" and (atom(E) or not is(op(E) = "*")))
-    or (opname = "+" and (atom(E) or not is(op(E) = "+")))
-  then ef : [E]
-  else (
-    ef : [],
-    for i : 1 thru length(E) do ef : append(ef, [part(E, i)])
-  ),
+  ef : %mr_mq_flat_ef(opname, E),
   r : false,
   for perm in %mr_perm(pf) do
     if not r then
@@ -1909,6 +1941,362 @@ rubi(f, x) := mr_int(f, x)$
       and freeof(x, %mr_mk(_mr_triMq_r1mq1_n, %mr_mqb))
       and %mr_eqQ(%mr_mk(_mr_triMq_r1mq1_j, %mr_mqb)
             - 2*%mr_mk(_mr_triMq_r1mq1_n, %mr_mqb), 0))))$
+
+/* ---- generalized binomial/trinomial predicates (Task 7a cluster E) --
+ * The six Generalized* shapes of the 1.4.2 normalization rules:
+ * GeneralizedBinomialQ/MatchQ/Degree and GeneralizedTrinomialQ/MatchQ/
+ * Degree (pinned Rubi :579-593, :1016-1088, :1450-1468). The .m Parts
+ * definitions are pattern rules, so the ports run the cluster-A3
+ * matcher with fresh marker atoms and read the binding back. The
+ * binding capture is global-state based (the %mr_mq_capture family):
+ * the Maxima lambda the matcher calls cannot return the binding list
+ * to the caller (its body is a fixed expression), so the cond lambda
+ * stashes the winning binding in %mr_mq_capture and answers true.
+ *
+ * The product cases (a_*u_, x^m_*u_) are guarded against the trivial
+ * no-progress binding (a := 1 / u := self, x^m := x^1 absent / u :=
+ * self) with the %mr_mq_capture_self check: without it the .m's
+ * optional-factor reading recurses on the unchanged u.
+ *
+ * GeneralizedTrinomialParts pins the POSITIVE orientation (n - q > 0)
+ * in the sum-pattern cond: the .m's EqQ[r, 2*n-q] is satisfied by
+ * either endpoint as q, and Maxima's stored (descending) term order
+ * otherwise traps the search on the negative-gap binding, while the
+ * GeneralizedTrinomialDegree use at the 1.4.2 call sites (EqQ against
+ * a BinomialDegree) can only see the positive gap. The boolean
+ * GeneralizedTrinomialQ / MatchQ answers are unchanged (a 3-term
+ * progression always has a positive orientation). */
+
+/* capture the binding list of the first structural match whose cond
+   is true (the cond is a lambda over the binding list, as in
+   %mr_matchQ). %mr_mq_capture_cond / %mr_mq_capture_self are globals
+   because the fixed capture lambda below cannot close over locals
+   (the Maxima lambda-scope limitation, matcher section note). */
+%mr_mq_capture : false$
+%mr_mq_capture_cond : false$
+%mr_mq_capture_self : false$
+
+%mr_mq_capture_lambda : lambda([%mr_mqb],
+  block([r],
+    r : errcatch(%mr_mq_capture_cond(%mr_mqb)),
+    if r = [] then false
+    else if is(first(r)) = true then (
+      %mr_mq_capture : %mr_mqb,
+      true
+    )
+    else false))$
+
+%mr_mq_capture_binding(u, pattern, cond) := block([r],
+  %mr_mq_capture : false,
+  %mr_mq_capture_cond : cond,
+  r : %mr_matchQ(u, pattern, %mr_mq_capture_lambda),
+  if r then %mr_mq_capture else false)$
+
+/* Rubi :1022-1045  GeneralizedBinomialParts[u,x] — [a, b, n, q] iff
+   u ~ a*x^q + b*x^n with n - q > 0 (the .m's PosQ[n-q]), else false.
+   Branch order: unary minus / sum pattern / a_*u_ (scale) /
+   x^m_*u_ over a generalized binomial (shift) / x^m_*u_ over an
+   ordinary binomial (the q := m shift of a + b*x^n). */
+%mr_generalizedBinomial_parts(u, x) := block([r, B, A, U, L, M],
+  if not atom(u) and is(op(u) = "-") then (
+    L : %mr_generalizedBinomial_parts(part(u, 1), x),
+    if atom(L) then false
+    else [-part(L, 1), -part(L, 2), part(L, 3), part(L, 4)]
+  )
+  else (
+    r : false,
+    if not atom(u) and is(op(u) = "+") then (
+      B : %mr_mq_capture_binding(
+        u,
+        _mr_gbp1_r1mq1_a * x^_mr_gbp1_r1mq1_q
+        + _mr_gbp1_r1mq1_b * x^_mr_gbp1_r1mq1_n,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gbp1_r1mq1_a, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gbp1_r1mq1_b, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gbp1_r1mq1_n, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gbp1_r1mq1_q, %mr_mqb))
+          and %mr_posQ(
+            %mr_mk(_mr_gbp1_r1mq1_n, %mr_mqb)
+            - %mr_mk(_mr_gbp1_r1mq1_q, %mr_mqb)))
+      ),
+      if not atom(B) then r : [
+        %mr_mk(_mr_gbp1_r1mq1_a, B),
+        %mr_mk(_mr_gbp1_r1mq1_b, B),
+        %mr_mk(_mr_gbp1_r1mq1_n, B),
+        %mr_mk(_mr_gbp1_r1mq1_q, B)
+      ]
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        _mr_gbp2_r1mq1_a * _mr_gbp2_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gbp2_r1mq1_a, %mr_mqb))
+          and not is(%mr_mk(_mr_gbp2_r1mq1_a, %mr_mqb) = 1)
+          and not is(
+            %mr_mk(_mr_gbp2_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        A : %mr_mk(_mr_gbp2_r1mq1_a, B),
+        U : %mr_mk(_mr_gbp2_r1mq1_u, B),
+        L : %mr_generalizedBinomial_parts(U, x),
+        if atom(L) then false
+        else r : [A*part(L, 1), A*part(L, 2), part(L, 3), part(L, 4)]
+      )
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        x^_mr_gbp3_r1mq1_m * _mr_gbp3_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gbp3_r1mq1_m, %mr_mqb))
+          and not is(
+            %mr_mk(_mr_gbp3_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        M : %mr_mk(_mr_gbp3_r1mq1_m, B),
+        U : %mr_mk(_mr_gbp3_r1mq1_u, B),
+        L : %mr_generalizedBinomial_parts(U, x),
+        if atom(L) then false
+        else if %mr_neQ(M + part(L, 3), 0)
+          and %mr_neQ(M + part(L, 4), 0)
+        then r : [part(L, 1), part(L, 2),
+                  M + part(L, 3), M + part(L, 4)]
+      )
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        x^_mr_gbp4_r1mq1_m * _mr_gbp4_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gbp4_r1mq1_m, %mr_mqb))
+          and not is(
+            %mr_mk(_mr_gbp4_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        M : %mr_mk(_mr_gbp4_r1mq1_m, B),
+        U : %mr_mk(_mr_gbp4_r1mq1_u, B),
+        L : %mr_binomial_parts(U, x),
+        if atom(L) then false
+        else if %mr_neQ(M + part(L, 3), 0)
+        then r : [part(L, 1), part(L, 2), M + part(L, 3), M]
+      )
+    ),
+    if atom(r) then false else r
+  ))$
+
+/* Rubi :579  GeneralizedBinomialQ[u,x] — ListQ[GeneralizedBinomialParts]
+   (the ListQ[u] arm is the generator's list-packing). */
+%mr_generalizedBinomialQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_generalizedBinomialQ(part(u, i), x) then v : false,
+    v
+  )
+  else not atom(%mr_generalizedBinomial_parts(u, x)))$
+
+/* Rubi :1017  GeneralizedBinomialDegree[u,x] := Parts[[3]] - Parts[[4]]
+   (n - q). The .m False[[3]] hard-errors on a non-generalized-binomial;
+   the port fails closed with false (every class-1 call site gates on
+   GeneralizedBinomialQ first). */
+%mr_generalizedBinomialDegree(u, x) := block([L],
+  L : %mr_generalizedBinomial_parts(u, x),
+  if atom(L) then false else part(L, 3) - part(L, 4))$
+
+/* Rubi :1451  GeneralizedBinomialMatchQ[u,x] — MatchQ[u,
+   a_.*x^q_.+b_.*x^n_. /; FreeQ[{a,b,n,q},x]]: the SURFACE two-power
+   sum, no PosQ gate and no product/PolyQ recursion. */
+%mr_generalizedBinomialMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_generalizedBinomialMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(
+    u,
+    _mr_gbm1_r1mq1_a * x^_mr_gbm1_r1mq1_q
+    + _mr_gbm1_r1mq1_b * x^_mr_gbm1_r1mq1_n,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_gbm1_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gbm1_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gbm1_r1mq1_n, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gbm1_r1mq1_q, %mr_mqb)))))$
+
+/* Rubi :1058-1088  GeneralizedTrinomialParts[u,x] — [a, b, c, n, q]
+   iff u ~ a*x^q + b*x^n + c*x^(2*n-q), else false. Branch order:
+   unary minus / sum pattern (positive orientation, section note) /
+    a_*u_ (scale) / the PolyQ+Expon List case (the .m's polynomial
+    fallback; NeQ[q,0] — the q := 0 form is the ORDINARY trinomial,
+    NOT generalized) / x^m_*u_ over a generalized trinomial (shift) /
+    x^m_*u_ over an ordinary trinomial (the q := m shift of
+    a + b*x^n + c*x^(2n), which is what generalizes the q := 0 form). */
+%mr_generalizedTrinomial_parts(u, x) := block([r, B, A, U, L, M, EL],
+  if not atom(u) and is(op(u) = "-") then (
+    L : %mr_generalizedTrinomial_parts(part(u, 1), x),
+    if atom(L) then false
+    else [-part(L, 1), -part(L, 2), -part(L, 3),
+          part(L, 4), part(L, 5)]
+  )
+  else (
+    r : false,
+    if not atom(u) and is(op(u) = "+") then (
+      B : %mr_mq_capture_binding(
+        u,
+        _mr_gtp1_r1mq1_a * x^_mr_gtp1_r1mq1_q
+        + _mr_gtp1_r1mq1_b * x^_mr_gtp1_r1mq1_n
+        + _mr_gtp1_r1mq1_c * x^_mr_gtp1_r1mq1_r,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gtp1_r1mq1_a, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gtp1_r1mq1_b, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gtp1_r1mq1_c, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gtp1_r1mq1_n, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gtp1_r1mq1_q, %mr_mqb))
+          and %mr_posQ(
+            %mr_mk(_mr_gtp1_r1mq1_n, %mr_mqb)
+            - %mr_mk(_mr_gtp1_r1mq1_q, %mr_mqb))
+          and %mr_eqQ(
+            %mr_mk(_mr_gtp1_r1mq1_r, %mr_mqb)
+            - (2*%mr_mk(_mr_gtp1_r1mq1_n, %mr_mqb)
+               - %mr_mk(_mr_gtp1_r1mq1_q, %mr_mqb)),
+            0))
+      ),
+      if not atom(B) then r : [
+        %mr_mk(_mr_gtp1_r1mq1_a, B),
+        %mr_mk(_mr_gtp1_r1mq1_b, B),
+        %mr_mk(_mr_gtp1_r1mq1_c, B),
+        %mr_mk(_mr_gtp1_r1mq1_n, B),
+        %mr_mk(_mr_gtp1_r1mq1_q, B)
+      ]
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        _mr_gtp2_r1mq1_a * _mr_gtp2_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gtp2_r1mq1_a, %mr_mqb))
+          and not is(%mr_mk(_mr_gtp2_r1mq1_a, %mr_mqb) = 1)
+          and not is(
+            %mr_mk(_mr_gtp2_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        A : %mr_mk(_mr_gtp2_r1mq1_a, B),
+        U : %mr_mk(_mr_gtp2_r1mq1_u, B),
+        L : %mr_generalizedTrinomial_parts(U, x),
+        if atom(L) then false
+        else r : [A*part(L, 1), A*part(L, 2), A*part(L, 3),
+                  part(L, 4), part(L, 5)]
+      )
+    ),
+    if atom(r) and %mr_polynomialQ(u, x) then (
+      EL : %mr_exp_list(u, x),
+      if length(EL) = 3
+        and %mr_neQ(part(EL, 1), 0)
+        and %mr_eqQ(
+          part(EL, 3),
+          2*part(EL, 2) - part(EL, 1))
+      then r : [
+        %mr_coeff(u, x, part(EL, 1)),
+        %mr_coeff(u, x, part(EL, 2)),
+        %mr_coeff(u, x, part(EL, 3)),
+        part(EL, 2),
+        part(EL, 1)
+      ]
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        x^_mr_gtp3_r1mq1_m * _mr_gtp3_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gtp3_r1mq1_m, %mr_mqb))
+          and not is(
+            %mr_mk(_mr_gtp3_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        M : %mr_mk(_mr_gtp3_r1mq1_m, B),
+        U : %mr_mk(_mr_gtp3_r1mq1_u, B),
+        L : %mr_generalizedTrinomial_parts(U, x),
+        if atom(L) then false
+        else if %mr_neQ(M + part(L, 4), 0)
+          and %mr_neQ(M + part(L, 5), 0)
+        then r : [part(L, 1), part(L, 2), part(L, 3),
+                  M + part(L, 4), M + part(L, 5)]
+      )
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        x^_mr_gtp4_r1mq1_m * _mr_gtp4_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gtp4_r1mq1_m, %mr_mqb))
+          and not is(
+            %mr_mk(_mr_gtp4_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        M : %mr_mk(_mr_gtp4_r1mq1_m, B),
+        U : %mr_mk(_mr_gtp4_r1mq1_u, B),
+        L : %mr_trinomial_parts(U, x),
+        if atom(L) then false
+        else if %mr_neQ(M + part(L, 4), 0)
+        then r : [part(L, 1), part(L, 2), part(L, 3),
+                  M + part(L, 4), M]
+      )
+    ),
+    if atom(r) then false else r
+  ))$
+
+/* Rubi :590  GeneralizedTrinomialQ[u,x] — ListQ[GeneralizedTrinomialParts]. */
+%mr_generalizedTrinomialQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_generalizedTrinomialQ(part(u, i), x) then v : false,
+    v
+  )
+  else not atom(%mr_generalizedTrinomial_parts(u, x)))$
+
+/* Rubi :1053  GeneralizedTrinomialDegree[u,x] := Parts[[4]] - Parts[[5]]
+   (n - q). Fails closed with false on a non-generalized-trinomial
+   (the .m False[[4]] hard-errors; the call sites gate on Q first). */
+%mr_generalizedTrinomialDegree(u, x) := block([L],
+  L : %mr_generalizedTrinomial_parts(u, x),
+  if atom(L) then false else part(L, 4) - part(L, 5))$
+
+/* Rubi :1465  GeneralizedTrinomialMatchQ[u,x] — MatchQ[u,
+   a_.*x^q_.+b_.*x^n_.+c_.*x^r_. /;
+   FreeQ[{a,b,c,n,q},x] && EqQ[r-(2*n-q),0]]: the SURFACE three-power
+   sum, no product/PolyQ recursion and (unlike the Parts port) no
+   PosQ orientation gate. */
+%mr_generalizedTrinomialMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_generalizedTrinomialMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(
+    u,
+    _mr_gtm1_r1mq1_a * x^_mr_gtm1_r1mq1_q
+    + _mr_gtm1_r1mq1_b * x^_mr_gtm1_r1mq1_n
+    + _mr_gtm1_r1mq1_c * x^_mr_gtm1_r1mq1_r,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_gtm1_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gtm1_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gtm1_r1mq1_c, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gtm1_r1mq1_n, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gtm1_r1mq1_q, %mr_mqb))
+      and %mr_eqQ(
+        %mr_mk(_mr_gtm1_r1mq1_r, %mr_mqb)
+        - (2*%mr_mk(_mr_gtm1_r1mq1_n, %mr_mqb)
+           - %mr_mk(_mr_gtm1_r1mq1_q, %mr_mqb)),
+        0))))$
 
 /* ---- RemoveContent family ------------------------------------------
  * Rubi :1152  RemoveContent[u,x] := with v = NonfreeFactors[u,x],

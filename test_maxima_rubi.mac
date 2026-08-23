@@ -76,6 +76,7 @@ run_all_tests() := block([],
   test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
+  test_cluster_e_predicates(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -804,8 +805,138 @@ test_structural_predicates() := block([],
    true
   )$
 
+  /* Task 7a cluster E — the generalized binomial/trinomial predicates.
+     Expected values hand-computed from the pinned Rubi definitions
+     (GeneralizedBinomialParts :1022-1045, GeneralizedTrinomialParts
+     :1058-1088, the Q/MatchQ/Degree wrappers at :579-593, :1016-1054,
+     :1450-1468). */
+  test_cluster_e_predicates() := block([],
+    print("--- generalized binomial/trinomial predicates (cluster E) ---"),
+    /* generalizedBinomial_parts (Rubi :1022-1045) — [a, b, n, q] iff
+       u ~ a*x^q + b*x^n with n - q > 0 */
+    check("gbp x+x^2",
+          %mr_generalizedBinomial_parts(x + x^2, x), [1, 1, 2, 1]),
+    check("gbp x^2+x (orderless)",
+          %mr_generalizedBinomial_parts(x^2 + x, x), [1, 1, 2, 1]),
+    check("gbp fractional exponents",
+          %mr_generalizedBinomial_parts(2*x^(1/3) + 3*x^(2/3), x),
+          [2, 3, 2/3, 1/3]),
+    check("gbp x^m*(x+x^2) (shift)",
+          %mr_generalizedBinomial_parts(x^m*(x + x^2), x),
+          [1, 1, m + 2, m + 1]),
+    check_not("gbp 3 terms",
+              %mr_generalizedBinomial_parts(x + x^2 + x^3, x)),
+    check_not("gbp single term",
+              %mr_generalizedBinomial_parts(x^2, x)),
+    /* generalizedBinomialQ (Rubi :579) */
+    check_bool("gbQ x+x^2",
+               %mr_generalizedBinomialQ(x + x^2, x)),
+    check_bool("gbQ fractional",
+               %mr_generalizedBinomialQ(2*x^(1/3) + 3*x^(2/3), x)),
+    check_bool("gbQ x^m*(x+x^2) (shift)",
+               %mr_generalizedBinomialQ(x^m*(x + x^2), x)),
+    check_not("gbQ 3 terms",
+              %mr_generalizedBinomialQ(x + x^2 + x^3, x)),
+    check_bool("gbQ list, all",
+               %mr_generalizedBinomialQ([x + x^2, x^(1/2) + x], x)),
+    check_not("gbQ list, one not",
+              %mr_generalizedBinomialQ([x + x^2, x + x^2 + x^3], x)),
+    /* generalizedBinomialDegree (Rubi :1017) — n - q */
+    check("gbDeg x+x^2",
+          %mr_generalizedBinomialDegree(x + x^2, x), 1),
+    check("gbDeg x^2+x (orderless)",
+          %mr_generalizedBinomialDegree(x^2 + x, x), 1),
+    check("gbDeg fractional",
+          %mr_generalizedBinomialDegree(2*x^(1/3) + 3*x^(2/3), x), 1/3),
+    check("gbDeg shift invariant",
+          %mr_generalizedBinomialDegree(x^m*(x + x^2), x), 1),
+    check_not("gbDeg non-gb",
+              %mr_generalizedBinomialDegree(x + x^2 + x^3, x)),
+    /* generalizedBinomialMatchQ (Rubi :1451) — the surface two-power
+       sum, no PosQ gate */
+    check_bool("gbM x+x^2",
+               %mr_generalizedBinomialMatchQ(x + x^2, x)),
+    check_bool("gbM descending exponents (no PosQ)",
+               %mr_generalizedBinomialMatchQ(x^(1/3) + x^(1/2), x)),
+    check_not("gbM product surface",
+              %mr_generalizedBinomialMatchQ(x^m*(x + x^2), x)),
+    check_not("gbM 3 terms",
+              %mr_generalizedBinomialMatchQ(x + x^2 + x^3, x)),
+    check_bool("gbM list, all",
+               %mr_generalizedBinomialMatchQ(
+                 [x + x^2, x^(1/3) + x^(1/2)], x)),
+    check_not("gbM list, one not",
+              %mr_generalizedBinomialMatchQ(
+                [x + x^2, x + x^2 + x^3], x)),
+    /* generalizedTrinomial_parts (Rubi :1058-1088) — [a, b, c, n, q]
+       iff u ~ a*x^q + b*x^n + c*x^(2*n-q) */
+    check("gtp x+x^2+x^3",
+          %mr_generalizedTrinomial_parts(x + x^2 + x^3, x),
+          [1, 1, 1, 2, 1]),
+    check("gtp x^3+x^2+x (orderless)",
+          %mr_generalizedTrinomial_parts(x^3 + x^2 + x, x),
+          [1, 1, 1, 2, 1]),
+    check("gtp fractional exponents",
+          %mr_generalizedTrinomial_parts(
+            2*x^(1/3) + 3*x^(2/3) + 4*x, x),
+          [2, 3, 4, 2/3, 1/3]),
+    /* q = 0 is the ORDINARY trinomial, not generalized: the .m's
+       PolyQ/Expon case carries NeQ[q,0] (usage: n, q, b, c nonzero).
+       The x^m shift below is what generalizes it (q := m). */
+    check_not("gtp 1+x^2+x^4 (q = 0 is ordinary, NeQ[q,0])",
+              %mr_generalizedTrinomial_parts(1 + x^2 + x^4, x)),
+    check("gtp x^m*(1+x^2+x^4) (shift of the q = 0 case)",
+          %mr_generalizedTrinomial_parts(x^m*(1 + x^2 + x^4), x),
+          [1, 1, 1, m + 2, m]),
+    check_not("gtp no progression",
+              %mr_generalizedTrinomial_parts(x + x^2 + x^4, x)),
+    /* generalizedTrinomialQ (Rubi :590) */
+    check_bool("gtQ x+x^2+x^3",
+               %mr_generalizedTrinomialQ(x + x^2 + x^3, x)),
+    check_not("gtQ 1+x^2+x^4 (q = 0 is ordinary)",
+              %mr_generalizedTrinomialQ(1 + x^2 + x^4, x)),
+    check_bool("gtQ x^m*(1+x^2+x^4) (shift)",
+               %mr_generalizedTrinomialQ(x^m*(1 + x^2 + x^4), x)),
+    check_not("gtQ no progression",
+              %mr_generalizedTrinomialQ(x + x^2 + x^4, x)),
+    check_bool("gtQ list, all",
+               %mr_generalizedTrinomialQ(
+                 [x + x^2 + x^3,
+                  2*x^(1/3) + 3*x^(2/3) + 4*x], x)),
+    check_not("gtQ list, one not",
+              %mr_generalizedTrinomialQ(
+                [x + x^2 + x^3, x + x^2 + x^4], x)),
+    /* generalizedTrinomialDegree (Rubi :1053) — n - q */
+    check("gtDeg x+x^2+x^3",
+          %mr_generalizedTrinomialDegree(x + x^2 + x^3, x), 1),
+    check_not("gtDeg 1+x^2+x^4 (q = 0 is ordinary)",
+              %mr_generalizedTrinomialDegree(1 + x^2 + x^4, x)),
+    check("gtDeg shift invariant",
+          %mr_generalizedTrinomialDegree(x^m*(1 + x^2 + x^4), x), 2),
+    check_not("gtDeg non-gt",
+              %mr_generalizedTrinomialDegree(x + x^2 + x^4, x)),
+    /* generalizedTrinomialMatchQ (Rubi :1465) — the surface three-power
+       sum with the progression gate, no product/PolyQ recursion */
+    check_bool("gtM x+x^2+x^3",
+               %mr_generalizedTrinomialMatchQ(x + x^2 + x^3, x)),
+    check_bool("gtM fractional",
+               %mr_generalizedTrinomialMatchQ(
+                 2*x^(1/3) + 3*x^(2/3) + 4*x, x)),
+    check_not("gtM 1+x^2+x^4 (q = 0 is not a surface power term)",
+              %mr_generalizedTrinomialMatchQ(1 + x^2 + x^4, x)),
+    check_not("gtM no progression",
+              %mr_generalizedTrinomialMatchQ(x + x^2 + x^4, x)),
+    check_bool("gtM list, all",
+               %mr_generalizedTrinomialMatchQ(
+                 [x + x^2 + x^3, 2*x^(1/3) + 3*x^(2/3) + 4*x], x)),
+    check_not("gtM list, one not",
+              %mr_generalizedTrinomialMatchQ(
+                [x + x^2 + x^3, x + x^2 + x^4], x)),
+    true
+   )$
+
   test_rules_1_1_1_1_behavior() := block([r],
-   print("--- generated 1.1.1.1 (behavioral) ---"),
+    print("--- generated 1.1.1.1 (behavioral) ---"),
   /* rule 2: the power rule x^m (m free of x, m # -1) */
   check("x^3", rubi(x^3, x), x^4/4),
   check("5x^2", rubi(5*x^2, x), 5*x^3/3),
