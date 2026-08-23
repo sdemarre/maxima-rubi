@@ -408,10 +408,37 @@ match+degree, E generalized*, F pairs/split/misc).
    optional coefficient — linearMatchQ 1+x^2, quadraticMatchQ 1+2x,
    trinomialMatchQ 1+2x stay port-false where the .m answers true.
    66 new probes; suite 331/0.
- - NEXT: cluster E — the six generalized* (4/4/2/2/2/1). F =
-   linearPairQ (10), perfectSquareQ (3), rationalFunctionQ (3),
-   splitProduct (2), pseudoBinomialPairQ (2), inverseFunctionQ (1),
-   algebraicFunctionQ (1).
+  - Cluster E — generalized binomial/trinomial — DONE (commit
+    1f49775). %mr_generalizedBinomialQ (:579),
+    %mr_generalizedTrinomialQ (:590),
+    %mr_generalizedBinomialMatchQ (:1451),
+    %mr_generalizedTrinomialMatchQ (:1465),
+    %mr_generalizedBinomialDegree (:1017),
+    %mr_generalizedTrinomialDegree (:1053), over
+    %mr_generalizedBinomial_parts (:1022) /
+    %mr_generalizedTrinomial_parts (:1058). The .m Parts pattern rules
+    run the A3 matcher with fresh marker atoms; the winning binding is
+    read back through the new %mr_mq_capture helper (global-state —
+    the Maxima lambda the matcher calls cannot return the binding to
+    the caller). The a_*u_ / x^m_*u_ product cases guard the trivial
+    no-progress binding with %mr_mq_capture_self. Matcher surface
+    fixes forced by the cluster: a ^-pattern matches the collapsed
+    sqrt node as exponent 1/2 (x^(1/2) stores as 'sqrt(x)); against a
+    TIMES pattern a unary-minus term splits into [-1, <subterm>]
+    (Mathematica's Times[-1, ...]) so a_*x^q binds a = -1 on a
+    negative sum term. GeneralizedTrinomialParts pins the positive
+    orientation (n - q > 0) in the sum-pattern cond — the .m
+    EqQ[r,2*n-q] is satisfied by either endpoint as q, and Maxima's
+    stored descending term order otherwise traps the search on the
+    negative-gap binding, while the GeneralizedTrinomialDegree call
+    sites can only see the positive gap; the boolean Q/MatchQ answers
+    are unchanged. The q := 0 form is the ORDINARY trinomial, not
+    generalized (the .m PolyQ/Expon case carries NeQ[q,0]); the x^m
+    shift of an ordinary trinomial is what generalizes it. 45 new
+    probes; suite 376/0.
+  - NEXT: cluster F — linearPairQ (10), perfectSquareQ (3),
+    rationalFunctionQ (3), splitProduct (2), pseudoBinomialPairQ (2),
+    inverseFunctionQ (1), algebraicFunctionQ (1).
 
 ## Minor findings (triage at final whole-branch review)
 
