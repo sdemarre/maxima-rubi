@@ -1478,7 +1478,7 @@ rubi(f, x) := mr_int(f, x)$
   )
   else 0)$
 
-%mr_coeff(u, x, n) := block([w, i, t, c, p],
+%mr_coeff3(u, x, n) := block([w, i, t, c, p],
   w : expand(num(rat(u))),
   if atom(w) then (
     p : %mr_term_xexp(w, x),
@@ -1498,6 +1498,14 @@ rubi(f, x) := mr_int(f, x)$
     if p # false and p = n then %mr_term_coeff(w, x, n) else 0
   ))$
 
+/* The generator's powered-form Coeff: Coeff[u, base^power, n] is the
+   coefficient of x^(power*n) when base is the integration variable. */
+%mr_coeff4(u, base, power, n) := %mr_coeff3(u, base, power*n)$
+
+%mr_coeff : lambda([u, base, a, [b]],
+  if length(b) = 0 then %mr_coeff3(u, base, a)
+  else %mr_coeff4(u, base, a, part(b, 1)))$
+
 /* degree in x of a (confirmed) polynomial; degree(0) := 0 by contract
    (the 3-arg PolyQ's NeQ[Coeff[...],0] guard is what rejects 0).
    TOTAL (review fix 2026-08-20, bug B): never leaks a boolean — a term
@@ -1507,6 +1515,7 @@ rubi(f, x) := mr_int(f, x)$
 %mr_degree(u, x) := block([e, i, d, p],
   e : expand(u),
   if is(e = 0) then 0
+  elseif freeof(x, e) then 0
   elseif atom(e) then %mr_term_xexp(e, x)
   elseif op(e) = "+" then (
     d : -1,
@@ -2930,8 +2939,19 @@ rubi(f, x) := mr_int(f, x)$
    but fails closed: no class-1 call site uses the exponent-list form. */
 %mr_expon2(u, x) := %mr_degree(%mr_together(u), x)$
 
+/* The generator's powered-form Expon: Expon[u, base^power] is the degree
+   in base^power (the degree in base divided by power, when that is an
+   integer; -1 otherwise, the Exponent parity). */
+%mr_expon3(u, base, power) := block([d],
+  d : %mr_degree(%mr_together(u), base),
+  if integerp(power) and is(power > 0) and d >= 0
+    and is(mod(d, power) = 0)
+  then d/power
+  else -1)$
+
 %mr_expon : lambda([u, form, [h]],
-  if length(h) = 0 then %mr_expon2(u, form) else false)$
+  if length(h) = 0 then %mr_expon2(u, form)
+  else %mr_expon3(u, form, part(h, 1)))$
 
 /* Rubi :3343  ExpandToSum[u, x] — u expanded into a sum of monomials of
    x. The .m's Simp is NOT %mr_simp here: %mr_simp factors (the cluster's
