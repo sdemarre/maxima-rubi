@@ -25,6 +25,7 @@ SECTION = "1 Algebraic functions"
 SUITE_REL = "reference/maxima-syntax-test-suite"
 N_SHARDS = 18
 
+LAUNCH = "--launch" in sys.argv
 sys.argv = ["corpus_class1_driver.py", SECTION + "/", "999999", "30"]
 _spec = importlib.util.spec_from_file_location("driver",
                                                os.path.join(ROOT, DRIVER))
@@ -89,7 +90,7 @@ plan_lines.append(f"covered entries: {covered}")
 
 print("\n".join(plan_lines))
 
-if "--launch" in sys.argv:
+if LAUNCH:
     pidfile = os.path.join(ROOT, "test", "corpus_class1.shard-pids")
     with open(pidfile, "w", encoding="utf-8") as pf:
         for idx, (a, b, skip, per) in enumerate(jobs):
