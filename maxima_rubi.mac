@@ -36,6 +36,17 @@
 
 %mr_load_sibling("maxima_rubi_utils.mac", 'mr_witness_utils)$
 
+/* The Lisp arity dispatchers (maxima_rubi_dispatch.lisp): %mr_binomialQ
+ * (2/3) and %mr_intBinomialQ (7/8/10) — the two predicates Rubi
+ * overloads by arity (class-1 census 2026-08-23: binomialQ 2/3 =
+ * 40/1, intBinomialQ 7/8/10 = 21/10/44; every other predicate is
+ * 1-arg or fixed-arity). The witness CALLS the dispatched names: a
+ * missed load leaves them nouns and fails loudly here. */
+mr_witness_dispatch() := is(%mr_binomialQ(1 + x, x) = true)
+  and is(%mr_intBinomialQ(1, 1, 1, 1, 1, 1, x) = true)$
+
+%mr_load_sibling("maxima_rubi_dispatch.lisp", 'mr_witness_dispatch)$
+
 /* Milestone-1 core (eager): the 1.1.1.1 rule file — what the Layer A
  * suite verifies behaviorally; 5 rules, safe on any build. */
 %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1)$

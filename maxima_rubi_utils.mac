@@ -655,6 +655,266 @@ rubi(f, x) := mr_int(f, x)$
     else if is(first(r)) = true then true
     else false))$
 
+/* ---- int-family + binomial predicates (Task 7a cluster B) -----------
+ * Rubi's integrability guards (IntLinearQ / IntQuadraticQ /
+ * IntBinomialQ — True iff the product integrates in terms of
+ * non-hypergeometric / non-Appell functions) and the BinomialQ shape
+ * test (a + b*x^n). Line-ports of the pinned Rubi definitions
+ * (provenance in each comment); the .m IntegerQ / IGtQ / ILtQ /
+ * RationalQ / IntegersQ / EqQ map onto the A1 ports — IntegerQ is
+ * integerp on an exact value (Maxima auto-simplifies exact rational
+ * arithmetic, MEASURED 2026-08-23: 1/2 + 1/2 -> 1, so IntegerQ[m+n]
+ * is integerp(m+n)). Arity (class-1 census 2026-08-23): binomialQ
+ * 2/3 and intBinomialQ 7/8/10 are the two multi-arity names — the Lisp
+ * dispatchers in maxima_rubi_dispatch.lisp re-dispatch onto the
+ * fixed-arity bodies here, named <name><arity>; intLinearQ (7) and
+ * intQuadraticQ (8) are fixed-arity and need no dispatcher. */
+
+/* Rubi :70/:379/:384 — IntegerQ, IGtQ[u,n] := IntegerQ[u] && u>n,
+ * ILtQ[u,n] := IntegerQ[u] && u<n. Exact integers only (floats and
+ * symbols fail, as in Mathematica). */
+%mr_integerQ(e) := integerp(e)$
+%mr_IGtQ(u, n) := %mr_integerQ(u) and is(u > n)$
+%mr_ILtQ(u, n) := %mr_integerQ(u) and is(u < n)$
+
+/* the distinct x-exponents of a CONFIRMED polynomial (callers gate on
+ * %mr_polynomialQ), ascending — MEASURED 2026-08-23: sort() orders
+ * exact rationals, member() on numbers returns a boolean, and op()
+ * hard-errors on ATOMS (symbols included) in this build, so the
+ * single-term case is gated on atom() first (expand(x) = x). */
+%mr_exp_list(u, x) := block([e, i, p, L],
+  e : expand(u),
+  L : [],
+  if atom(e) then (
+    p : %mr_term_xexp(e, x),
+    if p # false then L : append(L, [p])
+  )
+  else if op(e) = "+" then (
+    for i : 1 thru length(e) do
+      (
+        p : %mr_term_xexp(part(e, i), x),
+        if p # false and not member(p, L) then L : append(L, [p])
+      )
+  )
+  else (
+    p : %mr_term_xexp(e, x),
+    if p # false then L : append(L, [p])),
+  sort(L))$
+
+/* Rubi :851  BinomialParts[u, x] — [a, b, n] iff u is equivalent to
+ * a + b*x^n (n, b nonzero), else false. LINE port; the branches follow
+ * the .m If-chain (polynomial / power / product / sum; First/Rest
+ * split as first factor-or-term over the rest). DEVIATIONS, both
+ * forced by Maxima's surface, documented:
+ *  - 1/x stores as a "/" node [1, x], NOT a power x^(-1) (MEASURED
+ *    2026-08-23), so the power branch also accepts the num = 1
+ *    reciprocal shape (1/x -> [0, 1, -1]; 1/x^k -> [0, 1, -k]);
+ *  - c/x (Mathematica's Times[c, x^(-1)] — the .m ProductQ branch)
+ *    stores as ONE "/" node [c, x] and is NOT accepted; no class-1
+ *    call site passes that shape (the factors of the (cx)^m (a+bx^n)^p
+ *    products are powers and binomials, never bare reciprocals). */
+%mr_binomial_parts(u, x) := block([d, L, i, f1, r1, L1, L2],
+  if %mr_polynomialQ(u, x) then (
+    d : %mr_degree(u, x),
+    if d = 0 then false
+    else (
+      L : %mr_exp_list(u, x),
+      if length(L) = 1 then [0, %mr_coeff(u, x, d), d]
+      else if length(L) = 2 and is(part(L, 1) = 0)
+      then [%mr_coeff(u, x, 0), %mr_coeff(u, x, d), d]
+      else false
+    )
+  )
+  elseif op(u) = "^" and is(part(u, 1) = x) and freeof(x, part(u, 2))
+  then [0, 1, part(u, 2)]
+  elseif op(u) = 'sqrt and is(part(u, 1) = x)
+  /* Mathematica stores Sqrt[x] AS x^(1/2) (PowerQ is true); this
+     Maxima build collapses exactly the 1/2 power to a sqrt node
+     (MEASURED 2026-08-23: op(x^(1/2)) = 'sqrt, op(x^(3/2)) = "^") —
+     accept the collapsed shape with the same reading (b = 1, n = 1/2).
+     NOTE: op() in this build returns the SYMBOL 'sqrt for the sqrt
+     head (is(op(sqrt(x)) = 'sqrt) is true; the string "sqrt" never
+     matches) while special heads (^, +, *, /, -, [) stay strings. */
+  then [0, 1, 1/2]
+  elseif op(u) = "/" and is(num(u) = 1) then (
+    if is(denom(u) = x) then [0, 1, -1]
+    else if op(denom(u)) = "^" and is(part(denom(u), 1) = x)
+      and freeof(x, part(denom(u), 2))
+    then [0, 1, -part(denom(u), 2)]
+    else false
+  )
+  elseif op(u) = "*" then (
+    f1 : part(u, 1),
+    r1 : part(u, 2),
+    for i : 3 thru length(u) do r1 : r1 * part(u, i),
+    if freeof(x, f1) then (
+      L2 : %mr_binomial_parts(r1, x),
+      if atom(L2) then false
+      else [f1*part(L2, 1), f1*part(L2, 2), part(L2, 3)]
+    )
+    else if freeof(x, r1) then (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else [r1*part(L1, 1), r1*part(L1, 2), part(L1, 3)]
+    )
+    else (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else (
+        L2 : %mr_binomial_parts(r1, x),
+        if atom(L2) then false
+        else if %mr_eqQ(part(L1, 1), 0) then (
+          if %mr_eqQ(part(L2, 1), 0)
+          then [0, part(L1, 2)*part(L2, 2), part(L1, 3) + part(L2, 3)]
+          else if %mr_eqQ(part(L1, 3) + part(L2, 3), 0)
+          then [part(L1, 2)*part(L2, 2), part(L1, 2)*part(L2, 1), part(L1, 3)]
+          else false
+        )
+        else if %mr_eqQ(part(L2, 1), 0) then (
+          if %mr_eqQ(part(L1, 3) + part(L2, 3), 0)
+          then [part(L1, 2)*part(L2, 2), part(L1, 1)*part(L2, 2), part(L2, 3)]
+          else false
+        )
+        else if is(part(L1, 3) = part(L2, 3))
+          and %mr_eqQ(part(L1, 1)*part(L2, 2) + part(L1, 2)*part(L2, 1), 0)
+        then [part(L1, 1)*part(L2, 1), part(L1, 2)*part(L2, 2), 2*part(L1, 3)]
+        else false
+      )
+    )
+  )
+  elseif op(u) = "+" then (
+    f1 : part(u, 1),
+    r1 : part(u, 2),
+    for i : 3 thru length(u) do r1 : r1 + part(u, i),
+    if freeof(x, f1) then (
+      L2 : %mr_binomial_parts(r1, x),
+      if atom(L2) then false
+      else [f1 + part(L2, 1), part(L2, 2), part(L2, 3)]
+    )
+    else if freeof(x, r1) then (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else [r1 + part(L1, 1), part(L1, 2), part(L1, 3)]
+    )
+    else (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else (
+        L2 : %mr_binomial_parts(r1, x),
+        if atom(L2) then false
+        else if is(part(L1, 3) = part(L2, 3))
+        then [part(L1, 1) + part(L2, 1), part(L1, 2) + part(L2, 2), part(L1, 3)]
+        else false
+      )
+    )
+  )
+  else false)$
+
+/* Rubi :549/:555  BinomialQ[u, x] / BinomialQ[u, x, n] — the 2/3-arg
+ * dispatch targets (maxima_rubi_dispatch.lisp); the list-first-arg arm
+ * is the .m ListQ[u] branch (the generator's list-packing). */
+%mr_binomialQ2(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_binomialQ2(part(u, i), x) then v : false,
+    v
+  )
+  else not atom(%mr_binomial_parts(u, x)))$
+
+%mr_binomialQ3(u, x, n) := block([L, i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_binomialQ3(part(u, i), x, n) then v : false,
+    v
+  )
+  else (
+    L : %mr_binomial_parts(u, x),
+    if atom(L) then false else is(part(L, 3) = n)))$
+
+/* Rubi 1.1.1.2:44  IntLinearQ[a, b, c, d, m, n, x] — True iff
+ * (a+b*x)^m (c+d*x)^n integrates in non-hypergeometric terms.
+ * Fixed 7-arg (census: 4 call sites, all 7-arg); a-d unused by the
+ * body, as in the .m. */
+%mr_intLinearQ(a, b, c, d, m, n, x) :=
+  %mr_IGtQ(m, 0) or %mr_IGtQ(n, 0)
+  or %mr_integersQ([3*m, 3*n]) or %mr_integersQ([4*m, 4*n])
+  or %mr_integersQ([2*m, 6*n]) or %mr_integersQ([6*m, 2*n])
+  or %mr_ILtQ(m + n, -1)
+  or %mr_integerQ(m + n) and %mr_rationalQ(m)$
+
+/* Rubi 1.2.1.2:151  IntQuadraticQ[a, b, c, d, e, m, p, x] — True iff
+ * (d+e*x)^m (a+b*x+c*x^2)^p integrates in non-Appell terms.
+ * Fixed 8-arg (census: 21 call sites, all 8-arg). */
+%mr_intQuadraticQ(a, b, c, d, e, m, p, x) :=
+  %mr_integerQ(p) or %mr_IGtQ(m, 0)
+  or %mr_integersQ([2*m, 2*p]) or %mr_integersQ([m, 4*p])
+  or %mr_integersQ([m, p + 1/3])
+     and (%mr_eqQ(c^2*d^2 - b*c*d*e + b^2*e^2 - 3*a*c*e^2, 0)
+          or %mr_eqQ(c^2*d^2 - b*c*d*e - 2*b^2*e^2 + 9*a*c*e^2, 0))$
+
+/* Rubi 1.1.3.2:118  IntBinomialQ[a, b, c, n, m, p, x] — True iff
+ * (c*x)^m (a+b*x^n)^p integrates in non-hypergeometric terms. The
+ * 7-arg dispatch target. The (m+1)/n disjunct is guarded on n # 0:
+ * Maxima hard-errors 3/0 ("expt: undefined: 0 to a negative exponent",
+ * MEASURED 2026-08-23) where Mathematica's Infinity answers
+ * IntegerQ -> false. */
+%mr_intBinomialQ7(a, b, c, n, m, p, x) :=
+  %mr_IGtQ(p, 0)
+  or (%mr_rationalQ(m) and %mr_integersQ([n, 2*p]))
+  or is(n # 0) and %mr_integerQ((m + 1)/n + p)
+  or (is(n = 2) or is(n = 4)) and %mr_integersQ([2*m, 4*p])
+  or is(n = 2) and %mr_integerQ(6*p)
+     and (%mr_integerQ(m) or %mr_integerQ(m - p))$
+
+/* Rubi 1.1.3.3:73  IntBinomialQ[a, b, c, d, n, p, q, x] — True iff
+ * (a+b*x^n)^p (c+d*x^n)^q integrates in non-Appell terms.
+ * The 8-arg dispatch target. */
+%mr_intBinomialQ8(a, b, c, d, n, p, q, x) :=
+  %mr_integersQ([p, q])
+  or %mr_IGtQ(p, 0) or %mr_IGtQ(q, 0)
+  or (is(n = 2) or is(n = 4))
+     and (%mr_integersQ([p, 4*q]) or %mr_integersQ([4*p, q]))
+  or is(n = 2)
+     and (%mr_integersQ([2*p, 2*q])
+          or (%mr_integersQ([3*p, q]) and %mr_eqQ(b*c + 3*a*d, 0))
+          or (%mr_integersQ([p, 3*q]) and %mr_eqQ(3*b*c + a*d, 0)))
+  or is(n = 3) and (%mr_integersQ([p + 1/3, q]) or %mr_integersQ([q + 1/3, p]))
+  or is(n = 3) and (%mr_integersQ([p + 2/3, q]) or %mr_integersQ([q + 2/3, p]))
+     and %mr_eqQ(b*c + a*d, 0)$
+
+/* Rubi 1.1.3.4:89  IntBinomialQ[a, b, c, d, e, m, n, p, q, x] —
+ * True iff (e*x)^m (a+b*x^n)^p (c+d*x^n)^q integrates in non-Appell
+ * terms. The 10-arg dispatch target. */
+%mr_intBinomialQ10(a, b, c, d, e, m, n, p, q, x) :=
+  %mr_integersQ([p, q])
+  or %mr_IGtQ(p, 0) or %mr_IGtQ(q, 0)
+  or is(n = 2)
+     and (%mr_integersQ([m, 2*p, 2*q])
+          or %mr_integersQ([2*m, p, 2*q])
+          or %mr_integersQ([2*m, 2*p, q]))
+  or is(n = 4) and (%mr_integersQ([m, p, 2*q]) or %mr_integersQ([m, 2*p, q]))
+  or is(n = 2) and %mr_integersQ([m/2, p + 1/3, q])
+     and (%mr_eqQ(b*c + 3*a*d, 0) or %mr_eqQ(b*c - 9*a*d, 0))
+  or is(n = 2) and %mr_integersQ([m/2, q + 1/3, p])
+     and (%mr_eqQ(a*d + 3*b*c, 0) or %mr_eqQ(a*d - 9*b*c, 0))
+  or is(n = 3) and %mr_integersQ([(m - 1)/3, q, p - 1/2])
+     and (%mr_eqQ(b*c - 4*a*d, 0) or %mr_eqQ(b*c + 8*a*d, 0)
+          or %mr_eqQ(b^2*c^2 - 20*a*b*c*d - 8*a^2*d^2, 0))
+  or is(n = 3) and %mr_integersQ([(m - 1)/3, p, q - 1/2])
+     and (%mr_eqQ(4*b*c - a*d, 0) or %mr_eqQ(8*b*c + a*d, 0)
+          or %mr_eqQ(8*b^2*c^2 + 20*a*b*c*d - a^2*d^2, 0))
+  or is(n = 3)
+     and (%mr_integersQ([m, q, 3*p]) or %mr_integersQ([m, p, 3*q]))
+     and %mr_eqQ(b*c + a*d, 0)
+  or is(n = 3)
+     and (%mr_integersQ([(m + 2)/3, p + 2/3, q])
+          or %mr_integersQ([(m + 2)/3, q + 2/3, p]))
+  or is(n = 3)
+     and (%mr_integersQ([m/3, p + 1/3, q])
+          or %mr_integersQ([m/3, q + 1/3, p]))$
+
 /* ---- coefficient / degree machinery --------------------------------
  * Maxima's coefficient/degree/maxexpt are NOUNS in this build (T4 §6,
  * re-measured 2026-08-20), so %mr_coeff and the degree-based %mr_polyQ
