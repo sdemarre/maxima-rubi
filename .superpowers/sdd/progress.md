@@ -492,9 +492,24 @@ match+degree, E generalized*, F pairs/split/misc).
       (:1668) as the monic x-dependent gcd, and
       %mr_rationalFunctionExpand (:1644) over the algebraic
       ExpandIntegrand surface. 13 new probes; suite 485/0.
-    - NEXT: cluster K — the last B-tier names (intSum, root, hold) and
-      a pass over the deferred ExpandIntegrand / SubstFor branches that
-      class-1 actually reaches, if any.
+    - Cluster K — last B-tier names — DONE (commit 3b1ab1e).
+      %mr_root (the rational reading of the Mathematica Root object:
+      k-th explicit-rational root in ascending order, false to decline),
+      %mr_intSum / %mr_intTerm (:7694/:7699) over FreeTerms /
+      IntTerm with the linear-power and quotient readings, and
+      %mr_hold (the identity ShowStep wrapper). 16 new probes; suite
+      501/0.
+    - Task 7 completion gate — PASSED. Every `%mr_*` name in
+      translation_table.py is now defined in maxima_rubi_utils.mac
+      (the missing-name census is empty); Layer A is 501/0; the parse
+      sweep and load curve are clean. Deferred fidelity branches remain
+      documented in the cluster notes (the .m's log/trig/smart-apart
+      ExpandIntegrand branches, the SubstFor trig/inverse-function
+      branches, the RationalFunctionExpand factor split) — they are not
+      reached by the Layer A surface and are revisited if the Layer B
+      corpus reaches them.
+    - NEXT: Task 8 — Layer B, the corpus driver + 1.1.1.2 smoke
+      (test/corpus_class1_driver.py + test/mr_preload.mac).
 
 ## Minor findings (triage at final whole-branch review)
 
