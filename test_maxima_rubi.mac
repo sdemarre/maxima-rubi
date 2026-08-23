@@ -79,6 +79,7 @@ run_all_tests() := block([],
   test_cluster_e_predicates(),
   test_cluster_f_predicates(),
   test_cluster_g_shims(),
+  test_cluster_h_shims(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -1065,6 +1066,30 @@ test_structural_predicates() := block([],
     check("fP x", %mr_fracPart(x), x),
     check("fP 3/2*x", %mr_fracPart(3/2*x), 3/2*x),
     check("fP sum", %mr_fracPart(3/2 + x), 1/2 + x),
+    true
+   )$
+
+  test_cluster_h_shims() := block([],
+    print("--- cluster H shims ---"),
+    /* polyQuotient / polyRemainder / polyDivide — the Maxima quotient /
+       remainder / divide builtins under the project names */
+    check("pQ basic",
+          %mr_polyQuotient(x^3 + x, x^2 + 1, x), x),
+    check("pQ by x",
+          %mr_polyQuotient(x^3 + x, x, x), x^2 + 1),
+    check("pR basic",
+          %mr_polyRemainder(x^3 + 1, x^2 + 1, x), 1 - x),
+    check("pR by x",
+          %mr_polyRemainder(x^3 + 1, x, x), 1),
+    check("pDiv",
+          %mr_polyDivide(x^3 + 1, x^2 + 1, x), [x, 1 - x]),
+    /* inverse-hyperbolic log shims (unbound in this build) */
+    check("atanh 1/2", %mr_atanh(1/2), 1/2*log(3)),
+    check("atanh 0", %mr_atanh(0), 0),
+    check("asinh 0", %mr_asinh(0), 0),
+    check("asinh 1", %mr_asinh(1), log(1 + sqrt(2))),
+    check("acosh 1", %mr_acosh(1), 0),
+    check("acosh 2", %mr_acosh(2), log(2 + sqrt(3))),
     true
    )$
 

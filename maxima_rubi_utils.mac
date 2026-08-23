@@ -3012,4 +3012,46 @@ rubi(f, x) := mr_int(f, x)$
 %mr_fracPart : lambda([u, [n]],
   %mr_fracPart_aux(u, if length(n) = 0 then 1 else part(n, 1)))$
 
+/* ---- cluster H: the small remaining B-tier shims --------------------
+ * PolyQuotient / PolyRemainder / PolyDivide are the Maxima quotient /
+ * remainder / divide builtins under the project names (the fail-closed
+ * guard is the %mr_polynomialQ pair — a non-polynomial argument is a
+ * rule-condition bug, not a division). ArcTanh / ArcSinh / ArcCosh are
+ * unbound in this build and get the log forms. */
+
+%mr_polyQuotient(u, v, x) := block([r],
+  if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
+  then (
+    r : errcatch(quotient(u, v, x)),
+    if is(r = []) then false else part(r, 1)
+  )
+  else false)$
+
+%mr_polyRemainder(u, v, x) := block([r],
+  if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
+  then (
+    r : errcatch(remainder(u, v, x)),
+    if is(r = []) then false else part(r, 1)
+  )
+  else false)$
+
+%mr_polyDivide(u, v, x) := block([r],
+  if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
+  then (
+    r : errcatch(divide(u, v, x)),
+    if is(r = [])
+    then [false, false]
+    else [part(part(r, 1), 1), part(part(r, 1), 2)]
+  )
+  else [false, false])$
+
+%mr_atanh(u) := 1/2*log((1 + u)/(1 - u))$
+
+%mr_asinh(u) := log(u + sqrt(u^2 + 1))$
+
+/* sqrt(z-1)*sqrt(z+1) (not sqrt(z^2-1)): the branch reading the .m's
+   ArcCosh wants on the real axis, and the acosh(1) probe pins the
+   sqrt(0) corner. */
+%mr_acosh(u) := log(u + sqrt(u - 1)*sqrt(u + 1))$
+
 mr_witness_utils() := true$
