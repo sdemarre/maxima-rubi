@@ -465,9 +465,19 @@ match+degree, E generalized*, F pairs/split/misc).
       not Rubi's NegQ. 32 new probes; suite 452/0. Same commit fixes
       %mr_symbols on negative rationals (length 2, one part — the
       unary-minus quirk) where %mr_eqQ used to hard-error.
-    - NEXT: cluster H — the remaining high-usage B-tier shims:
-      expandIntegrand (203), polyQuotient (110), polyRemainder (74),
-      atanh (36), asinh (2), acosh (1).
+    - Cluster H — small remaining B-tier shims — DONE (commit 8a7a5e3).
+      %mr_polyQuotient / %mr_polyRemainder / %mr_polyDivide over the
+      Maxima quotient / remainder / divide builtins (fail-closed on the
+      %mr_polynomialQ pair), and the unbound inverse-hyperbolic log
+      shims %mr_atanh / %mr_asinh / %mr_acosh. 11 new probes; suite
+      463/0.
+    - NEXT: cluster I — expandIntegrand (203 uses) and its helper
+      surface (DistributeOverTerms / NonfreeTerms / FreeTerms /
+      MergeMonomials / ExpandLinearProduct / ExpandExpression /
+      SimplifyTerm / CollectRecipTerms), then the remaining B-tier
+      names (cancel, substFor, substPower, polyGCD,
+      rationalFunctionExpand, normalizePseudoBinomial, dist, intSum,
+      root, hold, coefficientList).
 
 ## Minor findings (triage at final whole-branch review)
 
