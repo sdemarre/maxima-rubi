@@ -333,14 +333,55 @@ match+degree, E generalized*, F pairs/split/misc).
   in its output; extend it to parse defmfun from
   maxima_rubi_dispatch.lisp before re-stamping (else binomialQ /
   intBinomialQ / intLinearQ / intQuadraticQ still count as pending).
-- NEXT: cluster C — sum/simpler: %mr_sumSimplerQ (36 uses),
-  %mr_simplerQ (28), %mr_simplerSqrtQ (24), %mr_niceSqrtQ (15),
-  %mr_sumQ (12). Remaining C-tier map: D = trinomialQ/linearMatchQ/
-  binomialMatchQ/quadraticQ/quadraticMatchQ/trinomialMatchQ/
-  binomialDegree (17/15/15/10/10/7/6); E = the six generalized*
-  (4/4/2/2/2/1); F = fractionalPowerFactorQ/linearPairQ/
-  perfectSquareQ/rationalFunctionQ/splitProduct/pseudoBinomialPairQ/
-  inverseFunctionQ/algebraicFunctionQ (6/10/3/3/2/2/1/1).
+- Cluster C — sum/simpler — DONE (commit 0548a48).
+  %mr_sumQ (:176), %mr_sumSimplerQ (:774) + %mr_sumSimplerAuxQ
+  (:784, the three .m definitions: split-v AND over v's terms /
+  split-u OR over u's terms / base: v # 0, NNF equality, NF ratio
+  < -1/2 with the -1/2 tie broken by NF[u] < 0), %mr_simplerQ
+  (:677), %mr_simplerSqrtQ (:732), %mr_niceSqrtQ (:647),
+  %mr_fractionalPowerFactorQ (:658 — the NiceSqrtQ dependency,
+  pulled forward from cluster F), plus %mr_numericFactor /
+  %mr_nonnumericFactors (:1096/:1125) + %mr_rest_sum helper the
+  SumSimplerAuxQ splits need, and the internal shims %mr_numberQ /
+  %mr_complexNumberQ / %mr_orderedQ (NumberQ/ComplexNumberQ/
+  OrderedQ — no Maxima builtins: complexp is a NOUN in 5.50.0).
+  MEASURED 5.50.0 traps added (all 2026-08-23): is() returns the
+  SYMBOL unknown for an undecidable relation and `if unknown` stays
+  unevaluated, while a bare `(a op b) = true` is NOT evaluated (stays
+  an equation) — conditions use the `is(a op b) = true` coercion, and
+  the VALUE position of a decidable comparison returns the bare
+  is() boolean (is(X) = true as a VALUE leaks the equation
+  false = true on a false answer — caught by the simplerSqrtQ 2 3
+  probe, which also pinned that the .m PosQ[u] && PosQ[v] branch is
+  the BARE LeafCount comparison: a tie answers false, the
+  Not[OrderedQ] tiebreak is only in the both-non-positive branch);
+  numberp covers exactly the real explicit numbers (1/2 is a "/"
+  node and numberp TRUE; %i/%pi/E/%inf/symbols false); the only
+  atomic complex is %i (-%i is a unary "-" node); sqrt normalizes
+  aggressively where Mathematica holds — sqrt(x^2) -> abs(x)
+  (documented divergence: niceSqrtQ(x^2) true here, false in Rubi —
+  unreachable at the class-1 discriminant sites), sqrt(2*x) ->
+  sqrt(2)*sqrt(x), x^(1/2) -> 'sqrt node, x^(-1/2) -> 1/sqrt(x) —
+  hence FPF carries 'sqrt / "/" / unary "-" branches; NF/NNF need
+  atom-gates before op() and unary "-" branches (Maxima stores -3*m
+  as a minus node, not a product with -1) and for-loop products
+  where the .m Maps over a product (Map keeps non-list heads in
+  Mathematica); SimplerSqrtQ's undecidable-sign case reproduces
+  Rubi's pending-If decline by answering false (never true);
+  sign() hard-errors on imaginary arguments (errcatch-able);
+  OrderedQ is a total-order stand-in on sort() (measured: numbers
+  first, %pi before bare symbols, x before 2*x — any consistent
+  total order suffices for the tiebreak uses). The ContentFactor
+  kludge (NF/NNF sum branches, LeafCount < 50 path) is omitted with
+  the .m's GCD fallback kept — a sum only reaches them through a
+  product-of-sums inside a captured exponent (no class-1 site).
+  75 new probes; suite 265/0.
+- NEXT: cluster D — trinomialQ (17), linearMatchQ (15),
+  binomialMatchQ (15), quadraticQ (10), quadraticMatchQ (10),
+  trinomialMatchQ (7), binomialDegree (6). E = the six generalized*
+  (4/4/2/2/2/1); F = linearPairQ (10), perfectSquareQ (3),
+  rationalFunctionQ (3), splitProduct (2), pseudoBinomialPairQ (2),
+  inverseFunctionQ (1), algebraicFunctionQ (1).
 
 ## Minor findings (triage at final whole-branch review)
 
