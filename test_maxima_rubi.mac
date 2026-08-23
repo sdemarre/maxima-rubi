@@ -75,6 +75,7 @@ run_all_tests() := block([],
   test_matchQ_predicates(),
   test_int_family_predicates(),
   test_sum_simpler_predicates(),
+  test_cluster_d_predicates(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -626,8 +627,185 @@ test_structural_predicates() := block([],
   true
   )$
 
- test_rules_1_1_1_1_behavior() := block([r],
-  print("--- generated 1.1.1.1 (behavioral) ---"),
+  /* Task 7a cluster D — the trinomial/quadratic/binomial-degree
+     predicates. Expected values hand-computed from the pinned Rubi
+     definitions (provenance in maxima_rubi_utils.mac). The *MatchQ
+     conds are threaded through the matcher's structural backtracking,
+     so the unit-coefficient bare-power cases now answer as in Rubi.
+     The remaining port-false pins are the matcher's absent-rule
+     corner: a product factor containing a literal (b_*x, c_*x^2)
+     cannot be deleted as a whole by its optional coefficient. */
+  test_cluster_d_predicates() := block([],
+   print("--- trinomial/quadratic/binomial-degree predicates (cluster D) ---"),
+   /* quadraticQ (Rubi :1380) — PolyQ[u,x,2] && Not[c0===0 && c1===0] */
+   check_bool("quadraticQ 1+x+x^2", %mr_quadraticQ(1 + x + x^2, x)),
+   check_bool("quadraticQ 1+x^2 (c0 nonzero, c1 = 0)",
+              %mr_quadraticQ(1 + x^2, x)),
+   check_bool("quadraticQ 3*x+5*x^2 (c0 = 0, c1 nonzero)",
+              %mr_quadraticQ(3*x + 5*x^2, x)),
+   check_not("quadraticQ 5*x^2 (a*x^2 monomial)", %mr_quadraticQ(5*x^2, x)),
+   check_not("quadraticQ 1+2*x (degree 1)", %mr_quadraticQ(1 + 2*x, x)),
+   check_not("quadraticQ 1+x+x^2+x^3 (degree 3)",
+             %mr_quadraticQ(1 + x + x^2 + x^3, x)),
+   check_bool("quadraticQ (1+x)^2 (unexpanded power, coeffs via expand)",
+              %mr_quadraticQ((1 + x)^2, x)),
+   check_bool("quadraticQ list, all quadratic",
+              %mr_quadraticQ([1 + x + x^2, 3*x + 5*x^2], x)),
+   check_not("quadraticQ list, one not",
+             %mr_quadraticQ([1 + x + x^2, 5*x^2], x)),
+   /* binomialDegree (Rubi :846) — BinomialParts[u,x][[3]] */
+   check("binomialDegree 3+5x^2", %mr_binomialDegree(3 + 5*x^2, x), 2),
+   check("binomialDegree x^2 (a = 0)", %mr_binomialDegree(x^2, x), 2),
+   check("binomialDegree 1/x (reciprocal corner, n = -1)",
+         %mr_binomialDegree(1/x, x), -1),
+   /* the .m False[[3]] hard-errors on a non-binomial; the port fails
+      closed (call sites gate on BinomialQ first) */
+   check_not("binomialDegree x+x^2 (non-binomial, fails closed)",
+             %mr_binomialDegree(x + x^2, x)),
+   /* linearMatchQ (Rubi :1420) — MatchQ[u, a_.+b_.*x /; FreeQ[{a,b},x]] */
+   check_bool("linearMatchQ 1+2*x", %mr_linearMatchQ(1 + 2*x, x)),
+   check_bool("linearMatchQ 2*x+3 (stored term order)",
+              %mr_linearMatchQ(2*x + 3, x)),
+   check_bool("linearMatchQ x (a = 0 absent)", %mr_linearMatchQ(x, x)),
+    /* Rubi: TRUE (a = 1+x^2, b = 0 — the absent x term). The port's
+       matcher cannot make a product factor (b_*x) absent in a sum:
+       the x literal has no Optional default, so no structural
+       binding exists. Unreachable at the call sites: the LinearQ
+       guard guarantees a real b*x term. */
+    check_not("linearMatchQ 1+x^2 (Rubi true, b = 0 absent-corner)",
+             %mr_linearMatchQ(1 + x^2, x)),
+   check_bool("linearMatchQ list, all linear",
+              %mr_linearMatchQ([1 + x, 3*x], x)),
+   check_not("linearMatchQ list, one not (x^2+2*x)",
+             %mr_linearMatchQ([1 + x, x^2 + 2*x], x)),
+   /* quadraticMatchQ (Rubi :1427) — the a_.+b_*x+c_*x^2 pattern OR
+      the a_.+c_*x^2 pattern */
+   check_bool("quadraticMatchQ 1+2x+3x^2",
+              %mr_quadraticMatchQ(1 + 2*x + 3*x^2, x)),
+   check_bool("quadraticMatchQ 1+3x^2 (2-term pattern)",
+              %mr_quadraticMatchQ(1 + 3*x^2, x)),
+   check_bool("quadraticMatchQ 2x+3x^2 (a = 0)",
+              %mr_quadraticMatchQ(2*x + 3*x^2, x)),
+   check_bool("quadraticMatchQ x^2 (a = 0, c = 1)",
+              %mr_quadraticMatchQ(x^2, x)),
+   check_not("quadraticMatchQ 1+x+x^2+x^3 (degree 3)",
+             %mr_quadraticMatchQ(1 + x + x^2 + x^3, x)),
+   /* Rubi: TRUE (a = 1, c = 0 — the absent x^2 term). Unreachable at
+      the call sites: the QuadraticQ guard guarantees a real x^2 term. */
+   check_not("quadraticMatchQ 1+2*x (Rubi true, c = 0 absent-corner)",
+             %mr_quadraticMatchQ(1 + 2*x, x)),
+   check_bool("quadraticMatchQ list, all",
+              %mr_quadraticMatchQ([1 + 2*x + 3*x^2, x^2], x)),
+   check_not("quadraticMatchQ list, one not",
+             %mr_quadraticMatchQ([1 + 2*x + 3*x^2, 1 + x + x^2 + x^3], x)),
+    /* binomialMatchQ (Rubi :1444) — MatchQ[u, a_.+b_.*x^n_. /;
+       FreeQ[{a,b,n},x]]. The orderless partition search plus the
+       threaded freeof cond finds the Rubi-faithful binding even when
+       Maxima's stored order presents the coefficient-absorbing
+       binding first. */
+    check_bool("binomialMatchQ 3+5x^2", %mr_binomialMatchQ(3 + 5*x^2, x)),
+    check_bool("binomialMatchQ 5x^2 (a = 0)", %mr_binomialMatchQ(5*x^2, x)),
+    check_bool("binomialMatchQ 7+2x^(1/3) (fractional n)",
+               %mr_binomialMatchQ(7 + 2*x^(1/3), x)),
+    check_not("binomialMatchQ 1+x+x^2 (not a binomial)",
+              %mr_binomialMatchQ(1 + x + x^2, x)),
+    /* Rubi: TRUE (a = 0, b = 1, n = 3). The coefficient-absorbing
+       binding (b = x^3, n = 1) fails freeof and is backtracked away;
+       the search continues to b = 1, n = 3. */
+    check_bool("binomialMatchQ x^3 (b = 1, n = 3)",
+               %mr_binomialMatchQ(x^3, x)),
+    /* Rubi: TRUE (a = 1, b = 1, n = 3/2) — same unit-coefficient
+       corner. */
+    check_bool("binomialMatchQ 1+x^(3/2) (b = 1, fractional n)",
+               %mr_binomialMatchQ(1 + x^(3/2), x)),
+   check_bool("binomialMatchQ list, all",
+              %mr_binomialMatchQ([3 + 5*x^2, 5*x^2], x)),
+   check_not("binomialMatchQ list, one not",
+             %mr_binomialMatchQ([3 + 5*x^2, 1 + x + x^2], x)),
+    /* trinomialMatchQ (Rubi :1458) — MatchQ[u, a_.+b_*x^n_.+c_*x^j_.
+       /; FreeQ[{a,b,c,n},x] && EqQ[j-2*n,0]]. The orderless
+       partition search plus the threaded j = 2*n cond finds the
+       Rubi-faithful n/j assignment regardless of Maxima's stored
+       term order. */
+    check_bool("trinomialMatchQ 1+2x^2+3x^4 (n = 2)",
+               %mr_trinomialMatchQ(1 + 2*x^2 + 3*x^4, x)),
+    check_bool("trinomialMatchQ 5x^2+7x^4 (a = 0)",
+               %mr_trinomialMatchQ(5*x^2 + 7*x^4, x)),
+    check_bool("trinomialMatchQ 1+2x+3x^2 (n = 1)",
+               %mr_trinomialMatchQ(1 + 2*x + 3*x^2, x)),
+    check_not("trinomialMatchQ 1+x^2+x^3 (j # 2*n)",
+              %mr_trinomialMatchQ(1 + x^2 + x^3, x)),
+    /* Rubi: TRUE (a = 1, b = 1, n = 2, c = 1, j = 4). Unit
+       coefficients: the coefficient-absorbing bindings fail freeof
+       and are backtracked away; the search continues to b = c = 1
+       with the real exponents. */
+    check_bool("trinomialMatchQ 1+x^2+x^4 (b = c = 1, n = 2, j = 4)",
+               %mr_trinomialMatchQ(1 + x^2 + x^4, x)),
+   /* Rubi: TRUE (a = 1, b = 2, n = 1, c = 0, j = 2 — the c = 0
+      absent-corner). Unreachable: TrinomialQ[1+2x, x] is false. */
+   check_not("trinomialMatchQ 1+2*x (Rubi true, c = 0 absent-corner)",
+             %mr_trinomialMatchQ(1 + 2*x, x)),
+   check_bool("trinomialMatchQ list, all",
+              %mr_trinomialMatchQ([1 + 2*x^2 + 3*x^4, 5*x^2 + 7*x^4], x)),
+   check_not("trinomialMatchQ list, one not",
+             %mr_trinomialMatchQ([1 + 2*x^2 + 3*x^4, 1 + x^2 + x^3], x)),
+   /* trinomial_parts (Rubi :929) — [a, b, c, n] iff u = a + b*x^n +
+      c*x^(2*n), else false */
+   check("trinomial_parts 3+2x^2+5x^4 (polynomial branch)",
+         %mr_trinomial_parts(3 + 2*x^2 + 5*x^4, x), [3, 2, 5, 2]),
+   check("trinomial_parts 1+x^(1/2)+2*x (sum branch, n = 1/2)",
+         %mr_trinomial_parts(1 + x^(1/2) + 2*x, x), [1, 1, 2, 1/2]),
+   check("trinomial_parts (1+x^(1/2))^2 (power branch)",
+         %mr_trinomial_parts((1 + x^(1/2))^2, x), [1, 2, 1, 1/2]),
+   check("trinomial_parts 2*(1+x^(1/2)+x) (product branch)",
+         %mr_trinomial_parts(2*(1 + x^(1/2) + x), x), [2, 2, 2, 1/2]),
+   check("trinomial_parts 4+x^(1/2)+7*x (auto-combined sum terms)",
+         %mr_trinomial_parts(3 + 2*x + 1 + x^(1/2) + 5*x, x), [4, 1, 7, 1/2]),
+   check("trinomial_parts 1+1/x+1/x^2 (reciprocal trinomial, n = -1)",
+         %mr_trinomial_parts(1 + 1/x + 1/x^2, x), [1, 1, 1, -1]),
+   check_not("trinomial_parts 1+x (coeff list length 2 < 3)",
+             %mr_trinomial_parts(1 + x, x)),
+   check_not("trinomial_parts 1+x^2 (middle coefficient 0)",
+             %mr_trinomial_parts(1 + x^2, x)),
+   /* the minus branch (cluster D dependency fix on %mr_binomial_parts:
+      Maxima stores -x^(1/2) as a unary "-" node; the .m's Times[-1,
+      x^(1/2)] goes through the ProductQ branch with the -1 factor) */
+   check("binomial_parts -x^(1/2) (minus branch)",
+         %mr_binomial_parts(-x^(1/2), x), [0, -1, 1/2]),
+   check("binomial_parts -2(1+x^(1/2)) (minus over product)",
+         %mr_binomial_parts(-2*(1 + x^(1/2)), x), [-2, -2, 1/2]),
+   check("binomial_parts -(3+5x^2) (sum with minus terms, pre-existing)",
+         %mr_binomial_parts(-(3 + 5*x^2), x), [-3, -5, 2]),
+   /* trinomialQ (Rubi :568) — ListQ[TrinomialParts[u,x]] &&
+      Not[QuadraticQ[u,x]] && Not[MatchQ[u, w_^2 /; BinomialQ[w,x]]] */
+   check_bool("trinomialQ 1+x^2+x^4", %mr_trinomialQ(1 + x^2 + x^4, x)),
+   check_bool("trinomialQ 3+2x^2+5x^4", %mr_trinomialQ(3 + 2*x^2 + 5*x^4, x)),
+   check_bool("trinomialQ x^2+x^4 (a = 0)", %mr_trinomialQ(x^2 + x^4, x)),
+   /* the .m Drop chain leaves the x^(n+1) coefficient unchecked —
+      Rubi-faithful laxness, pinned */
+   check_bool("trinomialQ 1+x^2+x^3+x^4 (Rubi lax scan: x^3 unchecked)",
+              %mr_trinomialQ(1 + x^2 + x^3 + x^4, x)),
+   check_bool("trinomialQ 1+x^(1/2)+x (fractional, unit coefficients)",
+              %mr_trinomialQ(1 + x^(1/2) + x, x)),
+   check_bool("trinomialQ 1+1/x+1/x^2 (reciprocal trinomial)",
+              %mr_trinomialQ(1 + 1/x + 1/x^2, x)),
+   check_not("trinomialQ 1+x (coeff list length 2)",
+             %mr_trinomialQ(1 + x, x)),
+   check_not("trinomialQ 1+2x+x^2 (a quadratic)",
+             %mr_trinomialQ(1 + 2*x + x^2, x)),
+   check_not("trinomialQ (1+x^2)^2 (a binomial square)",
+             %mr_trinomialQ((1 + x^2)^2, x)),
+   check_not("trinomialQ (1+x^(1/2))^2 (a binomial square, power branch)",
+             %mr_trinomialQ((1 + x^(1/2))^2, x)),
+   check_bool("trinomialQ list, all",
+              %mr_trinomialQ([1 + x^2 + x^4, x^2 + x^4], x)),
+   check_not("trinomialQ list, one not",
+             %mr_trinomialQ([1 + x^2 + x^4, 1 + 2*x + x^2], x)),
+   true
+  )$
+
+  test_rules_1_1_1_1_behavior() := block([r],
+   print("--- generated 1.1.1.1 (behavioral) ---"),
   /* rule 2: the power rule x^m (m free of x, m # -1) */
   check("x^3", rubi(x^3, x), x^4/4),
   check("5x^2", rubi(5*x^2, x), 5*x^3/3),

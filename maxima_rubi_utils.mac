@@ -379,15 +379,15 @@ rubi(f, x) := mr_int(f, x)$
  * %mr_mqb) lookup>) or bare true — is called with the binding list
  * (Maxima evaluates call arguments eagerly and this build's ev() does
  * not strip quotes, so a plain or quoted cond cannot be held —
- * measured 2026-08-23); the match stands iff the result is true
- * (false, an error, or a cond that is not true — a pending predicate
- * noun — fails closed, the existing pending-noun contract). KNOWN
- * LIMITATION: the cond is not threaded through the partition
- * backtracking — the FIRST successful binding decides, so a cond that
- * fails on the first binding but would pass on a later one is a false
- * negative (no class-1 site exercises this: at the integerp(m) guard
- * sites every structural binding of a polyQ-polynomial gives an
- * integer m). */
+ * measured 2026-08-23). A non-trivial cond is threaded through the
+ * structural search: the match stands iff SOME structural binding
+ * makes the cond true (false, an error, or a cond that is not true —
+ * a pending predicate noun — fails closed, the existing pending-noun
+ * contract). The backtracking continuation is carried as an explicit
+ * list (["final" | "match" | "part", ...]), not a lambda: Maxima
+ * lambdas in this build do not capture the local variables of the
+ * function that created them (measured 2026-08-23), so a closure over
+ * the search state would resolve the wrong P/E/k at call time. */
 
 /* a pattern marker: an atom the generator minted for a MatchQ pattern
  * variable — name shape _mr_<key>_r<n>mq<k>_<v> (generate_class1.py
@@ -631,29 +631,125 @@ rubi(f, x) := mr_int(f, x)$
  * unquoted cond evaluates its marker-dependent parts — integerp(m),
  * is(m > 1), freeof(x, m) — on the unbound marker symbols before the
  * match; and this build's ev() does not strip quotes, so the
- * quote-based variant is dead). The closure also preserves the
- * lexical environment, so the cond's references to the OUTER rule
- * captures (a, b, n, ...) resolve to the cond function's locals at
- * call time. On a successful match the closure is called with the
- * binding list; false on no match, on a closure error, or a cond that
- * is not true (unknown / a pending predicate noun fails closed — the
- * existing pending-noun contract). No marker ordering is coupled
- * between generator and matcher: every marker reference is a named
- * lookup, not a positional argument.
+ * quote-based variant is dead). The cond's references to the OUTER
+ * rule captures (a, b, n, ...) resolve through Maxima's ordinary
+ * variable resolution at call time. On each COMPLETE structural match
+ * the closure is called with the binding list; while it answers false
+ * (or errors), the search continues to the next structural binding.
+ * false on no match, on a closure error, or a cond that is not true
+ * (unknown / a pending predicate noun fails closed — the existing
+ * pending-noun contract). No marker ordering is coupled between
+ * generator and matcher: every marker reference is a named lookup,
+ * not a positional argument.
  *
  * The cond = true guard is measured (2026-08-23): true = true
  * evaluates to true, while a lambda = true stays a pending relation,
  * which Maxima's if treats as false — so the bare-true and closure
  * cases split without is() (is(lambda = true) would risk unknown). */
-%mr_matchQ(u, pattern, cond) := block([b, r],
-  b : %mr_mq_match(pattern, u, []),
-  if atom(b) then false
-  else if cond = true then true
+%mr_matchQ(u, pattern, cond) := block([b],
+  if cond = true then (
+    b : %mr_mq_match(pattern, u, []),
+    if atom(b) then false else true
+  )
+  else %mr_mq_search(pattern, u, [], ["final", cond]))$
+
+/* the MatchQ cond, evaluated on a complete binding list. The cond is
+ * the generator's lambda over the binding list; a cond error, a false
+ * answer, or a pending noun all fail closed. */
+%mr_cond_ok(cond, B) := block([r],
+  r : errcatch(cond(B)),
+  if r = [] then false
+  else if is(first(r)) = true then true
+  else false)$
+
+/* apply a search continuation to a binding list. The continuation is
+ * an explicit list (no lambda — see the matcher note):
+ *   ["final", cond]        — the top level: test the MatchQ cond
+ *   ["match", P, E, G]     — match sub-pattern P against E, then G
+ *   ["part", pf, i, ef, j, opname, G]
+ *                           — resume the flat partition at pf[i..]
+ */
+%mr_mq_apply_goal(G, B) := block([t],
+  t : part(G, 1),
+  if is(t = "final") then %mr_cond_ok(part(G, 2), B)
+  else if is(t = "match") then
+    %mr_mq_search(part(G, 2), part(G, 3), B, part(G, 4))
+  else if is(t = "part") then
+    %mr_mq_part_search(part(G, 2), part(G, 3), part(G, 4),
+      part(G, 5), B, part(G, 6), part(G, 7))
+  else false)$
+
+/* the cond-threading structural search: true iff SOME structural
+ * binding of P against E (extending B) makes the continuation G
+ * succeed. The first-success %mr_mq_match family above is kept for the
+ * cond = true fast path; this is the Rubi MatchQ[u, pat /; cond]
+ * semantics where the cond participates in the backtracking. */
+%mr_mq_search(P, E, B, G) := block([],
+  if atom(P) then (
+    if %mr_isMQMarker(P) then
+      block([b],
+        b : %mr_mq_bind(B, P, E),
+        if atom(b) then false else %mr_mq_apply_goal(G, b)
+      )
+    else if is(P = E) then %mr_mq_apply_goal(G, B)
+    else false
+  )
+  elseif op(P) = "*" then %mr_mq_flat_search(P, E, B, "*", G)
+  elseif op(P) = "+" then %mr_mq_flat_search(P, E, B, "+", G)
+  elseif op(P) = "^" then (
+    if not atom(E) and op(E) = "^" then
+      %mr_mq_search(part(P, 1), part(E, 1), B,
+        ["match", part(P, 2), part(E, 2), G]
+      )
+    else (
+      if is(part(P, 2) = 1) then
+        %mr_mq_search(part(P, 1), E, B, G)
+      elseif %mr_isMQMarker(part(P, 2)) then
+        block([b],
+          b : %mr_mq_bind(B, part(P, 2), 1),
+          if atom(b) then false
+          else %mr_mq_search(part(P, 1), E, b, G)
+        )
+      else false
+    )
+  )
+  else false)$
+
+%mr_mq_flat_search(P, E, B, opname, G) := block([ef, i, pf, perm, r],
+  pf : [],
+  for i : 1 thru length(P) do pf : append(pf, [part(P, i)]),
+  if (opname = "*" and (atom(E) or not is(op(E) = "*")))
+    or (opname = "+" and (atom(E) or not is(op(E) = "+")))
+  then ef : [E]
   else (
-    r : errcatch(cond(b)),
-    if r = [] then false
-    else if is(first(r)) = true then true
-    else false))$
+    ef : [],
+    for i : 1 thru length(E) do ef : append(ef, [part(E, i)])
+  ),
+  r : false,
+  for perm in %mr_perm(pf) do
+    if not r then
+      r : %mr_mq_part_search(perm, 1, ef, 1, B, opname, G),
+  r)$
+
+%mr_mq_part_search(pf, i, ef, j, B, opname, G) := block([k, b, res],
+  if i > length(pf) then (
+    if is(j = length(ef) + 1) then %mr_mq_apply_goal(G, B) else false
+  )
+  else (
+    res : false, k : j + 1,
+    while not res and k <= length(ef) + 1 do (
+      if %mr_mq_search(part(pf, i), %mr_mq_group(ef, j, k, opname), B,
+            ["part", pf, i + 1, ef, k, opname, G])
+      then res : true
+      else k : k + 1
+    ),
+    if not res then (
+      b : %mr_mq_absent(part(pf, i), opname, B),
+      if not atom(b) and
+         %mr_mq_part_search(pf, i + 1, ef, j, b, opname, G)
+      then res : true
+    ),
+    res))$
 
 /* ---- int-family + binomial predicates (Task 7a cluster B) -----------
  * Rubi's integrability guards (IntLinearQ / IntQuadraticQ /
@@ -736,14 +832,24 @@ rubi(f, x) := mr_int(f, x)$
      head (is(op(sqrt(x)) = 'sqrt) is true; the string "sqrt" never
      matches) while special heads (^, +, *, /, -, [) stay strings. */
   then [0, 1, 1/2]
-  elseif op(u) = "/" and is(num(u) = 1) then (
-    if is(denom(u) = x) then [0, 1, -1]
-    else if op(denom(u)) = "^" and is(part(denom(u), 1) = x)
-      and freeof(x, part(denom(u), 2))
-    then [0, 1, -part(denom(u), 2)]
-    else false
-  )
-  elseif op(u) = "*" then (
+   elseif op(u) = "/" and is(num(u) = 1) then (
+     if is(denom(u) = x) then [0, 1, -1]
+     else if op(denom(u)) = "^" and is(part(denom(u), 1) = x)
+       and freeof(x, part(denom(u), 2))
+     then [0, 1, -part(denom(u), 2)]
+     else false
+   )
+   /* unary minus: Maxima stores -x^(1/2) / -2*(1+x^(1/2)) as a "-"
+      node (the .m's Times[-1, ...] goes through the ProductQ branch
+      with the -1 factor: {-1*a, -1*b, n}). Polynomial minus terms
+      (-x^2) never reach this branch — the polynomial branch above
+      handles them. Cluster D dependency: %mr_trinomial_parts sum
+      branch passes unary-minus terms (1 - x^(1/2) + ...). */
+   elseif op(u) = "-" then (
+     L : %mr_binomial_parts(part(u, 1), x),
+     if atom(L) then false else [-part(L, 1), -part(L, 2), part(L, 3)]
+   )
+   elseif op(u) = "*" then (
     f1 : part(u, 1),
     r1 : part(u, 2),
     for i : 3 thru length(u) do r1 : r1 * part(u, i),
@@ -1505,6 +1611,304 @@ rubi(f, x) := mr_int(f, x)$
 /* Rubi :1373  LinearQ[u,x] := PolyQ[u,x,1] (list form dropped — no
    list-valued integrands in the emitted conds) */
 %mr_linearQ(u, x) := %mr_polyDegQ(u, x, 1)$
+
+/* ---- trinomial/quadratic/binomial-degree predicates (Task 7a
+ * cluster D) ----------------------------------------------------------
+ * The shape predicates of the 1.3/1.4 normalization rule families:
+ * QuadraticQ, TrinomialQ (+ TrinomialParts), BinomialDegree, and the
+ * four *MatchQ "simple shape" tests. Line-ports of the pinned Rubi
+ * definitions (provenance per function); the .m ListQ[u] arm is the
+ * generator's list-packing. The *MatchQ ports call the cluster-A3
+ * matcher with fresh marker atoms (the %mr_mq_ family binds by
+ * identity); the cond is the lambda-over-bindings-list form the
+ * matcher contract requires.
+ *
+ * The *MatchQ conds are threaded through the matcher's structural
+ * backtracking (the ["final"]/["match"]/["part"] continuation search
+ * in %mr_mq_search), so a unit-coefficient term (a bare x^n / x^(2n)
+ * summand) no longer traps the search on the coefficient-absorbing
+ * binding: the freeof cond fails on that binding and the search
+ * continues to the b := 1 / real-exponent binding. REMAINING DIVERGENCE
+ * (the matcher's absent rule, not the cond search): a product/sum
+ * factor that contains a literal (b_*x, c_*x^2) cannot be treated as
+ * ABSENT as a whole, so the .m corner where the optional coefficient
+ * defaults to 0 and deletes the whole literal-base term still answers
+ * false here. Those corners are unreachable at the class-1 call sites
+ * (the LinearQ / QuadraticQ / TrinomialQ guards guarantee a real
+ * literal-base term). */
+
+/* Rubi :846  BinomialDegree[u,x] := BinomialParts[u,x][[3]]. The .m
+   False[[3]] hard-errors on a non-binomial; the port fails closed
+   with false (every class-1 call site gates on BinomialQ[u,x] first). */
+%mr_binomialDegree(u, x) := block([L],
+  L : %mr_binomial_parts(u, x),
+  if atom(L) then false else part(L, 3))$
+
+/* Rubi :1380  QuadraticQ[u,x] — a degree-2 polynomial that is not the
+   a*x^2 monomial. The .m ===0 (IdentityQ) maps onto is(c = 0): this
+   build's is(a = b) is true/false, never unknown (RC1), and
+   is(e = 0) = true iff e simplifies to the structural 0. */
+%mr_quadraticQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_quadraticQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_polyDegQ(u, x, 2)
+       and not (is(%mr_coeff(u, x, 0) = 0)
+                and is(%mr_coeff(u, x, 1) = 0)))$
+
+/* Rubi :929  TrinomialParts[u,x] — [a, b, c, n] iff u is equivalent
+   to a + b*x^n + c*x^(2*n) (n, b, c nonzero), else false. LINE port
+   of the .m If-chain (polynomial / power / product / sum; First/Rest
+   split as first term-or-factor over the rest). CoefficientList is
+   the [c0..cd] walk over %mr_coeff (degree-gated; %mr_coeff is exact
+   on a confirmed polynomial). DEVIATIONS, documented:
+    - the .m's Drop chain Drop[Drop[lst,{m}],1],-1 (m = (Length+1)/2)
+     scans coefficients x^(n+2)..x^(2n-1) ONLY — the coefficients
+     x^(n-1) and x^(n+1) (the ones adjacent to the middle term) are
+     UNCHECKED; the port reproduces the scan exactly (the 1+x^2+x^3+x^4
+     probe pins the Rubi-faithful laxness);
+   - the .m's :994 b-slot (lst3[[2]] where the reconstruction says
+     lst2[[2]] — a typo in the pinned clone, the branch reachable only
+     through a binomial-first/trinomial-rest sum split that
+     auto-combining makes unreachable) is ported as written. */
+%mr_trinomial_parts(u, x) := block([d, L, i, m, ok, f1, r1, L1, L2, L3, L4],
+  if %mr_polynomialQ(u, x) then (
+    d : %mr_degree(u, x),
+    L : [],
+    for i : 0 thru d do L : append(L, [%mr_coeff(u, x, i)]),
+    if is(length(L) < 3) or evenp(length(L))
+    or %mr_eqQ(part(L, (length(L) + 1)/2), 0)
+    then false
+    else (
+      m : (length(L) + 1)/2,
+      ok : true,
+      for i : m + 2 thru 2*m - 2 do
+        if %mr_eqQ(part(L, i), 0) then ok : false,
+      if ok
+      then [part(L, 1), part(L, m), part(L, length(L)), (length(L) - 1)/2]
+      else false
+    )
+  )
+  elseif not atom(u) and op(u) = "^" then (
+    /* PowerQ[u] && EqQ[u[[2]], 2]: the square of a binomial */
+    if %mr_eqQ(part(u, 2), 2) then (
+      L1 : %mr_binomial_parts(part(u, 1), x),
+      if atom(L1) or %mr_eqQ(part(L1, 1), 0) then false
+      else [part(L1, 1)^2, 2*part(L1, 1)*part(L1, 2), part(L1, 2)^2, part(L1, 3)]
+    )
+    else false
+  )
+  elseif op(u) = "-" then (
+    /* the .m's Times[-1, u] goes through the ProductQ branch with
+       the -1 factor: {-1*a, -1*b, -1*c, n} */
+    L : %mr_trinomial_parts(part(u, 1), x),
+    if atom(L) then false
+    else [-part(L, 1), -part(L, 2), -part(L, 3), part(L, 4)]
+  )
+  elseif not atom(u) and op(u) = "*" then (
+    f1 : part(u, 1),
+    r1 : part(u, 2),
+    for i : 3 thru length(u) do r1 : r1 * part(u, i),
+    if freeof(x, f1) then (
+      L2 : %mr_trinomial_parts(r1, x),
+      if atom(L2) then false
+      else [f1*part(L2, 1), f1*part(L2, 2), f1*part(L2, 3), part(L2, 4)]
+    )
+    else if freeof(x, r1) then (
+      L1 : %mr_trinomial_parts(f1, x),
+      if atom(L1) then false
+      else [r1*part(L1, 1), r1*part(L1, 2), r1*part(L1, 3), part(L1, 4)]
+    )
+    else (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else (
+        L2 : %mr_binomial_parts(r1, x),
+        if atom(L2) then false
+        else if %mr_eqQ(part(L1, 3), part(L2, 3))
+          and %mr_neQ(part(L1, 1)*part(L2, 2) + part(L1, 2)*part(L2, 1), 0)
+        then [part(L1, 1)*part(L2, 1),
+              part(L1, 1)*part(L2, 2) + part(L1, 2)*part(L2, 1),
+              part(L1, 2)*part(L2, 2), part(L1, 3)]
+        else false
+      )
+    )
+  )
+  elseif %mr_sumQ(u) then (
+    f1 : part(u, 1),
+    r1 : %mr_rest_sum(u),
+    if freeof(x, f1) then (
+      L2 : %mr_trinomial_parts(r1, x),
+      if atom(L2) then false
+      else [f1 + part(L2, 1), part(L2, 2), part(L2, 3), part(L2, 4)]
+    )
+    else if freeof(x, r1) then (
+      L1 : %mr_trinomial_parts(f1, x),
+      if atom(L1) then false
+      else [r1 + part(L1, 1), part(L1, 2), part(L1, 3), part(L1, 4)]
+    )
+    else (
+      L1 : %mr_trinomial_parts(f1, x),
+      if atom(L1) then (
+        L3 : %mr_binomial_parts(f1, x),
+        if atom(L3) then false
+        else (
+          L2 : %mr_trinomial_parts(r1, x),
+          if atom(L2) then (
+            L4 : %mr_binomial_parts(r1, x),
+            if atom(L4) then false
+            else if %mr_eqQ(part(L3, 3), 2*part(L4, 3))
+              then [part(L3, 1) + part(L4, 1), part(L4, 2),
+                    part(L3, 2), part(L4, 3)]
+              else if %mr_eqQ(part(L4, 3), 2*part(L3, 3))
+              then [part(L3, 1) + part(L4, 1), part(L3, 2),
+                    part(L4, 2), part(L3, 3)]
+              else false
+          )
+          else if %mr_eqQ(part(L3, 3), part(L2, 4))
+            and %mr_neQ(part(L3, 2) + part(L2, 2), 0)
+          then [part(L3, 1) + part(L2, 1), part(L3, 2) + part(L2, 2),
+                part(L2, 3), part(L2, 4)]
+          /* the .m :994 b-slot as written (see the DEVIATIONS note) */
+          else if %mr_eqQ(part(L3, 3), 2*part(L2, 4))
+            and %mr_neQ(part(L3, 2) + part(L2, 3), 0)
+          then [part(L3, 1) + part(L2, 1), part(L3, 2),
+                part(L3, 2) + part(L2, 3), part(L2, 4)]
+          else false
+        )
+      )
+      else (
+        L2 : %mr_trinomial_parts(r1, x),
+        if atom(L2) then (
+          L4 : %mr_binomial_parts(r1, x),
+          if atom(L4) then false
+          else if %mr_eqQ(part(L4, 3), part(L1, 4))
+            and %mr_neQ(part(L1, 2) + part(L4, 2), 0)
+          then [part(L1, 1) + part(L4, 1), part(L1, 2) + part(L4, 2),
+                part(L1, 3), part(L1, 4)]
+          else if %mr_eqQ(part(L4, 3), 2*part(L1, 4))
+            and %mr_neQ(part(L1, 3) + part(L4, 2), 0)
+          then [part(L1, 1) + part(L4, 1), part(L1, 2),
+                part(L1, 3) + part(L4, 2), part(L1, 4)]
+          else false
+        )
+        else if %mr_eqQ(part(L1, 4), part(L2, 4))
+          and %mr_neQ(part(L1, 2) + part(L2, 2), 0)
+          and %mr_neQ(part(L1, 3) + part(L2, 3), 0)
+        then [part(L1, 1) + part(L2, 1), part(L1, 2) + part(L2, 2),
+              part(L1, 3) + part(L2, 3), part(L1, 4)]
+        else false
+      )
+    )
+  )
+  else false)$
+
+/* Rubi :568  TrinomialQ[u,x] — ListQ[TrinomialParts[u,x]] &&
+   Not[QuadraticQ[u,x]] && Not[MatchQ[u, w_^2 /; BinomialQ[w,x]]]: a
+   trinomial that is neither a quadratic (the n = 1 corner) nor the
+   square of a binomial (the perfect-square corner the Chebyshev
+   rules handle separately). */
+%mr_trinomialQ(u, x) := block([i, v, L],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_trinomialQ(part(u, i), x) then v : false,
+    v
+  )
+  else (
+    L : %mr_trinomial_parts(u, x),
+    not atom(L) and not %mr_quadraticQ(u, x)
+    and not %mr_matchQ(u, _mr_triQ_r1mq1_w^2,
+      lambda([%mr_mqb],
+        %mr_binomialQ2(%mr_mk(_mr_triQ_r1mq1_w, %mr_mqb), x)))))$
+
+/* Rubi :1420  LinearMatchQ[u,x] — MatchQ[u, a_.+b_.*x /; FreeQ[{a,b},x]].
+   The x literal in the product factor cannot be absent (see the
+   section note for the corner where the WHOLE b_*x term is absent —
+   unreachable at the call sites, LinearQ-guarded). */
+%mr_linearMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_linearMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(u, _mr_linMq_r1mq1_a + _mr_linMq_r1mq1_b * x,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_linMq_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_linMq_r1mq1_b, %mr_mqb)))))$
+
+/* Rubi :1427  QuadraticMatchQ[u,x] — MatchQ[u, a_.+b_.*x+c_.*x^2 /;
+   FreeQ[{a,b,c},x]] || MatchQ[u, a_.+c_.*x^2 /; FreeQ[{a,c},x]]. The
+   literal x / x^2 powers cannot be absent (the a + b*x corner is the
+   2nd pattern's absent x^2 term — unreachable at the call sites,
+   QuadraticQ-guarded). */
+%mr_quadraticMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_quadraticMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(u,
+    _mr_quadMq_r1mq1_a + _mr_quadMq_r1mq1_b * x + _mr_quadMq_r1mq1_c * x^2,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_quadMq_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_quadMq_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_quadMq_r1mq1_c, %mr_mqb))))
+  or %mr_matchQ(u, _mr_quadMq_r2mq1_a + _mr_quadMq_r2mq1_c * x^2,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_quadMq_r2mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_quadMq_r2mq1_c, %mr_mqb)))))$
+
+/* Rubi :1444  BinomialMatchQ[u,x] — MatchQ[u, a_.+b_.*x^n_. /;
+   FreeQ[{a,b,n},x]]. The orderless partition search tries every
+   stored order of the pattern factors, and the freeof cond is
+   threaded through the search, so a bare x^n term binds b = 1 and
+   the real n (the coefficient-absorbing binding fails freeof and is
+   backtracked away). */
+%mr_binomialMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_binomialMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(u, _mr_binMq_r1mq1_a + _mr_binMq_r1mq1_b * x^_mr_binMq_r1mq1_n,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_binMq_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_binMq_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_binMq_r1mq1_n, %mr_mqb)))))$
+
+/* Rubi :1458  TrinomialMatchQ[u,x] — MatchQ[u, a_.+b_.*x^n_.+c_.*x^j_.
+   /; FreeQ[{a,b,c,n},x] && EqQ[j-2*n,0]] (j is not FreeQ'd: j = 2n
+   and n x-free implies it). The orderless partition search tries
+   every stored order of the three pattern factors, and the j = 2*n
+   cond is threaded through the search, so the Rubi-faithful n/j
+   assignment is found even when Maxima's stored order presents the
+   other assignment first (and a unit-coefficient term no longer
+   traps the search on the coefficient-absorbing binding). */
+%mr_trinomialMatchQ(u, x) := block([i, v],
+   if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_trinomialMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(u,
+    _mr_triMq_r1mq1_a
+    + _mr_triMq_r1mq1_b * x^_mr_triMq_r1mq1_n
+    + _mr_triMq_r1mq1_c * x^_mr_triMq_r1mq1_j,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_triMq_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_triMq_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_triMq_r1mq1_c, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_triMq_r1mq1_n, %mr_mqb))
+      and %mr_eqQ(%mr_mk(_mr_triMq_r1mq1_j, %mr_mqb)
+            - 2*%mr_mk(_mr_triMq_r1mq1_n, %mr_mqb), 0))))$
 
 /* ---- RemoveContent family ------------------------------------------
  * Rubi :1152  RemoveContent[u,x] := with v = NonfreeFactors[u,x],
