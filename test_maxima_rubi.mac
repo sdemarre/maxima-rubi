@@ -81,6 +81,7 @@ run_all_tests() := block([],
   test_cluster_g_shims(),
   test_cluster_h_shims(),
   test_cluster_i_expandIntegrand(),
+  test_cluster_j_shims(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -1122,6 +1123,47 @@ test_structural_predicates() := block([],
     check("eI3 distribute const",
           %mr_expandIntegrand(2, x^2 + 2*x + 1, x),
           2*x^2 + 4*x + 2),
+    true
+   )$
+
+  test_cluster_j_shims() := block([],
+    print("--- cluster J shims ---"),
+    /* substFor — the algebraic surface (the .m's trig/inverse-function
+       branches are not ported) */
+    check("substFor x^n",
+          %mr_substFor(x^2, x^4 + x^2 + 1, x), x^2 + x + 1),
+    check("substFor linear",
+          %mr_substFor(x + 1, (x + 1)^2 + 1, x), x^2 + 1),
+    check("substFor atom",
+          %mr_substFor(t, t^2 + 1, x), x^2 + 1),
+    check("substFor 4-arg",
+          %mr_substFor(2, x^2, x^4 + 1, x), 2*(x^2 + 1)),
+    /* substPower */
+    check("substPower",
+          %mr_substPower(x^4 + x^2 + 1, x, 1/2), x^2 + x + 1),
+    /* dist — distribute the first argument over a Plus sum, leave a
+       noun Sum multiplied */
+    check("dist sum", %mr_dist(2, x + x^2, x), 2*x + 2*x^2),
+    check("dist noun sum",
+          %mr_dist(2, mr_sum(u, k, 1, 3), x), 2*mr_sum(u, k, 1, 3)),
+    /* normalizePseudoBinomial */
+    check("normalizePB",
+          %mr_normalizePseudoBinomial(x^3 + 3*x^2 + 3*x + 2, x),
+          1 + (x + 1)^3),
+    /* cancel */
+    check("cancel",
+          %mr_cancel((x + 1)/(x^2 + 2*x + 1)), 1/(x + 1)),
+    /* polyGCD — monic, x-dependent factors only */
+    check("polyGCD",
+          %mr_polyGCD((x + 1)*(x + 2), (x + 1)*x, x), x + 1),
+    check("polyGCD none",
+          %mr_polyGCD(x + 1, x + 2, x), 1),
+    /* rationalFunctionExpand — the algebraic-ExpandIntegrand surface */
+    check("rFE power",
+          %mr_rationalFunctionExpand((x + 1)^2, x), x^2 + 2*x + 1),
+    check("rFE linear product",
+          %mr_rationalFunctionExpand(x*(x + 1)^2, x),
+          (x + 1)^3 - (x + 1)^2),
     true
    )$
 

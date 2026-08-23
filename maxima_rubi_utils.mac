@@ -3201,4 +3201,110 @@ rubi(f, x) := mr_int(f, x)$
   then %mr_expandIntegrand2(a, b)
   else %mr_expandIntegrand3(a, b, part(c, 1)))$
 
+/* ---- cluster J: the remaining high-usage B-tier shims ---------------
+ * SubstFor / SubstPower are the ALGEBRAIC surface: x^n and linear-v
+ * substitutions (the .m's trig / inverse-function branches are not
+ * ported). Dist is the DistributeOverTerms surface. Cancel is factor()
+ * (the unbound builtin, measured). PolyGCD is the monic x-dependent
+ * gcd. RationalFunctionExpand is the algebraic-ExpandIntegrand surface
+ * (the .m's RationalFunctionFactors / NonrationalFunctionFactors split
+ * is deferred). */
+
+/* Rubi :6142  SubstPower[F[x], x, n] — x^m -> x^(m*n), x -> x^n. */
+%mr_substPower(u, x, n) := block([],
+  if atom(u) then (
+    if is(u = x) then x^n else u
+  )
+  else if numberp(u) then u
+  else if not atom(u) and op(u) = "^" then (
+    if is(part(u, 1) = x) and freeof(x, part(u, 2))
+    then x^(n*part(u, 2))
+    else %mr_substPower(part(u, 1), x, n)
+         ^%mr_substPower(part(u, 2), x, n)
+  )
+  else if not atom(u) and op(u) = "*"
+  then apply("*", map(lambda([z], %mr_substPower(z, x, n)),
+    %mr_parts_list(u)))
+  else if not atom(u) and op(u) = "+"
+  then apply("+", map(lambda([z], %mr_substPower(z, x, n)),
+    %mr_parts_list(u)))
+  else if not atom(u) and op(u) = "/"
+  then %mr_substPower(part(u, 1), x, n)
+       /%mr_substPower(part(u, 2), x, n)
+  else if not atom(u) and op(u) = "-"
+  then -%mr_substPower(part(u, 1), x, n)
+  else if not atom(u) and op(u) = "["
+  then map(lambda([z], %mr_substPower(z, x, n)), %mr_parts_list(u))
+  else u)$
+
+/* Rubi :5980  SubstFor[v, u, x] — u (a function of v) with v replaced
+   by x. The algebraic surface: an atom is a plain subst, x^n is the
+   SubstPower reading with factor 1/n, a linear v is the shifted
+   variable (x-a)/b, and the fallback is the plain subst. */
+%mr_substFor3(v, u, x) := block([L],
+  if %mr_atomQ(v)
+  then subst(x, v, u)
+  else if not atom(v) and op(v) = "^"
+    and is(part(v, 1) = x) and freeof(x, part(v, 2))
+  then %mr_substPower(u, x, 1/part(v, 2))
+  else if %mr_linearQ(v, x) then (
+    L : %mr_binomial_parts(v, x),
+    if not atom(L) and is(part(L, 3) = 1)
+    then subst((x - part(L, 1))/part(L, 2), x, u)
+    else subst(x, v, u)
+  )
+  else subst(x, v, u))$
+
+%mr_substFor4(w, v, u, x) := w*%mr_substFor3(v, u, x)$
+
+%mr_substFor : lambda([a, b, c, [d]],
+  if length(d) = 0
+  then %mr_substFor3(a, b, c)
+  else %mr_substFor4(a, b, c, part(d, 1)))$
+
+/* Rubi's Dist — distribute the first argument over a Plus sum, leave
+   everything else (a noun Sum in particular) multiplied. */
+%mr_dist : lambda([a, b, [c]],
+  %mr_ei_distribute(a, b, 0))$
+
+/* Rubi :1518  NormalizePseudoBinomial[u, x] — a + b*(c+d*x)^n. Fails
+   closed to u (the .m's False[[1]] hard-errors; the class-1 call sites
+   gate on PseudoBinomialPairQ first). */
+%mr_normalizePseudoBinomial(u, x) := block([L],
+  L : %mr_pseudoBinomial_parts(u, x),
+  if atom(L) then u
+  else part(L, 1) + part(L, 2)*(part(L, 3) + part(L, 4)*x)^part(L, 5))$
+
+/* Rubi's Cancel — the builtin is unbound in this build (measured);
+   factor() is the closest cancel-without-expand reading. */
+%mr_cancel(u) := block([r],
+  r : errcatch(factor(u)),
+  if is(r = []) then u else part(r, 1))$
+
+/* Rubi :1668  PolyGCD[u, v, x] — the monic x-dependent gcd. The .m's
+   PolynomialGCD is monic; Maxima's gcd carries the content, so the
+   leading coefficient is divided out (the NonfreeFactors reading then
+   drops any surviving free factor). */
+%mr_polyGCD(u, v, x) := block([g, d, lc],
+  if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
+  then (
+    g : errcatch(gcd(u, v, x)),
+    if is(g = []) then false
+    else (
+      g : part(g, 1),
+      if freeof(x, g) then 1
+      else (
+        d : %mr_degree(g, x),
+        lc : %mr_coeff(g, x, d),
+        g/lc
+      )
+    )
+  )
+  else false)$
+
+/* Rubi :1644  RationalFunctionExpand[u, x] — the algebraic
+   ExpandIntegrand surface (the .m's RationalFunctionFactors /
+   NonrationalFunctionFactors split is deferred). */
+%mr_rationalFunctionExpand(u, x) := %mr_expandIntegrand2(u, x)$
+
 mr_witness_utils() := true$
