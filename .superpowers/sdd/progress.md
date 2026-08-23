@@ -483,9 +483,18 @@ match+degree, E generalized*, F pairs/split/misc).
       MergeMonomials bases, SimplifyTerm / NormalizeIntegrand /
       UnifySum) are deferred and the fallback is plain expand(). 9 new
       probes; suite 472/0.
-    - NEXT: cluster J — the remaining B-tier shims by class-1 usage:
-      substFor (15), dist (8), normalizePseudoBinomial (4), cancel
-      (2), polyGCD (2), rationalFunctionExpand (2).
+    - Cluster J — remaining high-usage B-tier shims — DONE (commit
+      77299cf). %mr_substFor / %mr_substPower (the algebraic surface:
+      x^n and linear-v substitutions; the .m's trig / inverse-function
+      branches deferred), %mr_dist over the DistributeOverTerms
+      surface, %mr_normalizePseudoBinomial (:1518), %mr_cancel over
+      factor() (the builtin is unbound in this build), %mr_polyGCD
+      (:1668) as the monic x-dependent gcd, and
+      %mr_rationalFunctionExpand (:1644) over the algebraic
+      ExpandIntegrand surface. 13 new probes; suite 485/0.
+    - NEXT: cluster K — the last B-tier names (intSum, root, hold) and
+      a pass over the deferred ExpandIntegrand / SubstFor branches that
+      class-1 actually reaches, if any.
 
 ## Minor findings (triage at final whole-branch review)
 
