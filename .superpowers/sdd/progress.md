@@ -520,9 +520,19 @@ match+degree, E generalized*, F pairs/split/misc).
       1_2_3_5_r20 needed an n # 0 guard against Maxima's degenerate
       constant-denominator binding (local guard, pending generator
       backport). Layer A 511/0; gates clean.
-    - NEXT: Task 9 — full class-1 run + divergence loop + acceptance
-      (recursion-cap tuning, the 18-shard 25,697-entry run, the
-      file-by-file FAIL chase, docs/corpus-baseline-uplift.md).
+    - Task 9 — IN PROGRESS. The full class-1 run (18 shards, 25,697
+      entries) was launched at 2026-08-23 19:10 UTC via
+      `python3 test/launch_class1_shards.py --launch`; pids in
+      `test/corpus_class1.shard-pids`, per-shard .out/.log in
+      `test/corpus_class1.shardNN.{out,log}`. Recursion-cap tuning:
+      the 1.1.1.2 first-20 smoke had no timeouts (max wall 8.6 s
+      under the 30 s cap) and the package's candidate cap is 16.
+      First-contact triage already fixed two more Maxima-matcher
+      degenerate-binding misfires (1_2_1_2_r134 c # 0; the earlier
+      1_2_3_5_r20 n # 0). Remaining work: wait for the shards, merge
+      with the T3 merge-shards mechanics, chase the file-by-file FAILs,
+      write docs/corpus-baseline-uplift.md, and commit the acceptance
+      record.
 
 ## Minor findings (triage at final whole-branch review)
 
