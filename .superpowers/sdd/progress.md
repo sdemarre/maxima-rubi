@@ -452,9 +452,22 @@ match+degree, E generalized*, F pairs/split/misc).
      the still-unported public %mr_rt; PairQ keeps the .m IdentityQ tail
      reading (loose %mr_eqQ would over-accept distinct symbolic
      constants). 44 new probes; suite 420/0.
-   - NEXT: cluster G — the B-tier shim layer, starting with the
-     highest-usage pending names: rt (344 uses), expandToSum (230),
-     fracPart (181), expon (133), intPart (121).
+    - Cluster G — first B-tier shims — DONE (commit 25766ce).
+      %mr_rt (:7513/:7549) over the structural RtAux split plus the
+      AtomBaseQ / NegSumBaseQ / AllNegTermQ / SomeNegTermQ / TrigSquare
+      helpers, %mr_expon (:1239), %mr_expandToSum (:3329/:3343) with the
+      2- and 3-arg call forms through the lambda rest-arg spelling,
+      %mr_intPart (:2952) and %mr_fracPart (:2969) with the floor
+      complement reading. The .m's TogetherSimplify is deliberately NOT
+      in %mr_rt: this build's ratsimp/factor expand or factor the
+      argument ((a+b)^2, x^2-1), destroying the PowerQ / non-product
+      reading. LtQ[#,0] inside RtAux is the strict is(# < 0) reading,
+      not Rubi's NegQ. 32 new probes; suite 452/0. Same commit fixes
+      %mr_symbols on negative rationals (length 2, one part — the
+      unary-minus quirk) where %mr_eqQ used to hard-error.
+    - NEXT: cluster H — the remaining high-usage B-tier shims:
+      expandIntegrand (203), polyQuotient (110), polyRemainder (74),
+      atanh (36), asinh (2), acosh (1).
 
 ## Minor findings (triage at final whole-branch review)
 
