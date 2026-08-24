@@ -12,12 +12,20 @@ finding 3: the source-only check let a corrupted generated file pass) —
 that each committed rules/class1/<key>.mac exists and its
 defmatch(_mr_pat_<key>_r<N> indices are exactly 1..count, so a missing,
 empty, duplicated, or gap-having generated file fails the probe.
-CONTENT integrity of a rule body (pattern/cond/repl text with intact
-indices) is OUT of scope here — it rides on the parse sweep
-(probes/load_wall/probe-parse-sweep), the per-file witness, the suite,
-and regeneration diffs. Static
-— no Maxima — because the installed build cannot hold the 2710 patterns
-in one process to check them there (measured 2026-08-20,
+
+A name-integrity half (2026-08-24 dead-rule bug) additionally checks that
+every `_mr*` token in a committed defmatch pattern is a well-formed
+capture or MatchQ marker of THAT rule. The generator's drop_optionals
+used to run post-translate and its text.replace("r_", "r") corrupted the
+`_mr_` prefix of every capture in any rule carrying an `r` variable
+(138 dead rules across 17 files). A corrupted token (`_mr1_...`) or a
+token from the wrong rule is a mismatch here.
+
+Other CONTENT integrity of a rule body (cond/repl semantics) is OUT of
+scope — it rides on the parse sweep (probes/load_wall/probe-parse-sweep),
+the per-file witness, the suite, and regeneration diffs. Static — no
+Maxima — because the installed build cannot hold the 2710 patterns in one
+process to check them there (measured 2026-08-20,
 probes/load_wall/probe-load-wall.out); the in-suite test_census checks
 the loadable subset instead. Exits nonzero on any mismatch (a broken
 generation must fail the probe, not just the diff).
@@ -40,6 +48,28 @@ def _load(name, rel):
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m
+
+
+def pattern_name_issues(text, key):
+    """(rule_number, token) pairs where a defmatch pattern carries an
+    `_mr*` token that is not a well-formed capture or MatchQ marker of
+    that same rule. Catches the 2026-08-24 drop_optionals corruption
+    (`_mr_` prefix mangled to `_mr` by a capture named `r`) and any
+    foreign/corrupted name that would make Maxima read the token as a
+    literal symbol (a silently dead rule)."""
+    issues = []
+    pat_re = re.compile(
+        r"^defmatch\(_mr_pat_" + re.escape(key) + r"_r(\d+), (.*), x\)\$",
+        re.M)
+    for m in pat_re.finditer(text):
+        n = m.group(1)
+        pat = m.group(2)
+        tok_re = (r"_mr_" + re.escape(key) + r"_r" + n
+                  + r"(mq\d+)?_[A-Za-z_][0-9A-Za-z_]*")
+        for tok in re.findall(r"_mr[0-9A-Za-z_]*", pat):
+            if not re.fullmatch(tok_re, tok):
+                issues.append((n, tok))
+    return issues
 
 
 def inventory_counts(path):
@@ -106,15 +136,17 @@ def main():
     # Committed-output half: the generated files must carry exactly the
     # counted rules (defmatch indices 1..count, no dupes, no gaps).
     committed = {}
+    name_bad = 0
     for key, count in gen_counts.items():
         path = RULES_DIR / f"{key}.mac"
         if not path.is_file():
             print(f"missing file {path.relative_to(ROOT)}")
             bad += 1
             continue
+        text = path.read_text()
         idx = [int(m) for m in re.findall(
             r"^defmatch\(_mr_pat_" + re.escape(key) + r"_r(\d+),",
-            path.read_text(), re.M)]
+            text, re.M)]
         committed[key] = len(idx)
         if len(idx) != count:
             print(f"count mismatch {key}: committed {len(idx)} "
@@ -123,13 +155,23 @@ def main():
         elif sorted(idx) != list(range(1, count + 1)):
             print(f"index anomaly {key}: {sorted(idx)} is not 1..{count}")
             bad += 1
+        issues = pattern_name_issues(text, key)
+        if issues:
+            name_bad += 1
+            shown = ", ".join(f"r{n}:{t}" for n, t in issues[:5])
+            more = f" (+{len(issues) - 5} more)" if len(issues) > 5 else ""
+            print(f"name integrity {key}: {shown}{more}")
+            bad += 1
     total_c = sum(committed.values())
-    print(f"committed: {len(committed)} files, {total_c} rules")
+    print(f"committed: {len(committed)} files, {total_c} rules, "
+          f"name-integrity bad files {name_bad}")
     if len(committed) != len(gen_counts) or total_c != 2710:
         bad += 1
     print("VERDICT:", "MISMATCH" if bad else
           f"OK ({len(gen_counts)} files, {total_g} rules, all per-file "
-          "counts equal; committed .mac carry exactly 1..N each)")
+          "counts equal; committed .mac carry exactly 1..N each; "
+          "all defmatch pattern names are well-formed rule-local "
+          "captures/markers)")
     return 1 if bad else 0
 
 

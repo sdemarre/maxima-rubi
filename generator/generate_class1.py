@@ -409,8 +409,11 @@ def drop_optionals(text, varset):
     decomposition fills the Plus/Times identity defaults). Power-optional
     exponents are D-duplicated at the emit level, not here.
 
-    Defensive: the translate_atom walk already consumes every v_ / v_.
-    marker, so this is a no-op on translated text; it guards a raw call."""
+    DANGER: raw-text use only. The replaces are SUBSTRING replacements,
+    not marker-aware: on translated text a capture named `r` makes
+    replace("r_", "r") hit the `_mr_` prefix of every renamed capture
+    (the 2026-08-24 dead-rule bug — see emit_rule). Never call this on
+    translated text."""
     for v in sorted(varset, key=len, reverse=True):
         text = text.replace(v + "_.", v).replace(v + "_", v)
     return text
@@ -1028,7 +1031,28 @@ def emit_rule(run, key, n, rule_vars):
         raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
     ctx = {"key": key, "n": n, "vars": rule_vars, "decls": set(),
            "markers": None, "mq": 0}
-    pat_text = drop_optionals(translate(m.group(1), ctx), rule_vars)
+    # BUG FIX (2026-08-24, 138 dead rules): this used to be
+    # drop_optionals(translate(...), rule_vars) — drop_optionals on
+    # TRANSLATED text is NOT the no-op its docstring claims: its
+    # text.replace(v + "_", v) hits any occurrence of v+"_" anywhere in
+    # the text, and a capture named `r` corrupted the `_mr_` prefix of
+    # every renamed capture in the pattern (`_mr_1_1_2_6_r3_g` ->
+    # `_mr1_1_2_6_r3_g`). The corrupted names are never matchdeclare'd
+    # (the decls use cap_name), so Maxima read them as LITERAL symbols
+    # and every rule carrying an `r` capture matched no integrand — all
+    # of 1.2.4.1/1.2.4.2 dead, 138 rules across 17 files. translate()
+    # already consumes every v_ / v_. marker (and raises on a stray one),
+    # so the pattern needs no optional-dropping at all.
+    pat_text = translate(m.group(1), ctx)
+    # Guard the class, not just this instance: every _mr* token in the
+    # emitted pattern must be one of THIS rule's declared captures or
+    # MatchQ markers — a corrupted/foreign name can never match.
+    expected = {cap_name(key, n, v) for v in rule_vars} | set(ctx["decls"])
+    for tok in re.findall(r"_mr[0-9A-Za-z_]*", pat_text):
+        if tok not in expected:
+            raise GenError(f"{key} r{n}: pattern token {tok!r} is not a "
+                           f"declared capture or MatchQ marker of this "
+                           f"rule (name corruption in the pattern text)")
     # Leading coefficients of degree>=2 polynomial factors (and symbolic
     # exponents) must be nonzero: see nonzero_guard_caps (the Maxima
     # degenerate-0-binding misfire).

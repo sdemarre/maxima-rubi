@@ -127,12 +127,24 @@ def extract_entries(path):
 
 
 def zero_chain(d_expr):
-    """Statement list whose value is 1 iff the zero-test closes."""
-    return (
+    """Statement list whose value is 1 iff the zero-test closes.
+
+    The whole chain is errcatch'd: a ratsimp/factor crash inside the
+    VERIFICATION (measured 2026-08-24: `quotient' by `zero' on 1.2.2.4
+    e165 / 1.2.2.8 e1) is an unverified zero-test, not a subprocess
+    fatality — without the guard the error kills Maxima before the CLASS
+    line and the entry is misclassified `error`. errcatch in this build
+    returns [value] on success and [] on error (probe-errcatch-semantics).
+    """
+    inner = (
         f"MR_d: ratsimp({d_expr}), if is(MR_d=0) then 1 "
         "else (MR_d: ratsimp(expand(MR_d)), if is(MR_d=0) then 1 "
         "else (MR_d: factor(MR_d), if is(MR_d=0) then 1 "
         "else (MR_d: ratsimp(factor(MR_d)), if is(MR_d=0) then 1 else 0)))"
+    )
+    return (
+        "block([MR_zr], MR_zr : errcatch(" + inner + "), "
+        "if MR_zr = [] then 0 else part(MR_zr, 1))"
     )
 
 

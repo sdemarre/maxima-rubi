@@ -1277,6 +1277,15 @@ test_structural_predicates() := block([],
    true
 )$
 
+/* The dead-rule name-corruption regression (2026-08-24: drop_optionals
+   ran post-translate and a capture named `r` mangled the `_mr_` prefix
+   of every renamed capture, killing 138 rules across 17 files) is a
+   generator defect. It is covered by the static name-integrity half of
+   probes/census/01-generation-vs-inventory. A behavioral defmatch probe
+   here would conflate it with the separate Maxima matcher under-match on
+   multi-factor products (measured 2026-08-24: 1.1.2.6 r3 declines even
+   with intact names). */
+
 /* Census cross-check (T6 Step 4). BRIEF DEVIATION (measured 2026-08-20,
    probes/load_wall/probe-load-wall.out, build
    branch_5_49_base_796_g60186bb22_dirty): the brief's global check
