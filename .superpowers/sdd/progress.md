@@ -588,7 +588,67 @@ canary, both fixed in one place (no per-rule whack-a-mole):
 Validation: canary 10/10 (was 1/10 at the start of the loop), Layer A
 511/0, parse sweep 67/67 clean, load curve clean. NEXT: broaden the canary
 to a cross-section of all 40 files to surface any remaining class, fix, and
-only then re-run the full class-1 as the acceptance gate.
+only then re-run the full class-1 as the acceptance gate. 
+
+## Work item: Task 9 divergence loop — Step 1 fallback gate (2026-08-24)
+
+The `rubi` integrate-fallback param, default false (handoff Step 1). A
+top-level 0-firing is a port/matcher-gap signal (the corpus is Rubi's own
+suite — rule-solvable by construction), not a job for Maxima's integrate,
+which is slow on generic parameters and prompts for sign assumptions
+(92 s before EOF in one standalone run, measured 2026-08-24).
+
+Changes:
+- `mr_top(f, x, fb)` gates the TWO top-level fall-throughs (recursion cap,
+  no rule fired). `rubi(f, x)` = rules-only (fb false): a 0-firing returns
+  the `mr_unintegrable` noun (the driver's noun detector already classifies
+  it no-answer). `rubi_fallback(f, x, fb)` = the explicit integrate
+  fall-through entry.
+- DESIGN DECISION (the handoff's open question): the flag governs ONLY the
+  top level. `mr_int(f, x)` — the entry the generated replacements call for
+  NESTED sub-integrals — keeps the status-quo integrate fall-through
+  (fb true): a nested 0-firing is a different case, and corpus entries
+  currently verified through nested fallback must not regress.
+- MEASURED Maxima landmine (this build): NO arity overloading — a second
+  same-name definition with a different arg count REPLACES the first (the
+  2-arg call then errors "Too few arguments supplied to rubi(f, x, fb)");
+  no variadic syntax (`b...` is a parse error); `argc`/`arglist` have no
+  manual entries. Hence the two modes have DISTINCT NAMES — a deviation
+  from the handoff's `rubi(f, x, fb)` sketch, which is not expressible in
+  this build.
+- Driver (`build_text`): rules-only by default; `MR_FALLBACK=1` switches to
+  `rubi_fallback(mr_f, var, true)` for A/B baseline runs.
+- Layer A: `test_load_and_api` rewritten for the new contract (5 ->
+  unintegrable noun; `rubi_fallback(5, x, true)` -> 5x; sin(x)^x ->
+  unintegrable noun; empty table -> unintegrable noun); the `5x^2` probe is
+  now explicitly full-coverage (below). TDD red first: the new probes FAILed
+  + the suite died on the arity error before the implementation landed.
+- Measured 0-firing facts behind the probes (full table loaded): 5 and
+  sin(x)^x fire no class-1 rule; x^2 DOES fire 1.1.1.1 r2 (x^m rule); 1/x
+  fires 1.1.1.1 r1 (literal pattern). 5*x^2 fires NO rule: the 1.1.1.1
+  family is (a+b x)^m / x^m / 1/x forms only, and there is NO constant-
+  factor pre-rule (`c_.*u_` grep over the whole pinned Rubi clone: nothing)
+  — in Rubi 4 the monomial-with-coefficient cases are carried by the
+  1.1.3.x (c x)^m families, not a pre-rule.
+
+Validation (Maxima 5.50.0 / SBCL 2.6.7): Layer A 511/0, parse sweep 67/67
+clean, load curve clean. Canary broad (120-target cross-section,
+--parallel 10) A/B:
+- OFF (new default): 76 PASS — no-answer 46, verified+expected 30,
+  unverified 15, timeout 29.
+- ON (MR_FALLBACK=1, status quo): 66 PASS — no-answer 21,
+  verified+expected 45, unverified 19, timeout 35.
+The top-level 0-firing cases converted from slow integrate (timeout or
+lucky slow-verified) to fast (~6 s) no-answer PASS lines — 25 of them are
+the machine-readable Step-2 gap list. Residual OFF timeouts are the
+designed nested-fallback cases (top-level rule fires; its replacement's
+nested mr_int falls through to a slow integrate) plus slow replacements.
+
+NEXT (Step 2): work the 46 no-answer cases — per case, find the Rubi rule
+that should cover it (expected-answer shape + family header) and trace why
+the Maxima port declines. FIRST target: the a*x^n monomial-with-coefficient
+form (5*x^2 class) — no rule in the ported set; decide whether the port
+needs the 1.1.3.x (c x)^m coverage for it or a documented gap.
 
 ## Minor findings (triage at final whole-branch review)
 
