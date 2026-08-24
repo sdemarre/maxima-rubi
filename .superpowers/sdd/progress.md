@@ -840,14 +840,41 @@ e44, its result carries a leftover degenerate `mr_sum[0,k,0,0]` (a 0-sum
 noun) so the zero-test cannot close — a PRE-EXISTING answer-quality defect
 the hang had been hiding (the integral never produced an answer before).
 
-NEXT (not done here): (1) e1276 + sibling product timeouts are correct but
-~32 s — the residual is the rules splitting the rational into ~6 terms and
-`integrate`-ing each (~5 s) instead of the whole rational at once (<1 s);
-closing it is the matcher-gap work (make the specific binomial-power rule
-fire), tracked in Task 9. (2) the degenerate `mr_sum[0,k,0,0]` noun — find
-why a package rule emits an empty-sum noun in a result and either simplify
-it to 0 or emit the concrete sum. (3) continue the timeout / no-answer
-triage.
+NEXT (investigated 2026-08-24, not yet fixed; both are real handoffs):
+
+(1) e1276 + sibling product timeouts — correct but ~32 s. CONFIRMED flow
+(rubi_verbose, one process): 1.1.1.3_r17 EXPANDS `((1-2x)^2(5x+3)^3)/(3x+2)^8`
+into six monomial terms over the EXPANDED `(3x+2)^8` — `500x^5, 400x^4,
+235x^3, 207x^2, 27x, 27` — and each term's own cascade (1.4.1_r7 /
+1.4.2_r24 / 1.3.3_r4) ENDS at the native `integrate` fall-through (~5 s
+each -> ~32 s total). Native `integrate` on the WHOLE integral is <1 s
+(measured). So the cost is 6 per-term integrate calls, NOT a matcher gap.
+My earlier "1.1.3.2 matcher-gap" note was WRONG: 1.1.3.2's pattern is
+`(c x)^m (a+b x^n)^p` — a POWER `(c x)^m` — which does NOT structurally
+match the monomial `c x^k`; measured 0/115 1.1.3.2 rules fire on
+`500x^5/(3x+2)^8` (all 115 patterns degenerate-match, all conds reject).
+OPEN (the real fix): find the rule that should integrate a monomial over a
+linear power, `c x^k (a+b x)^n` — is it absent from the port, or does a
+rule decline it on a too-strict cond? OR stop 1.1.1.3_r17 from splitting
+into six per-term integrates. Repro: canary target `1.1.1.3 1276`,
+integrand `(1-2*x)^2*(3+5*x)^3/(2+3*x)^8`.
+
+(2) degenerate `mr_sum[0,k,0,0]` noun (the 4 unverified). CONFIRMED:
+`mr_sum` is emitted ONLY by rule repls (no utility constructs it; the only
+def is the 4-arg noun); 24 rule files emit it, incl. the 1.2.2.5/1.2.2.6/
+1.2.2.7 quadratic-in-x^2 rules that handle e44's shape. e44's cascade
+operates ENTIRELY on `mr_sum[0,k,0,<n>]/(...)`-shaped integrands (1.3.3_r4,
+1.2.2_5_r3, 1.2.1_6_r4, 1.2.2_6_r2) that never resolve the noun, so the
+final answer carries `mr_sum[0,k,0,0]` -> unverified. `mr_sum[0,k,0,0]` is
+`Sum[<0>,{k,0,0}]` — a sum whose range collapsed to `0..0` (empty) with a
+0 summand for this integrand. OPEN: pin the EXACT 1.2.2.x rule whose repl
+first emits it for e44, then either (a) have the generator emit the
+CONCRETE sum when the limits are constant integers (an empty sum = 0), or
+(b) add a package simplification `mr_sum[0,_,0,0]`->0 (and reduce any
+constant-range mr_sum). Repro: canary target `1.2.2.5 44`, integrand
+`(p1+p2*x+p3*x^2+p4*x^3)/(x^4-5*x^2+4)^3`.
+
+(3) continue the timeout / no-answer triage.
 
 ## Minor findings (triage at final whole-branch review)
 
