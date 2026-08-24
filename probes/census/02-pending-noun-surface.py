@@ -43,7 +43,15 @@ def _load(name, rel):
 def defined_names():
     lib = (ROOT / "maxima_rubi_utils.mac").read_text() + "\n" + \
           (ROOT / "maxima_rubi.mac").read_text()
-    return set(re.findall(r"^\s*(%?mr_\w+)\s*(?:[(:])", lib, re.M))
+    names = set(re.findall(r"^\s*(%?mr_\w+)\s*(?:[(:])", lib, re.M))
+    # The arity dispatchers are defmfun definitions in a .lisp sibling
+    # (maxima_rubi_dispatch.lisp), not Maxima `:=` bodies: parse them
+    # too, or %mr_binomialQ / %mr_intBinomialQ stay "pending" here.
+    lisp = ROOT / "maxima_rubi_dispatch.lisp"
+    if lisp.is_file():
+        names.update(re.findall(r"defmfun\s+\|\$(%?mr_\w+)\|",
+                                lisp.read_text()))
+    return names
 
 
 NAME = re.compile(r"(?<![A-Za-z0-9_])(%?mr_\w+)(?=\s*[(\[])")

@@ -77,8 +77,13 @@ RESTRUCTURE = {
     # 4-arg; Rubi's iterator {var, lo, hi} must be split, not renamed 1:1.
     "With": "block", "Module": "block",
     "If": "if",
-    "EllipticF": "mr_elliptic_f", "EllipticE": "mr_elliptic_e",
-    "EllipticPi": "mr_elliptic_pi",
+    # Answer-side special functions: keep the NATIVE Maxima names. They
+    # are not package-defined shims, so the anti-masking %mr_ rule does
+    # not apply; emitting the native noun lets `diff` differentiate the
+    # answer (measured 2026-08-24 on 5.50.0) and cancels against the
+    # corpus's native expected answers.
+    "EllipticF": "elliptic_f", "EllipticE": "elliptic_e",
+    "EllipticPi": "elliptic_pi",
     "Hypergeometric2F1": "hypergeometric",   # list-form args
     "AppellF1": "mr_appellf1",
     "Root": "%mr_root", "Hold": "%mr_hold", "Boole": "if",

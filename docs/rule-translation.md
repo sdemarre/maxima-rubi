@@ -131,7 +131,7 @@ Replacements (token → used by N rules → state):
 | Denominator / Denom / Numerator / Numer | 88 / 11 / 24 / 11 | `denom` / `num` | present |
 | ArcTan / ArcSin / ArcCos | 78 / 43 / 6 | `atan` `asin` `acos` | present |
 | ArcTanh / ArcSinh / ArcCosh | 35 / 2 / 1 | **nouns in this build** → log-form shims (`atanh(z) = log((1+z)/(1-z))/2` …) | shim |
-| EllipticF / EllipticE / EllipticPi | 33 / 28 / 9 | `elliptic_f/e/pi` **nouns in this build but documented in its manual**; emit as package nouns, differentiation of the answer is at risk here (§6) | noun + verify |
+| EllipticF / EllipticE / EllipticPi | 33 / 28 / 9 | **native** `elliptic_f/e/pi` answer-side nouns. On 5.49 they were emitted as `mr_elliptic_*` package nouns because the calls stayed nouns; on 5.50.0 `diff` knows the native derivatives (measured 2026-08-24), and the corpus expected answers use the native names, so the generator now emits them natively (the anti-masking rule applies only to package-DEFINED shims) | native noun + verify |
 | Sum | 28 | `sum` present but *evaluates definite sums* — Rubi's `Sum` is a formal placeholder → package noun `mr_sum` | package noun |
 | Hypergeometric2F1 | 18 | `hypergeometric([a,b],[c],z)` **bound** (list form; warns on scalar args: audit) | present (shape translation) |
 | AppellF1 | 8 | no Maxima equivalent at all | package noun (+ deriv rule if corpus needs it) |
@@ -322,9 +322,13 @@ local edits. Consequences, all measured 2026-08-18:
   ratroot, pquoto/pmodulo/quo/polynomial-rem, cancel, holdform, boole,
   gcf, factorterm, rootof) is a property of **this binary**. On the
   5.50 release, re-run `sh probes/translation/02-support-surface.run`
-  and shrink the shims to whatever still nouns; the generator's
-  translation table does not change either way (it names the shims;
-  the shims may become one-line pass-throughs).
+  and shrink the shims to whatever still nouns. For PACKAGE-DEFINED
+  shims the translation table keeps the `%mr_*` names (the shims may
+  become one-line pass-throughs). MEASURED 2026-08-24 on 5.50.0: the
+  answer-side elliptic entries are the exception that DID change —
+  `elliptic_f/e/pi` still stay nouns on numeric calls, but `diff`
+  knows their derivatives, so the generator now emits the native
+  names rather than `mr_elliptic_*` package nouns.
 - `is(…)` returns `unknown` as a third value (audit: `is(x > 0)` →
   `unknown`); every generated guard and every C-tier port must treat
   unknown as not-true.

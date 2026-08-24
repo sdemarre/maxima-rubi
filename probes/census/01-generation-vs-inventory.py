@@ -21,6 +21,11 @@ used to run post-translate and its text.replace("r_", "r") corrupted the
 (138 dead rules across 17 files). A corrupted token (`_mr1_...`) or a
 token from the wrong rule is a mismatch here.
 
+A native-elliptic half (2026-08-24, 5.50.0) checks that elliptic answers
+use Maxima's native `elliptic_f/e/pi` nouns, not package `mr_elliptic_*`
+nouns: `diff` knows the native derivatives, so the package spelling makes
+verification strictly harder.
+
 Other CONTENT integrity of a rule body (cond/repl semantics) is OUT of
 scope — it rides on the parse sweep (probes/load_wall/probe-parse-sweep),
 the per-file witness, the suite, and regeneration diffs. Static — no
@@ -70,6 +75,16 @@ def pattern_name_issues(text, key):
             if not re.fullmatch(tok_re, tok):
                 issues.append((n, tok))
     return issues
+
+
+def native_elliptic_issues(text):
+    """`mr_elliptic_*` call tokens in a committed rule file. The elliptic
+    answer-side functions are NOT package-defined shims: Maxima's native
+    `elliptic_f/e/pi` nouns are differentiable by `diff` (measured
+    2026-08-24 on 5.50.0), and the corpus's expected answers use the
+    native names, so the `mr_` spelling blocks both the verified chain
+    and expected-answer cancellation."""
+    return re.findall(r"\bmr_elliptic_(?:f|e|pi)\s*\(", text)
 
 
 def inventory_counts(path):
@@ -137,6 +152,7 @@ def main():
     # counted rules (defmatch indices 1..count, no dupes, no gaps).
     committed = {}
     name_bad = 0
+    elliptic_bad = 0
     for key, count in gen_counts.items():
         path = RULES_DIR / f"{key}.mac"
         if not path.is_file():
@@ -162,16 +178,25 @@ def main():
             more = f" (+{len(issues) - 5} more)" if len(issues) > 5 else ""
             print(f"name integrity {key}: {shown}{more}")
             bad += 1
+        ell = native_elliptic_issues(text)
+        if ell:
+            elliptic_bad += 1
+            shown = ", ".join(ell[:5])
+            more = f" (+{len(ell) - 5} more)" if len(ell) > 5 else ""
+            print(f"native elliptic nouns {key}: {shown}{more}")
+            bad += 1
     total_c = sum(committed.values())
     print(f"committed: {len(committed)} files, {total_c} rules, "
-          f"name-integrity bad files {name_bad}")
+          f"name-integrity bad files {name_bad}, "
+          f"mr_elliptic_* files {elliptic_bad}")
     if len(committed) != len(gen_counts) or total_c != 2710:
         bad += 1
     print("VERDICT:", "MISMATCH" if bad else
           f"OK ({len(gen_counts)} files, {total_g} rules, all per-file "
           "counts equal; committed .mac carry exactly 1..N each; "
           "all defmatch pattern names are well-formed rule-local "
-          "captures/markers)")
+          "captures/markers; elliptic answers use the native "
+          "elliptic_f/e/pi nouns)")
     return 1 if bad else 0
 
 

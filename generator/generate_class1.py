@@ -1003,8 +1003,11 @@ def emit_head(head, arglist, ctx):
         a, b, c, z = arglist
         return f"hypergeometric([{a}, {b}], [{c}], {z})"
     if head in ("EllipticF", "EllipticE", "EllipticPi"):
-        fn = {"EllipticF": "mr_elliptic_f", "EllipticE": "mr_elliptic_e",
-              "EllipticPi": "mr_elliptic_pi"}[head]
+        # Native Maxima noun (NOT a package mr_* spelling): `diff` knows
+        # the native elliptic_f/e/pi derivatives, and the corpus's
+        # expected answers use the native names (measured 2026-08-24).
+        fn = {"EllipticF": "elliptic_f", "EllipticE": "elliptic_e",
+              "EllipticPi": "elliptic_pi"}[head]
         return f"{fn}({', '.join(arglist)})"
     # A head absent from the table is a census miss: fail LOUDLY, never emit
     # a bare Maxima noun FooQ(...) — that makes is(ok) = true perpetually

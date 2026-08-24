@@ -247,8 +247,9 @@ The code lives under these, each one earned by a measurement:
   times per class, not per change. The per-change gate is Layer A
   (seconds).
 - Open (implementation-phase, not research-phase): the recursion cap
-  value, the zero-test chain's adequacy against the T3 23-unverified
-  sample (the strengthen-the-chain loop of T4 §4), and whether
-  corpus-expected elliptic answers differentiate back in this build
-  (T4 §2 flagged `elliptic_f`'s missing binding as a verification
-  risk, not an answer-emission risk).
+  value and the zero-test chain's adequacy against the T3 23-unverified
+  sample (the strengthen-the-chain loop of T4 §4). RESOLVED 2026-08-24
+  on 5.50.0: the elliptic question — `diff` DOES differentiate the
+  native `elliptic_f/e/pi` nouns, so the generator emits the native
+  names (not `mr_elliptic_*`) and elliptic answers can close the
+  verified chain.

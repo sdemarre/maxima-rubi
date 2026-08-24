@@ -700,6 +700,70 @@ NEXT: triage the residual broad-canary classes — the 25 timeouts first
 unverified, then the 46 no-answer Step-2 gap list. The matcher under-match
 class (1.1.2.6 r3 shape) is now a named open item.
 
+## Work item: native elliptic answer nouns (2026-08-24)
+
+HUMAN DECISION (2026-08-24): for the elliptic cases the generator should
+return the NATIVE Maxima nouns `elliptic_f/e/pi`, not the `mr_elliptic_*`
+package spelling, because `diff` differentiates the native nouns (the
+`mr_` spelling was a dead end for verification). Committed separately from
+the dead-rule / verifier work.
+
+- ROOT CAUSE of the old spelling: the 5.49 support audit saw
+  `elliptic_f(...)` calls stay nouns and the plan chose `mr_elliptic_*`
+  "package nouns" (docs/rule-translation.md:134). That over-applied the
+  anti-masking house rule (package-DEFINED shims must not take native
+  names) to answer-side functions the package does NOT define. A native
+  answer noun never masks a builtin, so the rule does not apply.
+- MEASURED on 5.50.0: `diff(elliptic_f(asin(x),1/2),x)`,
+  `diff(elliptic_e(...),x)`, `diff(elliptic_pi(1,asin(x),1/2),x)` all
+  close. So the native noun both differentiates and cancels against the
+  corpus's native expected answers.
+- CHANGE: `generator/translation_table.py` (RESTRUCTURE) and
+  `generator/generate_class1.py` (the EllipticF/E/Pi special-case) now
+  emit `elliptic_f/e/pi`. Regenerated 14 rule files; the diff is PURELY
+  the `mr_elliptic_* -> elliptic_*` rename (spot-checked, no other drift).
+- STATIC REGRESSION PROBE (new): `probes/census/01-generation-vs-inventory.py`
+  gained a `native_elliptic_issues` half — no committed `rules/class1/*.mac`
+  may carry an `mr_elliptic_{f,e,pi}(` call. Red before the fix (14 files),
+  green after (0).
+- CENSUS 02 PROBE FIX (needed to re-stamp honestly): `defined_names()`
+  now also parses the `defmfun` dispatchers out of
+  `maxima_rubi_dispatch.lisp`, so `%mr_binomialQ` / `%mr_intBinomialQ`
+  are no longer miscounted as "pending". Re-stamped pending surface:
+  full 2 (mr_appellf1 8, %mr_exponMin 2), C-tier 0.
+- DOCS: rule-translation.md:134 + the §6 build-drift caveat updated
+  (the elliptic entries are the one answer-side case that DID change
+  native); package-architecture.md open item marked RESOLVED.
+
+Validation (Maxima 5.50.0 / SBCL 2.6.7): Layer A 511/0; parse sweep 67/67
+clean; load curve clean (2705 measured rules, c = 9.92); census OK (2710
+rules, 0 name-integrity bad, 0 mr_elliptic_* files). Broad canary
+(120-target, rules-only, --parallel 12): 78 PASS / 42 FAIL (up from
+77/43) — no-answer 46, verified 27, expected 5, timeout 25, unverified
+17, error 0.
+
+- PROVABLE WIN the canary does not yet show: 1.3.2 e1 (integrand
+  `1/((2^(2/3)+x)*sqrt(1+x^3))`) — in a CLEAN session
+  `ratsimp(diff(rubi(...) - <corpus expected>, x)) = 0` (is() = true),
+  i.e. the native elliptic fix DOES close that entry's expected chain.
+  Yet the broad canary still labels it `unverified`.
+- NEW DRIVER BUG (found, NOT fixed — separate commit): the corpus driver's
+  fixed `pos$ no$` answer chain (meant to answer `rubi`'s prompts) LEAKS
+  into the verification `ratsimp`. When `rubi` does not consume all the
+  answers, the leftover ones are read by the verification `ratsimp`'s
+  sign-prompt and change its result (nonzero) — so an entry whose
+  expected residual provably closes in a clean session is misclassified
+  `unverified`. This is a verifier-isolation defect, distinct from the
+  elliptic change.
+
+NEXT: (1) fix the driver answer-leak so the verification zero-test is
+isolated from the rubi-call answer chain (expected to flip 1.3.2 e1 and
+possibly other expected targets); (2) AppellF1 (`mr_appellf1`, 8 uses) —
+native `appellf1` exists only as a noun and `diff` does not close on it,
+so keep the package noun or add a deriv rule; (3) `%mr_exponMin` (2 uses)
+is a genuinely unported B-tier helper; (4) continue the timeout /
+no-answer triage.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed

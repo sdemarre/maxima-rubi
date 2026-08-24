@@ -345,7 +345,7 @@ _mr_cond_1_1_2_5_r17(mm, x) := block([_mr_1_1_2_5_r17_a, _mr_1_1_2_5_r17_b, _mr_
   freeof(x, _mr_1_1_2_5_r17_a) and freeof(x, _mr_1_1_2_5_r17_b) and freeof(x, _mr_1_1_2_5_r17_c) and freeof(x, _mr_1_1_2_5_r17_d) and freeof(x, _mr_1_1_2_5_r17_e) and freeof(x, _mr_1_1_2_5_r17_f)  and  not(is(_mr_1_1_2_5_r17_d/_mr_1_1_2_5_r17_c > 0))  and  is(_mr_1_1_2_5_r17_c > 0)  and  is(_mr_1_1_2_5_r17_e > 0)  and  not(not(is(_mr_1_1_2_5_r17_f/_mr_1_1_2_5_r17_e > 0))  and  %mr_simplerSqrtQ(-_mr_1_1_2_5_r17_f/_mr_1_1_2_5_r17_e, -_mr_1_1_2_5_r17_d/_mr_1_1_2_5_r17_c)))$
 _mr_repl_1_1_2_5_r17(mm, x) := block([_mr_1_1_2_5_r17_a, _mr_1_1_2_5_r17_b, _mr_1_1_2_5_r17_c, _mr_1_1_2_5_r17_d, _mr_1_1_2_5_r17_e, _mr_1_1_2_5_r17_f],
   _mr_1_1_2_5_r17_a : geteqR(mm, '_mr_1_1_2_5_r17_a), _mr_1_1_2_5_r17_b : geteqR(mm, '_mr_1_1_2_5_r17_b), _mr_1_1_2_5_r17_c : geteqR(mm, '_mr_1_1_2_5_r17_c), _mr_1_1_2_5_r17_d : geteqR(mm, '_mr_1_1_2_5_r17_d), _mr_1_1_2_5_r17_e : geteqR(mm, '_mr_1_1_2_5_r17_e), _mr_1_1_2_5_r17_f : geteqR(mm, '_mr_1_1_2_5_r17_f),
-  1/(_mr_1_1_2_5_r17_a*sqrt(_mr_1_1_2_5_r17_c)*sqrt(_mr_1_1_2_5_r17_e)*%mr_rt(-_mr_1_1_2_5_r17_d/_mr_1_1_2_5_r17_c, 2))*mr_elliptic_pi(_mr_1_1_2_5_r17_b*_mr_1_1_2_5_r17_c/(_mr_1_1_2_5_r17_a*_mr_1_1_2_5_r17_d), asin(%mr_rt(-_mr_1_1_2_5_r17_d/_mr_1_1_2_5_r17_c, 2)*x), _mr_1_1_2_5_r17_c*_mr_1_1_2_5_r17_f/(_mr_1_1_2_5_r17_d*_mr_1_1_2_5_r17_e)))$
+  1/(_mr_1_1_2_5_r17_a*sqrt(_mr_1_1_2_5_r17_c)*sqrt(_mr_1_1_2_5_r17_e)*%mr_rt(-_mr_1_1_2_5_r17_d/_mr_1_1_2_5_r17_c, 2))*elliptic_pi(_mr_1_1_2_5_r17_b*_mr_1_1_2_5_r17_c/(_mr_1_1_2_5_r17_a*_mr_1_1_2_5_r17_d), asin(%mr_rt(-_mr_1_1_2_5_r17_d/_mr_1_1_2_5_r17_c, 2)*x), _mr_1_1_2_5_r17_c*_mr_1_1_2_5_r17_f/(_mr_1_1_2_5_r17_d*_mr_1_1_2_5_r17_e)))$
 _mr_rule_1_1_2_5_r17(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_2_5_r17(f, x),
   if mm = false then return(false),
@@ -384,7 +384,7 @@ _mr_cond_1_1_2_5_r19(mm, x) := block([_mr_1_1_2_5_r19_a, _mr_1_1_2_5_r19_b, _mr_
 _mr_repl_1_1_2_5_r19(mm, x) := block([_mr_1_1_2_5_r19_a, _mr_1_1_2_5_r19_b, _mr_1_1_2_5_r19_c, _mr_1_1_2_5_r19_d, _mr_1_1_2_5_r19_e, _mr_1_1_2_5_r19_f],
   _mr_1_1_2_5_r19_a : geteqR(mm, '_mr_1_1_2_5_r19_a), _mr_1_1_2_5_r19_b : geteqR(mm, '_mr_1_1_2_5_r19_b), _mr_1_1_2_5_r19_c : geteqR(mm, '_mr_1_1_2_5_r19_c), _mr_1_1_2_5_r19_d : geteqR(mm, '_mr_1_1_2_5_r19_d), _mr_1_1_2_5_r19_e : geteqR(mm, '_mr_1_1_2_5_r19_e), _mr_1_1_2_5_r19_f : geteqR(mm, '_mr_1_1_2_5_r19_f),
   _mr_1_1_2_5_r19_c*sqrt(_mr_1_1_2_5_r19_e+_mr_1_1_2_5_r19_f*x^2)/(_mr_1_1_2_5_r19_a*_mr_1_1_2_5_r19_e*%mr_rt(_mr_1_1_2_5_r19_d/_mr_1_1_2_5_r19_c, 2)*sqrt(_mr_1_1_2_5_r19_c+_mr_1_1_2_5_r19_d*x^2)*sqrt(_mr_1_1_2_5_r19_c*(_mr_1_1_2_5_r19_e+_mr_1_1_2_5_r19_f*x^2)/(_mr_1_1_2_5_r19_e*(_mr_1_1_2_5_r19_c+_mr_1_1_2_5_r19_d*x^2))))*
-    mr_elliptic_pi(1-_mr_1_1_2_5_r19_b*_mr_1_1_2_5_r19_c/(_mr_1_1_2_5_r19_a*_mr_1_1_2_5_r19_d), atan(%mr_rt(_mr_1_1_2_5_r19_d/_mr_1_1_2_5_r19_c, 2)*x), 1-_mr_1_1_2_5_r19_c*_mr_1_1_2_5_r19_f/(_mr_1_1_2_5_r19_d*_mr_1_1_2_5_r19_e)))$
+    elliptic_pi(1-_mr_1_1_2_5_r19_b*_mr_1_1_2_5_r19_c/(_mr_1_1_2_5_r19_a*_mr_1_1_2_5_r19_d), atan(%mr_rt(_mr_1_1_2_5_r19_d/_mr_1_1_2_5_r19_c, 2)*x), 1-_mr_1_1_2_5_r19_c*_mr_1_1_2_5_r19_f/(_mr_1_1_2_5_r19_d*_mr_1_1_2_5_r19_e)))$
 _mr_rule_1_1_2_5_r19(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_2_5_r19(f, x),
   if mm = false then return(false),
