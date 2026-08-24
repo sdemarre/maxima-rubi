@@ -280,6 +280,98 @@ def split_top_power(s):
         return (None, None)
     return (s[:pos].strip(), s[pos+1:].strip())
 
+def _term_deg_coef(t):
+    """(exp_str, coef) for a monomial-in-x term; exp None if x-free.
+    exp_str is the literal text after x^ (a digit run) or '1' for a bare x;
+    a non-digit exp (a capture var) is passed through so the caller can flag
+    the factor ambiguous. coef is the text multiplying the x-part."""
+    t = t.strip()
+    if t[:1] in ("+", "-"):
+        t = t[1:].strip()
+    m = re.search(r"(?<![A-Za-z0-9_])x\^([A-Za-z0-9_]+|\d+)\s*$", t)
+    if m:
+        return (m.group(1), t[:m.start()])
+    m = re.search(r"(?<![A-Za-z0-9_])x\s*$", t)
+    if m:
+        return ("1", t[:m.start()])
+    return (None, t)
+
+def _split_sum(s):
+    """Top-level terms of a Plus/Minus sum (sign kept with the following
+    term; bracket nesting honoured)."""
+    terms, depth, cur = [], 0, []
+    for i, ch in enumerate(s):
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        if depth == 0 and ch in "+-" and i > 0:
+            if "".join(cur).strip():
+                terms.append("".join(cur)); cur = []
+            cur.append(ch)
+        else:
+            cur.append(ch)
+    if "".join(cur).strip():
+        terms.append("".join(cur))
+    return terms
+
+def _paren_groups(s):
+    """Every balanced (start, end) paren group in s."""
+    out, depth, start = [], 0, -1
+    for i, ch in enumerate(s):
+        if ch == "(":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0 and start >= 0:
+                out.append((start, i)); start = -1
+    return out
+
+def nonzero_guard_caps(pat):
+    """Capture names whose degenerate 0-binding must be rejected by the
+    matcher: (a) the LEADING coefficient of a parenthesized polynomial-in-x
+    factor of numeric degree >= 2, and (b) any SYMBOLIC exponent of an x-term.
+
+    Maxima's defmatch, unlike Mathematica's, binds a missing leading term of
+    a lower-degree polynomial to 0, so a quadratic/quartic pattern matches a
+    binomial/monomial (the flat first-match-wins table then lets the
+    higher-form rule fire on the lower-form integrand — the measured
+    2026-08-24 source of the wrong-answer misfires). Likewise a symbolic
+    exponent n bound to 0 turns b*x^n into the constant b (a degenerate
+    constant denominator, the 1_2_3_5_r20 case). Declaring such a capture to
+    match only nonzero values makes the matcher itself reject the binding
+    (probe /tmp/md4: rejects C=0, keeps the missing-middle-term case B=0).
+    A numeric exponent (x^2, x^4) is never 0, so only symbolic ones are
+    flagged; a numeric leading coefficient needs degree >= 2 (a binomial's
+    b*x bound to b=0 against a constant is not the misfire seen)."""
+    res = set()
+    for (s, e) in _paren_groups(pat):
+        content = pat[s+1:e]
+        if "x" not in content:
+            continue
+        terms = _split_sum(content)
+        if any(("(" in t) or ("[" in t) for t in terms):
+            continue  # not a flat monomial-in-x sum
+        infos = [_term_deg_coef(t) for t in terms]
+        if all(exp is None for exp, _ in infos):
+            continue  # no x term at all
+        sym = [exp for exp, _ in infos
+               if exp is not None and not re.fullmatch(r"-?\d+", exp)]
+        for exp in sym:
+            res.add(exp.strip())  # a genuine x-term requires n != 0
+        if sym:
+            continue  # degrees are symbolic: exponents guard the factor
+        degs = [int(exp) for exp, _ in infos if exp is not None]
+        mx = max(degs)
+        if mx < 2:
+            continue  # binomials/monomials: degenerate-0 is not the bug
+        for exp, coef in infos:
+            if exp is not None and int(exp) == mx:
+                res.update(re.findall(r"_mr_[A-Za-z0-9_]+", coef))
+    return res
+
 def split_utility_def(text):
     """(rule_text, [utility def lines]) — a Rubi rule file may inline a
     C-tier utility definition (IntLinearQ/IntBinomialQ/IntQuadraticQ) on
@@ -937,7 +1029,11 @@ def emit_rule(run, key, n, rule_vars):
     ctx = {"key": key, "n": n, "vars": rule_vars, "decls": set(),
            "markers": None, "mq": 0}
     pat_text = drop_optionals(translate(m.group(1), ctx), rule_vars)
-    # declare each capture; freeof(x)-guarded if the cond has FreeQ[... , x].
+    # Leading coefficients of degree>=2 polynomial factors (and symbolic
+    # exponents) must be nonzero: see nonzero_guard_caps (the Maxima
+    # degenerate-0-binding misfire).
+    leadcaps = nonzero_guard_caps(pat_text)
+    # declare each capture; freeof(x)-guarded if the cond has FreeQ[..., x].
     # FIX F4: the brief did set(re.findall(...)).split(",") — a set has no
     # split; split the group strings instead.
     freeq_guarded = set(v.strip()
@@ -950,9 +1046,20 @@ def emit_rule(run, key, n, rule_vars):
         decls.append(f"matchdeclare({cap_name(key, n, v)}, {pred})$")
     for d in sorted(ctx["decls"]):
         decls.append(f"matchdeclare({d}, true)$")
-    # cond: translate; an empty cond -> true
-    cond_txt = (translate(drop_optionals(cond, rule_vars), ctx)
-                if cond else "true")
+    # cond: translate; an empty cond -> true. A rule whose pattern can
+    # degenerate-bind a leading coeff / symbolic exponent to 0 (see
+    # nonzero_guard_caps) gets %mr_neQ(<cap>, 0) appended: evaluated once in
+    # the cond per matched rule (a regular function) rather than as a match-
+    # time matchdeclare lambda, which the 2026-08-24 e8 timing showed pushes
+    # hard quartics past the 30 s cap (13.4 s -> 30 s).
+    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
+                 if cond else "true")
+    if leadcaps:
+        guards = "  and  ".join(f"%mr_neQ({c}, 0)"
+                                for c in sorted(leadcaps))
+        cond_txt = f"({base_cond})  and  {guards}"
+    else:
+        cond_txt = base_cond
     # FIX F12: the brief passed `varset` here — an undefined name in
     # emit_rule (the parameter is rule_vars); a NameError on every rule.
     repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)

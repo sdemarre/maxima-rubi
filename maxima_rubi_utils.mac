@@ -44,7 +44,16 @@ mr_sum(fun, var, lo, hi) := 'mr_sum[fun, var, lo, hi]$
   ans : false,
   for i : 1 thru length(rl) do (
     r : part(rl, i),
-    res : apply(r, [f, x]),
+    /* A rule that CRASHES on a binding is a misfire, not a result. Maxima's
+       matcher degenerate-binds zero coefficients (a monomial read as the
+       binomial 0 + c*x), and the affected rule's condition/replacement then
+       divides by 0 (measured 2026-08-24: the 1_1_1_2_r34 / 1_2_1_2_r134 /
+       1_2_3_5_r20 family killed the process across the full class-1 run).
+       A crashing rule must decline so the next rule (or the integrate
+       fall-through) handles the integrand. errcatch in this build returns
+       [value] on success and [] on error (probe-errcatch-semantics). */
+    res : errcatch(apply(r, [f, x])),
+    if res = [] then res : false else res : part(res, 1),
     if res # false then (
       if rubi_verbose then
         print("rubi: rule ", string(r), " fired on ", string(f)),

@@ -544,9 +544,51 @@ match+degree, E generalized*, F pairs/split/misc).
       Layer A 511/0, gates clean, 1.1.1.3 sample dropped from ~all-FAIL
       to 12/15 PASS.
     - Full class-1 run RE-LAUNCHED (18 shards) after the EqQ fix;
-      results pending. Remaining: wait for the shards, re-merge, chase
-      the residual file-by-file FAILs, write docs/corpus-baseline-uplift.md,
-      and commit the acceptance record.
+       results pending. Remaining: wait for the shards, re-merge, chase
+       the residual file-by-file FAILs, write docs/corpus-baseline-uplift.md,
+       and commit the acceptance record.
+
+## Work item: Task 9 divergence loop — matcher-divergence classes (2026-08-24)
+
+PROCESS CHANGE (HUMAN FEEDBACK 2026-08-24): the 3-h full run is a
+confidence GATE, not a debug tool. KILLED the in-flight 18-shard run (its
+code was non-final; its number would be superseded) and adopted a fast
+inner loop: `test/canary.py` re-runs just the failing (file, entry) targets
+in fresh Maxima subprocesses (~1 min/iteration) + Layer A (511) as the
+regression gate. Full run only once the canary/sample is clean.
+
+Two systemic MAXIMA-MATCHER-DEGENERATE-BINDING classes found via the
+canary, both fixed in one place (no per-rule whack-a-mole):
+
+- CRASH class: Maxima's defmatch degenerate-binds a zero coefficient (a
+  monomial read as the binomial `0 + c*x`), and the affected rule's cond
+  divides by it (`expt: undefined: 0 to a negative exponent`), KILLING the
+  process. Fix (maxima_rubi_utils.mac %mr_dispatch): wrap `apply(r,[f,x])`
+  in `errcatch` — a rule that crashes on a binding is a misfire, so it
+  declines and the next rule / integrate fall-through handles the integrand.
+  `errcatch` returns [value]/[] (measured); a crashing rule now declines.
+  Cleared 6 of the 9 initial canary FAILs.
+
+- WRONG-ANSWER class: the flat first-match-wins table + the loose matcher
+  let a higher-form rule (quadratic/quartic) fire on a lower-form integrand
+  (its leading `x^2`/`x^4` coefficient bound to 0). Fix (generator
+  `nonzero_guard_caps`): for every parenthesized polynomial-in-x factor,
+  the LEADING coefficient of a numeric degree >= 2, and any SYMBOLIC
+  exponent (a term `b*x^n` with n=0 is the constant b), must be nonzero.
+  Emitted as `%mr_neQ(<cap>, 0)` appended to the rule COND (a regular
+  function, evaluated once per matched rule) — NOT as a matchdeclare
+  lambda, which the e8 timing showed adds ~17 s to hard quartics (13.4 s ->
+  30 s, past the cap); the cond form restores 13.6 s. `nonzero_guard_caps`
+  also supersedes the two hand-patched local guards (1_2_1_2_r134 c # 0,
+  1_2_3_5_r20 n # 0) — regenerated from the Rubi source now, so they are
+  properly backported. Regenerated all 67 files (2710 rules, no mismatch);
+  2743 guard clauses across 56 files. Probe /tmp/md4: rejects the C=0
+  degenerate match, keeps the missing-middle-term case (B=0).
+
+Validation: canary 10/10 (was 1/10 at the start of the loop), Layer A
+511/0, parse sweep 67/67 clean, load curve clean. NEXT: broaden the canary
+to a cross-section of all 40 files to surface any remaining class, fix, and
+only then re-run the full class-1 as the acceptance gate.
 
 ## Minor findings (triage at final whole-branch review)
 
