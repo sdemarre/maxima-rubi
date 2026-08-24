@@ -141,12 +141,22 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # their scope, so the names must not collide with corpus symbols.
     # Noun detector: the rubi fall-through is the integrate noun; the
     # package's explicit no-answer noun is `unintegrable`.
+    # Default mode is rules-only (2-arg rubi — a 0-firing top level is
+    # the fast no-answer noun, the Step-2 gap list); MR_FALLBACK=1
+    # restores the status-quo top-level integrate fall-through (A/B
+    # baseline runs). Maxima has no arity overloading, so the fallback
+    # mode is the distinct entry rubi_fallback (utils file, measured
+    # 2026-08-24).
+    if os.environ.get("MR_FALLBACK") == "1":
+        call = f"rubi_fallback(mr_f, {var_text}, true)"
+    else:
+        call = f"rubi(mr_f, {var_text})"
     noun = ("block([], if atom(mr_r) then 0 else "
             "if is(string(op(mr_r)) = \"integrate\") "
             "or is(string(op(mr_r)) = \"unintegrable\") "
             "then 1 else 0)")
     head = (f"mr_f: {f_text}$\n"
-            f"mr_r: rubi(mr_f, {var_text})$\n"
+            f"mr_r: {call}$\n"
             + "pos$\n" * 6 + "no$\n" * 6)
     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
         body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "

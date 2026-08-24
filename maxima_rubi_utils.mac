@@ -68,17 +68,49 @@ mr_sum(fun, var, lo, hi) := 'mr_sum[fun, var, lo, hi]$
  * becomes the fall-through noun, not a stack overflow. */
 depth_level : 0$
 
-mr_int(f, x) := block([ans],
+/* The top-level entry. fb gates the two top-level fall-throughs
+ * (recursion cap, no rule fired). fb = false — the default `rubi(f, x)` —
+ * returns the package no-answer noun instead of calling integrate: a
+ * top-level 0-firing is a port/matcher-gap signal (2026-08-24 divergence
+ * loop), not a job for Maxima's integrate, which is slow on generic
+ * parameters and prompts for sign assumptions (one standalone run 92 s
+ * before EOF, measured 2026-08-24). fb = true restores the status-quo
+ * integrate fall-through.
+ *
+ * The flag governs ONLY the top level. mr_int — the entry the generated
+ * rule replacements call for NESTED sub-integrals — keeps the status-quo
+ * integrate fall-through: a nested 0-firing is a different case, and
+ * corpus entries currently verified through nested fallback must not
+ * regress (2026-08-24 design decision, handoff Step 1 open question). */
+mr_top(f, x, fb) := block([ans],
   depth_level : depth_level + 1,
   if depth_level > %mr_max_depth then (
     depth_level : depth_level - 1,
-    return(integrate(f, x))
+    if fb then return(integrate(f, x))
+    else return(mr_unintegrable(f, x))
   ),
   ans : %mr_dispatch(f, x, mr_rule_table, depth_level),
   depth_level : depth_level - 1,
-  if ans = false then integrate(f, x) else ans)$
+  if ans = false then (
+    if fb then integrate(f, x)
+    else mr_unintegrable(f, x)
+  ) else ans)$
 
-rubi(f, x) := mr_int(f, x)$
+/* Nested sub-integral entry (generated replacements call mr_int by
+ * name): the status-quo integrate fall-through, exactly what mr_int
+ * did before the fallback gate. */
+mr_int(f, x) := mr_top(f, x, true)$
+
+/* Two-arg rubi is the rules-only entry (fast no-answer noun on a
+ * 0-firing). The integrate fall-through is the separate explicit entry
+ * rubi_fallback(f, x, fb). MEASURED (2026-08-24, this build): Maxima
+ * has NO arity overloading — a second same-name definition with a
+ * different arg count REPLACES the first (the 2-arg call then errors
+ * "Too few arguments supplied to rubi(f, x, fb)") — and no variadic
+ * syntax (`b...` is a parse error; `argc`/`arglist` have no manual
+ * entries), so the two modes must have distinct names. */
+rubi(f, x) := mr_top(f, x, false)$
+rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
 
 /* ===================== predicate cluster 1 (T5) =====================
  * Ports of Rubi IntegrationUtilityFunctions.m (pinned clone, read-only)

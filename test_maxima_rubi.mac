@@ -96,25 +96,31 @@ run_all_tests() := block([],
 load("maxima_rubi.mac")$
 
 test_load_and_api() := block([r, saved_table],
-  print("--- load + API fall-through ---"),
+  print("--- load + API fallback gate ---"),
   check_bool("loader witness survived", is(mr_witness_maxima_rubi() = true)),
-  /* the 1.1.1.1 rules are loaded, but the %mr_* predicates they guard
-     with are undefined until Task 5, so their conds evaluate non-true and
-     every call still falls through to Maxima's integrate */
-  check("fall-through x^2", rubi(x^2, x), integrate(x^2, x)),
-  check("fall-through 5", rubi(5, x), integrate(5, x)),
-  /* the fall-through noun is Maxima's own, list-structured */
+  /* 5 fires no class-1 rule with the full table (measured 2026-08-24 —
+     the 1.1.1.1 family is (a+b x)^m / x^m / 1/x forms only; x^2 DOES
+     fire rule r2), so it exercises the two top-level fall-throughs
+     directly. The default (2-arg) rubi is rules-only: a 0-firing
+     returns the no-answer noun, not Maxima's integrate; rubi_fallback
+     with fb = true restores the status-quo integrate fall-through. */
+  check_bool("default off: constant -> unintegrable noun",
+             is(rubi(5, x) = mr_unintegrable(5, x))),
+  check("fallback on: rubi_fallback(5, x, true)",
+        rubi_fallback(5, x, true), integrate(5, x)),
+  /* the no-fallback noun is the package's own, list-structured */
   r : rubi(sin(x)^x, x),
-  check_bool("fall-through noun detect",
-             is(atom(r) = false) and is(string(op(r)) = "integrate")),
+  check_bool("no-fallback noun detect",
+             is(atom(r) = false) and is(string(op(r)) = "unintegrable")),
   /* noun forms are distinct from the fall-through noun */
   check_bool("mr_unintegrable is a noun", is(mr_unintegrable(f, x) = 'unintegrable[f, x])),
-  /* empty table -> fall-through. Save/restore the table so a later test
-     (Task 3+) is not run against a wiped table (measured landmine 2026-08-20). */
+  /* empty table -> no rule can fire -> no-answer noun (default off).
+     Save/restore the table so a later test (Task 3+) is not run against
+     a wiped table (measured landmine 2026-08-20). */
   saved_table : mr_rule_table,
   mr_rule_table : [],
-  check_bool("empty table -> noun", is(string(op(rubi(1/x, x))) = "integrate")
-             or is(rubi(1/x, x) = log(x))),
+  check_bool("empty table -> noun",
+             is(string(op(rubi(1/x, x))) = "unintegrable")),
   mr_rule_table : saved_table,
     true
 )$
@@ -1233,7 +1239,11 @@ test_structural_predicates() := block([],
     print("--- generated 1.1.1.1 (behavioral) ---"),
   /* rule 2: the power rule x^m (m free of x, m # -1) */
   check("x^3", rubi(x^3, x), x^4/4),
-  check("5x^2", rubi(5*x^2, x), 5*x^3/3),
+  /* 5*x^2 fires no class-1 rule (the 1.1.1.1 family is (a+b x)^m forms
+     only; no a*x^n / constant-factor rule in the ported set, measured
+     2026-08-24) — this probe pins the integrate fall-through, so it is
+     full-coverage. */
+  check("5x^2 (full coverage)", rubi_fallback(5*x^2, x, true), 5*x^3/3),
   /* rule 1: 1/x -> log(x) */
   check("1/x", rubi(1/x, x), log(x)),
   /* rule 4: (a+b x)^m, m # -1. BRIEF DEVIATION (measured 2026-08-20):
