@@ -529,10 +529,24 @@ match+degree, E generalized*, F pairs/split/misc).
       under the 30 s cap) and the package's candidate cap is 16.
       First-contact triage already fixed two more Maxima-matcher
       degenerate-binding misfires (1_2_1_2_r134 c # 0; the earlier
-      1_2_3_5_r20 n # 0). Remaining work: wait for the shards, merge
-      with the T3 merge-shards mechanics, chase the file-by-file FAILs,
-      write docs/corpus-baseline-uplift.md, and commit the acceptance
-      record.
+      1_2_3_5_r20 n # 0).
+    - Task 9 first full run (pre-fix) merged 25,697/25,697 entries:
+      6,243 PASS / 19,454 FAIL (24.3%); class split error 8,866,
+      unverified 7,385, timeout 3,198, no-answer 2,389, verified 2,810,
+      expected 1,044, unexpected 5. Merged via test/merge_class1_shards.py
+      into test/corpus_class1.out.
+    - ROOT CAUSE of the mass FAILs: %mr_eqQ was the LOOSE clone-gap
+      reading (%mr_possible_zeroQ(u-v)), which zero-substitutes EVERY
+      variable symbol, so a generic parameter product (-10*a*b*c) read as
+      "possibly zero" and the EqQ guards of the 1.1.1.x / 1.2.x rules
+      fired on integrands they did not cover. Fixed (commit 312f949):
+      %mr_eqQ is now strict (u-v simplifies to 0); %mr_neQ unchanged.
+      Layer A 511/0, gates clean, 1.1.1.3 sample dropped from ~all-FAIL
+      to 12/15 PASS.
+    - Full class-1 run RE-LAUNCHED (18 shards) after the EqQ fix;
+      results pending. Remaining: wait for the shards, re-merge, chase
+      the residual file-by-file FAILs, write docs/corpus-baseline-uplift.md,
+      and commit the acceptance record.
 
 ## Minor findings (triage at final whole-branch review)
 
