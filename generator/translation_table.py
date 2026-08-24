@@ -75,6 +75,9 @@ RESTRUCTURE = {
     "IntHide": "mr_int",
     # Sum is emitter-dispatched (Task 6 E5): mr_sum(fun, var, lo, hi) is
     # 4-arg; Rubi's iterator {var, lo, hi} must be split, not renamed 1:1.
+    # The package mr_sum CONCRETIZES numeric bounds per integer index, so a
+    # non-identifier summand is lambda-wrapped by the emitter to survive
+    # Maxima's eager argument evaluation (generate_class1.py Sum handler).
     "With": "block", "Module": "block",
     "If": "if",
     # Answer-side special functions: keep the NATIVE Maxima names. They

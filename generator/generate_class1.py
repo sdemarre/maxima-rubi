@@ -924,9 +924,17 @@ def emit_head(head, arglist, ctx):
             raise GenError(f"{key} r{n}: Boole arity {len(arglist)}")
         return f"(if {arglist[0]} then 1 else 0)"
     if head == "Sum":
-        # FIX E5: the noun is 4-arg mr_sum(fun, var, lo, hi); Rubi's
-        # iterator {var, lo, hi} is the second arg. Single-iterator only in
-        # class 1 (28 uses, measured).
+        # FIX E5: Rubi's finite Sum -> 4-arg mr_sum(fun, var, lo, hi);
+        # the iterator {var, lo, hi} is the second arg. Single-iterator
+        # only in class 1 (28 uses, measured). Maxima evaluates function
+        # arguments eagerly, so a summand containing a total package
+        # function of the index (e.g. %mr_coeff(Pq, x, 2*k)) would
+        # collapse to 0 before mr_sum sees it: every NON-identifier
+        # summand is wrapped in lambda([var], <summand>) so the body
+        # survives to per-index evaluation — mr_sum concretizes constant
+        # ranges (2026-08-25 divergence fix). Identifier summands (the
+        # Module-local-u shape) are passed bare: mr_sum resolves the
+        # symbol's value per index.
         if len(arglist) != 2:
             raise GenError(f"{key} r{n}: Sum arity {len(arglist)}")
         it = arglist[1].strip()
@@ -937,7 +945,10 @@ def emit_head(head, arglist, ctx):
             raise GenError(f"{key} r{n}: multi-iterator Sum not in class 1: "
                            f"{it[:40]!r}")
         var, lo, hi = (p.strip() for p in parts)
-        return f"mr_sum({arglist[0]}, {var}, {lo}, {hi})"
+        fun = arglist[0].strip()
+        if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", fun):
+            return f"mr_sum({fun}, {var}, {lo}, {hi})"
+        return f"mr_sum(lambda([{var}], {fun}), {var}, {lo}, {hi})"
     if head == "ShowStep":
         # Rubi ShowStepRoutines.m :221 — ShowStep[condStrg, lhsStrg,
         # rhsStrg, rhs] is a display wrapper that VALUES to ReleaseHold[rhs]:
@@ -1104,21 +1115,50 @@ def emit_rule(run, key, n, rule_vars):
     # "' is not an infix operator" (repro: `t : 'v'$` fails; the brief's
     # own loader line uses the unbalanced idiom, as do the committed
     # Task-3 rules, which the 20/20 suite verifies behaviorally).
-    binds = [f"{cap_name(key, n, v)} : geteqR(mm, '{cap_name(key, n, v)})"
-             for v in sorted(rule_vars)]
+    caps = sorted(cap_name(key, n, v) for v in rule_vars)
+    binds = [f"{c} : geteqR(mm, '{c})" for c in caps]
     bind_block = ", ".join(binds) if binds else "true"
     # FIX F5: the block locals are the renamed captures; the brief listed
     # the bare names, which are dead locals there (and would shadow the
     # mm/x parameters if a capture were ever named mm or x).
-    locals_txt = ", ".join(cap_name(key, n, v) for v in sorted(rule_vars))
+    locals_txt = ", ".join(caps) if caps else ""
+    # Capture snapshots (2026-08-25, e44 wrong-answer fix). Maxima block
+    # scoping is DYNAMIC, and a defmatch matcher assigns the pattern
+    # symbols as a side effect of every match attempt. A repl whose body
+    # makes a nested mr_int call re-dispatches the whole rule list, which
+    # re-matches THIS rule's own pattern against the cascade's
+    # intermediate integrands and clobbers the capture bindings the repl
+    # still reads after the nested call. Measured on e44 (1.2.2.5 r3):
+    # the even-part cascade rebound _mr_1_2_2_5_r3_b/_mr_1_2_2_5_r3_c to
+    # -240/348 (a matched intermediate quartic 348x^4-240x^2+4), and the
+    # odd-part integrand was then built from the wrong quartic — a
+    # non-antiderivative answer that the zero-test rightly rejects. The
+    # matchlist mm is an immutable value, so the repl reads each capture
+    # from mm into a fresh local no matcher can assign and the body is
+    # rewritten to those locals. The cond keeps the capture names: it
+    # runs before any nested dispatch and its predicates never re-match
+    # this rule's pattern. The __s suffix cannot collide: a capture name
+    # is strictly shorter than its snapshot, and a Rubi variable named
+    # v__s would be asserted against below.
+    snaps = {c: c + "__s" for c in caps}
+    if set(snaps.values()) & set(caps):
+        raise GenError(f"{key} r{n}: a snapshot name collides with a "
+                       f"capture name (a Rubi variable named __s?)")
+    for c in caps:
+        repl_txt = re.sub(
+            r"(?<![0-9A-Za-z_])" + re.escape(c) + r"(?![0-9A-Za-z_])",
+            snaps[c], repl_txt)
+    snap_binds = [f"{snaps[c]} : geteqR(mm, '{c})" for c in caps]
+    snap_bind_block = ", ".join(snap_binds) if snap_binds else "true"
+    snap_locals_txt = ", ".join(snaps[c] for c in caps) if caps else ""
     pat_name = f"_mr_pat_{key}_r{n}"
     lines = list(decls)
     lines.append(f"defmatch({pat_name}, {pat_text}, x)$")
     lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
     lines.append(f"  {bind_block},")
     lines.append(f"  {cond_txt})$")
-    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{locals_txt}],")
-    lines.append(f"  {bind_block},")
+    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals_txt}],")
+    lines.append(f"  {snap_bind_block},")
     lines.append(f"  {repl_txt})$")
     lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
     lines.append(f"  mm : {pat_name}(f, x),")

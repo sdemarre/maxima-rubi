@@ -132,7 +132,7 @@ Replacements (token → used by N rules → state):
 | ArcTan / ArcSin / ArcCos | 78 / 43 / 6 | `atan` `asin` `acos` | present |
 | ArcTanh / ArcSinh / ArcCosh | 35 / 2 / 1 | **nouns in this build** → log-form shims (`atanh(z) = log((1+z)/(1-z))/2` …) | shim |
 | EllipticF / EllipticE / EllipticPi | 33 / 28 / 9 | **native** `elliptic_f/e/pi` answer-side nouns. On 5.49 they were emitted as `mr_elliptic_*` package nouns because the calls stayed nouns; on 5.50.0 `diff` knows the native derivatives (measured 2026-08-24), and the corpus expected answers use the native names, so the generator now emits them natively (the anti-masking rule applies only to package-DEFINED shims) | native noun + verify |
-| Sum | 28 | `sum` present but *evaluates definite sums* — Rubi's `Sum` is a formal placeholder → package noun `mr_sum` | package noun |
+| Sum | 28 | `sum` present but *evaluates definite sums* — Rubi's `Sum` is a formal placeholder → package **function** `mr_sum(fun, var, lo, hi)`: numeric bounds are **concretized** per integer index (a non-identifier summand arrives as `lambda([var], <summand>)` — Maxima evaluates call arguments eagerly, so the generator wraps it — and is applied per index; a bare-identifier summand (Rubi's `Module`-local-u shape) is resolved through its value; symbolic bounds keep the noun `mr_sum[fun, var, lo, hi]`). The lambda test must compare against the unquoted symbol (`op(lam) = lambda`; the string form is false in this build) — measured 2026-08-25 | package function (concretizing) |
 | Hypergeometric2F1 | 18 | `hypergeometric([a,b],[c],z)` **bound** (list form; warns on scalar args: audit) | present (shape translation) |
 | AppellF1 | 8 | no Maxima equivalent at all | package noun (+ deriv rule if corpus needs it) |
 | GCD / PolyGCD | 10 / 2 | `gcd` present; `gcf` noun | port (trivial) |
@@ -215,8 +215,23 @@ Mechanical (a Python generator; the census script already contains the
 4. Replacements: `Subst[...]` → ported subst forms; `Simp[...]` → the
    package simplify policy; `Int[smaller, x]` → `mr_int(smaller, x)`
    (recursion handled by the runner's T2 dispatch, max-recursion
-   capped); `Sum` → `mr_sum`; 2F1/AppellF1/elliptic in their Maxima
-   forms.
+   capped); `Sum` → `mr_sum`, with a non-identifier summand
+   lambda-wrapped so it survives Maxima's eager argument evaluation and
+   is concretized per integer index (a bare-identifier summand — Rubi's
+   `Module`-local-u shape — stays bare and resolves through its value);
+   2F1/AppellF1/elliptic in their Maxima forms.
+   **Capture snapshots** (2026-08-25, e44 wrong-answer fix): Maxima
+   `block` scoping is dynamic and a `defmatch` matcher assigns the
+   pattern symbols as a side effect of every match attempt, so a nested
+   `mr_int` in the repl re-dispatches the whole rule list, re-matches
+   THIS rule's pattern on the cascade's intermediate integrands, and
+   clobbers the capture bindings the repl still reads afterwards (e44:
+   the even-part cascade rebound `…_b`/`…_c` to `-240`/`348` and the
+   odd-part integrand was built from the wrong quartic). The repl
+   therefore reads each capture from the immutable matchlist `mm` into a
+   fresh `<cap>__s` local — a name no matcher can assign — and the body
+   is rewritten to those locals. The cond keeps the capture names (it
+   runs before any nested dispatch).
 5. Emit the `.mac` triple table; a loader `load`s one file per rule
    section and registers triples into the section's rule list; a
    `mr_rules_count` per section cross-checks the census (2,710).

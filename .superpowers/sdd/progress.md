@@ -876,6 +876,86 @@ constant-range mr_sum). Repro: canary target `1.2.2.5 44`, integrand
 
 (3) continue the timeout / no-answer triage.
 
+## Work item: mr_sum concretization + capture snapshots (2026-08-25)
+
+Follow-up (2) of the loop-guard item: the degenerate `mr_sum[0,k,0,0]`
+unverified answers. TWO root causes, two fixes.
+
+ROOT CAUSE 1 — eager summand evaluation. Maxima evaluates call
+arguments eagerly: a repl's `mr_sum(%mr_coeff(Pq,x,2*k)*x^(2*k), k, 0,
+q/2)` evaluates the summand ONCE with k free; the total %mr_coeff
+returns 0 for a symbolic exponent, so every even/odd-split sum is born
+the contentless noun `mr_sum[0,k,0,3/2]`; the same rule family re-fires
+on it, drains the bounds, and the answer carries `mr_sum[0,k,0,0]`.
+
+FIX 1 — `mr_sum` is now a CONCRETIZING function (maxima_rubi_utils.mac):
+numeric bounds -> per-integer i over ceiling(lo)..floor(hi): a lambda
+summand is applied per index (`apply(fun,[i])`); a bare-identifier
+summand resolves through its value (`ev(subst(i,var,ev(fun)))` — the
+Rubi Module-local-u shape of 1.1.3.1 r13; a lambda body of one bare
+symbol does NOT get the index bound into its value — measured
+mech_decisive D1); an already-evaluated expression gets the index
+substituted + re-ev'd; empty range -> 0; symbolic bounds keep the noun.
+The generator lambda-wraps every NON-identifier summand
+(`mr_sum(lambda([var], <summand>), var, lo, hi)`); the 8 bare
+identifier summand sites (1.1.3.1/1.1.3.2 r13 family) stay bare.
+
+ROOT CAUSE 2 — capture corruption under nested dispatch. Found when
+FIX 1 let the 1.2.2.5 r3 repl run to completion for the first time:
+e44 then returned a NON-antiderivative. Maxima block scoping is
+DYNAMIC, and a defmatch matcher assigns the pattern symbols as a side
+effect of every match attempt. The even/odd-split repl evaluates its
+SECOND mr_int argument (the odd part) AFTER the first mr_int (the even
+part) has re-dispatched the whole rule list — which re-matches r3's
+own pattern on the even cascade's intermediate integrands and clobbers
+the repl's live capture bindings. Measured on e44: the even cascade
+rebound `_mr_1_2_2_5_r3_b`/`_mr_1_2_2_5_r3_c` to -240/348 (a matched
+intermediate quartic `348x^4-240x^2+4`) and the odd integrand was
+built from the wrong quartic. Previously masked: with contentless sums
+the repl's cascade never reached the corrupting integrand; and once the
+lambda branch below was dead, the repl FATAL'd inside mr_sum and
+errcatch made r3 DECLINE, so a different (clean) rule handled e44.
+
+FIX 2 — capture snapshots (generate_class1.py emit_rule): the repl
+binds each capture from the immutable matchlist `mm` into a fresh
+`<cap>__s` local (a name no matcher can assign) and the body is
+rewritten to those locals. The cond keeps the capture names (it runs
+before any nested dispatch). Regeneration is purely mechanical: every
+changed rule line is a repl line (verified: all added lines carry
+`__s`, none removed).
+
+MEASURED BUILD TRAP (the lambda-branch bug that hid ROOT CAUSE 2 for a
+session): in this build `op(lam) = "lambda"` (STRING) is FALSE for a
+lambda form — op returns a symbol for special forms while the string
+idiom holds for ordinary operators, and symbols never compare equal to
+strings (`a = "a"` -> false, all measured 2026-08-25, op_cmp/
+op_typeof probes). A dead lambda branch fell to `ev(subst(i,var,fun))`,
+which descends into the lambda and fatals replacing its parameter
+("parameter must be a symbol ... found: 0"). The branch test is now
+`op(fun) = lambda or op(fun) = "lambda"` (both forms; robust across
+builds).
+
+Validation (Maxima 5.50.0 / SBCL 2.6.7): new regression guard
+`test/test_mr_sum_concrete.py` (sweep: every generated mr_sum call is
+lambda-wrapped or a bare identifier; semantics SEM1-SEM7 on the public
+mr_sum contract; behavior: 1.2.2.5 e44 classifies as a PASS class) —
+RED before both fixes, GREEN after. Layer A 511/0, per-test lines
+byte-identical to baseline. Broad canary (120 targets, --parallel 8):
+83/37 -> 85/35, NO PASS->FAIL; the only classification changes are
+1.2.2.5 e44/e94 FAIL:unverified -> PASS:expected; every other target
+unchanged in kind. `test/canary.broad.out` regenerated.
+
+REMAINING (separate bugs — now exposed by the concretization, not
+caused by it): 1.2.1.2 e2202, 1.2.1.5 e105, 1.2.2.6 e123 are still
+FAIL:unverified but their answers carry NO mr_sum anymore — they now
+return monstrous (323 KB - 2 MB) non-antiderivatives from a different
+sub-rule path the concretized cascade reaches; 1.2.2.7 e1/e17 still
+timeout (the e1276-class slowness, follow-up (1)). Also observed,
+separate gap: Rubi's 2-arg `Simp[u, x]` (IntegrationUtilityFunctions.m
+:2265) translates to a 1-arg `%mr_simp` call — "Too many arguments"
+error at repl evaluation, errcatched -> those rules silently decline
+(coverage gap, not wrong answers).
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed

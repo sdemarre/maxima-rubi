@@ -14,9 +14,9 @@ defmatch(_mr_pat_1_1_3_7_r1, _mr_1_1_3_7_r1_Pq*(_mr_1_1_3_7_r1_a+ _mr_1_1_3_7_r1
 _mr_cond_1_1_3_7_r1(mm, x) := block([_mr_1_1_3_7_r1_Pq, _mr_1_1_3_7_r1_a, _mr_1_1_3_7_r1_b, _mr_1_1_3_7_r1_n, _mr_1_1_3_7_r1_p],
   _mr_1_1_3_7_r1_Pq : geteqR(mm, '_mr_1_1_3_7_r1_Pq), _mr_1_1_3_7_r1_a : geteqR(mm, '_mr_1_1_3_7_r1_a), _mr_1_1_3_7_r1_b : geteqR(mm, '_mr_1_1_3_7_r1_b), _mr_1_1_3_7_r1_n : geteqR(mm, '_mr_1_1_3_7_r1_n), _mr_1_1_3_7_r1_p : geteqR(mm, '_mr_1_1_3_7_r1_p),
   (freeof(x, _mr_1_1_3_7_r1_a) and freeof(x, _mr_1_1_3_7_r1_b) and freeof(x, _mr_1_1_3_7_r1_n)  and  %mr_polyQ(_mr_1_1_3_7_r1_Pq, x)  and  (is(_mr_1_1_3_7_r1_p > 0)  or  %mr_eqQ(_mr_1_1_3_7_r1_n, 1)))  and  %mr_neQ(_mr_1_1_3_7_r1_n, 0))$
-_mr_repl_1_1_3_7_r1(mm, x) := block([_mr_1_1_3_7_r1_Pq, _mr_1_1_3_7_r1_a, _mr_1_1_3_7_r1_b, _mr_1_1_3_7_r1_n, _mr_1_1_3_7_r1_p],
-  _mr_1_1_3_7_r1_Pq : geteqR(mm, '_mr_1_1_3_7_r1_Pq), _mr_1_1_3_7_r1_a : geteqR(mm, '_mr_1_1_3_7_r1_a), _mr_1_1_3_7_r1_b : geteqR(mm, '_mr_1_1_3_7_r1_b), _mr_1_1_3_7_r1_n : geteqR(mm, '_mr_1_1_3_7_r1_n), _mr_1_1_3_7_r1_p : geteqR(mm, '_mr_1_1_3_7_r1_p),
-  mr_int(%mr_expandIntegrand(_mr_1_1_3_7_r1_Pq*(_mr_1_1_3_7_r1_a + _mr_1_1_3_7_r1_b*x^_mr_1_1_3_7_r1_n)^_mr_1_1_3_7_r1_p, x), x))$
+_mr_repl_1_1_3_7_r1(mm, x) := block([_mr_1_1_3_7_r1_Pq__s, _mr_1_1_3_7_r1_a__s, _mr_1_1_3_7_r1_b__s, _mr_1_1_3_7_r1_n__s, _mr_1_1_3_7_r1_p__s],
+  _mr_1_1_3_7_r1_Pq__s : geteqR(mm, '_mr_1_1_3_7_r1_Pq), _mr_1_1_3_7_r1_a__s : geteqR(mm, '_mr_1_1_3_7_r1_a), _mr_1_1_3_7_r1_b__s : geteqR(mm, '_mr_1_1_3_7_r1_b), _mr_1_1_3_7_r1_n__s : geteqR(mm, '_mr_1_1_3_7_r1_n), _mr_1_1_3_7_r1_p__s : geteqR(mm, '_mr_1_1_3_7_r1_p),
+  mr_int(%mr_expandIntegrand(_mr_1_1_3_7_r1_Pq__s*(_mr_1_1_3_7_r1_a__s + _mr_1_1_3_7_r1_b__s*x^_mr_1_1_3_7_r1_n__s)^_mr_1_1_3_7_r1_p__s, x), x))$
 _mr_rule_1_1_3_7_r1(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r1(f, x),
   if mm = false then return(false),
@@ -32,9 +32,9 @@ defmatch(_mr_pat_1_1_3_7_r2, _mr_1_1_3_7_r2_Pq*(_mr_1_1_3_7_r2_a+ _mr_1_1_3_7_r2
 _mr_cond_1_1_3_7_r2(mm, x) := block([_mr_1_1_3_7_r2_Pq, _mr_1_1_3_7_r2_a, _mr_1_1_3_7_r2_b, _mr_1_1_3_7_r2_n, _mr_1_1_3_7_r2_p],
   _mr_1_1_3_7_r2_Pq : geteqR(mm, '_mr_1_1_3_7_r2_Pq), _mr_1_1_3_7_r2_a : geteqR(mm, '_mr_1_1_3_7_r2_a), _mr_1_1_3_7_r2_b : geteqR(mm, '_mr_1_1_3_7_r2_b), _mr_1_1_3_7_r2_n : geteqR(mm, '_mr_1_1_3_7_r2_n), _mr_1_1_3_7_r2_p : geteqR(mm, '_mr_1_1_3_7_r2_p),
   (freeof(x, _mr_1_1_3_7_r2_a) and freeof(x, _mr_1_1_3_7_r2_b) and freeof(x, _mr_1_1_3_7_r2_n) and freeof(x, _mr_1_1_3_7_r2_p)  and  %mr_polyQ(_mr_1_1_3_7_r2_Pq, x)  and  %mr_eqQ(%mr_coeff(_mr_1_1_3_7_r2_Pq, x, 0), 0)  and  not(%mr_matchQ(_mr_1_1_3_7_r2_Pq, x^_mr_1_1_3_7_r2mq1_m*_mr_1_1_3_7_r2mq1_u, lambda([%mr_mqb], integerp(%mr_mk(_mr_1_1_3_7_r2mq1_m, %mr_mqb))))))  and  %mr_neQ(_mr_1_1_3_7_r2_n, 0))$
-_mr_repl_1_1_3_7_r2(mm, x) := block([_mr_1_1_3_7_r2_Pq, _mr_1_1_3_7_r2_a, _mr_1_1_3_7_r2_b, _mr_1_1_3_7_r2_n, _mr_1_1_3_7_r2_p],
-  _mr_1_1_3_7_r2_Pq : geteqR(mm, '_mr_1_1_3_7_r2_Pq), _mr_1_1_3_7_r2_a : geteqR(mm, '_mr_1_1_3_7_r2_a), _mr_1_1_3_7_r2_b : geteqR(mm, '_mr_1_1_3_7_r2_b), _mr_1_1_3_7_r2_n : geteqR(mm, '_mr_1_1_3_7_r2_n), _mr_1_1_3_7_r2_p : geteqR(mm, '_mr_1_1_3_7_r2_p),
-  mr_int(x*%mr_polyQuotient(_mr_1_1_3_7_r2_Pq, x, x)*(_mr_1_1_3_7_r2_a + _mr_1_1_3_7_r2_b*x^_mr_1_1_3_7_r2_n)^_mr_1_1_3_7_r2_p, x))$
+_mr_repl_1_1_3_7_r2(mm, x) := block([_mr_1_1_3_7_r2_Pq__s, _mr_1_1_3_7_r2_a__s, _mr_1_1_3_7_r2_b__s, _mr_1_1_3_7_r2_n__s, _mr_1_1_3_7_r2_p__s],
+  _mr_1_1_3_7_r2_Pq__s : geteqR(mm, '_mr_1_1_3_7_r2_Pq), _mr_1_1_3_7_r2_a__s : geteqR(mm, '_mr_1_1_3_7_r2_a), _mr_1_1_3_7_r2_b__s : geteqR(mm, '_mr_1_1_3_7_r2_b), _mr_1_1_3_7_r2_n__s : geteqR(mm, '_mr_1_1_3_7_r2_n), _mr_1_1_3_7_r2_p__s : geteqR(mm, '_mr_1_1_3_7_r2_p),
+  mr_int(x*%mr_polyQuotient(_mr_1_1_3_7_r2_Pq__s, x, x)*(_mr_1_1_3_7_r2_a__s + _mr_1_1_3_7_r2_b__s*x^_mr_1_1_3_7_r2_n__s)^_mr_1_1_3_7_r2_p__s, x))$
 _mr_rule_1_1_3_7_r2(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r2(f, x),
   if mm = false then return(false),
@@ -50,9 +50,9 @@ defmatch(_mr_pat_1_1_3_7_r3, _mr_1_1_3_7_r3_Pq*(_mr_1_1_3_7_r3_a+ _mr_1_1_3_7_r3
 _mr_cond_1_1_3_7_r3(mm, x) := block([_mr_1_1_3_7_r3_Pq, _mr_1_1_3_7_r3_a, _mr_1_1_3_7_r3_b, _mr_1_1_3_7_r3_n, _mr_1_1_3_7_r3_p],
   _mr_1_1_3_7_r3_Pq : geteqR(mm, '_mr_1_1_3_7_r3_Pq), _mr_1_1_3_7_r3_a : geteqR(mm, '_mr_1_1_3_7_r3_a), _mr_1_1_3_7_r3_b : geteqR(mm, '_mr_1_1_3_7_r3_b), _mr_1_1_3_7_r3_n : geteqR(mm, '_mr_1_1_3_7_r3_n), _mr_1_1_3_7_r3_p : geteqR(mm, '_mr_1_1_3_7_r3_p),
   (freeof(x, _mr_1_1_3_7_r3_a) and freeof(x, _mr_1_1_3_7_r3_b) and freeof(x, _mr_1_1_3_7_r3_p)  and  %mr_polyQ(_mr_1_1_3_7_r3_Pq, x)  and  is(_mr_1_1_3_7_r3_n > 0)  and  is(%mr_expon(_mr_1_1_3_7_r3_Pq, x) >= _mr_1_1_3_7_r3_n)  and  %mr_eqQ(%mr_polyRemainder(_mr_1_1_3_7_r3_Pq, _mr_1_1_3_7_r3_a + _mr_1_1_3_7_r3_b*x^_mr_1_1_3_7_r3_n, x), 0))  and  %mr_neQ(_mr_1_1_3_7_r3_n, 0))$
-_mr_repl_1_1_3_7_r3(mm, x) := block([_mr_1_1_3_7_r3_Pq, _mr_1_1_3_7_r3_a, _mr_1_1_3_7_r3_b, _mr_1_1_3_7_r3_n, _mr_1_1_3_7_r3_p],
-  _mr_1_1_3_7_r3_Pq : geteqR(mm, '_mr_1_1_3_7_r3_Pq), _mr_1_1_3_7_r3_a : geteqR(mm, '_mr_1_1_3_7_r3_a), _mr_1_1_3_7_r3_b : geteqR(mm, '_mr_1_1_3_7_r3_b), _mr_1_1_3_7_r3_n : geteqR(mm, '_mr_1_1_3_7_r3_n), _mr_1_1_3_7_r3_p : geteqR(mm, '_mr_1_1_3_7_r3_p),
-  mr_int(%mr_polyQuotient(_mr_1_1_3_7_r3_Pq, _mr_1_1_3_7_r3_a + _mr_1_1_3_7_r3_b*x^_mr_1_1_3_7_r3_n, x)*(_mr_1_1_3_7_r3_a + _mr_1_1_3_7_r3_b*x^_mr_1_1_3_7_r3_n)^(_mr_1_1_3_7_r3_p + 1), x))$
+_mr_repl_1_1_3_7_r3(mm, x) := block([_mr_1_1_3_7_r3_Pq__s, _mr_1_1_3_7_r3_a__s, _mr_1_1_3_7_r3_b__s, _mr_1_1_3_7_r3_n__s, _mr_1_1_3_7_r3_p__s],
+  _mr_1_1_3_7_r3_Pq__s : geteqR(mm, '_mr_1_1_3_7_r3_Pq), _mr_1_1_3_7_r3_a__s : geteqR(mm, '_mr_1_1_3_7_r3_a), _mr_1_1_3_7_r3_b__s : geteqR(mm, '_mr_1_1_3_7_r3_b), _mr_1_1_3_7_r3_n__s : geteqR(mm, '_mr_1_1_3_7_r3_n), _mr_1_1_3_7_r3_p__s : geteqR(mm, '_mr_1_1_3_7_r3_p),
+  mr_int(%mr_polyQuotient(_mr_1_1_3_7_r3_Pq__s, _mr_1_1_3_7_r3_a__s + _mr_1_1_3_7_r3_b__s*x^_mr_1_1_3_7_r3_n__s, x)*(_mr_1_1_3_7_r3_a__s + _mr_1_1_3_7_r3_b__s*x^_mr_1_1_3_7_r3_n__s)^(_mr_1_1_3_7_r3_p__s + 1), x))$
 _mr_rule_1_1_3_7_r3(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r3(f, x),
   if mm = false then return(false),
@@ -68,9 +68,9 @@ defmatch(_mr_pat_1_1_3_7_r4, _mr_1_1_3_7_r4_Pq*(_mr_1_1_3_7_r4_a+ _mr_1_1_3_7_r4
 _mr_cond_1_1_3_7_r4(mm, x) := block([_mr_1_1_3_7_r4_Pq, _mr_1_1_3_7_r4_a, _mr_1_1_3_7_r4_b, _mr_1_1_3_7_r4_n, _mr_1_1_3_7_r4_p],
   _mr_1_1_3_7_r4_Pq : geteqR(mm, '_mr_1_1_3_7_r4_Pq), _mr_1_1_3_7_r4_a : geteqR(mm, '_mr_1_1_3_7_r4_a), _mr_1_1_3_7_r4_b : geteqR(mm, '_mr_1_1_3_7_r4_b), _mr_1_1_3_7_r4_n : geteqR(mm, '_mr_1_1_3_7_r4_n), _mr_1_1_3_7_r4_p : geteqR(mm, '_mr_1_1_3_7_r4_p),
   (freeof(x, _mr_1_1_3_7_r4_a) and freeof(x, _mr_1_1_3_7_r4_b)  and  %mr_polyQ(_mr_1_1_3_7_r4_Pq, x)  and  is((_mr_1_1_3_7_r4_n - 1)/2 > 0)  and  is(_mr_1_1_3_7_r4_p > 0))  and  %mr_neQ(_mr_1_1_3_7_r4_n, 0))$
-_mr_repl_1_1_3_7_r4(mm, x) := block([_mr_1_1_3_7_r4_Pq, _mr_1_1_3_7_r4_a, _mr_1_1_3_7_r4_b, _mr_1_1_3_7_r4_n, _mr_1_1_3_7_r4_p],
-  _mr_1_1_3_7_r4_Pq : geteqR(mm, '_mr_1_1_3_7_r4_Pq), _mr_1_1_3_7_r4_a : geteqR(mm, '_mr_1_1_3_7_r4_a), _mr_1_1_3_7_r4_b : geteqR(mm, '_mr_1_1_3_7_r4_b), _mr_1_1_3_7_r4_n : geteqR(mm, '_mr_1_1_3_7_r4_n), _mr_1_1_3_7_r4_p : geteqR(mm, '_mr_1_1_3_7_r4_p),
-  block([q, i], q : %mr_expon(_mr_1_1_3_7_r4_Pq, x), (_mr_1_1_3_7_r4_a + _mr_1_1_3_7_r4_b*x^_mr_1_1_3_7_r4_n)^_mr_1_1_3_7_r4_p* mr_sum(%mr_coeff(_mr_1_1_3_7_r4_Pq, x, i)*x^(i + 1)/(_mr_1_1_3_7_r4_n*_mr_1_1_3_7_r4_p + i + 1), i, 0, q) + _mr_1_1_3_7_r4_a*_mr_1_1_3_7_r4_n*_mr_1_1_3_7_r4_p* mr_int((_mr_1_1_3_7_r4_a + _mr_1_1_3_7_r4_b*x^_mr_1_1_3_7_r4_n)^(_mr_1_1_3_7_r4_p - 1)* mr_sum(%mr_coeff(_mr_1_1_3_7_r4_Pq, x, i)*x^i/(_mr_1_1_3_7_r4_n*_mr_1_1_3_7_r4_p + i + 1), i, 0, q), x)))$
+_mr_repl_1_1_3_7_r4(mm, x) := block([_mr_1_1_3_7_r4_Pq__s, _mr_1_1_3_7_r4_a__s, _mr_1_1_3_7_r4_b__s, _mr_1_1_3_7_r4_n__s, _mr_1_1_3_7_r4_p__s],
+  _mr_1_1_3_7_r4_Pq__s : geteqR(mm, '_mr_1_1_3_7_r4_Pq), _mr_1_1_3_7_r4_a__s : geteqR(mm, '_mr_1_1_3_7_r4_a), _mr_1_1_3_7_r4_b__s : geteqR(mm, '_mr_1_1_3_7_r4_b), _mr_1_1_3_7_r4_n__s : geteqR(mm, '_mr_1_1_3_7_r4_n), _mr_1_1_3_7_r4_p__s : geteqR(mm, '_mr_1_1_3_7_r4_p),
+  block([q, i], q : %mr_expon(_mr_1_1_3_7_r4_Pq__s, x), (_mr_1_1_3_7_r4_a__s + _mr_1_1_3_7_r4_b__s*x^_mr_1_1_3_7_r4_n__s)^_mr_1_1_3_7_r4_p__s* mr_sum(lambda([i], %mr_coeff(_mr_1_1_3_7_r4_Pq__s, x, i)*x^(i + 1)/(_mr_1_1_3_7_r4_n__s*_mr_1_1_3_7_r4_p__s + i + 1)), i, 0, q) + _mr_1_1_3_7_r4_a__s*_mr_1_1_3_7_r4_n__s*_mr_1_1_3_7_r4_p__s* mr_int((_mr_1_1_3_7_r4_a__s + _mr_1_1_3_7_r4_b__s*x^_mr_1_1_3_7_r4_n__s)^(_mr_1_1_3_7_r4_p__s - 1)* mr_sum(lambda([i], %mr_coeff(_mr_1_1_3_7_r4_Pq__s, x, i)*x^i/(_mr_1_1_3_7_r4_n__s*_mr_1_1_3_7_r4_p__s + i + 1)), i, 0, q), x)))$
 _mr_rule_1_1_3_7_r4(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r4(f, x),
   if mm = false then return(false),
@@ -86,9 +86,9 @@ defmatch(_mr_pat_1_1_3_7_r5, _mr_1_1_3_7_r5_Pq*(_mr_1_1_3_7_r5_a+ _mr_1_1_3_7_r5
 _mr_cond_1_1_3_7_r5(mm, x) := block([_mr_1_1_3_7_r5_Pq, _mr_1_1_3_7_r5_a, _mr_1_1_3_7_r5_b, _mr_1_1_3_7_r5_n, _mr_1_1_3_7_r5_p],
   _mr_1_1_3_7_r5_Pq : geteqR(mm, '_mr_1_1_3_7_r5_Pq), _mr_1_1_3_7_r5_a : geteqR(mm, '_mr_1_1_3_7_r5_a), _mr_1_1_3_7_r5_b : geteqR(mm, '_mr_1_1_3_7_r5_b), _mr_1_1_3_7_r5_n : geteqR(mm, '_mr_1_1_3_7_r5_n), _mr_1_1_3_7_r5_p : geteqR(mm, '_mr_1_1_3_7_r5_p),
   (freeof(x, _mr_1_1_3_7_r5_a) and freeof(x, _mr_1_1_3_7_r5_b)  and  %mr_polyQ(_mr_1_1_3_7_r5_Pq, x)  and  is(_mr_1_1_3_7_r5_n > 0)  and  is(_mr_1_1_3_7_r5_p < -1))  and  %mr_neQ(_mr_1_1_3_7_r5_n, 0))$
-_mr_repl_1_1_3_7_r5(mm, x) := block([_mr_1_1_3_7_r5_Pq, _mr_1_1_3_7_r5_a, _mr_1_1_3_7_r5_b, _mr_1_1_3_7_r5_n, _mr_1_1_3_7_r5_p],
-  _mr_1_1_3_7_r5_Pq : geteqR(mm, '_mr_1_1_3_7_r5_Pq), _mr_1_1_3_7_r5_a : geteqR(mm, '_mr_1_1_3_7_r5_a), _mr_1_1_3_7_r5_b : geteqR(mm, '_mr_1_1_3_7_r5_b), _mr_1_1_3_7_r5_n : geteqR(mm, '_mr_1_1_3_7_r5_n), _mr_1_1_3_7_r5_p : geteqR(mm, '_mr_1_1_3_7_r5_p),
-  block([q, i], q : %mr_expon(_mr_1_1_3_7_r5_Pq, x), (if is(q = _mr_1_1_3_7_r5_n - 1) = true then (_mr_1_1_3_7_r5_a*%mr_coeff(_mr_1_1_3_7_r5_Pq, x, q) - _mr_1_1_3_7_r5_b*x*%mr_expandToSum(_mr_1_1_3_7_r5_Pq - %mr_coeff(_mr_1_1_3_7_r5_Pq, x, q)*x^q, x))*(_mr_1_1_3_7_r5_a + _mr_1_1_3_7_r5_b*x^_mr_1_1_3_7_r5_n)^(_mr_1_1_3_7_r5_p + 1)/(_mr_1_1_3_7_r5_a*_mr_1_1_3_7_r5_b*_mr_1_1_3_7_r5_n*(_mr_1_1_3_7_r5_p + 1)) + 1/(_mr_1_1_3_7_r5_a*_mr_1_1_3_7_r5_n*(_mr_1_1_3_7_r5_p + 1))* mr_int(mr_sum((_mr_1_1_3_7_r5_n*(_mr_1_1_3_7_r5_p + 1) + i + 1)*%mr_coeff(_mr_1_1_3_7_r5_Pq, x, i)*x^i, i, 0, q - 1)*(_mr_1_1_3_7_r5_a + _mr_1_1_3_7_r5_b*x^_mr_1_1_3_7_r5_n)^(_mr_1_1_3_7_r5_p + 1), x) else false)))$
+_mr_repl_1_1_3_7_r5(mm, x) := block([_mr_1_1_3_7_r5_Pq__s, _mr_1_1_3_7_r5_a__s, _mr_1_1_3_7_r5_b__s, _mr_1_1_3_7_r5_n__s, _mr_1_1_3_7_r5_p__s],
+  _mr_1_1_3_7_r5_Pq__s : geteqR(mm, '_mr_1_1_3_7_r5_Pq), _mr_1_1_3_7_r5_a__s : geteqR(mm, '_mr_1_1_3_7_r5_a), _mr_1_1_3_7_r5_b__s : geteqR(mm, '_mr_1_1_3_7_r5_b), _mr_1_1_3_7_r5_n__s : geteqR(mm, '_mr_1_1_3_7_r5_n), _mr_1_1_3_7_r5_p__s : geteqR(mm, '_mr_1_1_3_7_r5_p),
+  block([q, i], q : %mr_expon(_mr_1_1_3_7_r5_Pq__s, x), (if is(q = _mr_1_1_3_7_r5_n__s - 1) = true then (_mr_1_1_3_7_r5_a__s*%mr_coeff(_mr_1_1_3_7_r5_Pq__s, x, q) - _mr_1_1_3_7_r5_b__s*x*%mr_expandToSum(_mr_1_1_3_7_r5_Pq__s - %mr_coeff(_mr_1_1_3_7_r5_Pq__s, x, q)*x^q, x))*(_mr_1_1_3_7_r5_a__s + _mr_1_1_3_7_r5_b__s*x^_mr_1_1_3_7_r5_n__s)^(_mr_1_1_3_7_r5_p__s + 1)/(_mr_1_1_3_7_r5_a__s*_mr_1_1_3_7_r5_b__s*_mr_1_1_3_7_r5_n__s*(_mr_1_1_3_7_r5_p__s + 1)) + 1/(_mr_1_1_3_7_r5_a__s*_mr_1_1_3_7_r5_n__s*(_mr_1_1_3_7_r5_p__s + 1))* mr_int(mr_sum(lambda([i], (_mr_1_1_3_7_r5_n__s*(_mr_1_1_3_7_r5_p__s + 1) + i + 1)*%mr_coeff(_mr_1_1_3_7_r5_Pq__s, x, i)*x^i), i, 0, q - 1)*(_mr_1_1_3_7_r5_a__s + _mr_1_1_3_7_r5_b__s*x^_mr_1_1_3_7_r5_n__s)^(_mr_1_1_3_7_r5_p__s + 1), x) else false)))$
 _mr_rule_1_1_3_7_r5(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r5(f, x),
   if mm = false then return(false),
@@ -104,9 +104,9 @@ defmatch(_mr_pat_1_1_3_7_r6, _mr_1_1_3_7_r6_Pq*(_mr_1_1_3_7_r6_a+ _mr_1_1_3_7_r6
 _mr_cond_1_1_3_7_r6(mm, x) := block([_mr_1_1_3_7_r6_Pq, _mr_1_1_3_7_r6_a, _mr_1_1_3_7_r6_b, _mr_1_1_3_7_r6_n, _mr_1_1_3_7_r6_p],
   _mr_1_1_3_7_r6_Pq : geteqR(mm, '_mr_1_1_3_7_r6_Pq), _mr_1_1_3_7_r6_a : geteqR(mm, '_mr_1_1_3_7_r6_a), _mr_1_1_3_7_r6_b : geteqR(mm, '_mr_1_1_3_7_r6_b), _mr_1_1_3_7_r6_n : geteqR(mm, '_mr_1_1_3_7_r6_n), _mr_1_1_3_7_r6_p : geteqR(mm, '_mr_1_1_3_7_r6_p),
   (freeof(x, _mr_1_1_3_7_r6_a) and freeof(x, _mr_1_1_3_7_r6_b)  and  %mr_polyQ(_mr_1_1_3_7_r6_Pq, x)  and  is(_mr_1_1_3_7_r6_n > 0)  and  is(_mr_1_1_3_7_r6_p < -1)  and  is(%mr_expon(_mr_1_1_3_7_r6_Pq, x) < _mr_1_1_3_7_r6_n - 1))  and  %mr_neQ(_mr_1_1_3_7_r6_n, 0))$
-_mr_repl_1_1_3_7_r6(mm, x) := block([_mr_1_1_3_7_r6_Pq, _mr_1_1_3_7_r6_a, _mr_1_1_3_7_r6_b, _mr_1_1_3_7_r6_n, _mr_1_1_3_7_r6_p],
-  _mr_1_1_3_7_r6_Pq : geteqR(mm, '_mr_1_1_3_7_r6_Pq), _mr_1_1_3_7_r6_a : geteqR(mm, '_mr_1_1_3_7_r6_a), _mr_1_1_3_7_r6_b : geteqR(mm, '_mr_1_1_3_7_r6_b), _mr_1_1_3_7_r6_n : geteqR(mm, '_mr_1_1_3_7_r6_n), _mr_1_1_3_7_r6_p : geteqR(mm, '_mr_1_1_3_7_r6_p),
-  -x*_mr_1_1_3_7_r6_Pq*(_mr_1_1_3_7_r6_a + _mr_1_1_3_7_r6_b*x^_mr_1_1_3_7_r6_n)^(_mr_1_1_3_7_r6_p + 1)/(_mr_1_1_3_7_r6_a*_mr_1_1_3_7_r6_n*(_mr_1_1_3_7_r6_p + 1)) + 1/(_mr_1_1_3_7_r6_a*_mr_1_1_3_7_r6_n*(_mr_1_1_3_7_r6_p + 1))* mr_int(%mr_expandToSum(_mr_1_1_3_7_r6_n*(_mr_1_1_3_7_r6_p + 1)*_mr_1_1_3_7_r6_Pq + diff(x*_mr_1_1_3_7_r6_Pq, x), x)*(_mr_1_1_3_7_r6_a + _mr_1_1_3_7_r6_b*x^_mr_1_1_3_7_r6_n)^(_mr_1_1_3_7_r6_p + 1), x))$
+_mr_repl_1_1_3_7_r6(mm, x) := block([_mr_1_1_3_7_r6_Pq__s, _mr_1_1_3_7_r6_a__s, _mr_1_1_3_7_r6_b__s, _mr_1_1_3_7_r6_n__s, _mr_1_1_3_7_r6_p__s],
+  _mr_1_1_3_7_r6_Pq__s : geteqR(mm, '_mr_1_1_3_7_r6_Pq), _mr_1_1_3_7_r6_a__s : geteqR(mm, '_mr_1_1_3_7_r6_a), _mr_1_1_3_7_r6_b__s : geteqR(mm, '_mr_1_1_3_7_r6_b), _mr_1_1_3_7_r6_n__s : geteqR(mm, '_mr_1_1_3_7_r6_n), _mr_1_1_3_7_r6_p__s : geteqR(mm, '_mr_1_1_3_7_r6_p),
+  -x*_mr_1_1_3_7_r6_Pq__s*(_mr_1_1_3_7_r6_a__s + _mr_1_1_3_7_r6_b__s*x^_mr_1_1_3_7_r6_n__s)^(_mr_1_1_3_7_r6_p__s + 1)/(_mr_1_1_3_7_r6_a__s*_mr_1_1_3_7_r6_n__s*(_mr_1_1_3_7_r6_p__s + 1)) + 1/(_mr_1_1_3_7_r6_a__s*_mr_1_1_3_7_r6_n__s*(_mr_1_1_3_7_r6_p__s + 1))* mr_int(%mr_expandToSum(_mr_1_1_3_7_r6_n__s*(_mr_1_1_3_7_r6_p__s + 1)*_mr_1_1_3_7_r6_Pq__s + diff(x*_mr_1_1_3_7_r6_Pq__s, x), x)*(_mr_1_1_3_7_r6_a__s + _mr_1_1_3_7_r6_b__s*x^_mr_1_1_3_7_r6_n__s)^(_mr_1_1_3_7_r6_p__s + 1), x))$
 _mr_rule_1_1_3_7_r6(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r6(f, x),
   if mm = false then return(false),
@@ -120,9 +120,9 @@ defmatch(_mr_pat_1_1_3_7_r7, _mr_1_1_3_7_r7_P4/(_mr_1_1_3_7_r7_a+ _mr_1_1_3_7_r7
 _mr_cond_1_1_3_7_r7(mm, x) := block([_mr_1_1_3_7_r7_P4, _mr_1_1_3_7_r7_a, _mr_1_1_3_7_r7_b],
   _mr_1_1_3_7_r7_P4 : geteqR(mm, '_mr_1_1_3_7_r7_P4), _mr_1_1_3_7_r7_a : geteqR(mm, '_mr_1_1_3_7_r7_a), _mr_1_1_3_7_r7_b : geteqR(mm, '_mr_1_1_3_7_r7_b),
   (freeof(x, _mr_1_1_3_7_r7_a) and freeof(x, _mr_1_1_3_7_r7_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r7_P4, x, 4)  and  %mr_eqQ(%mr_coeff(_mr_1_1_3_7_r7_P4, x, 2), 0))  and  %mr_neQ(_mr_1_1_3_7_r7_b, 0))$
-_mr_repl_1_1_3_7_r7(mm, x) := block([_mr_1_1_3_7_r7_P4, _mr_1_1_3_7_r7_a, _mr_1_1_3_7_r7_b],
-  _mr_1_1_3_7_r7_P4 : geteqR(mm, '_mr_1_1_3_7_r7_P4), _mr_1_1_3_7_r7_a : geteqR(mm, '_mr_1_1_3_7_r7_a), _mr_1_1_3_7_r7_b : geteqR(mm, '_mr_1_1_3_7_r7_b),
-  block([d, e, f, g], d : %mr_coeff(_mr_1_1_3_7_r7_P4, x, 0), e : %mr_coeff(_mr_1_1_3_7_r7_P4, x, 1), f : %mr_coeff(_mr_1_1_3_7_r7_P4, x, 3), g : %mr_coeff(_mr_1_1_3_7_r7_P4, x, 4), (if is(%mr_eqQ(_mr_1_1_3_7_r7_b*d + _mr_1_1_3_7_r7_a*g, 0)) = true then -(_mr_1_1_3_7_r7_a*f + 2*_mr_1_1_3_7_r7_a*g*x - _mr_1_1_3_7_r7_b*e*x^2)/(2*_mr_1_1_3_7_r7_a*_mr_1_1_3_7_r7_b*sqrt(_mr_1_1_3_7_r7_a + _mr_1_1_3_7_r7_b*x^4)) else false)))$
+_mr_repl_1_1_3_7_r7(mm, x) := block([_mr_1_1_3_7_r7_P4__s, _mr_1_1_3_7_r7_a__s, _mr_1_1_3_7_r7_b__s],
+  _mr_1_1_3_7_r7_P4__s : geteqR(mm, '_mr_1_1_3_7_r7_P4), _mr_1_1_3_7_r7_a__s : geteqR(mm, '_mr_1_1_3_7_r7_a), _mr_1_1_3_7_r7_b__s : geteqR(mm, '_mr_1_1_3_7_r7_b),
+  block([d, e, f, g], d : %mr_coeff(_mr_1_1_3_7_r7_P4__s, x, 0), e : %mr_coeff(_mr_1_1_3_7_r7_P4__s, x, 1), f : %mr_coeff(_mr_1_1_3_7_r7_P4__s, x, 3), g : %mr_coeff(_mr_1_1_3_7_r7_P4__s, x, 4), (if is(%mr_eqQ(_mr_1_1_3_7_r7_b__s*d + _mr_1_1_3_7_r7_a__s*g, 0)) = true then -(_mr_1_1_3_7_r7_a__s*f + 2*_mr_1_1_3_7_r7_a__s*g*x - _mr_1_1_3_7_r7_b__s*e*x^2)/(2*_mr_1_1_3_7_r7_a__s*_mr_1_1_3_7_r7_b__s*sqrt(_mr_1_1_3_7_r7_a__s + _mr_1_1_3_7_r7_b__s*x^4)) else false)))$
 _mr_rule_1_1_3_7_r7(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r7(f, x),
   if mm = false then return(false),
@@ -136,9 +136,9 @@ defmatch(_mr_pat_1_1_3_7_r8, _mr_1_1_3_7_r8_P6/(_mr_1_1_3_7_r8_a+ _mr_1_1_3_7_r8
 _mr_cond_1_1_3_7_r8(mm, x) := block([_mr_1_1_3_7_r8_P6, _mr_1_1_3_7_r8_a, _mr_1_1_3_7_r8_b],
   _mr_1_1_3_7_r8_P6 : geteqR(mm, '_mr_1_1_3_7_r8_P6), _mr_1_1_3_7_r8_a : geteqR(mm, '_mr_1_1_3_7_r8_a), _mr_1_1_3_7_r8_b : geteqR(mm, '_mr_1_1_3_7_r8_b),
   (freeof(x, _mr_1_1_3_7_r8_a) and freeof(x, _mr_1_1_3_7_r8_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r8_P6, x, 6)  and  %mr_eqQ(%mr_coeff(_mr_1_1_3_7_r8_P6, x, 1), 0)  and  %mr_eqQ(%mr_coeff(_mr_1_1_3_7_r8_P6, x, 5), 0))  and  %mr_neQ(_mr_1_1_3_7_r8_b, 0))$
-_mr_repl_1_1_3_7_r8(mm, x) := block([_mr_1_1_3_7_r8_P6, _mr_1_1_3_7_r8_a, _mr_1_1_3_7_r8_b],
-  _mr_1_1_3_7_r8_P6 : geteqR(mm, '_mr_1_1_3_7_r8_P6), _mr_1_1_3_7_r8_a : geteqR(mm, '_mr_1_1_3_7_r8_a), _mr_1_1_3_7_r8_b : geteqR(mm, '_mr_1_1_3_7_r8_b),
-  block([d, e, f, g, h], d : %mr_coeff(_mr_1_1_3_7_r8_P6, x, 0), e : %mr_coeff(_mr_1_1_3_7_r8_P6, x, 2), f : %mr_coeff(_mr_1_1_3_7_r8_P6, x, 3), g : %mr_coeff(_mr_1_1_3_7_r8_P6, x, 4), h : %mr_coeff(_mr_1_1_3_7_r8_P6, x, 6), (if is(%mr_eqQ(_mr_1_1_3_7_r8_b*e - 3*_mr_1_1_3_7_r8_a*h, 0)  and  %mr_eqQ(_mr_1_1_3_7_r8_b*d + _mr_1_1_3_7_r8_a*g, 0)) = true then -(_mr_1_1_3_7_r8_a*f - 2*_mr_1_1_3_7_r8_b*d*x - 2*_mr_1_1_3_7_r8_a*h*x^3)/(2*_mr_1_1_3_7_r8_a*_mr_1_1_3_7_r8_b*sqrt(_mr_1_1_3_7_r8_a + _mr_1_1_3_7_r8_b*x^4)) else false)))$
+_mr_repl_1_1_3_7_r8(mm, x) := block([_mr_1_1_3_7_r8_P6__s, _mr_1_1_3_7_r8_a__s, _mr_1_1_3_7_r8_b__s],
+  _mr_1_1_3_7_r8_P6__s : geteqR(mm, '_mr_1_1_3_7_r8_P6), _mr_1_1_3_7_r8_a__s : geteqR(mm, '_mr_1_1_3_7_r8_a), _mr_1_1_3_7_r8_b__s : geteqR(mm, '_mr_1_1_3_7_r8_b),
+  block([d, e, f, g, h], d : %mr_coeff(_mr_1_1_3_7_r8_P6__s, x, 0), e : %mr_coeff(_mr_1_1_3_7_r8_P6__s, x, 2), f : %mr_coeff(_mr_1_1_3_7_r8_P6__s, x, 3), g : %mr_coeff(_mr_1_1_3_7_r8_P6__s, x, 4), h : %mr_coeff(_mr_1_1_3_7_r8_P6__s, x, 6), (if is(%mr_eqQ(_mr_1_1_3_7_r8_b__s*e - 3*_mr_1_1_3_7_r8_a__s*h, 0)  and  %mr_eqQ(_mr_1_1_3_7_r8_b__s*d + _mr_1_1_3_7_r8_a__s*g, 0)) = true then -(_mr_1_1_3_7_r8_a__s*f - 2*_mr_1_1_3_7_r8_b__s*d*x - 2*_mr_1_1_3_7_r8_a__s*h*x^3)/(2*_mr_1_1_3_7_r8_a__s*_mr_1_1_3_7_r8_b__s*sqrt(_mr_1_1_3_7_r8_a__s + _mr_1_1_3_7_r8_b__s*x^4)) else false)))$
 _mr_rule_1_1_3_7_r8(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r8(f, x),
   if mm = false then return(false),
@@ -154,9 +154,9 @@ defmatch(_mr_pat_1_1_3_7_r9, _mr_1_1_3_7_r9_Pq*(_mr_1_1_3_7_r9_a+ _mr_1_1_3_7_r9
 _mr_cond_1_1_3_7_r9(mm, x) := block([_mr_1_1_3_7_r9_Pq, _mr_1_1_3_7_r9_a, _mr_1_1_3_7_r9_b, _mr_1_1_3_7_r9_n, _mr_1_1_3_7_r9_p],
   _mr_1_1_3_7_r9_Pq : geteqR(mm, '_mr_1_1_3_7_r9_Pq), _mr_1_1_3_7_r9_a : geteqR(mm, '_mr_1_1_3_7_r9_a), _mr_1_1_3_7_r9_b : geteqR(mm, '_mr_1_1_3_7_r9_b), _mr_1_1_3_7_r9_n : geteqR(mm, '_mr_1_1_3_7_r9_n), _mr_1_1_3_7_r9_p : geteqR(mm, '_mr_1_1_3_7_r9_p),
   (freeof(x, _mr_1_1_3_7_r9_a) and freeof(x, _mr_1_1_3_7_r9_b)  and  %mr_polyQ(_mr_1_1_3_7_r9_Pq, x)  and  is(_mr_1_1_3_7_r9_n > 0)  and  is(_mr_1_1_3_7_r9_p < -1))  and  %mr_neQ(_mr_1_1_3_7_r9_n, 0))$
-_mr_repl_1_1_3_7_r9(mm, x) := block([_mr_1_1_3_7_r9_Pq, _mr_1_1_3_7_r9_a, _mr_1_1_3_7_r9_b, _mr_1_1_3_7_r9_n, _mr_1_1_3_7_r9_p],
-  _mr_1_1_3_7_r9_Pq : geteqR(mm, '_mr_1_1_3_7_r9_Pq), _mr_1_1_3_7_r9_a : geteqR(mm, '_mr_1_1_3_7_r9_a), _mr_1_1_3_7_r9_b : geteqR(mm, '_mr_1_1_3_7_r9_b), _mr_1_1_3_7_r9_n : geteqR(mm, '_mr_1_1_3_7_r9_n), _mr_1_1_3_7_r9_p : geteqR(mm, '_mr_1_1_3_7_r9_p),
-  block([q], q : %mr_expon(_mr_1_1_3_7_r9_Pq, x), (if is(is(q >= _mr_1_1_3_7_r9_n)) = true then block([Q, R], Q : %mr_polyQuotient(_mr_1_1_3_7_r9_b^(floor((q - 1)/_mr_1_1_3_7_r9_n) + 1)*_mr_1_1_3_7_r9_Pq, _mr_1_1_3_7_r9_a + _mr_1_1_3_7_r9_b*x^_mr_1_1_3_7_r9_n, x), R : %mr_polyRemainder(_mr_1_1_3_7_r9_b^(floor((q - 1)/_mr_1_1_3_7_r9_n) + 1)*_mr_1_1_3_7_r9_Pq, _mr_1_1_3_7_r9_a + _mr_1_1_3_7_r9_b*x^_mr_1_1_3_7_r9_n, x), -x* R*(_mr_1_1_3_7_r9_a + _mr_1_1_3_7_r9_b*x^_mr_1_1_3_7_r9_n)^(_mr_1_1_3_7_r9_p + 1)/(_mr_1_1_3_7_r9_a*_mr_1_1_3_7_r9_n*(_mr_1_1_3_7_r9_p + 1)* _mr_1_1_3_7_r9_b^(floor((q - 1)/_mr_1_1_3_7_r9_n) + 1)) + 1/(_mr_1_1_3_7_r9_a*_mr_1_1_3_7_r9_n*(_mr_1_1_3_7_r9_p + 1)*_mr_1_1_3_7_r9_b^(floor((q - 1)/_mr_1_1_3_7_r9_n) + 1))* mr_int((_mr_1_1_3_7_r9_a + _mr_1_1_3_7_r9_b*x^_mr_1_1_3_7_r9_n)^(_mr_1_1_3_7_r9_p + 1)* %mr_expandToSum(_mr_1_1_3_7_r9_a*_mr_1_1_3_7_r9_n*(_mr_1_1_3_7_r9_p + 1)*Q + _mr_1_1_3_7_r9_n*(_mr_1_1_3_7_r9_p + 1)*R + diff(x*R, x), x), x)) else false)))$
+_mr_repl_1_1_3_7_r9(mm, x) := block([_mr_1_1_3_7_r9_Pq__s, _mr_1_1_3_7_r9_a__s, _mr_1_1_3_7_r9_b__s, _mr_1_1_3_7_r9_n__s, _mr_1_1_3_7_r9_p__s],
+  _mr_1_1_3_7_r9_Pq__s : geteqR(mm, '_mr_1_1_3_7_r9_Pq), _mr_1_1_3_7_r9_a__s : geteqR(mm, '_mr_1_1_3_7_r9_a), _mr_1_1_3_7_r9_b__s : geteqR(mm, '_mr_1_1_3_7_r9_b), _mr_1_1_3_7_r9_n__s : geteqR(mm, '_mr_1_1_3_7_r9_n), _mr_1_1_3_7_r9_p__s : geteqR(mm, '_mr_1_1_3_7_r9_p),
+  block([q], q : %mr_expon(_mr_1_1_3_7_r9_Pq__s, x), (if is(is(q >= _mr_1_1_3_7_r9_n__s)) = true then block([Q, R], Q : %mr_polyQuotient(_mr_1_1_3_7_r9_b__s^(floor((q - 1)/_mr_1_1_3_7_r9_n__s) + 1)*_mr_1_1_3_7_r9_Pq__s, _mr_1_1_3_7_r9_a__s + _mr_1_1_3_7_r9_b__s*x^_mr_1_1_3_7_r9_n__s, x), R : %mr_polyRemainder(_mr_1_1_3_7_r9_b__s^(floor((q - 1)/_mr_1_1_3_7_r9_n__s) + 1)*_mr_1_1_3_7_r9_Pq__s, _mr_1_1_3_7_r9_a__s + _mr_1_1_3_7_r9_b__s*x^_mr_1_1_3_7_r9_n__s, x), -x* R*(_mr_1_1_3_7_r9_a__s + _mr_1_1_3_7_r9_b__s*x^_mr_1_1_3_7_r9_n__s)^(_mr_1_1_3_7_r9_p__s + 1)/(_mr_1_1_3_7_r9_a__s*_mr_1_1_3_7_r9_n__s*(_mr_1_1_3_7_r9_p__s + 1)* _mr_1_1_3_7_r9_b__s^(floor((q - 1)/_mr_1_1_3_7_r9_n__s) + 1)) + 1/(_mr_1_1_3_7_r9_a__s*_mr_1_1_3_7_r9_n__s*(_mr_1_1_3_7_r9_p__s + 1)*_mr_1_1_3_7_r9_b__s^(floor((q - 1)/_mr_1_1_3_7_r9_n__s) + 1))* mr_int((_mr_1_1_3_7_r9_a__s + _mr_1_1_3_7_r9_b__s*x^_mr_1_1_3_7_r9_n__s)^(_mr_1_1_3_7_r9_p__s + 1)* %mr_expandToSum(_mr_1_1_3_7_r9_a__s*_mr_1_1_3_7_r9_n__s*(_mr_1_1_3_7_r9_p__s + 1)*Q + _mr_1_1_3_7_r9_n__s*(_mr_1_1_3_7_r9_p__s + 1)*R + diff(x*R, x), x), x)) else false)))$
 _mr_rule_1_1_3_7_r9(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r9(f, x),
   if mm = false then return(false),
@@ -171,9 +171,9 @@ defmatch(_mr_pat_1_1_3_7_r10, (_mr_1_1_3_7_r10_A+ _mr_1_1_3_7_r10_B*x)/(_mr_1_1_
 _mr_cond_1_1_3_7_r10(mm, x) := block([_mr_1_1_3_7_r10_A, _mr_1_1_3_7_r10_B, _mr_1_1_3_7_r10_a, _mr_1_1_3_7_r10_b],
   _mr_1_1_3_7_r10_A : geteqR(mm, '_mr_1_1_3_7_r10_A), _mr_1_1_3_7_r10_B : geteqR(mm, '_mr_1_1_3_7_r10_B), _mr_1_1_3_7_r10_a : geteqR(mm, '_mr_1_1_3_7_r10_a), _mr_1_1_3_7_r10_b : geteqR(mm, '_mr_1_1_3_7_r10_b),
   (freeof(x, _mr_1_1_3_7_r10_a) and freeof(x, _mr_1_1_3_7_r10_b) and freeof(x, _mr_1_1_3_7_r10_A) and freeof(x, _mr_1_1_3_7_r10_B)  and  %mr_eqQ(_mr_1_1_3_7_r10_a*_mr_1_1_3_7_r10_B^3 - _mr_1_1_3_7_r10_b*_mr_1_1_3_7_r10_A^3, 0))  and  %mr_neQ(_mr_1_1_3_7_r10_b, 0))$
-_mr_repl_1_1_3_7_r10(mm, x) := block([_mr_1_1_3_7_r10_A, _mr_1_1_3_7_r10_B, _mr_1_1_3_7_r10_a, _mr_1_1_3_7_r10_b],
-  _mr_1_1_3_7_r10_A : geteqR(mm, '_mr_1_1_3_7_r10_A), _mr_1_1_3_7_r10_B : geteqR(mm, '_mr_1_1_3_7_r10_B), _mr_1_1_3_7_r10_a : geteqR(mm, '_mr_1_1_3_7_r10_a), _mr_1_1_3_7_r10_b : geteqR(mm, '_mr_1_1_3_7_r10_b),
-  _mr_1_1_3_7_r10_B^3/_mr_1_1_3_7_r10_b*mr_int(1/(_mr_1_1_3_7_r10_A^2 - _mr_1_1_3_7_r10_A*_mr_1_1_3_7_r10_B*x + _mr_1_1_3_7_r10_B^2*x^2), x))$
+_mr_repl_1_1_3_7_r10(mm, x) := block([_mr_1_1_3_7_r10_A__s, _mr_1_1_3_7_r10_B__s, _mr_1_1_3_7_r10_a__s, _mr_1_1_3_7_r10_b__s],
+  _mr_1_1_3_7_r10_A__s : geteqR(mm, '_mr_1_1_3_7_r10_A), _mr_1_1_3_7_r10_B__s : geteqR(mm, '_mr_1_1_3_7_r10_B), _mr_1_1_3_7_r10_a__s : geteqR(mm, '_mr_1_1_3_7_r10_a), _mr_1_1_3_7_r10_b__s : geteqR(mm, '_mr_1_1_3_7_r10_b),
+  _mr_1_1_3_7_r10_B__s^3/_mr_1_1_3_7_r10_b__s*mr_int(1/(_mr_1_1_3_7_r10_A__s^2 - _mr_1_1_3_7_r10_A__s*_mr_1_1_3_7_r10_B__s*x + _mr_1_1_3_7_r10_B__s^2*x^2), x))$
 _mr_rule_1_1_3_7_r10(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r10(f, x),
   if mm = false then return(false),
@@ -188,9 +188,9 @@ defmatch(_mr_pat_1_1_3_7_r11, (_mr_1_1_3_7_r11_A+ _mr_1_1_3_7_r11_B*x)/(_mr_1_1_
 _mr_cond_1_1_3_7_r11(mm, x) := block([_mr_1_1_3_7_r11_A, _mr_1_1_3_7_r11_B, _mr_1_1_3_7_r11_a, _mr_1_1_3_7_r11_b],
   _mr_1_1_3_7_r11_A : geteqR(mm, '_mr_1_1_3_7_r11_A), _mr_1_1_3_7_r11_B : geteqR(mm, '_mr_1_1_3_7_r11_B), _mr_1_1_3_7_r11_a : geteqR(mm, '_mr_1_1_3_7_r11_a), _mr_1_1_3_7_r11_b : geteqR(mm, '_mr_1_1_3_7_r11_b),
   (freeof(x, _mr_1_1_3_7_r11_a) and freeof(x, _mr_1_1_3_7_r11_b) and freeof(x, _mr_1_1_3_7_r11_A) and freeof(x, _mr_1_1_3_7_r11_B)  and  %mr_neQ(_mr_1_1_3_7_r11_a*_mr_1_1_3_7_r11_B^3 - _mr_1_1_3_7_r11_b*_mr_1_1_3_7_r11_A^3, 0)  and  %mr_posQ(_mr_1_1_3_7_r11_a/_mr_1_1_3_7_r11_b))  and  %mr_neQ(_mr_1_1_3_7_r11_b, 0))$
-_mr_repl_1_1_3_7_r11(mm, x) := block([_mr_1_1_3_7_r11_A, _mr_1_1_3_7_r11_B, _mr_1_1_3_7_r11_a, _mr_1_1_3_7_r11_b],
-  _mr_1_1_3_7_r11_A : geteqR(mm, '_mr_1_1_3_7_r11_A), _mr_1_1_3_7_r11_B : geteqR(mm, '_mr_1_1_3_7_r11_B), _mr_1_1_3_7_r11_a : geteqR(mm, '_mr_1_1_3_7_r11_a), _mr_1_1_3_7_r11_b : geteqR(mm, '_mr_1_1_3_7_r11_b),
-  block([r, s], r : num(%mr_rt(_mr_1_1_3_7_r11_a/_mr_1_1_3_7_r11_b, 3)), s : denom(%mr_rt(_mr_1_1_3_7_r11_a/_mr_1_1_3_7_r11_b, 3)), -r*(_mr_1_1_3_7_r11_B*r - _mr_1_1_3_7_r11_A*s)/(3*_mr_1_1_3_7_r11_a*s)*mr_int(1/(r + s*x), x) + r/(3*_mr_1_1_3_7_r11_a*s)* mr_int((r*(_mr_1_1_3_7_r11_B*r + 2*_mr_1_1_3_7_r11_A*s) + s*(_mr_1_1_3_7_r11_B*r - _mr_1_1_3_7_r11_A*s)*x)/(r^2 - r*s*x + s^2*x^2), x)))$
+_mr_repl_1_1_3_7_r11(mm, x) := block([_mr_1_1_3_7_r11_A__s, _mr_1_1_3_7_r11_B__s, _mr_1_1_3_7_r11_a__s, _mr_1_1_3_7_r11_b__s],
+  _mr_1_1_3_7_r11_A__s : geteqR(mm, '_mr_1_1_3_7_r11_A), _mr_1_1_3_7_r11_B__s : geteqR(mm, '_mr_1_1_3_7_r11_B), _mr_1_1_3_7_r11_a__s : geteqR(mm, '_mr_1_1_3_7_r11_a), _mr_1_1_3_7_r11_b__s : geteqR(mm, '_mr_1_1_3_7_r11_b),
+  block([r, s], r : num(%mr_rt(_mr_1_1_3_7_r11_a__s/_mr_1_1_3_7_r11_b__s, 3)), s : denom(%mr_rt(_mr_1_1_3_7_r11_a__s/_mr_1_1_3_7_r11_b__s, 3)), -r*(_mr_1_1_3_7_r11_B__s*r - _mr_1_1_3_7_r11_A__s*s)/(3*_mr_1_1_3_7_r11_a__s*s)*mr_int(1/(r + s*x), x) + r/(3*_mr_1_1_3_7_r11_a__s*s)* mr_int((r*(_mr_1_1_3_7_r11_B__s*r + 2*_mr_1_1_3_7_r11_A__s*s) + s*(_mr_1_1_3_7_r11_B__s*r - _mr_1_1_3_7_r11_A__s*s)*x)/(r^2 - r*s*x + s^2*x^2), x)))$
 _mr_rule_1_1_3_7_r11(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r11(f, x),
   if mm = false then return(false),
@@ -205,9 +205,9 @@ defmatch(_mr_pat_1_1_3_7_r12, (_mr_1_1_3_7_r12_A+ _mr_1_1_3_7_r12_B*x)/(_mr_1_1_
 _mr_cond_1_1_3_7_r12(mm, x) := block([_mr_1_1_3_7_r12_A, _mr_1_1_3_7_r12_B, _mr_1_1_3_7_r12_a, _mr_1_1_3_7_r12_b],
   _mr_1_1_3_7_r12_A : geteqR(mm, '_mr_1_1_3_7_r12_A), _mr_1_1_3_7_r12_B : geteqR(mm, '_mr_1_1_3_7_r12_B), _mr_1_1_3_7_r12_a : geteqR(mm, '_mr_1_1_3_7_r12_a), _mr_1_1_3_7_r12_b : geteqR(mm, '_mr_1_1_3_7_r12_b),
   (freeof(x, _mr_1_1_3_7_r12_a) and freeof(x, _mr_1_1_3_7_r12_b) and freeof(x, _mr_1_1_3_7_r12_A) and freeof(x, _mr_1_1_3_7_r12_B)  and  %mr_neQ(_mr_1_1_3_7_r12_a*_mr_1_1_3_7_r12_B^3 - _mr_1_1_3_7_r12_b*_mr_1_1_3_7_r12_A^3, 0)  and  %mr_negQ(_mr_1_1_3_7_r12_a/_mr_1_1_3_7_r12_b))  and  %mr_neQ(_mr_1_1_3_7_r12_b, 0))$
-_mr_repl_1_1_3_7_r12(mm, x) := block([_mr_1_1_3_7_r12_A, _mr_1_1_3_7_r12_B, _mr_1_1_3_7_r12_a, _mr_1_1_3_7_r12_b],
-  _mr_1_1_3_7_r12_A : geteqR(mm, '_mr_1_1_3_7_r12_A), _mr_1_1_3_7_r12_B : geteqR(mm, '_mr_1_1_3_7_r12_B), _mr_1_1_3_7_r12_a : geteqR(mm, '_mr_1_1_3_7_r12_a), _mr_1_1_3_7_r12_b : geteqR(mm, '_mr_1_1_3_7_r12_b),
-  block([r, s], r : num(%mr_rt(-_mr_1_1_3_7_r12_a/_mr_1_1_3_7_r12_b, 3)), s : denom(%mr_rt(-_mr_1_1_3_7_r12_a/_mr_1_1_3_7_r12_b, 3)), r*(_mr_1_1_3_7_r12_B*r + _mr_1_1_3_7_r12_A*s)/(3*_mr_1_1_3_7_r12_a*s)*mr_int(1/(r - s*x), x) - r/(3*_mr_1_1_3_7_r12_a*s)* mr_int((r*(_mr_1_1_3_7_r12_B*r - 2*_mr_1_1_3_7_r12_A*s) - s*(_mr_1_1_3_7_r12_B*r + _mr_1_1_3_7_r12_A*s)*x)/(r^2 + r*s*x + s^2*x^2), x)))$
+_mr_repl_1_1_3_7_r12(mm, x) := block([_mr_1_1_3_7_r12_A__s, _mr_1_1_3_7_r12_B__s, _mr_1_1_3_7_r12_a__s, _mr_1_1_3_7_r12_b__s],
+  _mr_1_1_3_7_r12_A__s : geteqR(mm, '_mr_1_1_3_7_r12_A), _mr_1_1_3_7_r12_B__s : geteqR(mm, '_mr_1_1_3_7_r12_B), _mr_1_1_3_7_r12_a__s : geteqR(mm, '_mr_1_1_3_7_r12_a), _mr_1_1_3_7_r12_b__s : geteqR(mm, '_mr_1_1_3_7_r12_b),
+  block([r, s], r : num(%mr_rt(-_mr_1_1_3_7_r12_a__s/_mr_1_1_3_7_r12_b__s, 3)), s : denom(%mr_rt(-_mr_1_1_3_7_r12_a__s/_mr_1_1_3_7_r12_b__s, 3)), r*(_mr_1_1_3_7_r12_B__s*r + _mr_1_1_3_7_r12_A__s*s)/(3*_mr_1_1_3_7_r12_a__s*s)*mr_int(1/(r - s*x), x) - r/(3*_mr_1_1_3_7_r12_a__s*s)* mr_int((r*(_mr_1_1_3_7_r12_B__s*r - 2*_mr_1_1_3_7_r12_A__s*s) - s*(_mr_1_1_3_7_r12_B__s*r + _mr_1_1_3_7_r12_A__s*s)*x)/(r^2 + r*s*x + s^2*x^2), x)))$
 _mr_rule_1_1_3_7_r12(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r12(f, x),
   if mm = false then return(false),
@@ -221,9 +221,9 @@ defmatch(_mr_pat_1_1_3_7_r13, _mr_1_1_3_7_r13_P2/(_mr_1_1_3_7_r13_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r13(mm, x) := block([_mr_1_1_3_7_r13_P2, _mr_1_1_3_7_r13_a, _mr_1_1_3_7_r13_b],
   _mr_1_1_3_7_r13_P2 : geteqR(mm, '_mr_1_1_3_7_r13_P2), _mr_1_1_3_7_r13_a : geteqR(mm, '_mr_1_1_3_7_r13_a), _mr_1_1_3_7_r13_b : geteqR(mm, '_mr_1_1_3_7_r13_b),
   (freeof(x, _mr_1_1_3_7_r13_a) and freeof(x, _mr_1_1_3_7_r13_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r13_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r13_b, 0))$
-_mr_repl_1_1_3_7_r13(mm, x) := block([_mr_1_1_3_7_r13_P2, _mr_1_1_3_7_r13_a, _mr_1_1_3_7_r13_b],
-  _mr_1_1_3_7_r13_P2 : geteqR(mm, '_mr_1_1_3_7_r13_P2), _mr_1_1_3_7_r13_a : geteqR(mm, '_mr_1_1_3_7_r13_a), _mr_1_1_3_7_r13_b : geteqR(mm, '_mr_1_1_3_7_r13_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r13_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r13_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r13_P2, x, 2), (if is(%mr_eqQ(B^2 - A*C, 0)  and  %mr_eqQ(_mr_1_1_3_7_r13_b*B^3 + _mr_1_1_3_7_r13_a*C^3, 0)) = true then -C^2/_mr_1_1_3_7_r13_b*mr_int(1/(B - C*x), x) else false)))$
+_mr_repl_1_1_3_7_r13(mm, x) := block([_mr_1_1_3_7_r13_P2__s, _mr_1_1_3_7_r13_a__s, _mr_1_1_3_7_r13_b__s],
+  _mr_1_1_3_7_r13_P2__s : geteqR(mm, '_mr_1_1_3_7_r13_P2), _mr_1_1_3_7_r13_a__s : geteqR(mm, '_mr_1_1_3_7_r13_a), _mr_1_1_3_7_r13_b__s : geteqR(mm, '_mr_1_1_3_7_r13_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r13_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r13_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r13_P2__s, x, 2), (if is(%mr_eqQ(B^2 - A*C, 0)  and  %mr_eqQ(_mr_1_1_3_7_r13_b__s*B^3 + _mr_1_1_3_7_r13_a__s*C^3, 0)) = true then -C^2/_mr_1_1_3_7_r13_b__s*mr_int(1/(B - C*x), x) else false)))$
 _mr_rule_1_1_3_7_r13(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r13(f, x),
   if mm = false then return(false),
@@ -237,9 +237,9 @@ defmatch(_mr_pat_1_1_3_7_r14, _mr_1_1_3_7_r14_P2/(_mr_1_1_3_7_r14_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r14(mm, x) := block([_mr_1_1_3_7_r14_P2, _mr_1_1_3_7_r14_a, _mr_1_1_3_7_r14_b],
   _mr_1_1_3_7_r14_P2 : geteqR(mm, '_mr_1_1_3_7_r14_P2), _mr_1_1_3_7_r14_a : geteqR(mm, '_mr_1_1_3_7_r14_a), _mr_1_1_3_7_r14_b : geteqR(mm, '_mr_1_1_3_7_r14_b),
   (freeof(x, _mr_1_1_3_7_r14_a) and freeof(x, _mr_1_1_3_7_r14_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r14_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r14_b, 0))$
-_mr_repl_1_1_3_7_r14(mm, x) := block([_mr_1_1_3_7_r14_P2, _mr_1_1_3_7_r14_a, _mr_1_1_3_7_r14_b],
-  _mr_1_1_3_7_r14_P2 : geteqR(mm, '_mr_1_1_3_7_r14_P2), _mr_1_1_3_7_r14_a : geteqR(mm, '_mr_1_1_3_7_r14_a), _mr_1_1_3_7_r14_b : geteqR(mm, '_mr_1_1_3_7_r14_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r14_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r14_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r14_P2, x, 2), (if is(%mr_eqQ(A*_mr_1_1_3_7_r14_b^(2/3) - _mr_1_1_3_7_r14_a^(1/3)*_mr_1_1_3_7_r14_b^(1/3)*B - 2*_mr_1_1_3_7_r14_a^(2/3)*C, 0)) = true then block([q], q : _mr_1_1_3_7_r14_a^(1/3)/_mr_1_1_3_7_r14_b^(1/3), C/_mr_1_1_3_7_r14_b*mr_int(1/(q + x), x) + (B + C*q)/_mr_1_1_3_7_r14_b* mr_int(1/(q^2 - q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r14(mm, x) := block([_mr_1_1_3_7_r14_P2__s, _mr_1_1_3_7_r14_a__s, _mr_1_1_3_7_r14_b__s],
+  _mr_1_1_3_7_r14_P2__s : geteqR(mm, '_mr_1_1_3_7_r14_P2), _mr_1_1_3_7_r14_a__s : geteqR(mm, '_mr_1_1_3_7_r14_a), _mr_1_1_3_7_r14_b__s : geteqR(mm, '_mr_1_1_3_7_r14_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r14_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r14_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r14_P2__s, x, 2), (if is(%mr_eqQ(A*_mr_1_1_3_7_r14_b__s^(2/3) - _mr_1_1_3_7_r14_a__s^(1/3)*_mr_1_1_3_7_r14_b__s^(1/3)*B - 2*_mr_1_1_3_7_r14_a__s^(2/3)*C, 0)) = true then block([q], q : _mr_1_1_3_7_r14_a__s^(1/3)/_mr_1_1_3_7_r14_b__s^(1/3), C/_mr_1_1_3_7_r14_b__s*mr_int(1/(q + x), x) + (B + C*q)/_mr_1_1_3_7_r14_b__s* mr_int(1/(q^2 - q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r14(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r14(f, x),
   if mm = false then return(false),
@@ -253,9 +253,9 @@ defmatch(_mr_pat_1_1_3_7_r15, _mr_1_1_3_7_r15_P2/(_mr_1_1_3_7_r15_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r15(mm, x) := block([_mr_1_1_3_7_r15_P2, _mr_1_1_3_7_r15_a, _mr_1_1_3_7_r15_b],
   _mr_1_1_3_7_r15_P2 : geteqR(mm, '_mr_1_1_3_7_r15_P2), _mr_1_1_3_7_r15_a : geteqR(mm, '_mr_1_1_3_7_r15_a), _mr_1_1_3_7_r15_b : geteqR(mm, '_mr_1_1_3_7_r15_b),
   (freeof(x, _mr_1_1_3_7_r15_a) and freeof(x, _mr_1_1_3_7_r15_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r15_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r15_b, 0))$
-_mr_repl_1_1_3_7_r15(mm, x) := block([_mr_1_1_3_7_r15_P2, _mr_1_1_3_7_r15_a, _mr_1_1_3_7_r15_b],
-  _mr_1_1_3_7_r15_P2 : geteqR(mm, '_mr_1_1_3_7_r15_P2), _mr_1_1_3_7_r15_a : geteqR(mm, '_mr_1_1_3_7_r15_a), _mr_1_1_3_7_r15_b : geteqR(mm, '_mr_1_1_3_7_r15_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r15_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r15_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r15_P2, x, 2), (if is(%mr_eqQ(A*(-_mr_1_1_3_7_r15_b)^(2/3) - (-_mr_1_1_3_7_r15_a)^(1/3)*(-_mr_1_1_3_7_r15_b)^(1/3)*B - 2*(-_mr_1_1_3_7_r15_a)^(2/3)*C, 0)) = true then block([q], q : (-_mr_1_1_3_7_r15_a)^(1/3)/(-_mr_1_1_3_7_r15_b)^(1/3), C/_mr_1_1_3_7_r15_b*mr_int(1/(q + x), x) + (B + C*q)/_mr_1_1_3_7_r15_b* mr_int(1/(q^2 - q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r15(mm, x) := block([_mr_1_1_3_7_r15_P2__s, _mr_1_1_3_7_r15_a__s, _mr_1_1_3_7_r15_b__s],
+  _mr_1_1_3_7_r15_P2__s : geteqR(mm, '_mr_1_1_3_7_r15_P2), _mr_1_1_3_7_r15_a__s : geteqR(mm, '_mr_1_1_3_7_r15_a), _mr_1_1_3_7_r15_b__s : geteqR(mm, '_mr_1_1_3_7_r15_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r15_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r15_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r15_P2__s, x, 2), (if is(%mr_eqQ(A*(-_mr_1_1_3_7_r15_b__s)^(2/3) - (-_mr_1_1_3_7_r15_a__s)^(1/3)*(-_mr_1_1_3_7_r15_b__s)^(1/3)*B - 2*(-_mr_1_1_3_7_r15_a__s)^(2/3)*C, 0)) = true then block([q], q : (-_mr_1_1_3_7_r15_a__s)^(1/3)/(-_mr_1_1_3_7_r15_b__s)^(1/3), C/_mr_1_1_3_7_r15_b__s*mr_int(1/(q + x), x) + (B + C*q)/_mr_1_1_3_7_r15_b__s* mr_int(1/(q^2 - q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r15(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r15(f, x),
   if mm = false then return(false),
@@ -269,9 +269,9 @@ defmatch(_mr_pat_1_1_3_7_r16, _mr_1_1_3_7_r16_P2/(_mr_1_1_3_7_r16_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r16(mm, x) := block([_mr_1_1_3_7_r16_P2, _mr_1_1_3_7_r16_a, _mr_1_1_3_7_r16_b],
   _mr_1_1_3_7_r16_P2 : geteqR(mm, '_mr_1_1_3_7_r16_P2), _mr_1_1_3_7_r16_a : geteqR(mm, '_mr_1_1_3_7_r16_a), _mr_1_1_3_7_r16_b : geteqR(mm, '_mr_1_1_3_7_r16_b),
   (freeof(x, _mr_1_1_3_7_r16_a) and freeof(x, _mr_1_1_3_7_r16_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r16_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r16_b, 0))$
-_mr_repl_1_1_3_7_r16(mm, x) := block([_mr_1_1_3_7_r16_P2, _mr_1_1_3_7_r16_a, _mr_1_1_3_7_r16_b],
-  _mr_1_1_3_7_r16_P2 : geteqR(mm, '_mr_1_1_3_7_r16_P2), _mr_1_1_3_7_r16_a : geteqR(mm, '_mr_1_1_3_7_r16_a), _mr_1_1_3_7_r16_b : geteqR(mm, '_mr_1_1_3_7_r16_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r16_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r16_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r16_P2, x, 2), (if is(%mr_eqQ(A*_mr_1_1_3_7_r16_b^(2/3) + (-_mr_1_1_3_7_r16_a)^(1/3)*_mr_1_1_3_7_r16_b^(1/3)*B - 2*(-_mr_1_1_3_7_r16_a)^(2/3)*C, 0)) = true then block([q], q : (-_mr_1_1_3_7_r16_a)^(1/3)/_mr_1_1_3_7_r16_b^(1/3), -C/_mr_1_1_3_7_r16_b* mr_int(1/(q - x), x) + (B - C*q)/_mr_1_1_3_7_r16_b*mr_int(1/(q^2 + q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r16(mm, x) := block([_mr_1_1_3_7_r16_P2__s, _mr_1_1_3_7_r16_a__s, _mr_1_1_3_7_r16_b__s],
+  _mr_1_1_3_7_r16_P2__s : geteqR(mm, '_mr_1_1_3_7_r16_P2), _mr_1_1_3_7_r16_a__s : geteqR(mm, '_mr_1_1_3_7_r16_a), _mr_1_1_3_7_r16_b__s : geteqR(mm, '_mr_1_1_3_7_r16_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r16_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r16_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r16_P2__s, x, 2), (if is(%mr_eqQ(A*_mr_1_1_3_7_r16_b__s^(2/3) + (-_mr_1_1_3_7_r16_a__s)^(1/3)*_mr_1_1_3_7_r16_b__s^(1/3)*B - 2*(-_mr_1_1_3_7_r16_a__s)^(2/3)*C, 0)) = true then block([q], q : (-_mr_1_1_3_7_r16_a__s)^(1/3)/_mr_1_1_3_7_r16_b__s^(1/3), -C/_mr_1_1_3_7_r16_b__s* mr_int(1/(q - x), x) + (B - C*q)/_mr_1_1_3_7_r16_b__s*mr_int(1/(q^2 + q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r16(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r16(f, x),
   if mm = false then return(false),
@@ -285,9 +285,9 @@ defmatch(_mr_pat_1_1_3_7_r17, _mr_1_1_3_7_r17_P2/(_mr_1_1_3_7_r17_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r17(mm, x) := block([_mr_1_1_3_7_r17_P2, _mr_1_1_3_7_r17_a, _mr_1_1_3_7_r17_b],
   _mr_1_1_3_7_r17_P2 : geteqR(mm, '_mr_1_1_3_7_r17_P2), _mr_1_1_3_7_r17_a : geteqR(mm, '_mr_1_1_3_7_r17_a), _mr_1_1_3_7_r17_b : geteqR(mm, '_mr_1_1_3_7_r17_b),
   (freeof(x, _mr_1_1_3_7_r17_a) and freeof(x, _mr_1_1_3_7_r17_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r17_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r17_b, 0))$
-_mr_repl_1_1_3_7_r17(mm, x) := block([_mr_1_1_3_7_r17_P2, _mr_1_1_3_7_r17_a, _mr_1_1_3_7_r17_b],
-  _mr_1_1_3_7_r17_P2 : geteqR(mm, '_mr_1_1_3_7_r17_P2), _mr_1_1_3_7_r17_a : geteqR(mm, '_mr_1_1_3_7_r17_a), _mr_1_1_3_7_r17_b : geteqR(mm, '_mr_1_1_3_7_r17_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r17_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r17_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r17_P2, x, 2), (if is(%mr_eqQ(A*(-_mr_1_1_3_7_r17_b)^(2/3) + _mr_1_1_3_7_r17_a^(1/3)*(-_mr_1_1_3_7_r17_b)^(1/3)*B - 2*_mr_1_1_3_7_r17_a^(2/3)*C, 0)) = true then block([q], q : _mr_1_1_3_7_r17_a^(1/3)/(-_mr_1_1_3_7_r17_b)^(1/3), -C/_mr_1_1_3_7_r17_b* mr_int(1/(q - x), x) + (B - C*q)/_mr_1_1_3_7_r17_b*mr_int(1/(q^2 + q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r17(mm, x) := block([_mr_1_1_3_7_r17_P2__s, _mr_1_1_3_7_r17_a__s, _mr_1_1_3_7_r17_b__s],
+  _mr_1_1_3_7_r17_P2__s : geteqR(mm, '_mr_1_1_3_7_r17_P2), _mr_1_1_3_7_r17_a__s : geteqR(mm, '_mr_1_1_3_7_r17_a), _mr_1_1_3_7_r17_b__s : geteqR(mm, '_mr_1_1_3_7_r17_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r17_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r17_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r17_P2__s, x, 2), (if is(%mr_eqQ(A*(-_mr_1_1_3_7_r17_b__s)^(2/3) + _mr_1_1_3_7_r17_a__s^(1/3)*(-_mr_1_1_3_7_r17_b__s)^(1/3)*B - 2*_mr_1_1_3_7_r17_a__s^(2/3)*C, 0)) = true then block([q], q : _mr_1_1_3_7_r17_a__s^(1/3)/(-_mr_1_1_3_7_r17_b__s)^(1/3), -C/_mr_1_1_3_7_r17_b__s* mr_int(1/(q - x), x) + (B - C*q)/_mr_1_1_3_7_r17_b__s*mr_int(1/(q^2 + q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r17(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r17(f, x),
   if mm = false then return(false),
@@ -301,9 +301,9 @@ defmatch(_mr_pat_1_1_3_7_r18, _mr_1_1_3_7_r18_P2/(_mr_1_1_3_7_r18_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r18(mm, x) := block([_mr_1_1_3_7_r18_P2, _mr_1_1_3_7_r18_a, _mr_1_1_3_7_r18_b],
   _mr_1_1_3_7_r18_P2 : geteqR(mm, '_mr_1_1_3_7_r18_P2), _mr_1_1_3_7_r18_a : geteqR(mm, '_mr_1_1_3_7_r18_a), _mr_1_1_3_7_r18_b : geteqR(mm, '_mr_1_1_3_7_r18_b),
   (freeof(x, _mr_1_1_3_7_r18_a) and freeof(x, _mr_1_1_3_7_r18_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r18_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r18_b, 0))$
-_mr_repl_1_1_3_7_r18(mm, x) := block([_mr_1_1_3_7_r18_P2, _mr_1_1_3_7_r18_a, _mr_1_1_3_7_r18_b],
-  _mr_1_1_3_7_r18_P2 : geteqR(mm, '_mr_1_1_3_7_r18_P2), _mr_1_1_3_7_r18_a : geteqR(mm, '_mr_1_1_3_7_r18_a), _mr_1_1_3_7_r18_b : geteqR(mm, '_mr_1_1_3_7_r18_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r18_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r18_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r18_P2, x, 2), (if is(%mr_eqQ(A - (_mr_1_1_3_7_r18_a/_mr_1_1_3_7_r18_b)^(1/3)*B - 2*(_mr_1_1_3_7_r18_a/_mr_1_1_3_7_r18_b)^(2/3)*C, 0)) = true then block([q], q : (_mr_1_1_3_7_r18_a/_mr_1_1_3_7_r18_b)^(1/3), C/_mr_1_1_3_7_r18_b*mr_int(1/(q + x), x) + (B + C*q)/_mr_1_1_3_7_r18_b* mr_int(1/(q^2 - q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r18(mm, x) := block([_mr_1_1_3_7_r18_P2__s, _mr_1_1_3_7_r18_a__s, _mr_1_1_3_7_r18_b__s],
+  _mr_1_1_3_7_r18_P2__s : geteqR(mm, '_mr_1_1_3_7_r18_P2), _mr_1_1_3_7_r18_a__s : geteqR(mm, '_mr_1_1_3_7_r18_a), _mr_1_1_3_7_r18_b__s : geteqR(mm, '_mr_1_1_3_7_r18_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r18_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r18_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r18_P2__s, x, 2), (if is(%mr_eqQ(A - (_mr_1_1_3_7_r18_a__s/_mr_1_1_3_7_r18_b__s)^(1/3)*B - 2*(_mr_1_1_3_7_r18_a__s/_mr_1_1_3_7_r18_b__s)^(2/3)*C, 0)) = true then block([q], q : (_mr_1_1_3_7_r18_a__s/_mr_1_1_3_7_r18_b__s)^(1/3), C/_mr_1_1_3_7_r18_b__s*mr_int(1/(q + x), x) + (B + C*q)/_mr_1_1_3_7_r18_b__s* mr_int(1/(q^2 - q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r18(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r18(f, x),
   if mm = false then return(false),
@@ -317,9 +317,9 @@ defmatch(_mr_pat_1_1_3_7_r19, _mr_1_1_3_7_r19_P2/(_mr_1_1_3_7_r19_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r19(mm, x) := block([_mr_1_1_3_7_r19_P2, _mr_1_1_3_7_r19_a, _mr_1_1_3_7_r19_b],
   _mr_1_1_3_7_r19_P2 : geteqR(mm, '_mr_1_1_3_7_r19_P2), _mr_1_1_3_7_r19_a : geteqR(mm, '_mr_1_1_3_7_r19_a), _mr_1_1_3_7_r19_b : geteqR(mm, '_mr_1_1_3_7_r19_b),
   (freeof(x, _mr_1_1_3_7_r19_a) and freeof(x, _mr_1_1_3_7_r19_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r19_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r19_b, 0))$
-_mr_repl_1_1_3_7_r19(mm, x) := block([_mr_1_1_3_7_r19_P2, _mr_1_1_3_7_r19_a, _mr_1_1_3_7_r19_b],
-  _mr_1_1_3_7_r19_P2 : geteqR(mm, '_mr_1_1_3_7_r19_P2), _mr_1_1_3_7_r19_a : geteqR(mm, '_mr_1_1_3_7_r19_a), _mr_1_1_3_7_r19_b : geteqR(mm, '_mr_1_1_3_7_r19_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r19_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r19_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r19_P2, x, 2), (if is(%mr_eqQ(A - %mr_rt(_mr_1_1_3_7_r19_a/_mr_1_1_3_7_r19_b, 3)*B - 2*%mr_rt(_mr_1_1_3_7_r19_a/_mr_1_1_3_7_r19_b, 3)^2*C, 0)) = true then block([q], q : %mr_rt(_mr_1_1_3_7_r19_a/_mr_1_1_3_7_r19_b, 3), C/_mr_1_1_3_7_r19_b*mr_int(1/(q + x), x) + (B + C*q)/_mr_1_1_3_7_r19_b* mr_int(1/(q^2 - q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r19(mm, x) := block([_mr_1_1_3_7_r19_P2__s, _mr_1_1_3_7_r19_a__s, _mr_1_1_3_7_r19_b__s],
+  _mr_1_1_3_7_r19_P2__s : geteqR(mm, '_mr_1_1_3_7_r19_P2), _mr_1_1_3_7_r19_a__s : geteqR(mm, '_mr_1_1_3_7_r19_a), _mr_1_1_3_7_r19_b__s : geteqR(mm, '_mr_1_1_3_7_r19_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r19_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r19_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r19_P2__s, x, 2), (if is(%mr_eqQ(A - %mr_rt(_mr_1_1_3_7_r19_a__s/_mr_1_1_3_7_r19_b__s, 3)*B - 2*%mr_rt(_mr_1_1_3_7_r19_a__s/_mr_1_1_3_7_r19_b__s, 3)^2*C, 0)) = true then block([q], q : %mr_rt(_mr_1_1_3_7_r19_a__s/_mr_1_1_3_7_r19_b__s, 3), C/_mr_1_1_3_7_r19_b__s*mr_int(1/(q + x), x) + (B + C*q)/_mr_1_1_3_7_r19_b__s* mr_int(1/(q^2 - q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r19(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r19(f, x),
   if mm = false then return(false),
@@ -333,9 +333,9 @@ defmatch(_mr_pat_1_1_3_7_r20, _mr_1_1_3_7_r20_P2/(_mr_1_1_3_7_r20_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r20(mm, x) := block([_mr_1_1_3_7_r20_P2, _mr_1_1_3_7_r20_a, _mr_1_1_3_7_r20_b],
   _mr_1_1_3_7_r20_P2 : geteqR(mm, '_mr_1_1_3_7_r20_P2), _mr_1_1_3_7_r20_a : geteqR(mm, '_mr_1_1_3_7_r20_a), _mr_1_1_3_7_r20_b : geteqR(mm, '_mr_1_1_3_7_r20_b),
   (freeof(x, _mr_1_1_3_7_r20_a) and freeof(x, _mr_1_1_3_7_r20_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r20_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r20_b, 0))$
-_mr_repl_1_1_3_7_r20(mm, x) := block([_mr_1_1_3_7_r20_P2, _mr_1_1_3_7_r20_a, _mr_1_1_3_7_r20_b],
-  _mr_1_1_3_7_r20_P2 : geteqR(mm, '_mr_1_1_3_7_r20_P2), _mr_1_1_3_7_r20_a : geteqR(mm, '_mr_1_1_3_7_r20_a), _mr_1_1_3_7_r20_b : geteqR(mm, '_mr_1_1_3_7_r20_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r20_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r20_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r20_P2, x, 2), (if is(%mr_eqQ(A + (-_mr_1_1_3_7_r20_a/_mr_1_1_3_7_r20_b)^(1/3)*B - 2*(-_mr_1_1_3_7_r20_a/_mr_1_1_3_7_r20_b)^(2/3)*C, 0)) = true then block([q], q : (-_mr_1_1_3_7_r20_a/_mr_1_1_3_7_r20_b)^(1/3), -C/_mr_1_1_3_7_r20_b*mr_int(1/(q - x), x) + (B - C*q)/_mr_1_1_3_7_r20_b* mr_int(1/(q^2 + q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r20(mm, x) := block([_mr_1_1_3_7_r20_P2__s, _mr_1_1_3_7_r20_a__s, _mr_1_1_3_7_r20_b__s],
+  _mr_1_1_3_7_r20_P2__s : geteqR(mm, '_mr_1_1_3_7_r20_P2), _mr_1_1_3_7_r20_a__s : geteqR(mm, '_mr_1_1_3_7_r20_a), _mr_1_1_3_7_r20_b__s : geteqR(mm, '_mr_1_1_3_7_r20_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r20_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r20_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r20_P2__s, x, 2), (if is(%mr_eqQ(A + (-_mr_1_1_3_7_r20_a__s/_mr_1_1_3_7_r20_b__s)^(1/3)*B - 2*(-_mr_1_1_3_7_r20_a__s/_mr_1_1_3_7_r20_b__s)^(2/3)*C, 0)) = true then block([q], q : (-_mr_1_1_3_7_r20_a__s/_mr_1_1_3_7_r20_b__s)^(1/3), -C/_mr_1_1_3_7_r20_b__s*mr_int(1/(q - x), x) + (B - C*q)/_mr_1_1_3_7_r20_b__s* mr_int(1/(q^2 + q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r20(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r20(f, x),
   if mm = false then return(false),
@@ -349,9 +349,9 @@ defmatch(_mr_pat_1_1_3_7_r21, _mr_1_1_3_7_r21_P2/(_mr_1_1_3_7_r21_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r21(mm, x) := block([_mr_1_1_3_7_r21_P2, _mr_1_1_3_7_r21_a, _mr_1_1_3_7_r21_b],
   _mr_1_1_3_7_r21_P2 : geteqR(mm, '_mr_1_1_3_7_r21_P2), _mr_1_1_3_7_r21_a : geteqR(mm, '_mr_1_1_3_7_r21_a), _mr_1_1_3_7_r21_b : geteqR(mm, '_mr_1_1_3_7_r21_b),
   (freeof(x, _mr_1_1_3_7_r21_a) and freeof(x, _mr_1_1_3_7_r21_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r21_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r21_b, 0))$
-_mr_repl_1_1_3_7_r21(mm, x) := block([_mr_1_1_3_7_r21_P2, _mr_1_1_3_7_r21_a, _mr_1_1_3_7_r21_b],
-  _mr_1_1_3_7_r21_P2 : geteqR(mm, '_mr_1_1_3_7_r21_P2), _mr_1_1_3_7_r21_a : geteqR(mm, '_mr_1_1_3_7_r21_a), _mr_1_1_3_7_r21_b : geteqR(mm, '_mr_1_1_3_7_r21_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r21_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r21_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r21_P2, x, 2), (if is(%mr_eqQ(A + %mr_rt(-_mr_1_1_3_7_r21_a/_mr_1_1_3_7_r21_b, 3)*B - 2*%mr_rt(-_mr_1_1_3_7_r21_a/_mr_1_1_3_7_r21_b, 3)^2*C, 0)) = true then block([q], q : %mr_rt(-_mr_1_1_3_7_r21_a/_mr_1_1_3_7_r21_b, 3), -C/_mr_1_1_3_7_r21_b*mr_int(1/(q - x), x) + (B - C*q)/_mr_1_1_3_7_r21_b* mr_int(1/(q^2 + q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r21(mm, x) := block([_mr_1_1_3_7_r21_P2__s, _mr_1_1_3_7_r21_a__s, _mr_1_1_3_7_r21_b__s],
+  _mr_1_1_3_7_r21_P2__s : geteqR(mm, '_mr_1_1_3_7_r21_P2), _mr_1_1_3_7_r21_a__s : geteqR(mm, '_mr_1_1_3_7_r21_a), _mr_1_1_3_7_r21_b__s : geteqR(mm, '_mr_1_1_3_7_r21_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r21_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r21_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r21_P2__s, x, 2), (if is(%mr_eqQ(A + %mr_rt(-_mr_1_1_3_7_r21_a__s/_mr_1_1_3_7_r21_b__s, 3)*B - 2*%mr_rt(-_mr_1_1_3_7_r21_a__s/_mr_1_1_3_7_r21_b__s, 3)^2*C, 0)) = true then block([q], q : %mr_rt(-_mr_1_1_3_7_r21_a__s/_mr_1_1_3_7_r21_b__s, 3), -C/_mr_1_1_3_7_r21_b__s*mr_int(1/(q - x), x) + (B - C*q)/_mr_1_1_3_7_r21_b__s* mr_int(1/(q^2 + q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r21(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r21(f, x),
   if mm = false then return(false),
@@ -365,9 +365,9 @@ defmatch(_mr_pat_1_1_3_7_r22, _mr_1_1_3_7_r22_P2/(_mr_1_1_3_7_r22_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r22(mm, x) := block([_mr_1_1_3_7_r22_P2, _mr_1_1_3_7_r22_a, _mr_1_1_3_7_r22_b],
   _mr_1_1_3_7_r22_P2 : geteqR(mm, '_mr_1_1_3_7_r22_P2), _mr_1_1_3_7_r22_a : geteqR(mm, '_mr_1_1_3_7_r22_a), _mr_1_1_3_7_r22_b : geteqR(mm, '_mr_1_1_3_7_r22_b),
   (freeof(x, _mr_1_1_3_7_r22_a) and freeof(x, _mr_1_1_3_7_r22_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r22_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r22_b, 0))$
-_mr_repl_1_1_3_7_r22(mm, x) := block([_mr_1_1_3_7_r22_P2, _mr_1_1_3_7_r22_a, _mr_1_1_3_7_r22_b],
-  _mr_1_1_3_7_r22_P2 : geteqR(mm, '_mr_1_1_3_7_r22_P2), _mr_1_1_3_7_r22_a : geteqR(mm, '_mr_1_1_3_7_r22_a), _mr_1_1_3_7_r22_b : geteqR(mm, '_mr_1_1_3_7_r22_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r22_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r22_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r22_P2, x, 2), (if is(%mr_eqQ(_mr_1_1_3_7_r22_a*B^3 - _mr_1_1_3_7_r22_b*A^3, 0)  or  not(%mr_rationalQ(_mr_1_1_3_7_r22_a/_mr_1_1_3_7_r22_b))) = true then mr_int((A + B*x)/(_mr_1_1_3_7_r22_a + _mr_1_1_3_7_r22_b*x^3), x) + C*mr_int(x^2/(_mr_1_1_3_7_r22_a + _mr_1_1_3_7_r22_b*x^3), x) else false)))$
+_mr_repl_1_1_3_7_r22(mm, x) := block([_mr_1_1_3_7_r22_P2__s, _mr_1_1_3_7_r22_a__s, _mr_1_1_3_7_r22_b__s],
+  _mr_1_1_3_7_r22_P2__s : geteqR(mm, '_mr_1_1_3_7_r22_P2), _mr_1_1_3_7_r22_a__s : geteqR(mm, '_mr_1_1_3_7_r22_a), _mr_1_1_3_7_r22_b__s : geteqR(mm, '_mr_1_1_3_7_r22_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r22_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r22_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r22_P2__s, x, 2), (if is(%mr_eqQ(_mr_1_1_3_7_r22_a__s*B^3 - _mr_1_1_3_7_r22_b__s*A^3, 0)  or  not(%mr_rationalQ(_mr_1_1_3_7_r22_a__s/_mr_1_1_3_7_r22_b__s))) = true then mr_int((A + B*x)/(_mr_1_1_3_7_r22_a__s + _mr_1_1_3_7_r22_b__s*x^3), x) + C*mr_int(x^2/(_mr_1_1_3_7_r22_a__s + _mr_1_1_3_7_r22_b__s*x^3), x) else false)))$
 _mr_rule_1_1_3_7_r22(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r22(f, x),
   if mm = false then return(false),
@@ -381,9 +381,9 @@ defmatch(_mr_pat_1_1_3_7_r23, _mr_1_1_3_7_r23_P2/(_mr_1_1_3_7_r23_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r23(mm, x) := block([_mr_1_1_3_7_r23_P2, _mr_1_1_3_7_r23_a, _mr_1_1_3_7_r23_b],
   _mr_1_1_3_7_r23_P2 : geteqR(mm, '_mr_1_1_3_7_r23_P2), _mr_1_1_3_7_r23_a : geteqR(mm, '_mr_1_1_3_7_r23_a), _mr_1_1_3_7_r23_b : geteqR(mm, '_mr_1_1_3_7_r23_b),
   (freeof(x, _mr_1_1_3_7_r23_a) and freeof(x, _mr_1_1_3_7_r23_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r23_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r23_b, 0))$
-_mr_repl_1_1_3_7_r23(mm, x) := block([_mr_1_1_3_7_r23_P2, _mr_1_1_3_7_r23_a, _mr_1_1_3_7_r23_b],
-  _mr_1_1_3_7_r23_P2 : geteqR(mm, '_mr_1_1_3_7_r23_P2), _mr_1_1_3_7_r23_a : geteqR(mm, '_mr_1_1_3_7_r23_a), _mr_1_1_3_7_r23_b : geteqR(mm, '_mr_1_1_3_7_r23_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r23_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r23_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r23_P2, x, 2), (if is(%mr_eqQ(A - B*(_mr_1_1_3_7_r23_a/_mr_1_1_3_7_r23_b)^(1/3) + C*(_mr_1_1_3_7_r23_a/_mr_1_1_3_7_r23_b)^(2/3), 0)) = true then block([q], q : (_mr_1_1_3_7_r23_a/_mr_1_1_3_7_r23_b)^(1/3), q^2/_mr_1_1_3_7_r23_a*mr_int((A + C*q*x)/(q^2 - q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r23(mm, x) := block([_mr_1_1_3_7_r23_P2__s, _mr_1_1_3_7_r23_a__s, _mr_1_1_3_7_r23_b__s],
+  _mr_1_1_3_7_r23_P2__s : geteqR(mm, '_mr_1_1_3_7_r23_P2), _mr_1_1_3_7_r23_a__s : geteqR(mm, '_mr_1_1_3_7_r23_a), _mr_1_1_3_7_r23_b__s : geteqR(mm, '_mr_1_1_3_7_r23_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r23_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r23_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r23_P2__s, x, 2), (if is(%mr_eqQ(A - B*(_mr_1_1_3_7_r23_a__s/_mr_1_1_3_7_r23_b__s)^(1/3) + C*(_mr_1_1_3_7_r23_a__s/_mr_1_1_3_7_r23_b__s)^(2/3), 0)) = true then block([q], q : (_mr_1_1_3_7_r23_a__s/_mr_1_1_3_7_r23_b__s)^(1/3), q^2/_mr_1_1_3_7_r23_a__s*mr_int((A + C*q*x)/(q^2 - q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r23(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r23(f, x),
   if mm = false then return(false),
@@ -397,9 +397,9 @@ defmatch(_mr_pat_1_1_3_7_r24, _mr_1_1_3_7_r24_P2/(_mr_1_1_3_7_r24_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r24(mm, x) := block([_mr_1_1_3_7_r24_P2, _mr_1_1_3_7_r24_a, _mr_1_1_3_7_r24_b],
   _mr_1_1_3_7_r24_P2 : geteqR(mm, '_mr_1_1_3_7_r24_P2), _mr_1_1_3_7_r24_a : geteqR(mm, '_mr_1_1_3_7_r24_a), _mr_1_1_3_7_r24_b : geteqR(mm, '_mr_1_1_3_7_r24_b),
   (freeof(x, _mr_1_1_3_7_r24_a) and freeof(x, _mr_1_1_3_7_r24_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r24_P2, x, 2))  and  %mr_neQ(_mr_1_1_3_7_r24_b, 0))$
-_mr_repl_1_1_3_7_r24(mm, x) := block([_mr_1_1_3_7_r24_P2, _mr_1_1_3_7_r24_a, _mr_1_1_3_7_r24_b],
-  _mr_1_1_3_7_r24_P2 : geteqR(mm, '_mr_1_1_3_7_r24_P2), _mr_1_1_3_7_r24_a : geteqR(mm, '_mr_1_1_3_7_r24_a), _mr_1_1_3_7_r24_b : geteqR(mm, '_mr_1_1_3_7_r24_b),
-  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r24_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r24_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r24_P2, x, 2), (if is(%mr_eqQ(A + B*(-_mr_1_1_3_7_r24_a/_mr_1_1_3_7_r24_b)^(1/3) + C*(-_mr_1_1_3_7_r24_a/_mr_1_1_3_7_r24_b)^(2/3), 0)) = true then block([q], q : (-_mr_1_1_3_7_r24_a/_mr_1_1_3_7_r24_b)^(1/3), q/_mr_1_1_3_7_r24_a*mr_int((A*q + (A + B*q)*x)/(q^2 + q*x + x^2), x)) else false)))$
+_mr_repl_1_1_3_7_r24(mm, x) := block([_mr_1_1_3_7_r24_P2__s, _mr_1_1_3_7_r24_a__s, _mr_1_1_3_7_r24_b__s],
+  _mr_1_1_3_7_r24_P2__s : geteqR(mm, '_mr_1_1_3_7_r24_P2), _mr_1_1_3_7_r24_a__s : geteqR(mm, '_mr_1_1_3_7_r24_a), _mr_1_1_3_7_r24_b__s : geteqR(mm, '_mr_1_1_3_7_r24_b),
+  block([A, B, C], A : %mr_coeff(_mr_1_1_3_7_r24_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r24_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r24_P2__s, x, 2), (if is(%mr_eqQ(A + B*(-_mr_1_1_3_7_r24_a__s/_mr_1_1_3_7_r24_b__s)^(1/3) + C*(-_mr_1_1_3_7_r24_a__s/_mr_1_1_3_7_r24_b__s)^(2/3), 0)) = true then block([q], q : (-_mr_1_1_3_7_r24_a__s/_mr_1_1_3_7_r24_b__s)^(1/3), q/_mr_1_1_3_7_r24_a__s*mr_int((A*q + (A + B*q)*x)/(q^2 + q*x + x^2), x)) else false)))$
 _mr_rule_1_1_3_7_r24(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r24(f, x),
   if mm = false then return(false),
@@ -413,9 +413,9 @@ defmatch(_mr_pat_1_1_3_7_r25, _mr_1_1_3_7_r25_P2/(_mr_1_1_3_7_r25_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r25(mm, x) := block([_mr_1_1_3_7_r25_P2, _mr_1_1_3_7_r25_a, _mr_1_1_3_7_r25_b],
   _mr_1_1_3_7_r25_P2 : geteqR(mm, '_mr_1_1_3_7_r25_P2), _mr_1_1_3_7_r25_a : geteqR(mm, '_mr_1_1_3_7_r25_a), _mr_1_1_3_7_r25_b : geteqR(mm, '_mr_1_1_3_7_r25_b),
   (freeof(x, _mr_1_1_3_7_r25_a) and freeof(x, _mr_1_1_3_7_r25_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r25_P2, x, 2)  and  is(_mr_1_1_3_7_r25_a/_mr_1_1_3_7_r25_b > 0))  and  %mr_neQ(_mr_1_1_3_7_r25_b, 0))$
-_mr_repl_1_1_3_7_r25(mm, x) := block([_mr_1_1_3_7_r25_P2, _mr_1_1_3_7_r25_a, _mr_1_1_3_7_r25_b],
-  _mr_1_1_3_7_r25_P2 : geteqR(mm, '_mr_1_1_3_7_r25_P2), _mr_1_1_3_7_r25_a : geteqR(mm, '_mr_1_1_3_7_r25_a), _mr_1_1_3_7_r25_b : geteqR(mm, '_mr_1_1_3_7_r25_b),
-  block([A, B, C, q], A : %mr_coeff(_mr_1_1_3_7_r25_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r25_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r25_P2, x, 2), q : (_mr_1_1_3_7_r25_a/_mr_1_1_3_7_r25_b)^(1/3), (if is(%mr_neQ(_mr_1_1_3_7_r25_a*B^3 - _mr_1_1_3_7_r25_b*A^3, 0)  and  %mr_neQ(A - B*q + C*q^2, 0)) = true then q*(A - B*q + C*q^2)/(3*_mr_1_1_3_7_r25_a)*mr_int(1/(q + x), x) + q/(3*_mr_1_1_3_7_r25_a)*mr_int((q*(2*A + B*q - C*q^2) - (A - B*q - 2*C*q^2)* x)/(q^2 - q*x + x^2), x) else false)))$
+_mr_repl_1_1_3_7_r25(mm, x) := block([_mr_1_1_3_7_r25_P2__s, _mr_1_1_3_7_r25_a__s, _mr_1_1_3_7_r25_b__s],
+  _mr_1_1_3_7_r25_P2__s : geteqR(mm, '_mr_1_1_3_7_r25_P2), _mr_1_1_3_7_r25_a__s : geteqR(mm, '_mr_1_1_3_7_r25_a), _mr_1_1_3_7_r25_b__s : geteqR(mm, '_mr_1_1_3_7_r25_b),
+  block([A, B, C, q], A : %mr_coeff(_mr_1_1_3_7_r25_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r25_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r25_P2__s, x, 2), q : (_mr_1_1_3_7_r25_a__s/_mr_1_1_3_7_r25_b__s)^(1/3), (if is(%mr_neQ(_mr_1_1_3_7_r25_a__s*B^3 - _mr_1_1_3_7_r25_b__s*A^3, 0)  and  %mr_neQ(A - B*q + C*q^2, 0)) = true then q*(A - B*q + C*q^2)/(3*_mr_1_1_3_7_r25_a__s)*mr_int(1/(q + x), x) + q/(3*_mr_1_1_3_7_r25_a__s)*mr_int((q*(2*A + B*q - C*q^2) - (A - B*q - 2*C*q^2)* x)/(q^2 - q*x + x^2), x) else false)))$
 _mr_rule_1_1_3_7_r25(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r25(f, x),
   if mm = false then return(false),
@@ -429,9 +429,9 @@ defmatch(_mr_pat_1_1_3_7_r26, _mr_1_1_3_7_r26_P2/(_mr_1_1_3_7_r26_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r26(mm, x) := block([_mr_1_1_3_7_r26_P2, _mr_1_1_3_7_r26_a, _mr_1_1_3_7_r26_b],
   _mr_1_1_3_7_r26_P2 : geteqR(mm, '_mr_1_1_3_7_r26_P2), _mr_1_1_3_7_r26_a : geteqR(mm, '_mr_1_1_3_7_r26_a), _mr_1_1_3_7_r26_b : geteqR(mm, '_mr_1_1_3_7_r26_b),
   (freeof(x, _mr_1_1_3_7_r26_a) and freeof(x, _mr_1_1_3_7_r26_b)  and  %mr_polyDegQ(_mr_1_1_3_7_r26_P2, x, 2)  and  is(_mr_1_1_3_7_r26_a/_mr_1_1_3_7_r26_b < 0))  and  %mr_neQ(_mr_1_1_3_7_r26_b, 0))$
-_mr_repl_1_1_3_7_r26(mm, x) := block([_mr_1_1_3_7_r26_P2, _mr_1_1_3_7_r26_a, _mr_1_1_3_7_r26_b],
-  _mr_1_1_3_7_r26_P2 : geteqR(mm, '_mr_1_1_3_7_r26_P2), _mr_1_1_3_7_r26_a : geteqR(mm, '_mr_1_1_3_7_r26_a), _mr_1_1_3_7_r26_b : geteqR(mm, '_mr_1_1_3_7_r26_b),
-  block([A, B, C, q], A : %mr_coeff(_mr_1_1_3_7_r26_P2, x, 0), B : %mr_coeff(_mr_1_1_3_7_r26_P2, x, 1), C : %mr_coeff(_mr_1_1_3_7_r26_P2, x, 2), q : (-_mr_1_1_3_7_r26_a/_mr_1_1_3_7_r26_b)^(1/3), (if is(%mr_neQ(_mr_1_1_3_7_r26_a*B^3 - _mr_1_1_3_7_r26_b*A^3, 0)  and  %mr_neQ(A + B*q + C*q^2, 0)) = true then q*(A + B*q + C*q^2)/(3*_mr_1_1_3_7_r26_a)*mr_int(1/(q - x), x) + q/(3*_mr_1_1_3_7_r26_a)*mr_int((q*(2*A - B*q - C*q^2) + (A + B*q - 2*C*q^2)* x)/(q^2 + q*x + x^2), x) else false)))$
+_mr_repl_1_1_3_7_r26(mm, x) := block([_mr_1_1_3_7_r26_P2__s, _mr_1_1_3_7_r26_a__s, _mr_1_1_3_7_r26_b__s],
+  _mr_1_1_3_7_r26_P2__s : geteqR(mm, '_mr_1_1_3_7_r26_P2), _mr_1_1_3_7_r26_a__s : geteqR(mm, '_mr_1_1_3_7_r26_a), _mr_1_1_3_7_r26_b__s : geteqR(mm, '_mr_1_1_3_7_r26_b),
+  block([A, B, C, q], A : %mr_coeff(_mr_1_1_3_7_r26_P2__s, x, 0), B : %mr_coeff(_mr_1_1_3_7_r26_P2__s, x, 1), C : %mr_coeff(_mr_1_1_3_7_r26_P2__s, x, 2), q : (-_mr_1_1_3_7_r26_a__s/_mr_1_1_3_7_r26_b__s)^(1/3), (if is(%mr_neQ(_mr_1_1_3_7_r26_a__s*B^3 - _mr_1_1_3_7_r26_b__s*A^3, 0)  and  %mr_neQ(A + B*q + C*q^2, 0)) = true then q*(A + B*q + C*q^2)/(3*_mr_1_1_3_7_r26_a__s)*mr_int(1/(q - x), x) + q/(3*_mr_1_1_3_7_r26_a__s)*mr_int((q*(2*A - B*q - C*q^2) + (A + B*q - 2*C*q^2)* x)/(q^2 + q*x + x^2), x) else false)))$
 _mr_rule_1_1_3_7_r26(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r26(f, x),
   if mm = false then return(false),
@@ -446,9 +446,9 @@ defmatch(_mr_pat_1_1_3_7_r27, _mr_1_1_3_7_r27_Pq/(_mr_1_1_3_7_r27_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r27(mm, x) := block([_mr_1_1_3_7_r27_Pq, _mr_1_1_3_7_r27_a, _mr_1_1_3_7_r27_b, _mr_1_1_3_7_r27_n],
   _mr_1_1_3_7_r27_Pq : geteqR(mm, '_mr_1_1_3_7_r27_Pq), _mr_1_1_3_7_r27_a : geteqR(mm, '_mr_1_1_3_7_r27_a), _mr_1_1_3_7_r27_b : geteqR(mm, '_mr_1_1_3_7_r27_b), _mr_1_1_3_7_r27_n : geteqR(mm, '_mr_1_1_3_7_r27_n),
   (freeof(x, _mr_1_1_3_7_r27_a) and freeof(x, _mr_1_1_3_7_r27_b)  and  %mr_polyQ(_mr_1_1_3_7_r27_Pq, x)  and  is(_mr_1_1_3_7_r27_n/2 > 0)  and  %mr_expon(_mr_1_1_3_7_r27_Pq, x) < _mr_1_1_3_7_r27_n)  and  %mr_neQ(_mr_1_1_3_7_r27_n, 0))$
-_mr_repl_1_1_3_7_r27(mm, x) := block([_mr_1_1_3_7_r27_Pq, _mr_1_1_3_7_r27_a, _mr_1_1_3_7_r27_b, _mr_1_1_3_7_r27_n],
-  _mr_1_1_3_7_r27_Pq : geteqR(mm, '_mr_1_1_3_7_r27_Pq), _mr_1_1_3_7_r27_a : geteqR(mm, '_mr_1_1_3_7_r27_a), _mr_1_1_3_7_r27_b : geteqR(mm, '_mr_1_1_3_7_r27_b), _mr_1_1_3_7_r27_n : geteqR(mm, '_mr_1_1_3_7_r27_n),
-  block([v], v : mr_sum(x^ii*(%mr_coeff(_mr_1_1_3_7_r27_Pq, x, ii) + %mr_coeff(_mr_1_1_3_7_r27_Pq, x, _mr_1_1_3_7_r27_n/2 + ii)*x^(_mr_1_1_3_7_r27_n/2))/(_mr_1_1_3_7_r27_a + _mr_1_1_3_7_r27_b*x^_mr_1_1_3_7_r27_n), ii, 0, _mr_1_1_3_7_r27_n/2 - 1), (if is(%mr_sumQ(v)) = true then mr_int(v, x) else false)))$
+_mr_repl_1_1_3_7_r27(mm, x) := block([_mr_1_1_3_7_r27_Pq__s, _mr_1_1_3_7_r27_a__s, _mr_1_1_3_7_r27_b__s, _mr_1_1_3_7_r27_n__s],
+  _mr_1_1_3_7_r27_Pq__s : geteqR(mm, '_mr_1_1_3_7_r27_Pq), _mr_1_1_3_7_r27_a__s : geteqR(mm, '_mr_1_1_3_7_r27_a), _mr_1_1_3_7_r27_b__s : geteqR(mm, '_mr_1_1_3_7_r27_b), _mr_1_1_3_7_r27_n__s : geteqR(mm, '_mr_1_1_3_7_r27_n),
+  block([v], v : mr_sum(lambda([ii], x^ii*(%mr_coeff(_mr_1_1_3_7_r27_Pq__s, x, ii) + %mr_coeff(_mr_1_1_3_7_r27_Pq__s, x, _mr_1_1_3_7_r27_n__s/2 + ii)*x^(_mr_1_1_3_7_r27_n__s/2))/(_mr_1_1_3_7_r27_a__s + _mr_1_1_3_7_r27_b__s*x^_mr_1_1_3_7_r27_n__s)), ii, 0, _mr_1_1_3_7_r27_n__s/2 - 1), (if is(%mr_sumQ(v)) = true then mr_int(v, x) else false)))$
 _mr_rule_1_1_3_7_r27(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r27(f, x),
   if mm = false then return(false),
@@ -463,9 +463,9 @@ defmatch(_mr_pat_1_1_3_7_r28, (_mr_1_1_3_7_r28_c+ _mr_1_1_3_7_r28_d*x)/sqrt(_mr_
 _mr_cond_1_1_3_7_r28(mm, x) := block([_mr_1_1_3_7_r28_a, _mr_1_1_3_7_r28_b, _mr_1_1_3_7_r28_c, _mr_1_1_3_7_r28_d],
   _mr_1_1_3_7_r28_a : geteqR(mm, '_mr_1_1_3_7_r28_a), _mr_1_1_3_7_r28_b : geteqR(mm, '_mr_1_1_3_7_r28_b), _mr_1_1_3_7_r28_c : geteqR(mm, '_mr_1_1_3_7_r28_c), _mr_1_1_3_7_r28_d : geteqR(mm, '_mr_1_1_3_7_r28_d),
   (freeof(x, _mr_1_1_3_7_r28_a) and freeof(x, _mr_1_1_3_7_r28_b) and freeof(x, _mr_1_1_3_7_r28_c) and freeof(x, _mr_1_1_3_7_r28_d)  and  %mr_posQ(_mr_1_1_3_7_r28_a)  and  %mr_eqQ(_mr_1_1_3_7_r28_b*_mr_1_1_3_7_r28_c^3 - 2*(5 - 3*sqrt(3))*_mr_1_1_3_7_r28_a*_mr_1_1_3_7_r28_d^3, 0))  and  %mr_neQ(_mr_1_1_3_7_r28_b, 0))$
-_mr_repl_1_1_3_7_r28(mm, x) := block([_mr_1_1_3_7_r28_a, _mr_1_1_3_7_r28_b, _mr_1_1_3_7_r28_c, _mr_1_1_3_7_r28_d],
-  _mr_1_1_3_7_r28_a : geteqR(mm, '_mr_1_1_3_7_r28_a), _mr_1_1_3_7_r28_b : geteqR(mm, '_mr_1_1_3_7_r28_b), _mr_1_1_3_7_r28_c : geteqR(mm, '_mr_1_1_3_7_r28_c), _mr_1_1_3_7_r28_d : geteqR(mm, '_mr_1_1_3_7_r28_d),
-  block([r, s], r : num(%mr_simp((1 - sqrt(3))*_mr_1_1_3_7_r28_d/_mr_1_1_3_7_r28_c)), s : denom(%mr_simp((1 - sqrt(3))*_mr_1_1_3_7_r28_d/_mr_1_1_3_7_r28_c)), 2*_mr_1_1_3_7_r28_d*s^3*sqrt(_mr_1_1_3_7_r28_a + _mr_1_1_3_7_r28_b*x^3)/(_mr_1_1_3_7_r28_a*r^2*((1 + sqrt(3))*s + r*x)) - 3^(1/4)*sqrt(2 - sqrt(3))*_mr_1_1_3_7_r28_d*s*(s + r*x)* sqrt((s^2 - r*s*x + r^2*x^2)/((1 + sqrt(3))*s + r*x)^2)/ (r^2*sqrt(_mr_1_1_3_7_r28_a + _mr_1_1_3_7_r28_b*x^3)* sqrt(s*(s + r*x)/((1 + sqrt(3))*s + r*x)^2))* elliptic_e(asin(((1 - sqrt(3))*s + r*x)/((1 + sqrt(3))*s + r*x)), -7 - 4*sqrt(3))))$
+_mr_repl_1_1_3_7_r28(mm, x) := block([_mr_1_1_3_7_r28_a__s, _mr_1_1_3_7_r28_b__s, _mr_1_1_3_7_r28_c__s, _mr_1_1_3_7_r28_d__s],
+  _mr_1_1_3_7_r28_a__s : geteqR(mm, '_mr_1_1_3_7_r28_a), _mr_1_1_3_7_r28_b__s : geteqR(mm, '_mr_1_1_3_7_r28_b), _mr_1_1_3_7_r28_c__s : geteqR(mm, '_mr_1_1_3_7_r28_c), _mr_1_1_3_7_r28_d__s : geteqR(mm, '_mr_1_1_3_7_r28_d),
+  block([r, s], r : num(%mr_simp((1 - sqrt(3))*_mr_1_1_3_7_r28_d__s/_mr_1_1_3_7_r28_c__s)), s : denom(%mr_simp((1 - sqrt(3))*_mr_1_1_3_7_r28_d__s/_mr_1_1_3_7_r28_c__s)), 2*_mr_1_1_3_7_r28_d__s*s^3*sqrt(_mr_1_1_3_7_r28_a__s + _mr_1_1_3_7_r28_b__s*x^3)/(_mr_1_1_3_7_r28_a__s*r^2*((1 + sqrt(3))*s + r*x)) - 3^(1/4)*sqrt(2 - sqrt(3))*_mr_1_1_3_7_r28_d__s*s*(s + r*x)* sqrt((s^2 - r*s*x + r^2*x^2)/((1 + sqrt(3))*s + r*x)^2)/ (r^2*sqrt(_mr_1_1_3_7_r28_a__s + _mr_1_1_3_7_r28_b__s*x^3)* sqrt(s*(s + r*x)/((1 + sqrt(3))*s + r*x)^2))* elliptic_e(asin(((1 - sqrt(3))*s + r*x)/((1 + sqrt(3))*s + r*x)), -7 - 4*sqrt(3))))$
 _mr_rule_1_1_3_7_r28(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r28(f, x),
   if mm = false then return(false),
@@ -480,9 +480,9 @@ defmatch(_mr_pat_1_1_3_7_r29, (_mr_1_1_3_7_r29_c+ _mr_1_1_3_7_r29_d*x)/sqrt(_mr_
 _mr_cond_1_1_3_7_r29(mm, x) := block([_mr_1_1_3_7_r29_a, _mr_1_1_3_7_r29_b, _mr_1_1_3_7_r29_c, _mr_1_1_3_7_r29_d],
   _mr_1_1_3_7_r29_a : geteqR(mm, '_mr_1_1_3_7_r29_a), _mr_1_1_3_7_r29_b : geteqR(mm, '_mr_1_1_3_7_r29_b), _mr_1_1_3_7_r29_c : geteqR(mm, '_mr_1_1_3_7_r29_c), _mr_1_1_3_7_r29_d : geteqR(mm, '_mr_1_1_3_7_r29_d),
   (freeof(x, _mr_1_1_3_7_r29_a) and freeof(x, _mr_1_1_3_7_r29_b) and freeof(x, _mr_1_1_3_7_r29_c) and freeof(x, _mr_1_1_3_7_r29_d)  and  %mr_posQ(_mr_1_1_3_7_r29_a)  and  %mr_neQ(_mr_1_1_3_7_r29_b*_mr_1_1_3_7_r29_c^3 - 2*(5 - 3*sqrt(3))*_mr_1_1_3_7_r29_a*_mr_1_1_3_7_r29_d^3, 0))  and  %mr_neQ(_mr_1_1_3_7_r29_b, 0))$
-_mr_repl_1_1_3_7_r29(mm, x) := block([_mr_1_1_3_7_r29_a, _mr_1_1_3_7_r29_b, _mr_1_1_3_7_r29_c, _mr_1_1_3_7_r29_d],
-  _mr_1_1_3_7_r29_a : geteqR(mm, '_mr_1_1_3_7_r29_a), _mr_1_1_3_7_r29_b : geteqR(mm, '_mr_1_1_3_7_r29_b), _mr_1_1_3_7_r29_c : geteqR(mm, '_mr_1_1_3_7_r29_c), _mr_1_1_3_7_r29_d : geteqR(mm, '_mr_1_1_3_7_r29_d),
-  block([r, s], r : num(%mr_rt(_mr_1_1_3_7_r29_b/_mr_1_1_3_7_r29_a, 3)), s : denom(%mr_rt(_mr_1_1_3_7_r29_b/_mr_1_1_3_7_r29_a, 3)), (_mr_1_1_3_7_r29_c*r - (1 - sqrt(3))*_mr_1_1_3_7_r29_d*s)/r*mr_int(1/sqrt(_mr_1_1_3_7_r29_a + _mr_1_1_3_7_r29_b*x^3), x) + _mr_1_1_3_7_r29_d/r*mr_int(((1 - sqrt(3))*s + r*x)/sqrt(_mr_1_1_3_7_r29_a + _mr_1_1_3_7_r29_b*x^3), x)))$
+_mr_repl_1_1_3_7_r29(mm, x) := block([_mr_1_1_3_7_r29_a__s, _mr_1_1_3_7_r29_b__s, _mr_1_1_3_7_r29_c__s, _mr_1_1_3_7_r29_d__s],
+  _mr_1_1_3_7_r29_a__s : geteqR(mm, '_mr_1_1_3_7_r29_a), _mr_1_1_3_7_r29_b__s : geteqR(mm, '_mr_1_1_3_7_r29_b), _mr_1_1_3_7_r29_c__s : geteqR(mm, '_mr_1_1_3_7_r29_c), _mr_1_1_3_7_r29_d__s : geteqR(mm, '_mr_1_1_3_7_r29_d),
+  block([r, s], r : num(%mr_rt(_mr_1_1_3_7_r29_b__s/_mr_1_1_3_7_r29_a__s, 3)), s : denom(%mr_rt(_mr_1_1_3_7_r29_b__s/_mr_1_1_3_7_r29_a__s, 3)), (_mr_1_1_3_7_r29_c__s*r - (1 - sqrt(3))*_mr_1_1_3_7_r29_d__s*s)/r*mr_int(1/sqrt(_mr_1_1_3_7_r29_a__s + _mr_1_1_3_7_r29_b__s*x^3), x) + _mr_1_1_3_7_r29_d__s/r*mr_int(((1 - sqrt(3))*s + r*x)/sqrt(_mr_1_1_3_7_r29_a__s + _mr_1_1_3_7_r29_b__s*x^3), x)))$
 _mr_rule_1_1_3_7_r29(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r29(f, x),
   if mm = false then return(false),
@@ -497,9 +497,9 @@ defmatch(_mr_pat_1_1_3_7_r30, (_mr_1_1_3_7_r30_c+ _mr_1_1_3_7_r30_d*x)/sqrt(_mr_
 _mr_cond_1_1_3_7_r30(mm, x) := block([_mr_1_1_3_7_r30_a, _mr_1_1_3_7_r30_b, _mr_1_1_3_7_r30_c, _mr_1_1_3_7_r30_d],
   _mr_1_1_3_7_r30_a : geteqR(mm, '_mr_1_1_3_7_r30_a), _mr_1_1_3_7_r30_b : geteqR(mm, '_mr_1_1_3_7_r30_b), _mr_1_1_3_7_r30_c : geteqR(mm, '_mr_1_1_3_7_r30_c), _mr_1_1_3_7_r30_d : geteqR(mm, '_mr_1_1_3_7_r30_d),
   (freeof(x, _mr_1_1_3_7_r30_a) and freeof(x, _mr_1_1_3_7_r30_b) and freeof(x, _mr_1_1_3_7_r30_c) and freeof(x, _mr_1_1_3_7_r30_d)  and  %mr_negQ(_mr_1_1_3_7_r30_a)  and  %mr_eqQ(_mr_1_1_3_7_r30_b*_mr_1_1_3_7_r30_c^3 - 2*(5 + 3*sqrt(3))*_mr_1_1_3_7_r30_a*_mr_1_1_3_7_r30_d^3, 0))  and  %mr_neQ(_mr_1_1_3_7_r30_b, 0))$
-_mr_repl_1_1_3_7_r30(mm, x) := block([_mr_1_1_3_7_r30_a, _mr_1_1_3_7_r30_b, _mr_1_1_3_7_r30_c, _mr_1_1_3_7_r30_d],
-  _mr_1_1_3_7_r30_a : geteqR(mm, '_mr_1_1_3_7_r30_a), _mr_1_1_3_7_r30_b : geteqR(mm, '_mr_1_1_3_7_r30_b), _mr_1_1_3_7_r30_c : geteqR(mm, '_mr_1_1_3_7_r30_c), _mr_1_1_3_7_r30_d : geteqR(mm, '_mr_1_1_3_7_r30_d),
-  block([r, s], r : num(%mr_simp((1 + sqrt(3))*_mr_1_1_3_7_r30_d/_mr_1_1_3_7_r30_c)), s : denom(%mr_simp((1 + sqrt(3))*_mr_1_1_3_7_r30_d/_mr_1_1_3_7_r30_c)), 2*_mr_1_1_3_7_r30_d*s^3*sqrt(_mr_1_1_3_7_r30_a + _mr_1_1_3_7_r30_b*x^3)/(_mr_1_1_3_7_r30_a*r^2*((1 - sqrt(3))*s + r*x)) + 3^(1/4)*sqrt(2 + sqrt(3))*_mr_1_1_3_7_r30_d*s*(s + r*x)* sqrt((s^2 - r*s*x + r^2*x^2)/((1 - sqrt(3))*s + r*x)^2)/ (r^2*sqrt(_mr_1_1_3_7_r30_a + _mr_1_1_3_7_r30_b*x^3)* sqrt(-s*(s + r*x)/((1 - sqrt(3))*s + r*x)^2))* elliptic_e(asin(((1 + sqrt(3))*s + r*x)/((1 - sqrt(3))*s + r*x)), -7 + 4*sqrt(3))))$
+_mr_repl_1_1_3_7_r30(mm, x) := block([_mr_1_1_3_7_r30_a__s, _mr_1_1_3_7_r30_b__s, _mr_1_1_3_7_r30_c__s, _mr_1_1_3_7_r30_d__s],
+  _mr_1_1_3_7_r30_a__s : geteqR(mm, '_mr_1_1_3_7_r30_a), _mr_1_1_3_7_r30_b__s : geteqR(mm, '_mr_1_1_3_7_r30_b), _mr_1_1_3_7_r30_c__s : geteqR(mm, '_mr_1_1_3_7_r30_c), _mr_1_1_3_7_r30_d__s : geteqR(mm, '_mr_1_1_3_7_r30_d),
+  block([r, s], r : num(%mr_simp((1 + sqrt(3))*_mr_1_1_3_7_r30_d__s/_mr_1_1_3_7_r30_c__s)), s : denom(%mr_simp((1 + sqrt(3))*_mr_1_1_3_7_r30_d__s/_mr_1_1_3_7_r30_c__s)), 2*_mr_1_1_3_7_r30_d__s*s^3*sqrt(_mr_1_1_3_7_r30_a__s + _mr_1_1_3_7_r30_b__s*x^3)/(_mr_1_1_3_7_r30_a__s*r^2*((1 - sqrt(3))*s + r*x)) + 3^(1/4)*sqrt(2 + sqrt(3))*_mr_1_1_3_7_r30_d__s*s*(s + r*x)* sqrt((s^2 - r*s*x + r^2*x^2)/((1 - sqrt(3))*s + r*x)^2)/ (r^2*sqrt(_mr_1_1_3_7_r30_a__s + _mr_1_1_3_7_r30_b__s*x^3)* sqrt(-s*(s + r*x)/((1 - sqrt(3))*s + r*x)^2))* elliptic_e(asin(((1 + sqrt(3))*s + r*x)/((1 - sqrt(3))*s + r*x)), -7 + 4*sqrt(3))))$
 _mr_rule_1_1_3_7_r30(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r30(f, x),
   if mm = false then return(false),
@@ -514,9 +514,9 @@ defmatch(_mr_pat_1_1_3_7_r31, (_mr_1_1_3_7_r31_c+ _mr_1_1_3_7_r31_d*x)/sqrt(_mr_
 _mr_cond_1_1_3_7_r31(mm, x) := block([_mr_1_1_3_7_r31_a, _mr_1_1_3_7_r31_b, _mr_1_1_3_7_r31_c, _mr_1_1_3_7_r31_d],
   _mr_1_1_3_7_r31_a : geteqR(mm, '_mr_1_1_3_7_r31_a), _mr_1_1_3_7_r31_b : geteqR(mm, '_mr_1_1_3_7_r31_b), _mr_1_1_3_7_r31_c : geteqR(mm, '_mr_1_1_3_7_r31_c), _mr_1_1_3_7_r31_d : geteqR(mm, '_mr_1_1_3_7_r31_d),
   (freeof(x, _mr_1_1_3_7_r31_a) and freeof(x, _mr_1_1_3_7_r31_b) and freeof(x, _mr_1_1_3_7_r31_c) and freeof(x, _mr_1_1_3_7_r31_d)  and  %mr_negQ(_mr_1_1_3_7_r31_a)  and  %mr_neQ(_mr_1_1_3_7_r31_b*_mr_1_1_3_7_r31_c^3 - 2*(5 + 3*sqrt(3))*_mr_1_1_3_7_r31_a*_mr_1_1_3_7_r31_d^3, 0))  and  %mr_neQ(_mr_1_1_3_7_r31_b, 0))$
-_mr_repl_1_1_3_7_r31(mm, x) := block([_mr_1_1_3_7_r31_a, _mr_1_1_3_7_r31_b, _mr_1_1_3_7_r31_c, _mr_1_1_3_7_r31_d],
-  _mr_1_1_3_7_r31_a : geteqR(mm, '_mr_1_1_3_7_r31_a), _mr_1_1_3_7_r31_b : geteqR(mm, '_mr_1_1_3_7_r31_b), _mr_1_1_3_7_r31_c : geteqR(mm, '_mr_1_1_3_7_r31_c), _mr_1_1_3_7_r31_d : geteqR(mm, '_mr_1_1_3_7_r31_d),
-  block([r, s], r : num(%mr_rt(_mr_1_1_3_7_r31_b/_mr_1_1_3_7_r31_a, 3)), s : denom(%mr_rt(_mr_1_1_3_7_r31_b/_mr_1_1_3_7_r31_a, 3)), (_mr_1_1_3_7_r31_c*r - (1 + sqrt(3))*_mr_1_1_3_7_r31_d*s)/r*mr_int(1/sqrt(_mr_1_1_3_7_r31_a + _mr_1_1_3_7_r31_b*x^3), x) + _mr_1_1_3_7_r31_d/r*mr_int(((1 + sqrt(3))*s + r*x)/sqrt(_mr_1_1_3_7_r31_a + _mr_1_1_3_7_r31_b*x^3), x)))$
+_mr_repl_1_1_3_7_r31(mm, x) := block([_mr_1_1_3_7_r31_a__s, _mr_1_1_3_7_r31_b__s, _mr_1_1_3_7_r31_c__s, _mr_1_1_3_7_r31_d__s],
+  _mr_1_1_3_7_r31_a__s : geteqR(mm, '_mr_1_1_3_7_r31_a), _mr_1_1_3_7_r31_b__s : geteqR(mm, '_mr_1_1_3_7_r31_b), _mr_1_1_3_7_r31_c__s : geteqR(mm, '_mr_1_1_3_7_r31_c), _mr_1_1_3_7_r31_d__s : geteqR(mm, '_mr_1_1_3_7_r31_d),
+  block([r, s], r : num(%mr_rt(_mr_1_1_3_7_r31_b__s/_mr_1_1_3_7_r31_a__s, 3)), s : denom(%mr_rt(_mr_1_1_3_7_r31_b__s/_mr_1_1_3_7_r31_a__s, 3)), (_mr_1_1_3_7_r31_c__s*r - (1 + sqrt(3))*_mr_1_1_3_7_r31_d__s*s)/r*mr_int(1/sqrt(_mr_1_1_3_7_r31_a__s + _mr_1_1_3_7_r31_b__s*x^3), x) + _mr_1_1_3_7_r31_d__s/r*mr_int(((1 + sqrt(3))*s + r*x)/sqrt(_mr_1_1_3_7_r31_a__s + _mr_1_1_3_7_r31_b__s*x^3), x)))$
 _mr_rule_1_1_3_7_r31(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r31(f, x),
   if mm = false then return(false),
@@ -531,9 +531,9 @@ defmatch(_mr_pat_1_1_3_7_r32, (_mr_1_1_3_7_r32_c+ _mr_1_1_3_7_r32_d*x^4)/sqrt(_m
 _mr_cond_1_1_3_7_r32(mm, x) := block([_mr_1_1_3_7_r32_a, _mr_1_1_3_7_r32_b, _mr_1_1_3_7_r32_c, _mr_1_1_3_7_r32_d],
   _mr_1_1_3_7_r32_a : geteqR(mm, '_mr_1_1_3_7_r32_a), _mr_1_1_3_7_r32_b : geteqR(mm, '_mr_1_1_3_7_r32_b), _mr_1_1_3_7_r32_c : geteqR(mm, '_mr_1_1_3_7_r32_c), _mr_1_1_3_7_r32_d : geteqR(mm, '_mr_1_1_3_7_r32_d),
   (freeof(x, _mr_1_1_3_7_r32_a) and freeof(x, _mr_1_1_3_7_r32_b) and freeof(x, _mr_1_1_3_7_r32_c) and freeof(x, _mr_1_1_3_7_r32_d)  and  %mr_eqQ(2*%mr_rt(_mr_1_1_3_7_r32_b/_mr_1_1_3_7_r32_a, 3)^2*_mr_1_1_3_7_r32_c - (1 - sqrt(3))*_mr_1_1_3_7_r32_d, 0))  and  %mr_neQ(_mr_1_1_3_7_r32_b, 0)  and  %mr_neQ(_mr_1_1_3_7_r32_d, 0))$
-_mr_repl_1_1_3_7_r32(mm, x) := block([_mr_1_1_3_7_r32_a, _mr_1_1_3_7_r32_b, _mr_1_1_3_7_r32_c, _mr_1_1_3_7_r32_d],
-  _mr_1_1_3_7_r32_a : geteqR(mm, '_mr_1_1_3_7_r32_a), _mr_1_1_3_7_r32_b : geteqR(mm, '_mr_1_1_3_7_r32_b), _mr_1_1_3_7_r32_c : geteqR(mm, '_mr_1_1_3_7_r32_c), _mr_1_1_3_7_r32_d : geteqR(mm, '_mr_1_1_3_7_r32_d),
-  block([r, s], r : num(%mr_rt(_mr_1_1_3_7_r32_b/_mr_1_1_3_7_r32_a, 3)), s : denom(%mr_rt(_mr_1_1_3_7_r32_b/_mr_1_1_3_7_r32_a, 3)), (1 + sqrt(3))*_mr_1_1_3_7_r32_d*s^3*x* sqrt(_mr_1_1_3_7_r32_a + _mr_1_1_3_7_r32_b*x^6)/(2*_mr_1_1_3_7_r32_a*r^2*(s + (1 + sqrt(3))*r*x^2)) - 3^(1/4)*_mr_1_1_3_7_r32_d*s*x*(s + r*x^2)* sqrt((s^2 - r*s*x^2 + r^2*x^4)/(s + (1 + sqrt(3))*r*x^2)^2)/ (2*r^2* sqrt((r*x^2*(s + r*x^2))/(s + (1 + sqrt(3))*r*x^2)^2)* sqrt(_mr_1_1_3_7_r32_a + _mr_1_1_3_7_r32_b*x^6))* elliptic_e(acos((s + (1 - sqrt(3))*r*x^2)/(s + (1 + sqrt(3))*r* x^2)), (2 + sqrt(3))/4)))$
+_mr_repl_1_1_3_7_r32(mm, x) := block([_mr_1_1_3_7_r32_a__s, _mr_1_1_3_7_r32_b__s, _mr_1_1_3_7_r32_c__s, _mr_1_1_3_7_r32_d__s],
+  _mr_1_1_3_7_r32_a__s : geteqR(mm, '_mr_1_1_3_7_r32_a), _mr_1_1_3_7_r32_b__s : geteqR(mm, '_mr_1_1_3_7_r32_b), _mr_1_1_3_7_r32_c__s : geteqR(mm, '_mr_1_1_3_7_r32_c), _mr_1_1_3_7_r32_d__s : geteqR(mm, '_mr_1_1_3_7_r32_d),
+  block([r, s], r : num(%mr_rt(_mr_1_1_3_7_r32_b__s/_mr_1_1_3_7_r32_a__s, 3)), s : denom(%mr_rt(_mr_1_1_3_7_r32_b__s/_mr_1_1_3_7_r32_a__s, 3)), (1 + sqrt(3))*_mr_1_1_3_7_r32_d__s*s^3*x* sqrt(_mr_1_1_3_7_r32_a__s + _mr_1_1_3_7_r32_b__s*x^6)/(2*_mr_1_1_3_7_r32_a__s*r^2*(s + (1 + sqrt(3))*r*x^2)) - 3^(1/4)*_mr_1_1_3_7_r32_d__s*s*x*(s + r*x^2)* sqrt((s^2 - r*s*x^2 + r^2*x^4)/(s + (1 + sqrt(3))*r*x^2)^2)/ (2*r^2* sqrt((r*x^2*(s + r*x^2))/(s + (1 + sqrt(3))*r*x^2)^2)* sqrt(_mr_1_1_3_7_r32_a__s + _mr_1_1_3_7_r32_b__s*x^6))* elliptic_e(acos((s + (1 - sqrt(3))*r*x^2)/(s + (1 + sqrt(3))*r* x^2)), (2 + sqrt(3))/4)))$
 _mr_rule_1_1_3_7_r32(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r32(f, x),
   if mm = false then return(false),
@@ -548,9 +548,9 @@ defmatch(_mr_pat_1_1_3_7_r33, (_mr_1_1_3_7_r33_c+ _mr_1_1_3_7_r33_d*x^4)/sqrt(_m
 _mr_cond_1_1_3_7_r33(mm, x) := block([_mr_1_1_3_7_r33_a, _mr_1_1_3_7_r33_b, _mr_1_1_3_7_r33_c, _mr_1_1_3_7_r33_d],
   _mr_1_1_3_7_r33_a : geteqR(mm, '_mr_1_1_3_7_r33_a), _mr_1_1_3_7_r33_b : geteqR(mm, '_mr_1_1_3_7_r33_b), _mr_1_1_3_7_r33_c : geteqR(mm, '_mr_1_1_3_7_r33_c), _mr_1_1_3_7_r33_d : geteqR(mm, '_mr_1_1_3_7_r33_d),
   (freeof(x, _mr_1_1_3_7_r33_a) and freeof(x, _mr_1_1_3_7_r33_b) and freeof(x, _mr_1_1_3_7_r33_c) and freeof(x, _mr_1_1_3_7_r33_d)  and  %mr_neQ(2*%mr_rt(_mr_1_1_3_7_r33_b/_mr_1_1_3_7_r33_a, 3)^2*_mr_1_1_3_7_r33_c - (1 - sqrt(3))*_mr_1_1_3_7_r33_d, 0))  and  %mr_neQ(_mr_1_1_3_7_r33_b, 0)  and  %mr_neQ(_mr_1_1_3_7_r33_d, 0))$
-_mr_repl_1_1_3_7_r33(mm, x) := block([_mr_1_1_3_7_r33_a, _mr_1_1_3_7_r33_b, _mr_1_1_3_7_r33_c, _mr_1_1_3_7_r33_d],
-  _mr_1_1_3_7_r33_a : geteqR(mm, '_mr_1_1_3_7_r33_a), _mr_1_1_3_7_r33_b : geteqR(mm, '_mr_1_1_3_7_r33_b), _mr_1_1_3_7_r33_c : geteqR(mm, '_mr_1_1_3_7_r33_c), _mr_1_1_3_7_r33_d : geteqR(mm, '_mr_1_1_3_7_r33_d),
-  block([q], q : %mr_rt(_mr_1_1_3_7_r33_b/_mr_1_1_3_7_r33_a, 3), (2*_mr_1_1_3_7_r33_c*q^2 - (1 - sqrt(3))*_mr_1_1_3_7_r33_d)/(2*q^2)*mr_int(1/sqrt(_mr_1_1_3_7_r33_a + _mr_1_1_3_7_r33_b*x^6), x) + _mr_1_1_3_7_r33_d/(2*q^2)*mr_int((1 - sqrt(3) + 2*q^2*x^4)/sqrt(_mr_1_1_3_7_r33_a + _mr_1_1_3_7_r33_b*x^6), x)))$
+_mr_repl_1_1_3_7_r33(mm, x) := block([_mr_1_1_3_7_r33_a__s, _mr_1_1_3_7_r33_b__s, _mr_1_1_3_7_r33_c__s, _mr_1_1_3_7_r33_d__s],
+  _mr_1_1_3_7_r33_a__s : geteqR(mm, '_mr_1_1_3_7_r33_a), _mr_1_1_3_7_r33_b__s : geteqR(mm, '_mr_1_1_3_7_r33_b), _mr_1_1_3_7_r33_c__s : geteqR(mm, '_mr_1_1_3_7_r33_c), _mr_1_1_3_7_r33_d__s : geteqR(mm, '_mr_1_1_3_7_r33_d),
+  block([q], q : %mr_rt(_mr_1_1_3_7_r33_b__s/_mr_1_1_3_7_r33_a__s, 3), (2*_mr_1_1_3_7_r33_c__s*q^2 - (1 - sqrt(3))*_mr_1_1_3_7_r33_d__s)/(2*q^2)*mr_int(1/sqrt(_mr_1_1_3_7_r33_a__s + _mr_1_1_3_7_r33_b__s*x^6), x) + _mr_1_1_3_7_r33_d__s/(2*q^2)*mr_int((1 - sqrt(3) + 2*q^2*x^4)/sqrt(_mr_1_1_3_7_r33_a__s + _mr_1_1_3_7_r33_b__s*x^6), x)))$
 _mr_rule_1_1_3_7_r33(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r33(f, x),
   if mm = false then return(false),
@@ -565,9 +565,9 @@ defmatch(_mr_pat_1_1_3_7_r34, (_mr_1_1_3_7_r34_c+ _mr_1_1_3_7_r34_d*x^2)/sqrt(_m
 _mr_cond_1_1_3_7_r34(mm, x) := block([_mr_1_1_3_7_r34_a, _mr_1_1_3_7_r34_b, _mr_1_1_3_7_r34_c, _mr_1_1_3_7_r34_d],
   _mr_1_1_3_7_r34_a : geteqR(mm, '_mr_1_1_3_7_r34_a), _mr_1_1_3_7_r34_b : geteqR(mm, '_mr_1_1_3_7_r34_b), _mr_1_1_3_7_r34_c : geteqR(mm, '_mr_1_1_3_7_r34_c), _mr_1_1_3_7_r34_d : geteqR(mm, '_mr_1_1_3_7_r34_d),
   (freeof(x, _mr_1_1_3_7_r34_a) and freeof(x, _mr_1_1_3_7_r34_b) and freeof(x, _mr_1_1_3_7_r34_c) and freeof(x, _mr_1_1_3_7_r34_d)  and  %mr_eqQ(_mr_1_1_3_7_r34_b*_mr_1_1_3_7_r34_c^4 - _mr_1_1_3_7_r34_a*_mr_1_1_3_7_r34_d^4, 0))  and  %mr_neQ(_mr_1_1_3_7_r34_b, 0)  and  %mr_neQ(_mr_1_1_3_7_r34_d, 0))$
-_mr_repl_1_1_3_7_r34(mm, x) := block([_mr_1_1_3_7_r34_a, _mr_1_1_3_7_r34_b, _mr_1_1_3_7_r34_c, _mr_1_1_3_7_r34_d],
-  _mr_1_1_3_7_r34_a : geteqR(mm, '_mr_1_1_3_7_r34_a), _mr_1_1_3_7_r34_b : geteqR(mm, '_mr_1_1_3_7_r34_b), _mr_1_1_3_7_r34_c : geteqR(mm, '_mr_1_1_3_7_r34_c), _mr_1_1_3_7_r34_d : geteqR(mm, '_mr_1_1_3_7_r34_d),
-  -_mr_1_1_3_7_r34_c*_mr_1_1_3_7_r34_d*x^3*sqrt(-(_mr_1_1_3_7_r34_c - _mr_1_1_3_7_r34_d*x^2)^2/(_mr_1_1_3_7_r34_c*_mr_1_1_3_7_r34_d*x^2))* sqrt(-_mr_1_1_3_7_r34_d^2*(_mr_1_1_3_7_r34_a + _mr_1_1_3_7_r34_b*x^8)/(_mr_1_1_3_7_r34_b*_mr_1_1_3_7_r34_c^2*x^4))/(sqrt(2 + sqrt(2))*(_mr_1_1_3_7_r34_c - _mr_1_1_3_7_r34_d*x^2)* sqrt(_mr_1_1_3_7_r34_a + _mr_1_1_3_7_r34_b*x^8))* elliptic_f(asin(1/2* sqrt((sqrt(2)*_mr_1_1_3_7_r34_c^2 + 2*_mr_1_1_3_7_r34_c*_mr_1_1_3_7_r34_d*x^2 + sqrt(2)*_mr_1_1_3_7_r34_d^2*x^4)/(_mr_1_1_3_7_r34_c*_mr_1_1_3_7_r34_d* x^2))), -2*(1 - sqrt(2))))$
+_mr_repl_1_1_3_7_r34(mm, x) := block([_mr_1_1_3_7_r34_a__s, _mr_1_1_3_7_r34_b__s, _mr_1_1_3_7_r34_c__s, _mr_1_1_3_7_r34_d__s],
+  _mr_1_1_3_7_r34_a__s : geteqR(mm, '_mr_1_1_3_7_r34_a), _mr_1_1_3_7_r34_b__s : geteqR(mm, '_mr_1_1_3_7_r34_b), _mr_1_1_3_7_r34_c__s : geteqR(mm, '_mr_1_1_3_7_r34_c), _mr_1_1_3_7_r34_d__s : geteqR(mm, '_mr_1_1_3_7_r34_d),
+  -_mr_1_1_3_7_r34_c__s*_mr_1_1_3_7_r34_d__s*x^3*sqrt(-(_mr_1_1_3_7_r34_c__s - _mr_1_1_3_7_r34_d__s*x^2)^2/(_mr_1_1_3_7_r34_c__s*_mr_1_1_3_7_r34_d__s*x^2))* sqrt(-_mr_1_1_3_7_r34_d__s^2*(_mr_1_1_3_7_r34_a__s + _mr_1_1_3_7_r34_b__s*x^8)/(_mr_1_1_3_7_r34_b__s*_mr_1_1_3_7_r34_c__s^2*x^4))/(sqrt(2 + sqrt(2))*(_mr_1_1_3_7_r34_c__s - _mr_1_1_3_7_r34_d__s*x^2)* sqrt(_mr_1_1_3_7_r34_a__s + _mr_1_1_3_7_r34_b__s*x^8))* elliptic_f(asin(1/2* sqrt((sqrt(2)*_mr_1_1_3_7_r34_c__s^2 + 2*_mr_1_1_3_7_r34_c__s*_mr_1_1_3_7_r34_d__s*x^2 + sqrt(2)*_mr_1_1_3_7_r34_d__s^2*x^4)/(_mr_1_1_3_7_r34_c__s*_mr_1_1_3_7_r34_d__s* x^2))), -2*(1 - sqrt(2))))$
 _mr_rule_1_1_3_7_r34(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r34(f, x),
   if mm = false then return(false),
@@ -582,9 +582,9 @@ defmatch(_mr_pat_1_1_3_7_r35, (_mr_1_1_3_7_r35_c+ _mr_1_1_3_7_r35_d*x^2)/sqrt(_m
 _mr_cond_1_1_3_7_r35(mm, x) := block([_mr_1_1_3_7_r35_a, _mr_1_1_3_7_r35_b, _mr_1_1_3_7_r35_c, _mr_1_1_3_7_r35_d],
   _mr_1_1_3_7_r35_a : geteqR(mm, '_mr_1_1_3_7_r35_a), _mr_1_1_3_7_r35_b : geteqR(mm, '_mr_1_1_3_7_r35_b), _mr_1_1_3_7_r35_c : geteqR(mm, '_mr_1_1_3_7_r35_c), _mr_1_1_3_7_r35_d : geteqR(mm, '_mr_1_1_3_7_r35_d),
   (freeof(x, _mr_1_1_3_7_r35_a) and freeof(x, _mr_1_1_3_7_r35_b) and freeof(x, _mr_1_1_3_7_r35_c) and freeof(x, _mr_1_1_3_7_r35_d)  and  %mr_neQ(_mr_1_1_3_7_r35_b*_mr_1_1_3_7_r35_c^4 - _mr_1_1_3_7_r35_a*_mr_1_1_3_7_r35_d^4, 0))  and  %mr_neQ(_mr_1_1_3_7_r35_b, 0)  and  %mr_neQ(_mr_1_1_3_7_r35_d, 0))$
-_mr_repl_1_1_3_7_r35(mm, x) := block([_mr_1_1_3_7_r35_a, _mr_1_1_3_7_r35_b, _mr_1_1_3_7_r35_c, _mr_1_1_3_7_r35_d],
-  _mr_1_1_3_7_r35_a : geteqR(mm, '_mr_1_1_3_7_r35_a), _mr_1_1_3_7_r35_b : geteqR(mm, '_mr_1_1_3_7_r35_b), _mr_1_1_3_7_r35_c : geteqR(mm, '_mr_1_1_3_7_r35_c), _mr_1_1_3_7_r35_d : geteqR(mm, '_mr_1_1_3_7_r35_d),
-  (_mr_1_1_3_7_r35_d + %mr_rt(_mr_1_1_3_7_r35_b/_mr_1_1_3_7_r35_a, 4)*_mr_1_1_3_7_r35_c)/(2*%mr_rt(_mr_1_1_3_7_r35_b/_mr_1_1_3_7_r35_a, 4))* mr_int((1 + %mr_rt(_mr_1_1_3_7_r35_b/_mr_1_1_3_7_r35_a, 4)*x^2)/sqrt(_mr_1_1_3_7_r35_a + _mr_1_1_3_7_r35_b*x^8), x) - (_mr_1_1_3_7_r35_d - %mr_rt(_mr_1_1_3_7_r35_b/_mr_1_1_3_7_r35_a, 4)*_mr_1_1_3_7_r35_c)/(2*%mr_rt(_mr_1_1_3_7_r35_b/_mr_1_1_3_7_r35_a, 4))* mr_int((1 - %mr_rt(_mr_1_1_3_7_r35_b/_mr_1_1_3_7_r35_a, 4)*x^2)/sqrt(_mr_1_1_3_7_r35_a + _mr_1_1_3_7_r35_b*x^8), x))$
+_mr_repl_1_1_3_7_r35(mm, x) := block([_mr_1_1_3_7_r35_a__s, _mr_1_1_3_7_r35_b__s, _mr_1_1_3_7_r35_c__s, _mr_1_1_3_7_r35_d__s],
+  _mr_1_1_3_7_r35_a__s : geteqR(mm, '_mr_1_1_3_7_r35_a), _mr_1_1_3_7_r35_b__s : geteqR(mm, '_mr_1_1_3_7_r35_b), _mr_1_1_3_7_r35_c__s : geteqR(mm, '_mr_1_1_3_7_r35_c), _mr_1_1_3_7_r35_d__s : geteqR(mm, '_mr_1_1_3_7_r35_d),
+  (_mr_1_1_3_7_r35_d__s + %mr_rt(_mr_1_1_3_7_r35_b__s/_mr_1_1_3_7_r35_a__s, 4)*_mr_1_1_3_7_r35_c__s)/(2*%mr_rt(_mr_1_1_3_7_r35_b__s/_mr_1_1_3_7_r35_a__s, 4))* mr_int((1 + %mr_rt(_mr_1_1_3_7_r35_b__s/_mr_1_1_3_7_r35_a__s, 4)*x^2)/sqrt(_mr_1_1_3_7_r35_a__s + _mr_1_1_3_7_r35_b__s*x^8), x) - (_mr_1_1_3_7_r35_d__s - %mr_rt(_mr_1_1_3_7_r35_b__s/_mr_1_1_3_7_r35_a__s, 4)*_mr_1_1_3_7_r35_c__s)/(2*%mr_rt(_mr_1_1_3_7_r35_b__s/_mr_1_1_3_7_r35_a__s, 4))* mr_int((1 - %mr_rt(_mr_1_1_3_7_r35_b__s/_mr_1_1_3_7_r35_a__s, 4)*x^2)/sqrt(_mr_1_1_3_7_r35_a__s + _mr_1_1_3_7_r35_b__s*x^8), x))$
 _mr_rule_1_1_3_7_r35(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r35(f, x),
   if mm = false then return(false),
@@ -599,9 +599,9 @@ defmatch(_mr_pat_1_1_3_7_r36, _mr_1_1_3_7_r36_Pq/(x*sqrt(_mr_1_1_3_7_r36_a+ _mr_
 _mr_cond_1_1_3_7_r36(mm, x) := block([_mr_1_1_3_7_r36_Pq, _mr_1_1_3_7_r36_a, _mr_1_1_3_7_r36_b, _mr_1_1_3_7_r36_n],
   _mr_1_1_3_7_r36_Pq : geteqR(mm, '_mr_1_1_3_7_r36_Pq), _mr_1_1_3_7_r36_a : geteqR(mm, '_mr_1_1_3_7_r36_a), _mr_1_1_3_7_r36_b : geteqR(mm, '_mr_1_1_3_7_r36_b), _mr_1_1_3_7_r36_n : geteqR(mm, '_mr_1_1_3_7_r36_n),
   freeof(x, _mr_1_1_3_7_r36_a) and freeof(x, _mr_1_1_3_7_r36_b)  and  %mr_polyQ(_mr_1_1_3_7_r36_Pq, x)  and  is(_mr_1_1_3_7_r36_n > 0)  and  %mr_neQ(%mr_coeff(_mr_1_1_3_7_r36_Pq, x, 0), 0))$
-_mr_repl_1_1_3_7_r36(mm, x) := block([_mr_1_1_3_7_r36_Pq, _mr_1_1_3_7_r36_a, _mr_1_1_3_7_r36_b, _mr_1_1_3_7_r36_n],
-  _mr_1_1_3_7_r36_Pq : geteqR(mm, '_mr_1_1_3_7_r36_Pq), _mr_1_1_3_7_r36_a : geteqR(mm, '_mr_1_1_3_7_r36_a), _mr_1_1_3_7_r36_b : geteqR(mm, '_mr_1_1_3_7_r36_b), _mr_1_1_3_7_r36_n : geteqR(mm, '_mr_1_1_3_7_r36_n),
-  %mr_coeff(_mr_1_1_3_7_r36_Pq, x, 0)*mr_int(1/(x*sqrt(_mr_1_1_3_7_r36_a + _mr_1_1_3_7_r36_b*x^_mr_1_1_3_7_r36_n)), x) + mr_int(%mr_expandToSum((_mr_1_1_3_7_r36_Pq - %mr_coeff(_mr_1_1_3_7_r36_Pq, x, 0))/x, x)/sqrt(_mr_1_1_3_7_r36_a + _mr_1_1_3_7_r36_b*x^_mr_1_1_3_7_r36_n), x))$
+_mr_repl_1_1_3_7_r36(mm, x) := block([_mr_1_1_3_7_r36_Pq__s, _mr_1_1_3_7_r36_a__s, _mr_1_1_3_7_r36_b__s, _mr_1_1_3_7_r36_n__s],
+  _mr_1_1_3_7_r36_Pq__s : geteqR(mm, '_mr_1_1_3_7_r36_Pq), _mr_1_1_3_7_r36_a__s : geteqR(mm, '_mr_1_1_3_7_r36_a), _mr_1_1_3_7_r36_b__s : geteqR(mm, '_mr_1_1_3_7_r36_b), _mr_1_1_3_7_r36_n__s : geteqR(mm, '_mr_1_1_3_7_r36_n),
+  %mr_coeff(_mr_1_1_3_7_r36_Pq__s, x, 0)*mr_int(1/(x*sqrt(_mr_1_1_3_7_r36_a__s + _mr_1_1_3_7_r36_b__s*x^_mr_1_1_3_7_r36_n__s)), x) + mr_int(%mr_expandToSum((_mr_1_1_3_7_r36_Pq__s - %mr_coeff(_mr_1_1_3_7_r36_Pq__s, x, 0))/x, x)/sqrt(_mr_1_1_3_7_r36_a__s + _mr_1_1_3_7_r36_b__s*x^_mr_1_1_3_7_r36_n__s), x))$
 _mr_rule_1_1_3_7_r36(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r36(f, x),
   if mm = false then return(false),
@@ -617,9 +617,9 @@ defmatch(_mr_pat_1_1_3_7_r37, _mr_1_1_3_7_r37_Pq*(_mr_1_1_3_7_r37_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r37(mm, x) := block([_mr_1_1_3_7_r37_Pq, _mr_1_1_3_7_r37_a, _mr_1_1_3_7_r37_b, _mr_1_1_3_7_r37_n, _mr_1_1_3_7_r37_p],
   _mr_1_1_3_7_r37_Pq : geteqR(mm, '_mr_1_1_3_7_r37_Pq), _mr_1_1_3_7_r37_a : geteqR(mm, '_mr_1_1_3_7_r37_a), _mr_1_1_3_7_r37_b : geteqR(mm, '_mr_1_1_3_7_r37_b), _mr_1_1_3_7_r37_n : geteqR(mm, '_mr_1_1_3_7_r37_n), _mr_1_1_3_7_r37_p : geteqR(mm, '_mr_1_1_3_7_r37_p),
   (freeof(x, _mr_1_1_3_7_r37_a) and freeof(x, _mr_1_1_3_7_r37_b) and freeof(x, _mr_1_1_3_7_r37_p)  and  %mr_polyQ(_mr_1_1_3_7_r37_Pq, x)  and  is(_mr_1_1_3_7_r37_n/2 > 0)  and  not(%mr_polyPowerQ(_mr_1_1_3_7_r37_Pq, x, (_mr_1_1_3_7_r37_n/2))))  and  %mr_neQ(_mr_1_1_3_7_r37_n, 0))$
-_mr_repl_1_1_3_7_r37(mm, x) := block([_mr_1_1_3_7_r37_Pq, _mr_1_1_3_7_r37_a, _mr_1_1_3_7_r37_b, _mr_1_1_3_7_r37_n, _mr_1_1_3_7_r37_p],
-  _mr_1_1_3_7_r37_Pq : geteqR(mm, '_mr_1_1_3_7_r37_Pq), _mr_1_1_3_7_r37_a : geteqR(mm, '_mr_1_1_3_7_r37_a), _mr_1_1_3_7_r37_b : geteqR(mm, '_mr_1_1_3_7_r37_b), _mr_1_1_3_7_r37_n : geteqR(mm, '_mr_1_1_3_7_r37_n), _mr_1_1_3_7_r37_p : geteqR(mm, '_mr_1_1_3_7_r37_p),
-  block([q, j, k], q : %mr_expon(_mr_1_1_3_7_r37_Pq, x), mr_int(mr_sum(x^j*mr_sum(%mr_coeff(_mr_1_1_3_7_r37_Pq, x, j + k*_mr_1_1_3_7_r37_n/2)*x^(k*_mr_1_1_3_7_r37_n/2), k, 0, 2*(q - j)/_mr_1_1_3_7_r37_n + 1)*(_mr_1_1_3_7_r37_a + _mr_1_1_3_7_r37_b*x^_mr_1_1_3_7_r37_n)^_mr_1_1_3_7_r37_p, j, 0, _mr_1_1_3_7_r37_n/2 - 1), x)))$
+_mr_repl_1_1_3_7_r37(mm, x) := block([_mr_1_1_3_7_r37_Pq__s, _mr_1_1_3_7_r37_a__s, _mr_1_1_3_7_r37_b__s, _mr_1_1_3_7_r37_n__s, _mr_1_1_3_7_r37_p__s],
+  _mr_1_1_3_7_r37_Pq__s : geteqR(mm, '_mr_1_1_3_7_r37_Pq), _mr_1_1_3_7_r37_a__s : geteqR(mm, '_mr_1_1_3_7_r37_a), _mr_1_1_3_7_r37_b__s : geteqR(mm, '_mr_1_1_3_7_r37_b), _mr_1_1_3_7_r37_n__s : geteqR(mm, '_mr_1_1_3_7_r37_n), _mr_1_1_3_7_r37_p__s : geteqR(mm, '_mr_1_1_3_7_r37_p),
+  block([q, j, k], q : %mr_expon(_mr_1_1_3_7_r37_Pq__s, x), mr_int(mr_sum(lambda([j], x^j*mr_sum(lambda([k], %mr_coeff(_mr_1_1_3_7_r37_Pq__s, x, j + k*_mr_1_1_3_7_r37_n__s/2)*x^(k*_mr_1_1_3_7_r37_n__s/2)), k, 0, 2*(q - j)/_mr_1_1_3_7_r37_n__s + 1)*(_mr_1_1_3_7_r37_a__s + _mr_1_1_3_7_r37_b__s*x^_mr_1_1_3_7_r37_n__s)^_mr_1_1_3_7_r37_p__s), j, 0, _mr_1_1_3_7_r37_n__s/2 - 1), x)))$
 _mr_rule_1_1_3_7_r37(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r37(f, x),
   if mm = false then return(false),
@@ -635,9 +635,9 @@ defmatch(_mr_pat_1_1_3_7_r38, _mr_1_1_3_7_r38_Pq*(_mr_1_1_3_7_r38_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r38(mm, x) := block([_mr_1_1_3_7_r38_Pq, _mr_1_1_3_7_r38_a, _mr_1_1_3_7_r38_b, _mr_1_1_3_7_r38_n, _mr_1_1_3_7_r38_p],
   _mr_1_1_3_7_r38_Pq : geteqR(mm, '_mr_1_1_3_7_r38_Pq), _mr_1_1_3_7_r38_a : geteqR(mm, '_mr_1_1_3_7_r38_a), _mr_1_1_3_7_r38_b : geteqR(mm, '_mr_1_1_3_7_r38_b), _mr_1_1_3_7_r38_n : geteqR(mm, '_mr_1_1_3_7_r38_n), _mr_1_1_3_7_r38_p : geteqR(mm, '_mr_1_1_3_7_r38_p),
   (freeof(x, _mr_1_1_3_7_r38_a) and freeof(x, _mr_1_1_3_7_r38_b) and freeof(x, _mr_1_1_3_7_r38_p)  and  %mr_polyQ(_mr_1_1_3_7_r38_Pq, x)  and  is(_mr_1_1_3_7_r38_n > 0)  and  %mr_expon(_mr_1_1_3_7_r38_Pq, x) = _mr_1_1_3_7_r38_n - 1)  and  %mr_neQ(_mr_1_1_3_7_r38_n, 0))$
-_mr_repl_1_1_3_7_r38(mm, x) := block([_mr_1_1_3_7_r38_Pq, _mr_1_1_3_7_r38_a, _mr_1_1_3_7_r38_b, _mr_1_1_3_7_r38_n, _mr_1_1_3_7_r38_p],
-  _mr_1_1_3_7_r38_Pq : geteqR(mm, '_mr_1_1_3_7_r38_Pq), _mr_1_1_3_7_r38_a : geteqR(mm, '_mr_1_1_3_7_r38_a), _mr_1_1_3_7_r38_b : geteqR(mm, '_mr_1_1_3_7_r38_b), _mr_1_1_3_7_r38_n : geteqR(mm, '_mr_1_1_3_7_r38_n), _mr_1_1_3_7_r38_p : geteqR(mm, '_mr_1_1_3_7_r38_p),
-  %mr_coeff(_mr_1_1_3_7_r38_Pq, x, _mr_1_1_3_7_r38_n - 1)*mr_int(x^(_mr_1_1_3_7_r38_n - 1)*(_mr_1_1_3_7_r38_a + _mr_1_1_3_7_r38_b*x^_mr_1_1_3_7_r38_n)^_mr_1_1_3_7_r38_p, x) + mr_int(%mr_expandToSum(_mr_1_1_3_7_r38_Pq - %mr_coeff(_mr_1_1_3_7_r38_Pq, x, _mr_1_1_3_7_r38_n - 1)*x^(_mr_1_1_3_7_r38_n - 1), x)*(_mr_1_1_3_7_r38_a + _mr_1_1_3_7_r38_b*x^_mr_1_1_3_7_r38_n)^_mr_1_1_3_7_r38_p, x))$
+_mr_repl_1_1_3_7_r38(mm, x) := block([_mr_1_1_3_7_r38_Pq__s, _mr_1_1_3_7_r38_a__s, _mr_1_1_3_7_r38_b__s, _mr_1_1_3_7_r38_n__s, _mr_1_1_3_7_r38_p__s],
+  _mr_1_1_3_7_r38_Pq__s : geteqR(mm, '_mr_1_1_3_7_r38_Pq), _mr_1_1_3_7_r38_a__s : geteqR(mm, '_mr_1_1_3_7_r38_a), _mr_1_1_3_7_r38_b__s : geteqR(mm, '_mr_1_1_3_7_r38_b), _mr_1_1_3_7_r38_n__s : geteqR(mm, '_mr_1_1_3_7_r38_n), _mr_1_1_3_7_r38_p__s : geteqR(mm, '_mr_1_1_3_7_r38_p),
+  %mr_coeff(_mr_1_1_3_7_r38_Pq__s, x, _mr_1_1_3_7_r38_n__s - 1)*mr_int(x^(_mr_1_1_3_7_r38_n__s - 1)*(_mr_1_1_3_7_r38_a__s + _mr_1_1_3_7_r38_b__s*x^_mr_1_1_3_7_r38_n__s)^_mr_1_1_3_7_r38_p__s, x) + mr_int(%mr_expandToSum(_mr_1_1_3_7_r38_Pq__s - %mr_coeff(_mr_1_1_3_7_r38_Pq__s, x, _mr_1_1_3_7_r38_n__s - 1)*x^(_mr_1_1_3_7_r38_n__s - 1), x)*(_mr_1_1_3_7_r38_a__s + _mr_1_1_3_7_r38_b__s*x^_mr_1_1_3_7_r38_n__s)^_mr_1_1_3_7_r38_p__s, x))$
 _mr_rule_1_1_3_7_r38(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r38(f, x),
   if mm = false then return(false),
@@ -652,9 +652,9 @@ defmatch(_mr_pat_1_1_3_7_r39, _mr_1_1_3_7_r39_Pq/(_mr_1_1_3_7_r39_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r39(mm, x) := block([_mr_1_1_3_7_r39_Pq, _mr_1_1_3_7_r39_a, _mr_1_1_3_7_r39_b, _mr_1_1_3_7_r39_n],
   _mr_1_1_3_7_r39_Pq : geteqR(mm, '_mr_1_1_3_7_r39_Pq), _mr_1_1_3_7_r39_a : geteqR(mm, '_mr_1_1_3_7_r39_a), _mr_1_1_3_7_r39_b : geteqR(mm, '_mr_1_1_3_7_r39_b), _mr_1_1_3_7_r39_n : geteqR(mm, '_mr_1_1_3_7_r39_n),
   (freeof(x, _mr_1_1_3_7_r39_a) and freeof(x, _mr_1_1_3_7_r39_b)  and  %mr_polyQ(_mr_1_1_3_7_r39_Pq, x)  and  integerp(_mr_1_1_3_7_r39_n))  and  %mr_neQ(_mr_1_1_3_7_r39_n, 0))$
-_mr_repl_1_1_3_7_r39(mm, x) := block([_mr_1_1_3_7_r39_Pq, _mr_1_1_3_7_r39_a, _mr_1_1_3_7_r39_b, _mr_1_1_3_7_r39_n],
-  _mr_1_1_3_7_r39_Pq : geteqR(mm, '_mr_1_1_3_7_r39_Pq), _mr_1_1_3_7_r39_a : geteqR(mm, '_mr_1_1_3_7_r39_a), _mr_1_1_3_7_r39_b : geteqR(mm, '_mr_1_1_3_7_r39_b), _mr_1_1_3_7_r39_n : geteqR(mm, '_mr_1_1_3_7_r39_n),
-  mr_int(%mr_expandIntegrand(_mr_1_1_3_7_r39_Pq/(_mr_1_1_3_7_r39_a + _mr_1_1_3_7_r39_b*x^_mr_1_1_3_7_r39_n), x), x))$
+_mr_repl_1_1_3_7_r39(mm, x) := block([_mr_1_1_3_7_r39_Pq__s, _mr_1_1_3_7_r39_a__s, _mr_1_1_3_7_r39_b__s, _mr_1_1_3_7_r39_n__s],
+  _mr_1_1_3_7_r39_Pq__s : geteqR(mm, '_mr_1_1_3_7_r39_Pq), _mr_1_1_3_7_r39_a__s : geteqR(mm, '_mr_1_1_3_7_r39_a), _mr_1_1_3_7_r39_b__s : geteqR(mm, '_mr_1_1_3_7_r39_b), _mr_1_1_3_7_r39_n__s : geteqR(mm, '_mr_1_1_3_7_r39_n),
+  mr_int(%mr_expandIntegrand(_mr_1_1_3_7_r39_Pq__s/(_mr_1_1_3_7_r39_a__s + _mr_1_1_3_7_r39_b__s*x^_mr_1_1_3_7_r39_n__s), x), x))$
 _mr_rule_1_1_3_7_r39(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r39(f, x),
   if mm = false then return(false),
@@ -670,9 +670,9 @@ defmatch(_mr_pat_1_1_3_7_r40, _mr_1_1_3_7_r40_Pq*(_mr_1_1_3_7_r40_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r40(mm, x) := block([_mr_1_1_3_7_r40_Pq, _mr_1_1_3_7_r40_a, _mr_1_1_3_7_r40_b, _mr_1_1_3_7_r40_n, _mr_1_1_3_7_r40_p],
   _mr_1_1_3_7_r40_Pq : geteqR(mm, '_mr_1_1_3_7_r40_Pq), _mr_1_1_3_7_r40_a : geteqR(mm, '_mr_1_1_3_7_r40_a), _mr_1_1_3_7_r40_b : geteqR(mm, '_mr_1_1_3_7_r40_b), _mr_1_1_3_7_r40_n : geteqR(mm, '_mr_1_1_3_7_r40_n), _mr_1_1_3_7_r40_p : geteqR(mm, '_mr_1_1_3_7_r40_p),
   (freeof(x, _mr_1_1_3_7_r40_a) and freeof(x, _mr_1_1_3_7_r40_b) and freeof(x, _mr_1_1_3_7_r40_p)  and  %mr_polyQ(_mr_1_1_3_7_r40_Pq, x)  and  is(_mr_1_1_3_7_r40_n > 0))  and  %mr_neQ(_mr_1_1_3_7_r40_n, 0))$
-_mr_repl_1_1_3_7_r40(mm, x) := block([_mr_1_1_3_7_r40_Pq, _mr_1_1_3_7_r40_a, _mr_1_1_3_7_r40_b, _mr_1_1_3_7_r40_n, _mr_1_1_3_7_r40_p],
-  _mr_1_1_3_7_r40_Pq : geteqR(mm, '_mr_1_1_3_7_r40_Pq), _mr_1_1_3_7_r40_a : geteqR(mm, '_mr_1_1_3_7_r40_a), _mr_1_1_3_7_r40_b : geteqR(mm, '_mr_1_1_3_7_r40_b), _mr_1_1_3_7_r40_n : geteqR(mm, '_mr_1_1_3_7_r40_n), _mr_1_1_3_7_r40_p : geteqR(mm, '_mr_1_1_3_7_r40_p),
-  block([q], q : %mr_expon(_mr_1_1_3_7_r40_Pq, x), (if is(%mr_neQ(q + _mr_1_1_3_7_r40_n*_mr_1_1_3_7_r40_p + 1, 0)  and  q - _mr_1_1_3_7_r40_n >= 0  and  (integerp(2*_mr_1_1_3_7_r40_p)  or  integerp(_mr_1_1_3_7_r40_p + (q + 1)/(2*_mr_1_1_3_7_r40_n)))) = true then block([Pqq], Pqq : %mr_coeff(_mr_1_1_3_7_r40_Pq, x, q), Pqq*x^(q - _mr_1_1_3_7_r40_n + 1)*(_mr_1_1_3_7_r40_a + _mr_1_1_3_7_r40_b*x^_mr_1_1_3_7_r40_n)^(_mr_1_1_3_7_r40_p + 1)/(_mr_1_1_3_7_r40_b*(q + _mr_1_1_3_7_r40_n*_mr_1_1_3_7_r40_p + 1)) + 1/(_mr_1_1_3_7_r40_b*(q + _mr_1_1_3_7_r40_n*_mr_1_1_3_7_r40_p + 1))* mr_int(%mr_expandToSum(_mr_1_1_3_7_r40_b*(q + _mr_1_1_3_7_r40_n*_mr_1_1_3_7_r40_p + 1)*(_mr_1_1_3_7_r40_Pq - Pqq*x^q) - _mr_1_1_3_7_r40_a*Pqq*(q - _mr_1_1_3_7_r40_n + 1)*x^(q - _mr_1_1_3_7_r40_n), x)*(_mr_1_1_3_7_r40_a + _mr_1_1_3_7_r40_b*x^_mr_1_1_3_7_r40_n)^_mr_1_1_3_7_r40_p, x)) else false)))$
+_mr_repl_1_1_3_7_r40(mm, x) := block([_mr_1_1_3_7_r40_Pq__s, _mr_1_1_3_7_r40_a__s, _mr_1_1_3_7_r40_b__s, _mr_1_1_3_7_r40_n__s, _mr_1_1_3_7_r40_p__s],
+  _mr_1_1_3_7_r40_Pq__s : geteqR(mm, '_mr_1_1_3_7_r40_Pq), _mr_1_1_3_7_r40_a__s : geteqR(mm, '_mr_1_1_3_7_r40_a), _mr_1_1_3_7_r40_b__s : geteqR(mm, '_mr_1_1_3_7_r40_b), _mr_1_1_3_7_r40_n__s : geteqR(mm, '_mr_1_1_3_7_r40_n), _mr_1_1_3_7_r40_p__s : geteqR(mm, '_mr_1_1_3_7_r40_p),
+  block([q], q : %mr_expon(_mr_1_1_3_7_r40_Pq__s, x), (if is(%mr_neQ(q + _mr_1_1_3_7_r40_n__s*_mr_1_1_3_7_r40_p__s + 1, 0)  and  q - _mr_1_1_3_7_r40_n__s >= 0  and  (integerp(2*_mr_1_1_3_7_r40_p__s)  or  integerp(_mr_1_1_3_7_r40_p__s + (q + 1)/(2*_mr_1_1_3_7_r40_n__s)))) = true then block([Pqq], Pqq : %mr_coeff(_mr_1_1_3_7_r40_Pq__s, x, q), Pqq*x^(q - _mr_1_1_3_7_r40_n__s + 1)*(_mr_1_1_3_7_r40_a__s + _mr_1_1_3_7_r40_b__s*x^_mr_1_1_3_7_r40_n__s)^(_mr_1_1_3_7_r40_p__s + 1)/(_mr_1_1_3_7_r40_b__s*(q + _mr_1_1_3_7_r40_n__s*_mr_1_1_3_7_r40_p__s + 1)) + 1/(_mr_1_1_3_7_r40_b__s*(q + _mr_1_1_3_7_r40_n__s*_mr_1_1_3_7_r40_p__s + 1))* mr_int(%mr_expandToSum(_mr_1_1_3_7_r40_b__s*(q + _mr_1_1_3_7_r40_n__s*_mr_1_1_3_7_r40_p__s + 1)*(_mr_1_1_3_7_r40_Pq__s - Pqq*x^q) - _mr_1_1_3_7_r40_a__s*Pqq*(q - _mr_1_1_3_7_r40_n__s + 1)*x^(q - _mr_1_1_3_7_r40_n__s), x)*(_mr_1_1_3_7_r40_a__s + _mr_1_1_3_7_r40_b__s*x^_mr_1_1_3_7_r40_n__s)^_mr_1_1_3_7_r40_p__s, x)) else false)))$
 _mr_rule_1_1_3_7_r40(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r40(f, x),
   if mm = false then return(false),
@@ -688,9 +688,9 @@ defmatch(_mr_pat_1_1_3_7_r41, _mr_1_1_3_7_r41_Pq*(_mr_1_1_3_7_r41_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r41(mm, x) := block([_mr_1_1_3_7_r41_Pq, _mr_1_1_3_7_r41_a, _mr_1_1_3_7_r41_b, _mr_1_1_3_7_r41_n, _mr_1_1_3_7_r41_p],
   _mr_1_1_3_7_r41_Pq : geteqR(mm, '_mr_1_1_3_7_r41_Pq), _mr_1_1_3_7_r41_a : geteqR(mm, '_mr_1_1_3_7_r41_a), _mr_1_1_3_7_r41_b : geteqR(mm, '_mr_1_1_3_7_r41_b), _mr_1_1_3_7_r41_n : geteqR(mm, '_mr_1_1_3_7_r41_n), _mr_1_1_3_7_r41_p : geteqR(mm, '_mr_1_1_3_7_r41_p),
   (freeof(x, _mr_1_1_3_7_r41_a) and freeof(x, _mr_1_1_3_7_r41_b) and freeof(x, _mr_1_1_3_7_r41_p)  and  %mr_polyQ(_mr_1_1_3_7_r41_Pq, x)  and  is(_mr_1_1_3_7_r41_n < 0))  and  %mr_neQ(_mr_1_1_3_7_r41_n, 0))$
-_mr_repl_1_1_3_7_r41(mm, x) := block([_mr_1_1_3_7_r41_Pq, _mr_1_1_3_7_r41_a, _mr_1_1_3_7_r41_b, _mr_1_1_3_7_r41_n, _mr_1_1_3_7_r41_p],
-  _mr_1_1_3_7_r41_Pq : geteqR(mm, '_mr_1_1_3_7_r41_Pq), _mr_1_1_3_7_r41_a : geteqR(mm, '_mr_1_1_3_7_r41_a), _mr_1_1_3_7_r41_b : geteqR(mm, '_mr_1_1_3_7_r41_b), _mr_1_1_3_7_r41_n : geteqR(mm, '_mr_1_1_3_7_r41_n), _mr_1_1_3_7_r41_p : geteqR(mm, '_mr_1_1_3_7_r41_p),
-  block([q], q : %mr_expon(_mr_1_1_3_7_r41_Pq, x), -%mr_subst(mr_int(%mr_expandToSum(x^q*subst(x^(-1), x, _mr_1_1_3_7_r41_Pq), x)*(_mr_1_1_3_7_r41_a + _mr_1_1_3_7_r41_b*x^(-_mr_1_1_3_7_r41_n))^_mr_1_1_3_7_r41_p/x^(q + 2), x), x, 1/x)))$
+_mr_repl_1_1_3_7_r41(mm, x) := block([_mr_1_1_3_7_r41_Pq__s, _mr_1_1_3_7_r41_a__s, _mr_1_1_3_7_r41_b__s, _mr_1_1_3_7_r41_n__s, _mr_1_1_3_7_r41_p__s],
+  _mr_1_1_3_7_r41_Pq__s : geteqR(mm, '_mr_1_1_3_7_r41_Pq), _mr_1_1_3_7_r41_a__s : geteqR(mm, '_mr_1_1_3_7_r41_a), _mr_1_1_3_7_r41_b__s : geteqR(mm, '_mr_1_1_3_7_r41_b), _mr_1_1_3_7_r41_n__s : geteqR(mm, '_mr_1_1_3_7_r41_n), _mr_1_1_3_7_r41_p__s : geteqR(mm, '_mr_1_1_3_7_r41_p),
+  block([q], q : %mr_expon(_mr_1_1_3_7_r41_Pq__s, x), -%mr_subst(mr_int(%mr_expandToSum(x^q*subst(x^(-1), x, _mr_1_1_3_7_r41_Pq__s), x)*(_mr_1_1_3_7_r41_a__s + _mr_1_1_3_7_r41_b__s*x^(-_mr_1_1_3_7_r41_n__s))^_mr_1_1_3_7_r41_p__s/x^(q + 2), x), x, 1/x)))$
 _mr_rule_1_1_3_7_r41(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r41(f, x),
   if mm = false then return(false),
@@ -706,9 +706,9 @@ defmatch(_mr_pat_1_1_3_7_r42, _mr_1_1_3_7_r42_Pq*(_mr_1_1_3_7_r42_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r42(mm, x) := block([_mr_1_1_3_7_r42_Pq, _mr_1_1_3_7_r42_a, _mr_1_1_3_7_r42_b, _mr_1_1_3_7_r42_n, _mr_1_1_3_7_r42_p],
   _mr_1_1_3_7_r42_Pq : geteqR(mm, '_mr_1_1_3_7_r42_Pq), _mr_1_1_3_7_r42_a : geteqR(mm, '_mr_1_1_3_7_r42_a), _mr_1_1_3_7_r42_b : geteqR(mm, '_mr_1_1_3_7_r42_b), _mr_1_1_3_7_r42_n : geteqR(mm, '_mr_1_1_3_7_r42_n), _mr_1_1_3_7_r42_p : geteqR(mm, '_mr_1_1_3_7_r42_p),
   (freeof(x, _mr_1_1_3_7_r42_a) and freeof(x, _mr_1_1_3_7_r42_b) and freeof(x, _mr_1_1_3_7_r42_p)  and  %mr_polyQ(_mr_1_1_3_7_r42_Pq, x)  and  %mr_fractionQ(_mr_1_1_3_7_r42_n))  and  %mr_neQ(_mr_1_1_3_7_r42_n, 0))$
-_mr_repl_1_1_3_7_r42(mm, x) := block([_mr_1_1_3_7_r42_Pq, _mr_1_1_3_7_r42_a, _mr_1_1_3_7_r42_b, _mr_1_1_3_7_r42_n, _mr_1_1_3_7_r42_p],
-  _mr_1_1_3_7_r42_Pq : geteqR(mm, '_mr_1_1_3_7_r42_Pq), _mr_1_1_3_7_r42_a : geteqR(mm, '_mr_1_1_3_7_r42_a), _mr_1_1_3_7_r42_b : geteqR(mm, '_mr_1_1_3_7_r42_b), _mr_1_1_3_7_r42_n : geteqR(mm, '_mr_1_1_3_7_r42_n), _mr_1_1_3_7_r42_p : geteqR(mm, '_mr_1_1_3_7_r42_p),
-  block([g], g : denom(_mr_1_1_3_7_r42_n), g*%mr_subst(mr_int(x^(g - 1)*subst(x^g, x, _mr_1_1_3_7_r42_Pq)*(_mr_1_1_3_7_r42_a + _mr_1_1_3_7_r42_b*x^(g*_mr_1_1_3_7_r42_n))^_mr_1_1_3_7_r42_p, x), x, x^(1/g))))$
+_mr_repl_1_1_3_7_r42(mm, x) := block([_mr_1_1_3_7_r42_Pq__s, _mr_1_1_3_7_r42_a__s, _mr_1_1_3_7_r42_b__s, _mr_1_1_3_7_r42_n__s, _mr_1_1_3_7_r42_p__s],
+  _mr_1_1_3_7_r42_Pq__s : geteqR(mm, '_mr_1_1_3_7_r42_Pq), _mr_1_1_3_7_r42_a__s : geteqR(mm, '_mr_1_1_3_7_r42_a), _mr_1_1_3_7_r42_b__s : geteqR(mm, '_mr_1_1_3_7_r42_b), _mr_1_1_3_7_r42_n__s : geteqR(mm, '_mr_1_1_3_7_r42_n), _mr_1_1_3_7_r42_p__s : geteqR(mm, '_mr_1_1_3_7_r42_p),
+  block([g], g : denom(_mr_1_1_3_7_r42_n__s), g*%mr_subst(mr_int(x^(g - 1)*subst(x^g, x, _mr_1_1_3_7_r42_Pq__s)*(_mr_1_1_3_7_r42_a__s + _mr_1_1_3_7_r42_b__s*x^(g*_mr_1_1_3_7_r42_n__s))^_mr_1_1_3_7_r42_p__s, x), x, x^(1/g))))$
 _mr_rule_1_1_3_7_r42(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r42(f, x),
   if mm = false then return(false),
@@ -726,9 +726,9 @@ defmatch(_mr_pat_1_1_3_7_r43, (_mr_1_1_3_7_r43_A+ _mr_1_1_3_7_r43_B*x^_mr_1_1_3_
 _mr_cond_1_1_3_7_r43(mm, x) := block([_mr_1_1_3_7_r43_A, _mr_1_1_3_7_r43_B, _mr_1_1_3_7_r43_a, _mr_1_1_3_7_r43_b, _mr_1_1_3_7_r43_m, _mr_1_1_3_7_r43_n, _mr_1_1_3_7_r43_p],
   _mr_1_1_3_7_r43_A : geteqR(mm, '_mr_1_1_3_7_r43_A), _mr_1_1_3_7_r43_B : geteqR(mm, '_mr_1_1_3_7_r43_B), _mr_1_1_3_7_r43_a : geteqR(mm, '_mr_1_1_3_7_r43_a), _mr_1_1_3_7_r43_b : geteqR(mm, '_mr_1_1_3_7_r43_b), _mr_1_1_3_7_r43_m : geteqR(mm, '_mr_1_1_3_7_r43_m), _mr_1_1_3_7_r43_n : geteqR(mm, '_mr_1_1_3_7_r43_n), _mr_1_1_3_7_r43_p : geteqR(mm, '_mr_1_1_3_7_r43_p),
   (freeof(x, _mr_1_1_3_7_r43_a) and freeof(x, _mr_1_1_3_7_r43_b) and freeof(x, _mr_1_1_3_7_r43_A) and freeof(x, _mr_1_1_3_7_r43_B) and freeof(x, _mr_1_1_3_7_r43_m) and freeof(x, _mr_1_1_3_7_r43_n) and freeof(x, _mr_1_1_3_7_r43_p)  and  %mr_eqQ(_mr_1_1_3_7_r43_m - _mr_1_1_3_7_r43_n + 1, 0))  and  %mr_neQ(_mr_1_1_3_7_r43_m, 0)  and  %mr_neQ(_mr_1_1_3_7_r43_n, 0))$
-_mr_repl_1_1_3_7_r43(mm, x) := block([_mr_1_1_3_7_r43_A, _mr_1_1_3_7_r43_B, _mr_1_1_3_7_r43_a, _mr_1_1_3_7_r43_b, _mr_1_1_3_7_r43_m, _mr_1_1_3_7_r43_n, _mr_1_1_3_7_r43_p],
-  _mr_1_1_3_7_r43_A : geteqR(mm, '_mr_1_1_3_7_r43_A), _mr_1_1_3_7_r43_B : geteqR(mm, '_mr_1_1_3_7_r43_B), _mr_1_1_3_7_r43_a : geteqR(mm, '_mr_1_1_3_7_r43_a), _mr_1_1_3_7_r43_b : geteqR(mm, '_mr_1_1_3_7_r43_b), _mr_1_1_3_7_r43_m : geteqR(mm, '_mr_1_1_3_7_r43_m), _mr_1_1_3_7_r43_n : geteqR(mm, '_mr_1_1_3_7_r43_n), _mr_1_1_3_7_r43_p : geteqR(mm, '_mr_1_1_3_7_r43_p),
-  _mr_1_1_3_7_r43_A*mr_int((_mr_1_1_3_7_r43_a + _mr_1_1_3_7_r43_b*x^_mr_1_1_3_7_r43_n)^_mr_1_1_3_7_r43_p, x) + _mr_1_1_3_7_r43_B*mr_int(x^_mr_1_1_3_7_r43_m*(_mr_1_1_3_7_r43_a + _mr_1_1_3_7_r43_b*x^_mr_1_1_3_7_r43_n)^_mr_1_1_3_7_r43_p, x))$
+_mr_repl_1_1_3_7_r43(mm, x) := block([_mr_1_1_3_7_r43_A__s, _mr_1_1_3_7_r43_B__s, _mr_1_1_3_7_r43_a__s, _mr_1_1_3_7_r43_b__s, _mr_1_1_3_7_r43_m__s, _mr_1_1_3_7_r43_n__s, _mr_1_1_3_7_r43_p__s],
+  _mr_1_1_3_7_r43_A__s : geteqR(mm, '_mr_1_1_3_7_r43_A), _mr_1_1_3_7_r43_B__s : geteqR(mm, '_mr_1_1_3_7_r43_B), _mr_1_1_3_7_r43_a__s : geteqR(mm, '_mr_1_1_3_7_r43_a), _mr_1_1_3_7_r43_b__s : geteqR(mm, '_mr_1_1_3_7_r43_b), _mr_1_1_3_7_r43_m__s : geteqR(mm, '_mr_1_1_3_7_r43_m), _mr_1_1_3_7_r43_n__s : geteqR(mm, '_mr_1_1_3_7_r43_n), _mr_1_1_3_7_r43_p__s : geteqR(mm, '_mr_1_1_3_7_r43_p),
+  _mr_1_1_3_7_r43_A__s*mr_int((_mr_1_1_3_7_r43_a__s + _mr_1_1_3_7_r43_b__s*x^_mr_1_1_3_7_r43_n__s)^_mr_1_1_3_7_r43_p__s, x) + _mr_1_1_3_7_r43_B__s*mr_int(x^_mr_1_1_3_7_r43_m__s*(_mr_1_1_3_7_r43_a__s + _mr_1_1_3_7_r43_b__s*x^_mr_1_1_3_7_r43_n__s)^_mr_1_1_3_7_r43_p__s, x))$
 _mr_rule_1_1_3_7_r43(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r43(f, x),
   if mm = false then return(false),
@@ -744,9 +744,9 @@ defmatch(_mr_pat_1_1_3_7_r44, _mr_1_1_3_7_r44_P3*(_mr_1_1_3_7_r44_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r44(mm, x) := block([_mr_1_1_3_7_r44_P3, _mr_1_1_3_7_r44_a, _mr_1_1_3_7_r44_b, _mr_1_1_3_7_r44_n, _mr_1_1_3_7_r44_p],
   _mr_1_1_3_7_r44_P3 : geteqR(mm, '_mr_1_1_3_7_r44_P3), _mr_1_1_3_7_r44_a : geteqR(mm, '_mr_1_1_3_7_r44_a), _mr_1_1_3_7_r44_b : geteqR(mm, '_mr_1_1_3_7_r44_b), _mr_1_1_3_7_r44_n : geteqR(mm, '_mr_1_1_3_7_r44_n), _mr_1_1_3_7_r44_p : geteqR(mm, '_mr_1_1_3_7_r44_p),
   (freeof(x, _mr_1_1_3_7_r44_a) and freeof(x, _mr_1_1_3_7_r44_b) and freeof(x, _mr_1_1_3_7_r44_n)  and  %mr_polyDegPowerQ(_mr_1_1_3_7_r44_P3, x, (_mr_1_1_3_7_r44_n/2), 3)  and  is(_mr_1_1_3_7_r44_p < -1))  and  %mr_neQ(_mr_1_1_3_7_r44_n, 0))$
-_mr_repl_1_1_3_7_r44(mm, x) := block([_mr_1_1_3_7_r44_P3, _mr_1_1_3_7_r44_a, _mr_1_1_3_7_r44_b, _mr_1_1_3_7_r44_n, _mr_1_1_3_7_r44_p],
-  _mr_1_1_3_7_r44_P3 : geteqR(mm, '_mr_1_1_3_7_r44_P3), _mr_1_1_3_7_r44_a : geteqR(mm, '_mr_1_1_3_7_r44_a), _mr_1_1_3_7_r44_b : geteqR(mm, '_mr_1_1_3_7_r44_b), _mr_1_1_3_7_r44_n : geteqR(mm, '_mr_1_1_3_7_r44_n), _mr_1_1_3_7_r44_p : geteqR(mm, '_mr_1_1_3_7_r44_p),
-  block([A, B, C, diff], A : %mr_coeff(_mr_1_1_3_7_r44_P3, x, (_mr_1_1_3_7_r44_n/2), 0), B : %mr_coeff(_mr_1_1_3_7_r44_P3, x, (_mr_1_1_3_7_r44_n/2), 1), C : %mr_coeff(_mr_1_1_3_7_r44_P3, x, (_mr_1_1_3_7_r44_n/2), 2), diff : %mr_coeff(_mr_1_1_3_7_r44_P3, x, (_mr_1_1_3_7_r44_n/2), 3), -(x*(_mr_1_1_3_7_r44_b*A - _mr_1_1_3_7_r44_a*C + (_mr_1_1_3_7_r44_b*B - _mr_1_1_3_7_r44_a*diff)*x^(_mr_1_1_3_7_r44_n/2))*(_mr_1_1_3_7_r44_a + _mr_1_1_3_7_r44_b*x^_mr_1_1_3_7_r44_n)^(_mr_1_1_3_7_r44_p + 1))/(_mr_1_1_3_7_r44_a*_mr_1_1_3_7_r44_b* _mr_1_1_3_7_r44_n*(_mr_1_1_3_7_r44_p + 1)) - 1/(2*_mr_1_1_3_7_r44_a*_mr_1_1_3_7_r44_b*_mr_1_1_3_7_r44_n*(_mr_1_1_3_7_r44_p + 1))* mr_int((_mr_1_1_3_7_r44_a + _mr_1_1_3_7_r44_b*x^_mr_1_1_3_7_r44_n)^(_mr_1_1_3_7_r44_p + 1)* %mr_simp(2*_mr_1_1_3_7_r44_a*C - 2*_mr_1_1_3_7_r44_b*A*(_mr_1_1_3_7_r44_n*(_mr_1_1_3_7_r44_p + 1) + 1) + (_mr_1_1_3_7_r44_a*diff*(_mr_1_1_3_7_r44_n + 2) - _mr_1_1_3_7_r44_b*B*(_mr_1_1_3_7_r44_n*(2*_mr_1_1_3_7_r44_p + 3) + 2))*x^(_mr_1_1_3_7_r44_n/2), x), x)))$
+_mr_repl_1_1_3_7_r44(mm, x) := block([_mr_1_1_3_7_r44_P3__s, _mr_1_1_3_7_r44_a__s, _mr_1_1_3_7_r44_b__s, _mr_1_1_3_7_r44_n__s, _mr_1_1_3_7_r44_p__s],
+  _mr_1_1_3_7_r44_P3__s : geteqR(mm, '_mr_1_1_3_7_r44_P3), _mr_1_1_3_7_r44_a__s : geteqR(mm, '_mr_1_1_3_7_r44_a), _mr_1_1_3_7_r44_b__s : geteqR(mm, '_mr_1_1_3_7_r44_b), _mr_1_1_3_7_r44_n__s : geteqR(mm, '_mr_1_1_3_7_r44_n), _mr_1_1_3_7_r44_p__s : geteqR(mm, '_mr_1_1_3_7_r44_p),
+  block([A, B, C, diff], A : %mr_coeff(_mr_1_1_3_7_r44_P3__s, x, (_mr_1_1_3_7_r44_n__s/2), 0), B : %mr_coeff(_mr_1_1_3_7_r44_P3__s, x, (_mr_1_1_3_7_r44_n__s/2), 1), C : %mr_coeff(_mr_1_1_3_7_r44_P3__s, x, (_mr_1_1_3_7_r44_n__s/2), 2), diff : %mr_coeff(_mr_1_1_3_7_r44_P3__s, x, (_mr_1_1_3_7_r44_n__s/2), 3), -(x*(_mr_1_1_3_7_r44_b__s*A - _mr_1_1_3_7_r44_a__s*C + (_mr_1_1_3_7_r44_b__s*B - _mr_1_1_3_7_r44_a__s*diff)*x^(_mr_1_1_3_7_r44_n__s/2))*(_mr_1_1_3_7_r44_a__s + _mr_1_1_3_7_r44_b__s*x^_mr_1_1_3_7_r44_n__s)^(_mr_1_1_3_7_r44_p__s + 1))/(_mr_1_1_3_7_r44_a__s*_mr_1_1_3_7_r44_b__s* _mr_1_1_3_7_r44_n__s*(_mr_1_1_3_7_r44_p__s + 1)) - 1/(2*_mr_1_1_3_7_r44_a__s*_mr_1_1_3_7_r44_b__s*_mr_1_1_3_7_r44_n__s*(_mr_1_1_3_7_r44_p__s + 1))* mr_int((_mr_1_1_3_7_r44_a__s + _mr_1_1_3_7_r44_b__s*x^_mr_1_1_3_7_r44_n__s)^(_mr_1_1_3_7_r44_p__s + 1)* %mr_simp(2*_mr_1_1_3_7_r44_a__s*C - 2*_mr_1_1_3_7_r44_b__s*A*(_mr_1_1_3_7_r44_n__s*(_mr_1_1_3_7_r44_p__s + 1) + 1) + (_mr_1_1_3_7_r44_a__s*diff*(_mr_1_1_3_7_r44_n__s + 2) - _mr_1_1_3_7_r44_b__s*B*(_mr_1_1_3_7_r44_n__s*(2*_mr_1_1_3_7_r44_p__s + 3) + 2))*x^(_mr_1_1_3_7_r44_n__s/2), x), x)))$
 _mr_rule_1_1_3_7_r44(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r44(f, x),
   if mm = false then return(false),
@@ -762,9 +762,9 @@ defmatch(_mr_pat_1_1_3_7_r45, _mr_1_1_3_7_r45_Pq*(_mr_1_1_3_7_r45_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r45(mm, x) := block([_mr_1_1_3_7_r45_Pq, _mr_1_1_3_7_r45_a, _mr_1_1_3_7_r45_b, _mr_1_1_3_7_r45_n, _mr_1_1_3_7_r45_p],
   _mr_1_1_3_7_r45_Pq : geteqR(mm, '_mr_1_1_3_7_r45_Pq), _mr_1_1_3_7_r45_a : geteqR(mm, '_mr_1_1_3_7_r45_a), _mr_1_1_3_7_r45_b : geteqR(mm, '_mr_1_1_3_7_r45_b), _mr_1_1_3_7_r45_n : geteqR(mm, '_mr_1_1_3_7_r45_n), _mr_1_1_3_7_r45_p : geteqR(mm, '_mr_1_1_3_7_r45_p),
   (freeof(x, _mr_1_1_3_7_r45_a) and freeof(x, _mr_1_1_3_7_r45_b) and freeof(x, _mr_1_1_3_7_r45_n) and freeof(x, _mr_1_1_3_7_r45_p)  and  (%mr_polyQ(_mr_1_1_3_7_r45_Pq, x)  or  %mr_polyPowerQ(_mr_1_1_3_7_r45_Pq, x, _mr_1_1_3_7_r45_n)))  and  %mr_neQ(_mr_1_1_3_7_r45_n, 0))$
-_mr_repl_1_1_3_7_r45(mm, x) := block([_mr_1_1_3_7_r45_Pq, _mr_1_1_3_7_r45_a, _mr_1_1_3_7_r45_b, _mr_1_1_3_7_r45_n, _mr_1_1_3_7_r45_p],
-  _mr_1_1_3_7_r45_Pq : geteqR(mm, '_mr_1_1_3_7_r45_Pq), _mr_1_1_3_7_r45_a : geteqR(mm, '_mr_1_1_3_7_r45_a), _mr_1_1_3_7_r45_b : geteqR(mm, '_mr_1_1_3_7_r45_b), _mr_1_1_3_7_r45_n : geteqR(mm, '_mr_1_1_3_7_r45_n), _mr_1_1_3_7_r45_p : geteqR(mm, '_mr_1_1_3_7_r45_p),
-  mr_int(%mr_expandIntegrand(_mr_1_1_3_7_r45_Pq*(_mr_1_1_3_7_r45_a + _mr_1_1_3_7_r45_b*x^_mr_1_1_3_7_r45_n)^_mr_1_1_3_7_r45_p, x), x))$
+_mr_repl_1_1_3_7_r45(mm, x) := block([_mr_1_1_3_7_r45_Pq__s, _mr_1_1_3_7_r45_a__s, _mr_1_1_3_7_r45_b__s, _mr_1_1_3_7_r45_n__s, _mr_1_1_3_7_r45_p__s],
+  _mr_1_1_3_7_r45_Pq__s : geteqR(mm, '_mr_1_1_3_7_r45_Pq), _mr_1_1_3_7_r45_a__s : geteqR(mm, '_mr_1_1_3_7_r45_a), _mr_1_1_3_7_r45_b__s : geteqR(mm, '_mr_1_1_3_7_r45_b), _mr_1_1_3_7_r45_n__s : geteqR(mm, '_mr_1_1_3_7_r45_n), _mr_1_1_3_7_r45_p__s : geteqR(mm, '_mr_1_1_3_7_r45_p),
+  mr_int(%mr_expandIntegrand(_mr_1_1_3_7_r45_Pq__s*(_mr_1_1_3_7_r45_a__s + _mr_1_1_3_7_r45_b__s*x^_mr_1_1_3_7_r45_n__s)^_mr_1_1_3_7_r45_p__s, x), x))$
 _mr_rule_1_1_3_7_r45(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r45(f, x),
   if mm = false then return(false),
@@ -781,9 +781,9 @@ defmatch(_mr_pat_1_1_3_7_r46, _mr_1_1_3_7_r46_Pq*(_mr_1_1_3_7_r46_a+ _mr_1_1_3_7
 _mr_cond_1_1_3_7_r46(mm, x) := block([_mr_1_1_3_7_r46_Pq, _mr_1_1_3_7_r46_a, _mr_1_1_3_7_r46_b, _mr_1_1_3_7_r46_n, _mr_1_1_3_7_r46_p, _mr_1_1_3_7_r46_v],
   _mr_1_1_3_7_r46_Pq : geteqR(mm, '_mr_1_1_3_7_r46_Pq), _mr_1_1_3_7_r46_a : geteqR(mm, '_mr_1_1_3_7_r46_a), _mr_1_1_3_7_r46_b : geteqR(mm, '_mr_1_1_3_7_r46_b), _mr_1_1_3_7_r46_n : geteqR(mm, '_mr_1_1_3_7_r46_n), _mr_1_1_3_7_r46_p : geteqR(mm, '_mr_1_1_3_7_r46_p), _mr_1_1_3_7_r46_v : geteqR(mm, '_mr_1_1_3_7_r46_v),
   freeof(x, _mr_1_1_3_7_r46_a) and freeof(x, _mr_1_1_3_7_r46_b) and freeof(x, _mr_1_1_3_7_r46_n) and freeof(x, _mr_1_1_3_7_r46_p)  and  %mr_linearQ(_mr_1_1_3_7_r46_v, x)  and  %mr_polyPowerQ(_mr_1_1_3_7_r46_Pq, _mr_1_1_3_7_r46_v, _mr_1_1_3_7_r46_n))$
-_mr_repl_1_1_3_7_r46(mm, x) := block([_mr_1_1_3_7_r46_Pq, _mr_1_1_3_7_r46_a, _mr_1_1_3_7_r46_b, _mr_1_1_3_7_r46_n, _mr_1_1_3_7_r46_p, _mr_1_1_3_7_r46_v],
-  _mr_1_1_3_7_r46_Pq : geteqR(mm, '_mr_1_1_3_7_r46_Pq), _mr_1_1_3_7_r46_a : geteqR(mm, '_mr_1_1_3_7_r46_a), _mr_1_1_3_7_r46_b : geteqR(mm, '_mr_1_1_3_7_r46_b), _mr_1_1_3_7_r46_n : geteqR(mm, '_mr_1_1_3_7_r46_n), _mr_1_1_3_7_r46_p : geteqR(mm, '_mr_1_1_3_7_r46_p), _mr_1_1_3_7_r46_v : geteqR(mm, '_mr_1_1_3_7_r46_v),
-  1/%mr_coeff(_mr_1_1_3_7_r46_v, x, 1)* %mr_subst(mr_int(%mr_substFor(_mr_1_1_3_7_r46_v, _mr_1_1_3_7_r46_Pq, x)*(_mr_1_1_3_7_r46_a + _mr_1_1_3_7_r46_b*x^_mr_1_1_3_7_r46_n)^_mr_1_1_3_7_r46_p, x), x, _mr_1_1_3_7_r46_v))$
+_mr_repl_1_1_3_7_r46(mm, x) := block([_mr_1_1_3_7_r46_Pq__s, _mr_1_1_3_7_r46_a__s, _mr_1_1_3_7_r46_b__s, _mr_1_1_3_7_r46_n__s, _mr_1_1_3_7_r46_p__s, _mr_1_1_3_7_r46_v__s],
+  _mr_1_1_3_7_r46_Pq__s : geteqR(mm, '_mr_1_1_3_7_r46_Pq), _mr_1_1_3_7_r46_a__s : geteqR(mm, '_mr_1_1_3_7_r46_a), _mr_1_1_3_7_r46_b__s : geteqR(mm, '_mr_1_1_3_7_r46_b), _mr_1_1_3_7_r46_n__s : geteqR(mm, '_mr_1_1_3_7_r46_n), _mr_1_1_3_7_r46_p__s : geteqR(mm, '_mr_1_1_3_7_r46_p), _mr_1_1_3_7_r46_v__s : geteqR(mm, '_mr_1_1_3_7_r46_v),
+  1/%mr_coeff(_mr_1_1_3_7_r46_v__s, x, 1)* %mr_subst(mr_int(%mr_substFor(_mr_1_1_3_7_r46_v__s, _mr_1_1_3_7_r46_Pq__s, x)*(_mr_1_1_3_7_r46_a__s + _mr_1_1_3_7_r46_b__s*x^_mr_1_1_3_7_r46_n__s)^_mr_1_1_3_7_r46_p__s, x), x, _mr_1_1_3_7_r46_v__s))$
 _mr_rule_1_1_3_7_r46(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r46(f, x),
   if mm = false then return(false),
@@ -801,9 +801,9 @@ defmatch(_mr_pat_1_1_3_7_r47, _mr_1_1_3_7_r47_Pq*(_mr_1_1_3_7_r47_a1+ _mr_1_1_3_
 _mr_cond_1_1_3_7_r47(mm, x) := block([_mr_1_1_3_7_r47_Pq, _mr_1_1_3_7_r47_a1, _mr_1_1_3_7_r47_a2, _mr_1_1_3_7_r47_b1, _mr_1_1_3_7_r47_b2, _mr_1_1_3_7_r47_n, _mr_1_1_3_7_r47_p],
   _mr_1_1_3_7_r47_Pq : geteqR(mm, '_mr_1_1_3_7_r47_Pq), _mr_1_1_3_7_r47_a1 : geteqR(mm, '_mr_1_1_3_7_r47_a1), _mr_1_1_3_7_r47_a2 : geteqR(mm, '_mr_1_1_3_7_r47_a2), _mr_1_1_3_7_r47_b1 : geteqR(mm, '_mr_1_1_3_7_r47_b1), _mr_1_1_3_7_r47_b2 : geteqR(mm, '_mr_1_1_3_7_r47_b2), _mr_1_1_3_7_r47_n : geteqR(mm, '_mr_1_1_3_7_r47_n), _mr_1_1_3_7_r47_p : geteqR(mm, '_mr_1_1_3_7_r47_p),
   (freeof(x, _mr_1_1_3_7_r47_a1) and freeof(x, _mr_1_1_3_7_r47_b1) and freeof(x, _mr_1_1_3_7_r47_a2) and freeof(x, _mr_1_1_3_7_r47_b2) and freeof(x, _mr_1_1_3_7_r47_n) and freeof(x, _mr_1_1_3_7_r47_p)  and  %mr_polyQ(_mr_1_1_3_7_r47_Pq, x)  and  %mr_eqQ(_mr_1_1_3_7_r47_a2*_mr_1_1_3_7_r47_b1 + _mr_1_1_3_7_r47_a1*_mr_1_1_3_7_r47_b2, 0)  and  (integerp(_mr_1_1_3_7_r47_p)  or  is(_mr_1_1_3_7_r47_a1 > 0)  and  is(_mr_1_1_3_7_r47_a2 > 0)))  and  %mr_neQ(_mr_1_1_3_7_r47_n, 0))$
-_mr_repl_1_1_3_7_r47(mm, x) := block([_mr_1_1_3_7_r47_Pq, _mr_1_1_3_7_r47_a1, _mr_1_1_3_7_r47_a2, _mr_1_1_3_7_r47_b1, _mr_1_1_3_7_r47_b2, _mr_1_1_3_7_r47_n, _mr_1_1_3_7_r47_p],
-  _mr_1_1_3_7_r47_Pq : geteqR(mm, '_mr_1_1_3_7_r47_Pq), _mr_1_1_3_7_r47_a1 : geteqR(mm, '_mr_1_1_3_7_r47_a1), _mr_1_1_3_7_r47_a2 : geteqR(mm, '_mr_1_1_3_7_r47_a2), _mr_1_1_3_7_r47_b1 : geteqR(mm, '_mr_1_1_3_7_r47_b1), _mr_1_1_3_7_r47_b2 : geteqR(mm, '_mr_1_1_3_7_r47_b2), _mr_1_1_3_7_r47_n : geteqR(mm, '_mr_1_1_3_7_r47_n), _mr_1_1_3_7_r47_p : geteqR(mm, '_mr_1_1_3_7_r47_p),
-  mr_int(_mr_1_1_3_7_r47_Pq*(_mr_1_1_3_7_r47_a1*_mr_1_1_3_7_r47_a2 + _mr_1_1_3_7_r47_b1*_mr_1_1_3_7_r47_b2*x^(2*_mr_1_1_3_7_r47_n))^_mr_1_1_3_7_r47_p, x))$
+_mr_repl_1_1_3_7_r47(mm, x) := block([_mr_1_1_3_7_r47_Pq__s, _mr_1_1_3_7_r47_a1__s, _mr_1_1_3_7_r47_a2__s, _mr_1_1_3_7_r47_b1__s, _mr_1_1_3_7_r47_b2__s, _mr_1_1_3_7_r47_n__s, _mr_1_1_3_7_r47_p__s],
+  _mr_1_1_3_7_r47_Pq__s : geteqR(mm, '_mr_1_1_3_7_r47_Pq), _mr_1_1_3_7_r47_a1__s : geteqR(mm, '_mr_1_1_3_7_r47_a1), _mr_1_1_3_7_r47_a2__s : geteqR(mm, '_mr_1_1_3_7_r47_a2), _mr_1_1_3_7_r47_b1__s : geteqR(mm, '_mr_1_1_3_7_r47_b1), _mr_1_1_3_7_r47_b2__s : geteqR(mm, '_mr_1_1_3_7_r47_b2), _mr_1_1_3_7_r47_n__s : geteqR(mm, '_mr_1_1_3_7_r47_n), _mr_1_1_3_7_r47_p__s : geteqR(mm, '_mr_1_1_3_7_r47_p),
+  mr_int(_mr_1_1_3_7_r47_Pq__s*(_mr_1_1_3_7_r47_a1__s*_mr_1_1_3_7_r47_a2__s + _mr_1_1_3_7_r47_b1__s*_mr_1_1_3_7_r47_b2__s*x^(2*_mr_1_1_3_7_r47_n__s))^_mr_1_1_3_7_r47_p__s, x))$
 _mr_rule_1_1_3_7_r47(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r47(f, x),
   if mm = false then return(false),
@@ -821,9 +821,9 @@ defmatch(_mr_pat_1_1_3_7_r48, _mr_1_1_3_7_r48_Pq*(_mr_1_1_3_7_r48_a1+ _mr_1_1_3_
 _mr_cond_1_1_3_7_r48(mm, x) := block([_mr_1_1_3_7_r48_Pq, _mr_1_1_3_7_r48_a1, _mr_1_1_3_7_r48_a2, _mr_1_1_3_7_r48_b1, _mr_1_1_3_7_r48_b2, _mr_1_1_3_7_r48_n, _mr_1_1_3_7_r48_p],
   _mr_1_1_3_7_r48_Pq : geteqR(mm, '_mr_1_1_3_7_r48_Pq), _mr_1_1_3_7_r48_a1 : geteqR(mm, '_mr_1_1_3_7_r48_a1), _mr_1_1_3_7_r48_a2 : geteqR(mm, '_mr_1_1_3_7_r48_a2), _mr_1_1_3_7_r48_b1 : geteqR(mm, '_mr_1_1_3_7_r48_b1), _mr_1_1_3_7_r48_b2 : geteqR(mm, '_mr_1_1_3_7_r48_b2), _mr_1_1_3_7_r48_n : geteqR(mm, '_mr_1_1_3_7_r48_n), _mr_1_1_3_7_r48_p : geteqR(mm, '_mr_1_1_3_7_r48_p),
   (freeof(x, _mr_1_1_3_7_r48_a1) and freeof(x, _mr_1_1_3_7_r48_b1) and freeof(x, _mr_1_1_3_7_r48_a2) and freeof(x, _mr_1_1_3_7_r48_b2) and freeof(x, _mr_1_1_3_7_r48_n) and freeof(x, _mr_1_1_3_7_r48_p)  and  %mr_polyQ(_mr_1_1_3_7_r48_Pq, x)  and  %mr_eqQ(_mr_1_1_3_7_r48_a2*_mr_1_1_3_7_r48_b1 + _mr_1_1_3_7_r48_a1*_mr_1_1_3_7_r48_b2, 0)  and  not(%mr_eqQ(_mr_1_1_3_7_r48_n, 1)  and  %mr_linearQ(_mr_1_1_3_7_r48_Pq, x)))  and  %mr_neQ(_mr_1_1_3_7_r48_n, 0))$
-_mr_repl_1_1_3_7_r48(mm, x) := block([_mr_1_1_3_7_r48_Pq, _mr_1_1_3_7_r48_a1, _mr_1_1_3_7_r48_a2, _mr_1_1_3_7_r48_b1, _mr_1_1_3_7_r48_b2, _mr_1_1_3_7_r48_n, _mr_1_1_3_7_r48_p],
-  _mr_1_1_3_7_r48_Pq : geteqR(mm, '_mr_1_1_3_7_r48_Pq), _mr_1_1_3_7_r48_a1 : geteqR(mm, '_mr_1_1_3_7_r48_a1), _mr_1_1_3_7_r48_a2 : geteqR(mm, '_mr_1_1_3_7_r48_a2), _mr_1_1_3_7_r48_b1 : geteqR(mm, '_mr_1_1_3_7_r48_b1), _mr_1_1_3_7_r48_b2 : geteqR(mm, '_mr_1_1_3_7_r48_b2), _mr_1_1_3_7_r48_n : geteqR(mm, '_mr_1_1_3_7_r48_n), _mr_1_1_3_7_r48_p : geteqR(mm, '_mr_1_1_3_7_r48_p),
-  (_mr_1_1_3_7_r48_a1 + _mr_1_1_3_7_r48_b1*x^_mr_1_1_3_7_r48_n)^ %mr_fracPart(_mr_1_1_3_7_r48_p)*(_mr_1_1_3_7_r48_a2 + _mr_1_1_3_7_r48_b2*x^_mr_1_1_3_7_r48_n)^%mr_fracPart(_mr_1_1_3_7_r48_p)/(_mr_1_1_3_7_r48_a1*_mr_1_1_3_7_r48_a2 + _mr_1_1_3_7_r48_b1*_mr_1_1_3_7_r48_b2*x^(2*_mr_1_1_3_7_r48_n))^ %mr_fracPart(_mr_1_1_3_7_r48_p)* mr_int(_mr_1_1_3_7_r48_Pq*(_mr_1_1_3_7_r48_a1*_mr_1_1_3_7_r48_a2 + _mr_1_1_3_7_r48_b1*_mr_1_1_3_7_r48_b2*x^(2*_mr_1_1_3_7_r48_n))^_mr_1_1_3_7_r48_p, x))$
+_mr_repl_1_1_3_7_r48(mm, x) := block([_mr_1_1_3_7_r48_Pq__s, _mr_1_1_3_7_r48_a1__s, _mr_1_1_3_7_r48_a2__s, _mr_1_1_3_7_r48_b1__s, _mr_1_1_3_7_r48_b2__s, _mr_1_1_3_7_r48_n__s, _mr_1_1_3_7_r48_p__s],
+  _mr_1_1_3_7_r48_Pq__s : geteqR(mm, '_mr_1_1_3_7_r48_Pq), _mr_1_1_3_7_r48_a1__s : geteqR(mm, '_mr_1_1_3_7_r48_a1), _mr_1_1_3_7_r48_a2__s : geteqR(mm, '_mr_1_1_3_7_r48_a2), _mr_1_1_3_7_r48_b1__s : geteqR(mm, '_mr_1_1_3_7_r48_b1), _mr_1_1_3_7_r48_b2__s : geteqR(mm, '_mr_1_1_3_7_r48_b2), _mr_1_1_3_7_r48_n__s : geteqR(mm, '_mr_1_1_3_7_r48_n), _mr_1_1_3_7_r48_p__s : geteqR(mm, '_mr_1_1_3_7_r48_p),
+  (_mr_1_1_3_7_r48_a1__s + _mr_1_1_3_7_r48_b1__s*x^_mr_1_1_3_7_r48_n__s)^ %mr_fracPart(_mr_1_1_3_7_r48_p__s)*(_mr_1_1_3_7_r48_a2__s + _mr_1_1_3_7_r48_b2__s*x^_mr_1_1_3_7_r48_n__s)^%mr_fracPart(_mr_1_1_3_7_r48_p__s)/(_mr_1_1_3_7_r48_a1__s*_mr_1_1_3_7_r48_a2__s + _mr_1_1_3_7_r48_b1__s*_mr_1_1_3_7_r48_b2__s*x^(2*_mr_1_1_3_7_r48_n__s))^ %mr_fracPart(_mr_1_1_3_7_r48_p__s)* mr_int(_mr_1_1_3_7_r48_Pq__s*(_mr_1_1_3_7_r48_a1__s*_mr_1_1_3_7_r48_a2__s + _mr_1_1_3_7_r48_b1__s*_mr_1_1_3_7_r48_b2__s*x^(2*_mr_1_1_3_7_r48_n__s))^_mr_1_1_3_7_r48_p__s, x))$
 _mr_rule_1_1_3_7_r48(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r48(f, x),
   if mm = false then return(false),
@@ -844,9 +844,9 @@ defmatch(_mr_pat_1_1_3_7_r49, (_mr_1_1_3_7_r49_e+ _mr_1_1_3_7_r49_f*x^_mr_1_1_3_
 _mr_cond_1_1_3_7_r49(mm, x) := block([_mr_1_1_3_7_r49_a, _mr_1_1_3_7_r49_b, _mr_1_1_3_7_r49_c, _mr_1_1_3_7_r49_d, _mr_1_1_3_7_r49_e, _mr_1_1_3_7_r49_f, _mr_1_1_3_7_r49_g, _mr_1_1_3_7_r49_n, _mr_1_1_3_7_r49_n2, _mr_1_1_3_7_r49_p],
   _mr_1_1_3_7_r49_a : geteqR(mm, '_mr_1_1_3_7_r49_a), _mr_1_1_3_7_r49_b : geteqR(mm, '_mr_1_1_3_7_r49_b), _mr_1_1_3_7_r49_c : geteqR(mm, '_mr_1_1_3_7_r49_c), _mr_1_1_3_7_r49_d : geteqR(mm, '_mr_1_1_3_7_r49_d), _mr_1_1_3_7_r49_e : geteqR(mm, '_mr_1_1_3_7_r49_e), _mr_1_1_3_7_r49_f : geteqR(mm, '_mr_1_1_3_7_r49_f), _mr_1_1_3_7_r49_g : geteqR(mm, '_mr_1_1_3_7_r49_g), _mr_1_1_3_7_r49_n : geteqR(mm, '_mr_1_1_3_7_r49_n), _mr_1_1_3_7_r49_n2 : geteqR(mm, '_mr_1_1_3_7_r49_n2), _mr_1_1_3_7_r49_p : geteqR(mm, '_mr_1_1_3_7_r49_p),
   (freeof(x, _mr_1_1_3_7_r49_a) and freeof(x, _mr_1_1_3_7_r49_b) and freeof(x, _mr_1_1_3_7_r49_c) and freeof(x, _mr_1_1_3_7_r49_d) and freeof(x, _mr_1_1_3_7_r49_e) and freeof(x, _mr_1_1_3_7_r49_f) and freeof(x, _mr_1_1_3_7_r49_g) and freeof(x, _mr_1_1_3_7_r49_n) and freeof(x, _mr_1_1_3_7_r49_p)  and  %mr_eqQ(_mr_1_1_3_7_r49_n2, 2*_mr_1_1_3_7_r49_n)  and  %mr_eqQ(_mr_1_1_3_7_r49_a*_mr_1_1_3_7_r49_c*_mr_1_1_3_7_r49_f - _mr_1_1_3_7_r49_e*(_mr_1_1_3_7_r49_b*_mr_1_1_3_7_r49_c + _mr_1_1_3_7_r49_a*_mr_1_1_3_7_r49_d)*(_mr_1_1_3_7_r49_n*(_mr_1_1_3_7_r49_p + 1) + 1), 0)  and  %mr_eqQ(_mr_1_1_3_7_r49_a*_mr_1_1_3_7_r49_c*_mr_1_1_3_7_r49_g - _mr_1_1_3_7_r49_b*_mr_1_1_3_7_r49_d*_mr_1_1_3_7_r49_e*(2*_mr_1_1_3_7_r49_n*(_mr_1_1_3_7_r49_p + 1) + 1), 0))  and  %mr_neQ(_mr_1_1_3_7_r49_n, 0)  and  %mr_neQ(_mr_1_1_3_7_r49_n2, 0))$
-_mr_repl_1_1_3_7_r49(mm, x) := block([_mr_1_1_3_7_r49_a, _mr_1_1_3_7_r49_b, _mr_1_1_3_7_r49_c, _mr_1_1_3_7_r49_d, _mr_1_1_3_7_r49_e, _mr_1_1_3_7_r49_f, _mr_1_1_3_7_r49_g, _mr_1_1_3_7_r49_n, _mr_1_1_3_7_r49_n2, _mr_1_1_3_7_r49_p],
-  _mr_1_1_3_7_r49_a : geteqR(mm, '_mr_1_1_3_7_r49_a), _mr_1_1_3_7_r49_b : geteqR(mm, '_mr_1_1_3_7_r49_b), _mr_1_1_3_7_r49_c : geteqR(mm, '_mr_1_1_3_7_r49_c), _mr_1_1_3_7_r49_d : geteqR(mm, '_mr_1_1_3_7_r49_d), _mr_1_1_3_7_r49_e : geteqR(mm, '_mr_1_1_3_7_r49_e), _mr_1_1_3_7_r49_f : geteqR(mm, '_mr_1_1_3_7_r49_f), _mr_1_1_3_7_r49_g : geteqR(mm, '_mr_1_1_3_7_r49_g), _mr_1_1_3_7_r49_n : geteqR(mm, '_mr_1_1_3_7_r49_n), _mr_1_1_3_7_r49_n2 : geteqR(mm, '_mr_1_1_3_7_r49_n2), _mr_1_1_3_7_r49_p : geteqR(mm, '_mr_1_1_3_7_r49_p),
-  _mr_1_1_3_7_r49_e*x*(_mr_1_1_3_7_r49_a + _mr_1_1_3_7_r49_b*x^_mr_1_1_3_7_r49_n)^(_mr_1_1_3_7_r49_p + 1)*(_mr_1_1_3_7_r49_c + _mr_1_1_3_7_r49_d*x^_mr_1_1_3_7_r49_n)^(_mr_1_1_3_7_r49_p + 1)/(_mr_1_1_3_7_r49_a*_mr_1_1_3_7_r49_c))$
+_mr_repl_1_1_3_7_r49(mm, x) := block([_mr_1_1_3_7_r49_a__s, _mr_1_1_3_7_r49_b__s, _mr_1_1_3_7_r49_c__s, _mr_1_1_3_7_r49_d__s, _mr_1_1_3_7_r49_e__s, _mr_1_1_3_7_r49_f__s, _mr_1_1_3_7_r49_g__s, _mr_1_1_3_7_r49_n__s, _mr_1_1_3_7_r49_n2__s, _mr_1_1_3_7_r49_p__s],
+  _mr_1_1_3_7_r49_a__s : geteqR(mm, '_mr_1_1_3_7_r49_a), _mr_1_1_3_7_r49_b__s : geteqR(mm, '_mr_1_1_3_7_r49_b), _mr_1_1_3_7_r49_c__s : geteqR(mm, '_mr_1_1_3_7_r49_c), _mr_1_1_3_7_r49_d__s : geteqR(mm, '_mr_1_1_3_7_r49_d), _mr_1_1_3_7_r49_e__s : geteqR(mm, '_mr_1_1_3_7_r49_e), _mr_1_1_3_7_r49_f__s : geteqR(mm, '_mr_1_1_3_7_r49_f), _mr_1_1_3_7_r49_g__s : geteqR(mm, '_mr_1_1_3_7_r49_g), _mr_1_1_3_7_r49_n__s : geteqR(mm, '_mr_1_1_3_7_r49_n), _mr_1_1_3_7_r49_n2__s : geteqR(mm, '_mr_1_1_3_7_r49_n2), _mr_1_1_3_7_r49_p__s : geteqR(mm, '_mr_1_1_3_7_r49_p),
+  _mr_1_1_3_7_r49_e__s*x*(_mr_1_1_3_7_r49_a__s + _mr_1_1_3_7_r49_b__s*x^_mr_1_1_3_7_r49_n__s)^(_mr_1_1_3_7_r49_p__s + 1)*(_mr_1_1_3_7_r49_c__s + _mr_1_1_3_7_r49_d__s*x^_mr_1_1_3_7_r49_n__s)^(_mr_1_1_3_7_r49_p__s + 1)/(_mr_1_1_3_7_r49_a__s*_mr_1_1_3_7_r49_c__s))$
 _mr_rule_1_1_3_7_r49(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r49(f, x),
   if mm = false then return(false),
@@ -866,9 +866,9 @@ defmatch(_mr_pat_1_1_3_7_r50, (_mr_1_1_3_7_r50_e+ _mr_1_1_3_7_r50_g*x^_mr_1_1_3_
 _mr_cond_1_1_3_7_r50(mm, x) := block([_mr_1_1_3_7_r50_a, _mr_1_1_3_7_r50_b, _mr_1_1_3_7_r50_c, _mr_1_1_3_7_r50_d, _mr_1_1_3_7_r50_e, _mr_1_1_3_7_r50_g, _mr_1_1_3_7_r50_n, _mr_1_1_3_7_r50_n2, _mr_1_1_3_7_r50_p],
   _mr_1_1_3_7_r50_a : geteqR(mm, '_mr_1_1_3_7_r50_a), _mr_1_1_3_7_r50_b : geteqR(mm, '_mr_1_1_3_7_r50_b), _mr_1_1_3_7_r50_c : geteqR(mm, '_mr_1_1_3_7_r50_c), _mr_1_1_3_7_r50_d : geteqR(mm, '_mr_1_1_3_7_r50_d), _mr_1_1_3_7_r50_e : geteqR(mm, '_mr_1_1_3_7_r50_e), _mr_1_1_3_7_r50_g : geteqR(mm, '_mr_1_1_3_7_r50_g), _mr_1_1_3_7_r50_n : geteqR(mm, '_mr_1_1_3_7_r50_n), _mr_1_1_3_7_r50_n2 : geteqR(mm, '_mr_1_1_3_7_r50_n2), _mr_1_1_3_7_r50_p : geteqR(mm, '_mr_1_1_3_7_r50_p),
   (freeof(x, _mr_1_1_3_7_r50_a) and freeof(x, _mr_1_1_3_7_r50_b) and freeof(x, _mr_1_1_3_7_r50_c) and freeof(x, _mr_1_1_3_7_r50_d) and freeof(x, _mr_1_1_3_7_r50_e) and freeof(x, _mr_1_1_3_7_r50_g) and freeof(x, _mr_1_1_3_7_r50_n) and freeof(x, _mr_1_1_3_7_r50_p)  and  %mr_eqQ(_mr_1_1_3_7_r50_n2, 2*_mr_1_1_3_7_r50_n)  and  %mr_eqQ(_mr_1_1_3_7_r50_n*(_mr_1_1_3_7_r50_p + 1) + 1, 0)  and  %mr_eqQ(_mr_1_1_3_7_r50_a*_mr_1_1_3_7_r50_c*_mr_1_1_3_7_r50_g - _mr_1_1_3_7_r50_b*_mr_1_1_3_7_r50_d*_mr_1_1_3_7_r50_e*(2*_mr_1_1_3_7_r50_n*(_mr_1_1_3_7_r50_p + 1) + 1), 0))  and  %mr_neQ(_mr_1_1_3_7_r50_n, 0)  and  %mr_neQ(_mr_1_1_3_7_r50_n2, 0))$
-_mr_repl_1_1_3_7_r50(mm, x) := block([_mr_1_1_3_7_r50_a, _mr_1_1_3_7_r50_b, _mr_1_1_3_7_r50_c, _mr_1_1_3_7_r50_d, _mr_1_1_3_7_r50_e, _mr_1_1_3_7_r50_g, _mr_1_1_3_7_r50_n, _mr_1_1_3_7_r50_n2, _mr_1_1_3_7_r50_p],
-  _mr_1_1_3_7_r50_a : geteqR(mm, '_mr_1_1_3_7_r50_a), _mr_1_1_3_7_r50_b : geteqR(mm, '_mr_1_1_3_7_r50_b), _mr_1_1_3_7_r50_c : geteqR(mm, '_mr_1_1_3_7_r50_c), _mr_1_1_3_7_r50_d : geteqR(mm, '_mr_1_1_3_7_r50_d), _mr_1_1_3_7_r50_e : geteqR(mm, '_mr_1_1_3_7_r50_e), _mr_1_1_3_7_r50_g : geteqR(mm, '_mr_1_1_3_7_r50_g), _mr_1_1_3_7_r50_n : geteqR(mm, '_mr_1_1_3_7_r50_n), _mr_1_1_3_7_r50_n2 : geteqR(mm, '_mr_1_1_3_7_r50_n2), _mr_1_1_3_7_r50_p : geteqR(mm, '_mr_1_1_3_7_r50_p),
-  _mr_1_1_3_7_r50_e*x*(_mr_1_1_3_7_r50_a + _mr_1_1_3_7_r50_b*x^_mr_1_1_3_7_r50_n)^(_mr_1_1_3_7_r50_p + 1)*(_mr_1_1_3_7_r50_c + _mr_1_1_3_7_r50_d*x^_mr_1_1_3_7_r50_n)^(_mr_1_1_3_7_r50_p + 1)/(_mr_1_1_3_7_r50_a*_mr_1_1_3_7_r50_c))$
+_mr_repl_1_1_3_7_r50(mm, x) := block([_mr_1_1_3_7_r50_a__s, _mr_1_1_3_7_r50_b__s, _mr_1_1_3_7_r50_c__s, _mr_1_1_3_7_r50_d__s, _mr_1_1_3_7_r50_e__s, _mr_1_1_3_7_r50_g__s, _mr_1_1_3_7_r50_n__s, _mr_1_1_3_7_r50_n2__s, _mr_1_1_3_7_r50_p__s],
+  _mr_1_1_3_7_r50_a__s : geteqR(mm, '_mr_1_1_3_7_r50_a), _mr_1_1_3_7_r50_b__s : geteqR(mm, '_mr_1_1_3_7_r50_b), _mr_1_1_3_7_r50_c__s : geteqR(mm, '_mr_1_1_3_7_r50_c), _mr_1_1_3_7_r50_d__s : geteqR(mm, '_mr_1_1_3_7_r50_d), _mr_1_1_3_7_r50_e__s : geteqR(mm, '_mr_1_1_3_7_r50_e), _mr_1_1_3_7_r50_g__s : geteqR(mm, '_mr_1_1_3_7_r50_g), _mr_1_1_3_7_r50_n__s : geteqR(mm, '_mr_1_1_3_7_r50_n), _mr_1_1_3_7_r50_n2__s : geteqR(mm, '_mr_1_1_3_7_r50_n2), _mr_1_1_3_7_r50_p__s : geteqR(mm, '_mr_1_1_3_7_r50_p),
+  _mr_1_1_3_7_r50_e__s*x*(_mr_1_1_3_7_r50_a__s + _mr_1_1_3_7_r50_b__s*x^_mr_1_1_3_7_r50_n__s)^(_mr_1_1_3_7_r50_p__s + 1)*(_mr_1_1_3_7_r50_c__s + _mr_1_1_3_7_r50_d__s*x^_mr_1_1_3_7_r50_n__s)^(_mr_1_1_3_7_r50_p__s + 1)/(_mr_1_1_3_7_r50_a__s*_mr_1_1_3_7_r50_c__s))$
 _mr_rule_1_1_3_7_r50(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r50(f, x),
   if mm = false then return(false),
@@ -889,9 +889,9 @@ defmatch(_mr_pat_1_1_3_7_r51, (_mr_1_1_3_7_r51_A+ _mr_1_1_3_7_r51_B*x^_mr_1_1_3_
 _mr_cond_1_1_3_7_r51(mm, x) := block([_mr_1_1_3_7_r51_A, _mr_1_1_3_7_r51_B, _mr_1_1_3_7_r51_a, _mr_1_1_3_7_r51_b, _mr_1_1_3_7_r51_c, _mr_1_1_3_7_r51_d, _mr_1_1_3_7_r51_m, _mr_1_1_3_7_r51_n, _mr_1_1_3_7_r51_p, _mr_1_1_3_7_r51_q],
   _mr_1_1_3_7_r51_A : geteqR(mm, '_mr_1_1_3_7_r51_A), _mr_1_1_3_7_r51_B : geteqR(mm, '_mr_1_1_3_7_r51_B), _mr_1_1_3_7_r51_a : geteqR(mm, '_mr_1_1_3_7_r51_a), _mr_1_1_3_7_r51_b : geteqR(mm, '_mr_1_1_3_7_r51_b), _mr_1_1_3_7_r51_c : geteqR(mm, '_mr_1_1_3_7_r51_c), _mr_1_1_3_7_r51_d : geteqR(mm, '_mr_1_1_3_7_r51_d), _mr_1_1_3_7_r51_m : geteqR(mm, '_mr_1_1_3_7_r51_m), _mr_1_1_3_7_r51_n : geteqR(mm, '_mr_1_1_3_7_r51_n), _mr_1_1_3_7_r51_p : geteqR(mm, '_mr_1_1_3_7_r51_p), _mr_1_1_3_7_r51_q : geteqR(mm, '_mr_1_1_3_7_r51_q),
   (freeof(x, _mr_1_1_3_7_r51_a) and freeof(x, _mr_1_1_3_7_r51_b) and freeof(x, _mr_1_1_3_7_r51_c) and freeof(x, _mr_1_1_3_7_r51_d) and freeof(x, _mr_1_1_3_7_r51_A) and freeof(x, _mr_1_1_3_7_r51_B) and freeof(x, _mr_1_1_3_7_r51_m) and freeof(x, _mr_1_1_3_7_r51_n) and freeof(x, _mr_1_1_3_7_r51_p) and freeof(x, _mr_1_1_3_7_r51_q)  and  %mr_neQ(_mr_1_1_3_7_r51_b*_mr_1_1_3_7_r51_c - _mr_1_1_3_7_r51_a*_mr_1_1_3_7_r51_d, 0)  and  %mr_eqQ(_mr_1_1_3_7_r51_m - _mr_1_1_3_7_r51_n + 1, 0))  and  %mr_neQ(_mr_1_1_3_7_r51_m, 0)  and  %mr_neQ(_mr_1_1_3_7_r51_n, 0))$
-_mr_repl_1_1_3_7_r51(mm, x) := block([_mr_1_1_3_7_r51_A, _mr_1_1_3_7_r51_B, _mr_1_1_3_7_r51_a, _mr_1_1_3_7_r51_b, _mr_1_1_3_7_r51_c, _mr_1_1_3_7_r51_d, _mr_1_1_3_7_r51_m, _mr_1_1_3_7_r51_n, _mr_1_1_3_7_r51_p, _mr_1_1_3_7_r51_q],
-  _mr_1_1_3_7_r51_A : geteqR(mm, '_mr_1_1_3_7_r51_A), _mr_1_1_3_7_r51_B : geteqR(mm, '_mr_1_1_3_7_r51_B), _mr_1_1_3_7_r51_a : geteqR(mm, '_mr_1_1_3_7_r51_a), _mr_1_1_3_7_r51_b : geteqR(mm, '_mr_1_1_3_7_r51_b), _mr_1_1_3_7_r51_c : geteqR(mm, '_mr_1_1_3_7_r51_c), _mr_1_1_3_7_r51_d : geteqR(mm, '_mr_1_1_3_7_r51_d), _mr_1_1_3_7_r51_m : geteqR(mm, '_mr_1_1_3_7_r51_m), _mr_1_1_3_7_r51_n : geteqR(mm, '_mr_1_1_3_7_r51_n), _mr_1_1_3_7_r51_p : geteqR(mm, '_mr_1_1_3_7_r51_p), _mr_1_1_3_7_r51_q : geteqR(mm, '_mr_1_1_3_7_r51_q),
-  _mr_1_1_3_7_r51_A*mr_int((_mr_1_1_3_7_r51_a + _mr_1_1_3_7_r51_b*x^_mr_1_1_3_7_r51_n)^_mr_1_1_3_7_r51_p*(_mr_1_1_3_7_r51_c + _mr_1_1_3_7_r51_d*x^_mr_1_1_3_7_r51_n)^_mr_1_1_3_7_r51_q, x) + _mr_1_1_3_7_r51_B*mr_int(x^_mr_1_1_3_7_r51_m*(_mr_1_1_3_7_r51_a + _mr_1_1_3_7_r51_b*x^_mr_1_1_3_7_r51_n)^_mr_1_1_3_7_r51_p*(_mr_1_1_3_7_r51_c + _mr_1_1_3_7_r51_d*x^_mr_1_1_3_7_r51_n)^_mr_1_1_3_7_r51_q, x))$
+_mr_repl_1_1_3_7_r51(mm, x) := block([_mr_1_1_3_7_r51_A__s, _mr_1_1_3_7_r51_B__s, _mr_1_1_3_7_r51_a__s, _mr_1_1_3_7_r51_b__s, _mr_1_1_3_7_r51_c__s, _mr_1_1_3_7_r51_d__s, _mr_1_1_3_7_r51_m__s, _mr_1_1_3_7_r51_n__s, _mr_1_1_3_7_r51_p__s, _mr_1_1_3_7_r51_q__s],
+  _mr_1_1_3_7_r51_A__s : geteqR(mm, '_mr_1_1_3_7_r51_A), _mr_1_1_3_7_r51_B__s : geteqR(mm, '_mr_1_1_3_7_r51_B), _mr_1_1_3_7_r51_a__s : geteqR(mm, '_mr_1_1_3_7_r51_a), _mr_1_1_3_7_r51_b__s : geteqR(mm, '_mr_1_1_3_7_r51_b), _mr_1_1_3_7_r51_c__s : geteqR(mm, '_mr_1_1_3_7_r51_c), _mr_1_1_3_7_r51_d__s : geteqR(mm, '_mr_1_1_3_7_r51_d), _mr_1_1_3_7_r51_m__s : geteqR(mm, '_mr_1_1_3_7_r51_m), _mr_1_1_3_7_r51_n__s : geteqR(mm, '_mr_1_1_3_7_r51_n), _mr_1_1_3_7_r51_p__s : geteqR(mm, '_mr_1_1_3_7_r51_p), _mr_1_1_3_7_r51_q__s : geteqR(mm, '_mr_1_1_3_7_r51_q),
+  _mr_1_1_3_7_r51_A__s*mr_int((_mr_1_1_3_7_r51_a__s + _mr_1_1_3_7_r51_b__s*x^_mr_1_1_3_7_r51_n__s)^_mr_1_1_3_7_r51_p__s*(_mr_1_1_3_7_r51_c__s + _mr_1_1_3_7_r51_d__s*x^_mr_1_1_3_7_r51_n__s)^_mr_1_1_3_7_r51_q__s, x) + _mr_1_1_3_7_r51_B__s*mr_int(x^_mr_1_1_3_7_r51_m__s*(_mr_1_1_3_7_r51_a__s + _mr_1_1_3_7_r51_b__s*x^_mr_1_1_3_7_r51_n__s)^_mr_1_1_3_7_r51_p__s*(_mr_1_1_3_7_r51_c__s + _mr_1_1_3_7_r51_d__s*x^_mr_1_1_3_7_r51_n__s)^_mr_1_1_3_7_r51_q__s, x))$
 _mr_rule_1_1_3_7_r51(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r51(f, x),
   if mm = false then return(false),
@@ -910,9 +910,9 @@ defmatch(_mr_pat_1_1_3_7_r52, _mr_1_1_3_7_r52_Px^_mr_1_1_3_7_r52_q*(_mr_1_1_3_7_
 _mr_cond_1_1_3_7_r52(mm, x) := block([_mr_1_1_3_7_r52_Px, _mr_1_1_3_7_r52_a, _mr_1_1_3_7_r52_b, _mr_1_1_3_7_r52_c, _mr_1_1_3_7_r52_d, _mr_1_1_3_7_r52_n, _mr_1_1_3_7_r52_p, _mr_1_1_3_7_r52_q],
   _mr_1_1_3_7_r52_Px : geteqR(mm, '_mr_1_1_3_7_r52_Px), _mr_1_1_3_7_r52_a : geteqR(mm, '_mr_1_1_3_7_r52_a), _mr_1_1_3_7_r52_b : geteqR(mm, '_mr_1_1_3_7_r52_b), _mr_1_1_3_7_r52_c : geteqR(mm, '_mr_1_1_3_7_r52_c), _mr_1_1_3_7_r52_d : geteqR(mm, '_mr_1_1_3_7_r52_d), _mr_1_1_3_7_r52_n : geteqR(mm, '_mr_1_1_3_7_r52_n), _mr_1_1_3_7_r52_p : geteqR(mm, '_mr_1_1_3_7_r52_p), _mr_1_1_3_7_r52_q : geteqR(mm, '_mr_1_1_3_7_r52_q),
   freeof(x, _mr_1_1_3_7_r52_a) and freeof(x, _mr_1_1_3_7_r52_b) and freeof(x, _mr_1_1_3_7_r52_c) and freeof(x, _mr_1_1_3_7_r52_d) and freeof(x, _mr_1_1_3_7_r52_p)  and  %mr_polynomialQ(_mr_1_1_3_7_r52_Px, x)  and  integerp(_mr_1_1_3_7_r52_q)  and  %mr_fractionQ(_mr_1_1_3_7_r52_n))$
-_mr_repl_1_1_3_7_r52(mm, x) := block([_mr_1_1_3_7_r52_Px, _mr_1_1_3_7_r52_a, _mr_1_1_3_7_r52_b, _mr_1_1_3_7_r52_c, _mr_1_1_3_7_r52_d, _mr_1_1_3_7_r52_n, _mr_1_1_3_7_r52_p, _mr_1_1_3_7_r52_q],
-  _mr_1_1_3_7_r52_Px : geteqR(mm, '_mr_1_1_3_7_r52_Px), _mr_1_1_3_7_r52_a : geteqR(mm, '_mr_1_1_3_7_r52_a), _mr_1_1_3_7_r52_b : geteqR(mm, '_mr_1_1_3_7_r52_b), _mr_1_1_3_7_r52_c : geteqR(mm, '_mr_1_1_3_7_r52_c), _mr_1_1_3_7_r52_d : geteqR(mm, '_mr_1_1_3_7_r52_d), _mr_1_1_3_7_r52_n : geteqR(mm, '_mr_1_1_3_7_r52_n), _mr_1_1_3_7_r52_p : geteqR(mm, '_mr_1_1_3_7_r52_p), _mr_1_1_3_7_r52_q : geteqR(mm, '_mr_1_1_3_7_r52_q),
-  block([k], k : denom(_mr_1_1_3_7_r52_n), k/_mr_1_1_3_7_r52_d* %mr_subst(mr_int(%mr_simp(x^(k - 1)*subst(x^k/_mr_1_1_3_7_r52_d - _mr_1_1_3_7_r52_c/_mr_1_1_3_7_r52_d, x, _mr_1_1_3_7_r52_Px)^_mr_1_1_3_7_r52_q*(_mr_1_1_3_7_r52_a + _mr_1_1_3_7_r52_b*x^(k*_mr_1_1_3_7_r52_n))^_mr_1_1_3_7_r52_p, x), x), x, (_mr_1_1_3_7_r52_c + _mr_1_1_3_7_r52_d*x)^(1/k))))$
+_mr_repl_1_1_3_7_r52(mm, x) := block([_mr_1_1_3_7_r52_Px__s, _mr_1_1_3_7_r52_a__s, _mr_1_1_3_7_r52_b__s, _mr_1_1_3_7_r52_c__s, _mr_1_1_3_7_r52_d__s, _mr_1_1_3_7_r52_n__s, _mr_1_1_3_7_r52_p__s, _mr_1_1_3_7_r52_q__s],
+  _mr_1_1_3_7_r52_Px__s : geteqR(mm, '_mr_1_1_3_7_r52_Px), _mr_1_1_3_7_r52_a__s : geteqR(mm, '_mr_1_1_3_7_r52_a), _mr_1_1_3_7_r52_b__s : geteqR(mm, '_mr_1_1_3_7_r52_b), _mr_1_1_3_7_r52_c__s : geteqR(mm, '_mr_1_1_3_7_r52_c), _mr_1_1_3_7_r52_d__s : geteqR(mm, '_mr_1_1_3_7_r52_d), _mr_1_1_3_7_r52_n__s : geteqR(mm, '_mr_1_1_3_7_r52_n), _mr_1_1_3_7_r52_p__s : geteqR(mm, '_mr_1_1_3_7_r52_p), _mr_1_1_3_7_r52_q__s : geteqR(mm, '_mr_1_1_3_7_r52_q),
+  block([k], k : denom(_mr_1_1_3_7_r52_n__s), k/_mr_1_1_3_7_r52_d__s* %mr_subst(mr_int(%mr_simp(x^(k - 1)*subst(x^k/_mr_1_1_3_7_r52_d__s - _mr_1_1_3_7_r52_c__s/_mr_1_1_3_7_r52_d__s, x, _mr_1_1_3_7_r52_Px__s)^_mr_1_1_3_7_r52_q__s*(_mr_1_1_3_7_r52_a__s + _mr_1_1_3_7_r52_b__s*x^(k*_mr_1_1_3_7_r52_n__s))^_mr_1_1_3_7_r52_p__s, x), x), x, (_mr_1_1_3_7_r52_c__s + _mr_1_1_3_7_r52_d__s*x)^(1/k))))$
 _mr_rule_1_1_3_7_r52(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_3_7_r52(f, x),
   if mm = false then return(false),

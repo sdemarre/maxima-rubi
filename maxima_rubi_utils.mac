@@ -25,7 +25,48 @@ geteqR(mm, nm) := block([],
 /* Package noun forms (house rule 10 — distinct from the fall-through
  * integrate noun and from corpus-expected nouns). */
 mr_unintegrable(f, x) := 'unintegrable[f, x]$
-mr_sum(fun, var, lo, hi) := 'mr_sum[fun, var, lo, hi]$
+
+/* Rubi's finite Sum, concretized (2026-08-25 divergence fix). Maxima
+   evaluates function arguments eagerly, so the generator hands the
+   summand over in held form: a NON-identifier summand arrives as
+   lambda([var], <summand>) and is applied per index (the body then
+   evaluates the total package functions, e.g. %mr_coeff(Pq, x, 2*k),
+   at a CONCRETE index — the eager call with k free returns 0 and
+   destroyed every even/odd-split sum, leaving degenerate
+   mr_sum[0,k,0,0] nouns in answers); a bare IDENTIFIER summand (the
+   Rubi Module-local-u shape, 1.1.3.1 r13 family) is resolved through
+   its value, which carries the index: ev(subst(i, var, ev(fun))). A
+   lambda body of one bare symbol does NOT get the index bound into
+   the value (measured 2026-08-25, probe mech_decisive D1) — hence the
+   two paths. Numeric bounds: per-integer i over ceiling(lo)..floor(hi);
+   an empty range is 0. Non-numeric bounds keep the noun. A plain
+    (already-evaluated, non-lambda) expression summand — hand-written
+    call sites only, never the generator's — gets the index substituted
+    and re-evaluated. The lambda test must compare against the UNQUOTED
+    symbol: in this build op() on a lambda form only compares true with
+    `lambda` — `op(lam) = "lambda"` is false, while for ordinary
+    operators the string idiom is the one that holds; symbols and
+    strings never compare equal here (measured 2026-08-25, probes
+    op_cmp_probe / op_typeof_probe, Maxima 5.50.0 SBCL). A dead lambda
+    branch is worse than an error: subst then descends into the lambda
+    and fatals replacing its parameter. */
+mr_sum(fun, var, lo, hi) := block([a, b, i, s, t],
+  if numberp(lo) and numberp(hi) then (
+    a : ceiling(lo),
+    b : floor(hi),
+    if a > b then 0
+    else (
+      s : 0,
+      for i : a thru b do (
+        if atom(fun) then t : ev(subst(i, var, ev(fun)))
+        else if (op(fun) = lambda or op(fun) = "lambda") then t : apply(fun, [i])
+        else t : ev(subst(i, var, fun)),
+        s : s + t
+      ),
+      s
+    )
+  )
+  else 'mr_sum[fun, var, lo, hi])$
 
 /* Recursion cap (T5 §1 candidate; re-tuned in Task 9). A runaway
  * replacement becomes the fall-through noun, not a stack overflow. */

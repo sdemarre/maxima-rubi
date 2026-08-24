@@ -23,9 +23,9 @@ defmatch(_mr_pat_1_1_1_1_r2, x^_mr_1_1_1_1_r2_m, x)$
 _mr_cond_1_1_1_1_r2(mm, x) := block([_mr_1_1_1_1_r2_m],
   _mr_1_1_1_1_r2_m : geteqR(mm, '_mr_1_1_1_1_r2_m),
   freeof(x, _mr_1_1_1_1_r2_m)  and  %mr_neQ(_mr_1_1_1_1_r2_m, -1))$
-_mr_repl_1_1_1_1_r2(mm, x) := block([_mr_1_1_1_1_r2_m],
-  _mr_1_1_1_1_r2_m : geteqR(mm, '_mr_1_1_1_1_r2_m),
-  x^(_mr_1_1_1_1_r2_m + 1)/(_mr_1_1_1_1_r2_m + 1))$
+_mr_repl_1_1_1_1_r2(mm, x) := block([_mr_1_1_1_1_r2_m__s],
+  _mr_1_1_1_1_r2_m__s : geteqR(mm, '_mr_1_1_1_1_r2_m),
+  x^(_mr_1_1_1_1_r2_m__s + 1)/(_mr_1_1_1_1_r2_m__s + 1))$
 _mr_rule_1_1_1_1_r2(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_1_r2(f, x),
   if mm = false then return(false),
@@ -38,9 +38,9 @@ defmatch(_mr_pat_1_1_1_1_r3, 1/(_mr_1_1_1_1_r3_a+ _mr_1_1_1_1_r3_b*x), x)$
 _mr_cond_1_1_1_1_r3(mm, x) := block([_mr_1_1_1_1_r3_a, _mr_1_1_1_1_r3_b],
   _mr_1_1_1_1_r3_a : geteqR(mm, '_mr_1_1_1_1_r3_a), _mr_1_1_1_1_r3_b : geteqR(mm, '_mr_1_1_1_1_r3_b),
   freeof(x, _mr_1_1_1_1_r3_a) and freeof(x, _mr_1_1_1_1_r3_b))$
-_mr_repl_1_1_1_1_r3(mm, x) := block([_mr_1_1_1_1_r3_a, _mr_1_1_1_1_r3_b],
-  _mr_1_1_1_1_r3_a : geteqR(mm, '_mr_1_1_1_1_r3_a), _mr_1_1_1_1_r3_b : geteqR(mm, '_mr_1_1_1_1_r3_b),
-  log(%mr_removeContent(_mr_1_1_1_1_r3_a + _mr_1_1_1_1_r3_b*x, x))/_mr_1_1_1_1_r3_b)$
+_mr_repl_1_1_1_1_r3(mm, x) := block([_mr_1_1_1_1_r3_a__s, _mr_1_1_1_1_r3_b__s],
+  _mr_1_1_1_1_r3_a__s : geteqR(mm, '_mr_1_1_1_1_r3_a), _mr_1_1_1_1_r3_b__s : geteqR(mm, '_mr_1_1_1_1_r3_b),
+  log(%mr_removeContent(_mr_1_1_1_1_r3_a__s + _mr_1_1_1_1_r3_b__s*x, x))/_mr_1_1_1_1_r3_b__s)$
 _mr_rule_1_1_1_1_r3(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_1_r3(f, x),
   if mm = false then return(false),
@@ -54,9 +54,9 @@ defmatch(_mr_pat_1_1_1_1_r4, (_mr_1_1_1_1_r4_a + _mr_1_1_1_1_r4_b*x)^_mr_1_1_1_1
 _mr_cond_1_1_1_1_r4(mm, x) := block([_mr_1_1_1_1_r4_a, _mr_1_1_1_1_r4_b, _mr_1_1_1_1_r4_m],
   _mr_1_1_1_1_r4_a : geteqR(mm, '_mr_1_1_1_1_r4_a), _mr_1_1_1_1_r4_b : geteqR(mm, '_mr_1_1_1_1_r4_b), _mr_1_1_1_1_r4_m : geteqR(mm, '_mr_1_1_1_1_r4_m),
   freeof(x, _mr_1_1_1_1_r4_a) and freeof(x, _mr_1_1_1_1_r4_b) and freeof(x, _mr_1_1_1_1_r4_m)  and  %mr_neQ(_mr_1_1_1_1_r4_m, -1))$
-_mr_repl_1_1_1_1_r4(mm, x) := block([_mr_1_1_1_1_r4_a, _mr_1_1_1_1_r4_b, _mr_1_1_1_1_r4_m],
-  _mr_1_1_1_1_r4_a : geteqR(mm, '_mr_1_1_1_1_r4_a), _mr_1_1_1_1_r4_b : geteqR(mm, '_mr_1_1_1_1_r4_b), _mr_1_1_1_1_r4_m : geteqR(mm, '_mr_1_1_1_1_r4_m),
-  (_mr_1_1_1_1_r4_a + _mr_1_1_1_1_r4_b*x)^(_mr_1_1_1_1_r4_m + 1)/(_mr_1_1_1_1_r4_b*(_mr_1_1_1_1_r4_m + 1)))$
+_mr_repl_1_1_1_1_r4(mm, x) := block([_mr_1_1_1_1_r4_a__s, _mr_1_1_1_1_r4_b__s, _mr_1_1_1_1_r4_m__s],
+  _mr_1_1_1_1_r4_a__s : geteqR(mm, '_mr_1_1_1_1_r4_a), _mr_1_1_1_1_r4_b__s : geteqR(mm, '_mr_1_1_1_1_r4_b), _mr_1_1_1_1_r4_m__s : geteqR(mm, '_mr_1_1_1_1_r4_m),
+  (_mr_1_1_1_1_r4_a__s + _mr_1_1_1_1_r4_b__s*x)^(_mr_1_1_1_1_r4_m__s + 1)/(_mr_1_1_1_1_r4_b__s*(_mr_1_1_1_1_r4_m__s + 1)))$
 _mr_rule_1_1_1_1_r4(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_1_r4(f, x),
   if mm = false then return(false),
@@ -71,9 +71,9 @@ defmatch(_mr_pat_1_1_1_1_r5, (_mr_1_1_1_1_r5_a + _mr_1_1_1_1_r5_b*_mr_1_1_1_1_r5
 _mr_cond_1_1_1_1_r5(mm, x) := block([_mr_1_1_1_1_r5_a, _mr_1_1_1_1_r5_b, _mr_1_1_1_1_r5_m, _mr_1_1_1_1_r5_u],
   _mr_1_1_1_1_r5_a : geteqR(mm, '_mr_1_1_1_1_r5_a), _mr_1_1_1_1_r5_b : geteqR(mm, '_mr_1_1_1_1_r5_b), _mr_1_1_1_1_r5_m : geteqR(mm, '_mr_1_1_1_1_r5_m), _mr_1_1_1_1_r5_u : geteqR(mm, '_mr_1_1_1_1_r5_u),
   freeof(x, _mr_1_1_1_1_r5_a) and freeof(x, _mr_1_1_1_1_r5_b) and freeof(x, _mr_1_1_1_1_r5_m)  and  %mr_linearQ(_mr_1_1_1_1_r5_u, x)  and  %mr_neQ(_mr_1_1_1_1_r5_u, x))$
-_mr_repl_1_1_1_1_r5(mm, x) := block([_mr_1_1_1_1_r5_a, _mr_1_1_1_1_r5_b, _mr_1_1_1_1_r5_m, _mr_1_1_1_1_r5_u],
-  _mr_1_1_1_1_r5_a : geteqR(mm, '_mr_1_1_1_1_r5_a), _mr_1_1_1_1_r5_b : geteqR(mm, '_mr_1_1_1_1_r5_b), _mr_1_1_1_1_r5_m : geteqR(mm, '_mr_1_1_1_1_r5_m), _mr_1_1_1_1_r5_u : geteqR(mm, '_mr_1_1_1_1_r5_u),
-  1/%mr_coeff(_mr_1_1_1_1_r5_u, x, 1)*%mr_subst(mr_int((_mr_1_1_1_1_r5_a + _mr_1_1_1_1_r5_b*x)^_mr_1_1_1_1_r5_m, x), x, _mr_1_1_1_1_r5_u))$
+_mr_repl_1_1_1_1_r5(mm, x) := block([_mr_1_1_1_1_r5_a__s, _mr_1_1_1_1_r5_b__s, _mr_1_1_1_1_r5_m__s, _mr_1_1_1_1_r5_u__s],
+  _mr_1_1_1_1_r5_a__s : geteqR(mm, '_mr_1_1_1_1_r5_a), _mr_1_1_1_1_r5_b__s : geteqR(mm, '_mr_1_1_1_1_r5_b), _mr_1_1_1_1_r5_m__s : geteqR(mm, '_mr_1_1_1_1_r5_m), _mr_1_1_1_1_r5_u__s : geteqR(mm, '_mr_1_1_1_1_r5_u),
+  1/%mr_coeff(_mr_1_1_1_1_r5_u__s, x, 1)*%mr_subst(mr_int((_mr_1_1_1_1_r5_a__s + _mr_1_1_1_1_r5_b__s*x)^_mr_1_1_1_1_r5_m__s, x), x, _mr_1_1_1_1_r5_u__s))$
 _mr_rule_1_1_1_1_r5(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_1_r5(f, x),
   if mm = false then return(false),
