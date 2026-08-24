@@ -66,11 +66,15 @@ mac_file = os.path.join(workdir, "i.mac")
 
 
 def maxima_run(mac_text, timeout):
-    open(mac_file, "w", encoding="utf-8").write(mac_text)
+    # A unique per-call file (mkstemp) so parallel canary workers don't
+    # clobber each other's batch; the driver's sequential use is unaffected.
+    fd, fpath = tempfile.mkstemp(prefix="mr-", suffix=".mac", dir=workdir)
     try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(mac_text)
         r = subprocess.run(
             ["maxima", "--very-quiet", "-X", "--tls-limit 100000",
-             "-p", PRELOAD, "-b", mac_file],
+             "-p", PRELOAD, "-b", fpath],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, timeout=timeout, cwd=ROOT,
         )
@@ -80,6 +84,11 @@ def maxima_run(mac_text, timeout):
         if isinstance(out, bytes):
             out = out.decode("utf-8", "replace")
         return out or "", True
+    finally:
+        try:
+            os.unlink(fpath)
+        except OSError:
+            pass
 
 
 def split_elements(entry_text):

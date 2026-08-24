@@ -71,24 +71,48 @@ def run_target(filter, entry_no):
     return pf, cls, dt, label, out
 
 
-def main():
+def _load(listfile):
+    # <filter ...> <entry> — the filter may contain spaces (a full file
+    # name), so the last whitespace-separated token is the entry number.
     targets = []
-    if len(REAL_ARGV) >= 3 and REAL_ARGV[1] != "":
-        targets.append((REAL_ARGV[1], int(REAL_ARGV[2])))
-    elif os.path.exists(CANARY):
-        for line in open(CANARY, encoding="utf-8"):
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            filt, no = line.split(None, 1)
-            targets.append((filt, int(no)))
+    for line in open(listfile, encoding="utf-8"):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split()
+        targets.append((" ".join(parts[:-1]), int(parts[-1])))
+    return targets
+
+
+def main():
+    args = [a for a in REAL_ARGV[1:]]
+    parallel = 1
+    if "--parallel" in args:
+        i = args.index("--parallel")
+        parallel = int(args[i + 1])
+        del args[i:i + 2]
+    if len(args) == 2 and args[1].isdigit():
+        targets = [(args[0], int(args[1]))]
+    elif len(args) == 1 and os.path.exists(args[0]):
+        targets = _load(args[0])
+    elif not args and os.path.exists(CANARY):
+        targets = _load(CANARY)
+    else:
+        print("usage: canary.py [listfile | file-substring entry] "
+              "[--parallel N]")
+        return
     if not targets:
-        print("no canary targets (empty test/canary.entries)")
+        print("no canary targets (empty list)")
         return
 
+    from concurrent.futures import ThreadPoolExecutor
     npass = nfail = 0
-    for filt, no in targets:
-        pf, cls, dt, label, _out = run_target(filt, no)
+    if parallel > 1:
+        with ThreadPoolExecutor(max_workers=parallel) as ex:
+            results = list(ex.map(lambda t: run_target(*t), targets))
+    else:
+        results = [run_target(*t) for t in targets]
+    for pf, cls, dt, label, _out in results:
         if pf == "PASS":
             npass += 1
         else:
