@@ -802,6 +802,53 @@ only as a noun and `diff` does not close on it, so keep the package noun or
 add a deriv rule; (3) `%mr_exponMin` (2 uses) is a genuinely unported B-tier
 helper; (4) continue the timeout / no-answer triage.
 
+## Work item: no-op rule self-match loop guard (2026-08-24)
+
+ROOT CAUSE (the first broad-canary timeout, 1.1.1.3 e1276
+`(1-2x)^2(3+5x)^3/(3x+2)^8`): the integrand is split into single-term
+rationals (500 x^5/(3x+2)^8, 400 x^4/(3x+2)^8, ...). Each term SHOULD be
+handled by the specific binomial-power rule, but that rule does not fire
+(the known matcher-gap), so each term falls to the Rubi NORMALIZATION rule
+1.4.2 r24 (`Px*z^q*u^p`, z binomial / u trinomial). Its repl is
+`Px*ExpandToSum[z,x]^q*ExpandToSum[u,x]^p` — the IDENTITY when z,u are
+already a binomial/trinomial, so r24 self-matches the SAME term forever.
+Measured (rubi_verbose, one process): the 500 x^5/(3x+2)^8 term fired r24
+14x identically (a pure 1-cycle) before the depth-16 cap; 28 firings total
+across two terms. Each loop level is a full ~2705-rule scan, so it ran to
+the cap and only THEN fell to `integrate`, which solves the whole integral
+in <1 s — the 30s+ canary timeout was entirely the loop.
+
+- FIX (`maxima_rubi_utils.mac`, +21): a seen-stack loop guard in `mr_top`.
+  `%mr_seen` (pushed/popped around the dispatch) holds the integrands on the
+  current recursion chain; if `member(f, %mr_seen)` a rule re-dispatched the
+  SAME integrand (a no-op self-match) -> cut the cycle now and fall through
+  (integrate nested / unintegrable top) instead of re-scanning. `member`/`=`
+  is the test — `isequal` and `identical` do NOT evaluate to a boolean in
+  this 5.50.0 build (they stay unevaluated nouns; measured).
+
+Validation (Maxima 5.50.0 / SBCL 2.6.7): Layer A 511/0 (unchanged). Broad
+canary (120-target, rules-only, --parallel 8): 82/38 -> 83/37, NO
+PASS->FAIL. The 5 changed targets were all `timeout` before: 1 -> `expected`
+(1.2.1.9 e160, now PASS), 4 -> `unverified` (1.2.1.2 e2202, 1.2.1.5 e105,
+1.2.2.5 e44/e94; still FAIL, but they now TERMINATE with an answer instead
+of hanging). Class shift: expected 31->32, unverified 16->20, timeout
+22->17, no-answer 46->46, verified 5->5. e1276 itself: infinite hang
+(>120 s) -> 32 s and CORRECT (`CLASS expected`), r24 firings 28 -> 4.
+
+The 4 `unverified` are NOT wrong answers from the guard: spot-checked 1.2.2.5
+e44, its result carries a leftover degenerate `mr_sum[0,k,0,0]` (a 0-sum
+noun) so the zero-test cannot close — a PRE-EXISTING answer-quality defect
+the hang had been hiding (the integral never produced an answer before).
+
+NEXT (not done here): (1) e1276 + sibling product timeouts are correct but
+~32 s — the residual is the rules splitting the rational into ~6 terms and
+`integrate`-ing each (~5 s) instead of the whole rational at once (<1 s);
+closing it is the matcher-gap work (make the specific binomial-power rule
+fire), tracked in Task 9. (2) the degenerate `mr_sum[0,k,0,0]` noun — find
+why a package rule emits an empty-sum noun in a result and either simplify
+it to 0 or emit the concrete sum. (3) continue the timeout / no-answer
+triage.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed

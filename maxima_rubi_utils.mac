@@ -68,6 +68,20 @@ mr_sum(fun, var, lo, hi) := 'mr_sum[fun, var, lo, hi]$
  * becomes the fall-through noun, not a stack overflow. */
 depth_level : 0$
 
+/* No-op / self-match loop guard (2026-08-24, divergence loop). A rule whose
+   replacement re-dispatches the SAME integrand — e.g. the 1.4.2
+   normalization rules, whose repl is Px*ExpandToSum[z]^q*ExpandToSum[u]^p,
+   the identity when z,u are already a binomial/trinomial, so the term
+   re-matches the rule forever — would spin to the depth cap, a full ~2705-
+   rule scan per level, before the integrate fall-through. The expanded
+   single-term rationals the linearity split produces for 1.1.1.3
+   (a+bx)^m(c+dx)^n(e+fx)^p hit this and blew the 30s canary cap (1.1.1.3
+   e1276: the 500 x^5/(3x+2)^8 term cycled 14x identically). Cut the cycle at
+   the first repeat and fall through now. member/ = is the membership test
+   (isequal and identical do NOT evaluate to a boolean in this build —
+   measured 2026-08-24, they stay unevaluated nouns). */
+%mr_seen : []$
+
 /* The top-level entry. fb gates the two top-level fall-throughs
  * (recursion cap, no rule fired). fb = false — the default `rubi(f, x)` —
  * returns the package no-answer noun instead of calling integrate: a
@@ -89,7 +103,14 @@ mr_top(f, x, fb) := block([ans],
     if fb then return(integrate(f, x))
     else return(mr_unintegrable(f, x))
   ),
+  if member(f, %mr_seen) then (
+    depth_level : depth_level - 1,
+    if fb then return(integrate(f, x))
+    else return(mr_unintegrable(f, x))
+  ),
+  %mr_seen : cons(f, %mr_seen),
   ans : %mr_dispatch(f, x, mr_rule_table, depth_level),
+  %mr_seen : rest(%mr_seen),
   depth_level : depth_level - 1,
   if ans = false then (
     if fb then integrate(f, x)
