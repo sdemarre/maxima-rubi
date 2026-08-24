@@ -174,10 +174,16 @@ def build_text(f_text, var_text, e_text, e_text2=None):
         body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
                 f"else disp(concat(\"CLASS unexpected\"))")
     else:
-        ze = zero_chain(f"diff(mr_r - {e_text}, {var_text})")
+        # The corpus expected text is inlined into the subtraction and MUST
+        # be parenthesized: an expected answer that is a SUM `A + B` would
+        # otherwise parse as `mr_r - A + B` (the sign of every term after
+        # the first is flipped), so a correct antiderivative fails the
+        # zero-test and is misclassified `unverified` (measured 2026-08-24
+        # on 1.3.2 e1: `mr_r - <e>` residual nonzero, `mr_r - (<e>)` zero).
+        ze = zero_chain(f"diff(mr_r - ({e_text}), {var_text})")
         zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f")
         if e_text2 is not None:
-            ze2 = zero_chain(f"diff(mr_r - {e_text2}, {var_text})")
+            ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})")
             body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
                     "else block([MR_z, MR_z2, MR_w], MR_z: (" + ze + "), "
                     "MR_z2: (" + ze2 + "), "

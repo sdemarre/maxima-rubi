@@ -747,22 +747,60 @@ rules, 0 name-integrity bad, 0 mr_elliptic_* files). Broad canary
   `ratsimp(diff(rubi(...) - <corpus expected>, x)) = 0` (is() = true),
   i.e. the native elliptic fix DOES close that entry's expected chain.
   Yet the broad canary still labels it `unverified`.
-- NEW DRIVER BUG (found, NOT fixed — separate commit): the corpus driver's
-  fixed `pos$ no$` answer chain (meant to answer `rubi`'s prompts) LEAKS
-  into the verification `ratsimp`. When `rubi` does not consume all the
-  answers, the leftover ones are read by the verification `ratsimp`'s
-  sign-prompt and change its result (nonzero) — so an entry whose
-  expected residual provably closes in a clean session is misclassified
-  `unverified`. This is a verifier-isolation defect, distinct from the
-  elliptic change.
+- DRIVER BUG (found here, ROOT-CAUSED + FIXED in the next work item):
+  1.3.2 e1's expected chain provably closes in a clean session, yet the
+  canary labels it `unverified`. An initial read blamed the driver's fixed
+  `pos$ no$` answer chain leaking into the verification `ratsimp`
+  (`batch_answers_from_file` reads the next input line as a sign answer),
+  but that was a RED HERRING — see the parenthesization work item below.
 
-NEXT: (1) fix the driver answer-leak so the verification zero-test is
-isolated from the rubi-call answer chain (expected to flip 1.3.2 e1 and
-possibly other expected targets); (2) AppellF1 (`mr_appellf1`, 8 uses) —
-native `appellf1` exists only as a noun and `diff` does not close on it,
-so keep the package noun or add a deriv rule; (3) `%mr_exponMin` (2 uses)
-is a genuinely unported B-tier helper; (4) continue the timeout /
-no-answer triage.
+## Work item: driver expected-answer parenthesization bug (2026-08-24)
+
+ROOT CAUSE (confirmed by measurement, NOT the suspected answer-leak):
+`build_text` built the expected-answer zero-test as
+`diff(mr_r - <e_text>, x)` by inlining the corpus expected text WITHOUT
+parentheses. When the expected answer is a SUM `A + B`, that parses as
+`mr_r - A + B` — every term after the first has its sign flipped — so a
+CORRECT antiderivative fails the zero-test and is misclassified
+`unverified` (or, worse, silently falls through to the weaker `verified`
+chain). Measured on 1.3.2 e1 in one process, `mr_r` fixed identical:
+  `ratsimp(diff(mr_r - <e>, x))`   -> nonzero  (the driver's exact form)
+  `ratsimp(diff(mr_r - (<e>), x))` -> 0        (parenthesized)
+  difference of the two -> nonzero (sign flip confirmed)
+The suspected answer-leak (pos/no pool feeding the verification ratsimp)
+is a SEPARATE, real-but-latent fragility of `batch_answers_from_file` + a
+fixed answer sequence; it did NOT cause this misclassification and is not
+fixed here.
+
+- FIX (one-line x2): `test/corpus_class1_driver.py` — parenthesize the
+  inlined expected text in both the primary and secondary expected
+  zero-chains: `diff(mr_r - ({e_text}), x)` / `diff(mr_r - ({e_text2}), x)`.
+  The verified chain (`diff(mr_r, x) - mr_f`) uses the `mr_f` symbol, so it
+  was never affected.
+- REGRESSION GUARD (new): `test/test_driver_parens.py` — (1) construction
+  check (no Maxima): `build_text` must emit the parenthesized form for both
+  expected chains; (2) behavior check (Maxima): the formerly-broken 1.3.2
+  e1 must classify as a PASS class. Verified it FAILS (exit 1) with the fix
+  reverted and PASSES (exit 0) with it.
+
+Validation (Maxima 5.50.0 / SBCL 2.6.7): Layer A 511/0 (unchanged — the
+fix is test-only). Broad canary (120-target, rules-only, --parallel 12):
+82 PASS / 38 FAIL (up from 78/42), NO PASS->FAIL regressions. Class shift:
+expected 5->31, verified 27->5, unverified 17->16, timeout 25->22,
+no-answer 46->46, error 0->0. The 26 `verified`->`expected` moves are a
+STRENGTHENING: those entries' SUM-valued expected answers now match the
+corpus answer up to a constant (the expected chain closes), previously
+masked by the sign flip and only caught by the weaker verified chain.
+
+NEXT: (1) the pos/no answer-chain fragility is now a NAMED latent item —
+the verification zero-test runs under `batch_answers_from_file` with a
+fixed answer sequence, so a verification sign-prompt would consume
+positional lines; consider isolating the verification from the answer
+stream (e.g. asksign-suppressed verification or a fresh subprocess) if it
+ever bites; (2) AppellF1 (`mr_appellf1`, 8 uses) — native `appellf1` exists
+only as a noun and `diff` does not close on it, so keep the package noun or
+add a deriv rule; (3) `%mr_exponMin` (2 uses) is a genuinely unported B-tier
+helper; (4) continue the timeout / no-answer triage.
 
 ## Minor findings (triage at final whole-branch review)
 
