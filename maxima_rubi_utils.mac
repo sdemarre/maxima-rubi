@@ -130,15 +130,18 @@ rubi(f, x) := mr_int(f, x)$
   if is(z = []) then false
   else if is(part(z, 1) = 0) then true else false)$
 
-/* EqQ/NeQ are the LOOSE guards (clone-gap philosophy: fire when the
- * condition could hold). Both are "not provably <opposite>" under
- * is(): eqQ is false only when u-v is provably nonzero (simplifies to a
- * nonzero), neQ only when u-v simplifies to 0. The brief's starter
- * neQ := not %mr_possible_zeroQ(u-v) is the STRICT reading (undecidable
- * -> false) and fails the unit probe "neQ a b -> loose true"; the probe
- * pins the loose reading, which is also what the 1.1.1.x NeQ guards
- * need (a symbolic m must let the power rule fire). */
-%mr_eqQ(u, v) := %mr_possible_zeroQ(u - v)$
+ /* EqQ is the STRICT equality guard: u-v must simplify to 0. The earlier
+  * loose reading (%mr_eqQ := %mr_possible_zeroQ(u-v), the clone-gap
+  * "fire when the condition could hold" philosophy) over-fired at scale:
+  * %mr_possible_zeroQ zero-substitutes EVERY variable symbol, so a generic
+  * parameter product like -10*a*b*c read as "possibly zero" and the EqQ
+  * guards of the 1.1.1.x/1.2.x rules fired on integrands they did not
+  * cover (the 2026-08-24 full class-1 run: 19,454 FAILs, many of them
+  * this). The harness derivative check cannot recover a wrong answer that
+  * a misfired rule already returned. NeQ stays "not provably zero" (a
+  * symbolic m must let the power rule fire), which is independent of the
+  * EqQ reading. */
+%mr_eqQ(u, v) := %mr_b(u - v = 0)$
 %mr_neQ(u, v) := block([z],
   z : is(u - v = 0),
   if z = true then false else true)$
