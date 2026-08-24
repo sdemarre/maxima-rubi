@@ -650,6 +650,56 @@ the Maxima port declines. FIRST target: the a*x^n monomial-with-coefficient
 form (5*x^2 class) — no rule in the ported set; decide whether the port
 needs the 1.1.3.x (c x)^m coverage for it or a documented gap.
 
+## Work item: Task 9 divergence loop — dead-rule names + verifier guard (2026-08-24)
+
+Two independent defects found while chasing the broad canary; both fixed,
+neither committed yet.
+
+- GENERATOR DEAD-RULE BUG (real, fixed). `drop_optionals` ran POST-translate
+  on the emitted pattern text and did a raw substring replace for a capture
+  named `r`; that hit the `_mr_` prefix of every renamed capture
+  (`_mr_1_1_2_6_r3_g` -> `_mr1_1_2_6_r3_g`). The corrupted names are never
+  `matchdeclare`d, so Maxima reads them as literal symbols and the pattern
+  matches no integrand. Effect: 138 dead rules across 17 files; 1.2.4.1 /
+  1.2.4.2 were fully dead. Fixed in `generator/generate_class1.py` and the
+  17 affected `rules/class1/*.mac` files regenerated.
+- STATIC REGRESSION PROBE (new). `probes/census/01-generation-vs-inventory.py`
+  now has a committed-file name-integrity half (`pattern_name_issues`): every
+  `_mr*` token in a committed `defmatch` pattern must be a well-formed
+  rule-local capture or a MatchQ marker for that rule. It catches the
+  `_mr1_1_2_6_r3_g` corruption shape and foreign `_mr_...` tokens. Current:
+  67 files, 2710 rules, 0 name-integrity bad files.
+- SECOND MAXIMA-MATCHER BUG (found, NOT fixed). A behavioral "pattern matches
+  its own family integrand" probe for 1.1.2.6 r3 failed even after the names
+  were intact: constrained multi-factor `defmatch` / `matchdeclare` product
+  patterns can under-match because Maxima's `*` matching is greedy,
+  order-dependent, and does not backtrack through the constraint. Minimal
+  repros show an all-`true` pattern matching with a cross-binding while a
+  `freeof(x)`-constrained pattern declines a valid binding. This is a separate
+  triage class from the generator name bug. The behavioral probe was removed
+  from Layer A (it conflated the two bugs); a comment in `test_maxima_rubi.mac`
+  points at the static census probe and records the under-match finding.
+- DRIVER VERIFIER ERROR GUARD (new). The corpus driver's zero-test chain called
+  `ratsimp` / `factor` unguarded; on 1.2.2.4 e165 and 1.2.2.8 e1 the
+  VERIFICATION crashed with `quotient' by `zero'` before the CLASS line, so the
+  entry was misclassified `error`. `zero_chain` now wraps the whole chain in
+  `errcatch` (error -> 0, i.e. the zero-test did not close). 1.2.2.4 e165 is
+  now `verified`; 1.2.2.8 e1 is `unverified`.
+
+Validation (Maxima 5.50.0 / SBCL 2.6.7): Layer A 511/0; parse sweep 67/67
+clean; load curve clean (2705 measured rules, c = 9.92 vars/rule); census
+OK (2710 rules, name integrity clean). Broad canary (120-target cross-section,
+rules-only default, --parallel 12): 77 PASS / 43 FAIL — no-answer 46,
+verified 26, expected 5, timeout 25, unverified 18, error 0. The Step-1 OFF
+baseline on the same cross-section was 76 PASS / 44 FAIL; the error class is
+gone, and the dead-rule fix shows up as a composition shift in this sample
+rather than a large total uplift.
+
+NEXT: triage the residual broad-canary classes — the 25 timeouts first
+(the designed nested-fallback / slow-replacement cases), then the 18
+unverified, then the 46 no-answer Step-2 gap list. The matcher under-match
+class (1.1.2.6 r3 shape) is now a named open item.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
