@@ -126,7 +126,7 @@ def extract_entries(path):
     return entries, line_nos
 
 
-def zero_chain(d_expr):
+def zero_chain(d_expr, var):
     """Statement list whose value is 1 iff the zero-test closes.
 
     The whole chain is errcatch'd: a ratsimp/factor crash inside the
@@ -150,16 +150,62 @@ def zero_chain(d_expr):
     chain is an unverified zero-test, not a fatality. The canary cap
     is 60 s (test/canary.py) to hold both chains.
     """
-    inner = (
-        f"MR_d: factor({d_expr}), if is(MR_d=0) then 1 "
-        "else (MR_d: ratsimp(MR_d), if is(MR_d=0) then 1 "
-        "else (MR_d: ratsimp(expand(MR_d)), if is(MR_d=0) then 1 "
-        "else (MR_d: ratsimp(factor(MR_d)), if is(MR_d=0) then 1 "
-        "else (MR_d: ratsimp(" + d_expr + "), if is(MR_d=0) then 1 "
-        "else (MR_d: ratsimp(expand(MR_d)), if is(MR_d=0) then 1 "
-        "else (MR_d: factor(MR_d), if is(MR_d=0) then 1 "
-        "else (MR_d: ratsimp(factor(MR_d)), if is(MR_d=0) then 1 else 0)))))))"
-    )
+    # Stage list: (expr to assign to MR_d, ...) — each stage reworks the
+    # previous MR_d; stage 1 of chain 2 restarts from the raw diff
+    # (MR_de — materialized ONCE: ev'd over a still-unevaluated
+    # diff(mr_r, x) substitutes x into the diff's variable argument and
+    # errors "second argument must be a variable; found 0.35", measured
+    # 2026-08-25). Stages are built programmatically so the
+    # nested-paren count can never drift (the hand-nested string
+    # miscounted twice, measured 2026-08-25).
+    stages = ["factor(MR_de)",
+              "ratsimp(MR_d)",
+              "ratsimp(expand(MR_d))",
+              "ratsimp(factor(MR_d))",
+              "ratsimp(MR_de)",
+              "ratsimp(expand(MR_d))",
+              "factor(MR_d)",
+              "ratsimp(factor(MR_d))"]
+    # FIRST numeric stage (measured 2026-08-25, 5.50.0/SBCL): correct
+    # answers whose diff carries elliptic_f/elliptic_e terms close under
+    # NO symbolic stage — 1.2.1.3 e1058 (after the SubstPower sqrt-head
+    # fix) is numerically exact (resid ~1e-15) but ratsimp/expand/factor
+    # all fail on its elliptic diff, and one of the symbolic stages
+    # CRASHES on it, so the single outer errcatch swallows the chain
+    # before a trailing numeric stage could run — the numeric stage
+    # therefore leads. Evaluate the diff at two points under the sweep
+    # parameter values (the same substitution the wrong-answer triage
+    # sweep uses); a float eval that still carries a symbolic parameter
+    # returns a float NOUN, whose is(abs(.) < 1e-9) is false — so
+    # symbolic-parameter targets are unaffected. A domain error (sqrt
+    # of negative, /0) at a test point is caught by the stage's OWN
+    # errcatch (measured 2026-08-25: letting such a domain error reach
+    # the OUTER errcatch kills the whole chain — 5 previously-verified
+    # targets, incl. 1.3.1 e1, regressed to unverified) and reads as
+    # "numeric stage declined, try the symbolic stages". Leading also
+    # saves the 60 s budget-eaters (1.1.2.4 e983 / 1.1.4.2 e182, both
+    # measured numerically correct) from burning the cap on the
+    # symbolic stages.
+    # NOTE: errcatch WRAPS its success value in a list (measured
+    # 2026-08-25: errcatch([f1, f2]) returns [[v1, v2]], so the
+    # two-point list form double-wraps and the condition dies) — each
+    # point gets its own errcatch, unwrapped with part(., 1).
+    subs = ("a=0.7, b=1.3, c=0.5, d=0.9, e=1.1, f=0.8, g=1.7, h=0.3, "
+            "A=0.6, B=1.4, C=0.4, D=0.9")
+    symbolic = "0"
+    for s in reversed(stages):
+        symbolic = f"MR_d: {s}, if is(MR_d=0) then 1 else (" + symbolic + ")"
+    numeric = ("MR_de: " + d_expr + ", "
+               "MR_z1 : errcatch(float(ev(MR_de, [" + subs + ", "
+               + var + "=0.35]))), "
+               "if MR_z1 = [] then (" + symbolic + ") else ("
+               "MR_z2 : errcatch(float(ev(MR_de, [" + subs + ", "
+               + var + "=0.65]))), "
+               "if MR_z2 = [] then (" + symbolic + ") else ("
+               "if is(abs(part(MR_z1, 1)) < 1e-9) = true "
+               "and is(abs(part(MR_z2, 1)) < 1e-9) = true "
+               "then 1 else (" + symbolic + ")))")
+    inner = numeric
     return (
         "block([MR_zr], MR_zr : errcatch(" + inner + "), "
         "if MR_zr = [] then 0 else part(MR_zr, 1))"
@@ -222,10 +268,10 @@ def build_text(f_text, var_text, e_text, e_text2=None):
         # e182, both numerically correct, timed out under ze-first).
         # "verified" and "expected" are both PASS classes, so the
         # reordering is classification-safe.
-        ze = zero_chain(f"diff(mr_r - ({e_text}), {var_text})")
-        zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f")
+        ze = zero_chain(f"diff(mr_r - ({e_text}), {var_text})", var_text)
+        zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f", var_text)
         if e_text2 is not None:
-            ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})")
+            ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})", var_text)
             body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
                     f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                     "else block([MR_z, MR_z2, MR_w], MR_w: (" + zv + "), "

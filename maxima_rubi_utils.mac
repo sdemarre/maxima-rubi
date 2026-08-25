@@ -1594,6 +1594,18 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
     ),
     if ok then p else false
   )
+  elseif op(t) = "/" then (
+    /* a rational-coefficient term: Maxima stores 3/4*x^3 as the
+       QUOTIENT node 3*x^3/4 (expand(3/4*x^3) = 3*x^3/4, measured
+       2026-08-25 on 5.50.0/SBCL — this is what sent %mr_degree of
+       (3/4)*x^3 to -1, derailing the 1.2.1.6 r5 reduction on 1.2.1.3
+       e1058). The x-exponent lives entirely in the numerator; an
+       x-bearing denominator makes the term a fraction, not a
+       polynomial monomial. */
+    if freeof(x, part(t, 2))
+    then %mr_term_xexp(part(t, 1), x)
+    else false
+  )
   elseif op(t) = "^" then (
     /* a bare-power term (x^2 as a WHOLE term after expand): a pure
        x-power only for base x with a positive integer exponent —
@@ -1624,6 +1636,14 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
       elseif op(f) = "^" and is(part(f, 1) = x) then n : n - part(f, 2)
     ),
     c
+  )
+  elseif op(t) = "/" then (
+    /* quotient node (3*x^3/4 — see the %mr_term_xexp /-case note);
+       the caller ensures %mr_term_xexp(t, x) = n, which for an
+       x-free denominator is the numerator's x-exponent */
+    if freeof(x, part(t, 2))
+    then %mr_term_coeff(part(t, 1), x, n)/part(t, 2)
+    else 0
   )
   elseif op(t) = "^" then (
     /* a bare-power term x^n: coefficient 1 (the caller ensures
@@ -3430,7 +3450,16 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   then -%mr_substPower(part(u, 1), x, n)
   else if not atom(u) and op(u) = "["
   then map(lambda([z], %mr_substPower(z, x, n)), %mr_parts_list(u))
-  else u)$
+  else (
+    /* generic head — MEASURED 2026-08-25 on 5.50.0/SBCL: sqrt(e) is
+       its OWN head (op = "sqrt", NOT "^"), so the explicit cases
+       above miss it and the old `else u` left sqrt(3*x^2+5*x+2)
+       untouched under SubstPower[., x, 2] (derailing 1.4.1 r34 on
+       1.2.1.3 e1058: the inner integrand kept a quadratic radical
+       where the substitution needs the quartic). Rubi's SubstPower
+       is Map over every subpart (IntegrationUtilityFunctions.m:6142),
+       so walk args generically. */
+    apply(op(u), map(lambda([z], %mr_substPower(z, x, n)), args(u)))))$
 
 /* Rubi :5980  SubstFor[v, u, x] — u (a function of v) with v replaced
    by x. The algebraic surface: an atom is a plain subst, x^n is the
