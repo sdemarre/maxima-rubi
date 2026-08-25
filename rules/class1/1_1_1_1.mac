@@ -15,6 +15,7 @@ _mr_repl_1_1_1_1_r1(mm, x) := block([],
 _mr_rule_1_1_1_1_r1(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_1_r1(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_1_r1(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_1_r1(mm, x) else false)$
 
@@ -29,6 +30,7 @@ _mr_repl_1_1_1_1_r2(mm, x) := block([_mr_1_1_1_1_r2_m__s],
 _mr_rule_1_1_1_1_r2(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_1_r2(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_1_r2(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_1_r2(mm, x) else false)$
 
@@ -44,6 +46,7 @@ _mr_repl_1_1_1_1_r3(mm, x) := block([_mr_1_1_1_1_r3_a__s, _mr_1_1_1_1_r3_b__s],
 _mr_rule_1_1_1_1_r3(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_1_r3(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_1_r3(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_1_r3(mm, x) else false)$
 
@@ -60,6 +63,7 @@ _mr_repl_1_1_1_1_r4(mm, x) := block([_mr_1_1_1_1_r4_a__s, _mr_1_1_1_1_r4_b__s, _
 _mr_rule_1_1_1_1_r4(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_1_r4(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_1_r4(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_1_r4(mm, x) else false)$
 
@@ -77,6 +81,7 @@ _mr_repl_1_1_1_1_r5(mm, x) := block([_mr_1_1_1_1_r5_a__s, _mr_1_1_1_1_r5_b__s, _
 _mr_rule_1_1_1_1_r5(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_1_r5(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_1_r5(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_1_r5(mm, x) else false)$
 

@@ -296,6 +296,275 @@ def _signed_rational(sgn, s):
         return f"-({s})" if "/" in s else f"-{s}"
     return s
 
+# ---------------------------------------------------------------------
+# Manual slot matcher (phase 1: 1.1.1.4-7 + 1.3.2).
+#
+# The .m's free-exponent slot (a_+b_.*x_)^m_ (or P_^p_, (c_.*x_)^m_)
+# cannot match a BARE target factor in Maxima: the matcher needs a
+# Power node, and Maxima's canonical form strips (expr)^1 (measured
+# 2026-08-25, 5.50.0/SBCL — probes/maxima/probe-matchfix-bare-factor.out).
+# Mathematica's matcher allows the slot to bind the bare factor with the
+# exponent := 1, which is how the corpus expected answers for those
+# entries were generated. The hybrid rule keeps the defmatch path first
+# (unchanged behavior for every entry that matches today) and falls back
+# to a structural decomposition (%mr_binpowfactors) that recovers the
+# implicit E=1, trying every slot assignment until the .m condition
+# accepts one.
+SLOT_KEYS_PHASE1 = {"1_1_1_4", "1_1_1_5", "1_1_1_6", "1_1_1_7", "1_3_2"}
+
+_V = r"([A-Za-z][A-Za-z0-9]*)([._]*)"
+
+def _slot_factor(part, sgn):
+    """One whitespace-free .m factor -> list of slot dicts, else None.
+    A factor may expand to TWO slots: Sqrt[lin]*Sqrt[lin] written as one
+    syntactic factor is not present in 1.1.1.x (checked 2026-08-25);
+    every accepted factor yields exactly one slot."""
+    in_sqrt = False
+    m = re.match(r"^Sqrt\[(.*)\]$", part)
+    if m:
+        in_sqrt = True
+        part = m.group(1)
+    e2 = None
+    m = re.match(r"^\((.*)\)\^(\S+)$", part)
+    if m:
+        base, e2 = m.group(1), m.group(2)
+    else:
+        base = part
+    if base.startswith("(") and base.endswith(")") and _balanced_outer(base):
+        base = base[1:-1]
+    # linear base: (A + B.*x_) / (A + B.*x_^n) / (A + B.*u_)
+    m = re.match(r"^" + _V + r"\+" + _V + r"\.\*" + _V +
+                 r"(?:\^([A-Za-z][A-Za-z0-9]*)([._]*))?$", base)
+    if m:
+        a, a_s, b, b_s, bv, bv_s, nv, nv_s = (m.group(i) for i in range(1, 9))
+        if a_s == "" or b_s == "":
+            return None
+        if bv_s == "":
+            return None
+        if nv is not None and nv_s == "":
+            return None
+        if in_sqrt and e2 is not None and re.match(r"^[A-Za-z]", e2):
+            return None
+        slot = {"kind": "binpow", "a": a, "b": b,
+                "n": nv.rstrip("._") if nv else None,
+                "basevar": bv if bv != "x" else None}
+        slot["E"] = _slot_e(e2, in_sqrt, sgn)
+        if slot["E"] is None:
+            return None
+        return [slot]
+    # monomial base: x_ / (C.*x_)
+    m = re.match(r"^" + _V + r"\.\*x_$", base)
+    if m:
+        c, c_s = m.group(1), m.group(2)
+        if c_s == "":
+            return None
+        slot = {"kind": "monom", "c": c, "basevar": None}
+        slot["E"] = _slot_e(e2, in_sqrt, sgn)
+        if slot["E"] is None:
+            return None
+        return [slot]
+    m = re.match(r"^x_$", base)
+    if m:
+        slot = {"kind": "monom", "c": None, "basevar": None}
+        slot["E"] = _slot_e(e2, in_sqrt, sgn)
+        if slot["E"] is None:
+            return None
+        return [slot]
+    # P(x)-style single-variable base: Pq_ (bare or ^p)
+    m = re.match(r"^" + _V + r"$", base)
+    if m:
+        P, p_s = m.group(1), m.group(2)
+        if p_s == "":
+            return None
+        if e2 is None:
+            return [{"kind": "barevar", "P": P}]
+        slot = {"kind": "polypow", "P": P}
+        slot["E"] = _slot_e(e2, in_sqrt, sgn)
+        if slot["E"] is None:
+            return None
+        return [slot]
+    # quadratic P(x) factor: (A + B.*x_ + C.*x_^2) / (A + C.*x_^2), BARE
+    if not in_sqrt and e2 is None:
+        m = re.match(r"^" + _V + r"\+" + _V + r"\.\*x_\+" + _V + r"\.\*x_\^2$",
+                     base)
+        if m:
+            A, A_s, B, B_s, C, C_s = (m.group(i) for i in range(1, 7))
+            if A_s == "" or B_s == "" or C_s == "":
+                return None
+            return [{"kind": "quadvar", "A": A, "B": B, "C": C}]
+        m = re.match(r"^" + _V + r"\+" + _V + r"\.\*x_\^2$", base)
+        if m:
+            A, A_s, C, C_s = (m.group(i) for i in range(1, 5))
+            if A_s == "" or C_s == "":
+                return None
+            return [{"kind": "quadvar", "A": A, "B": None, "C": C}]
+    return None
+
+def _balanced_outer(s):
+    """s = '(' + ... + ')' where the FIRST ( closes at the LAST char."""
+    depth = 0
+    for i, ch in enumerate(s):
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0 and i != len(s) - 1:
+                return False
+    return depth == 0
+
+def _slot_e(e2, in_sqrt, sgn):
+    """The slot's exponent spec from the outer ^E2 and sqrt:
+    (free, var) or (fixed, signed-literal); None = unsupported."""
+    if in_sqrt:
+        e_base = "1/2"
+    else:
+        e_base = "1"
+    if e2 is None:
+        return ("fixed", _signed_rational(sgn, e_base))
+    if re.match(r"^[A-Za-z][A-Za-z0-9]*[._]*$", e2):
+        if in_sqrt:
+            return None
+        return ("free", e2.rstrip("._"))
+    if re.match(r"^-?\d+(/\d+)?$", e2):
+        e = e_base if e_base == "1" else f"({e_base})*{e2}"
+        if in_sqrt:
+            # 1/2 * literal: fold
+            num = 1 if e2 == "1" else None
+            if num is None:
+                return None
+        return ("fixed", _signed_rational(sgn, e))
+    return None
+
+def slots_from_lhs(pat_body):
+    """Whitespace-free integrand pattern -> list of slot dicts, else None.
+    The LHS may be a single top-level quotient (num/den). Every factor
+    must be a supported slot; anything else (product bases, nested
+    powers, literal constants, polynomial bases with two free exponents)
+    declines the manual path for the whole rule (the defmatch path
+    stays the sole mechanism for it)."""
+    if "/" in pat_body:
+        parts = split_top(pat_body, sep="/")
+        if len(parts) != 2:
+            return None
+        sides = [(parts[0], 1), (parts[1], -1)]
+    else:
+        sides = [(pat_body, 1)]
+    slots = []
+    for body, sgn in sides:
+        for part in split_top(body, sep="*"):
+            if part == "1":
+                continue
+            sl = _slot_factor(part, sgn)
+            if sl is None:
+                return None
+            slots.extend(sl)
+    return slots or None
+
+def slot_captures(slots):
+    """Every capture name a slot binds (the union must equal rule_vars)."""
+    out = set()
+    for s in slots:
+        k = s["kind"]
+        if k == "binpow":
+            out.add(s["a"]); out.add(s["b"])
+            if s["n"]:
+                out.add(s["n"])
+            if s["E"][0] == "free":
+                out.add(s["E"][1])
+            if s["basevar"]:
+                out.add(s["basevar"])
+        elif k == "monom":
+            if s["c"]:
+                out.add(s["c"])
+            if s["E"][0] == "free":
+                out.add(s["E"][1])
+        elif k in ("barevar", "polypow"):
+            out.add(s["P"])
+            if k == "polypow" and s["E"][0] == "free":
+                out.add(s["E"][1])
+        elif k == "quadvar":
+            out.add(s["A"]); out.add(s["C"])
+            if s["B"]:
+                out.add(s["B"])
+    return out
+
+def _has_free_e(slots):
+    """The bare-factor hazard: some slot's exponent is a pattern var."""
+    return any(s["E"][0] == "free" for s in slots if "E" in s)
+
+def _slot_tag_branches(s, key, n, caps, elem):
+    """The per-tag (L/R/M) branch text for slot s over pool element
+    `elem` (a Maxima expression naming the pool item): (checks, eqs,
+    nvals-expr) per accepted tag, in L, R, M order. checks is a Maxima
+    boolean (and-chain) or None; eqs a list of Maxima equation strings;
+    nv-expr the nvals append argument (the n expression or None)."""
+    out = []
+    if s["kind"] == "binpow":
+        cks = [f'is(part({elem}, 4) = 1) = true'] if s["n"] is None else []
+        eqs = [f"{caps[s['a']]} = part({elem}, 2)",
+               f"{caps[s['b']]} = part({elem}, 3)"]
+        nv = None
+        if s["n"]:
+            eqs.append(f"{caps[s['n']]} = part({elem}, 4)")
+            nv = f"part({elem}, 4)"
+        if s["E"][0] == "free":
+            eqs.append(f"{caps[s['E'][1]]} = part({elem}, 5)")
+        else:
+            cks.append(f'is(part({elem}, 5) = {s["E"][1]}) = true')
+        if s["basevar"]:
+            eqs.append(f"{caps[s['basevar']]} = x")
+        out.append(("L", " and ".join(cks) if cks else None, eqs, nv))
+    elif s["kind"] == "monom":
+        cks = None
+        eqs = []
+        if s["c"]:
+            eqs.append(f"{caps[s['c']]} = part({elem}, 2)")
+        if s["E"][0] == "free":
+            eqs.append(f"{caps[s['E'][1]]} = part({elem}, 3)")
+        else:
+            cks = f'is(part({elem}, 3) = {s["E"][1]}) = true'
+        out.append(("M", cks, eqs, None))
+    elif s["kind"] == "barevar":
+        out.append(("R", None, [f"{caps[s['P']]} = part({elem}, 2)"], None))
+        out.append(("L", 'is(part(' + elem + ', 5) = 1) = true',
+                    [f"{caps[s['P']]} = part({elem}, 2) + "
+                     f"part({elem}, 3)*x^part({elem}, 4)"], None))
+        out.append(("M", 'is(part(' + elem + ', 3) = 1) = true',
+                    [f"{caps[s['P']]} = part({elem}, 2)*x"], None))
+    elif s["kind"] == "polypow":
+        P = caps[s["P"]]
+        if s["E"][0] == "free":
+            out.append(("L", None,
+                        [f"{P} = part({elem}, 2) + part({elem}, 3)*"
+                         f"x^part({elem}, 4)",
+                         f"{caps[s['E'][1]]} = part({elem}, 5)"], None))
+        else:
+            out.append(("L", f'is(part({elem}, 5) = {s["E"][1]}) = true',
+                        [f"{P} = part({elem}, 2) + part({elem}, 3)*"
+                         f"x^part({elem}, 4)"], None))
+        if s["E"][0] == "free":
+            out.append(("R", None, [f"{P} = part({elem}, 2)",
+                                    f"{caps[s['E'][1]]} = 1"], None))
+            out.append(("M", None,
+                        [f"{P} = part({elem}, 2)*x",
+                         f"{caps[s['E'][1]]} = part({elem}, 3)"], None))
+        else:
+            if s["E"][1] in ("1", "-(1)"):
+                out.append(("R", None, [f"{P} = part({elem}, 2)"], None))
+            out.append(("M", f'is(part({elem}, 3) = {s["E"][1]}) = true',
+                        [f"{P} = part({elem}, 2)*x"], None))
+    elif s["kind"] == "quadvar":
+        cks = ("is(op(part(" + elem + ", 2)) = \"*\") = false  and  "
+               "is(deg(part(" + elem + ", 2), x) <= 2) = true")
+        eqs = [f"{caps[s['A']]} = coeff(part({elem}, 2), x, 0)",
+               f"{caps[s['C']]} = coeff(part({elem}, 2), x, 2)"]
+        if s["B"]:
+            eqs.insert(1, f"{caps[s['B']]} = coeff(part({elem}, 2), x, 1)")
+        out.append(("R", cks, eqs, None))
+    else:
+        raise GenError(f"{key} r{n}: unknown slot kind {s['kind']}")
+    return out
+
 def split_top(s, sep=","):
     """Split s on top-level sep, honouring [ ] ( ) { } nesting."""
     out, depth, cur = [], 0, []
@@ -1257,6 +1526,120 @@ def _emit_binpow_manual(spec, key, n, rule_vars, cond, rhs, ctx):
     return "\n".join(lines + body), []
 
 
+# Defmatch in this build binds PATTERN SLOTS THAT CANNOT BE FILLED to
+# `false` (measured 2026-08-25: 1.1.1.7 r25's Px*(lin)^m*(lin)^n*
+# (lin)^p*(lin)^q degenerate-binds two unfilled exponent slots to false
+# on the 3-factor target (0.3x+1.7)^2*(0.8x+1.1)*(0.9x+0.5); freeof(x,
+# false) = true sails the .m condition, and the repl rebuilds
+# (false*x+false)^false garbage whose own mr_int sub-dispatch re-fires
+# r25 with fresh false bindings — an unbounded cascade the result-level
+# leak check only catches too late). A false matchlist value can never
+# be a genuine binding (an integrand factor is never a boolean), so
+# every rule body rejects matchlists containing a boolean.
+_MM_BOOL_GUARD = "  if %mr_containsBoolean(mm) then return(false),"
+
+
+def _slot_backtrack_lines(slots, key, n, rule_vars):
+    """The _mr_slots backtracking function for a slot list:
+    _mr_slots(j, used, acc, nvals, pool, x) -> the rule's repl (an
+    antiderivative) or false. j walks the slots in .m order; used is
+    the set of consumed pool indices; acc the matchlist equations;
+    nvals the x-exponent values of the shared-n slots (in slot order);
+    pool the tagged factor list from %mr_binpowfactors (["L",A,B,n,E]
+    lin factors, ["R",rest], ["M",c0,k]). A slot consumes one pool
+    item of an accepted tag; the first assignment whose .m condition
+    accepts wins (any condition-passing binding is a valid
+    antiderivative — the driver verifies by differentiation)."""
+    caps = {v: cap_name(key, n, v) for v in rule_vars}
+    k = len(slots)
+    nvars = {}
+    for s in slots:
+        if s["kind"] == "binpow" and s["n"]:
+            nvars.setdefault(s["n"], []).append(s)
+    shared = [v for v, ss in nvars.items() if len(ss) > 1]
+
+    def tag_stmts(s):
+        """The per-tag branch statements over the loop variable i."""
+        stmts = []
+        for tag, checks, eqs, nv in _slot_tag_branches(s, key, n, caps,
+                                                       "part(pool, i)"):
+            pre = (f'is(part(part(pool, i), 1) = "{tag}") = true'
+                   + (f"  and  {checks}" if checks else ""))
+            nvals_arg = (f"append(nvals, [{nv}])" if nv else "nvals")
+            stmts.append(
+                f"      if {pre} then (\n"
+                f"        r2 : _mr_slots_{key}_r{n}(j + 1, append(used, "
+                f"[i]), append(acc, [{', '.join(eqs)}]), {nvals_arg}, "
+                f"pool, x),\n"
+                f"        if is(r2 # false) then return(r2)\n"
+                f"      )")
+        return stmts
+
+    body = []
+    for j in range(1, k + 1):
+        s = slots[j - 1]
+        stmts = tag_stmts(s)
+        body.append(f"  if is(j = {j}) then (")
+        body.append(f"    for i : 1 thru length(pool) do (")
+        body.append(f"      if is(member(i, used) = false) then (")
+        body.append(",\n".join(stmts))
+        body.append(f"      )")
+        body.append(f"    ),")
+        body.append(f"    return(false)")
+        if j == k:
+            cks = []
+            for v in shared:
+                js = [slots.index(s) + 1 for s in nvars[v]]
+                for a in range(len(js)):
+                    for b in range(a + 1, len(js)):
+                        cks.append(f"is(part(nvals, {a + 1}) = "
+                                   f"part(nvals, {b + 1})) = true")
+            ck_txt = "  and  ".join(cks) if cks else "true"
+            body.append(f"  ),")
+            body.append(f"  if is(j = {k + 1}) then (")
+            body.append(f"    if {ck_txt} then (")
+            body.append(f"      r2 : _mr_cond_{key}_r{n}(acc, x),")
+            body.append(f"      if is(r2) = true then "
+                        f"return(_mr_repl_{key}_r{n}(acc, x)),")
+            body.append(f"      return(false)")
+            body.append(f"    ) else return(false)")
+            body.append(f"  ),")
+        else:
+            body.append(f"  ),")
+    body.append(f"  false)$")
+    return ([f"_mr_slots_{key}_r{n}(j, used, acc, nvals, pool, x) := "
+             f"block([i, r2],"] + body)
+
+def _slot_rule_lines(key, n):
+    """The hybrid _mr_rule body: defmatch first (unchanged behavior),
+    the structural fallback on decline."""
+    return [
+        f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok, d, pool, r0, i],",
+        f"  mm : _mr_pat_{key}_r{n}(f, x),",
+        # the mm # false guard: false is the legitimate declination
+        # signal that opens the structural fallback
+        f"  if mm # false and %mr_containsBoolean(mm) then return(false),",
+        f"  if mm = false then (",
+        f"    d : %mr_binpowfactors(f, x),",
+        f"    if is(d = false) then return(false),",
+        f"    if is(part(d, 1) # 1) then return(false),",
+        f"    pool : [],",
+        f"    for i : 1 thru length(part(d, 4)) do",
+        f"      pool : append(pool, [[\"L\", part(part(part(d, 4), i), 1),",
+        f"        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),",
+        f"        part(part(part(d, 4), i), 4)]]),",
+        f"    if is(part(d, 3) = 1) = false then",
+        f"      pool : append(pool, [[\"R\", part(d, 3)]]),",
+        f"    if is(part(d, 2) = false) = false then",
+        f"      pool : append(pool, [[\"M\", part(part(d, 2), 1),",
+        f"        part(part(d, 2), 2)]]),",
+        f"    r0 : _mr_slots_{key}_r{n}(1, [], [], [], pool, x),",
+        f"    return(r0)",
+        f"  ),",
+        f"  ok : _mr_cond_{key}_r{n}(mm, x),",
+        f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$",
+    ]
+
 def emit_rule(run, key, n, rule_vars):
     """One rule run (lhs, rhs, cond) -> the five Maxima functions as text.
     rule_vars is the set of capture names (from the lhs)."""
@@ -1386,11 +1769,38 @@ def emit_rule(run, key, n, rule_vars):
     lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals_txt}],")
     lines.append(f"  {snap_bind_block},")
     lines.append(f"  {repl_txt})$")
-    lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
-    lines.append(f"  mm : {pat_name}(f, x),")
-    lines.append("  if mm = false then return(false),")
-    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
-    lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$")
+    # Slot-matcher hybrid (SLOT_KEYS_PHASE1): a pattern with a
+    # free-exponent slot also gets the structural fallback — the
+    # defmatch path above is unchanged (every entry that matches today
+    # behaves exactly as before), the fallback runs only on decline.
+    # Slot-matcher hybrid (SLOT_KEYS_PHASE1): a pattern with a
+    # free-exponent slot gets the structural fallback INSTEAD of the
+    # plain defmatch rule body — the defmatch pattern itself is kept
+    # and tried first, so every entry that matches today behaves
+    # exactly as before; the fallback runs only on decline.
+    slots = None
+    if key in SLOT_KEYS_PHASE1:
+        slots = slots_from_lhs(re.sub(r"\s+", "", m.group(1)))
+        if (slots is not None and _has_free_e(slots)
+                and slot_captures(slots) == set(rule_vars)
+                and not ctx["decls"]
+                and "MatchQ" not in (cond or "")):
+            lines.extend(_slot_backtrack_lines(slots, key, n, rule_vars))
+            lines.extend(_slot_rule_lines(key, n))
+        else:
+            lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
+            lines.append(f"  mm : {pat_name}(f, x),")
+            lines.append("  if mm = false then return(false),")
+            lines.append(_MM_BOOL_GUARD)
+            lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
+            lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$")
+    else:
+        lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
+        lines.append(f"  mm : {pat_name}(f, x),")
+        lines.append("  if mm = false then return(false),")
+        lines.append(_MM_BOOL_GUARD)
+        lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
+        lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$")
     # The rule's MatchQ marker names (ctx["decls"] — updated only by
     # _emit_matchq) are returned for the file-level registry line: the
     # marker test is membership, not name-shape (see %mr_isMQMarker,

@@ -22,9 +22,79 @@ _mr_cond_1_1_1_4_r1(mm, x) := block([_mr_1_1_1_4_r1_a, _mr_1_1_1_4_r1_b, _mr_1_1
 _mr_repl_1_1_1_4_r1(mm, x) := block([_mr_1_1_1_4_r1_a__s, _mr_1_1_1_4_r1_b__s, _mr_1_1_1_4_r1_c__s, _mr_1_1_1_4_r1_d__s, _mr_1_1_1_4_r1_e__s, _mr_1_1_1_4_r1_f__s, _mr_1_1_1_4_r1_g__s, _mr_1_1_1_4_r1_h__s, _mr_1_1_1_4_r1_m__s, _mr_1_1_1_4_r1_n__s],
   _mr_1_1_1_4_r1_a__s : geteqR(mm, '_mr_1_1_1_4_r1_a), _mr_1_1_1_4_r1_b__s : geteqR(mm, '_mr_1_1_1_4_r1_b), _mr_1_1_1_4_r1_c__s : geteqR(mm, '_mr_1_1_1_4_r1_c), _mr_1_1_1_4_r1_d__s : geteqR(mm, '_mr_1_1_1_4_r1_d), _mr_1_1_1_4_r1_e__s : geteqR(mm, '_mr_1_1_1_4_r1_e), _mr_1_1_1_4_r1_f__s : geteqR(mm, '_mr_1_1_1_4_r1_f), _mr_1_1_1_4_r1_g__s : geteqR(mm, '_mr_1_1_1_4_r1_g), _mr_1_1_1_4_r1_h__s : geteqR(mm, '_mr_1_1_1_4_r1_h), _mr_1_1_1_4_r1_m__s : geteqR(mm, '_mr_1_1_1_4_r1_m), _mr_1_1_1_4_r1_n__s : geteqR(mm, '_mr_1_1_1_4_r1_n),
   mr_int(%mr_expandIntegrand((_mr_1_1_1_4_r1_a__s + _mr_1_1_1_4_r1_b__s*x)^_mr_1_1_1_4_r1_m__s*(_mr_1_1_1_4_r1_c__s + _mr_1_1_1_4_r1_d__s*x)^_mr_1_1_1_4_r1_n__s*(_mr_1_1_1_4_r1_e__s + _mr_1_1_1_4_r1_f__s*x)*(_mr_1_1_1_4_r1_g__s + _mr_1_1_1_4_r1_h__s*x), x), x))$
-_mr_rule_1_1_1_4_r1(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r1(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r1(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r1_a = part(part(pool, i), 2), _mr_1_1_1_4_r1_b = part(part(pool, i), 3), _mr_1_1_1_4_r1_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r1(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r1_c = part(part(pool, i), 2), _mr_1_1_1_4_r1_d = part(part(pool, i), 3), _mr_1_1_1_4_r1_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r1(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r1_e = part(part(pool, i), 2), _mr_1_1_1_4_r1_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r1(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r1_g = part(part(pool, i), 2), _mr_1_1_1_4_r1_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r1(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r1(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r1(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r1(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r1(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r1(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r1(mm, x) else false)$
 
@@ -45,9 +115,79 @@ _mr_cond_1_1_1_4_r2(mm, x) := block([_mr_1_1_1_4_r2_a, _mr_1_1_1_4_r2_b, _mr_1_1
 _mr_repl_1_1_1_4_r2(mm, x) := block([_mr_1_1_1_4_r2_a__s, _mr_1_1_1_4_r2_b__s, _mr_1_1_1_4_r2_c__s, _mr_1_1_1_4_r2_d__s, _mr_1_1_1_4_r2_e__s, _mr_1_1_1_4_r2_f__s, _mr_1_1_1_4_r2_g__s, _mr_1_1_1_4_r2_h__s, _mr_1_1_1_4_r2_m__s, _mr_1_1_1_4_r2_n__s],
   _mr_1_1_1_4_r2_a__s : geteqR(mm, '_mr_1_1_1_4_r2_a), _mr_1_1_1_4_r2_b__s : geteqR(mm, '_mr_1_1_1_4_r2_b), _mr_1_1_1_4_r2_c__s : geteqR(mm, '_mr_1_1_1_4_r2_c), _mr_1_1_1_4_r2_d__s : geteqR(mm, '_mr_1_1_1_4_r2_d), _mr_1_1_1_4_r2_e__s : geteqR(mm, '_mr_1_1_1_4_r2_e), _mr_1_1_1_4_r2_f__s : geteqR(mm, '_mr_1_1_1_4_r2_f), _mr_1_1_1_4_r2_g__s : geteqR(mm, '_mr_1_1_1_4_r2_g), _mr_1_1_1_4_r2_h__s : geteqR(mm, '_mr_1_1_1_4_r2_h), _mr_1_1_1_4_r2_m__s : geteqR(mm, '_mr_1_1_1_4_r2_m), _mr_1_1_1_4_r2_n__s : geteqR(mm, '_mr_1_1_1_4_r2_n),
   (_mr_1_1_1_4_r2_b__s^2*_mr_1_1_1_4_r2_d__s*_mr_1_1_1_4_r2_e__s*_mr_1_1_1_4_r2_g__s - _mr_1_1_1_4_r2_a__s^2*_mr_1_1_1_4_r2_d__s*_mr_1_1_1_4_r2_f__s*_mr_1_1_1_4_r2_h__s*_mr_1_1_1_4_r2_m__s - _mr_1_1_1_4_r2_a__s*_mr_1_1_1_4_r2_b__s*(_mr_1_1_1_4_r2_d__s*(_mr_1_1_1_4_r2_f__s*_mr_1_1_1_4_r2_g__s + _mr_1_1_1_4_r2_e__s*_mr_1_1_1_4_r2_h__s) - _mr_1_1_1_4_r2_c__s*_mr_1_1_1_4_r2_f__s*_mr_1_1_1_4_r2_h__s*(_mr_1_1_1_4_r2_m__s + 1)) + _mr_1_1_1_4_r2_b__s*_mr_1_1_1_4_r2_f__s*_mr_1_1_1_4_r2_h__s*(_mr_1_1_1_4_r2_b__s*_mr_1_1_1_4_r2_c__s - _mr_1_1_1_4_r2_a__s*_mr_1_1_1_4_r2_d__s)*(_mr_1_1_1_4_r2_m__s + 1)*x)*(_mr_1_1_1_4_r2_a__s + _mr_1_1_1_4_r2_b__s*x)^(_mr_1_1_1_4_r2_m__s + 1)*(_mr_1_1_1_4_r2_c__s + _mr_1_1_1_4_r2_d__s*x)^(_mr_1_1_1_4_r2_n__s + 1)/ (_mr_1_1_1_4_r2_b__s^2*_mr_1_1_1_4_r2_d__s*(_mr_1_1_1_4_r2_b__s*_mr_1_1_1_4_r2_c__s - _mr_1_1_1_4_r2_a__s*_mr_1_1_1_4_r2_d__s)*(_mr_1_1_1_4_r2_m__s + 1)) + (_mr_1_1_1_4_r2_a__s*_mr_1_1_1_4_r2_d__s*_mr_1_1_1_4_r2_f__s*_mr_1_1_1_4_r2_h__s*_mr_1_1_1_4_r2_m__s + _mr_1_1_1_4_r2_b__s*(_mr_1_1_1_4_r2_d__s*(_mr_1_1_1_4_r2_f__s*_mr_1_1_1_4_r2_g__s + _mr_1_1_1_4_r2_e__s*_mr_1_1_1_4_r2_h__s) - _mr_1_1_1_4_r2_c__s*_mr_1_1_1_4_r2_f__s*_mr_1_1_1_4_r2_h__s*(_mr_1_1_1_4_r2_m__s + 2)))/(_mr_1_1_1_4_r2_b__s^2*_mr_1_1_1_4_r2_d__s)* mr_int((_mr_1_1_1_4_r2_a__s + _mr_1_1_1_4_r2_b__s*x)^(_mr_1_1_1_4_r2_m__s + 1)*(_mr_1_1_1_4_r2_c__s + _mr_1_1_1_4_r2_d__s*x)^_mr_1_1_1_4_r2_n__s, x))$
-_mr_rule_1_1_1_4_r2(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r2(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r2(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r2_a = part(part(pool, i), 2), _mr_1_1_1_4_r2_b = part(part(pool, i), 3), _mr_1_1_1_4_r2_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r2(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r2_c = part(part(pool, i), 2), _mr_1_1_1_4_r2_d = part(part(pool, i), 3), _mr_1_1_1_4_r2_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r2(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r2_e = part(part(pool, i), 2), _mr_1_1_1_4_r2_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r2(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r2_g = part(part(pool, i), 2), _mr_1_1_1_4_r2_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r2(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r2(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r2(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r2(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r2(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r2(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r2(mm, x) else false)$
 
@@ -68,9 +208,79 @@ _mr_cond_1_1_1_4_r3(mm, x) := block([_mr_1_1_1_4_r3_a, _mr_1_1_1_4_r3_b, _mr_1_1
 _mr_repl_1_1_1_4_r3(mm, x) := block([_mr_1_1_1_4_r3_a__s, _mr_1_1_1_4_r3_b__s, _mr_1_1_1_4_r3_c__s, _mr_1_1_1_4_r3_d__s, _mr_1_1_1_4_r3_e__s, _mr_1_1_1_4_r3_f__s, _mr_1_1_1_4_r3_g__s, _mr_1_1_1_4_r3_h__s, _mr_1_1_1_4_r3_m__s, _mr_1_1_1_4_r3_n__s],
   _mr_1_1_1_4_r3_a__s : geteqR(mm, '_mr_1_1_1_4_r3_a), _mr_1_1_1_4_r3_b__s : geteqR(mm, '_mr_1_1_1_4_r3_b), _mr_1_1_1_4_r3_c__s : geteqR(mm, '_mr_1_1_1_4_r3_c), _mr_1_1_1_4_r3_d__s : geteqR(mm, '_mr_1_1_1_4_r3_d), _mr_1_1_1_4_r3_e__s : geteqR(mm, '_mr_1_1_1_4_r3_e), _mr_1_1_1_4_r3_f__s : geteqR(mm, '_mr_1_1_1_4_r3_f), _mr_1_1_1_4_r3_g__s : geteqR(mm, '_mr_1_1_1_4_r3_g), _mr_1_1_1_4_r3_h__s : geteqR(mm, '_mr_1_1_1_4_r3_h), _mr_1_1_1_4_r3_m__s : geteqR(mm, '_mr_1_1_1_4_r3_m), _mr_1_1_1_4_r3_n__s : geteqR(mm, '_mr_1_1_1_4_r3_n),
   (_mr_1_1_1_4_r3_b__s^2*_mr_1_1_1_4_r3_c__s*_mr_1_1_1_4_r3_d__s*_mr_1_1_1_4_r3_e__s*_mr_1_1_1_4_r3_g__s*(_mr_1_1_1_4_r3_n__s + 1) + _mr_1_1_1_4_r3_a__s^2*_mr_1_1_1_4_r3_c__s*_mr_1_1_1_4_r3_d__s*_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_h__s*(_mr_1_1_1_4_r3_n__s + 1) + _mr_1_1_1_4_r3_a__s*_mr_1_1_1_4_r3_b__s*(_mr_1_1_1_4_r3_d__s^2*_mr_1_1_1_4_r3_e__s*_mr_1_1_1_4_r3_g__s*(_mr_1_1_1_4_r3_m__s + 1) + _mr_1_1_1_4_r3_c__s^2*_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_h__s*(_mr_1_1_1_4_r3_m__s + 1) - _mr_1_1_1_4_r3_c__s*_mr_1_1_1_4_r3_d__s*(_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_g__s + _mr_1_1_1_4_r3_e__s*_mr_1_1_1_4_r3_h__s)*(_mr_1_1_1_4_r3_m__s + _mr_1_1_1_4_r3_n__s + 2)) + (_mr_1_1_1_4_r3_a__s^2*_mr_1_1_1_4_r3_d__s^2*_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_h__s*(_mr_1_1_1_4_r3_n__s + 1) - _mr_1_1_1_4_r3_a__s*_mr_1_1_1_4_r3_b__s*_mr_1_1_1_4_r3_d__s^2*(_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_g__s + _mr_1_1_1_4_r3_e__s*_mr_1_1_1_4_r3_h__s)*(_mr_1_1_1_4_r3_n__s + 1) + _mr_1_1_1_4_r3_b__s^2*(_mr_1_1_1_4_r3_c__s^2*_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_h__s*(_mr_1_1_1_4_r3_m__s + 1) - _mr_1_1_1_4_r3_c__s*_mr_1_1_1_4_r3_d__s*(_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_g__s + _mr_1_1_1_4_r3_e__s*_mr_1_1_1_4_r3_h__s)*(_mr_1_1_1_4_r3_m__s + 1) + _mr_1_1_1_4_r3_d__s^2*_mr_1_1_1_4_r3_e__s*_mr_1_1_1_4_r3_g__s*(_mr_1_1_1_4_r3_m__s + _mr_1_1_1_4_r3_n__s + 2)))*x)/ (_mr_1_1_1_4_r3_b__s*_mr_1_1_1_4_r3_d__s*(_mr_1_1_1_4_r3_b__s*_mr_1_1_1_4_r3_c__s - _mr_1_1_1_4_r3_a__s*_mr_1_1_1_4_r3_d__s)^2*(_mr_1_1_1_4_r3_m__s + 1)*(_mr_1_1_1_4_r3_n__s + 1))*(_mr_1_1_1_4_r3_a__s + _mr_1_1_1_4_r3_b__s*x)^(_mr_1_1_1_4_r3_m__s + 1)*(_mr_1_1_1_4_r3_c__s + _mr_1_1_1_4_r3_d__s*x)^(_mr_1_1_1_4_r3_n__s + 1) - (_mr_1_1_1_4_r3_a__s^2*_mr_1_1_1_4_r3_d__s^2*_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_h__s*(2 + 3*_mr_1_1_1_4_r3_n__s + _mr_1_1_1_4_r3_n__s^2) + _mr_1_1_1_4_r3_a__s*_mr_1_1_1_4_r3_b__s*_mr_1_1_1_4_r3_d__s*(_mr_1_1_1_4_r3_n__s + 1)*(2*_mr_1_1_1_4_r3_c__s*_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_h__s*(_mr_1_1_1_4_r3_m__s + 1) - _mr_1_1_1_4_r3_d__s*(_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_g__s + _mr_1_1_1_4_r3_e__s*_mr_1_1_1_4_r3_h__s)*(_mr_1_1_1_4_r3_m__s + _mr_1_1_1_4_r3_n__s + 3)) + _mr_1_1_1_4_r3_b__s^2*(_mr_1_1_1_4_r3_c__s^2*_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_h__s*(2 + 3*_mr_1_1_1_4_r3_m__s + _mr_1_1_1_4_r3_m__s^2) - _mr_1_1_1_4_r3_c__s*_mr_1_1_1_4_r3_d__s*(_mr_1_1_1_4_r3_f__s*_mr_1_1_1_4_r3_g__s + _mr_1_1_1_4_r3_e__s*_mr_1_1_1_4_r3_h__s)*(_mr_1_1_1_4_r3_m__s + 1)*(_mr_1_1_1_4_r3_m__s + _mr_1_1_1_4_r3_n__s + 3) + _mr_1_1_1_4_r3_d__s^2*_mr_1_1_1_4_r3_e__s*_mr_1_1_1_4_r3_g__s*(6 + _mr_1_1_1_4_r3_m__s^2 + 5*_mr_1_1_1_4_r3_n__s + _mr_1_1_1_4_r3_n__s^2 + _mr_1_1_1_4_r3_m__s*(2*_mr_1_1_1_4_r3_n__s + 5))))/ (_mr_1_1_1_4_r3_b__s*_mr_1_1_1_4_r3_d__s*(_mr_1_1_1_4_r3_b__s*_mr_1_1_1_4_r3_c__s - _mr_1_1_1_4_r3_a__s*_mr_1_1_1_4_r3_d__s)^2*(_mr_1_1_1_4_r3_m__s + 1)*(_mr_1_1_1_4_r3_n__s + 1))* mr_int((_mr_1_1_1_4_r3_a__s + _mr_1_1_1_4_r3_b__s*x)^(_mr_1_1_1_4_r3_m__s + 1)*(_mr_1_1_1_4_r3_c__s + _mr_1_1_1_4_r3_d__s*x)^(_mr_1_1_1_4_r3_n__s + 1), x))$
-_mr_rule_1_1_1_4_r3(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r3(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r3(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r3_a = part(part(pool, i), 2), _mr_1_1_1_4_r3_b = part(part(pool, i), 3), _mr_1_1_1_4_r3_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r3(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r3_c = part(part(pool, i), 2), _mr_1_1_1_4_r3_d = part(part(pool, i), 3), _mr_1_1_1_4_r3_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r3(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r3_e = part(part(pool, i), 2), _mr_1_1_1_4_r3_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r3(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r3_g = part(part(pool, i), 2), _mr_1_1_1_4_r3_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r3(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r3(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r3(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r3(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r3(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r3(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r3(mm, x) else false)$
 
@@ -91,9 +301,79 @@ _mr_cond_1_1_1_4_r4(mm, x) := block([_mr_1_1_1_4_r4_a, _mr_1_1_1_4_r4_b, _mr_1_1
 _mr_repl_1_1_1_4_r4(mm, x) := block([_mr_1_1_1_4_r4_a__s, _mr_1_1_1_4_r4_b__s, _mr_1_1_1_4_r4_c__s, _mr_1_1_1_4_r4_d__s, _mr_1_1_1_4_r4_e__s, _mr_1_1_1_4_r4_f__s, _mr_1_1_1_4_r4_g__s, _mr_1_1_1_4_r4_h__s, _mr_1_1_1_4_r4_m__s, _mr_1_1_1_4_r4_n__s],
   _mr_1_1_1_4_r4_a__s : geteqR(mm, '_mr_1_1_1_4_r4_a), _mr_1_1_1_4_r4_b__s : geteqR(mm, '_mr_1_1_1_4_r4_b), _mr_1_1_1_4_r4_c__s : geteqR(mm, '_mr_1_1_1_4_r4_c), _mr_1_1_1_4_r4_d__s : geteqR(mm, '_mr_1_1_1_4_r4_d), _mr_1_1_1_4_r4_e__s : geteqR(mm, '_mr_1_1_1_4_r4_e), _mr_1_1_1_4_r4_f__s : geteqR(mm, '_mr_1_1_1_4_r4_f), _mr_1_1_1_4_r4_g__s : geteqR(mm, '_mr_1_1_1_4_r4_g), _mr_1_1_1_4_r4_h__s : geteqR(mm, '_mr_1_1_1_4_r4_h), _mr_1_1_1_4_r4_m__s : geteqR(mm, '_mr_1_1_1_4_r4_m), _mr_1_1_1_4_r4_n__s : geteqR(mm, '_mr_1_1_1_4_r4_n),
   (_mr_1_1_1_4_r4_b__s^3*_mr_1_1_1_4_r4_c__s*_mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_g__s*(_mr_1_1_1_4_r4_m__s + 2) - _mr_1_1_1_4_r4_a__s^3*_mr_1_1_1_4_r4_d__s*_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_h__s*(_mr_1_1_1_4_r4_n__s + 2) - _mr_1_1_1_4_r4_a__s^2*_mr_1_1_1_4_r4_b__s*(_mr_1_1_1_4_r4_c__s*_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_h__s*_mr_1_1_1_4_r4_m__s - _mr_1_1_1_4_r4_d__s*(_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_g__s + _mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_h__s)*(_mr_1_1_1_4_r4_m__s + _mr_1_1_1_4_r4_n__s + 3)) - _mr_1_1_1_4_r4_a__s*_mr_1_1_1_4_r4_b__s^2*(_mr_1_1_1_4_r4_c__s*(_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_g__s + _mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_h__s) + _mr_1_1_1_4_r4_d__s*_mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_g__s*(2*_mr_1_1_1_4_r4_m__s + _mr_1_1_1_4_r4_n__s + 4)) + _mr_1_1_1_4_r4_b__s*(_mr_1_1_1_4_r4_a__s^2*_mr_1_1_1_4_r4_d__s*_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_h__s*(_mr_1_1_1_4_r4_m__s - _mr_1_1_1_4_r4_n__s) - _mr_1_1_1_4_r4_a__s*_mr_1_1_1_4_r4_b__s*(2*_mr_1_1_1_4_r4_c__s*_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_h__s*(_mr_1_1_1_4_r4_m__s + 1) - _mr_1_1_1_4_r4_d__s*(_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_g__s + _mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_h__s)*(_mr_1_1_1_4_r4_n__s + 1)) + _mr_1_1_1_4_r4_b__s^2*(_mr_1_1_1_4_r4_c__s*(_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_g__s + _mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_h__s)*(_mr_1_1_1_4_r4_m__s + 1) - _mr_1_1_1_4_r4_d__s*_mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_g__s*(_mr_1_1_1_4_r4_m__s + _mr_1_1_1_4_r4_n__s + 2)))*x)/ (_mr_1_1_1_4_r4_b__s^2*(_mr_1_1_1_4_r4_b__s*_mr_1_1_1_4_r4_c__s - _mr_1_1_1_4_r4_a__s*_mr_1_1_1_4_r4_d__s)^2*(_mr_1_1_1_4_r4_m__s + 1)*(_mr_1_1_1_4_r4_m__s + 2))*(_mr_1_1_1_4_r4_a__s + _mr_1_1_1_4_r4_b__s*x)^(_mr_1_1_1_4_r4_m__s + 1)*(_mr_1_1_1_4_r4_c__s + _mr_1_1_1_4_r4_d__s*x)^(_mr_1_1_1_4_r4_n__s + 1) + (_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_h__s/ _mr_1_1_1_4_r4_b__s^2 - (_mr_1_1_1_4_r4_d__s*(_mr_1_1_1_4_r4_m__s + _mr_1_1_1_4_r4_n__s + 3)*(_mr_1_1_1_4_r4_a__s^2*_mr_1_1_1_4_r4_d__s*_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_h__s*(_mr_1_1_1_4_r4_m__s - _mr_1_1_1_4_r4_n__s) - _mr_1_1_1_4_r4_a__s*_mr_1_1_1_4_r4_b__s*(2*_mr_1_1_1_4_r4_c__s*_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_h__s*(_mr_1_1_1_4_r4_m__s + 1) - _mr_1_1_1_4_r4_d__s*(_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_g__s + _mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_h__s)*(_mr_1_1_1_4_r4_n__s + 1)) + _mr_1_1_1_4_r4_b__s^2*(_mr_1_1_1_4_r4_c__s*(_mr_1_1_1_4_r4_f__s*_mr_1_1_1_4_r4_g__s + _mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_h__s)*(_mr_1_1_1_4_r4_m__s + 1) - _mr_1_1_1_4_r4_d__s*_mr_1_1_1_4_r4_e__s*_mr_1_1_1_4_r4_g__s*(_mr_1_1_1_4_r4_m__s + _mr_1_1_1_4_r4_n__s + 2))))/ (_mr_1_1_1_4_r4_b__s^2*(_mr_1_1_1_4_r4_b__s*_mr_1_1_1_4_r4_c__s - _mr_1_1_1_4_r4_a__s*_mr_1_1_1_4_r4_d__s)^2*(_mr_1_1_1_4_r4_m__s + 1)*(_mr_1_1_1_4_r4_m__s + 2)))* mr_int((_mr_1_1_1_4_r4_a__s + _mr_1_1_1_4_r4_b__s*x)^(_mr_1_1_1_4_r4_m__s + 2)*(_mr_1_1_1_4_r4_c__s + _mr_1_1_1_4_r4_d__s*x)^_mr_1_1_1_4_r4_n__s, x))$
-_mr_rule_1_1_1_4_r4(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r4(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r4(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r4_a = part(part(pool, i), 2), _mr_1_1_1_4_r4_b = part(part(pool, i), 3), _mr_1_1_1_4_r4_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r4(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r4_c = part(part(pool, i), 2), _mr_1_1_1_4_r4_d = part(part(pool, i), 3), _mr_1_1_1_4_r4_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r4(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r4_e = part(part(pool, i), 2), _mr_1_1_1_4_r4_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r4(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r4_g = part(part(pool, i), 2), _mr_1_1_1_4_r4_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r4(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r4(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r4(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r4(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r4(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r4(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r4(mm, x) else false)$
 
@@ -114,9 +394,79 @@ _mr_cond_1_1_1_4_r5(mm, x) := block([_mr_1_1_1_4_r5_a, _mr_1_1_1_4_r5_b, _mr_1_1
 _mr_repl_1_1_1_4_r5(mm, x) := block([_mr_1_1_1_4_r5_a__s, _mr_1_1_1_4_r5_b__s, _mr_1_1_1_4_r5_c__s, _mr_1_1_1_4_r5_d__s, _mr_1_1_1_4_r5_e__s, _mr_1_1_1_4_r5_f__s, _mr_1_1_1_4_r5_g__s, _mr_1_1_1_4_r5_h__s, _mr_1_1_1_4_r5_m__s, _mr_1_1_1_4_r5_n__s],
   _mr_1_1_1_4_r5_a__s : geteqR(mm, '_mr_1_1_1_4_r5_a), _mr_1_1_1_4_r5_b__s : geteqR(mm, '_mr_1_1_1_4_r5_b), _mr_1_1_1_4_r5_c__s : geteqR(mm, '_mr_1_1_1_4_r5_c), _mr_1_1_1_4_r5_d__s : geteqR(mm, '_mr_1_1_1_4_r5_d), _mr_1_1_1_4_r5_e__s : geteqR(mm, '_mr_1_1_1_4_r5_e), _mr_1_1_1_4_r5_f__s : geteqR(mm, '_mr_1_1_1_4_r5_f), _mr_1_1_1_4_r5_g__s : geteqR(mm, '_mr_1_1_1_4_r5_g), _mr_1_1_1_4_r5_h__s : geteqR(mm, '_mr_1_1_1_4_r5_h), _mr_1_1_1_4_r5_m__s : geteqR(mm, '_mr_1_1_1_4_r5_m), _mr_1_1_1_4_r5_n__s : geteqR(mm, '_mr_1_1_1_4_r5_n),
   (_mr_1_1_1_4_r5_a__s^2*_mr_1_1_1_4_r5_d__s*_mr_1_1_1_4_r5_f__s*_mr_1_1_1_4_r5_h__s*(_mr_1_1_1_4_r5_n__s + 2) + _mr_1_1_1_4_r5_b__s^2*_mr_1_1_1_4_r5_d__s*_mr_1_1_1_4_r5_e__s*_mr_1_1_1_4_r5_g__s*(_mr_1_1_1_4_r5_m__s + _mr_1_1_1_4_r5_n__s + 3) + _mr_1_1_1_4_r5_a__s*_mr_1_1_1_4_r5_b__s*(_mr_1_1_1_4_r5_c__s*_mr_1_1_1_4_r5_f__s*_mr_1_1_1_4_r5_h__s*(_mr_1_1_1_4_r5_m__s + 1) - _mr_1_1_1_4_r5_d__s*(_mr_1_1_1_4_r5_f__s*_mr_1_1_1_4_r5_g__s + _mr_1_1_1_4_r5_e__s*_mr_1_1_1_4_r5_h__s)*(_mr_1_1_1_4_r5_m__s + _mr_1_1_1_4_r5_n__s + 3)) + _mr_1_1_1_4_r5_b__s*_mr_1_1_1_4_r5_f__s*_mr_1_1_1_4_r5_h__s*(_mr_1_1_1_4_r5_b__s*_mr_1_1_1_4_r5_c__s - _mr_1_1_1_4_r5_a__s*_mr_1_1_1_4_r5_d__s)*(_mr_1_1_1_4_r5_m__s + 1)*x)/ (_mr_1_1_1_4_r5_b__s^2*_mr_1_1_1_4_r5_d__s*(_mr_1_1_1_4_r5_b__s*_mr_1_1_1_4_r5_c__s - _mr_1_1_1_4_r5_a__s*_mr_1_1_1_4_r5_d__s)*(_mr_1_1_1_4_r5_m__s + 1)*(_mr_1_1_1_4_r5_m__s + _mr_1_1_1_4_r5_n__s + 3))*(_mr_1_1_1_4_r5_a__s + _mr_1_1_1_4_r5_b__s*x)^(_mr_1_1_1_4_r5_m__s + 1)*(_mr_1_1_1_4_r5_c__s + _mr_1_1_1_4_r5_d__s*x)^(_mr_1_1_1_4_r5_n__s + 1) - (_mr_1_1_1_4_r5_a__s^2*_mr_1_1_1_4_r5_d__s^2*_mr_1_1_1_4_r5_f__s*_mr_1_1_1_4_r5_h__s*(_mr_1_1_1_4_r5_n__s + 1)*(_mr_1_1_1_4_r5_n__s + 2) + _mr_1_1_1_4_r5_a__s*_mr_1_1_1_4_r5_b__s*_mr_1_1_1_4_r5_d__s*(_mr_1_1_1_4_r5_n__s + 1)*(2*_mr_1_1_1_4_r5_c__s*_mr_1_1_1_4_r5_f__s*_mr_1_1_1_4_r5_h__s*(_mr_1_1_1_4_r5_m__s + 1) - _mr_1_1_1_4_r5_d__s*(_mr_1_1_1_4_r5_f__s*_mr_1_1_1_4_r5_g__s + _mr_1_1_1_4_r5_e__s*_mr_1_1_1_4_r5_h__s)*(_mr_1_1_1_4_r5_m__s + _mr_1_1_1_4_r5_n__s + 3)) + _mr_1_1_1_4_r5_b__s^2*(_mr_1_1_1_4_r5_c__s^2*_mr_1_1_1_4_r5_f__s*_mr_1_1_1_4_r5_h__s*(_mr_1_1_1_4_r5_m__s + 1)*(_mr_1_1_1_4_r5_m__s + 2) - _mr_1_1_1_4_r5_c__s*_mr_1_1_1_4_r5_d__s*(_mr_1_1_1_4_r5_f__s*_mr_1_1_1_4_r5_g__s + _mr_1_1_1_4_r5_e__s*_mr_1_1_1_4_r5_h__s)*(_mr_1_1_1_4_r5_m__s + 1)*(_mr_1_1_1_4_r5_m__s + _mr_1_1_1_4_r5_n__s + 3) + _mr_1_1_1_4_r5_d__s^2*_mr_1_1_1_4_r5_e__s*_mr_1_1_1_4_r5_g__s*(_mr_1_1_1_4_r5_m__s + _mr_1_1_1_4_r5_n__s + 2)*(_mr_1_1_1_4_r5_m__s + _mr_1_1_1_4_r5_n__s + 3)))/ (_mr_1_1_1_4_r5_b__s^2*_mr_1_1_1_4_r5_d__s*(_mr_1_1_1_4_r5_b__s*_mr_1_1_1_4_r5_c__s - _mr_1_1_1_4_r5_a__s*_mr_1_1_1_4_r5_d__s)*(_mr_1_1_1_4_r5_m__s + 1)*(_mr_1_1_1_4_r5_m__s + _mr_1_1_1_4_r5_n__s + 3))* mr_int((_mr_1_1_1_4_r5_a__s + _mr_1_1_1_4_r5_b__s*x)^(_mr_1_1_1_4_r5_m__s + 1)*(_mr_1_1_1_4_r5_c__s + _mr_1_1_1_4_r5_d__s*x)^_mr_1_1_1_4_r5_n__s, x))$
-_mr_rule_1_1_1_4_r5(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r5(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r5(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r5_a = part(part(pool, i), 2), _mr_1_1_1_4_r5_b = part(part(pool, i), 3), _mr_1_1_1_4_r5_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r5(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r5_c = part(part(pool, i), 2), _mr_1_1_1_4_r5_d = part(part(pool, i), 3), _mr_1_1_1_4_r5_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r5(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r5_e = part(part(pool, i), 2), _mr_1_1_1_4_r5_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r5(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r5_g = part(part(pool, i), 2), _mr_1_1_1_4_r5_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r5(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r5(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r5(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r5(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r5(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r5(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r5(mm, x) else false)$
 
@@ -137,9 +487,79 @@ _mr_cond_1_1_1_4_r6(mm, x) := block([_mr_1_1_1_4_r6_a, _mr_1_1_1_4_r6_b, _mr_1_1
 _mr_repl_1_1_1_4_r6(mm, x) := block([_mr_1_1_1_4_r6_a__s, _mr_1_1_1_4_r6_b__s, _mr_1_1_1_4_r6_c__s, _mr_1_1_1_4_r6_d__s, _mr_1_1_1_4_r6_e__s, _mr_1_1_1_4_r6_f__s, _mr_1_1_1_4_r6_g__s, _mr_1_1_1_4_r6_h__s, _mr_1_1_1_4_r6_m__s, _mr_1_1_1_4_r6_n__s],
   _mr_1_1_1_4_r6_a__s : geteqR(mm, '_mr_1_1_1_4_r6_a), _mr_1_1_1_4_r6_b__s : geteqR(mm, '_mr_1_1_1_4_r6_b), _mr_1_1_1_4_r6_c__s : geteqR(mm, '_mr_1_1_1_4_r6_c), _mr_1_1_1_4_r6_d__s : geteqR(mm, '_mr_1_1_1_4_r6_d), _mr_1_1_1_4_r6_e__s : geteqR(mm, '_mr_1_1_1_4_r6_e), _mr_1_1_1_4_r6_f__s : geteqR(mm, '_mr_1_1_1_4_r6_f), _mr_1_1_1_4_r6_g__s : geteqR(mm, '_mr_1_1_1_4_r6_g), _mr_1_1_1_4_r6_h__s : geteqR(mm, '_mr_1_1_1_4_r6_h), _mr_1_1_1_4_r6_m__s : geteqR(mm, '_mr_1_1_1_4_r6_m), _mr_1_1_1_4_r6_n__s : geteqR(mm, '_mr_1_1_1_4_r6_n),
   -(_mr_1_1_1_4_r6_a__s*_mr_1_1_1_4_r6_d__s*_mr_1_1_1_4_r6_f__s*_mr_1_1_1_4_r6_h__s*(_mr_1_1_1_4_r6_n__s + 2) + _mr_1_1_1_4_r6_b__s*_mr_1_1_1_4_r6_c__s*_mr_1_1_1_4_r6_f__s*_mr_1_1_1_4_r6_h__s*(_mr_1_1_1_4_r6_m__s + 2) - _mr_1_1_1_4_r6_b__s*_mr_1_1_1_4_r6_d__s*(_mr_1_1_1_4_r6_f__s*_mr_1_1_1_4_r6_g__s + _mr_1_1_1_4_r6_e__s*_mr_1_1_1_4_r6_h__s)*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 3) - _mr_1_1_1_4_r6_b__s*_mr_1_1_1_4_r6_d__s*_mr_1_1_1_4_r6_f__s*_mr_1_1_1_4_r6_h__s*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 2)*x)*(_mr_1_1_1_4_r6_a__s + _mr_1_1_1_4_r6_b__s*x)^(_mr_1_1_1_4_r6_m__s + 1)*(_mr_1_1_1_4_r6_c__s + _mr_1_1_1_4_r6_d__s*x)^(_mr_1_1_1_4_r6_n__s + 1)/ (_mr_1_1_1_4_r6_b__s^2*_mr_1_1_1_4_r6_d__s^2*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 2)*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 3)) + (_mr_1_1_1_4_r6_a__s^2*_mr_1_1_1_4_r6_d__s^2*_mr_1_1_1_4_r6_f__s*_mr_1_1_1_4_r6_h__s*(_mr_1_1_1_4_r6_n__s + 1)*(_mr_1_1_1_4_r6_n__s + 2) + _mr_1_1_1_4_r6_a__s*_mr_1_1_1_4_r6_b__s*_mr_1_1_1_4_r6_d__s*(_mr_1_1_1_4_r6_n__s + 1)*(2*_mr_1_1_1_4_r6_c__s*_mr_1_1_1_4_r6_f__s*_mr_1_1_1_4_r6_h__s*(_mr_1_1_1_4_r6_m__s + 1) - _mr_1_1_1_4_r6_d__s*(_mr_1_1_1_4_r6_f__s*_mr_1_1_1_4_r6_g__s + _mr_1_1_1_4_r6_e__s*_mr_1_1_1_4_r6_h__s)*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 3)) + _mr_1_1_1_4_r6_b__s^2*(_mr_1_1_1_4_r6_c__s^2*_mr_1_1_1_4_r6_f__s*_mr_1_1_1_4_r6_h__s*(_mr_1_1_1_4_r6_m__s + 1)*(_mr_1_1_1_4_r6_m__s + 2) - _mr_1_1_1_4_r6_c__s*_mr_1_1_1_4_r6_d__s*(_mr_1_1_1_4_r6_f__s*_mr_1_1_1_4_r6_g__s + _mr_1_1_1_4_r6_e__s*_mr_1_1_1_4_r6_h__s)*(_mr_1_1_1_4_r6_m__s + 1)*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 3) + _mr_1_1_1_4_r6_d__s^2*_mr_1_1_1_4_r6_e__s*_mr_1_1_1_4_r6_g__s*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 2)*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 3)))/ (_mr_1_1_1_4_r6_b__s^2*_mr_1_1_1_4_r6_d__s^2*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 2)*(_mr_1_1_1_4_r6_m__s + _mr_1_1_1_4_r6_n__s + 3))* mr_int((_mr_1_1_1_4_r6_a__s + _mr_1_1_1_4_r6_b__s*x)^_mr_1_1_1_4_r6_m__s*(_mr_1_1_1_4_r6_c__s + _mr_1_1_1_4_r6_d__s*x)^_mr_1_1_1_4_r6_n__s, x))$
-_mr_rule_1_1_1_4_r6(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r6(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r6(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r6_a = part(part(pool, i), 2), _mr_1_1_1_4_r6_b = part(part(pool, i), 3), _mr_1_1_1_4_r6_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r6(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r6_c = part(part(pool, i), 2), _mr_1_1_1_4_r6_d = part(part(pool, i), 3), _mr_1_1_1_4_r6_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r6(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r6_e = part(part(pool, i), 2), _mr_1_1_1_4_r6_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r6(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r6_g = part(part(pool, i), 2), _mr_1_1_1_4_r6_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r6(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r6(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r6(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r6(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r6(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r6(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r6(mm, x) else false)$
 
@@ -161,9 +581,79 @@ _mr_cond_1_1_1_4_r7(mm, x) := block([_mr_1_1_1_4_r7_a, _mr_1_1_1_4_r7_b, _mr_1_1
 _mr_repl_1_1_1_4_r7(mm, x) := block([_mr_1_1_1_4_r7_a__s, _mr_1_1_1_4_r7_b__s, _mr_1_1_1_4_r7_c__s, _mr_1_1_1_4_r7_d__s, _mr_1_1_1_4_r7_e__s, _mr_1_1_1_4_r7_f__s, _mr_1_1_1_4_r7_g__s, _mr_1_1_1_4_r7_h__s, _mr_1_1_1_4_r7_m__s, _mr_1_1_1_4_r7_n__s, _mr_1_1_1_4_r7_p__s],
   _mr_1_1_1_4_r7_a__s : geteqR(mm, '_mr_1_1_1_4_r7_a), _mr_1_1_1_4_r7_b__s : geteqR(mm, '_mr_1_1_1_4_r7_b), _mr_1_1_1_4_r7_c__s : geteqR(mm, '_mr_1_1_1_4_r7_c), _mr_1_1_1_4_r7_d__s : geteqR(mm, '_mr_1_1_1_4_r7_d), _mr_1_1_1_4_r7_e__s : geteqR(mm, '_mr_1_1_1_4_r7_e), _mr_1_1_1_4_r7_f__s : geteqR(mm, '_mr_1_1_1_4_r7_f), _mr_1_1_1_4_r7_g__s : geteqR(mm, '_mr_1_1_1_4_r7_g), _mr_1_1_1_4_r7_h__s : geteqR(mm, '_mr_1_1_1_4_r7_h), _mr_1_1_1_4_r7_m__s : geteqR(mm, '_mr_1_1_1_4_r7_m), _mr_1_1_1_4_r7_n__s : geteqR(mm, '_mr_1_1_1_4_r7_n), _mr_1_1_1_4_r7_p__s : geteqR(mm, '_mr_1_1_1_4_r7_p),
   mr_int(%mr_expandIntegrand((_mr_1_1_1_4_r7_a__s + _mr_1_1_1_4_r7_b__s*x)^_mr_1_1_1_4_r7_m__s*(_mr_1_1_1_4_r7_c__s + _mr_1_1_1_4_r7_d__s*x)^_mr_1_1_1_4_r7_n__s*(_mr_1_1_1_4_r7_e__s + _mr_1_1_1_4_r7_f__s*x)^_mr_1_1_1_4_r7_p__s*(_mr_1_1_1_4_r7_g__s + _mr_1_1_1_4_r7_h__s*x), x), x))$
-_mr_rule_1_1_1_4_r7(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r7(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r7(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r7_a = part(part(pool, i), 2), _mr_1_1_1_4_r7_b = part(part(pool, i), 3), _mr_1_1_1_4_r7_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r7(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r7_c = part(part(pool, i), 2), _mr_1_1_1_4_r7_d = part(part(pool, i), 3), _mr_1_1_1_4_r7_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r7(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r7_e = part(part(pool, i), 2), _mr_1_1_1_4_r7_f = part(part(pool, i), 3), _mr_1_1_1_4_r7_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r7(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r7_g = part(part(pool, i), 2), _mr_1_1_1_4_r7_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r7(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r7(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r7(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r7(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r7(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r7(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r7(mm, x) else false)$
 
@@ -185,9 +675,79 @@ _mr_cond_1_1_1_4_r8(mm, x) := block([_mr_1_1_1_4_r8_a, _mr_1_1_1_4_r8_b, _mr_1_1
 _mr_repl_1_1_1_4_r8(mm, x) := block([_mr_1_1_1_4_r8_a__s, _mr_1_1_1_4_r8_b__s, _mr_1_1_1_4_r8_c__s, _mr_1_1_1_4_r8_d__s, _mr_1_1_1_4_r8_e__s, _mr_1_1_1_4_r8_f__s, _mr_1_1_1_4_r8_g__s, _mr_1_1_1_4_r8_h__s, _mr_1_1_1_4_r8_m__s, _mr_1_1_1_4_r8_n__s, _mr_1_1_1_4_r8_p__s],
   _mr_1_1_1_4_r8_a__s : geteqR(mm, '_mr_1_1_1_4_r8_a), _mr_1_1_1_4_r8_b__s : geteqR(mm, '_mr_1_1_1_4_r8_b), _mr_1_1_1_4_r8_c__s : geteqR(mm, '_mr_1_1_1_4_r8_c), _mr_1_1_1_4_r8_d__s : geteqR(mm, '_mr_1_1_1_4_r8_d), _mr_1_1_1_4_r8_e__s : geteqR(mm, '_mr_1_1_1_4_r8_e), _mr_1_1_1_4_r8_f__s : geteqR(mm, '_mr_1_1_1_4_r8_f), _mr_1_1_1_4_r8_g__s : geteqR(mm, '_mr_1_1_1_4_r8_g), _mr_1_1_1_4_r8_h__s : geteqR(mm, '_mr_1_1_1_4_r8_h), _mr_1_1_1_4_r8_m__s : geteqR(mm, '_mr_1_1_1_4_r8_m), _mr_1_1_1_4_r8_n__s : geteqR(mm, '_mr_1_1_1_4_r8_n), _mr_1_1_1_4_r8_p__s : geteqR(mm, '_mr_1_1_1_4_r8_p),
   (_mr_1_1_1_4_r8_b__s*_mr_1_1_1_4_r8_g__s - _mr_1_1_1_4_r8_a__s*_mr_1_1_1_4_r8_h__s)*(_mr_1_1_1_4_r8_a__s + _mr_1_1_1_4_r8_b__s*x)^(_mr_1_1_1_4_r8_m__s + 1)*(_mr_1_1_1_4_r8_c__s + _mr_1_1_1_4_r8_d__s*x)^ _mr_1_1_1_4_r8_n__s*(_mr_1_1_1_4_r8_e__s + _mr_1_1_1_4_r8_f__s*x)^(_mr_1_1_1_4_r8_p__s + 1)/(_mr_1_1_1_4_r8_b__s*(_mr_1_1_1_4_r8_b__s*_mr_1_1_1_4_r8_e__s - _mr_1_1_1_4_r8_a__s*_mr_1_1_1_4_r8_f__s)*(_mr_1_1_1_4_r8_m__s + 1)) - 1/(_mr_1_1_1_4_r8_b__s*(_mr_1_1_1_4_r8_b__s*_mr_1_1_1_4_r8_e__s - _mr_1_1_1_4_r8_a__s*_mr_1_1_1_4_r8_f__s)*(_mr_1_1_1_4_r8_m__s + 1))* mr_int((_mr_1_1_1_4_r8_a__s + _mr_1_1_1_4_r8_b__s*x)^(_mr_1_1_1_4_r8_m__s + 1)*(_mr_1_1_1_4_r8_c__s + _mr_1_1_1_4_r8_d__s*x)^(_mr_1_1_1_4_r8_n__s - 1)*(_mr_1_1_1_4_r8_e__s + _mr_1_1_1_4_r8_f__s*x)^_mr_1_1_1_4_r8_p__s* %mr_simp(_mr_1_1_1_4_r8_b__s*_mr_1_1_1_4_r8_c__s*(_mr_1_1_1_4_r8_f__s*_mr_1_1_1_4_r8_g__s - _mr_1_1_1_4_r8_e__s*_mr_1_1_1_4_r8_h__s)*(_mr_1_1_1_4_r8_m__s + 1) + (_mr_1_1_1_4_r8_b__s*_mr_1_1_1_4_r8_g__s - _mr_1_1_1_4_r8_a__s*_mr_1_1_1_4_r8_h__s)*(_mr_1_1_1_4_r8_d__s*_mr_1_1_1_4_r8_e__s*_mr_1_1_1_4_r8_n__s + _mr_1_1_1_4_r8_c__s*_mr_1_1_1_4_r8_f__s*(_mr_1_1_1_4_r8_p__s + 1)) + _mr_1_1_1_4_r8_d__s*(_mr_1_1_1_4_r8_b__s*(_mr_1_1_1_4_r8_f__s*_mr_1_1_1_4_r8_g__s - _mr_1_1_1_4_r8_e__s*_mr_1_1_1_4_r8_h__s)*(_mr_1_1_1_4_r8_m__s + 1) + _mr_1_1_1_4_r8_f__s*(_mr_1_1_1_4_r8_b__s*_mr_1_1_1_4_r8_g__s - _mr_1_1_1_4_r8_a__s*_mr_1_1_1_4_r8_h__s)*(_mr_1_1_1_4_r8_n__s + _mr_1_1_1_4_r8_p__s + 1))*x, x), x))$
-_mr_rule_1_1_1_4_r8(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r8(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r8(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r8_a = part(part(pool, i), 2), _mr_1_1_1_4_r8_b = part(part(pool, i), 3), _mr_1_1_1_4_r8_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r8(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r8_c = part(part(pool, i), 2), _mr_1_1_1_4_r8_d = part(part(pool, i), 3), _mr_1_1_1_4_r8_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r8(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r8_e = part(part(pool, i), 2), _mr_1_1_1_4_r8_f = part(part(pool, i), 3), _mr_1_1_1_4_r8_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r8(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r8_g = part(part(pool, i), 2), _mr_1_1_1_4_r8_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r8(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r8(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r8(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r8(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r8(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r8(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r8(mm, x) else false)$
 
@@ -209,9 +769,79 @@ _mr_cond_1_1_1_4_r9(mm, x) := block([_mr_1_1_1_4_r9_a, _mr_1_1_1_4_r9_b, _mr_1_1
 _mr_repl_1_1_1_4_r9(mm, x) := block([_mr_1_1_1_4_r9_a__s, _mr_1_1_1_4_r9_b__s, _mr_1_1_1_4_r9_c__s, _mr_1_1_1_4_r9_d__s, _mr_1_1_1_4_r9_e__s, _mr_1_1_1_4_r9_f__s, _mr_1_1_1_4_r9_g__s, _mr_1_1_1_4_r9_h__s, _mr_1_1_1_4_r9_m__s, _mr_1_1_1_4_r9_n__s, _mr_1_1_1_4_r9_p__s],
   _mr_1_1_1_4_r9_a__s : geteqR(mm, '_mr_1_1_1_4_r9_a), _mr_1_1_1_4_r9_b__s : geteqR(mm, '_mr_1_1_1_4_r9_b), _mr_1_1_1_4_r9_c__s : geteqR(mm, '_mr_1_1_1_4_r9_c), _mr_1_1_1_4_r9_d__s : geteqR(mm, '_mr_1_1_1_4_r9_d), _mr_1_1_1_4_r9_e__s : geteqR(mm, '_mr_1_1_1_4_r9_e), _mr_1_1_1_4_r9_f__s : geteqR(mm, '_mr_1_1_1_4_r9_f), _mr_1_1_1_4_r9_g__s : geteqR(mm, '_mr_1_1_1_4_r9_g), _mr_1_1_1_4_r9_h__s : geteqR(mm, '_mr_1_1_1_4_r9_h), _mr_1_1_1_4_r9_m__s : geteqR(mm, '_mr_1_1_1_4_r9_m), _mr_1_1_1_4_r9_n__s : geteqR(mm, '_mr_1_1_1_4_r9_n), _mr_1_1_1_4_r9_p__s : geteqR(mm, '_mr_1_1_1_4_r9_p),
   (_mr_1_1_1_4_r9_b__s*_mr_1_1_1_4_r9_g__s - _mr_1_1_1_4_r9_a__s*_mr_1_1_1_4_r9_h__s)*(_mr_1_1_1_4_r9_a__s + _mr_1_1_1_4_r9_b__s*x)^(_mr_1_1_1_4_r9_m__s + 1)*(_mr_1_1_1_4_r9_c__s + _mr_1_1_1_4_r9_d__s*x)^ _mr_1_1_1_4_r9_n__s*(_mr_1_1_1_4_r9_e__s + _mr_1_1_1_4_r9_f__s*x)^(_mr_1_1_1_4_r9_p__s + 1)/(_mr_1_1_1_4_r9_b__s*(_mr_1_1_1_4_r9_b__s*_mr_1_1_1_4_r9_e__s - _mr_1_1_1_4_r9_a__s*_mr_1_1_1_4_r9_f__s)*(_mr_1_1_1_4_r9_m__s + 1)) - 1/(_mr_1_1_1_4_r9_b__s*(_mr_1_1_1_4_r9_b__s*_mr_1_1_1_4_r9_e__s - _mr_1_1_1_4_r9_a__s*_mr_1_1_1_4_r9_f__s)*(_mr_1_1_1_4_r9_m__s + 1))* mr_int((_mr_1_1_1_4_r9_a__s + _mr_1_1_1_4_r9_b__s*x)^(_mr_1_1_1_4_r9_m__s + 1)*(_mr_1_1_1_4_r9_c__s + _mr_1_1_1_4_r9_d__s*x)^(_mr_1_1_1_4_r9_n__s - 1)*(_mr_1_1_1_4_r9_e__s + _mr_1_1_1_4_r9_f__s*x)^_mr_1_1_1_4_r9_p__s* %mr_simp(_mr_1_1_1_4_r9_b__s*_mr_1_1_1_4_r9_c__s*(_mr_1_1_1_4_r9_f__s*_mr_1_1_1_4_r9_g__s - _mr_1_1_1_4_r9_e__s*_mr_1_1_1_4_r9_h__s)*(_mr_1_1_1_4_r9_m__s + 1) + (_mr_1_1_1_4_r9_b__s*_mr_1_1_1_4_r9_g__s - _mr_1_1_1_4_r9_a__s*_mr_1_1_1_4_r9_h__s)*(_mr_1_1_1_4_r9_d__s*_mr_1_1_1_4_r9_e__s*_mr_1_1_1_4_r9_n__s + _mr_1_1_1_4_r9_c__s*_mr_1_1_1_4_r9_f__s*(_mr_1_1_1_4_r9_p__s + 1)) + _mr_1_1_1_4_r9_d__s*(_mr_1_1_1_4_r9_b__s*(_mr_1_1_1_4_r9_f__s*_mr_1_1_1_4_r9_g__s - _mr_1_1_1_4_r9_e__s*_mr_1_1_1_4_r9_h__s)*(_mr_1_1_1_4_r9_m__s + 1) + _mr_1_1_1_4_r9_f__s*(_mr_1_1_1_4_r9_b__s*_mr_1_1_1_4_r9_g__s - _mr_1_1_1_4_r9_a__s*_mr_1_1_1_4_r9_h__s)*(_mr_1_1_1_4_r9_n__s + _mr_1_1_1_4_r9_p__s + 1))*x, x), x))$
-_mr_rule_1_1_1_4_r9(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r9(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r9(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r9_a = part(part(pool, i), 2), _mr_1_1_1_4_r9_b = part(part(pool, i), 3), _mr_1_1_1_4_r9_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r9(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r9_c = part(part(pool, i), 2), _mr_1_1_1_4_r9_d = part(part(pool, i), 3), _mr_1_1_1_4_r9_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r9(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r9_e = part(part(pool, i), 2), _mr_1_1_1_4_r9_f = part(part(pool, i), 3), _mr_1_1_1_4_r9_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r9(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r9_g = part(part(pool, i), 2), _mr_1_1_1_4_r9_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r9(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r9(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r9(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r9(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r9(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r9(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r9(mm, x) else false)$
 
@@ -233,9 +863,79 @@ _mr_cond_1_1_1_4_r10(mm, x) := block([_mr_1_1_1_4_r10_a, _mr_1_1_1_4_r10_b, _mr_
 _mr_repl_1_1_1_4_r10(mm, x) := block([_mr_1_1_1_4_r10_a__s, _mr_1_1_1_4_r10_b__s, _mr_1_1_1_4_r10_c__s, _mr_1_1_1_4_r10_d__s, _mr_1_1_1_4_r10_e__s, _mr_1_1_1_4_r10_f__s, _mr_1_1_1_4_r10_g__s, _mr_1_1_1_4_r10_h__s, _mr_1_1_1_4_r10_m__s, _mr_1_1_1_4_r10_n__s, _mr_1_1_1_4_r10_p__s],
   _mr_1_1_1_4_r10_a__s : geteqR(mm, '_mr_1_1_1_4_r10_a), _mr_1_1_1_4_r10_b__s : geteqR(mm, '_mr_1_1_1_4_r10_b), _mr_1_1_1_4_r10_c__s : geteqR(mm, '_mr_1_1_1_4_r10_c), _mr_1_1_1_4_r10_d__s : geteqR(mm, '_mr_1_1_1_4_r10_d), _mr_1_1_1_4_r10_e__s : geteqR(mm, '_mr_1_1_1_4_r10_e), _mr_1_1_1_4_r10_f__s : geteqR(mm, '_mr_1_1_1_4_r10_f), _mr_1_1_1_4_r10_g__s : geteqR(mm, '_mr_1_1_1_4_r10_g), _mr_1_1_1_4_r10_h__s : geteqR(mm, '_mr_1_1_1_4_r10_h), _mr_1_1_1_4_r10_m__s : geteqR(mm, '_mr_1_1_1_4_r10_m), _mr_1_1_1_4_r10_n__s : geteqR(mm, '_mr_1_1_1_4_r10_n), _mr_1_1_1_4_r10_p__s : geteqR(mm, '_mr_1_1_1_4_r10_p),
   (_mr_1_1_1_4_r10_b__s*_mr_1_1_1_4_r10_g__s - _mr_1_1_1_4_r10_a__s*_mr_1_1_1_4_r10_h__s)*(_mr_1_1_1_4_r10_a__s + _mr_1_1_1_4_r10_b__s*x)^(_mr_1_1_1_4_r10_m__s + 1)*(_mr_1_1_1_4_r10_c__s + _mr_1_1_1_4_r10_d__s*x)^(_mr_1_1_1_4_r10_n__s + 1)*(_mr_1_1_1_4_r10_e__s + _mr_1_1_1_4_r10_f__s*x)^(_mr_1_1_1_4_r10_p__s + 1)/((_mr_1_1_1_4_r10_m__s + 1)*(_mr_1_1_1_4_r10_b__s*_mr_1_1_1_4_r10_c__s - _mr_1_1_1_4_r10_a__s*_mr_1_1_1_4_r10_d__s)*(_mr_1_1_1_4_r10_b__s*_mr_1_1_1_4_r10_e__s - _mr_1_1_1_4_r10_a__s*_mr_1_1_1_4_r10_f__s)) + 1/((_mr_1_1_1_4_r10_m__s + 1)*(_mr_1_1_1_4_r10_b__s*_mr_1_1_1_4_r10_c__s - _mr_1_1_1_4_r10_a__s*_mr_1_1_1_4_r10_d__s)*(_mr_1_1_1_4_r10_b__s*_mr_1_1_1_4_r10_e__s - _mr_1_1_1_4_r10_a__s*_mr_1_1_1_4_r10_f__s))* mr_int((_mr_1_1_1_4_r10_a__s + _mr_1_1_1_4_r10_b__s*x)^(_mr_1_1_1_4_r10_m__s + 1)*(_mr_1_1_1_4_r10_c__s + _mr_1_1_1_4_r10_d__s*x)^_mr_1_1_1_4_r10_n__s*(_mr_1_1_1_4_r10_e__s + _mr_1_1_1_4_r10_f__s*x)^_mr_1_1_1_4_r10_p__s* %mr_simp((_mr_1_1_1_4_r10_a__s*_mr_1_1_1_4_r10_d__s*_mr_1_1_1_4_r10_f__s*_mr_1_1_1_4_r10_g__s - _mr_1_1_1_4_r10_b__s*(_mr_1_1_1_4_r10_d__s*_mr_1_1_1_4_r10_e__s + _mr_1_1_1_4_r10_c__s*_mr_1_1_1_4_r10_f__s)*_mr_1_1_1_4_r10_g__s + _mr_1_1_1_4_r10_b__s*_mr_1_1_1_4_r10_c__s*_mr_1_1_1_4_r10_e__s*_mr_1_1_1_4_r10_h__s)*(_mr_1_1_1_4_r10_m__s + 1) - (_mr_1_1_1_4_r10_b__s*_mr_1_1_1_4_r10_g__s - _mr_1_1_1_4_r10_a__s*_mr_1_1_1_4_r10_h__s)*(_mr_1_1_1_4_r10_d__s*_mr_1_1_1_4_r10_e__s*(_mr_1_1_1_4_r10_n__s + 1) + _mr_1_1_1_4_r10_c__s*_mr_1_1_1_4_r10_f__s*(_mr_1_1_1_4_r10_p__s + 1)) - _mr_1_1_1_4_r10_d__s*_mr_1_1_1_4_r10_f__s*(_mr_1_1_1_4_r10_b__s*_mr_1_1_1_4_r10_g__s - _mr_1_1_1_4_r10_a__s*_mr_1_1_1_4_r10_h__s)*(_mr_1_1_1_4_r10_m__s + _mr_1_1_1_4_r10_n__s + _mr_1_1_1_4_r10_p__s + 3)*x, x), x))$
-_mr_rule_1_1_1_4_r10(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r10(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r10(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r10_a = part(part(pool, i), 2), _mr_1_1_1_4_r10_b = part(part(pool, i), 3), _mr_1_1_1_4_r10_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r10(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r10_c = part(part(pool, i), 2), _mr_1_1_1_4_r10_d = part(part(pool, i), 3), _mr_1_1_1_4_r10_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r10(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r10_e = part(part(pool, i), 2), _mr_1_1_1_4_r10_f = part(part(pool, i), 3), _mr_1_1_1_4_r10_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r10(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r10_g = part(part(pool, i), 2), _mr_1_1_1_4_r10_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r10(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r10(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r10(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r10(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r10(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r10(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r10(mm, x) else false)$
 
@@ -257,9 +957,79 @@ _mr_cond_1_1_1_4_r11(mm, x) := block([_mr_1_1_1_4_r11_a, _mr_1_1_1_4_r11_b, _mr_
 _mr_repl_1_1_1_4_r11(mm, x) := block([_mr_1_1_1_4_r11_a__s, _mr_1_1_1_4_r11_b__s, _mr_1_1_1_4_r11_c__s, _mr_1_1_1_4_r11_d__s, _mr_1_1_1_4_r11_e__s, _mr_1_1_1_4_r11_f__s, _mr_1_1_1_4_r11_g__s, _mr_1_1_1_4_r11_h__s, _mr_1_1_1_4_r11_m__s, _mr_1_1_1_4_r11_n__s, _mr_1_1_1_4_r11_p__s],
   _mr_1_1_1_4_r11_a__s : geteqR(mm, '_mr_1_1_1_4_r11_a), _mr_1_1_1_4_r11_b__s : geteqR(mm, '_mr_1_1_1_4_r11_b), _mr_1_1_1_4_r11_c__s : geteqR(mm, '_mr_1_1_1_4_r11_c), _mr_1_1_1_4_r11_d__s : geteqR(mm, '_mr_1_1_1_4_r11_d), _mr_1_1_1_4_r11_e__s : geteqR(mm, '_mr_1_1_1_4_r11_e), _mr_1_1_1_4_r11_f__s : geteqR(mm, '_mr_1_1_1_4_r11_f), _mr_1_1_1_4_r11_g__s : geteqR(mm, '_mr_1_1_1_4_r11_g), _mr_1_1_1_4_r11_h__s : geteqR(mm, '_mr_1_1_1_4_r11_h), _mr_1_1_1_4_r11_m__s : geteqR(mm, '_mr_1_1_1_4_r11_m), _mr_1_1_1_4_r11_n__s : geteqR(mm, '_mr_1_1_1_4_r11_n), _mr_1_1_1_4_r11_p__s : geteqR(mm, '_mr_1_1_1_4_r11_p),
   (_mr_1_1_1_4_r11_b__s*_mr_1_1_1_4_r11_g__s - _mr_1_1_1_4_r11_a__s*_mr_1_1_1_4_r11_h__s)*(_mr_1_1_1_4_r11_a__s + _mr_1_1_1_4_r11_b__s*x)^(_mr_1_1_1_4_r11_m__s + 1)*(_mr_1_1_1_4_r11_c__s + _mr_1_1_1_4_r11_d__s*x)^(_mr_1_1_1_4_r11_n__s + 1)*(_mr_1_1_1_4_r11_e__s + _mr_1_1_1_4_r11_f__s*x)^(_mr_1_1_1_4_r11_p__s + 1)/((_mr_1_1_1_4_r11_m__s + 1)*(_mr_1_1_1_4_r11_b__s*_mr_1_1_1_4_r11_c__s - _mr_1_1_1_4_r11_a__s*_mr_1_1_1_4_r11_d__s)*(_mr_1_1_1_4_r11_b__s*_mr_1_1_1_4_r11_e__s - _mr_1_1_1_4_r11_a__s*_mr_1_1_1_4_r11_f__s)) + 1/((_mr_1_1_1_4_r11_m__s + 1)*(_mr_1_1_1_4_r11_b__s*_mr_1_1_1_4_r11_c__s - _mr_1_1_1_4_r11_a__s*_mr_1_1_1_4_r11_d__s)*(_mr_1_1_1_4_r11_b__s*_mr_1_1_1_4_r11_e__s - _mr_1_1_1_4_r11_a__s*_mr_1_1_1_4_r11_f__s))* mr_int((_mr_1_1_1_4_r11_a__s + _mr_1_1_1_4_r11_b__s*x)^(_mr_1_1_1_4_r11_m__s + 1)*(_mr_1_1_1_4_r11_c__s + _mr_1_1_1_4_r11_d__s*x)^_mr_1_1_1_4_r11_n__s*(_mr_1_1_1_4_r11_e__s + _mr_1_1_1_4_r11_f__s*x)^_mr_1_1_1_4_r11_p__s* %mr_simp((_mr_1_1_1_4_r11_a__s*_mr_1_1_1_4_r11_d__s*_mr_1_1_1_4_r11_f__s*_mr_1_1_1_4_r11_g__s - _mr_1_1_1_4_r11_b__s*(_mr_1_1_1_4_r11_d__s*_mr_1_1_1_4_r11_e__s + _mr_1_1_1_4_r11_c__s*_mr_1_1_1_4_r11_f__s)*_mr_1_1_1_4_r11_g__s + _mr_1_1_1_4_r11_b__s*_mr_1_1_1_4_r11_c__s*_mr_1_1_1_4_r11_e__s*_mr_1_1_1_4_r11_h__s)*(_mr_1_1_1_4_r11_m__s + 1) - (_mr_1_1_1_4_r11_b__s*_mr_1_1_1_4_r11_g__s - _mr_1_1_1_4_r11_a__s*_mr_1_1_1_4_r11_h__s)*(_mr_1_1_1_4_r11_d__s*_mr_1_1_1_4_r11_e__s*(_mr_1_1_1_4_r11_n__s + 1) + _mr_1_1_1_4_r11_c__s*_mr_1_1_1_4_r11_f__s*(_mr_1_1_1_4_r11_p__s + 1)) - _mr_1_1_1_4_r11_d__s*_mr_1_1_1_4_r11_f__s*(_mr_1_1_1_4_r11_b__s*_mr_1_1_1_4_r11_g__s - _mr_1_1_1_4_r11_a__s*_mr_1_1_1_4_r11_h__s)*(_mr_1_1_1_4_r11_m__s + _mr_1_1_1_4_r11_n__s + _mr_1_1_1_4_r11_p__s + 3)*x, x), x))$
-_mr_rule_1_1_1_4_r11(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r11(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r11(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r11_a = part(part(pool, i), 2), _mr_1_1_1_4_r11_b = part(part(pool, i), 3), _mr_1_1_1_4_r11_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r11(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r11_c = part(part(pool, i), 2), _mr_1_1_1_4_r11_d = part(part(pool, i), 3), _mr_1_1_1_4_r11_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r11(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r11_e = part(part(pool, i), 2), _mr_1_1_1_4_r11_f = part(part(pool, i), 3), _mr_1_1_1_4_r11_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r11(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r11_g = part(part(pool, i), 2), _mr_1_1_1_4_r11_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r11(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r11(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r11(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r11(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r11(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r11(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r11(mm, x) else false)$
 
@@ -281,9 +1051,79 @@ _mr_cond_1_1_1_4_r12(mm, x) := block([_mr_1_1_1_4_r12_a, _mr_1_1_1_4_r12_b, _mr_
 _mr_repl_1_1_1_4_r12(mm, x) := block([_mr_1_1_1_4_r12_a__s, _mr_1_1_1_4_r12_b__s, _mr_1_1_1_4_r12_c__s, _mr_1_1_1_4_r12_d__s, _mr_1_1_1_4_r12_e__s, _mr_1_1_1_4_r12_f__s, _mr_1_1_1_4_r12_g__s, _mr_1_1_1_4_r12_h__s, _mr_1_1_1_4_r12_m__s, _mr_1_1_1_4_r12_n__s, _mr_1_1_1_4_r12_p__s],
   _mr_1_1_1_4_r12_a__s : geteqR(mm, '_mr_1_1_1_4_r12_a), _mr_1_1_1_4_r12_b__s : geteqR(mm, '_mr_1_1_1_4_r12_b), _mr_1_1_1_4_r12_c__s : geteqR(mm, '_mr_1_1_1_4_r12_c), _mr_1_1_1_4_r12_d__s : geteqR(mm, '_mr_1_1_1_4_r12_d), _mr_1_1_1_4_r12_e__s : geteqR(mm, '_mr_1_1_1_4_r12_e), _mr_1_1_1_4_r12_f__s : geteqR(mm, '_mr_1_1_1_4_r12_f), _mr_1_1_1_4_r12_g__s : geteqR(mm, '_mr_1_1_1_4_r12_g), _mr_1_1_1_4_r12_h__s : geteqR(mm, '_mr_1_1_1_4_r12_h), _mr_1_1_1_4_r12_m__s : geteqR(mm, '_mr_1_1_1_4_r12_m), _mr_1_1_1_4_r12_n__s : geteqR(mm, '_mr_1_1_1_4_r12_n), _mr_1_1_1_4_r12_p__s : geteqR(mm, '_mr_1_1_1_4_r12_p),
   _mr_1_1_1_4_r12_h__s*(_mr_1_1_1_4_r12_a__s + _mr_1_1_1_4_r12_b__s*x)^ _mr_1_1_1_4_r12_m__s*(_mr_1_1_1_4_r12_c__s + _mr_1_1_1_4_r12_d__s*x)^(_mr_1_1_1_4_r12_n__s + 1)*(_mr_1_1_1_4_r12_e__s + _mr_1_1_1_4_r12_f__s*x)^(_mr_1_1_1_4_r12_p__s + 1)/(_mr_1_1_1_4_r12_d__s*_mr_1_1_1_4_r12_f__s*(_mr_1_1_1_4_r12_m__s + _mr_1_1_1_4_r12_n__s + _mr_1_1_1_4_r12_p__s + 2)) + 1/(_mr_1_1_1_4_r12_d__s*_mr_1_1_1_4_r12_f__s*(_mr_1_1_1_4_r12_m__s + _mr_1_1_1_4_r12_n__s + _mr_1_1_1_4_r12_p__s + 2))* mr_int((_mr_1_1_1_4_r12_a__s + _mr_1_1_1_4_r12_b__s*x)^(_mr_1_1_1_4_r12_m__s - 1)*(_mr_1_1_1_4_r12_c__s + _mr_1_1_1_4_r12_d__s*x)^_mr_1_1_1_4_r12_n__s*(_mr_1_1_1_4_r12_e__s + _mr_1_1_1_4_r12_f__s*x)^_mr_1_1_1_4_r12_p__s* %mr_simp(_mr_1_1_1_4_r12_a__s*_mr_1_1_1_4_r12_d__s*_mr_1_1_1_4_r12_f__s*_mr_1_1_1_4_r12_g__s*(_mr_1_1_1_4_r12_m__s + _mr_1_1_1_4_r12_n__s + _mr_1_1_1_4_r12_p__s + 2) - _mr_1_1_1_4_r12_h__s*(_mr_1_1_1_4_r12_b__s*_mr_1_1_1_4_r12_c__s*_mr_1_1_1_4_r12_e__s*_mr_1_1_1_4_r12_m__s + _mr_1_1_1_4_r12_a__s*(_mr_1_1_1_4_r12_d__s*_mr_1_1_1_4_r12_e__s*(_mr_1_1_1_4_r12_n__s + 1) + _mr_1_1_1_4_r12_c__s*_mr_1_1_1_4_r12_f__s*(_mr_1_1_1_4_r12_p__s + 1))) + (_mr_1_1_1_4_r12_b__s*_mr_1_1_1_4_r12_d__s*_mr_1_1_1_4_r12_f__s*_mr_1_1_1_4_r12_g__s*(_mr_1_1_1_4_r12_m__s + _mr_1_1_1_4_r12_n__s + _mr_1_1_1_4_r12_p__s + 2) + _mr_1_1_1_4_r12_h__s*(_mr_1_1_1_4_r12_a__s*_mr_1_1_1_4_r12_d__s*_mr_1_1_1_4_r12_f__s*_mr_1_1_1_4_r12_m__s - _mr_1_1_1_4_r12_b__s*(_mr_1_1_1_4_r12_d__s*_mr_1_1_1_4_r12_e__s*(_mr_1_1_1_4_r12_m__s + _mr_1_1_1_4_r12_n__s + 1) + _mr_1_1_1_4_r12_c__s*_mr_1_1_1_4_r12_f__s*(_mr_1_1_1_4_r12_m__s + _mr_1_1_1_4_r12_p__s + 1))))*x, x), x))$
-_mr_rule_1_1_1_4_r12(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r12(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r12(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r12_a = part(part(pool, i), 2), _mr_1_1_1_4_r12_b = part(part(pool, i), 3), _mr_1_1_1_4_r12_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r12(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r12_c = part(part(pool, i), 2), _mr_1_1_1_4_r12_d = part(part(pool, i), 3), _mr_1_1_1_4_r12_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r12(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r12_e = part(part(pool, i), 2), _mr_1_1_1_4_r12_f = part(part(pool, i), 3), _mr_1_1_1_4_r12_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r12(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r12_g = part(part(pool, i), 2), _mr_1_1_1_4_r12_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r12(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r12(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r12(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r12(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r12(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r12(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r12(mm, x) else false)$
 
@@ -305,9 +1145,79 @@ _mr_cond_1_1_1_4_r13(mm, x) := block([_mr_1_1_1_4_r13_a, _mr_1_1_1_4_r13_b, _mr_
 _mr_repl_1_1_1_4_r13(mm, x) := block([_mr_1_1_1_4_r13_a__s, _mr_1_1_1_4_r13_b__s, _mr_1_1_1_4_r13_c__s, _mr_1_1_1_4_r13_d__s, _mr_1_1_1_4_r13_e__s, _mr_1_1_1_4_r13_f__s, _mr_1_1_1_4_r13_g__s, _mr_1_1_1_4_r13_h__s, _mr_1_1_1_4_r13_m__s, _mr_1_1_1_4_r13_n__s, _mr_1_1_1_4_r13_p__s],
   _mr_1_1_1_4_r13_a__s : geteqR(mm, '_mr_1_1_1_4_r13_a), _mr_1_1_1_4_r13_b__s : geteqR(mm, '_mr_1_1_1_4_r13_b), _mr_1_1_1_4_r13_c__s : geteqR(mm, '_mr_1_1_1_4_r13_c), _mr_1_1_1_4_r13_d__s : geteqR(mm, '_mr_1_1_1_4_r13_d), _mr_1_1_1_4_r13_e__s : geteqR(mm, '_mr_1_1_1_4_r13_e), _mr_1_1_1_4_r13_f__s : geteqR(mm, '_mr_1_1_1_4_r13_f), _mr_1_1_1_4_r13_g__s : geteqR(mm, '_mr_1_1_1_4_r13_g), _mr_1_1_1_4_r13_h__s : geteqR(mm, '_mr_1_1_1_4_r13_h), _mr_1_1_1_4_r13_m__s : geteqR(mm, '_mr_1_1_1_4_r13_m), _mr_1_1_1_4_r13_n__s : geteqR(mm, '_mr_1_1_1_4_r13_n), _mr_1_1_1_4_r13_p__s : geteqR(mm, '_mr_1_1_1_4_r13_p),
   _mr_1_1_1_4_r13_h__s*(_mr_1_1_1_4_r13_a__s + _mr_1_1_1_4_r13_b__s*x)^ _mr_1_1_1_4_r13_m__s*(_mr_1_1_1_4_r13_c__s + _mr_1_1_1_4_r13_d__s*x)^(_mr_1_1_1_4_r13_n__s + 1)*(_mr_1_1_1_4_r13_e__s + _mr_1_1_1_4_r13_f__s*x)^(_mr_1_1_1_4_r13_p__s + 1)/(_mr_1_1_1_4_r13_d__s*_mr_1_1_1_4_r13_f__s*(_mr_1_1_1_4_r13_m__s + _mr_1_1_1_4_r13_n__s + _mr_1_1_1_4_r13_p__s + 2)) + 1/(_mr_1_1_1_4_r13_d__s*_mr_1_1_1_4_r13_f__s*(_mr_1_1_1_4_r13_m__s + _mr_1_1_1_4_r13_n__s + _mr_1_1_1_4_r13_p__s + 2))* mr_int((_mr_1_1_1_4_r13_a__s + _mr_1_1_1_4_r13_b__s*x)^(_mr_1_1_1_4_r13_m__s - 1)*(_mr_1_1_1_4_r13_c__s + _mr_1_1_1_4_r13_d__s*x)^_mr_1_1_1_4_r13_n__s*(_mr_1_1_1_4_r13_e__s + _mr_1_1_1_4_r13_f__s*x)^_mr_1_1_1_4_r13_p__s* %mr_simp(_mr_1_1_1_4_r13_a__s*_mr_1_1_1_4_r13_d__s*_mr_1_1_1_4_r13_f__s*_mr_1_1_1_4_r13_g__s*(_mr_1_1_1_4_r13_m__s + _mr_1_1_1_4_r13_n__s + _mr_1_1_1_4_r13_p__s + 2) - _mr_1_1_1_4_r13_h__s*(_mr_1_1_1_4_r13_b__s*_mr_1_1_1_4_r13_c__s*_mr_1_1_1_4_r13_e__s*_mr_1_1_1_4_r13_m__s + _mr_1_1_1_4_r13_a__s*(_mr_1_1_1_4_r13_d__s*_mr_1_1_1_4_r13_e__s*(_mr_1_1_1_4_r13_n__s + 1) + _mr_1_1_1_4_r13_c__s*_mr_1_1_1_4_r13_f__s*(_mr_1_1_1_4_r13_p__s + 1))) + (_mr_1_1_1_4_r13_b__s*_mr_1_1_1_4_r13_d__s*_mr_1_1_1_4_r13_f__s*_mr_1_1_1_4_r13_g__s*(_mr_1_1_1_4_r13_m__s + _mr_1_1_1_4_r13_n__s + _mr_1_1_1_4_r13_p__s + 2) + _mr_1_1_1_4_r13_h__s*(_mr_1_1_1_4_r13_a__s*_mr_1_1_1_4_r13_d__s*_mr_1_1_1_4_r13_f__s*_mr_1_1_1_4_r13_m__s - _mr_1_1_1_4_r13_b__s*(_mr_1_1_1_4_r13_d__s*_mr_1_1_1_4_r13_e__s*(_mr_1_1_1_4_r13_m__s + _mr_1_1_1_4_r13_n__s + 1) + _mr_1_1_1_4_r13_c__s*_mr_1_1_1_4_r13_f__s*(_mr_1_1_1_4_r13_m__s + _mr_1_1_1_4_r13_p__s + 1))))*x, x), x))$
-_mr_rule_1_1_1_4_r13(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r13(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r13(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r13_a = part(part(pool, i), 2), _mr_1_1_1_4_r13_b = part(part(pool, i), 3), _mr_1_1_1_4_r13_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r13(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r13_c = part(part(pool, i), 2), _mr_1_1_1_4_r13_d = part(part(pool, i), 3), _mr_1_1_1_4_r13_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r13(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r13_e = part(part(pool, i), 2), _mr_1_1_1_4_r13_f = part(part(pool, i), 3), _mr_1_1_1_4_r13_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r13(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r13_g = part(part(pool, i), 2), _mr_1_1_1_4_r13_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r13(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r13(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r13(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r13(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r13(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r13(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r13(mm, x) else false)$
 
@@ -329,9 +1239,79 @@ _mr_cond_1_1_1_4_r14(mm, x) := block([_mr_1_1_1_4_r14_a, _mr_1_1_1_4_r14_b, _mr_
 _mr_repl_1_1_1_4_r14(mm, x) := block([_mr_1_1_1_4_r14_a__s, _mr_1_1_1_4_r14_b__s, _mr_1_1_1_4_r14_c__s, _mr_1_1_1_4_r14_d__s, _mr_1_1_1_4_r14_e__s, _mr_1_1_1_4_r14_f__s, _mr_1_1_1_4_r14_g__s, _mr_1_1_1_4_r14_h__s, _mr_1_1_1_4_r14_m__s, _mr_1_1_1_4_r14_n__s, _mr_1_1_1_4_r14_p__s],
   _mr_1_1_1_4_r14_a__s : geteqR(mm, '_mr_1_1_1_4_r14_a), _mr_1_1_1_4_r14_b__s : geteqR(mm, '_mr_1_1_1_4_r14_b), _mr_1_1_1_4_r14_c__s : geteqR(mm, '_mr_1_1_1_4_r14_c), _mr_1_1_1_4_r14_d__s : geteqR(mm, '_mr_1_1_1_4_r14_d), _mr_1_1_1_4_r14_e__s : geteqR(mm, '_mr_1_1_1_4_r14_e), _mr_1_1_1_4_r14_f__s : geteqR(mm, '_mr_1_1_1_4_r14_f), _mr_1_1_1_4_r14_g__s : geteqR(mm, '_mr_1_1_1_4_r14_g), _mr_1_1_1_4_r14_h__s : geteqR(mm, '_mr_1_1_1_4_r14_h), _mr_1_1_1_4_r14_m__s : geteqR(mm, '_mr_1_1_1_4_r14_m), _mr_1_1_1_4_r14_n__s : geteqR(mm, '_mr_1_1_1_4_r14_n), _mr_1_1_1_4_r14_p__s : geteqR(mm, '_mr_1_1_1_4_r14_p),
   (_mr_1_1_1_4_r14_b__s*_mr_1_1_1_4_r14_g__s - _mr_1_1_1_4_r14_a__s*_mr_1_1_1_4_r14_h__s)*(_mr_1_1_1_4_r14_a__s + _mr_1_1_1_4_r14_b__s*x)^(_mr_1_1_1_4_r14_m__s + 1)*(_mr_1_1_1_4_r14_c__s + _mr_1_1_1_4_r14_d__s*x)^(_mr_1_1_1_4_r14_n__s + 1)*(_mr_1_1_1_4_r14_e__s + _mr_1_1_1_4_r14_f__s*x)^(_mr_1_1_1_4_r14_p__s + 1)/((_mr_1_1_1_4_r14_m__s + 1)*(_mr_1_1_1_4_r14_b__s*_mr_1_1_1_4_r14_c__s - _mr_1_1_1_4_r14_a__s*_mr_1_1_1_4_r14_d__s)*(_mr_1_1_1_4_r14_b__s*_mr_1_1_1_4_r14_e__s - _mr_1_1_1_4_r14_a__s*_mr_1_1_1_4_r14_f__s)) + 1/((_mr_1_1_1_4_r14_m__s + 1)*(_mr_1_1_1_4_r14_b__s*_mr_1_1_1_4_r14_c__s - _mr_1_1_1_4_r14_a__s*_mr_1_1_1_4_r14_d__s)*(_mr_1_1_1_4_r14_b__s*_mr_1_1_1_4_r14_e__s - _mr_1_1_1_4_r14_a__s*_mr_1_1_1_4_r14_f__s))* mr_int((_mr_1_1_1_4_r14_a__s + _mr_1_1_1_4_r14_b__s*x)^(_mr_1_1_1_4_r14_m__s + 1)*(_mr_1_1_1_4_r14_c__s + _mr_1_1_1_4_r14_d__s*x)^_mr_1_1_1_4_r14_n__s*(_mr_1_1_1_4_r14_e__s + _mr_1_1_1_4_r14_f__s*x)^_mr_1_1_1_4_r14_p__s* %mr_simp((_mr_1_1_1_4_r14_a__s*_mr_1_1_1_4_r14_d__s*_mr_1_1_1_4_r14_f__s*_mr_1_1_1_4_r14_g__s - _mr_1_1_1_4_r14_b__s*(_mr_1_1_1_4_r14_d__s*_mr_1_1_1_4_r14_e__s + _mr_1_1_1_4_r14_c__s*_mr_1_1_1_4_r14_f__s)*_mr_1_1_1_4_r14_g__s + _mr_1_1_1_4_r14_b__s*_mr_1_1_1_4_r14_c__s*_mr_1_1_1_4_r14_e__s*_mr_1_1_1_4_r14_h__s)*(_mr_1_1_1_4_r14_m__s + 1) - (_mr_1_1_1_4_r14_b__s*_mr_1_1_1_4_r14_g__s - _mr_1_1_1_4_r14_a__s*_mr_1_1_1_4_r14_h__s)*(_mr_1_1_1_4_r14_d__s*_mr_1_1_1_4_r14_e__s*(_mr_1_1_1_4_r14_n__s + 1) + _mr_1_1_1_4_r14_c__s*_mr_1_1_1_4_r14_f__s*(_mr_1_1_1_4_r14_p__s + 1)) - _mr_1_1_1_4_r14_d__s*_mr_1_1_1_4_r14_f__s*(_mr_1_1_1_4_r14_b__s*_mr_1_1_1_4_r14_g__s - _mr_1_1_1_4_r14_a__s*_mr_1_1_1_4_r14_h__s)*(_mr_1_1_1_4_r14_m__s + _mr_1_1_1_4_r14_n__s + _mr_1_1_1_4_r14_p__s + 3)*x, x), x))$
-_mr_rule_1_1_1_4_r14(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r14(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r14(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r14_a = part(part(pool, i), 2), _mr_1_1_1_4_r14_b = part(part(pool, i), 3), _mr_1_1_1_4_r14_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r14(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r14_c = part(part(pool, i), 2), _mr_1_1_1_4_r14_d = part(part(pool, i), 3), _mr_1_1_1_4_r14_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r14(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r14_e = part(part(pool, i), 2), _mr_1_1_1_4_r14_f = part(part(pool, i), 3), _mr_1_1_1_4_r14_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r14(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r14_g = part(part(pool, i), 2), _mr_1_1_1_4_r14_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r14(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r14(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r14(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r14(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r14(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r14(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r14(mm, x) else false)$
 
@@ -352,9 +1332,79 @@ _mr_cond_1_1_1_4_r15(mm, x) := block([_mr_1_1_1_4_r15_a, _mr_1_1_1_4_r15_b, _mr_
 _mr_repl_1_1_1_4_r15(mm, x) := block([_mr_1_1_1_4_r15_a__s, _mr_1_1_1_4_r15_b__s, _mr_1_1_1_4_r15_c__s, _mr_1_1_1_4_r15_d__s, _mr_1_1_1_4_r15_e__s, _mr_1_1_1_4_r15_f__s, _mr_1_1_1_4_r15_g__s, _mr_1_1_1_4_r15_h__s, _mr_1_1_1_4_r15_m__s, _mr_1_1_1_4_r15_n__s],
   _mr_1_1_1_4_r15_a__s : geteqR(mm, '_mr_1_1_1_4_r15_a), _mr_1_1_1_4_r15_b__s : geteqR(mm, '_mr_1_1_1_4_r15_b), _mr_1_1_1_4_r15_c__s : geteqR(mm, '_mr_1_1_1_4_r15_c), _mr_1_1_1_4_r15_d__s : geteqR(mm, '_mr_1_1_1_4_r15_d), _mr_1_1_1_4_r15_e__s : geteqR(mm, '_mr_1_1_1_4_r15_e), _mr_1_1_1_4_r15_f__s : geteqR(mm, '_mr_1_1_1_4_r15_f), _mr_1_1_1_4_r15_g__s : geteqR(mm, '_mr_1_1_1_4_r15_g), _mr_1_1_1_4_r15_h__s : geteqR(mm, '_mr_1_1_1_4_r15_h), _mr_1_1_1_4_r15_m__s : geteqR(mm, '_mr_1_1_1_4_r15_m), _mr_1_1_1_4_r15_n__s : geteqR(mm, '_mr_1_1_1_4_r15_n),
   (_mr_1_1_1_4_r15_f__s*_mr_1_1_1_4_r15_g__s - _mr_1_1_1_4_r15_e__s*_mr_1_1_1_4_r15_h__s)*(_mr_1_1_1_4_r15_c__s*_mr_1_1_1_4_r15_f__s - _mr_1_1_1_4_r15_d__s*_mr_1_1_1_4_r15_e__s)^(_mr_1_1_1_4_r15_m__s + _mr_1_1_1_4_r15_n__s + 1)/_mr_1_1_1_4_r15_f__s^(_mr_1_1_1_4_r15_m__s + _mr_1_1_1_4_r15_n__s + 2)* mr_int((_mr_1_1_1_4_r15_a__s + _mr_1_1_1_4_r15_b__s*x)^_mr_1_1_1_4_r15_m__s/((_mr_1_1_1_4_r15_c__s + _mr_1_1_1_4_r15_d__s*x)^(_mr_1_1_1_4_r15_m__s + 1)*(_mr_1_1_1_4_r15_e__s + _mr_1_1_1_4_r15_f__s*x)), x) + 1/_mr_1_1_1_4_r15_f__s^(_mr_1_1_1_4_r15_m__s + _mr_1_1_1_4_r15_n__s + 2)*mr_int((_mr_1_1_1_4_r15_a__s + _mr_1_1_1_4_r15_b__s*x)^_mr_1_1_1_4_r15_m__s/(_mr_1_1_1_4_r15_c__s + _mr_1_1_1_4_r15_d__s*x)^(_mr_1_1_1_4_r15_m__s + 1)* %mr_expandToSum((_mr_1_1_1_4_r15_f__s^(_mr_1_1_1_4_r15_m__s + _mr_1_1_1_4_r15_n__s + 2)*(_mr_1_1_1_4_r15_c__s + _mr_1_1_1_4_r15_d__s*x)^(_mr_1_1_1_4_r15_m__s + _mr_1_1_1_4_r15_n__s + 1)*(_mr_1_1_1_4_r15_g__s + _mr_1_1_1_4_r15_h__s*x) - (_mr_1_1_1_4_r15_f__s*_mr_1_1_1_4_r15_g__s - _mr_1_1_1_4_r15_e__s*_mr_1_1_1_4_r15_h__s)*(_mr_1_1_1_4_r15_c__s*_mr_1_1_1_4_r15_f__s - _mr_1_1_1_4_r15_d__s*_mr_1_1_1_4_r15_e__s)^(_mr_1_1_1_4_r15_m__s + _mr_1_1_1_4_r15_n__s + 1))/(_mr_1_1_1_4_r15_e__s + _mr_1_1_1_4_r15_f__s*x), x), x))$
-_mr_rule_1_1_1_4_r15(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r15(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r15(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r15_a = part(part(pool, i), 2), _mr_1_1_1_4_r15_b = part(part(pool, i), 3), _mr_1_1_1_4_r15_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r15(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r15_c = part(part(pool, i), 2), _mr_1_1_1_4_r15_d = part(part(pool, i), 3), _mr_1_1_1_4_r15_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r15(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r15_g = part(part(pool, i), 2), _mr_1_1_1_4_r15_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = -1) = true then (
+        r2 : _mr_slots_1_1_1_4_r15(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r15_e = part(part(pool, i), 2), _mr_1_1_1_4_r15_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r15(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r15(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r15(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r15(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r15(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r15(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r15(mm, x) else false)$
 
@@ -377,6 +1427,7 @@ _mr_repl_1_1_1_4_r16(mm, x) := block([_mr_1_1_1_4_r16_a__s, _mr_1_1_1_4_r16_b__s
 _mr_rule_1_1_1_4_r16(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r16(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r16(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r16(mm, x) else false)$
 
@@ -397,9 +1448,79 @@ _mr_cond_1_1_1_4_r17(mm, x) := block([_mr_1_1_1_4_r17_a, _mr_1_1_1_4_r17_b, _mr_
 _mr_repl_1_1_1_4_r17(mm, x) := block([_mr_1_1_1_4_r17_a__s, _mr_1_1_1_4_r17_b__s, _mr_1_1_1_4_r17_c__s, _mr_1_1_1_4_r17_d__s, _mr_1_1_1_4_r17_e__s, _mr_1_1_1_4_r17_f__s, _mr_1_1_1_4_r17_g__s, _mr_1_1_1_4_r17_h__s, _mr_1_1_1_4_r17_n__s, _mr_1_1_1_4_r17_p__s],
   _mr_1_1_1_4_r17_a__s : geteqR(mm, '_mr_1_1_1_4_r17_a), _mr_1_1_1_4_r17_b__s : geteqR(mm, '_mr_1_1_1_4_r17_b), _mr_1_1_1_4_r17_c__s : geteqR(mm, '_mr_1_1_1_4_r17_c), _mr_1_1_1_4_r17_d__s : geteqR(mm, '_mr_1_1_1_4_r17_d), _mr_1_1_1_4_r17_e__s : geteqR(mm, '_mr_1_1_1_4_r17_e), _mr_1_1_1_4_r17_f__s : geteqR(mm, '_mr_1_1_1_4_r17_f), _mr_1_1_1_4_r17_g__s : geteqR(mm, '_mr_1_1_1_4_r17_g), _mr_1_1_1_4_r17_h__s : geteqR(mm, '_mr_1_1_1_4_r17_h), _mr_1_1_1_4_r17_n__s : geteqR(mm, '_mr_1_1_1_4_r17_n), _mr_1_1_1_4_r17_p__s : geteqR(mm, '_mr_1_1_1_4_r17_p),
   _mr_1_1_1_4_r17_h__s/_mr_1_1_1_4_r17_b__s*mr_int((_mr_1_1_1_4_r17_c__s + _mr_1_1_1_4_r17_d__s*x)^_mr_1_1_1_4_r17_n__s*(_mr_1_1_1_4_r17_e__s + _mr_1_1_1_4_r17_f__s*x)^_mr_1_1_1_4_r17_p__s, x) + (_mr_1_1_1_4_r17_b__s*_mr_1_1_1_4_r17_g__s - _mr_1_1_1_4_r17_a__s*_mr_1_1_1_4_r17_h__s)/_mr_1_1_1_4_r17_b__s* mr_int((_mr_1_1_1_4_r17_c__s + _mr_1_1_1_4_r17_d__s*x)^_mr_1_1_1_4_r17_n__s*(_mr_1_1_1_4_r17_e__s + _mr_1_1_1_4_r17_f__s*x)^_mr_1_1_1_4_r17_p__s/(_mr_1_1_1_4_r17_a__s + _mr_1_1_1_4_r17_b__s*x), x))$
-_mr_rule_1_1_1_4_r17(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r17(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r17(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r17_c = part(part(pool, i), 2), _mr_1_1_1_4_r17_d = part(part(pool, i), 3), _mr_1_1_1_4_r17_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r17(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r17_e = part(part(pool, i), 2), _mr_1_1_1_4_r17_f = part(part(pool, i), 3), _mr_1_1_1_4_r17_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r17(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r17_g = part(part(pool, i), 2), _mr_1_1_1_4_r17_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = -1) = true then (
+        r2 : _mr_slots_1_1_1_4_r17(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r17_a = part(part(pool, i), 2), _mr_1_1_1_4_r17_b = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r17(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r17(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r17(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r17(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r17(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r17(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r17(mm, x) else false)$
 
@@ -421,6 +1542,7 @@ _mr_repl_1_1_1_4_r18(mm, x) := block([_mr_1_1_1_4_r18_a__s, _mr_1_1_1_4_r18_b__s
 _mr_rule_1_1_1_4_r18(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r18(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r18(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r18(mm, x) else false)$
 
@@ -442,9 +1564,79 @@ _mr_cond_1_1_1_4_r19(mm, x) := block([_mr_1_1_1_4_r19_a, _mr_1_1_1_4_r19_b, _mr_
 _mr_repl_1_1_1_4_r19(mm, x) := block([_mr_1_1_1_4_r19_a__s, _mr_1_1_1_4_r19_b__s, _mr_1_1_1_4_r19_c__s, _mr_1_1_1_4_r19_d__s, _mr_1_1_1_4_r19_e__s, _mr_1_1_1_4_r19_f__s, _mr_1_1_1_4_r19_g__s, _mr_1_1_1_4_r19_h__s, _mr_1_1_1_4_r19_m__s, _mr_1_1_1_4_r19_n__s, _mr_1_1_1_4_r19_p__s],
   _mr_1_1_1_4_r19_a__s : geteqR(mm, '_mr_1_1_1_4_r19_a), _mr_1_1_1_4_r19_b__s : geteqR(mm, '_mr_1_1_1_4_r19_b), _mr_1_1_1_4_r19_c__s : geteqR(mm, '_mr_1_1_1_4_r19_c), _mr_1_1_1_4_r19_d__s : geteqR(mm, '_mr_1_1_1_4_r19_d), _mr_1_1_1_4_r19_e__s : geteqR(mm, '_mr_1_1_1_4_r19_e), _mr_1_1_1_4_r19_f__s : geteqR(mm, '_mr_1_1_1_4_r19_f), _mr_1_1_1_4_r19_g__s : geteqR(mm, '_mr_1_1_1_4_r19_g), _mr_1_1_1_4_r19_h__s : geteqR(mm, '_mr_1_1_1_4_r19_h), _mr_1_1_1_4_r19_m__s : geteqR(mm, '_mr_1_1_1_4_r19_m), _mr_1_1_1_4_r19_n__s : geteqR(mm, '_mr_1_1_1_4_r19_n), _mr_1_1_1_4_r19_p__s : geteqR(mm, '_mr_1_1_1_4_r19_p),
   _mr_1_1_1_4_r19_h__s/_mr_1_1_1_4_r19_b__s*mr_int((_mr_1_1_1_4_r19_a__s + _mr_1_1_1_4_r19_b__s*x)^(_mr_1_1_1_4_r19_m__s + 1)*(_mr_1_1_1_4_r19_c__s + _mr_1_1_1_4_r19_d__s*x)^_mr_1_1_1_4_r19_n__s*(_mr_1_1_1_4_r19_e__s + _mr_1_1_1_4_r19_f__s*x)^_mr_1_1_1_4_r19_p__s, x) + (_mr_1_1_1_4_r19_b__s*_mr_1_1_1_4_r19_g__s - _mr_1_1_1_4_r19_a__s*_mr_1_1_1_4_r19_h__s)/_mr_1_1_1_4_r19_b__s*mr_int((_mr_1_1_1_4_r19_a__s + _mr_1_1_1_4_r19_b__s*x)^_mr_1_1_1_4_r19_m__s*(_mr_1_1_1_4_r19_c__s + _mr_1_1_1_4_r19_d__s*x)^_mr_1_1_1_4_r19_n__s*(_mr_1_1_1_4_r19_e__s + _mr_1_1_1_4_r19_f__s*x)^_mr_1_1_1_4_r19_p__s, x))$
-_mr_rule_1_1_1_4_r19(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r19(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r19(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r19_a = part(part(pool, i), 2), _mr_1_1_1_4_r19_b = part(part(pool, i), 3), _mr_1_1_1_4_r19_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r19(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r19_c = part(part(pool, i), 2), _mr_1_1_1_4_r19_d = part(part(pool, i), 3), _mr_1_1_1_4_r19_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r19(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r19_e = part(part(pool, i), 2), _mr_1_1_1_4_r19_f = part(part(pool, i), 3), _mr_1_1_1_4_r19_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r19(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r19_g = part(part(pool, i), 2), _mr_1_1_1_4_r19_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r19(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r19(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r19(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r19(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r19(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r19(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r19(mm, x) else false)$
 
@@ -464,9 +1656,79 @@ _mr_cond_1_1_1_4_r20(mm, x) := block([_mr_1_1_1_4_r20_a, _mr_1_1_1_4_r20_b, _mr_
 _mr_repl_1_1_1_4_r20(mm, x) := block([_mr_1_1_1_4_r20_a__s, _mr_1_1_1_4_r20_b__s, _mr_1_1_1_4_r20_c__s, _mr_1_1_1_4_r20_d__s, _mr_1_1_1_4_r20_e__s, _mr_1_1_1_4_r20_f__s, _mr_1_1_1_4_r20_g__s, _mr_1_1_1_4_r20_h__s, _mr_1_1_1_4_r20_m__s],
   _mr_1_1_1_4_r20_a__s : geteqR(mm, '_mr_1_1_1_4_r20_a), _mr_1_1_1_4_r20_b__s : geteqR(mm, '_mr_1_1_1_4_r20_b), _mr_1_1_1_4_r20_c__s : geteqR(mm, '_mr_1_1_1_4_r20_c), _mr_1_1_1_4_r20_d__s : geteqR(mm, '_mr_1_1_1_4_r20_d), _mr_1_1_1_4_r20_e__s : geteqR(mm, '_mr_1_1_1_4_r20_e), _mr_1_1_1_4_r20_f__s : geteqR(mm, '_mr_1_1_1_4_r20_f), _mr_1_1_1_4_r20_g__s : geteqR(mm, '_mr_1_1_1_4_r20_g), _mr_1_1_1_4_r20_h__s : geteqR(mm, '_mr_1_1_1_4_r20_h), _mr_1_1_1_4_r20_m__s : geteqR(mm, '_mr_1_1_1_4_r20_m),
   (_mr_1_1_1_4_r20_a__s + _mr_1_1_1_4_r20_b__s*x)^(_mr_1_1_1_4_r20_m__s + 1)*sqrt(_mr_1_1_1_4_r20_c__s + _mr_1_1_1_4_r20_d__s*x)*sqrt(_mr_1_1_1_4_r20_e__s + _mr_1_1_1_4_r20_f__s*x)* sqrt(_mr_1_1_1_4_r20_g__s + _mr_1_1_1_4_r20_h__s*x)/(_mr_1_1_1_4_r20_b__s*(_mr_1_1_1_4_r20_m__s + 1)) - 1/(2*_mr_1_1_1_4_r20_b__s*(_mr_1_1_1_4_r20_m__s + 1))* mr_int((_mr_1_1_1_4_r20_a__s + _mr_1_1_1_4_r20_b__s*x)^(_mr_1_1_1_4_r20_m__s + 1)/(sqrt(_mr_1_1_1_4_r20_c__s + _mr_1_1_1_4_r20_d__s*x)*sqrt(_mr_1_1_1_4_r20_e__s + _mr_1_1_1_4_r20_f__s*x)* sqrt(_mr_1_1_1_4_r20_g__s + _mr_1_1_1_4_r20_h__s*x))* %mr_simp(_mr_1_1_1_4_r20_d__s*_mr_1_1_1_4_r20_e__s*_mr_1_1_1_4_r20_g__s + _mr_1_1_1_4_r20_c__s*_mr_1_1_1_4_r20_f__s*_mr_1_1_1_4_r20_g__s + _mr_1_1_1_4_r20_c__s*_mr_1_1_1_4_r20_e__s*_mr_1_1_1_4_r20_h__s + 2*(_mr_1_1_1_4_r20_d__s*_mr_1_1_1_4_r20_f__s*_mr_1_1_1_4_r20_g__s + _mr_1_1_1_4_r20_d__s*_mr_1_1_1_4_r20_e__s*_mr_1_1_1_4_r20_h__s + _mr_1_1_1_4_r20_c__s*_mr_1_1_1_4_r20_f__s*_mr_1_1_1_4_r20_h__s)*x + 3*_mr_1_1_1_4_r20_d__s*_mr_1_1_1_4_r20_f__s*_mr_1_1_1_4_r20_h__s*x^2, x), x))$
-_mr_rule_1_1_1_4_r20(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r20(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r20(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r20_a = part(part(pool, i), 2), _mr_1_1_1_4_r20_b = part(part(pool, i), 3), _mr_1_1_1_4_r20_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r20(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r20_c = part(part(pool, i), 2), _mr_1_1_1_4_r20_d = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r20(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r20_e = part(part(pool, i), 2), _mr_1_1_1_4_r20_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r20(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r20_g = part(part(pool, i), 2), _mr_1_1_1_4_r20_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r20(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r20(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r20(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r20(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r20(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r20(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r20(mm, x) else false)$
 
@@ -486,9 +1748,79 @@ _mr_cond_1_1_1_4_r21(mm, x) := block([_mr_1_1_1_4_r21_a, _mr_1_1_1_4_r21_b, _mr_
 _mr_repl_1_1_1_4_r21(mm, x) := block([_mr_1_1_1_4_r21_a__s, _mr_1_1_1_4_r21_b__s, _mr_1_1_1_4_r21_c__s, _mr_1_1_1_4_r21_d__s, _mr_1_1_1_4_r21_e__s, _mr_1_1_1_4_r21_f__s, _mr_1_1_1_4_r21_g__s, _mr_1_1_1_4_r21_h__s, _mr_1_1_1_4_r21_m__s],
   _mr_1_1_1_4_r21_a__s : geteqR(mm, '_mr_1_1_1_4_r21_a), _mr_1_1_1_4_r21_b__s : geteqR(mm, '_mr_1_1_1_4_r21_b), _mr_1_1_1_4_r21_c__s : geteqR(mm, '_mr_1_1_1_4_r21_c), _mr_1_1_1_4_r21_d__s : geteqR(mm, '_mr_1_1_1_4_r21_d), _mr_1_1_1_4_r21_e__s : geteqR(mm, '_mr_1_1_1_4_r21_e), _mr_1_1_1_4_r21_f__s : geteqR(mm, '_mr_1_1_1_4_r21_f), _mr_1_1_1_4_r21_g__s : geteqR(mm, '_mr_1_1_1_4_r21_g), _mr_1_1_1_4_r21_h__s : geteqR(mm, '_mr_1_1_1_4_r21_h), _mr_1_1_1_4_r21_m__s : geteqR(mm, '_mr_1_1_1_4_r21_m),
   2*(_mr_1_1_1_4_r21_a__s + _mr_1_1_1_4_r21_b__s*x)^(_mr_1_1_1_4_r21_m__s + 1)*sqrt(_mr_1_1_1_4_r21_c__s + _mr_1_1_1_4_r21_d__s*x)*sqrt(_mr_1_1_1_4_r21_e__s + _mr_1_1_1_4_r21_f__s*x)* sqrt(_mr_1_1_1_4_r21_g__s + _mr_1_1_1_4_r21_h__s*x)/(_mr_1_1_1_4_r21_b__s*(2*_mr_1_1_1_4_r21_m__s + 5)) + 1/(_mr_1_1_1_4_r21_b__s*(2*_mr_1_1_1_4_r21_m__s + 5))* mr_int(((_mr_1_1_1_4_r21_a__s + _mr_1_1_1_4_r21_b__s*x)^_mr_1_1_1_4_r21_m__s)/(sqrt(_mr_1_1_1_4_r21_c__s + _mr_1_1_1_4_r21_d__s*x)*sqrt(_mr_1_1_1_4_r21_e__s + _mr_1_1_1_4_r21_f__s*x)*sqrt(_mr_1_1_1_4_r21_g__s + _mr_1_1_1_4_r21_h__s*x))* %mr_simp(3*_mr_1_1_1_4_r21_b__s*_mr_1_1_1_4_r21_c__s*_mr_1_1_1_4_r21_e__s*_mr_1_1_1_4_r21_g__s - _mr_1_1_1_4_r21_a__s*(_mr_1_1_1_4_r21_d__s*_mr_1_1_1_4_r21_e__s*_mr_1_1_1_4_r21_g__s + _mr_1_1_1_4_r21_c__s*_mr_1_1_1_4_r21_f__s*_mr_1_1_1_4_r21_g__s + _mr_1_1_1_4_r21_c__s*_mr_1_1_1_4_r21_e__s*_mr_1_1_1_4_r21_h__s) + 2*(_mr_1_1_1_4_r21_b__s*(_mr_1_1_1_4_r21_d__s*_mr_1_1_1_4_r21_e__s*_mr_1_1_1_4_r21_g__s + _mr_1_1_1_4_r21_c__s*_mr_1_1_1_4_r21_f__s*_mr_1_1_1_4_r21_g__s + _mr_1_1_1_4_r21_c__s*_mr_1_1_1_4_r21_e__s*_mr_1_1_1_4_r21_h__s) - _mr_1_1_1_4_r21_a__s*(_mr_1_1_1_4_r21_d__s*_mr_1_1_1_4_r21_f__s*_mr_1_1_1_4_r21_g__s + _mr_1_1_1_4_r21_d__s*_mr_1_1_1_4_r21_e__s*_mr_1_1_1_4_r21_h__s + _mr_1_1_1_4_r21_c__s*_mr_1_1_1_4_r21_f__s*_mr_1_1_1_4_r21_h__s))* x - (3*_mr_1_1_1_4_r21_a__s*_mr_1_1_1_4_r21_d__s*_mr_1_1_1_4_r21_f__s*_mr_1_1_1_4_r21_h__s - _mr_1_1_1_4_r21_b__s*(_mr_1_1_1_4_r21_d__s*_mr_1_1_1_4_r21_f__s*_mr_1_1_1_4_r21_g__s + _mr_1_1_1_4_r21_d__s*_mr_1_1_1_4_r21_e__s*_mr_1_1_1_4_r21_h__s + _mr_1_1_1_4_r21_c__s*_mr_1_1_1_4_r21_f__s*_mr_1_1_1_4_r21_h__s))*x^2, x), x))$
-_mr_rule_1_1_1_4_r21(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r21(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r21(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r21_a = part(part(pool, i), 2), _mr_1_1_1_4_r21_b = part(part(pool, i), 3), _mr_1_1_1_4_r21_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r21(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r21_c = part(part(pool, i), 2), _mr_1_1_1_4_r21_d = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r21(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r21_e = part(part(pool, i), 2), _mr_1_1_1_4_r21_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r21(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r21_g = part(part(pool, i), 2), _mr_1_1_1_4_r21_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r21(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r21(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r21(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r21(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r21(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r21(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r21(mm, x) else false)$
 
@@ -508,9 +1840,79 @@ _mr_cond_1_1_1_4_r22(mm, x) := block([_mr_1_1_1_4_r22_a, _mr_1_1_1_4_r22_b, _mr_
 _mr_repl_1_1_1_4_r22(mm, x) := block([_mr_1_1_1_4_r22_a__s, _mr_1_1_1_4_r22_b__s, _mr_1_1_1_4_r22_c__s, _mr_1_1_1_4_r22_d__s, _mr_1_1_1_4_r22_e__s, _mr_1_1_1_4_r22_f__s, _mr_1_1_1_4_r22_g__s, _mr_1_1_1_4_r22_h__s, _mr_1_1_1_4_r22_m__s],
   _mr_1_1_1_4_r22_a__s : geteqR(mm, '_mr_1_1_1_4_r22_a), _mr_1_1_1_4_r22_b__s : geteqR(mm, '_mr_1_1_1_4_r22_b), _mr_1_1_1_4_r22_c__s : geteqR(mm, '_mr_1_1_1_4_r22_c), _mr_1_1_1_4_r22_d__s : geteqR(mm, '_mr_1_1_1_4_r22_d), _mr_1_1_1_4_r22_e__s : geteqR(mm, '_mr_1_1_1_4_r22_e), _mr_1_1_1_4_r22_f__s : geteqR(mm, '_mr_1_1_1_4_r22_f), _mr_1_1_1_4_r22_g__s : geteqR(mm, '_mr_1_1_1_4_r22_g), _mr_1_1_1_4_r22_h__s : geteqR(mm, '_mr_1_1_1_4_r22_h), _mr_1_1_1_4_r22_m__s : geteqR(mm, '_mr_1_1_1_4_r22_m),
   2*(_mr_1_1_1_4_r22_a__s + _mr_1_1_1_4_r22_b__s*x)^_mr_1_1_1_4_r22_m__s*sqrt(_mr_1_1_1_4_r22_c__s + _mr_1_1_1_4_r22_d__s*x)*sqrt(_mr_1_1_1_4_r22_e__s + _mr_1_1_1_4_r22_f__s*x)* sqrt(_mr_1_1_1_4_r22_g__s + _mr_1_1_1_4_r22_h__s*x)/(_mr_1_1_1_4_r22_d__s*(2*_mr_1_1_1_4_r22_m__s + 3)) - 1/(_mr_1_1_1_4_r22_d__s*(2*_mr_1_1_1_4_r22_m__s + 3))* mr_int(((_mr_1_1_1_4_r22_a__s + _mr_1_1_1_4_r22_b__s*x)^(_mr_1_1_1_4_r22_m__s - 1)/(sqrt(_mr_1_1_1_4_r22_c__s + _mr_1_1_1_4_r22_d__s*x)*sqrt(_mr_1_1_1_4_r22_e__s + _mr_1_1_1_4_r22_f__s*x)* sqrt(_mr_1_1_1_4_r22_g__s + _mr_1_1_1_4_r22_h__s*x)))* %mr_simp(2*_mr_1_1_1_4_r22_b__s*_mr_1_1_1_4_r22_c__s*_mr_1_1_1_4_r22_e__s*_mr_1_1_1_4_r22_g__s*_mr_1_1_1_4_r22_m__s + _mr_1_1_1_4_r22_a__s*(_mr_1_1_1_4_r22_c__s*(_mr_1_1_1_4_r22_f__s*_mr_1_1_1_4_r22_g__s + _mr_1_1_1_4_r22_e__s*_mr_1_1_1_4_r22_h__s) - 2*_mr_1_1_1_4_r22_d__s*_mr_1_1_1_4_r22_e__s*_mr_1_1_1_4_r22_g__s*(_mr_1_1_1_4_r22_m__s + 1)) - (_mr_1_1_1_4_r22_b__s*(2*_mr_1_1_1_4_r22_d__s*_mr_1_1_1_4_r22_e__s*_mr_1_1_1_4_r22_g__s - _mr_1_1_1_4_r22_c__s*(_mr_1_1_1_4_r22_f__s*_mr_1_1_1_4_r22_g__s + _mr_1_1_1_4_r22_e__s*_mr_1_1_1_4_r22_h__s)*(2*_mr_1_1_1_4_r22_m__s + 1)) - _mr_1_1_1_4_r22_a__s*(2*_mr_1_1_1_4_r22_c__s*_mr_1_1_1_4_r22_f__s*_mr_1_1_1_4_r22_h__s - _mr_1_1_1_4_r22_d__s*(2*_mr_1_1_1_4_r22_m__s + 1)*(_mr_1_1_1_4_r22_f__s*_mr_1_1_1_4_r22_g__s + _mr_1_1_1_4_r22_e__s*_mr_1_1_1_4_r22_h__s)))*x - (2*_mr_1_1_1_4_r22_a__s*_mr_1_1_1_4_r22_d__s*_mr_1_1_1_4_r22_f__s*_mr_1_1_1_4_r22_h__s*_mr_1_1_1_4_r22_m__s + _mr_1_1_1_4_r22_b__s*(_mr_1_1_1_4_r22_d__s*(_mr_1_1_1_4_r22_f__s*_mr_1_1_1_4_r22_g__s + _mr_1_1_1_4_r22_e__s*_mr_1_1_1_4_r22_h__s) - 2*_mr_1_1_1_4_r22_c__s*_mr_1_1_1_4_r22_f__s*_mr_1_1_1_4_r22_h__s*(_mr_1_1_1_4_r22_m__s + 1)))*x^2, x), x))$
-_mr_rule_1_1_1_4_r22(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r22(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r22(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r22_a = part(part(pool, i), 2), _mr_1_1_1_4_r22_b = part(part(pool, i), 3), _mr_1_1_1_4_r22_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r22(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r22_e = part(part(pool, i), 2), _mr_1_1_1_4_r22_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r22(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r22_g = part(part(pool, i), 2), _mr_1_1_1_4_r22_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = -(1/2)) = true then (
+        r2 : _mr_slots_1_1_1_4_r22(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r22_c = part(part(pool, i), 2), _mr_1_1_1_4_r22_d = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r22(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r22(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r22(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r22(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r22(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r22(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r22(mm, x) else false)$
 
@@ -532,6 +1934,7 @@ _mr_repl_1_1_1_4_r23(mm, x) := block([_mr_1_1_1_4_r23_a__s, _mr_1_1_1_4_r23_b__s
 _mr_rule_1_1_1_4_r23(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r23(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r23(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r23(mm, x) else false)$
 
@@ -551,9 +1954,79 @@ _mr_cond_1_1_1_4_r24(mm, x) := block([_mr_1_1_1_4_r24_a, _mr_1_1_1_4_r24_b, _mr_
 _mr_repl_1_1_1_4_r24(mm, x) := block([_mr_1_1_1_4_r24_a__s, _mr_1_1_1_4_r24_b__s, _mr_1_1_1_4_r24_c__s, _mr_1_1_1_4_r24_d__s, _mr_1_1_1_4_r24_e__s, _mr_1_1_1_4_r24_f__s, _mr_1_1_1_4_r24_g__s, _mr_1_1_1_4_r24_h__s, _mr_1_1_1_4_r24_m__s],
   _mr_1_1_1_4_r24_a__s : geteqR(mm, '_mr_1_1_1_4_r24_a), _mr_1_1_1_4_r24_b__s : geteqR(mm, '_mr_1_1_1_4_r24_b), _mr_1_1_1_4_r24_c__s : geteqR(mm, '_mr_1_1_1_4_r24_c), _mr_1_1_1_4_r24_d__s : geteqR(mm, '_mr_1_1_1_4_r24_d), _mr_1_1_1_4_r24_e__s : geteqR(mm, '_mr_1_1_1_4_r24_e), _mr_1_1_1_4_r24_f__s : geteqR(mm, '_mr_1_1_1_4_r24_f), _mr_1_1_1_4_r24_g__s : geteqR(mm, '_mr_1_1_1_4_r24_g), _mr_1_1_1_4_r24_h__s : geteqR(mm, '_mr_1_1_1_4_r24_h), _mr_1_1_1_4_r24_m__s : geteqR(mm, '_mr_1_1_1_4_r24_m),
   (_mr_1_1_1_4_r24_a__s + _mr_1_1_1_4_r24_b__s*x)^(_mr_1_1_1_4_r24_m__s + 1)*sqrt(_mr_1_1_1_4_r24_c__s + _mr_1_1_1_4_r24_d__s*x)*sqrt(_mr_1_1_1_4_r24_e__s + _mr_1_1_1_4_r24_f__s*x)* sqrt(_mr_1_1_1_4_r24_g__s + _mr_1_1_1_4_r24_h__s*x)/((_mr_1_1_1_4_r24_m__s + 1)*(_mr_1_1_1_4_r24_b__s*_mr_1_1_1_4_r24_c__s - _mr_1_1_1_4_r24_a__s*_mr_1_1_1_4_r24_d__s)) - 1/(2*(_mr_1_1_1_4_r24_m__s + 1)*(_mr_1_1_1_4_r24_b__s*_mr_1_1_1_4_r24_c__s - _mr_1_1_1_4_r24_a__s*_mr_1_1_1_4_r24_d__s))* mr_int(((_mr_1_1_1_4_r24_a__s + _mr_1_1_1_4_r24_b__s*x)^(_mr_1_1_1_4_r24_m__s + 1)/(sqrt(_mr_1_1_1_4_r24_c__s + _mr_1_1_1_4_r24_d__s*x)*sqrt(_mr_1_1_1_4_r24_e__s + _mr_1_1_1_4_r24_f__s*x)* sqrt(_mr_1_1_1_4_r24_g__s + _mr_1_1_1_4_r24_h__s*x)))* %mr_simp(_mr_1_1_1_4_r24_c__s*(_mr_1_1_1_4_r24_f__s*_mr_1_1_1_4_r24_g__s + _mr_1_1_1_4_r24_e__s*_mr_1_1_1_4_r24_h__s) + _mr_1_1_1_4_r24_d__s*_mr_1_1_1_4_r24_e__s*_mr_1_1_1_4_r24_g__s*(2*_mr_1_1_1_4_r24_m__s + 3) + 2*(_mr_1_1_1_4_r24_c__s*_mr_1_1_1_4_r24_f__s*_mr_1_1_1_4_r24_h__s + _mr_1_1_1_4_r24_d__s*(_mr_1_1_1_4_r24_m__s + 2)*(_mr_1_1_1_4_r24_f__s*_mr_1_1_1_4_r24_g__s + _mr_1_1_1_4_r24_e__s*_mr_1_1_1_4_r24_h__s))*x + _mr_1_1_1_4_r24_d__s*_mr_1_1_1_4_r24_f__s*_mr_1_1_1_4_r24_h__s*(2*_mr_1_1_1_4_r24_m__s + 5)*x^2, x), x))$
-_mr_rule_1_1_1_4_r24(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r24(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r24(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r24_a = part(part(pool, i), 2), _mr_1_1_1_4_r24_b = part(part(pool, i), 3), _mr_1_1_1_4_r24_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r24(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r24_e = part(part(pool, i), 2), _mr_1_1_1_4_r24_f = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = 1/2) = true then (
+        r2 : _mr_slots_1_1_1_4_r24(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r24_g = part(part(pool, i), 2), _mr_1_1_1_4_r24_h = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true and is(part(part(pool, i), 5) = -(1/2)) = true then (
+        r2 : _mr_slots_1_1_1_4_r24(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r24_c = part(part(pool, i), 2), _mr_1_1_1_4_r24_d = part(part(pool, i), 3)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r24(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r24(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r24(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r24(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r24(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r24(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r24(mm, x) else false)$
 
@@ -575,6 +2048,7 @@ _mr_repl_1_1_1_4_r25(mm, x) := block([_mr_1_1_1_4_r25_a__s, _mr_1_1_1_4_r25_b__s
 _mr_rule_1_1_1_4_r25(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r25(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r25(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r25(mm, x) else false)$
 
@@ -596,6 +2070,7 @@ _mr_repl_1_1_1_4_r26(mm, x) := block([_mr_1_1_1_4_r26_a__s, _mr_1_1_1_4_r26_b__s
 _mr_rule_1_1_1_4_r26(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r26(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r26(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r26(mm, x) else false)$
 
@@ -618,6 +2093,7 @@ _mr_repl_1_1_1_4_r27(mm, x) := block([_mr_1_1_1_4_r27_a__s, _mr_1_1_1_4_r27_b__s
 _mr_rule_1_1_1_4_r27(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r27(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r27(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r27(mm, x) else false)$
 
@@ -639,6 +2115,7 @@ _mr_repl_1_1_1_4_r28(mm, x) := block([_mr_1_1_1_4_r28_a__s, _mr_1_1_1_4_r28_b__s
 _mr_rule_1_1_1_4_r28(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r28(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r28(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r28(mm, x) else false)$
 
@@ -660,6 +2137,7 @@ _mr_repl_1_1_1_4_r29(mm, x) := block([_mr_1_1_1_4_r29_a__s, _mr_1_1_1_4_r29_b__s
 _mr_rule_1_1_1_4_r29(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r29(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r29(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r29(mm, x) else false)$
 
@@ -681,6 +2159,7 @@ _mr_repl_1_1_1_4_r30(mm, x) := block([_mr_1_1_1_4_r30_a__s, _mr_1_1_1_4_r30_b__s
 _mr_rule_1_1_1_4_r30(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r30(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r30(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r30(mm, x) else false)$
 
@@ -702,6 +2181,7 @@ _mr_repl_1_1_1_4_r31(mm, x) := block([_mr_1_1_1_4_r31_a__s, _mr_1_1_1_4_r31_b__s
 _mr_rule_1_1_1_4_r31(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r31(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r31(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r31(mm, x) else false)$
 
@@ -724,6 +2204,7 @@ _mr_repl_1_1_1_4_r32(mm, x) := block([_mr_1_1_1_4_r32_a__s, _mr_1_1_1_4_r32_b__s
 _mr_rule_1_1_1_4_r32(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r32(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r32(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r32(mm, x) else false)$
 
@@ -745,6 +2226,7 @@ _mr_repl_1_1_1_4_r33(mm, x) := block([_mr_1_1_1_4_r33_a__s, _mr_1_1_1_4_r33_b__s
 _mr_rule_1_1_1_4_r33(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r33(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r33(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r33(mm, x) else false)$
 
@@ -767,6 +2249,7 @@ _mr_repl_1_1_1_4_r34(mm, x) := block([_mr_1_1_1_4_r34_a__s, _mr_1_1_1_4_r34_b__s
 _mr_rule_1_1_1_4_r34(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r34(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r34(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r34(mm, x) else false)$
 
@@ -788,6 +2271,7 @@ _mr_repl_1_1_1_4_r35(mm, x) := block([_mr_1_1_1_4_r35_a__s, _mr_1_1_1_4_r35_b__s
 _mr_rule_1_1_1_4_r35(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r35(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r35(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r35(mm, x) else false)$
 
@@ -809,6 +2293,7 @@ _mr_repl_1_1_1_4_r36(mm, x) := block([_mr_1_1_1_4_r36_a__s, _mr_1_1_1_4_r36_b__s
 _mr_rule_1_1_1_4_r36(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r36(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r36(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r36(mm, x) else false)$
 
@@ -831,6 +2316,7 @@ _mr_repl_1_1_1_4_r37(mm, x) := block([_mr_1_1_1_4_r37_a__s, _mr_1_1_1_4_r37_b__s
 _mr_rule_1_1_1_4_r37(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r37(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r37(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r37(mm, x) else false)$
 
@@ -854,6 +2340,7 @@ _mr_repl_1_1_1_4_r38(mm, x) := block([_mr_1_1_1_4_r38_a__s, _mr_1_1_1_4_r38_b__s
 _mr_rule_1_1_1_4_r38(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r38(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r38(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r38(mm, x) else false)$
 
@@ -877,6 +2364,7 @@ _mr_repl_1_1_1_4_r39(mm, x) := block([_mr_1_1_1_4_r39_a__s, _mr_1_1_1_4_r39_b__s
 _mr_rule_1_1_1_4_r39(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r39(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r39(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r39(mm, x) else false)$
 
@@ -899,9 +2387,79 @@ _mr_cond_1_1_1_4_r40(mm, x) := block([_mr_1_1_1_4_r40_a, _mr_1_1_1_4_r40_b, _mr_
 _mr_repl_1_1_1_4_r40(mm, x) := block([_mr_1_1_1_4_r40_a__s, _mr_1_1_1_4_r40_b__s, _mr_1_1_1_4_r40_c__s, _mr_1_1_1_4_r40_d__s, _mr_1_1_1_4_r40_e__s, _mr_1_1_1_4_r40_f__s, _mr_1_1_1_4_r40_g__s, _mr_1_1_1_4_r40_h__s, _mr_1_1_1_4_r40_m__s, _mr_1_1_1_4_r40_n__s, _mr_1_1_1_4_r40_p__s, _mr_1_1_1_4_r40_q__s],
   _mr_1_1_1_4_r40_a__s : geteqR(mm, '_mr_1_1_1_4_r40_a), _mr_1_1_1_4_r40_b__s : geteqR(mm, '_mr_1_1_1_4_r40_b), _mr_1_1_1_4_r40_c__s : geteqR(mm, '_mr_1_1_1_4_r40_c), _mr_1_1_1_4_r40_d__s : geteqR(mm, '_mr_1_1_1_4_r40_d), _mr_1_1_1_4_r40_e__s : geteqR(mm, '_mr_1_1_1_4_r40_e), _mr_1_1_1_4_r40_f__s : geteqR(mm, '_mr_1_1_1_4_r40_f), _mr_1_1_1_4_r40_g__s : geteqR(mm, '_mr_1_1_1_4_r40_g), _mr_1_1_1_4_r40_h__s : geteqR(mm, '_mr_1_1_1_4_r40_h), _mr_1_1_1_4_r40_m__s : geteqR(mm, '_mr_1_1_1_4_r40_m), _mr_1_1_1_4_r40_n__s : geteqR(mm, '_mr_1_1_1_4_r40_n), _mr_1_1_1_4_r40_p__s : geteqR(mm, '_mr_1_1_1_4_r40_p), _mr_1_1_1_4_r40_q__s : geteqR(mm, '_mr_1_1_1_4_r40_q),
   mr_int(%mr_expandIntegrand((_mr_1_1_1_4_r40_a__s + _mr_1_1_1_4_r40_b__s*x)^_mr_1_1_1_4_r40_m__s*(_mr_1_1_1_4_r40_c__s + _mr_1_1_1_4_r40_d__s*x)^_mr_1_1_1_4_r40_n__s*(_mr_1_1_1_4_r40_e__s + _mr_1_1_1_4_r40_f__s*x)^_mr_1_1_1_4_r40_p__s*(_mr_1_1_1_4_r40_g__s + _mr_1_1_1_4_r40_h__s*x)^ _mr_1_1_1_4_r40_q__s, x), x))$
-_mr_rule_1_1_1_4_r40(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r40(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r40(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r40_a = part(part(pool, i), 2), _mr_1_1_1_4_r40_b = part(part(pool, i), 3), _mr_1_1_1_4_r40_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r40(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r40_c = part(part(pool, i), 2), _mr_1_1_1_4_r40_d = part(part(pool, i), 3), _mr_1_1_1_4_r40_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r40(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r40_e = part(part(pool, i), 2), _mr_1_1_1_4_r40_f = part(part(pool, i), 3), _mr_1_1_1_4_r40_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r40(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r40_g = part(part(pool, i), 2), _mr_1_1_1_4_r40_h = part(part(pool, i), 3), _mr_1_1_1_4_r40_q = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r40(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r40(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r40(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r40(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r40(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r40(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r40(mm, x) else false)$
 
@@ -924,9 +2482,79 @@ _mr_cond_1_1_1_4_r41(mm, x) := block([_mr_1_1_1_4_r41_a, _mr_1_1_1_4_r41_b, _mr_
 _mr_repl_1_1_1_4_r41(mm, x) := block([_mr_1_1_1_4_r41_a__s, _mr_1_1_1_4_r41_b__s, _mr_1_1_1_4_r41_c__s, _mr_1_1_1_4_r41_d__s, _mr_1_1_1_4_r41_e__s, _mr_1_1_1_4_r41_f__s, _mr_1_1_1_4_r41_g__s, _mr_1_1_1_4_r41_h__s, _mr_1_1_1_4_r41_m__s, _mr_1_1_1_4_r41_n__s, _mr_1_1_1_4_r41_p__s, _mr_1_1_1_4_r41_q__s],
   _mr_1_1_1_4_r41_a__s : geteqR(mm, '_mr_1_1_1_4_r41_a), _mr_1_1_1_4_r41_b__s : geteqR(mm, '_mr_1_1_1_4_r41_b), _mr_1_1_1_4_r41_c__s : geteqR(mm, '_mr_1_1_1_4_r41_c), _mr_1_1_1_4_r41_d__s : geteqR(mm, '_mr_1_1_1_4_r41_d), _mr_1_1_1_4_r41_e__s : geteqR(mm, '_mr_1_1_1_4_r41_e), _mr_1_1_1_4_r41_f__s : geteqR(mm, '_mr_1_1_1_4_r41_f), _mr_1_1_1_4_r41_g__s : geteqR(mm, '_mr_1_1_1_4_r41_g), _mr_1_1_1_4_r41_h__s : geteqR(mm, '_mr_1_1_1_4_r41_h), _mr_1_1_1_4_r41_m__s : geteqR(mm, '_mr_1_1_1_4_r41_m), _mr_1_1_1_4_r41_n__s : geteqR(mm, '_mr_1_1_1_4_r41_n), _mr_1_1_1_4_r41_p__s : geteqR(mm, '_mr_1_1_1_4_r41_p), _mr_1_1_1_4_r41_q__s : geteqR(mm, '_mr_1_1_1_4_r41_q),
   _mr_1_1_1_4_r41_h__s/_mr_1_1_1_4_r41_b__s*mr_int((_mr_1_1_1_4_r41_a__s + _mr_1_1_1_4_r41_b__s*x)^(_mr_1_1_1_4_r41_m__s + 1)*(_mr_1_1_1_4_r41_c__s + _mr_1_1_1_4_r41_d__s*x)^_mr_1_1_1_4_r41_n__s*(_mr_1_1_1_4_r41_e__s + _mr_1_1_1_4_r41_f__s*x)^ _mr_1_1_1_4_r41_p__s*(_mr_1_1_1_4_r41_g__s + _mr_1_1_1_4_r41_h__s*x)^(_mr_1_1_1_4_r41_q__s - 1), x) + (_mr_1_1_1_4_r41_b__s*_mr_1_1_1_4_r41_g__s - _mr_1_1_1_4_r41_a__s*_mr_1_1_1_4_r41_h__s)/_mr_1_1_1_4_r41_b__s* mr_int((_mr_1_1_1_4_r41_a__s + _mr_1_1_1_4_r41_b__s*x)^_mr_1_1_1_4_r41_m__s*(_mr_1_1_1_4_r41_c__s + _mr_1_1_1_4_r41_d__s*x)^_mr_1_1_1_4_r41_n__s*(_mr_1_1_1_4_r41_e__s + _mr_1_1_1_4_r41_f__s*x)^_mr_1_1_1_4_r41_p__s*(_mr_1_1_1_4_r41_g__s + _mr_1_1_1_4_r41_h__s*x)^(_mr_1_1_1_4_r41_q__s - 1), x))$
-_mr_rule_1_1_1_4_r41(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r41(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r41(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r41_a = part(part(pool, i), 2), _mr_1_1_1_4_r41_b = part(part(pool, i), 3), _mr_1_1_1_4_r41_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r41(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r41_c = part(part(pool, i), 2), _mr_1_1_1_4_r41_d = part(part(pool, i), 3), _mr_1_1_1_4_r41_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r41(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r41_e = part(part(pool, i), 2), _mr_1_1_1_4_r41_f = part(part(pool, i), 3), _mr_1_1_1_4_r41_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r41(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r41_g = part(part(pool, i), 2), _mr_1_1_1_4_r41_h = part(part(pool, i), 3), _mr_1_1_1_4_r41_q = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r41(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r41(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r41(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r41(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r41(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r41(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r41(mm, x) else false)$
 
@@ -949,9 +2577,79 @@ _mr_cond_1_1_1_4_r42(mm, x) := block([_mr_1_1_1_4_r42_a, _mr_1_1_1_4_r42_b, _mr_
 _mr_repl_1_1_1_4_r42(mm, x) := block([_mr_1_1_1_4_r42_a__s, _mr_1_1_1_4_r42_b__s, _mr_1_1_1_4_r42_c__s, _mr_1_1_1_4_r42_d__s, _mr_1_1_1_4_r42_e__s, _mr_1_1_1_4_r42_f__s, _mr_1_1_1_4_r42_g__s, _mr_1_1_1_4_r42_h__s, _mr_1_1_1_4_r42_m__s, _mr_1_1_1_4_r42_n__s, _mr_1_1_1_4_r42_p__s, _mr_1_1_1_4_r42_q__s],
   _mr_1_1_1_4_r42_a__s : geteqR(mm, '_mr_1_1_1_4_r42_a), _mr_1_1_1_4_r42_b__s : geteqR(mm, '_mr_1_1_1_4_r42_b), _mr_1_1_1_4_r42_c__s : geteqR(mm, '_mr_1_1_1_4_r42_c), _mr_1_1_1_4_r42_d__s : geteqR(mm, '_mr_1_1_1_4_r42_d), _mr_1_1_1_4_r42_e__s : geteqR(mm, '_mr_1_1_1_4_r42_e), _mr_1_1_1_4_r42_f__s : geteqR(mm, '_mr_1_1_1_4_r42_f), _mr_1_1_1_4_r42_g__s : geteqR(mm, '_mr_1_1_1_4_r42_g), _mr_1_1_1_4_r42_h__s : geteqR(mm, '_mr_1_1_1_4_r42_h), _mr_1_1_1_4_r42_m__s : geteqR(mm, '_mr_1_1_1_4_r42_m), _mr_1_1_1_4_r42_n__s : geteqR(mm, '_mr_1_1_1_4_r42_n), _mr_1_1_1_4_r42_p__s : geteqR(mm, '_mr_1_1_1_4_r42_p), _mr_1_1_1_4_r42_q__s : geteqR(mm, '_mr_1_1_1_4_r42_q),
   mr_unintegrable((_mr_1_1_1_4_r42_a__s + _mr_1_1_1_4_r42_b__s*x)^_mr_1_1_1_4_r42_m__s*(_mr_1_1_1_4_r42_c__s + _mr_1_1_1_4_r42_d__s*x)^_mr_1_1_1_4_r42_n__s*(_mr_1_1_1_4_r42_e__s + _mr_1_1_1_4_r42_f__s*x)^_mr_1_1_1_4_r42_p__s*(_mr_1_1_1_4_r42_g__s + _mr_1_1_1_4_r42_h__s*x)^_mr_1_1_1_4_r42_q__s, x))$
-_mr_rule_1_1_1_4_r42(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r42(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r42(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r42_a = part(part(pool, i), 2), _mr_1_1_1_4_r42_b = part(part(pool, i), 3), _mr_1_1_1_4_r42_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r42(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r42_c = part(part(pool, i), 2), _mr_1_1_1_4_r42_d = part(part(pool, i), 3), _mr_1_1_1_4_r42_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r42(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r42_e = part(part(pool, i), 2), _mr_1_1_1_4_r42_f = part(part(pool, i), 3), _mr_1_1_1_4_r42_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r42(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r42_g = part(part(pool, i), 2), _mr_1_1_1_4_r42_h = part(part(pool, i), 3), _mr_1_1_1_4_r42_q = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r42(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r42(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r42(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r42(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r42(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r42(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r42(mm, x) else false)$
 
@@ -975,9 +2673,79 @@ _mr_cond_1_1_1_4_r43(mm, x) := block([_mr_1_1_1_4_r43_a, _mr_1_1_1_4_r43_b, _mr_
 _mr_repl_1_1_1_4_r43(mm, x) := block([_mr_1_1_1_4_r43_a__s, _mr_1_1_1_4_r43_b__s, _mr_1_1_1_4_r43_c__s, _mr_1_1_1_4_r43_d__s, _mr_1_1_1_4_r43_e__s, _mr_1_1_1_4_r43_f__s, _mr_1_1_1_4_r43_g__s, _mr_1_1_1_4_r43_h__s, _mr_1_1_1_4_r43_m__s, _mr_1_1_1_4_r43_n__s, _mr_1_1_1_4_r43_p__s, _mr_1_1_1_4_r43_q__s, _mr_1_1_1_4_r43_u__s],
   _mr_1_1_1_4_r43_a__s : geteqR(mm, '_mr_1_1_1_4_r43_a), _mr_1_1_1_4_r43_b__s : geteqR(mm, '_mr_1_1_1_4_r43_b), _mr_1_1_1_4_r43_c__s : geteqR(mm, '_mr_1_1_1_4_r43_c), _mr_1_1_1_4_r43_d__s : geteqR(mm, '_mr_1_1_1_4_r43_d), _mr_1_1_1_4_r43_e__s : geteqR(mm, '_mr_1_1_1_4_r43_e), _mr_1_1_1_4_r43_f__s : geteqR(mm, '_mr_1_1_1_4_r43_f), _mr_1_1_1_4_r43_g__s : geteqR(mm, '_mr_1_1_1_4_r43_g), _mr_1_1_1_4_r43_h__s : geteqR(mm, '_mr_1_1_1_4_r43_h), _mr_1_1_1_4_r43_m__s : geteqR(mm, '_mr_1_1_1_4_r43_m), _mr_1_1_1_4_r43_n__s : geteqR(mm, '_mr_1_1_1_4_r43_n), _mr_1_1_1_4_r43_p__s : geteqR(mm, '_mr_1_1_1_4_r43_p), _mr_1_1_1_4_r43_q__s : geteqR(mm, '_mr_1_1_1_4_r43_q), _mr_1_1_1_4_r43_u__s : geteqR(mm, '_mr_1_1_1_4_r43_u),
   1/%mr_coeff(_mr_1_1_1_4_r43_u__s, x, 1)* %mr_subst(mr_int((_mr_1_1_1_4_r43_a__s + _mr_1_1_1_4_r43_b__s*x)^_mr_1_1_1_4_r43_m__s*(_mr_1_1_1_4_r43_c__s + _mr_1_1_1_4_r43_d__s*x)^_mr_1_1_1_4_r43_n__s*(_mr_1_1_1_4_r43_e__s + _mr_1_1_1_4_r43_f__s*x)^_mr_1_1_1_4_r43_p__s*(_mr_1_1_1_4_r43_g__s + _mr_1_1_1_4_r43_h__s*x)^_mr_1_1_1_4_r43_q__s, x), x, _mr_1_1_1_4_r43_u__s))$
-_mr_rule_1_1_1_4_r43(f, x) := block([mm, ok],
+_mr_slots_1_1_1_4_r43(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r43(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r43_a = part(part(pool, i), 2), _mr_1_1_1_4_r43_b = part(part(pool, i), 3), _mr_1_1_1_4_r43_m = part(part(pool, i), 5), _mr_1_1_1_4_r43_u = x]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r43(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r43_c = part(part(pool, i), 2), _mr_1_1_1_4_r43_d = part(part(pool, i), 3), _mr_1_1_1_4_r43_n = part(part(pool, i), 5), _mr_1_1_1_4_r43_u = x]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r43(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r43_e = part(part(pool, i), 2), _mr_1_1_1_4_r43_f = part(part(pool, i), 3), _mr_1_1_1_4_r43_p = part(part(pool, i), 5), _mr_1_1_1_4_r43_u = x]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_4_r43(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_4_r43_g = part(part(pool, i), 2), _mr_1_1_1_4_r43_h = part(part(pool, i), 3), _mr_1_1_1_4_r43_q = part(part(pool, i), 5), _mr_1_1_1_4_r43_u = x]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_4_r43(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_4_r43(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_4_r43(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_4_r43(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_4_r43(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_4_r43(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r43(mm, x) else false)$
 
@@ -1005,6 +2773,7 @@ _mr_repl_1_1_1_4_r44(mm, x) := block([_mr_1_1_1_4_r44_a__s, _mr_1_1_1_4_r44_b__s
 _mr_rule_1_1_1_4_r44(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r44(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r44(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r44(mm, x) else false)$
 
@@ -1020,6 +2789,7 @@ _mr_repl_1_1_1_4_r45(mm, x) := block([_mr_1_1_1_4_r45_m__s, _mr_1_1_1_4_r45_u__s
 _mr_rule_1_1_1_4_r45(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r45(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r45(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r45(mm, x) else false)$
 
@@ -1037,6 +2807,7 @@ _mr_repl_1_1_1_4_r46(mm, x) := block([_mr_1_1_1_4_r46_m__s, _mr_1_1_1_4_r46_n__s
 _mr_rule_1_1_1_4_r46(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r46(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r46(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r46(mm, x) else false)$
 
@@ -1056,6 +2827,7 @@ _mr_repl_1_1_1_4_r47(mm, x) := block([_mr_1_1_1_4_r47_m__s, _mr_1_1_1_4_r47_n__s
 _mr_rule_1_1_1_4_r47(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r47(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r47(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r47(mm, x) else false)$
 
@@ -1077,6 +2849,7 @@ _mr_repl_1_1_1_4_r48(mm, x) := block([_mr_1_1_1_4_r48_m__s, _mr_1_1_1_4_r48_n__s
 _mr_rule_1_1_1_4_r48(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_4_r48(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_4_r48(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_4_r48(mm, x) else false)$
 

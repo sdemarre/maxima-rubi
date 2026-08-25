@@ -26,6 +26,7 @@ _mr_repl_1_2_1_8_r1(mm, x) := block([_mr_1_2_1_8_r1_Px__s, _mr_1_2_1_8_r1_a__s, 
 _mr_rule_1_2_1_8_r1(f, x) := block([mm, ok],
   mm : _mr_pat_1_2_1_8_r1(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_2_1_8_r1(mm, x),
   if is(ok) = true then _mr_repl_1_2_1_8_r1(mm, x) else false)$
 
@@ -50,6 +51,7 @@ _mr_repl_1_2_1_8_r2(mm, x) := block([_mr_1_2_1_8_r2_Px__s, _mr_1_2_1_8_r2_a__s, 
 _mr_rule_1_2_1_8_r2(f, x) := block([mm, ok],
   mm : _mr_pat_1_2_1_8_r2(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_2_1_8_r2(mm, x),
   if is(ok) = true then _mr_repl_1_2_1_8_r2(mm, x) else false)$
 
@@ -75,6 +77,7 @@ _mr_repl_1_2_1_8_r3(mm, x) := block([_mr_1_2_1_8_r3_Px__s, _mr_1_2_1_8_r3_a__s, 
 _mr_rule_1_2_1_8_r3(f, x) := block([mm, ok],
   mm : _mr_pat_1_2_1_8_r3(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_2_1_8_r3(mm, x),
   if is(ok) = true then _mr_repl_1_2_1_8_r3(mm, x) else false)$
 

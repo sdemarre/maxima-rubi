@@ -20,6 +20,7 @@ _mr_repl_1_1_1_7_r1(mm, x) := block([_mr_1_1_1_7_r1_Px__s, _mr_1_1_1_7_r1_a__s, 
 _mr_rule_1_1_1_7_r1(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r1(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r1(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r1(mm, x) else false)$
 
@@ -39,6 +40,7 @@ _mr_repl_1_1_1_7_r2(mm, x) := block([_mr_1_1_1_7_r2_Px__s, _mr_1_1_1_7_r2_a__s, 
 _mr_rule_1_1_1_7_r2(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r2(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r2(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r2(mm, x) else false)$
 
@@ -59,6 +61,7 @@ _mr_repl_1_1_1_7_r3(mm, x) := block([_mr_1_1_1_7_r3_a__s, _mr_1_1_1_7_r3_b__s, _
 _mr_rule_1_1_1_7_r3(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r3(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r3(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r3(mm, x) else false)$
 
@@ -81,6 +84,7 @@ _mr_repl_1_1_1_7_r4(mm, x) := block([_mr_1_1_1_7_r4_a__s, _mr_1_1_1_7_r4_b__s, _
 _mr_rule_1_1_1_7_r4(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r4(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r4(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r4(mm, x) else false)$
 
@@ -99,6 +103,7 @@ _mr_repl_1_1_1_7_r5(mm, x) := block([_mr_1_1_1_7_r5_Px__s, _mr_1_1_1_7_r5_Qx__s,
 _mr_rule_1_1_1_7_r5(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r5(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r5(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r5(mm, x) else false)$
 
@@ -114,6 +119,7 @@ _mr_repl_1_1_1_7_r6(mm, x) := block([_mr_1_1_1_7_r6_Pp__s, _mr_1_1_1_7_r6_Qq__s]
 _mr_rule_1_1_1_7_r6(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r6(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r6(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r6(mm, x) else false)$
 
@@ -130,6 +136,7 @@ _mr_repl_1_1_1_7_r7(mm, x) := block([_mr_1_1_1_7_r7_Pp__s, _mr_1_1_1_7_r7_Qq__s,
 _mr_rule_1_1_1_7_r7(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r7(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r7(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r7(mm, x) else false)$
 
@@ -150,6 +157,7 @@ _mr_repl_1_1_1_7_r8(mm, x) := block([_mr_1_1_1_7_r8_a1__s, _mr_1_1_1_7_r8_a2__s,
 _mr_rule_1_1_1_7_r8(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r8(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r8(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r8(mm, x) else false)$
 
@@ -168,6 +176,7 @@ _mr_repl_1_1_1_7_r9(mm, x) := block([_mr_1_1_1_7_r9_Pp__s, _mr_1_1_1_7_r9_Qq__s,
 _mr_rule_1_1_1_7_r9(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r9(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r9(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r9(mm, x) else false)$
 
@@ -184,9 +193,65 @@ _mr_cond_1_1_1_7_r10(mm, x) := block([_mr_1_1_1_7_r10_Pq, _mr_1_1_1_7_r10_Qr, _m
 _mr_repl_1_1_1_7_r10(mm, x) := block([_mr_1_1_1_7_r10_Pq__s, _mr_1_1_1_7_r10_Qr__s, _mr_1_1_1_7_r10_a__s, _mr_1_1_1_7_r10_b__s, _mr_1_1_1_7_r10_n__s, _mr_1_1_1_7_r10_p__s],
   _mr_1_1_1_7_r10_Pq__s : geteqR(mm, '_mr_1_1_1_7_r10_Pq), _mr_1_1_1_7_r10_Qr__s : geteqR(mm, '_mr_1_1_1_7_r10_Qr), _mr_1_1_1_7_r10_a__s : geteqR(mm, '_mr_1_1_1_7_r10_a), _mr_1_1_1_7_r10_b__s : geteqR(mm, '_mr_1_1_1_7_r10_b), _mr_1_1_1_7_r10_n__s : geteqR(mm, '_mr_1_1_1_7_r10_n), _mr_1_1_1_7_r10_p__s : geteqR(mm, '_mr_1_1_1_7_r10_p),
   block([q, r], q : %mr_expon(_mr_1_1_1_7_r10_Pq__s, x), r : %mr_expon(_mr_1_1_1_7_r10_Qr__s, x), (if is(%mr_eqQ(r, q - 1)  and  %mr_eqQ(%mr_coeff(_mr_1_1_1_7_r10_Qr__s, x, r)*diff(_mr_1_1_1_7_r10_Pq__s, x), q*%mr_coeff(_mr_1_1_1_7_r10_Pq__s, x, q)*_mr_1_1_1_7_r10_Qr__s)) = true then %mr_coeff(_mr_1_1_1_7_r10_Qr__s, x, r)/(q*%mr_coeff(_mr_1_1_1_7_r10_Pq__s, x, q))* %mr_subst(mr_int((_mr_1_1_1_7_r10_a__s + _mr_1_1_1_7_r10_b__s*x^_mr_1_1_1_7_r10_n__s)^_mr_1_1_1_7_r10_p__s, x), x, _mr_1_1_1_7_r10_Pq__s) else false)))$
-_mr_rule_1_1_1_7_r10(f, x) := block([mm, ok],
+_mr_slots_1_1_1_7_r10(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "R") = true then (
+        r2 : _mr_slots_1_1_1_7_r10(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r10_Qr = part(part(pool, i), 2)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      ),
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r10(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r10_Qr = part(part(pool, i), 2) + part(part(pool, i), 3)*x^part(part(pool, i), 4)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      ),
+      if is(part(part(pool, i), 1) = "M") = true  and  is(part(part(pool, i), 3) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r10(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r10_Qr = part(part(pool, i), 2)*x]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true then (
+        r2 : _mr_slots_1_1_1_7_r10(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r10_a = part(part(pool, i), 2), _mr_1_1_1_7_r10_b = part(part(pool, i), 3), _mr_1_1_1_7_r10_n = part(part(pool, i), 4), _mr_1_1_1_7_r10_p = part(part(pool, i), 5), _mr_1_1_1_7_r10_Pq = x]), append(nvals, [part(part(pool, i), 4)]), pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_7_r10(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_7_r10(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_7_r10(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_7_r10(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_7_r10(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_7_r10(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r10(mm, x) else false)$
 
@@ -208,6 +273,7 @@ _mr_repl_1_1_1_7_r11(mm, x) := block([_mr_1_1_1_7_r11_Pq__s, _mr_1_1_1_7_r11_Qr_
 _mr_rule_1_1_1_7_r11(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r11(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r11(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r11(mm, x) else false)$
 
@@ -227,6 +293,7 @@ _mr_repl_1_1_1_7_r12(mm, x) := block([_mr_1_1_1_7_r12_a__s, _mr_1_1_1_7_r12_b__s
 _mr_rule_1_1_1_7_r12(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r12(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r12(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r12(mm, x) else false)$
 
@@ -248,6 +315,7 @@ _mr_repl_1_1_1_7_r13(mm, x) := block([_mr_1_1_1_7_r13_a__s, _mr_1_1_1_7_r13_b__s
 _mr_rule_1_1_1_7_r13(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r13(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r13(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r13(mm, x) else false)$
 
@@ -271,6 +339,7 @@ _mr_repl_1_1_1_7_r14(mm, x) := block([_mr_1_1_1_7_r14_A__s, _mr_1_1_1_7_r14_B__s
 _mr_rule_1_1_1_7_r14(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r14(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r14(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r14(mm, x) else false)$
 
@@ -294,6 +363,7 @@ _mr_repl_1_1_1_7_r15(mm, x) := block([_mr_1_1_1_7_r15_A__s, _mr_1_1_1_7_r15_B__s
 _mr_rule_1_1_1_7_r15(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r15(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r15(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r15(mm, x) else false)$
 
@@ -318,6 +388,7 @@ _mr_repl_1_1_1_7_r16(mm, x) := block([_mr_1_1_1_7_r16_A__s, _mr_1_1_1_7_r16_B__s
 _mr_rule_1_1_1_7_r16(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r16(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r16(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r16(mm, x) else false)$
 
@@ -341,6 +412,7 @@ _mr_repl_1_1_1_7_r17(mm, x) := block([_mr_1_1_1_7_r17_A__s, _mr_1_1_1_7_r17_B__s
 _mr_rule_1_1_1_7_r17(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r17(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r17(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r17(mm, x) else false)$
 
@@ -365,6 +437,7 @@ _mr_repl_1_1_1_7_r18(mm, x) := block([_mr_1_1_1_7_r18_A__s, _mr_1_1_1_7_r18_B__s
 _mr_rule_1_1_1_7_r18(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r18(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r18(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r18(mm, x) else false)$
 
@@ -390,6 +463,7 @@ _mr_repl_1_1_1_7_r19(mm, x) := block([_mr_1_1_1_7_r19_A__s, _mr_1_1_1_7_r19_B__s
 _mr_rule_1_1_1_7_r19(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r19(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r19(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r19(mm, x) else false)$
 
@@ -414,6 +488,7 @@ _mr_repl_1_1_1_7_r20(mm, x) := block([_mr_1_1_1_7_r20_A__s, _mr_1_1_1_7_r20_C__s
 _mr_rule_1_1_1_7_r20(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r20(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r20(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r20(mm, x) else false)$
 
@@ -438,6 +513,7 @@ _mr_repl_1_1_1_7_r21(mm, x) := block([_mr_1_1_1_7_r21_A__s, _mr_1_1_1_7_r21_B__s
 _mr_rule_1_1_1_7_r21(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r21(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r21(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r21(mm, x) else false)$
 
@@ -461,6 +537,7 @@ _mr_repl_1_1_1_7_r22(mm, x) := block([_mr_1_1_1_7_r22_A__s, _mr_1_1_1_7_r22_C__s
 _mr_rule_1_1_1_7_r22(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r22(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r22(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r22(mm, x) else false)$
 
@@ -486,6 +563,7 @@ _mr_repl_1_1_1_7_r23(mm, x) := block([_mr_1_1_1_7_r23_A__s, _mr_1_1_1_7_r23_B__s
 _mr_rule_1_1_1_7_r23(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r23(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r23(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r23(mm, x) else false)$
 
@@ -510,6 +588,7 @@ _mr_repl_1_1_1_7_r24(mm, x) := block([_mr_1_1_1_7_r24_A__s, _mr_1_1_1_7_r24_C__s
 _mr_rule_1_1_1_7_r24(f, x) := block([mm, ok],
   mm : _mr_pat_1_1_1_7_r24(f, x),
   if mm = false then return(false),
+  if %mr_containsBoolean(mm) then return(false),
   ok : _mr_cond_1_1_1_7_r24(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r24(mm, x) else false)$
 
@@ -533,9 +612,98 @@ _mr_cond_1_1_1_7_r25(mm, x) := block([_mr_1_1_1_7_r25_Px, _mr_1_1_1_7_r25_a, _mr
 _mr_repl_1_1_1_7_r25(mm, x) := block([_mr_1_1_1_7_r25_Px__s, _mr_1_1_1_7_r25_a__s, _mr_1_1_1_7_r25_b__s, _mr_1_1_1_7_r25_c__s, _mr_1_1_1_7_r25_d__s, _mr_1_1_1_7_r25_e__s, _mr_1_1_1_7_r25_f__s, _mr_1_1_1_7_r25_g__s, _mr_1_1_1_7_r25_h__s, _mr_1_1_1_7_r25_m__s, _mr_1_1_1_7_r25_n__s, _mr_1_1_1_7_r25_p__s, _mr_1_1_1_7_r25_q__s],
   _mr_1_1_1_7_r25_Px__s : geteqR(mm, '_mr_1_1_1_7_r25_Px), _mr_1_1_1_7_r25_a__s : geteqR(mm, '_mr_1_1_1_7_r25_a), _mr_1_1_1_7_r25_b__s : geteqR(mm, '_mr_1_1_1_7_r25_b), _mr_1_1_1_7_r25_c__s : geteqR(mm, '_mr_1_1_1_7_r25_c), _mr_1_1_1_7_r25_d__s : geteqR(mm, '_mr_1_1_1_7_r25_d), _mr_1_1_1_7_r25_e__s : geteqR(mm, '_mr_1_1_1_7_r25_e), _mr_1_1_1_7_r25_f__s : geteqR(mm, '_mr_1_1_1_7_r25_f), _mr_1_1_1_7_r25_g__s : geteqR(mm, '_mr_1_1_1_7_r25_g), _mr_1_1_1_7_r25_h__s : geteqR(mm, '_mr_1_1_1_7_r25_h), _mr_1_1_1_7_r25_m__s : geteqR(mm, '_mr_1_1_1_7_r25_m), _mr_1_1_1_7_r25_n__s : geteqR(mm, '_mr_1_1_1_7_r25_n), _mr_1_1_1_7_r25_p__s : geteqR(mm, '_mr_1_1_1_7_r25_p), _mr_1_1_1_7_r25_q__s : geteqR(mm, '_mr_1_1_1_7_r25_q),
   mr_int(%mr_expandIntegrand(_mr_1_1_1_7_r25_Px__s*(_mr_1_1_1_7_r25_a__s + _mr_1_1_1_7_r25_b__s*x)^_mr_1_1_1_7_r25_m__s*(_mr_1_1_1_7_r25_c__s + _mr_1_1_1_7_r25_d__s*x)^_mr_1_1_1_7_r25_n__s*(_mr_1_1_1_7_r25_e__s + _mr_1_1_1_7_r25_f__s*x)^_mr_1_1_1_7_r25_p__s*(_mr_1_1_1_7_r25_g__s + _mr_1_1_1_7_r25_h__s*x)^_mr_1_1_1_7_r25_q__s, x), x))$
-_mr_rule_1_1_1_7_r25(f, x) := block([mm, ok],
+_mr_slots_1_1_1_7_r25(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "R") = true then (
+        r2 : _mr_slots_1_1_1_7_r25(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r25_Px = part(part(pool, i), 2)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      ),
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r25(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r25_Px = part(part(pool, i), 2) + part(part(pool, i), 3)*x^part(part(pool, i), 4)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      ),
+      if is(part(part(pool, i), 1) = "M") = true  and  is(part(part(pool, i), 3) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r25(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r25_Px = part(part(pool, i), 2)*x]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r25(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r25_a = part(part(pool, i), 2), _mr_1_1_1_7_r25_b = part(part(pool, i), 3), _mr_1_1_1_7_r25_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r25(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r25_c = part(part(pool, i), 2), _mr_1_1_1_7_r25_d = part(part(pool, i), 3), _mr_1_1_1_7_r25_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r25(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r25_e = part(part(pool, i), 2), _mr_1_1_1_7_r25_f = part(part(pool, i), 3), _mr_1_1_1_7_r25_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r25(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r25_g = part(part(pool, i), 2), _mr_1_1_1_7_r25_h = part(part(pool, i), 3), _mr_1_1_1_7_r25_q = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 6) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_7_r25(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_7_r25(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_7_r25(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_7_r25(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_7_r25(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_7_r25(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r25(mm, x) else false)$
 
@@ -559,9 +727,98 @@ _mr_cond_1_1_1_7_r26(mm, x) := block([_mr_1_1_1_7_r26_Px, _mr_1_1_1_7_r26_a, _mr
 _mr_repl_1_1_1_7_r26(mm, x) := block([_mr_1_1_1_7_r26_Px__s, _mr_1_1_1_7_r26_a__s, _mr_1_1_1_7_r26_b__s, _mr_1_1_1_7_r26_c__s, _mr_1_1_1_7_r26_d__s, _mr_1_1_1_7_r26_e__s, _mr_1_1_1_7_r26_f__s, _mr_1_1_1_7_r26_g__s, _mr_1_1_1_7_r26_h__s, _mr_1_1_1_7_r26_m__s, _mr_1_1_1_7_r26_n__s, _mr_1_1_1_7_r26_p__s, _mr_1_1_1_7_r26_q__s],
   _mr_1_1_1_7_r26_Px__s : geteqR(mm, '_mr_1_1_1_7_r26_Px), _mr_1_1_1_7_r26_a__s : geteqR(mm, '_mr_1_1_1_7_r26_a), _mr_1_1_1_7_r26_b__s : geteqR(mm, '_mr_1_1_1_7_r26_b), _mr_1_1_1_7_r26_c__s : geteqR(mm, '_mr_1_1_1_7_r26_c), _mr_1_1_1_7_r26_d__s : geteqR(mm, '_mr_1_1_1_7_r26_d), _mr_1_1_1_7_r26_e__s : geteqR(mm, '_mr_1_1_1_7_r26_e), _mr_1_1_1_7_r26_f__s : geteqR(mm, '_mr_1_1_1_7_r26_f), _mr_1_1_1_7_r26_g__s : geteqR(mm, '_mr_1_1_1_7_r26_g), _mr_1_1_1_7_r26_h__s : geteqR(mm, '_mr_1_1_1_7_r26_h), _mr_1_1_1_7_r26_m__s : geteqR(mm, '_mr_1_1_1_7_r26_m), _mr_1_1_1_7_r26_n__s : geteqR(mm, '_mr_1_1_1_7_r26_n), _mr_1_1_1_7_r26_p__s : geteqR(mm, '_mr_1_1_1_7_r26_p), _mr_1_1_1_7_r26_q__s : geteqR(mm, '_mr_1_1_1_7_r26_q),
   %mr_polyRemainder(_mr_1_1_1_7_r26_Px__s, _mr_1_1_1_7_r26_a__s + _mr_1_1_1_7_r26_b__s*x, x)* mr_int((_mr_1_1_1_7_r26_a__s + _mr_1_1_1_7_r26_b__s*x)^_mr_1_1_1_7_r26_m__s*(_mr_1_1_1_7_r26_c__s + _mr_1_1_1_7_r26_d__s*x)^_mr_1_1_1_7_r26_n__s*(_mr_1_1_1_7_r26_e__s + _mr_1_1_1_7_r26_f__s*x)^_mr_1_1_1_7_r26_p__s*(_mr_1_1_1_7_r26_g__s + _mr_1_1_1_7_r26_h__s*x)^_mr_1_1_1_7_r26_q__s, x) + mr_int(%mr_polyQuotient(_mr_1_1_1_7_r26_Px__s, _mr_1_1_1_7_r26_a__s + _mr_1_1_1_7_r26_b__s*x, x)*(_mr_1_1_1_7_r26_a__s + _mr_1_1_1_7_r26_b__s*x)^(_mr_1_1_1_7_r26_m__s + 1)*(_mr_1_1_1_7_r26_c__s + _mr_1_1_1_7_r26_d__s*x)^ _mr_1_1_1_7_r26_n__s*(_mr_1_1_1_7_r26_e__s + _mr_1_1_1_7_r26_f__s*x)^_mr_1_1_1_7_r26_p__s*(_mr_1_1_1_7_r26_g__s + _mr_1_1_1_7_r26_h__s*x)^_mr_1_1_1_7_r26_q__s, x))$
-_mr_rule_1_1_1_7_r26(f, x) := block([mm, ok],
+_mr_slots_1_1_1_7_r26(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "R") = true then (
+        r2 : _mr_slots_1_1_1_7_r26(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r26_Px = part(part(pool, i), 2)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      ),
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r26(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r26_Px = part(part(pool, i), 2) + part(part(pool, i), 3)*x^part(part(pool, i), 4)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      ),
+      if is(part(part(pool, i), 1) = "M") = true  and  is(part(part(pool, i), 3) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r26(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r26_Px = part(part(pool, i), 2)*x]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r26(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r26_a = part(part(pool, i), 2), _mr_1_1_1_7_r26_b = part(part(pool, i), 3), _mr_1_1_1_7_r26_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r26(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r26_c = part(part(pool, i), 2), _mr_1_1_1_7_r26_d = part(part(pool, i), 3), _mr_1_1_1_7_r26_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r26(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r26_e = part(part(pool, i), 2), _mr_1_1_1_7_r26_f = part(part(pool, i), 3), _mr_1_1_1_7_r26_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r26(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r26_g = part(part(pool, i), 2), _mr_1_1_1_7_r26_h = part(part(pool, i), 3), _mr_1_1_1_7_r26_q = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 6) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_7_r26(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_7_r26(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_7_r26(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_7_r26(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_7_r26(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_7_r26(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r26(mm, x) else false)$
 
@@ -585,9 +842,98 @@ _mr_cond_1_1_1_7_r27(mm, x) := block([_mr_1_1_1_7_r27_Px, _mr_1_1_1_7_r27_a, _mr
 _mr_repl_1_1_1_7_r27(mm, x) := block([_mr_1_1_1_7_r27_Px__s, _mr_1_1_1_7_r27_a__s, _mr_1_1_1_7_r27_b__s, _mr_1_1_1_7_r27_c__s, _mr_1_1_1_7_r27_d__s, _mr_1_1_1_7_r27_e__s, _mr_1_1_1_7_r27_f__s, _mr_1_1_1_7_r27_g__s, _mr_1_1_1_7_r27_h__s, _mr_1_1_1_7_r27_m__s, _mr_1_1_1_7_r27_n__s, _mr_1_1_1_7_r27_p__s, _mr_1_1_1_7_r27_q__s],
   _mr_1_1_1_7_r27_Px__s : geteqR(mm, '_mr_1_1_1_7_r27_Px), _mr_1_1_1_7_r27_a__s : geteqR(mm, '_mr_1_1_1_7_r27_a), _mr_1_1_1_7_r27_b__s : geteqR(mm, '_mr_1_1_1_7_r27_b), _mr_1_1_1_7_r27_c__s : geteqR(mm, '_mr_1_1_1_7_r27_c), _mr_1_1_1_7_r27_d__s : geteqR(mm, '_mr_1_1_1_7_r27_d), _mr_1_1_1_7_r27_e__s : geteqR(mm, '_mr_1_1_1_7_r27_e), _mr_1_1_1_7_r27_f__s : geteqR(mm, '_mr_1_1_1_7_r27_f), _mr_1_1_1_7_r27_g__s : geteqR(mm, '_mr_1_1_1_7_r27_g), _mr_1_1_1_7_r27_h__s : geteqR(mm, '_mr_1_1_1_7_r27_h), _mr_1_1_1_7_r27_m__s : geteqR(mm, '_mr_1_1_1_7_r27_m), _mr_1_1_1_7_r27_n__s : geteqR(mm, '_mr_1_1_1_7_r27_n), _mr_1_1_1_7_r27_p__s : geteqR(mm, '_mr_1_1_1_7_r27_p), _mr_1_1_1_7_r27_q__s : geteqR(mm, '_mr_1_1_1_7_r27_q),
   %mr_polyRemainder(_mr_1_1_1_7_r27_Px__s, _mr_1_1_1_7_r27_a__s + _mr_1_1_1_7_r27_b__s*x, x)* mr_int((_mr_1_1_1_7_r27_a__s + _mr_1_1_1_7_r27_b__s*x)^_mr_1_1_1_7_r27_m__s*(_mr_1_1_1_7_r27_c__s + _mr_1_1_1_7_r27_d__s*x)^_mr_1_1_1_7_r27_n__s*(_mr_1_1_1_7_r27_e__s + _mr_1_1_1_7_r27_f__s*x)^_mr_1_1_1_7_r27_p__s*(_mr_1_1_1_7_r27_g__s + _mr_1_1_1_7_r27_h__s*x)^_mr_1_1_1_7_r27_q__s, x) + mr_int(%mr_polyQuotient(_mr_1_1_1_7_r27_Px__s, _mr_1_1_1_7_r27_a__s + _mr_1_1_1_7_r27_b__s*x, x)*(_mr_1_1_1_7_r27_a__s + _mr_1_1_1_7_r27_b__s*x)^(_mr_1_1_1_7_r27_m__s + 1)*(_mr_1_1_1_7_r27_c__s + _mr_1_1_1_7_r27_d__s*x)^ _mr_1_1_1_7_r27_n__s*(_mr_1_1_1_7_r27_e__s + _mr_1_1_1_7_r27_f__s*x)^_mr_1_1_1_7_r27_p__s*(_mr_1_1_1_7_r27_g__s + _mr_1_1_1_7_r27_h__s*x)^_mr_1_1_1_7_r27_q__s, x))$
-_mr_rule_1_1_1_7_r27(f, x) := block([mm, ok],
+_mr_slots_1_1_1_7_r27(j, used, acc, nvals, pool, x) := block([i, r2],
+  if is(j = 1) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "R") = true then (
+        r2 : _mr_slots_1_1_1_7_r27(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r27_Px = part(part(pool, i), 2)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      ),
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 5) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r27(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r27_Px = part(part(pool, i), 2) + part(part(pool, i), 3)*x^part(part(pool, i), 4)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      ),
+      if is(part(part(pool, i), 1) = "M") = true  and  is(part(part(pool, i), 3) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r27(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r27_Px = part(part(pool, i), 2)*x]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 2) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r27(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r27_a = part(part(pool, i), 2), _mr_1_1_1_7_r27_b = part(part(pool, i), 3), _mr_1_1_1_7_r27_m = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 3) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r27(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r27_c = part(part(pool, i), 2), _mr_1_1_1_7_r27_d = part(part(pool, i), 3), _mr_1_1_1_7_r27_n = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 4) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r27(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r27_e = part(part(pool, i), 2), _mr_1_1_1_7_r27_f = part(part(pool, i), 3), _mr_1_1_1_7_r27_p = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 5) then (
+    for i : 1 thru length(pool) do (
+      if is(member(i, used) = false) then (
+      if is(part(part(pool, i), 1) = "L") = true  and  is(part(part(pool, i), 4) = 1) = true then (
+        r2 : _mr_slots_1_1_1_7_r27(j + 1, append(used, [i]), append(acc, [_mr_1_1_1_7_r27_g = part(part(pool, i), 2), _mr_1_1_1_7_r27_h = part(part(pool, i), 3), _mr_1_1_1_7_r27_q = part(part(pool, i), 5)]), nvals, pool, x),
+        if is(r2 # false) then return(r2)
+      )
+      )
+    ),
+    return(false)
+  ),
+  if is(j = 6) then (
+    if true then (
+      r2 : _mr_cond_1_1_1_7_r27(acc, x),
+      if is(r2) = true then return(_mr_repl_1_1_1_7_r27(acc, x)),
+      return(false)
+    ) else return(false)
+  ),
+  false)$
+_mr_rule_1_1_1_7_r27(f, x) := block([mm, ok, d, pool, r0, i],
   mm : _mr_pat_1_1_1_7_r27(f, x),
-  if mm = false then return(false),
+  if mm # false and %mr_containsBoolean(mm) then return(false),
+  if mm = false then (
+    d : %mr_binpowfactors(f, x),
+    if is(d = false) then return(false),
+    if is(part(d, 1) # 1) then return(false),
+    pool : [],
+    for i : 1 thru length(part(d, 4)) do
+      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+        part(part(part(d, 4), i), 4)]]),
+    if is(part(d, 3) = 1) = false then
+      pool : append(pool, [["R", part(d, 3)]]),
+    if is(part(d, 2) = false) = false then
+      pool : append(pool, [["M", part(part(d, 2), 1),
+        part(part(d, 2), 2)]]),
+    r0 : _mr_slots_1_1_1_7_r27(1, [], [], [], pool, x),
+    return(r0)
+  ),
   ok : _mr_cond_1_1_1_7_r27(mm, x),
   if is(ok) = true then _mr_repl_1_1_1_7_r27(mm, x) else false)$
 

@@ -1596,3 +1596,56 @@ decide symbolically (r61 cond IntegerQ[m]||GtQ[a,0] is false for
 symbolic m even in Mathematica) — the 97 1.1.3.3 deferred entries are
 a suite-generation vs faithful-port gap, not a rule bug. Triage
 decision pending the full-run census.
+
+2026-08-25 (5.50.0/SBCL): SLOT-MATCHER HYBRID + BOOLEAN MATCHLIST GUARD
++ NORMALIZATION-SEEN GUARD. The bare-factor wall (probe 89e8b22: a
+free-exponent slot (lin)^pm declines a bare (lin) target; (lin)^1
+re-canonicalizes so no explicit unit exponent exists on the target
+side) is fixed for the 1.1.1.4/5/6/7 families by a HYBRID rule: the
+defmatch path is unchanged and tried first; on decline the structural
+fallback decomposes the integrand with %mr_binpowfactors (78b8095)
+into [c, M, rest, L-factors] and a generated _mr_slots backtracker
+assigns factors to the .m slot model (binpow/monom/barevar/polypow/
+quadvar) with backtracking + shared-n equality + the .m condition on
+bound values. 1_3_2 was expected to join but its pattern (P_^p_*Q_^q_.)
+parses no slot (P/Q are polypow with the exponent INSIDE the base
+pattern — parser returns None — defmatch-only for now). MEASURED:
+1.1.1.4 e1/e2 went timeout->deferred/error (the bare wall is GONE:
+r1 now fires on the 4-bare-linear target and returns the expanded
+polynomial antiderivative; the residual gap is the cascade coverage
+of the expanded sub-integrals — e2's symbolic form also runs a bare-
+integrate prompt flood that exhausts the 60 queued answers: RETRIEVE
+EOF). NEW BUG CLASS FOUND + FIXED (all 3026 rules regenerated): this
+build's defmatch BINDS UNFILLED PATTERN SLOTS TO `false` (1.1.1.7 r25
+Px*(lin)^m*(lin)^n*(lin)^p*(lin)^q on a 3-factor target: freeof(x,
+false) = true sails the .m condition; the repl rebuilds
+(false*x+false)^false garbage whose own mr_int sub-dispatch re-fires
+r25 with fresh false bindings — an unbounded cascade the result-level
+leak check only catches after stack exhaustion, measured: SBCL
+"Control stack exhausted" on 1.1.1.4 e1, 2.5M-line trace). FIX:
+every generated rule body now rejects matchlists containing a boolean
+(%mr_containsBoolean(mm) before the cond; the hybrid variant is
+mm # false and ... so a legitimate declination still opens the
+fallback). SEPARATELY: the seen guard (mr_top) was exact-member only
+and missed the measured float/rat normalization cycle
+((104*(3/10*x+17/10)^4)/3 vs (104*(0.3*x+1.7)^4)/3: member false,
+is(f2=f1) false, ratsimp(f2-f1) = 0) — the r25/r7 chain walked it
+lap after lap; %mr_seenp now ratsimp-compares against the dispatch
+path (O(depth<=16) ratsimps; errcatch per probe-errcatch-semantics:
+[value]/[]). BUILD QUIRKS MEASURED THIS SESSION: (1) redefining a
+function that captured the old function via `g0 : g` INFINITELY
+RECURSES (the capture re-resolves to the new definition at call time)
+— never wrap-override a package function in a probe; (2) `for s :
+list do` / `for s from list do` HANG in this build — use the
+indexed `for i : 1 thru length(L) do part(L, i)` idiom. CANARY:
+69/51 vs 71/49 baseline — the 3 diffs are NOT attributable to this
+change: 1.1.1.7 e1 (verified->noun) reproduces on the LAST COMMIT
+(stash-tested; the corpus expected answer is also COMPLEX-valued:
+realpart(diff) = 18.98 at x=0.35, so it can only have closed
+symbolically via a radical-form identity under earlier code),
+1.1.1.4 e135 (verified->unverified: the new answer is NUMERICALLY
+correct, V1/V2 ~ 1e-16, the zero chain just no longer closes the
+different radical form), 1.1.1.4 e1 (deferred->timeout: the fallback
+cascade takes ~190 s > the canary's 60 s cap). GATED 511/0. The
+in-flight 12-shard full run saw the regenerated files mid-run
+(mixed-state caveat #2 — the final clean re-run remains planned).
