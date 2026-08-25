@@ -1571,3 +1571,28 @@ a sum over a denominator term (x + (1-x)/(x^2+1) -> -x/(x^2+1) +
 Layer A test checks the identity u = v*PolyDivide[u,v,x] (syntactic =
 fails on sum-term canonical order). e5 (1.1.3.3, (a+b x^3)/(c+d
 x^3)) verified, resid 5.5e-17. Gated 511/0 + canary 71/49 (0/0).
+
+WORK ITEM: AppellF1 corpus-head fix — committed 9c87a3f
+2026-08-25, 5.50.0/SBCL. translation_table mapped AppellF1 ->
+mr_appellf1 (unbound) while the corpus expected answers carry the
+AppellF1 head; mismatched heads never cancel in the zero-test. Now
+emits AppellF1 (identical answer -> identical nouns -> diff closes
+symbolically to 0). Measured build quirk: this build's diff KNOWS the
+bracket-list form AppellF1[...] (= AppellF1 applied to a list) and
+SILENTLY DROPS its x-dependence (diff(AppellF1[...,-b*x,...],x) = 0;
+diff(e1 + x^2, x) = 2*x) — the parenthesized form stays a noun diff
+(no false closure). FOLLOW-UP: driver-side normalization of the
+corpus's AppellF1[...] -> AppellF1(...) in the inlined expected text
+(latent hazard; only matters once AppellF1 answers verify). Gated
+511/0 + 71/49 (0/0). 5 rule files regenerated. The in-flight full run
+kept running (only AppellF1-answer entries affected; census usable —
+recorded as mixed-state caveat).
+
+CONTEXT (measured): the corpus suite is pinned at 60295e2 (2018-10-25,
+predates our pinned Rubi 61e9c18); its expected answers for
+free-exponent entries (e.g. 1.1.3.3 e34: (a+b x^3)^m (c+d x^3)^p ->
+AppellF1) are produced under conditions our faithful port cannot
+decide symbolically (r61 cond IntegerQ[m]||GtQ[a,0] is false for
+symbolic m even in Mathematica) — the 97 1.1.3.3 deferred entries are
+a suite-generation vs faithful-port gap, not a rule bug. Triage
+decision pending the full-run census.
