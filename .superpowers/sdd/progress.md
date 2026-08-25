@@ -1222,6 +1222,37 @@ diff won't close; numeric stage declines on the noun); 6 unverified
 wrong-answer/verify-gap candidates: 1.2.1.2 e2202, 1.2.1.4 e383,
 1.2.1.5 e105, 1.2.2.2 e450, 1.2.2.2 e957, 1.2.2.6 e123.
 
+## Work item: wrong-answer family — 1.2.1.2 e2202 root cause (2026-08-25, committed 2547162)
+
+1.2.1.2 e2202 `(d+e x)^4/(a+b x+c x^2)^3` (resid 3.19/1.96). The
+cascade (1.2.1.6 r4 p=−3 -> r4 p=−2 -> r1 p=−1 -> native integrate,
+the last step verified correct) reduced to a broken 1.2.1.6 r4
+reduction. THREE stacked predicate bugs:
+
+1. BUILT-IN FRACTION PARTS: for a non-monic divisor with symbolic
+   coefficients, `quotient`/`remainder`/`divide` return the parts as
+   FRACTIONS — op(remainder((e x+d)^4, a+b x+c x^2, x)) = "/" with
+   the symbolic content c^3 in the DENOMINATOR (Mathematica's
+   PolynomialQuotient/Remainder return true polynomials). Fix:
+   %mr_polyQuotient/%mr_polyRemainder/%mr_polyDivide expand() the
+   result.
+2. RAT CONTENT EXTRACTION: %mr_coeff3's `expand(num(rat(u)))`
+   rescaled u — rat() puts the symbolic content below the line for
+   symbolic polynomials, so num(rat(u)) was a c^3-scaled copy;
+   coefficients came back c^3-wrong. Fix: `expand(u)` (Rubi's Coeff
+   is Coefficient[expr,x,n] directly; Together only as fallback).
+3. SYMBOL-POWER CONSTANTS DROPPED: %mr_term_xexp returned false for
+   a power with an x-free base (d^2) instead of 0 — every
+   symbol-power constant term vanished from coefficient walks
+   (%mr_coeff(d^2 - a e^2/c, x, 0) lost the d^2). Fix: the ^ branches
+   of %mr_term_xexp/%mr_term_coeff read an x-free base as a
+   degree-0 monomial. Regression probe: the 1.2.1.6 r4 reduction
+   identity, verified symbolically in general p for (e x+d)^2 and
+   (e x+d)^4 (it was -d^2*qu^p / -d^4*qu^p before).
+
+GATES: Layer A 511/0; canary 109/11 -> 111/9 (e2202 + 1.2.2.2 e450
+-> verified, 0 regressions). Session total: 88/32 -> 111/9.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
