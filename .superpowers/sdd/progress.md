@@ -1454,3 +1454,39 @@ regressions). REMAINING 22 family fails are other shapes: e5 =
 (a+b x)^-2 (r18 .m:23 LtQ[m,-1] rule's defmatch does not match the
 integrand — matchfix backtracking, next probe), e18/e29 = quadratic
 P — post-run family triage.
+
+WORK ITEM: MatchQ marker name-shape scan -> load-time registry
+(commit 6fab44f)
+2026-08-25, 5.50.0/SBCL. The full run's 19 `error` entries
+(1.2.1.6 e77/e78/e80/e84/e85/e87/e94 + 1.1.1.6 e42 + others) traced
+to %mr_isMQMarker_name's char-by-char substring scan: the COMPILED
+substring ERRORS on out-of-range (interpreted clamps — clamp.mac
+probe: interpreted substring("ab",1,5)="ab", the same call in a
+compiled (:=) errors; the length scan and the L-1 mq_hit probe both
+go one past the end), and in the nested compiled context of a
+matchfix defmatch the condition is FATAL — errcatch cannot catch it
+(e77hb probe: no CLASS line, batch ends "RETRIEVE: End of file";
+a shallower probe catches the identical error, so depth decides).
+FIX: membership, not name-shape — the generator mints marker names,
+so each rule file emits a trailing %mr_register_markers([...]) and
+%mr_isMQMarker is a registry scan (utils registers its own 43
+inline markers; Layer A registers its synthetic unit markers).
+REVERTED along the way: a CL handler-case defmfun in
+maxima_rubi_dispatch.lisp — an added defmfun is SILENTLY dropped by
+load() in this build (call stays a noun; the file's two existing
+dispatchers work; defmfun = (defprop + defun) per commac.lisp:254;
+no load error is printed — cause not identified, documented in the
+.lisp history only via this entry).
+SECOND BUG, same symptom: the driver's sign-prompt budget (6 pos +
+6 no per stage) — with the fatality gone the 1.2.1.6 cascade reaches
+the integrate fallback, which asks 13-20 questions; an exhausted
+stream EOF-kills the batch identically (e77n probe: N=12 dies,
+N=20 completes). Raised to 40/20 per stage; exhausted budget now
+degrades to `no` answers, not death.
+PARSE QUIRKS measured (test-file edits): block-body statements are
+COMMA-separated — a $ mid-body breaks the parse; a (:=) definition
+line caps at ~256 chars (longline probes); top-level .mac lines
+carry 700+ chars fine.
+RESULTS: the 8 formerly-erroring entries: 7 PASS verified (e80 a
+pre-existing 60 s timeout); Layer A 511/0; broad canary 71/49,
+0 regressions / 0 improvements vs canary_pre_remap.out (canary_cmp).
