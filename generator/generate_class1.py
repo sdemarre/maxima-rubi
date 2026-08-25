@@ -1167,12 +1167,16 @@ def emit_rule(run, key, n, rule_vars):
     lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$")
     return "\n".join(lines)
 
-def emit_file(rel_m, runs):
-    key = key_of(rel_m)
+def emit_file(rel_m, runs, key=None):
+    # key defaults to the file's own number; the EXTRA_CLASS1 files
+    # (measured 2026-08-25) are emitted under a `<key>b` suffix so their
+    # rule names never collide with the same-numbered LoadRules sibling.
+    if key is None:
+        key = key_of(rel_m)
     header = (f"/* rules/class1/{key}.mac — GENERATED; do not edit.\n"
               f" * Source: Rubi 4 {PIN}\n"
               f" *          {rel_m}\n * Regenerate: "
-              f"python3 generator/generate_class1.py --only {key_of(rel_m)} */\n"
+              f"python3 generator/generate_class1.py --only {key} */\n"
               f"{MIT}\n\n")
     body = []
     rule_fns = []
@@ -1239,6 +1243,31 @@ def load_class1_files(rubi):
         out.append(rel)
     return out
 
+# Class-1 .m files ABSENT from Rubi.m's LoadRules that the Maxima-syntax
+# corpus nonetheless tests (measured 2026-08-25): the 1.2.1.3/.4/.5/.6/.9
+# corpus files name-match exactly these five dead .m files, while Rubi.m
+# loads the same-numbered SIBLINGS instead (e.g. Rubi.m:145 loads
+# "1.2.1.4 (a+b x+c x^2)^p (d+e x+f x^2)^q" — 35 rules — and the corpus
+# "1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac" — 958 entries — needs
+# the 122-rule dead sibling). The generator's key_of collision made the
+# loaded sibling win the shared key, so these five were silently never
+# ported and their corpus entries mass-deferred. Ported under a `b` key
+# suffix, table position right after the same-numbered sibling (Rubi
+# family-block order). The other dead class-1 files (1.2.1.7/1.2.1.8
+# siblings, the four 1.3.x files, 1.1.2.x/.y) have NO corpus file and
+# stay unported until the full-corpus run shows deferral that needs them.
+_QD = ("Rubi/IntegrationRules/1 Algebraic functions/"
+       "1.2 Trinomial products/1.2.1 Quadratic/")
+EXTRA_CLASS1 = [
+    _QD + "1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.m",
+    _QD + "1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.m",
+    _QD + "1.2.1.5 (a+b x+c x^2)^p (d+e x+f x^2)^q.m",
+    _QD + "1.2.1.6 (g+h x)^m (a+b x+c x^2)^p (d+e x+f x^2)^q.m",
+    _QD + "1.2.1.9 P(x) (d+e x)^m (a+b x+c x^2)^p.m",
+]
+EXTRA_TOTAL = 316  # 82 + 122 + 31 + 48 + 33 (measured 2026-08-25)
+
+
 def main():
     only = None
     if "--only" in sys.argv:
@@ -1261,11 +1290,37 @@ def main():
             f"%mr_load_sibling(\"rules/class1/{key}.mac\", "
             f"'mr_witness_{key})$")
         table_terms.append(f"mr_rules_{key}")
-    note = "OK (== 2710)" if (total == 2710 and not only) else \
-           ("partial (--only)" if only else f"MISMATCH (expected 2710)")
+    # The five corpus-tested dead siblings (EXTRA_CLASS1), `b`-suffixed,
+    # table position immediately after their same-numbered sibling.
+    for rel_m in EXTRA_CLASS1:
+        if not (RUBI / rel_m).exists():
+            raise GenError(f"EXTRA_CLASS1 file missing: {rel_m}")
+        base = key_of(rel_m)
+        key = base + "b"
+        if only and key != only:
+            continue
+        text = strip_comments((RUBI / rel_m).read_text())
+        runs = rule_runs(text)
+        out = OUT / f"{key}.mac"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(emit_file(rel_m, runs, key))
+        print(f"  {key}: {len(runs)} rules (extra, corpus-matched dead file)")
+        total += len(runs)
+        load_lines.append(
+            f"%mr_load_sibling(\"rules/class1/{key}.mac\", "
+            f"'mr_witness_{key})$")
+        sib = f"mr_rules_{base}"
+        pos = table_terms.index(sib) + 1 if sib in table_terms \
+            else len(table_terms)
+        table_terms.insert(pos, f"mr_rules_{key}")
+    expected = 2710 + EXTRA_TOTAL
+    note = (f"OK (== {expected})" if (total == expected and not only)
+            else ("partial (--only)" if only
+                  else f"MISMATCH (expected {expected})"))
     print(f"TOTAL: {total} rules — {note}")
-    if not only and total != 2710:
-        raise GenError(f"rule total {total} != 2710 (T1 census); aborting")
+    if not only and total != expected:
+        raise GenError(f"rule total {total} != {expected} "
+                       "(2710 T1 census + 316 EXTRA_CLASS1); aborting")
     if not only:
         print()
         print("# maxima_rubi.mac load list (Rubi LoadRules order):")

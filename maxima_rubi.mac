@@ -76,7 +76,9 @@ mr_rule_table : mr_rules_1_1_1_1$
  * "Thread local storage exhausted" — errcatch cannot catch it. So the
  * loader does NOT call this. On a build with the headroom (5.50 is
  * expected to improve pattern matching), call mr_load_class1_all();
- * the table then becomes the full 67-term flatten per the T5 §2
+ * the table then becomes the full 72-term flatten (67 LoadRules files
+ * + the five corpus-matched dead siblings, the `b`-suffixed 1.2.1
+ * families — measured 2026-08-25) per the T5 §2
  * interface. For single files on this build:
  *     %mr_load_sibling("rules/class1/<key>.mac", 'mr_witness_<key>);
  *     mr_rule_table : mr_rule_table concat mr_rules_<key>$
@@ -105,8 +107,11 @@ mr_load_class1_all() := block([],
   %mr_load_sibling("rules/class1/1_2_1_1.mac", 'mr_witness_1_2_1_1),
   %mr_load_sibling("rules/class1/1_2_1_2.mac", 'mr_witness_1_2_1_2),
   %mr_load_sibling("rules/class1/1_2_1_3.mac", 'mr_witness_1_2_1_3),
+  %mr_load_sibling("rules/class1/1_2_1_3b.mac", 'mr_witness_1_2_1_3b),
   %mr_load_sibling("rules/class1/1_2_1_4.mac", 'mr_witness_1_2_1_4),
+  %mr_load_sibling("rules/class1/1_2_1_4b.mac", 'mr_witness_1_2_1_4b),
   %mr_load_sibling("rules/class1/1_2_1_5.mac", 'mr_witness_1_2_1_5),
+  %mr_load_sibling("rules/class1/1_2_1_5b.mac", 'mr_witness_1_2_1_5b),
   %mr_load_sibling("rules/class1/1_2_2_1.mac", 'mr_witness_1_2_2_1),
   %mr_load_sibling("rules/class1/1_2_2_2.mac", 'mr_witness_1_2_2_2),
   %mr_load_sibling("rules/class1/1_2_2_3.mac", 'mr_witness_1_2_2_3),
@@ -128,9 +133,11 @@ mr_load_class1_all() := block([],
   %mr_load_sibling("rules/class1/1_1_1_6.mac", 'mr_witness_1_1_1_6),
   %mr_load_sibling("rules/class1/1_1_1_5.mac", 'mr_witness_1_1_1_5),
   %mr_load_sibling("rules/class1/1_2_1_9.mac", 'mr_witness_1_2_1_9),
+  %mr_load_sibling("rules/class1/1_2_1_9b.mac", 'mr_witness_1_2_1_9b),
   %mr_load_sibling("rules/class1/1_2_1_8.mac", 'mr_witness_1_2_1_8),
   %mr_load_sibling("rules/class1/1_2_1_7.mac", 'mr_witness_1_2_1_7),
   %mr_load_sibling("rules/class1/1_2_1_6.mac", 'mr_witness_1_2_1_6),
+  %mr_load_sibling("rules/class1/1_2_1_6b.mac", 'mr_witness_1_2_1_6b),
   %mr_load_sibling("rules/class1/1_2_2_6.mac", 'mr_witness_1_2_2_6),
   %mr_load_sibling("rules/class1/1_2_2_5.mac", 'mr_witness_1_2_2_5),
   %mr_load_sibling("rules/class1/1_2_2_7.mac", 'mr_witness_1_2_2_7),
@@ -150,7 +157,7 @@ mr_load_class1_all() := block([],
   %mr_load_sibling("rules/class1/1_3_2.mac", 'mr_witness_1_3_2),
   %mr_load_sibling("rules/class1/1_3_4.mac", 'mr_witness_1_3_4),
   %mr_load_sibling("rules/class1/1_4_3.mac", 'mr_witness_1_4_3),
-  mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_1_1_2, mr_rules_1_1_1_3, mr_rules_1_1_1_4, mr_rules_1_1_2_1, mr_rules_1_1_2_2, mr_rules_1_1_2_3, mr_rules_1_1_2_4, mr_rules_1_1_2_5, mr_rules_1_1_2_6, mr_rules_1_1_2_7, mr_rules_1_1_2_8, mr_rules_1_1_2_9, mr_rules_1_1_3_1, mr_rules_1_1_3_2, mr_rules_1_1_3_3, mr_rules_1_1_3_4, mr_rules_1_1_3_5, mr_rules_1_1_3_6, mr_rules_1_2_1_1, mr_rules_1_2_1_2, mr_rules_1_2_1_3, mr_rules_1_2_1_4, mr_rules_1_2_1_5, mr_rules_1_2_2_1, mr_rules_1_2_2_2, mr_rules_1_2_2_3, mr_rules_1_2_2_4, mr_rules_1_2_3_1, mr_rules_1_2_3_2, mr_rules_1_2_3_3, mr_rules_1_2_3_4, mr_rules_1_1_4_1, mr_rules_1_1_4_2, mr_rules_1_1_4_3, mr_rules_1_2_4_1, mr_rules_1_2_4_2, mr_rules_1_2_4_3, mr_rules_1_2_4_4, mr_rules_1_4_1, mr_rules_1_4_2, mr_rules_1_1_1_7, mr_rules_1_1_1_6, mr_rules_1_1_1_5, mr_rules_1_2_1_9, mr_rules_1_2_1_8, mr_rules_1_2_1_7, mr_rules_1_2_1_6, mr_rules_1_2_2_6, mr_rules_1_2_2_5, mr_rules_1_2_2_7, mr_rules_1_2_2_8, mr_rules_1_2_3_6, mr_rules_1_2_3_5, mr_rules_1_1_2_11, mr_rules_1_1_2_10, mr_rules_1_1_2_14, mr_rules_1_1_2_13, mr_rules_1_1_2_12, mr_rules_1_1_3_8, mr_rules_1_1_3_7, mr_rules_1_1_4_4, mr_rules_1_3_3, mr_rules_1_3_1, mr_rules_1_3_2, mr_rules_1_3_4, mr_rules_1_4_3])
+  mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_1_1_2, mr_rules_1_1_1_3, mr_rules_1_1_1_4, mr_rules_1_1_2_1, mr_rules_1_1_2_2, mr_rules_1_1_2_3, mr_rules_1_1_2_4, mr_rules_1_1_2_5, mr_rules_1_1_2_6, mr_rules_1_1_2_7, mr_rules_1_1_2_8, mr_rules_1_1_2_9, mr_rules_1_1_3_1, mr_rules_1_1_3_2, mr_rules_1_1_3_3, mr_rules_1_1_3_4, mr_rules_1_1_3_5, mr_rules_1_1_3_6, mr_rules_1_2_1_1, mr_rules_1_2_1_2, mr_rules_1_2_1_3, mr_rules_1_2_1_3b, mr_rules_1_2_1_4, mr_rules_1_2_1_4b, mr_rules_1_2_1_5, mr_rules_1_2_1_5b, mr_rules_1_2_2_1, mr_rules_1_2_2_2, mr_rules_1_2_2_3, mr_rules_1_2_2_4, mr_rules_1_2_3_1, mr_rules_1_2_3_2, mr_rules_1_2_3_3, mr_rules_1_2_3_4, mr_rules_1_1_4_1, mr_rules_1_1_4_2, mr_rules_1_1_4_3, mr_rules_1_2_4_1, mr_rules_1_2_4_2, mr_rules_1_2_4_3, mr_rules_1_2_4_4, mr_rules_1_4_1, mr_rules_1_4_2, mr_rules_1_1_1_7, mr_rules_1_1_1_6, mr_rules_1_1_1_5, mr_rules_1_2_1_9, mr_rules_1_2_1_9b, mr_rules_1_2_1_8, mr_rules_1_2_1_7, mr_rules_1_2_1_6, mr_rules_1_2_1_6b, mr_rules_1_2_2_6, mr_rules_1_2_2_5, mr_rules_1_2_2_7, mr_rules_1_2_2_8, mr_rules_1_2_3_6, mr_rules_1_2_3_5, mr_rules_1_1_2_11, mr_rules_1_1_2_10, mr_rules_1_1_2_14, mr_rules_1_1_2_13, mr_rules_1_1_2_12, mr_rules_1_1_3_8, mr_rules_1_1_3_7, mr_rules_1_1_4_4, mr_rules_1_3_3, mr_rules_1_3_1, mr_rules_1_3_2, mr_rules_1_3_4, mr_rules_1_4_3])
 )$
 
 mr_witness_maxima_rubi() := true$
