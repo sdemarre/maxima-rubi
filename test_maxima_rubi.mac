@@ -1093,8 +1093,13 @@ test_structural_predicates() := block([],
           %mr_polyRemainder(x^3 + 1, x^2 + 1, x), 1 - x),
     check("pR by x",
           %mr_polyRemainder(x^3 + 1, x, x), 1),
-    check("pDiv",
-          %mr_polyDivide(x^3 + 1, x^2 + 1, x), [x, 1 - x]),
+    /* polyDivide returns the ONE expression quo + rem/v (Rubi :3298
+       contract, consumed by the generated mr_int repls) */
+    /* the unexpanded form is (1-x)/(x^2+1)+x (sum-term order is
+       canonical, not source order — a source-order `= check would
+       fail); the identity u = v*PolyDivide[u,v,x] is the contract. */
+    check("pDiv identity",
+          is(ratsimp((x^3 + 1) - (x^2 + 1)*%mr_polyDivide(x^3 + 1, x^2 + 1, x)) = 0), true),
     /* inverse-hyperbolic log shims (unbound in this build) */
     check("atanh 1/2", %mr_atanh(1/2), 1/2*log(3)),
     check("atanh 0", %mr_atanh(0), 0),

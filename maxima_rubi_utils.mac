@@ -3385,15 +3385,33 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   )
   else false)$
 
-%mr_polyDivide(u, v, x) := block([r],
+/* Rubi :3298  PolynomialDivide[u, v, x] — the POLYNOMIAL quotient PLUS
+   the remainder over v, as ONE expression: quo + rem/v. The generated
+   repls call mr_int(%mr_polyDivide(...), x) and integrate that single
+   expression (Rubi: Int[PolynomialDivide[u, v, x], x]); the earlier
+   [Q, R] list contract integrated the LIST (a noun/garbage answer —
+   measured 2026-08-25: 1.1.3.3 e5, resid ~0.33/1.6). `divide(u, v, x)`
+   is NOT used: in this build it divides by a RECIPROCAL by multiplying
+   and dropping the remainder (divide(a+b*x^3, 1/(c+d*x^3), x) =
+   [[b*d*x^6 + ..., 0]] — the "remainder" is a sum, not a < v-degree
+   remainder, measured 2026-08-25). */
+%mr_polyDivide(u, v, x) := block([q, r],
   if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
   then (
-    r : errcatch(divide(u, v, x)),
-    if is(r = [])
-    then [false, false]
-    else [expand(part(part(r, 1), 1)), expand(part(part(r, 1), 2))]
+    q : errcatch(quotient(u, v, x)),
+    if is(q = []) then false
+    else (
+      r : errcatch(remainder(u, v, x)),
+      if is(r = []) then false
+      /* no expand(): this build's expand DISTRIBUTES a sum over a
+         denominator term (expand(Q + R/v) = Q + R1/v - R2/... per
+         summand, measured 2026-08-25: x + (1-x)/(x^2+1) became
+         -(x/(x^2+1)) + 1/(x^2+1) + x) — the unexpanded form is the
+         canonical one the cascade and the zero-tests expect. */
+      else part(q, 1) + part(r, 1)/v
+    )
   )
-  else [false, false])$
+  else false)$
 
 %mr_atanh(u) := 1/2*log((1 + u)/(1 - u))$
 
