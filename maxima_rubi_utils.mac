@@ -4120,6 +4120,162 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   ),
   res)$
 
+/* ---- generic binomial-power factor decomposition ----------------------
+ * %mr_binpowfactors(f, x) -> false | [c, M, rest, L]
+ *   c    x-free constant factor (1 when none)
+ *   M    the monomial factor c2*x^k as [c2, k], false when none
+ *   rest product of the factors that are NEITHER binomial powers nor a
+ *        monomial (1 when none) — the slot the .m's P(x) pattern
+ *        variable consumes
+ *   L    list of [A, B, n, E], one per binomial-power factor (A + B*x^n)^E
+ *        (a bare factor is E=1; sqrt(A + B*x^n) is E=1/2; a factor in the
+ *        DENOMINATOR carries the sign of E — the same convention as the
+ *        two-factor %mr_mbp2). n is x-free for every factor.
+ *
+ * The generalization of %mr_mbp2 (which stays for the committed 1.1.3.1/
+ * 1.1.3.3 rules): any NUMBER of binpow factors, plus the monomial and
+ * P(x) slots the 1.1.1.x (m-free linear) and 1.1.3.2/4/6/8 (free n,
+ * (c x)^m) families need. The generated manual-matcher rule body assigns
+ * the factors of L to the rule's slots and takes `rest` for its P(x)
+ * slot.
+ *
+ * Measured 2026-08-25, 5.50.0/SBCL (the walker's two premises):
+ *  - length() of a times node is the factor count and part() reaches
+ *    every factor (probes/maxima/probe-times-length.out);
+ *  - a free-exponent pattern slot (pa + pb*x)^pm does NOT match a BARE
+ *    target factor (a + b*x): Maxima's canonical form strips (expr)^1,
+ *    so the target has no Power node — probes/maxima/
+ *    probe-matchfix-bare-factor.out. This walker recovers the implicit
+ *    E=1 that the matcher cannot see.
+ *
+ * Build quirks observed while writing this (see the %mr_mbp2 block):
+ * op() on an atom is fatal (every op() is atom()-guarded); sqrt heads
+ * are tested via string(op(t)); every branch assigns res (a bare
+ * if/then/else as the block value evaluates UNDEFINED); comparisons go
+ * through is(); no return() inside for-loops (loop-level only). */
+/* Split an expression into IRREDUCIBLE factors, carrying a sign: a
+   factor from the NUMERATOR has sgn=1, from the DENOMINATOR sgn=-1.
+   A times node distributes over its factors; a quotient recurses into
+   both sides. Everything else (atoms, powers, sqrt, sums) is one
+   factor — the classifier below decides what it is. */
+%mr_bpf_walk(e, x, sgn) := block([facs, i, res],
+  if atom(e) then (
+    res : [[e, sgn]]
+  ) else (
+    if op(e) = "*" then (
+      facs : [],
+      for i : 1 thru length(e) do
+        facs : append(facs, %mr_bpf_walk(part(e, i), x, sgn)),
+      res : facs
+    ) else (
+      if op(e) = "/" then (
+        res : append(%mr_bpf_walk(part(e, 1), x, sgn),
+                     %mr_bpf_walk(part(e, 2), x, -sgn))
+      ) else (
+        res : [[e, sgn]]
+      )
+    )
+  ),
+  res)$
+
+/* a monomial factor: bare x^k, (c0*x)^k, or x -> [c0, k*sgn], else
+   false. (c0*x)^k is the .m's (c_.*x_)^m_ slot: c0 binds to c_, k to
+   m_. */
+%mr_bpf_monomial(t, sgn, x) := block([base, k, res],
+  if is(t = x) then (
+    res : [1, sgn]
+  ) else (
+    if op(t) = "^" then (
+      base : part(t, 1), k : part(t, 2),
+      if is(base = x) then (
+        res : [1, sgn*k]
+      ) else (
+        if op(base) = "*" and is(length(base) = 2) and is(part(base, 2) = x)
+           and is(freeof(x, part(base, 1))) then (
+          res : [part(base, 1), sgn*k]
+        ) else (
+          res : false
+        )
+      )
+    ) else (
+      res : false
+    )
+  ),
+  res)$
+
+/* a binomial-power factor (A + B*x^n)^E, incl. the BARE form (implicit
+   E=1 — the case the matchfix cannot see, probe-matchfix-bare-factor)
+   and sqrt (E=1/2); the denominator sign is folded into E.
+   -> [A, B, n, E], else false. */
+%mr_bpf_factor(t, sgn, x) := block([base, E, r, res],
+  base : t, E : sgn,
+  if op(t) = "^" then (
+    E : sgn*part(t, 2),
+    base : part(t, 1)
+  ),
+  if string(op(base)) = "sqrt" then (
+    E : E/2,
+    base : part(base, 1)
+  ),
+  /* sqrt of a power: 1/sqrt((A+B x^n)^k) may stay uncombined */
+  if op(base) = "^" then (
+    E : E*part(base, 2),
+    base : part(base, 1)
+  ),
+  r : %mr_mbp_base(base, x),
+  if is(r = false) then (
+    res : false
+  ) else (
+    res : [part(r, 1), part(r, 2), part(r, 3), E]
+  ),
+  res)$
+
+/* f -> [c, M, rest, L]
+   c    product of the x-free factors (1 when none)
+   M    [c0, k] the combined monomial factor, false when none
+   rest product of the factors that are NEITHER monomial NOR binomial
+        power (1 when none) — what the .m's P(x) pattern variable
+        consumes, times any lin factors a rule body leaves unassigned
+   L    [A, B, n, E] per binomial-power factor, part order
+ * The generalization of the two-factor %mr_mbp2 (which stays for the
+   committed 1.1.3.1/1.1.3.3 rules): any number of binpow factors,
+   plus the monomial and P(x) slots the 1.1.1.x (m-free linear) and
+   1.1.3.2/4/6/8 ((c x)^m, free n) families need.
+ * Measured 2026-08-25, 5.50.0/SBCL: length() of a times node is the
+   factor count (probe-times-length.out); a free-exponent pattern slot
+   declines bare (exponent-1) factors (probe-matchfix-bare-factor.out).
+ * Build quirks applied (see the %mr_mbp2 block): op() atom-guarded,
+   sqrt tested via string(op), every branch assigns res, comparisons
+   through is(), no return() in for-loops. */
+%mr_binpowfactors(f, x) := block([facs, c, M, rest, L, i, t, sgn, r, res],
+  facs : %mr_bpf_walk(f, x, 1),
+  c : 1, M : false, rest : 1, L : [],
+  for i : 1 thru length(facs) do (
+    t : part(part(facs, i), 1),
+    sgn : part(part(facs, i), 2),
+    if is(freeof(x, t)) then (
+      c : c*t^sgn
+    ) else (
+      r : %mr_bpf_monomial(t, sgn, x),
+      if is(r = false) then (
+        r : %mr_bpf_factor(t, sgn, x),
+        if is(r = false) then (
+          rest : rest*t^sgn
+        ) else (
+          L : append(L, [r])
+        )
+      ) else (
+        if is(M = false) then (
+          M : r
+        ) else (
+          M : [part(M, 1)*part(r, 1), part(M, 2) + part(r, 2)]
+        )
+      )
+    )
+  ),
+  res : [c, M, rest, L],
+  res)$
+
 /* Rubi's ShowStep Hold wrapper — identity outside the (unported)
    ShowStep machinery. */
 %mr_hold(u) := u$
