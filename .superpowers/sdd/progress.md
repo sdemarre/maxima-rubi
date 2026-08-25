@@ -1649,3 +1649,54 @@ different radical form), 1.1.1.4 e1 (deferred->timeout: the fallback
 cascade takes ~190 s > the canary's 60 s cap). GATED 511/0. The
 in-flight 12-shard full run saw the regenerated files mid-run
 (mixed-state caveat #2 — the final clean re-run remains planned).
+
+## Work item: slot-matcher fallback — the four build traps + consumption check (2026-08-26)
+
+The hybrid fallback from 9f5ccef was verified BROKEN end-to-end
+(r1 on 1.1.1.4 e1 returned false; e3/e4/e5 "verified" came from
+OTHER rules). Root causes, all MEASURED this session
+(probes in /tmp/opencode: retprobe, jtest/jtest3, forif, mapprobe,
+forcnt, termclean/termpois, remcmp/remmap2-4, remg, e2slots2,
+bttrace/cleantrace, consump):
+(1) return() inside a for body terminates the LOOP and its value is
+DISCARDED — the backtracker's `if is(r2 # false) then return(r2)`
+was dead code; rewrote as r2-flag + next-iteration guard
+(`if is(r2 = false) and is(member(i, used) = false) then (...)`)
+with the branch ending in a BLOCK-level return(r2).
+(2) `if C then <value>, NEXT` in a block SWALLOWS NEXT into the
+then-branch (whole j-chain collapses to the tail value);
+`if C then <statement>, NEXT` separates correctly — every j-group
+must END IN A STATEMENT (hence the return(r2) placement).
+(3) A DECLINED defmatch that PARTIALLY matched commits its capture
+bindings as GLOBALS (3/1-quotient shape: 3 slots bound, 4th
+unmatched): the fallback's acc equations then auto-evaluate
+(`_mr_.._a = 1.1` -> `1.7 = 1.1`), geteqR finds no capture, cond
+degrades to unknown, every terminal declines. Fix: unquoted
+`remvalue(name)` per capture at the top of the fallback — quoted
+remvalue('sym) does NOT unbind in this build, and
+map(lambda([v],remvalue(v)),[sym]) evaluates the argument to its
+value first (both measured). This also explains the apparent
+"pool-order dependence": it was call-order pollution from a prior
+cascade's defmatch.
+(4) FULL-CONSUMPTION CHECK: without it a k-slot rule's fallback
+accepts any integrand containing a valid k-factor subset — a
+4-slot 1.1.1.4 rule fired on a 5-factor 1.1.1.7 e14 quotient and
+integrated the wrong integrand (canary PASS->FAIL). Terminal now
+requires is(length(used) = length(pool)) = true.
+REVERTED: the sqrt-product _slot_factor branch (1.1.1.7 r16-class)
+and 1_1_1_7 from SLOT_KEYS_PHASE1 — the 1.1.1.7 hybrid fallbacks
+returned a WRONG answer on the symbolic m/(sqrt sqrt sqrt) cascade
+(V1 = 0.48, /tmp/opencode/e17v; driver e1/e2 150 s timeouts,
+e17drv) and canary e1/e14/e30 regressed; 1.1.1.7 is back to
+defmatch-only (baseline behavior). Revisit with a cascade budget.
+NOTE: 1.1.1.7 e1's verified->timeout also reproduces on the last
+pre-slot-matcher commit (prior session's stash test) — pre-existing
+since ~78b8095, separate from the slot work; still open.
+GATES (post-revert + consumption): Layer A 511/0; canary 71/49 =
+BASELINE, with 1.1.1.4 e1 FAIL->PASS (deferred->verified, the only
+improvement) and 1.1.1.4 e135 verified->unverified (the known
+artifact: answer numerically correct V1 -1.18e-16, zero chain no
+longer closes the different radical form). 1.1.1.4 driver 6/6
+verified; 1.1.1.5 3/4 (e4 deferred); 1.1.1.6 4/4. Full run at
+20747/25697 when this entry was written (mixed-state caveat #2
+still applies — final clean re-run remains planned).

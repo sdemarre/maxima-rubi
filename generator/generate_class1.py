@@ -310,15 +310,24 @@ def _signed_rational(sgn, s):
 # to a structural decomposition (%mr_binpowfactors) that recovers the
 # implicit E=1, trying every slot assignment until the .m condition
 # accepts one.
-SLOT_KEYS_PHASE1 = {"1_1_1_4", "1_1_1_5", "1_1_1_6", "1_1_1_7", "1_3_2"}
+# 1_1_1_7 is EXCLUDED (2026-08-26): its hybrid fallbacks (r16-class
+# m/(sqrt sqrt sqrt)) return wrong answers / blow up the symbolic
+# cascade on the corpus's 10-parameter entries — see the _slot_factor
+# note. 1.1.1.4/5/6 stay (1.1.1.4 verified 6/6 in the driver;
+# canary shows no 1.1.1.5/6 regression).
+SLOT_KEYS_PHASE1 = {"1_1_1_4", "1_1_1_5", "1_1_1_6", "1_3_2"}
 
 _V = r"([A-Za-z][A-Za-z0-9]*)([._]*)"
 
 def _slot_factor(part, sgn):
     """One whitespace-free .m factor -> list of slot dicts, else None.
-    A factor may expand to TWO slots: Sqrt[lin]*Sqrt[lin] written as one
-    syntactic factor is not present in 1.1.1.x (checked 2026-08-25);
-    every accepted factor yields exactly one slot."""
+    (The parenthesized sqrt-product expansion for the 1.1.1.7 r16-class
+    LHSes was tried 2026-08-26 and REVERTED: the resulting 1.1.1.7
+    hybrid fallbacks returned a WRONG answer on the symbolic
+    m/(sqrt sqrt sqrt) cascade (V1 = 0.48, /tmp/opencode/e17v) and
+    timed out in the driver (e1/e2 150s each, /tmp/opencode/e17drv).
+    1_1_1_7 is therefore back to defmatch-only; revisit with a
+    cascade budget before re-adding.)"""
     in_sqrt = False
     m = re.match(r"^Sqrt\[(.*)\]$", part)
     if m:
@@ -1559,7 +1568,10 @@ def _slot_backtrack_lines(slots, key, n, rule_vars):
     shared = [v for v, ss in nvars.items() if len(ss) > 1]
 
     def tag_stmts(s):
-        """The per-tag branch statements over the loop variable i."""
+        """The per-tag branch statements over the loop variable i.
+        The recursion RESULT is stored in r2 (the flag); a successful
+        assignment is detected on the NEXT iteration by the guard,
+        which then skips the remaining pool items."""
         stmts = []
         for tag, checks, eqs, nv in _slot_tag_branches(s, key, n, caps,
                                                        "part(pool, i)"):
@@ -1567,25 +1579,43 @@ def _slot_backtrack_lines(slots, key, n, rule_vars):
                    + (f"  and  {checks}" if checks else ""))
             nvals_arg = (f"append(nvals, [{nv}])" if nv else "nvals")
             stmts.append(
-                f"      if {pre} then (\n"
+                f"      if {pre} then\n"
                 f"        r2 : _mr_slots_{key}_r{n}(j + 1, append(used, "
                 f"[i]), append(acc, [{', '.join(eqs)}]), {nvals_arg}, "
-                f"pool, x),\n"
-                f"        if is(r2 # false) then return(r2)\n"
-                f"      )")
-        return stmts
+                f"pool, x)")
+        return " else\n".join(stmts)
 
+    # return() inside a for body does NOT return the function in this
+    # build: it terminates the loop and its value is DISCARDED
+    # (measured 2026-08-26, /tmp/opencode/retprobe: f1(5) returned the
+    # block-level -1 instead of the loop-level 3). The backtracker
+    # therefore stores the recursion result in the r2 flag, guards the
+    # remaining iterations on it, and the branch value after the loop
+    # is r2 itself. (The F1 pool-append idiom is unaffected: it never
+    # returned from inside the loop.)
+    # Two parse traps, both measured 2026-08-26 (/tmp/opencode/jtest,
+    # jtest3, forif, retprobe):
+    #  (a) return() inside a for body terminates the LOOP and its
+    #      value is DISCARDED — the recursion result must be stored
+    #      in the r2 flag instead;
+    #  (b) `if C then <value>, NEXT` in a block SWALLOWS NEXT into
+    #      the then-branch (the whole j-chain collapses to the tail
+    #      value), while `if C then <statement>, NEXT` separates
+    #      correctly — every j-group must therefore END IN A
+    #      STATEMENT: return(r2) at block level (outside the for).
     body = []
     for j in range(1, k + 1):
         s = slots[j - 1]
         stmts = tag_stmts(s)
         body.append(f"  if is(j = {j}) then (")
+        body.append(f"    r2 : false,")
         body.append(f"    for i : 1 thru length(pool) do (")
-        body.append(f"      if is(member(i, used) = false) then (")
-        body.append(",\n".join(stmts))
+        body.append(f"      if is(r2 = false) and is(member(i, used) = "
+                    f"false) then (")
+        body.append(f"        ({stmts}\n        )")
         body.append(f"      )")
         body.append(f"    ),")
-        body.append(f"    return(false)")
+        body.append(f"    return(r2)")
         if j == k:
             cks = []
             for v in shared:
@@ -1594,7 +1624,16 @@ def _slot_backtrack_lines(slots, key, n, rule_vars):
                     for b in range(a + 1, len(js)):
                         cks.append(f"is(part(nvals, {a + 1}) = "
                                    f"part(nvals, {b + 1})) = true")
-            ck_txt = "  and  ".join(cks) if cks else "true"
+            # FULL-CONSUMPTION CHECK (2026-08-26, canary 1.1.1.7 e14
+            # regression): without it a k-slot rule's fallback accepts
+            # ANY integrand whose factors include a valid k-subset —
+            # a 4-slot 1.1.1.4 rule fired on a 5-factor quotient
+            # (1.1.1.7 e14's shape), bound four factors, and its repl
+            # integrated the wrong integrand. The pattern's shape is
+            # "exactly these factors", so every pool element (L/R/M)
+            # must be consumed by the time the terminal is reached.
+            cks.append("is(length(used) = length(pool)) = true")
+            ck_txt = "  and  ".join(cks)
             body.append(f"  ),")
             body.append(f"  if is(j = {k + 1}) then (")
             body.append(f"    if {ck_txt} then (")
@@ -1610,9 +1649,17 @@ def _slot_backtrack_lines(slots, key, n, rule_vars):
     return ([f"_mr_slots_{key}_r{n}(j, used, acc, nvals, pool, x) := "
              f"block([i, r2],"] + body)
 
-def _slot_rule_lines(key, n):
+def _slot_rule_lines(key, n, rule_vars):
     """The hybrid _mr_rule body: defmatch first (unchanged behavior),
-    the structural fallback on decline."""
+    the structural fallback on decline. rule_vars: the capture names,
+    remvalued at the top of the fallback (see the pollution note)."""
+    # remvalue must be called UNQUOTED, one statement per capture:
+    # quoted form remvalue('sym) does not unbind in this build, and
+    # map(lambda([v], remvalue(v)), [sym]) evaluates the argument to
+    # its value before the lambda sees it (measured 2026-08-26,
+    # /tmp/opencode/remcmp, remmap2-4, remg).
+    caps = sorted(cap_name(key, n, v) for v in rule_vars)
+    rem = ",\n    ".join(f"remvalue({c})" for c in caps)
     return [
         f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok, d, pool, r0, i],",
         f"  mm : _mr_pat_{key}_r{n}(f, x),",
@@ -1620,6 +1667,17 @@ def _slot_rule_lines(key, n):
         # signal that opens the structural fallback
         f"  if mm # false and %mr_containsBoolean(mm) then return(false),",
         f"  if mm = false then (",
+        # Pollution (measured 2026-08-26, /tmp/opencode/termpois vs
+        # termclean): a DECLINED defmatch that partially matched
+        # (e.g. the 3/1-quotient shape: three slots bound, the fourth
+        # unmatched) COMMITS the capture bindings as globals. The
+        # fallback then builds acc equations with those names and the
+        # LHS auto-evaluates (`_mr_.._a = 1.1` -> `1.7 = 1.1`), so
+        # geteqR finds no capture, cond degrades to unknown, and every
+        # terminal declines — even though the same pool integrates
+        # fine in a clean process. remvalue the rule's own captures
+        # (uniquely named per rule; remvalue is a no-op on unbound).
+        f"    {rem},",
         f"    d : %mr_binpowfactors(f, x),",
         f"    if is(d = false) then return(false),",
         f"    if is(part(d, 1) # 1) then return(false),",
@@ -1786,7 +1844,7 @@ def emit_rule(run, key, n, rule_vars):
                 and not ctx["decls"]
                 and "MatchQ" not in (cond or "")):
             lines.extend(_slot_backtrack_lines(slots, key, n, rule_vars))
-            lines.extend(_slot_rule_lines(key, n))
+            lines.extend(_slot_rule_lines(key, n, rule_vars))
         else:
             lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
             lines.append(f"  mm : {pat_name}(f, x),")
