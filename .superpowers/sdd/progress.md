@@ -1151,6 +1151,77 @@ prompt assumptions are cleared before verification, so the formal
 zero-test needs sign info the chain can't derive — candidates for a
 numeric-fallback stage or an assumption-aware verification).
 
+## Work item: contains-noun sub-class (2026-08-25, committed 2a0ff92)
+
+1.1.1.7 e30's "constant answer" is a faithful port, not a bug: its
+cascade hits 1.1.1.4.m:47 — Rubi's OWN CannotIntegrate catch-all for
+the 4-binomial family (ported as rule r42 whose repl IS the
+`unintegrable` noun). Rubi 4 returns the inert Int there too; the
+corpus expects a closed form the rule set cannot produce.
+
+HARNESS GAP: such answers diff to a constant (noun heads evaluate to 0),
+so the zero chains burn the budget and the target misclassifies
+timeout/unverified. FIX: build_text checks freeof(unintegrable, mr_r)
+(cheap, BEFORE the chains) and emits CLASS contains-noun (new FAIL
+sub-class). POISON SET MEASURED: only `unintegrable` — an
+`integrate[g, x]` head in an answer is a LEGITIMATE explicit integral
+term (Maxima diff knows d/dx int(g,x) = g): 1.2.2.7 e1 carries a
+integral term and VERIFIES; 1.1.2.3 e138 carries one too but its
+self-diff does not close (separate open item, stays FAIL:timeout).
+
+CANARY: 93/27 unchanged, zero regressions; 4 honest reclassifications:
+1.1.1.7 e30 (timeout -> contains-noun, 6.8 s), 1.1.2.5 e46, 1.2.2.3
+e165, 1.2.2.8 e1 (unverified -> contains-noun).
+
+## Work item: wrong-answer family — 1.2.1.3 e1058 root cause (2026-08-25, committed a87fbc8)
+
+1.2.1.3 e1058 `f = (2-5 x) x^(3/2) / sqrt(2+5 x+3 x^2)` (corpus
+expects elliptic_f/elliptic_e). TWO package bugs found by bisecting
+the r34 (1.4.1 Euler) cascade:
+
+1. `%mr_substPower` (SubstPower port) fell through to `else u` on
+   `sqrt(e)`: **sqrt is its OWN head in Maxima** (op = "sqrt", not
+   "^") — SubstPower[., x, 2] left sqrt(3 x^2+5 x+2) untouched where
+   r34's back-substitution needs sqrt(3 x^4+5 x^2+2) (quartic). The
+   inner integrand was (2 x^4-5 x^6)/sqrt(3 x^2+5 x+2) instead of
+   /sqrt(3 x^4+5 x^2+2). FIX: generic args() walk fallback (Rubi's
+   Map semantics).
+2. `%mr_term_xexp` / `%mr_term_coeff` had no "/" case:
+   `expand(3/4*x^3) = 3*x^3/4` is a QUOTIENT node, so %mr_degree /
+   %mr_expon of rational-coefficient polynomials returned the -1
+   sentinel — the 1.2.1.6 r5 reduction (Expon/Coeff-driven) produced
+   garbage nested integrands (measured: an r5 loop 15+ levels deep
+   with coefficient 3^15 shrinking 1/9 per level).
+
+DEAD-END AVOIDED: `subst` itself is NOT broken — an early probe
+batch called it with the arguments reversed (subst(a, b, c) = "a for
+b IN c"); all "subst is broken" evidence was a test-code artifact.
+The 1.2.1.6-r1 degenerate-binding cascade (g=0 reading x^(3/2) as
+(0+x)^(3/2)) is a red herring — family bisect (1.2.1.3, 1.2.1.6,
+1.4.1) isolated the path to 1.4.1 r34's inner call.
+
+HARNESS: zero_chain now leads with a two-point numeric stage (sweep
+parameter values, x=0.35/0.65; per-point errcatch; `= true` coercion
+— `is()` on a float-noun residual returns `unknown`, which ERRORS in
+this build's if; diff materialized once in MR_de — ev over an
+unevaluated diff(mr_r, x) substitutes x into the variable argument).
+Stage builder is now programmatic (the hand-nested paren string
+miscounted twice this session).
+
+GATES: Layer A 511/0; canary 93/27 -> **109/11**, 16 FAIL->PASS,
+0 regressions. Fixed: 1.1.1.4 e135, 1.1.1.6 e1/e31, 1.1.2.2 e428/
+e910, 1.1.2.4 e983, 1.1.2.8 e1, 1.1.4.2 e182, 1.1.4.3 e253,
+1.2.1.1 e1/e57, 1.2.1.2 e1036, 1.2.1.3 e1058/e2249, 1.2.1.5 e1,
+1.2.4.2 e119.
+
+REMAINING 11 canary failures: 4 contains-noun (faithful
+CannotIntegrate markers — 1.1.1.7 e30, 1.1.2.5 e46, 1.2.2.3 e165,
+1.2.2.8 e1 — documented, not bugs); 1 timeout (1.1.2.3 e138 —
+answer carries a legitimate `integrate[g, x]` term whose formal
+diff won't close; numeric stage declines on the noun); 6 unverified
+wrong-answer/verify-gap candidates: 1.2.1.2 e2202, 1.2.1.4 e383,
+1.2.1.5 e105, 1.2.2.2 e450, 1.2.2.2 e957, 1.2.2.6 e123.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
