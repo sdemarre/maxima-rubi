@@ -12,13 +12,21 @@ one PASS:/FAIL: line on stdout):
   unverified   answer; neither zero-test closed within the chain
   no-answer    rubi returned a no-answer noun (the integrate fall-through
                or the package unintegrable noun); corpus also expects a noun
+  deferred     rubi returned a TOP-LEVEL no-answer noun; corpus expects an
+               ANSWER (a coverage gap: the ported rules did not reach this
+               integrand — distinct from no-answer, which is the honest
+               match on a noun-expected entry; T5's table predates this
+               distinction, measured 2026-08-25: the 1.2.1.4 corpus file
+               exercises Rubi's UNLOADED second 1.2.1.4 .m — 122 rules —
+               so its 958 entries mass-defer and would read as PASS
+               no-answer under the old class)
   unexpected   rubi returned an answer; corpus expects a noun
   error        subprocess died (Lisp error, parse-time fatality, or a
                missing CLASS line)
   timeout      per-process wall cap
 
 Pass/fail mapping (T5 section 3): expected / verified / no-answer -> PASS;
-unverified / unexpected / error / timeout -> FAIL.
+unverified / deferred / unexpected / error / timeout -> FAIL.
 
 The .out result line keeps the T3 shape
     <class>  t=<s>s <relpath> e<entry> L<line>
@@ -66,7 +74,7 @@ SHARD_FILE = sys.argv[10] if len(sys.argv) > 10 else None
 
 KNOWN_CLASSES = {
     "expected", "verified", "unverified", "contains-noun",
-    "no-answer", "unexpected", "error", "timeout",
+    "no-answer", "deferred", "unexpected", "error", "timeout",
 }
 PASS_CLASSES = {"expected", "verified", "no-answer"}
 
@@ -301,7 +309,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
         zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f", var_text)
         if e_text2 is not None:
             ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})", var_text)
-            body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
+            body = (f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
                     f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                     "else block([MR_z, MR_z2, MR_w], MR_w: (" + zv + "), "
                     "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
@@ -310,7 +318,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
                     "then disp(concat(\"CLASS expected\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
         else:
-            body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
+            body = (f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
                     f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                     "else block([MR_z, MR_w], MR_w: (" + zv + "), "
                     "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
