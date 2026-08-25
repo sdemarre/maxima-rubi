@@ -135,12 +135,30 @@ def zero_chain(d_expr):
     fatality — without the guard the error kills Maxima before the CLASS
     line and the entry is misclassified `error`. errcatch in this build
     returns [value] on success and [] on error (probe-errcatch-semantics).
+
+    Stage order (measured 2026-08-25, 5.50.0/SBCL): TWO full chains —
+    factor-first, then ratsimp-first — because closure is ORDER-
+    DEPENDENT and no single order is uniformly cheap:
+      - radical diffs (correct package answer): factor closes in ~2 s,
+        ratsimp hangs >50 s (1.2.2.7 e1);
+      - 1.2.2.3 e1's expected-diff: factor-first chain = 47 s,
+        ratsimp-first chain = 9 s;
+      - 1.2.2.4 e165's self-diff closes only under the ratsimp-first
+        order (ratsimp(expand(ratsimp(D))) = 0; the same stages after a
+        leading factor do not close).
+    Each chain keeps the errcatch-crash semantics; a crash in either
+    chain is an unverified zero-test, not a fatality. The canary cap
+    is 60 s (test/canary.py) to hold both chains.
     """
     inner = (
-        f"MR_d: ratsimp({d_expr}), if is(MR_d=0) then 1 "
+        f"MR_d: factor({d_expr}), if is(MR_d=0) then 1 "
+        "else (MR_d: ratsimp(MR_d), if is(MR_d=0) then 1 "
+        "else (MR_d: ratsimp(expand(MR_d)), if is(MR_d=0) then 1 "
+        "else (MR_d: ratsimp(factor(MR_d)), if is(MR_d=0) then 1 "
+        "else (MR_d: ratsimp(" + d_expr + "), if is(MR_d=0) then 1 "
         "else (MR_d: ratsimp(expand(MR_d)), if is(MR_d=0) then 1 "
         "else (MR_d: factor(MR_d), if is(MR_d=0) then 1 "
-        "else (MR_d: ratsimp(factor(MR_d)), if is(MR_d=0) then 1 else 0)))"
+        "else (MR_d: ratsimp(factor(MR_d)), if is(MR_d=0) then 1 else 0)))))))"
     )
     return (
         "block([MR_zr], MR_zr : errcatch(" + inner + "), "
@@ -180,24 +198,31 @@ def build_text(f_text, var_text, e_text, e_text2=None):
         # the first is flipped), so a correct antiderivative fails the
         # zero-test and is misclassified `unverified` (measured 2026-08-24
         # on 1.3.2 e1: `mr_r - <e>` residual nonzero, `mr_r - (<e>)` zero).
+        # The SELF-diff (zv) is checked FIRST: for a correct answer it
+        # closes on the cheap factor stage, and a non-closing expected-
+        # diff (the package's right answer in a different radical form)
+        # would otherwise burn the whole per-target budget and starve
+        # the self-diff (measured 2026-08-25: 1.1.2.4 e983 / 1.1.4.2
+        # e182, both numerically correct, timed out under ze-first).
+        # "verified" and "expected" are both PASS classes, so the
+        # reordering is classification-safe.
         ze = zero_chain(f"diff(mr_r - ({e_text}), {var_text})")
         zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f")
         if e_text2 is not None:
             ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})")
             body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
-                    "else block([MR_z, MR_z2, MR_w], MR_z: (" + ze + "), "
-                    "MR_z2: (" + ze2 + "), "
+                    "else block([MR_z, MR_z2, MR_w], MR_w: (" + zv + "), "
+                    "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
+                    "else (MR_z: (" + ze + "), MR_z2: (" + ze2 + "), "
                     "if is(MR_z=1) or is(MR_z2=1) "
                     "then disp(concat(\"CLASS expected\")) "
-                    "else (MR_w: (" + zv + "), "
-                    "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
         else:
             body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
-                    "else block([MR_z, MR_w], MR_z: (" + ze + "), "
-                    "if is(MR_z=1) then disp(concat(\"CLASS expected\")) "
-                    "else (MR_w: (" + zv + "), "
+                    "else block([MR_z, MR_w], MR_w: (" + zv + "), "
                     "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
+                    "else (MR_z: (" + ze + "), "
+                    "if is(MR_z=1) then disp(concat(\"CLASS expected\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
     return head + body + "$\n" + "pos$\n" * 6 + "no$\n" * 6
 

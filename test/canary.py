@@ -24,7 +24,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DRIVER = os.path.join("test", "corpus_class1_driver.py")
 SECTION = "1 Algebraic functions"
 CANARY = os.path.join("test", "canary.entries")
-TIMEOUT = 30
+# 60 s per target: the zero chain runs BOTH stage orders (factor-first
+# and ratsimp-first — closure is order-dependent, measured 2026-08-25)
+# and the slow non-closing stage of the radical-diff family alone
+# exceeds 30 s. See zero_chain in corpus_class1_driver.py.
+TIMEOUT = 60
 
 REAL_ARGV = sys.argv[:]
 sys.argv = ["corpus_class1_driver.py", SECTION + "/", "999999", "30"]
