@@ -58,9 +58,33 @@ def key_of(rel_m):
 def cap_name(key, n, v):
     """The pattern-variable name for capture v of rule n of file key:
     `_mr_<key>_r<n>_v` (the brief's naming; pattern-variable status comes
-    from matchdeclare, not from the leading underscore).
+    from matchdeclare, not from the leading underscore). cap_remap is
+    applied before the name is built (see CAP_REMAP).
     """
-    return f"_mr_{key}_r{n}_{v}"
+    remap = CAP_REMAP.get((key, n), {})
+    return f"_mr_{key}_r{n}_{remap.get(v, v)}"
+
+# Maxima's matchfix binds commutatively-similar pattern factors by
+# VARIABLE-NAME order, not by the .m's in-text order: the ascending-sorted
+# pattern vars get the DESCENDING-sorted target factors (measured
+# 2026-08-25, Maxima 5.50.0, three independent defmatch probes: for the
+# 1.1.1.4 four-sqrt pattern the (g,h)-named slot always receives the
+# first target sqrt, (e,f) the middle, (c,d) the last, regardless of the
+# factors' written order). Rubi's .m rules assume in-text binding
+# (Mathematica matches commutative factors in order), and some repls are
+# slot-specific: for the 1.1.1.4 1/((a+b x) Sqrt[c+d x] Sqrt[e+f x]
+# Sqrt[g+h x]) identity, (c,d) is the Subst point — verified numerically
+# (invar5/invar6 probes, 2026-08-25): the chain-rule difference is ~1e-19
+# iff (c,d) holds the .m-named first factor and (e,f)/(g,h) are free to
+# swap, ~1e-2 otherwise. So the (c,d) slot's capture names are remapped
+# to sort LAST (g,h), making matchfix hand that slot the first target
+# factor; the (e,f)/(g,h) slots keep/swap names freely (the identity is
+# symmetric in them). A pure relabel — the repl/cond formulas are
+# unchanged in value, only the names move.
+CAP_REMAP = {
+    ("1_1_1_4", 28): {"c": "g", "d": "h", "g": "c", "h": "d"},
+    ("1_1_1_4", 29): {"c": "g", "d": "h", "g": "c", "h": "d"},
+}
 
 _IDCH = ("0123456789abcdefghijklmnopqrstuvwxyz"
          "ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
