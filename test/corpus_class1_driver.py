@@ -190,7 +190,15 @@ def zero_chain(d_expr, var):
     # 2026-08-25: errcatch([f1, f2]) returns [[v1, v2]], so the
     # two-point list form double-wraps and the condition dies) — each
     # point gets its own errcatch, unwrapped with part(., 1).
-    subs = ("a=0.7, b=1.3, c=0.5, d=0.9, e=1.1, f=0.8, g=1.7, h=0.3, "
+    # a = 0.9 (not 0.7): the quadratic-family reductions carry
+    # sqrt(4*a*c-b^2)-type branch terms, and 4*0.7*0.5-1.3^2 < 0 made
+    # the float eval take the COMPLEX branch of a branch-dependent
+    # (otherwise correct) answer, reading as a huge residual — measured
+    # 2026-08-25: 1.2.2.2 e957 and 1.2.1.5 e105 are numerically exact
+    # under 4ac-b^2 > 0 (resid ~1e-16) but "wrong" (resid 0.6-1.6 /
+    # exactly d) under 4ac-b^2 < 0. 4*0.9*0.5-1.3^2 = 0.11 > 0 and
+    # a+b*x+c*x^2 > 0 at both test points.
+    subs = ("a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, f=0.8, g=1.7, h=0.3, "
             "A=0.6, B=1.4, C=0.4, D=0.9")
     symbolic = "0"
     for s in reversed(stages):
