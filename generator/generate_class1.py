@@ -202,6 +202,100 @@ def pattern_vars(lhs):
     vs |= set(re.findall(r"(?<!\.)\b([A-Za-z][A-Za-z0-9]*)_(?![.\w])", lhs))
     return vs - {"x"}
 
+# --- Manual matcher for the two-binomial-power (a+b x^n)^p (c+d x^n)^q
+# family (1.1.3.3 and siblings). matchfix CANNOT match the free-n
+# pattern: it binds (a + b*x^3) against (A + B*x_^n) degenerately as
+# n := 0 with B := b*x^3, and the freeof(x) matchdeclare predicate that
+# kills the degenerate binding kills the whole match — no backtracking
+# to the correct reading (measured 2026-08-25, 5.50.0/SBCL,
+# /tmp/opencode/n1133b.mac). The generator therefore emits a structural
+# matcher (%mr_mbp2 in maxima_rubi_utils.mac) for exactly this shape.
+
+def _binpow_factor(pat):
+    """One whitespace-free .m factor -> (a, b, n, e) or None, where
+    a/b/n are the BARE capture names and e is ("free", var) or
+    ("fixed", literal-string). Accepted:
+      Sqrt[(A + B.*x_^N)]            e = ("fixed", "1/2")
+      (A + B.*x_^N)                  e = ("fixed", "1")
+      (A + B.*x_^N)^E                E a pattern var or positive literal
+    A/B/N must carry the .m variable suffix (_ or _.) — a literal
+    exponent base (x^2, x^3, x^4) yields None (those rules keep the
+    working defmatch path)."""
+    v = r"([A-Za-z][A-Za-z0-9]*)([._]*)?"
+    m = re.match(r"^Sqrt\[\(" + v + r"\+" + v + r"\.\*x_\^" + v + r"\)\]$",
+                 pat)
+    e = ("fixed", "1/2") if m else None
+    if e is None:
+        m = re.match(r"^\(" + v + r"\+" + v + r"\.\*x_\^" + v + r"\)$",
+                     pat)
+        e = ("fixed", "1") if m else None
+    if e is None:
+        m = re.match(r"^\(" + v + r"\+" + v + r"\.\*x_\^" + v +
+                     r"\)\^(\S+)$", pat)
+        if m:
+            e2 = m.group(7)
+            if re.match(r"^[A-Za-z][A-Za-z0-9]*[._]*$", e2):
+                e = ("free", e2.rstrip("._"))
+            elif re.match(r"^\d+(/\d+)?$", e2):
+                e = ("fixed", e2)
+            else:
+                e = None
+    if e is None or m is None:
+        return None
+    a, b, n, n_sfx = m.group(1), m.group(3), m.group(5), m.group(6)
+    # N must be a pattern variable (suffixed _ or _.) — a literal base
+    # power (x^2, x^3, x^4) has no suffix and keeps the defmatch path.
+    if n_sfx not in ("_", "_."):
+        return None
+    # the x_ slot is literal in every accepted form; a/b must be
+    # pattern variables too (suffixed)
+    if m.group(2) not in ("_", "_.") or m.group(4) not in ("_", "_."):
+        return None
+    return (a, b, n, e)
+
+def binpow_manual_match(pat_body):
+    """Whitespace-free integrand pattern -> the manual-matcher spec
+    dict, or None. The pattern must be EXACTLY two binpow factors
+    (numerator and/or denominator) sharing one free n variable."""
+    p = pat_body
+    if p.startswith("1/(") and p.endswith(")"):
+        sides = [(p[3:-1], -1)]
+    elif "/" in p:
+        parts = split_top(p, sep="/")
+        if len(parts) != 2:
+            return None
+        sides = [(parts[0], 1), (parts[1], -1)]
+    else:
+        sides = [(p, 1)]
+    factors = []
+    for body, sgn in sides:
+        for part in split_top(body, sep="*"):
+            if part == "1":
+                continue
+            f = _binpow_factor(part)
+            if f is None:
+                return None
+            a, b, n, e = f
+            kind, e2 = e
+            if kind == "fixed":
+                e2 = _signed_rational(sgn, e2)
+            factors.append({"a": a, "b": b, "n": n, "sgn": sgn,
+                            "free": kind == "free",
+                            "var": e2 if kind == "free" else None,
+                            "lit": None if kind == "free" else e2})
+    if len(factors) != 2:
+        return None
+    if factors[0]["n"] != factors[1]["n"]:
+        return None
+    return {"n": factors[0]["n"], "factors": factors}
+
+def _signed_rational(sgn, s):
+    """Maxima rational literal with the factor sign folded in:
+    (1, '1/2') -> '1/2', (-1, '1/2') -> '-(1/2)', (-1, '1') -> '-1'."""
+    if sgn < 0:
+        return f"-({s})" if "/" in s else f"-{s}"
+    return s
+
 def split_top(s, sep=","):
     """Split s on top-level sep, honouring [ ] ( ) { } nesting."""
     out, depth, cur = [], 0, []
@@ -1059,6 +1153,110 @@ def emit_head(head, arglist, ctx):
     # form in Maxima.
     return f"{name}({', '.join(arglist)})"
 
+def _emit_binpow_manual(spec, key, n, rule_vars, cond, rhs, ctx):
+    """Manual-matcher rule for the (a+b x^n)^p (c+d x^n)^q family:
+    no matchdeclare/defmatch — the rule body calls %mr_mbp2 (the
+    structural two-binpow matcher) and builds the matchlist itself.
+    The cond/repl are the usual generated functions (they read the
+    captures via geteqR(mm, 'cap), which works on any equation list).
+    The factor SLOT order (which factor binds (a,b) vs (c,d)) is
+    Maxima's canonical times order, not the .m text order, so the body
+    tries the canonical assignment and then the swapped one — the
+    cond decides, exactly like the %mr_matchQ cond threading."""
+    f1, f2 = spec["factors"]
+    caps = {v: cap_name(key, n, v) for v in rule_vars}
+    used = {f1["a"], f1["b"], f2["a"], f2["b"], spec["n"]}
+    for f in (f1, f2):
+        if f["free"]:
+            used.add(f["var"])
+    if used != set(rule_vars):
+        raise GenError(f"{key} r{n}: manual-matcher spec names {sorted(used)}"
+                       f" != rule vars {sorted(rule_vars)}")
+    # MatchQ is a defmatch mechanism — a manual rule cannot use markers.
+    if "MatchQ" in (cond or ""):
+        raise GenError(f"{key} r{n}: manual-matcher shape with a MatchQ "
+                       f"condition (unsupported)")
+
+    def mm_list(fa, fb):
+        """Equation list for the assignment fa -> slot 1, fb -> slot 2.
+        Each factor's captures come from ITS OWN position's locals
+        (a1/e1 = matcher factor 1, a2/e2 = factor 2; e1/e2 already
+        carry the factor's numerator/denominator sign)."""
+        eqs = []
+        for f, pos in ((fa, 1), (fb, 2)):
+            e_local = "e1" if f is f1 else "e2"
+            eqs.append(f"{caps[f['a']]} = a{pos}")
+            eqs.append(f"{caps[f['b']]} = b{pos}")
+            if f["free"]:
+                eqs.append(f"{caps[f['var']]} = {e_local}")
+        eqs.append(f"{caps[spec['n']]} = nmbp")
+        return "[" + ", ".join(eqs) + "]"
+
+    lines = []
+    lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm0, mm, ok, nmbp, "
+                 f"a1, b1, e1, a2, b2, e2],")
+    lines.append("  mm0 : %mr_mbp2(f, x),")
+    lines.append("  if mm0 = false then return(false),")
+    lines.append("  nmbp : part(part(mm0, 1), 3),")
+    lines.append(f"  a1 : part(part(mm0, 1), 1), b1 : part(part(mm0, 1), 2),")
+    lines.append(f"  e1 : part(part(mm0, 1), 4),")
+    lines.append(f"  a2 : part(part(mm0, 2), 1), b2 : part(part(mm0, 2), 2),")
+    lines.append(f"  e2 : part(part(mm0, 2), 4),")
+
+    def attempt(fa, fb):
+        """One slot assignment: fa -> slot 1, fb -> slot 2. The fixed-
+        exponent check reads the LOCAL exponent of the factor occupying
+        the slot (e1/e2 carry the sign of the factor's ORIGINAL side,
+        which is what the matcher produced and what the .m literal
+        refers to)."""
+        efa = "e1" if fa is f1 else "e2"
+        efb = "e1" if fb is f1 else "e2"
+        ca = "true" if fa["free"] else f"is({efa} = {fa['lit']}) = true"
+        cb = "true" if fb["free"] else f"is({efb} = {fb['lit']}) = true"
+        # Group-body comma rules (measured 2026-08-25, 5.50.0/SBCL):
+        # statements are COMMA-SEPARATED, but the LAST statement of a
+        # parenthesized group takes NO trailing comma (one -> "Illegal
+        # use of delimiter )"; none earlier -> "if is not an infix
+        # operator"). The defmatch-path rules never hit this because
+        # their last block statement is the bare if-expression value.
+        return [
+            f"  if {ca} and {cb} then (",
+            f"    mm : {mm_list(fa, fb)},",
+            f"    ok : _mr_cond_{key}_r{n}(mm, x),",
+            f"    if is(ok) = true then return(_mr_repl_{key}_r{n}(mm, x))",
+            "  ),",
+        ]
+
+    lines += attempt(f1, f2)
+    lines += attempt(f2, f1)
+    lines.append("  false)$")
+    # cond/repl: the usual generated bodies (translated here).
+    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
+                 if cond else "true")
+    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
+    if ctx["decls"]:
+        raise GenError(f"{key} r{n}: manual-matcher rule produced MatchQ "
+                       f"markers (unsupported)")
+    caps_sorted = sorted(caps[c] for c in rule_vars)
+    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
+    snaps = {c: c + "__s" for c in caps_sorted}
+    for c in caps_sorted:
+        repl_txt = re.sub(r"(?<![0-9A-Za-z_])" + re.escape(c) +
+                          r"(?![0-9A-Za-z_])", snaps[c], repl_txt)
+    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
+                           for c in caps_sorted) or "true"
+    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
+    locals_txt = ", ".join(caps_sorted)
+    body = []
+    body.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
+    body.append(f"  {binds},")
+    body.append(f"  {base_cond})$")
+    body.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
+    body.append(f"  {snap_binds},")
+    body.append(f"  {repl_txt})$")
+    return "\n".join(lines + body), []
+
+
 def emit_rule(run, key, n, rule_vars):
     """One rule run (lhs, rhs, cond) -> the five Maxima functions as text.
     rule_vars is the set of capture names (from the lhs)."""
@@ -1081,6 +1279,10 @@ def emit_rule(run, key, n, rule_vars):
     # of 1.2.4.1/1.2.4.2 dead, 138 rules across 17 files. translate()
     # already consumes every v_ / v_. marker (and raises on a stray one),
     # so the pattern needs no optional-dropping at all.
+    spec = binpow_manual_match(re.sub(r"\s+", "", m.group(1)))
+    if spec is not None:
+        return _emit_binpow_manual(spec, key, n, rule_vars, cond, rhs,
+                                   ctx)
     pat_text = translate(m.group(1), ctx)
     # Guard the class, not just this instance: every _mr* token in the
     # emitted pattern must be one of THIS rule's declared captures or
