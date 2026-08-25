@@ -1253,6 +1253,46 @@ reduction. THREE stacked predicate bugs:
 GATES: Layer A 511/0; canary 109/11 -> 111/9 (e2202 + 1.2.2.2 e450
 -> verified, 0 regressions). Session total: 88/32 -> 111/9.
 
+## Work item: 1.2.2.6 e123 false-arithmetic + branch-artifact targets (2026-08-25, committed 5cd442e, 6d6ef5d)
+
+1.2.2.6 e123 `(4+x^2+3x^4+5x^6)/(x^2(3+2x^2+x^4)^3)`: answer carried
+literal `false` factors. Root cause: 1.2.2.6 r8 (.m ILtQ[m/2,0]) fired
+with m = -2 where x^m*Pq is LAURENT, not polynomial —
+%mr_polyRemainder's `false` sentinel reached %mr_coeff, which returned
+the boolean as the "coefficient"; Maxima keeps `126*false` as a factor
+(booleans don't collapse to 0/1). The .m rule is vacuous at such
+bindings in Mathematica (PolynomialRemainder stays a noun). Fix:
+runner-level boolean-leak misfire check in %mr_dispatch
+(%mr_containsBoolean, %mr_boolcheck kill-switch). Walk gotchas
+measured: part()-reified false is an atom string-"false" unequal to
+both the boolean and the symbol (string test only); control heads are
+opaque (repls contain legal `else false` code — misfired e1058);
+negation nodes crash on part(e,2) (descend part 1 only — its crash
+silently derailed e1058 outside the errcatch). e123 now: honest
+no-answer (expected answer needs an unported rule chain — coverage
+gap, not a bug).
+
+1.2.2.2 e957 + 1.2.1.5 e105: answers CORRECT but unverified — the
+driver's fixed numeric-stage subs (a=0.7) give 4ac-b^2 < 0, sending
+the float eval down the COMPLEX branch of branch-dependent answers
+(resid 0.6-1.6 / exactly d). a=0.9 (4ac-b^2 = 0.11 > 0) -> both
+verify (resid ~1e-16). 6d6ef5d.
+
+1.2.1.4 e383 `x^3(d+e x)(a+b x^2)^p`: answer CORRECT (instance
+residuals ~1e-17 at p = 2 / -3 / 5, measured 2026-08-25) but
+unverifiable by the stage — free p -> float NOUN decline, and the
+formal chain cannot close the p-dependent diff. Fixed by p = 2 in the
+numeric-stage subs (instance check; p = 2 avoids the 1/(p+1) /
+1/(2p+3) reduction singularities) — 5405f31.
+
+GATES: Layer A 511/0; canary 113/7 -> 114/6 (e123 -> no-answer, e957
++ e105 -> verified, e1058 stays verified, 0 regressions) -> 115/5
+(e383 -> verified, 0 regressions). Remaining canary FAILs are all
+known/honest: 4 contains-noun markers (1.1.1.7 e30, 1.1.2.5 e46,
+1.2.2.3 e165, 1.2.2.8 e1 — faithful CannotIntegrate) and 1.1.2.3
+e138 timeout (legitimate integrate term, self-diff doesn't close).
+The wrong-answer family is DONE. Session total: 88/32 -> 115/5.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
