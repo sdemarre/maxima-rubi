@@ -28,9 +28,17 @@ streams PASS:/FAIL: on stdout and ends with a `Results:` line.
 Usage:
   corpus_class1_driver.py [filter] [per-file] [timeout] [suite-dir]
       [start-index] [append] [skip-first] [out-file] [stop-index]
+      [shard-file]
 
 Defaults: the whole "1 Algebraic functions/" section, 5 entries per file,
 30 s per-integral cap.
+
+shard-file: a file of one whole-file index per line (indexes into the
+sorted file list); when given, it REPLACES the start/stop range, so
+parallel full-corpus runs can take load-balanced NON-CONTIGUOUS file
+sets (measured 2026-08-25: the two giant files 1.1.1.2 / 1.1.1.3 are
+1917 / 3189 entries vs a 34-entry minimum — contiguous ranges cannot
+balance them).
 """
 
 import os
@@ -54,6 +62,7 @@ APPEND = len(sys.argv) > 6 and sys.argv[6] == "append"
 SKIP_FIRST = int(sys.argv[7]) if len(sys.argv) > 7 else 0
 OUT_FILE = sys.argv[8] if len(sys.argv) > 8 else None
 STOP_INDEX = int(sys.argv[9]) if len(sys.argv) > 9 else None
+SHARD_FILE = sys.argv[10] if len(sys.argv) > 10 else None
 
 KNOWN_CLASSES = {
     "expected", "verified", "unverified", "contains-noun",
@@ -332,7 +341,14 @@ def file_list():
 
 
 def main():
-    files = file_list()[START_INDEX:STOP_INDEX]
+    all_files = file_list()
+    if SHARD_FILE:
+        idxs = sorted(int(t) for t in open(SHARD_FILE) if t.strip())
+        assert all(0 <= i < len(all_files) for i in idxs), \
+            "shard file index out of range"
+        files = [all_files[i] for i in idxs]
+    else:
+        files = all_files[START_INDEX:STOP_INDEX]
 
     out_lines = [
         ("=== maxima-rubi class-1 corpus driver (phase 2, "
@@ -352,7 +368,8 @@ def main():
             if line.startswith(("Maxima", "Lisp ", "Host ")):
                 out_lines.append(f"maxima: {line}")
     out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
-                     f"timeout: {TIMEOUT}s")
+                     f"timeout: {TIMEOUT}s  files: {len(files)}"
+                     + (f"  shard: {SHARD_FILE}" if SHARD_FILE else ""))
     out_lines.append("")
 
     counts = {}
