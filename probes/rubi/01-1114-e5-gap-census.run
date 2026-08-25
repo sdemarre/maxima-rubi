@@ -1,0 +1,13 @@
+#!/bin/sh
+# probes/rubi/01-1114-e5-gap-census.run — static census: can any pinned
+# Rubi 4 rule of 1.1.1.4 reduce the e5-class shape (a+b x)^m/(Sqrt
+# Sqrt Sqrt) at m = -2?
+#
+#   sh probes/rubi/01-1114-e5-gap-census.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# 1.1.1.4 e5-class shape gap census, $(date -u +%F)"
+  echo "# pinned Rubi commit: $(git -C reference/rubi rev-parse HEAD 2>/dev/null || echo 'reference/rubi not checked out')"
+  python3 probes/rubi/01-1114-e5-gap-census.py
+} > probes/rubi/01-1114-e5-gap-census.out
+echo "wrote probes/rubi/01-1114-e5-gap-census.out"

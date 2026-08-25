@@ -1490,3 +1490,22 @@ carry 700+ chars fine.
 RESULTS: the 8 formerly-erroring entries: 7 PASS verified (e80 a
 pre-existing 60 s timeout); Layer A 511/0; broad canary 71/49,
 0 regressions / 0 improvements vs canary_pre_remap.out (canary_cmp).
+
+WORK ITEM: e5-class diagnosis completed — matchfix limit, not a
+rule-set gap (probe probes/rubi/01-1114-e5-gap-census.py, doc
+corpus-baseline.md §4.1)
+2026-08-25, 5.50.0/SBCL. The static census of the pinned .m
+1.1.1.4 (48 rule runs) shows the e5 shape (a+b x)^m/(Sqrt Sqrt
+Sqrt) IS covered: the LeQ[m,-2] rule (probe class A4; ported as
+1_1_1_4 r32, cond integerp(2*m) and is(m <= -2)) plus its GeQ[m,2]
+twin — the "version gap" hypothesis of the previous session is
+retracted (the corpus expectations match the pinned rule set).
+The deferral is the matchfix pattern limit: free-exponent power
+factor + sibling fixed-FRACTIONAL-exponent or Sqrt factor never
+matches (r32fix/r32bis/pq probes: A=false, B=false, P4=false,
+Q1=false, Q4/Q5=false; all-fixed P1=true, free+free P3=true,
+fixed-integer-in-denominator Q3=true — same family as the r18
+finding of the OrderedQ work item). Fix = custom matcher for the
+m/(Sqrt Sqrt Sqrt) shape and the sibling permutation rules
+(r20/r21/r22/r24/r27/r34); scoping deferred to the clean full
+run's failure count on this pattern family.
