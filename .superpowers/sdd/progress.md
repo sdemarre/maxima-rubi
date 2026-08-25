@@ -1293,6 +1293,25 @@ known/honest: 4 contains-noun markers (1.1.1.7 e30, 1.1.2.5 e46,
 e138 timeout (legitimate integrate term, self-diff doesn't close).
 The wrong-answer family is DONE. Session total: 88/32 -> 115/5.
 
+## Work item: the five corpus-tested dead 1.2.1 sibling files (2026-08-25, committed e345c38 + ddc88ef)
+
+Full-corpus prep exposed a generator key collision: key_of() keys .m
+files by leading number; Rubi.m's LoadRules carries a DIFFERENT file
+for five 1.2.1 numbers, so the loaded sibling won the key and the
+corpus-tested sibling was silently never ported. The Maxima corpus
+files name-match exactly five DEAD .m files (not in LoadRules):
+1.2.1.3 (82 r), 1.2.1.4 (122 r), 1.2.1.5 (31 r), 1.2.1.6 (48 r),
+1.2.1.9 (33 r) = 316 rules (2710 -> 3026). Ported under `b`-suffixed
+keys, table position after the sibling. Also: a harness gap — a
+top-level no-answer noun on an ANSWER-expected entry read as PASS
+no-answer (T5's table only defines no-answer for noun-expected
+entries); new FAIL class `deferred` (ddc88ef). 1.2.1.4 e1 was
+deferred, now verified; family-A integrand (d+e x)^4(f+g x)^2/
+(d^2-e^2 x^2) residual ~1e-14. Layer A 511/0 at 3026 rules. Other
+dead class-1 files (1.2.1.7/1.2.1.8 siblings, 1.3.x x4, 1.1.2.x/.y)
+have NO corpus file — unported until the run shows deferral that
+needs them. Full 25,697-integral run in flight (12 LPT shards).
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
