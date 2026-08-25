@@ -1101,6 +1101,56 @@ under the queued assumptions — a RULE-QUALITY divergence (r4 path vs
 the old r5 path that verified), tracked as a separate work item with
 the wrong-answer family.
 
+## Work item: broad-canary timeout targets — triage + harness zero-chain fix (2026-08-25)
+
+14 FAIL:timeout targets. The timeouts were a VERIFICATION-cost problem,
+not a package-speed problem: the 30 s per-target cap (test/canary.py)
+conflated the package call (7.5 s on 1.1.1.6 e1, well within budget)
+with the zero-chain verification of the answer.
+
+NUMERIC TRIAGE (sweep: diff(mr_r, x) - mr_f evaluated numerically at
+x=0.1, all-positive parameters, g/h added; /tmp/opencode/num_sweep*.py):
+- numerically CORRECT (residual <= 3e-10): 1.1.1.7 e14, 1.1.2.4 e983,
+  1.1.4.2 e182, 1.2.2.7 e1, 1.2.2.7 e17, 1.2.4.2 e119;
+- diff() itself errors on the answer (noun-laden structure): 1.1.2.3
+  e138, 1.1.4.3 e253, 1.2.2.8 e3;
+- numerically NONZERO (wrong-answer family): 1.1.1.6 e1, 1.1.1.6 e31,
+  1.1.1.7 e30 (residual = -integrand: the answer is a CONSTANT),
+  1.2.1.3 e1058, 1.2.1.6 e1 (1.2.1.6 e1 later verified formally — the
+  numeric miss was a domain/branch artifact of the test assignment).
+
+ZERO-CHAIN ORDER DEPENDENCE (measured): no single stage order is
+uniformly cheap — radical diffs close on factor in ~2 s where ratsimp
+hangs >50 s (1.2.2.7 e1); 1.2.2.3 e1's expected-diff: 47 s
+factor-first vs 9 s ratsimp-first; 1.2.2.4 e165's self-diff closes
+only under the ratsimp-first order (ratsimp(expand(ratsimp(D))) = 0;
+the same stages after a leading factor do not close).
+
+FIX (committed 3c0451b, test/corpus_class1_driver.py + test/canary.py):
+(1) zero_chain runs BOTH stage orders — factor-first chain, then
+ratsimp-first chain (same errcatch-crash semantics; a crash is an
+unverified zero-test, not a fatality); (2) build_text checks the
+self-diff (zv) BEFORE the expected-diff (ze) — a non-closing
+expected-diff (right answer, different radical form) must not starve
+the cheap self-diff closure (1.1.2.4 e983 / 1.1.4.2 e182 timed out
+under ze-first); "verified" and "expected" are both PASS classes, so
+the reorder is classification-safe; (3) canary cap 30 s -> 60 s to
+hold both chains (full-corpus driver stays 30 s for now).
+
+BROAD CANARY: 88/32 -> 93/27, ZERO regressions, zero fail-kind
+changes: +1.1.1.7 e14, +1.2.1.6 e1 (expected); +1.2.2.7 e1, +1.2.2.7
+e17, +1.2.2.8 e3 (verified).
+
+REMAINING 7 timeouts (60 s budget exhausted — all verification cost or
+wrong answers, none package-speed): 1.1.1.6 e1/e31 (numeric nonzero —
+wrong-answer family), 1.1.1.7 e30 (constant answer), 1.1.2.3 e138 +
+1.1.4.3 e253 (diff errors on the answer structure — noun-laden),
+1.1.2.4 e983 + 1.1.4.2 e182 (numerically correct; formal closure of
+the self-diff exceeds 60 s — assumption-branch forms: the queued
+prompt assumptions are cleared before verification, so the formal
+zero-test needs sign info the chain can't derive — candidates for a
+numeric-fallback stage or an assumption-aware verification).
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
