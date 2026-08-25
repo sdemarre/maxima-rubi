@@ -1529,3 +1529,32 @@ term — the diff does not close because of it). Family-level triage
 rule owns it — candidates 1.1.3.3 / 1.1.1.2) deferred to the
 post-full-run batch; e99 joins that family's ticket, it is not a
 standalone bug.
+
+WORK ITEM: manual structural matcher for the free-n binpow family
+(1.1.3.3 / 1.1.3.1) — implemented, gated, committed c109cf4
+2026-08-25, 5.50.0/SBCL. matchfix cannot match (a + b*x_^n_): it
+binds (a + b*x^3) degenerately as n := 0 with B := b*x^3, and the
+freeof(x) predicate that kills the degenerate binding kills the
+whole match (no backtracking) — probes n1133/n1133b. The 32 class-1
+rules of the shape (26 in 1.1.3.3, 6 in 1.1.3.1) declined every
+integrand. Generator now detects the whitespace-free .m shape
+(_binpow_factor / binpow_manual_match) and emits a rule that calls
+the structural matcher %mr_mbp2 (utils) and builds the matchlist
+itself, trying the canonical and swapped factor-to-slot
+assignments. Five 5.50.0/SBCL build quirks measured and honored:
+op() on an atom is FATAL (atom()-guarded); op(t)="sqrt" never
+evaluates in a compiled if (string(op(t)) test); return() inside a
+for-loop is LOOP-level (flag + is() bail-outs); `var = false` stays
+unevaluated in a compiled if (is() comparisons); a bare
+`if ... then false else ...` as a block value evaluates to
+UNDEFINED (assign-to-res idiom). The first draft silently dropped
+non-matching factors inside the for-loop (the loop-level return
+never escaped) and misfired on 1.1.1.5 e1 / 1.2.1.3 e2249
+(canary 2 regressions) before the rewrite. Gated: Layer A 511/0,
+broad canary 71/49 = baseline (0/0 vs canary_pre_remap). e4
+(1.1.3.3 smoke) now verifies. The 3+-factor free-n families
+(1.1.3.2/4/6/8, 1.2.3.x, 1.4.x — 922 rules) need the N-factor
+matcher extension: deferred to post-run triage on the full run's
+failure data. NOTE: the clean 12-shard full run started before
+this fix is now MIXED-state (entries started mid-fix see the
+buggy matcher) — restart it clean after the 1.1.3.3 family run.
