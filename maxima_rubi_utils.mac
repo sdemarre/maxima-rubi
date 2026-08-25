@@ -227,6 +227,28 @@ depth_level : 0$
    flips, e.g. 1.1.4.3 e119 A/B'd against the bare call). The
    seen-guard branch below is the SAME bare call — the productive
    loop resolution, not a fall-through (see there). */
+/* Normalization-aware loop guard helper. %mr_seen membership alone
+   (exact match) misses the measured float/rat normalization cycle:
+   (104*(3/10*x+17/10)^4)/3 and (104*(0.3*x+1.7)^4)/3 are the same
+   integrand in two forms — member() = false, is(f2 = f1) = false,
+   ratsimp(f2-f1) = 0 (measured 2026-08-25, /tmp/opencode/looptest).
+   The r25/r7 reduction chain 1.1.1.4 e1 walks that cycle: the seen
+   list then grows one drifted copy per lap and the guard never fires
+   (e1 timed out at 500 s, 2.5M-line trace). The per-dispatch cost is
+   O(depth) ratsimps on small polynomials — depth caps at
+   %mr_max_depth = 16. */
+%mr_seenp(f) := block([looped, d, i],
+  looped : false,
+  if member(f, %mr_seen) then return(true),
+  for i : 1 thru length(%mr_seen) do
+    if is(looped) = false then (
+      d : errcatch(ratsimp(part(%mr_seen, i) - f)),
+      /* errcatch in this build returns [value] / []
+         (probe-errcatch-semantics); the %mr_dispatch idiom */
+      if d # [] and is(part(d, 1) = 0) then looped : true
+    ),
+  looped)$
+
 mr_top(f, x, fb) := block([ans],
   depth_level : depth_level + 1,
   if depth_level > %mr_max_depth then (
@@ -234,7 +256,7 @@ mr_top(f, x, fb) := block([ans],
     if fb then return(integrate(f, x))
     else return(mr_unintegrable(f, x))
   ),
-  if member(f, %mr_seen) then (
+  if %mr_seenp(f) then (
     depth_level : depth_level - 1,
     /* A re-dispatch of an integrand already on the dispatch path is
        a pure rule loop (static table, deterministic matcher -> the
@@ -4230,6 +4252,70 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   ),
   res)$
 
+/* One walk factor [t, sgn] -> a list of [A, B, n, E] binomial-power
+   factors (empty list: not a binpow factor). The exponent distributes
+   over a PRODUCT base: Sqrt[(A+B x)(C+D x)] is the .m's single factor
+   Sqrt[(a_+b_.*x_)*(c_+d_.*x_)] and equals (A+B x)^(1/2)*(C+D x)^(1/2);
+   (c0*(A+B x)^E1*(C+D x)^E2)^p expands the same way. Each sub-factor
+   must itself be binpow or monomial — anything else (a polynomial
+   base, a nested product) declines the whole factor. */
+%mr_bpf_factorlist(t, sgn, x) := block([base, E, i, u, r, out, res],
+  base : t, E : sgn,
+  if op(t) = "^" then (
+    E : sgn*part(t, 2),
+    base : part(t, 1)
+  ),
+  if string(op(base)) = "sqrt" then (
+    E : E/2,
+    base : part(base, 1)
+  ),
+  if op(base) = "^" then (
+    E : E*part(base, 2),
+    base : part(base, 1)
+  ),
+  if op(base) = "*" then (
+    out : [],
+    for i : 1 thru length(base) do (
+      u : part(base, i),
+      if is(freeof(x, u)) then (
+        /* a constant inside the product base: the .m has no constant
+           slot — a stray constant declines the factor */
+        out : false
+      ) else (
+        r : %mr_bpf_monomial(u, 1, x),
+        if is(r = false) then (
+          r : %mr_bpf_factor(u, 1, x),
+          if is(r = false) or is(out = false) then (
+            out : false
+          ) else (
+            out : append(out,
+                         [[part(r, 1), part(r, 2), part(r, 3),
+                           part(r, 4)*E]])
+          )
+        ) else (
+          if is(out = false) then (
+            true
+          ) else (
+            out : false
+          )
+        )
+      )
+    ),
+    if is(out = false) then (
+      res : []
+    ) else (
+      res : out
+    )
+  ) else (
+    r : %mr_mbp_base(base, x),
+    if is(r = false) then (
+      res : []
+    ) else (
+      res : [[part(r, 1), part(r, 2), part(r, 3), E]]
+    )
+  ),
+  res)$
+
 /* f -> [c, M, rest, L]
    c    product of the x-free factors (1 when none)
    M    [c0, k] the combined monomial factor, false when none
@@ -4258,11 +4344,11 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
     ) else (
       r : %mr_bpf_monomial(t, sgn, x),
       if is(r = false) then (
-        r : %mr_bpf_factor(t, sgn, x),
-        if is(r = false) then (
+        r : %mr_bpf_factorlist(t, sgn, x),
+        if is(length(r) = 0) then (
           rest : rest*t^sgn
         ) else (
-          L : append(L, [r])
+          L : append(L, r)
         )
       ) else (
         if is(M = false) then (
