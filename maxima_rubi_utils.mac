@@ -3212,6 +3212,66 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   if length(h) = 0 then %mr_expon2(u, form)
   else %mr_expon3(u, form, part(h, 1)))$
 
+/* Rubi :1242  Expon[expr, form, Min] — the MINIMUM x-exponent of
+   Together[expr] (Mathematica Exponent[_, _, Min]). The generator maps
+   it to %mr_exponMin (1.3.3 r17 / 1.4.1 r25 — the Px minimum-power
+   split). %mr_degree's term walker cannot be reused: %mr_term_xexp
+   returns FALSE on x-bearing denominators (1/x -> false, the
+   polynomial-monomial reading), which DROPS exactly the terms the
+   minimum is about — a local walker below handles negative powers
+   (1/x -> -1, x^2/x^5 -> -3) and x-free bases (d^2 -> 0), mirroring
+   %mr_term_xexp's atom/minus/times/quote cases. Edge parity with
+   %mr_degree: 0 -> 0, x-free -> 0, no x-power term at all -> -1. */
+%mr_exponMin_term(t, x) := block([i, f, p, ok],
+  if atom(t) then (
+    if is(t = x) then 1 else 0
+  )
+  elseif op(t) = "-" then %mr_exponMin_term(part(t, 1), x)
+  elseif op(t) = "*" then (
+    p : 0,
+    ok : true,
+    for i : 1 thru length(t) do (
+      f : part(t, i),
+      if freeof(x, f) then true
+      elseif is(f = x) then p : p + 1
+      elseif op(f) = "^" and is(part(f, 1) = x)
+        and integerp(part(f, 2)) then p : p + part(f, 2)
+      else ok : false
+    ),
+    if ok then p else false
+  )
+  elseif op(t) = "/" then block([n, d],
+    n : %mr_exponMin_term(part(t, 1), x),
+    d : %mr_exponMin_term(part(t, 2), x),
+    if n # false and d # false then n - d else false
+  )
+  elseif op(t) = "^" then (
+    if is(part(t, 1) = x) and integerp(part(t, 2))
+    then part(t, 2)
+    else if freeof(x, part(t, 1)) then 0 else false
+  )
+  else false)$
+
+%mr_exponMin(u, x) := block([e, i, m, p, found],
+  e : expand(%mr_together(u)),
+  if is(e = 0) then 0
+  elseif freeof(x, e) then 0
+  elseif atom(e) then %mr_exponMin_term(e, x)
+  elseif op(e) = "+" then (
+    m : -1, found : false,
+    for i : 1 thru length(e) do (
+      p : %mr_exponMin_term(part(e, i), x),
+      if p # false then (
+        if not found then (m : p, found : true)
+        elseif p < m then m : p
+      )
+    ),
+    if found then m else -1
+  )
+  else (
+    p : %mr_exponMin_term(e, x),
+    if p # false then p else -1))$
+
 /* Rubi :3343  ExpandToSum[u, x] — u expanded into a sum of monomials of
    x. The .m's Simp is NOT %mr_simp here: %mr_simp factors (the cluster's
    whole point is the MONOMIAL-SUM shape, so (x+1)^2 must stay
