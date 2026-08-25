@@ -72,6 +72,9 @@ mr_sum(fun, var, lo, hi) := block([a, b, i, s, t],
  * replacement becomes the fall-through noun, not a stack overflow. */
 %mr_max_depth : 16$
 
+/* Kill-switch for the boolean-leak misfire check (debug). */
+%mr_boolcheck : true$
+
 /* Ordered first-match-wins whole-expression dispatch (T2 §4.2). rl is a
  * list of rule functions r(f, x) -> replacement | false. The parameter is
  * named rl, never rules (protected symbol, measured 2026-08-20). */
@@ -81,7 +84,60 @@ mr_sum(fun, var, lo, hi) := block([a, b, i, s, t],
    returned false (rubi() was a silent pass-through to integrate). The fix:
    track the firing result in `ans`, use a BARE `return()` to break the `for`
    loop, and return `ans` after the loop. */
-%mr_dispatch(f, x, rl, depth) := block([i, r, res, ans],
+/* A boolean (true/false) anywhere in a replacement is a port bug, not a
+   result: it means a predicate's `false` sentinel (e.g.
+   %mr_polyRemainder on a non-polynomial) flowed into the repl's
+   arithmetic, where Maxima booleans do NOT collapse to 0/1 — 126*false
+   stays 126*false (measured 2026-08-25, 5.50.0/SBCL: 1.2.2.6 r8 on
+   1.2.2.6 e123, m = -2, x^m*Pq non-polynomial -> the .m rule is
+   vacuous there in Mathematica — PolynomialRemainder stays a noun and
+   the firing dead-ends — but the port computed d = %mr_coeff(false, x,
+   0) = false and the corrupted terms reached the final answer as
+   `false` factors under a deferred integrate noun). The faithful
+   port behavior for a vacuous firing is a DECLINE, so any boolean in
+   the replacement downgrades the fire to a misfire and lets the next
+   rule (or the integrate fall-through) handle the integrand. No
+   early exit: `return` inside a `for` is loop-level in this build
+   (measured 2026-08-20, the %mr_dispatch ans/return() note above). */
+/* The boolean test is by STRING, not by = (measured 2026-08-25,
+   5.50.0/SBCL): a `false` factor inside a Times node is retrieved by
+   part() as an atom whose string is "false" but which is NEITHER
+   =-nor # -equal to the boolean false NOR to the symbol 'false
+   (a distinct reified object — identical() is an unevaluated noun
+   here, featurep misses it, is(p = false)/is(p = 'false) both
+   false, is(string(p) = "false") true) — so only the name test
+   catches all three presentations (literal boolean, symbol, and the
+   part()-reified factor). Atoms are cheap; the non-atom arm never
+   calls string(). */
+/* Control structures are OPAQUE leaves (measured 2026-08-25): generated
+   replacements legally CONTAIN booleans as code — e.g. the 1.4.1 r70
+   repl carries an (if is(...) = true then (...) else false) that
+   evaluates away when the condition decides, and stays boolean-bearing
+   when it does not. Walking into if/block/lambda bodies misfired every
+   such rule (1.2.1.3 e1058 verified -> unverified). A leaked boolean
+   instead sits under arithmetic (+ * / ^) or a list/noun — descending
+   everything EXCEPT the control heads is the right cut. */
+%mr_containsBoolean(e) := block([i, hit],
+  if atom(e) then is(string(e) = "true") or is(string(e) = "false")
+  else if op(e) = "if" or op(e) = "block" or op(e) = "lambda"
+    or op(e) = "let" or op(e) = "letf" or op(e) = "do"
+    or op(e) = "for" or op(e) = "while" or op(e) = "when"
+  then false
+  else if op(e) = "-" then (
+    /* a negation node: length() reports 2 but part(e, 2) ERRORS in
+       this build (measured 2026-08-25: part(-(1/2), 2) killed the
+       walk on the 1.2.2.1 r13 repl's elliptic_f(atan(x), -1/2) — the
+       1.2.1.3 e1058 cascade silently derailed). Only part 1 exists. */
+    %mr_containsBoolean(part(e, 1))
+  )
+  else (
+    hit : false,
+    for i : 1 thru length(e) do (
+      if %mr_containsBoolean(part(e, i)) then hit : true
+    ),
+    hit))$
+
+%mr_dispatch(f, x, rl, depth) := block([i, r, res, ans, leak, bc],
   ans : false,
   for i : 1 thru length(rl) do (
     r : part(rl, i),
@@ -95,6 +151,21 @@ mr_sum(fun, var, lo, hi) := block([a, b, i, s, t],
        [value] on success and [] on error (probe-errcatch-semantics). */
     res : errcatch(apply(r, [f, x])),
     if res = [] then res : false else res : part(res, 1),
+    leak : false,
+    if %mr_boolcheck and res # false then (
+      bc : errcatch(%mr_containsBoolean(res)),
+      if bc = [] then (
+        if rubi_verbose then
+          print("rubi: rule ", string(r), " BOOLWALK-CRASH on ", string(f)),
+        leak : true
+      )
+      else leak : part(bc, 1)
+    ),
+    if leak then (
+      if rubi_verbose then
+        print("rubi: rule ", string(r), " misfire (boolean leaked) on ", string(f)),
+      res : false
+    ),
     if res # false then (
       if rubi_verbose then
         print("rubi: rule ", string(r), " fired on ", string(f)),
