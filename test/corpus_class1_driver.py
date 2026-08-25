@@ -56,7 +56,7 @@ OUT_FILE = sys.argv[8] if len(sys.argv) > 8 else None
 STOP_INDEX = int(sys.argv[9]) if len(sys.argv) > 9 else None
 
 KNOWN_CLASSES = {
-    "expected", "verified", "unverified",
+    "expected", "verified", "unverified", "contains-noun",
     "no-answer", "unexpected", "error", "timeout",
 }
 PASS_CLASSES = {"expected", "verified", "no-answer"}
@@ -185,6 +185,22 @@ def build_text(f_text, var_text, e_text, e_text2=None):
             "if is(string(op(mr_r)) = \"integrate\") "
             "or is(string(op(mr_r)) = \"unintegrable\") "
             "then 1 else 0)")
+    # Contains-noun sub-classification: an answer that CONTAINS Rubi's
+    # CannotIntegrate marker (port: the `unintegrable` subscript noun —
+    # 1.1.1.4.m:47 and the sibling family catch-alls port it faithfully;
+    # Rubi 4 itself returns the inert Int there, so the cascade result
+    # legitimately carries it) or a native `integrate` noun somewhere in
+    # its interior. diff() evaluates such heads to 0, so the zero chains
+    # can never verify the answer — an honest FAIL sub-class, not an
+    # unexplained `unverified`. The check is one freeof() call (cheap)
+    # and runs BEFORE the zero chains, which would otherwise burn the
+    # whole per-target budget on a noun-laden diff (measured 2026-08-25:
+    # 1.1.1.7 e30). Only the `unintegrable` marker is poison: an
+    # `integrate[g, x]` head inside an answer is a LEGITIMATE explicit
+    # integral term — Maxima's diff knows d/dx ∫g dx = g, so such
+    # answers verify normally (measured: 1.2.2.7 e1 carries a ∫-term
+    # and its self-diff closes).
+    has_noun = "not is(freeof(unintegrable, mr_r))"
     head = (f"mr_f: {f_text}$\n"
             f"mr_r: {call}$\n"
             + "pos$\n" * 6 + "no$\n" * 6)
@@ -211,6 +227,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
         if e_text2 is not None:
             ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})")
             body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
+                    f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                     "else block([MR_z, MR_z2, MR_w], MR_w: (" + zv + "), "
                     "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
                     "else (MR_z: (" + ze + "), MR_z2: (" + ze2 + "), "
@@ -219,6 +236,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
                     "else disp(concat(\"CLASS unverified\"))))")
         else:
             body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
+                    f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                     "else block([MR_z, MR_w], MR_w: (" + zv + "), "
                     "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
                     "else (MR_z: (" + ze + "), "
