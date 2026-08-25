@@ -1,0 +1,69 @@
+/* probes/maxima/probe-matchfix-bare-factor.mac  (milestone-1 / matchfix)
+ *
+ * Measures a matchfix limitation in the installed build: a pattern slot
+ * with a FREE exponent, (pa + pb*x)^pm, does NOT match a BARE linear
+ * target factor (a + b*x) — the factor whose exponent is the implicit 1.
+ * Maxima's canonical form strips (expr)^1 to expr, so the target has no
+ * Power node for the matcher to see, while the pattern demands one.
+ *
+ * Consequence: every class-1 rule whose .m LHS carries a free-exponent
+ * slot over a linear factor cannot fire on corpus integrands that write
+ * that factor bare (exponent 1). Measured case: 1.1.1.4 e1, the plain
+ * four-linear product (a+b*x)*(c+d*x)*(e+f*x)*(g+h*x) — its .m rule r1
+ * pattern (a+b x)^m (c+d x)^n (e+f x)(g+h x) declines (m-slot vs bare
+ * (a+b*x)), the top level 0-fires, and the entry classifies `deferred`
+ * although the corpus expects the expanded polynomial.
+ *
+ * Also measures: explicit ^3 matches (the slot needs a Power node with
+ * any non-unit exponent), and that (a+b*x)^1 re-canonicalizes to the
+ * bare form before matching, so an explicit unit exponent is impossible
+ * on the target side.
+ *
+ * Run:
+ *   sh probes/maxima/probe-matchfix-bare-factor.run
+ *
+ * Stamped 2026-08-25; Maxima 5.50.0, SBCL 2.6.7.
+ */
+
+/* The class-1 load fires defmatch prompts; answer them from the batch
+   stream (the driver's convention — test/mr_preload.mac). */
+batch_answers_from_file: true$
+
+disp(build_info())$
+
+/* --- the minimal reproduction ------------------------------------------ */
+matchdeclare(mf_pa, freeof(x))$
+matchdeclare(mf_pb, true)$
+matchdeclare(mf_pm, true)$
+defmatch(mf_pat, (mf_pa + mf_pb*x)^mf_pm, x)$
+
+/* explicit non-unit exponent: matches */
+disp(concat("P3  (a+b*x)^3      = ", string(mf_pat((a + b*x)^3, x))))$
+/* explicit negative exponent: matches */
+disp(concat("Pm  (a+b*x)^-2     = ", string(mf_pat((a + b*x)^(-2), x))))$
+/* bare factor (implicit 1): NO match */
+disp(concat("PB  (a+b*x)        = ", string(mf_pat((a + b*x), x))))$
+/* (a+b*x)^1 re-canonicalizes to the bare form: NO match, same as PB */
+disp(concat("P1  (a+b*x)^1      = ", string(mf_pat((a + b*x)^1, x))))$
+
+/* the target's canonical form has no Power node: */
+disp(concat("FORM (a+b*x)^1     = ", string(form((a + b*x)^1))))$
+disp(concat("OP   (a+b*x)       = ", string(op(a + b*x))))$
+
+/* --- the same pair with the exponent slot made BARE in the pattern ----- */
+/* (pattern side without ^pm matches the bare target, as before: the
+   limitation is specifically free-exponent slot vs bare target) */
+defmatch(mf_pat_bare, mf_pa + mf_pb*x, x)$
+disp(concat("PB2 pat-bare (a+b*x) = ", string(mf_pat_bare((a + b*x), x))))$
+
+/* --- the rule pattern of 1.1.1.4 r1 on corpus e1 ----------------------- */
+/* loaded package: the generated rule's own defmatch pattern */
+if errcatch(load("maxima_rubi.mac")) = [] then disp("LOAD-FAILED")$
+mr_load_class1_all()$
+mr_f: (a + b*x)*(c + d*x)*(e + f*x)*(g + h*x)$
+disp(concat("R1  _mr_pat_1_1_1_4_r1(e1) = ",
+            string(_mr_pat_1_1_1_4_r1(mr_f, x))))$
+/* control: the same rule pattern on the m-EXPLICIT form matches */
+disp(concat("R1c m-explicit is-match = ",
+            string(is(_mr_pat_1_1_1_4_r1((a + b*x)^2*(c + d*x)*(e + f*x)*(g + h*x), x) = false))))$
+disp(MFBFD)$

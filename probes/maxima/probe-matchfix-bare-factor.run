@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run the matchfix bare-factor probe (from repo root):
+#   sh probes/maxima/probe-matchfix-bare-factor.run
+# Output is redirected to probe-matchfix-bare-factor.out with a date/build
+# stamp and committed (measured-claims discipline).
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# probe-matchfix-bare-factor output, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  maxima --very-quiet -X "--tls-limit 100000" -b probes/maxima/probe-matchfix-bare-factor.mac
+} > probes/maxima/probe-matchfix-bare-factor.out
+echo "wrote probes/maxima/probe-matchfix-bare-factor.out"
