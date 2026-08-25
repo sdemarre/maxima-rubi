@@ -36,6 +36,18 @@
 
 %mr_load_sibling("maxima_rubi_utils.mac", 'mr_witness_utils)$
 
+/* Native-integrate prompt design (measured 2026-08-25): integrate's
+   sign prompts are answered from the batch input stream — the test
+   harness pre-queues pos/no answer lines (see the mr_top comment in
+   maxima_rubi_utils.mac). An earlier iteration replaced the prompt
+   with a noninteractive throw (maxima_rubi_ni.lisp, since deleted):
+   it suppressed the assumption-conditional answers the harness
+   verifies and regressed 10 broad-canary targets, so the prompt is
+   kept native. The answer-exhaustion process death
+   ("RETRIEVE: End of file encountered.") occurs only in batches
+   that queue no answers; vanilla Maxima integrate dies identically
+   there, so it is not a package regression. */
+
 /* The Lisp arity dispatchers (maxima_rubi_dispatch.lisp): %mr_binomialQ
  * (2/3) and %mr_intBinomialQ (7/8/10) — the two predicates Rubi
  * overloads by arity (class-1 census 2026-08-23: binomialQ 2/3 =

@@ -137,6 +137,25 @@ depth_level : 0$
  * integrate fall-through: a nested 0-firing is a different case, and
  * corpus entries currently verified through nested fallback must not
  * regress (2026-08-24 design decision, handoff Step 1 open question). */
+/* Native-integrate fall-through design (measured 2026-08-25): the
+   integrate call in the fb=true branches below is BARE — deliberately
+   not errcatched. (a) Sign prompts are a designed input channel: the
+   test harness (corpus_class1_driver.build_text) runs with
+   batch_answers_from_file true and pre-queues prompt answers (six
+   "pos" + six "no" lines; the flag must be set via -p preload, not in
+   the batch) — retrieve() reads the next batch line as the answer, so
+   integrate returns an assumption-conditional result the harness's
+   formal diff check verifies. (b) An ERRORING integrate (a Lisp-level
+   crash, or the uncatchable RETRIEVE input-EOF when the 12 queued
+   answers are exhausted) must PROPAGATE: it kills the rule's
+   replacement, %mr_dispatch's errcatch turns that into a misfire, and
+   the next rule gets the integrand. errcatching it instead bakes the
+   no-answer noun into the answer and regresses targets that the
+   declining rule's successor handles (measured 2026-08-25: broad
+   canary 88/32 -> 86/34, five expected/no-answer -> unverified
+   flips, e.g. 1.1.4.3 e119 A/B'd against the bare call). The
+   seen-guard branch below is the SAME bare call — the productive
+   loop resolution, not a fall-through (see there). */
 mr_top(f, x, fb) := block([ans],
   depth_level : depth_level + 1,
   if depth_level > %mr_max_depth then (
@@ -146,6 +165,24 @@ mr_top(f, x, fb) := block([ans],
   ),
   if member(f, %mr_seen) then (
     depth_level : depth_level - 1,
+    /* A re-dispatch of an integrand already on the dispatch path is
+       a pure rule loop (static table, deterministic matcher -> the
+       same rule re-fires; e.g. the 1.1.1.2 r12 ExpandIntegrand-
+       identity repl). MEASURED 2026-08-25: the fb fall-through to
+       bare integrate(f, x) is LOAD-BEARING, not a bug — targets
+       whose nested sub-integrals loop (1.1.4.3 e119: ten seen-guard
+       hits on its productive 1.3.3/1.4.1/1.3.2 cascade) build their
+       VERIFIED answer from those integrate results (assumption-
+       conditional, from the driver's queued prompt answers). The
+       seen guard fires once per cycle (it returns the integrate
+       result instead of re-dispatching), so there is no per-cycle
+       re-entry to cut. An ERROR here instead (measured same day)
+       declines the outer rule and drops those targets to unverified
+       (broad canary 88/32 -> 86/34). The manual-batch prompt-EOF
+       death ("RETRIEVE: End of file encountered." when no answer
+       lines are queued) is inherent to bare integrate in a batch —
+       vanilla Maxima integrate dies identically — and is not
+       regressed or fixed here. */
     if fb then return(integrate(f, x))
     else return(mr_unintegrable(f, x))
   ),
@@ -258,8 +295,19 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   else num(part(r, 1))/denom(part(r, 1)))$
 
 /* the zero-chain (Q3, docs/corpus-baseline.md): apply in order, return
-   the last stage */
-%mr_simp(e) := block([a],
+   the last stage. Rubi's 2-arg Simp[u_,x_] (IntegrationUtilityFunctions.m
+   :2265) is TimeConstrained[NormalizeSumFactors[SimpHelp[u,x]],$TimeLimit,u]
+   — a value-preserving sum-factor sign/content normalization. DEVIATION:
+   the port accepts the variable argument (Maxima optional-arg idiom,
+   [v] collects it as a list, [] when absent — MEASURED 2026-08-25) but
+   ignores it and runs the same zero-chain; value-preserving is the hard
+   requirement, shape parity is not. MEASURED 2026-08-25: with a
+   1-arg-only definition every 2-arg call site fatal'd
+   "Too many arguments" at repl evaluation — errcatched, so the 32 rules
+   carrying a 2-arg %mr_simp (39 call sites: 1.1.1.4, 1.1.2.7, 1.1.2.9,
+   1.2.1.1, 1.2.1.2, 1.2.1.3, 1.2.1.5, 1.2.2.3, 1.2.2.4, 1.2.3.4, 1.4.1)
+   silently DECLINED. */
+%mr_simp(e, [v]) := block([a],
   a : ratsimp(e),
   a : ratsimp(expand(a)),
   a : factor(a),

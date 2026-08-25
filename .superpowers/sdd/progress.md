@@ -1037,6 +1037,70 @@ VALIDATION (Maxima 5.50.0 / SBCL 2.6.7):
    `test/canary.broad.out` regenerated.
  - Layer A: 511/0, per-test lines byte-identical to baseline.
 
+## Work item: Simp 2-arg port + 1.2.1.1 e1 silent-batch-kill investigation (2026-08-25)
+
+Two coupled outcomes. (A) the Rubi `Simp[u_,x_]` 2-arg port was missing:
+all 39 two-arg `%mr_simp(…, x)` call sites (32 rules: 1.1.1.4, 1.1.2.7,
+1.1.2.9, 1.2.1.1, 1.2.1.2, 1.2.1.3, 1.2.1.5, 1.2.2.3, 1.2.2.4, 1.2.3.4,
+1.4.1) fataled "Too many arguments" at repl evaluation — errcatched, so
+the rules silently DECLINED. (B) activating r4 (1.2.1.1,
+perfect-discriminant) moved e1 from the r5 ExpandIntegrand path to the
+Rubi-faithful r4 product-decomposition path, whose cascade (1.1.1.2
+r39/r38) surfaced a "silent batch-kill": rc=0, no error text, batch dies
+at the next statement read, two `RETRIEVE: End of file encountered.`
+lines.
+
+Simp fix (COMMITTED THIS ITEM): `%mr_simp(e, [v])` — Maxima optional-arg
+idiom (`[v]` collects the extra arg into a list, `[]` when absent —
+MEASURED; distinct from the documented "no b... variadic" trap); the
+arg is accepted and ignored, the 1-arg zero-chain runs (Rubi's 2-arg
+Simp is a value-preserving NormalizeSumFactors — value parity is the
+hard requirement).
+
+The e1 "kill" is RESOLVED AS UNDERSTOOD, NOT CODE-FIXED. Measured facts
+(this build, 5.50.0/SBCL 2.6.7):
+1. The prompt is a DESIGNED input channel: the harness runs
+   `batch_answers_from_file: true` (via -p preload — setting it inside
+   the batch is too late, MEASURED) and pre-queues six `pos$` + six
+   `no$` lines; retrieve() reads the next batch line as the answer.
+   Under the driver, integrate returns assumption-conditional results
+   the formal diff check verifies. In a batch with NO queued answers
+   the first prompt hits input EOF — the uncatchable Lisp-level
+   RETRIEVE death. Vanilla `integrate` on the same integrand dies
+   identically (A/B'd): the kill is not a package regression.
+2. The mr_top fb=true branches' BARE `integrate(f, x)` (no errcatch) is
+   LOAD-BEARING: (a) an erroring integrate must PROPAGATE so the repl
+   dies and the rule declines for the next rule; errcatching it bakes
+   the no-answer noun into answers and regressed 5 targets (88/32 ->
+   86/34, e.g. 1.1.4.3 e119 A/B'd: old true, errcatched false). (b) The
+   seen-guard branch is the same bare call — productive loop
+   resolution: e119's verified answer is BUILT from ten seen-guard
+   integrate results; an ERROR there instead (decline) also regressed
+   (same 88/32 -> 86/34, canary is deterministic — re-run of identical
+   code gives 0 flips). `mr_int(f,x) := mr_top(f,x,TRUE)` — the
+   fb=true branches run on EVERY nested sub-integral, not just the
+   top-level fallback.
+3. A no_questions-style noninteractive throw (maxima_rubi_ni.lisp,
+   deleted) regressed harder: 88/32 -> 82/38, 10 expected->unverified —
+   it suppresses the assumption-conditional answers the harness
+   verifies (global even when toggled only around integrate: 82/38
+   unchanged — the loss is in the integrate result itself).
+4. Naming trap that masked all of the above for hours: lisp
+   `$mr_ni_loaded` is the Maxima name `mr_ni_loaded`, NOT
+   `%mr_ni_loaded` (that maps to lisp `|%mr_ni_loaded|`, never bound) —
+   a "failing lisp load" was a broken witness test all along.
+
+FINAL STATE: mr_top branches restored to HEAD (net code change this item
+= the %mr_simp signature + measured-behavior comments in
+maxima_rubi_utils.mac / maxima_rubi.mac). Broad canary 88/32,
+PER-TARGET IDENTICAL to the pre-investigation Simp-baseline run (0
+regressions / 0 improvements / 0 fail-kind changes); Layer A 511/0
+byte-identical. e1 = FAIL:unverified (honest): the r4 path's answer is
+the Rubi-identity hypergeometric form but fails Maxima's formal diff
+under the queued assumptions — a RULE-QUALITY divergence (r4 path vs
+the old r5 path that verified), tracked as a separate work item with
+the wrong-answer family.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
