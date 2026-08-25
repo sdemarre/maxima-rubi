@@ -88,7 +88,15 @@ RESTRUCTURE = {
     "EllipticF": "elliptic_f", "EllipticE": "elliptic_e",
     "EllipticPi": "elliptic_pi",
     "Hypergeometric2F1": "hypergeometric",   # list-form args
-    "AppellF1": "mr_appellf1",
+    # AppellF1: emit the SAME head the corpus expected answers use
+    # (the .mac files carry AppellF1[...]). Maxima has no AppellF1
+    # builtin, so both sides of the zero-test carry the identical
+    # noun and an identical answer closes symbolically; the noun is
+    # undifferentiable, so the numeric stage cannot false-close it
+    # (measured 2026-08-25: ev of its diff is an atom, is(abs(.)<eps)
+    # false). The earlier mr_appellf1 alias mismatched the corpus head
+    # and made every AppellF1 entry unverified/deferred.
+    "AppellF1": "AppellF1",
     "Root": "%mr_root", "Hold": "%mr_hold", "Boole": "if",
     # ShowStep is emitter-dispatched (Task 6 E4): it values to its 4th arg
     # (ReleaseHold[rhs]), which the handler emits — a "drop" would leave
