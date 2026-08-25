@@ -1558,3 +1558,16 @@ matcher extension: deferred to post-run triage on the full run's
 failure data. NOTE: the clean 12-shard full run started before
 this fix is now MIXED-state (entries started mid-fix see the
 buggy matcher) — restart it clean after the 1.1.3.3 family run.
+
+WORK ITEM: %mr_polyDivide contract fix — committed 9279f9f
+2026-08-25, 5.50.0/SBCL. Rubi PolynomialDivide[u,v,x] = quo + rem/v as
+ONE expression; the 8 class-1 repl call sites do mr_int(that, x). The
+old port returned [Q, R] — integrating a list (garbage). Measured
+consequences: (1) Maxima `divide(u, 1/w, x)` is broken in this build
+(it multiplies by w and drops the remainder — the "remainder" came
+back b*d*x^6+(a*d+b*c)*x^3+a*c); (2) this build's expand distributes
+a sum over a denominator term (x + (1-x)/(x^2+1) -> -x/(x^2+1) +
+1/(x^2+1) + x) — so the port returns the UNEXPANDED Q + R/v. New
+Layer A test checks the identity u = v*PolyDivide[u,v,x] (syntactic =
+fails on sum-term canonical order). e5 (1.1.3.3, (a+b x^3)/(c+d
+x^3)) verified, resid 5.5e-17. Gated 511/0 + canary 71/49 (0/0).
