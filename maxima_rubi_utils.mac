@@ -624,63 +624,38 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
  * variable — name shape _mr_<key>_r<n>mq<k>_<v> (generate_class1.py
  * _emit_matchq). Distinguishes markers from rule captures
  * (_mr_<key>_r<n>_<v> — no "mq") and pattern literals (x, numbers,
- * computed values). The "mq" of a real marker is flanked by DIGITS
- * (the rule number n before, the occurrence k after); a capture can
- * never have that (the char before its var name is always "_").
+ * computed values).
  *
- * This build's string surface is thin and hostile (measured 2026-08-23):
- * stringposition / stringmatch / char / stringlength are NOUNS;
- * length() on a string is a hard Lisp error ("not of type LIST");
- * = / # on strings NEVER evaluate on their own — they stay equations
- * outside boolean contexts (if / and / or / is(), where they do
- * evaluate); substring(s, a, b) is END-EXCLUSIVE. So: the length is a
- * char scan that stops on the substring out-of-range error, and every
- * string comparison is an is(... = ...) inside a boolean context. */
-%mr_digit1Q(c1) := is(c1 = "0") or is(c1 = "1") or is(c1 = "2")
-  or is(c1 = "3") or is(c1 = "4") or is(c1 = "5")
-  or is(c1 = "6") or is(c1 = "7") or is(c1 = "8") or is(c1 = "9")$
+ * Membership, not name-shape (measured 2026-08-25, 5.50.0/SBCL): the
+ * name-shape test the scan below used (char-by-char substring probes)
+ * is unsound on this build — the COMPILED substring ERRORS on
+ * out-of-range bounds (interpreted substring clamps; the same
+ * (:=) function's scan probes one past the end), and inside the
+ * nested compiled context of a matchfix defmatch that error is
+ * FATAL — Maxima's errcatch cannot catch it: 1.2.1.6 e77's batch
+ * died mid-target after 15 printed "substring: unsuitable start or
+ * end position" lines (no CLASS line; a shallower probe caught the
+ * identical error). The generator mints the marker names, so each
+ * generated rule file REGISTERS its exact markers at load time and
+ * the test is a membership scan — no strings, no probes, no errors.
+ * (member() in this build returns a boolean, true/false, not the
+ * sublist — measured 2026-08-23 — which is what the test wants.) */
+%mr_marker_registry : []$
 
-/* the char window at i..i+2 of ss (1-based) is <digit>"mq"<digit> */
-%mr_mq_hit(ss, i) := block([],
-  if not is(substring(ss, i + 1, i + 3) = "mq") then false
-  else if %mr_digit1Q(substring(ss, i, i + 1))
-    and %mr_digit1Q(substring(ss, i + 3, i + 4))
-  then true else false)$
+%mr_register_markers(list) :=
+  %mr_marker_registry : append(%mr_marker_registry, list)$
 
-/* memo: the same atoms (x, the markers, the captures) are re-tested on
- * every rule application — member() in this build returns a boolean
- * (true/false, not the sublist — measured 2026-08-23), so two lists
- * give a value cache. */
-%mr_marker_yes : []$
-%mr_marker_no : []$
-
-%mr_isMQMarker(s) := block([r],
+%mr_isMQMarker(s) := block([],
   if not atom(s) or numberp(s) then false
-  else if member(s, %mr_marker_yes) then true
-  else if member(s, %mr_marker_no) then false
-  else (
-    r : %mr_isMQMarker_name(s),
-    if r then %mr_marker_yes : append(%mr_marker_yes, [s])
-    else %mr_marker_no : append(%mr_marker_no, [s]),
-    r))$
+  else member(s, %mr_marker_registry))$
 
-/* the actual name test. The length is a predicate scan — break does
- * not take effect inside a comma-sequence while body in this build
- * (measured 2026-08-23); the scan's final out-of-range probe prints
- * one swallowed error line per DISTINCT symbol (the memo absorbs the
- * repeats). substring(start > length) errors; start <= length clamps,
- * so the prefix probe below can never error on a non-empty name. */
-%mr_isMQMarker_name(s) := block([ss, i, L],
-  ss : string(s),
-  i : 1,
-  while length(errcatch(substring(ss, i, i + 1))) = 1 do i : i + 1,
-  L : i - 1,
-  if L < 4 then false
-  else if not is(substring(ss, 1, 5) = "_mr_") then false
-  else (
-    i : 1,
-    while i <= L - 3 and not %mr_mq_hit(ss, i) do i : i + 1,
-    is(i <= L - 3)))$
+/* the util-side predicates above (linearMatchQ / quadraticMatchQ /
+ * binomialMatchQ / trinomialMatchQ / trinomialQ / gbp / gbm / gtp /
+ * gtm) mint their own markers inline — register them here, at load,
+ * so the membership test above sees them (the generated rule files
+ * register their own in the trailing %mr_register_markers line). */
+%mr_register_markers([ _mr_binMq_r1mq1_a, _mr_binMq_r1mq1_b, _mr_binMq_r1mq1_n, _mr_gbm1_r1mq1_a, _mr_gbm1_r1mq1_b, _mr_gbm1_r1mq1_n, _mr_gbm1_r1mq1_q, _mr_gbp1_r1mq1_a, _mr_gbp1_r1mq1_b, _mr_gbp1_r1mq1_n, _mr_gbp1_r1mq1_q, _mr_gbp2_r1mq1_a, _mr_gbp2_r1mq1_u, _mr_gbp3_r1mq1_m, _mr_gbp3_r1mq1_u, _mr_gbp4_r1mq1_m, _mr_gbp4_r1mq1_u, _mr_gtm1_r1mq1_a, _mr_gtm1_r1mq1_b, _mr_gtm1_r1mq1_c, _mr_gtm1_r1mq1_n, _mr_gtm1_r1mq1_q, _mr_gtm1_r1mq1_r ])$
+%mr_register_markers([ _mr_gtp1_r1mq1_a, _mr_gtp1_r1mq1_b, _mr_gtp1_r1mq1_c, _mr_gtp1_r1mq1_n, _mr_gtp1_r1mq1_q, _mr_gtp1_r1mq1_r, _mr_gtp2_r1mq1_a, _mr_gtp2_r1mq1_u, _mr_gtp3_r1mq1_m, _mr_gtp3_r1mq1_u, _mr_gtp4_r1mq1_m, _mr_gtp4_r1mq1_u, _mr_linMq_r1mq1_a, _mr_linMq_r1mq1_b, _mr_quadMq_r1mq1_a, _mr_quadMq_r1mq1_b, _mr_quadMq_r1mq1_c, _mr_quadMq_r2mq1_a, _mr_quadMq_r2mq1_c, _mr_triMq_r1mq1_a, _mr_triMq_r1mq1_b, _mr_triMq_r1mq1_c, _mr_triMq_r1mq1_j, _mr_triMq_r1mq1_n, _mr_triQ_r1mq1_w ])$
 
 /* bind a marker to a value in the binding list [marker = value, ...];
  * a re-bound marker must agree. false on conflict. (No return() inside

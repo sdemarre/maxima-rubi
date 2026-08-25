@@ -326,11 +326,13 @@ test_structural_predicates() := block([],
    pinned by the monomialQ probes, not here. */
  test_matchQ_predicates() := block([],
    print("--- matchQ (structural matcher) ---"),
-   /* marker name test: real generator shape _mr_<key>_r<n>mq<k>_<v> —
-      "mq" flanked by digits; captures (_mr_<key>_r<n>_<v>) and
-      literals are not markers */
-   check_bool("isMQMarker real rule-file marker",
-              %mr_isMQMarker(_mr_1_1_2_10_r2mq1_m)),
+    /* marker test: MEMBERSHIP, not name-shape (see %mr_isMQMarker, maxima_rubi_utils.mac); unit markers register here */
+    %mr_register_markers([ _mr_1_1_2_10_r2mq1_m, _mr_9_r1mq1_m, _mr_9_r1mq1_u, _mr_9_r2mq1_m, _mr_9_r2mq1_u ]),
+    %mr_register_markers([ _mr_9_r3mq1_m, _mr_9_r3mq1_u, _mr_9_r4mq1_m, _mr_9_r4mq1_u, _mr_9_r5mq1_f, _mr_9_r5mq1_g, _mr_9_r5mq1_r ]),
+    %mr_register_markers([ _mr_9_r6mq1_f, _mr_9_r6mq1_g, _mr_9_r6mq1_r, _mr_9_r7mq1_f, _mr_9_r8mq1_a, _mr_9_r8mq1_b, _mr_9_r8mq1_v ]),
+    %mr_register_markers([ _mr_9_r9mq9_z, _mr_9_r12mq1_v, _mr_9_r13mq1_f, _mr_9_r13mq1_g, _mr_9_r20mq1_m ]),
+    check_bool("isMQMarker real rule-file marker",
+               %mr_isMQMarker(_mr_1_1_2_10_r2mq1_m)),
    check_bool("isMQMarker unit-shape marker",
               %mr_isMQMarker(_mr_9_r1mq1_m)),
    check_not("isMQMarker capture (no mq)",

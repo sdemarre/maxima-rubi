@@ -1189,7 +1189,12 @@ def emit_rule(run, key, n, rule_vars):
     lines.append("  if mm = false then return(false),")
     lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
     lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$")
-    return "\n".join(lines)
+    # The rule's MatchQ marker names (ctx["decls"] — updated only by
+    # _emit_matchq) are returned for the file-level registry line: the
+    # marker test is membership, not name-shape (see %mr_isMQMarker,
+    # maxima_rubi_utils.mac — the name-shape substring scan was FATAL
+    # on the compiled out-of-range probe).
+    return "\n".join(lines), sorted(ctx["decls"])
 
 def emit_file(rel_m, runs, key=None):
     # key defaults to the file's own number; the EXTRA_CLASS1 files
@@ -1204,6 +1209,7 @@ def emit_file(rel_m, runs, key=None):
               f"{MIT}\n\n")
     body = []
     rule_fns = []
+    file_markers = set()
     for n, run in enumerate(runs, start=1):
         # FIX F3: rule_runs yields LISTS OF LINES; the brief's emit_rule
         # unpacked them as a (lhs, rhs, cond) triple (ValueError on any
@@ -1228,7 +1234,10 @@ def emit_file(rel_m, runs, key=None):
         cond = clean_cond(cond, key, n)
         rule_vars = pattern_vars(lhs)
         try:
-            body.append(emit_rule((lhs, rhs, cond), key, n, rule_vars))
+            rule_text, markers = emit_rule((lhs, rhs, cond), key, n,
+                                           rule_vars)
+            body.append(rule_text)
+            file_markers.update(markers)
         except GenError:
             raise
         except Exception as ex:
@@ -1245,6 +1254,9 @@ def emit_file(rel_m, runs, key=None):
                 body.append(f" * {ln.strip()}")
             body.append(" */")
         rule_fns.append(f"_mr_rule_{key}_r{n}")
+        body.append("")
+    if file_markers:
+        body.append(f"%mr_register_markers([ {', '.join(sorted(file_markers))} ])$")
         body.append("")
     body.append(f"mr_rules_{key} : [ {', '.join(rule_fns)} ]$")
     body.append(f"mr_rules_count_{key} : {len(runs)}$")

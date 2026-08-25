@@ -184,6 +184,18 @@ def zero_chain(d_expr, var):
               "factor(MR_d)",
               "ratsimp(factor(MR_d))"]
     # FIRST numeric stage (measured 2026-08-25, 5.50.0/SBCL): correct
+    # Prompt budget (measured 2026-08-25, 5.50.0/SBCL): integrate's sign
+    # prompts are answered from the batch input stream, and a target that
+    # asks MORE questions than queued lines exhausts the stream — the
+    # reader hits EOF ("RETRIEVE: End of file encountered."), the batch
+    # dies before the CLASS line, and the entry misclassifies `error`
+    # (1.2.1.6 e77: the substring-fatality fix let its cascade reach the
+    # integrate fallback, which asked 13-20 questions vs the old 6/6
+    # budget). 40 pos + 20 no per stage covers the deepest cascade
+    # measured so far; an exhausted budget now degrades to `no` answers
+    # (graceful, classification-safe) rather than an EOF death. The pos-
+    # first order keeps Rubi's all-parameters-positive convention for as
+    # many questions as the budget reaches.
     # answers whose diff carries elliptic_f/elliptic_e terms close under
     # NO symbolic stage — 1.2.1.3 e1058 (after the SubstPower sqrt-head
     # fix) is numerically exact (resid ~1e-15) but ratsimp/expand/factor
@@ -286,7 +298,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     has_noun = "not is(freeof(unintegrable, mr_r))"
     head = (f"mr_f: {f_text}$\n"
             f"mr_r: {call}$\n"
-            + "pos$\n" * 6 + "no$\n" * 6)
+            + "pos$\n" * 40 + "no$\n" * 20)
     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
         body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
                 f"else disp(concat(\"CLASS unexpected\"))")
@@ -325,7 +337,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
                     "else (MR_z: (" + ze + "), "
                     "if is(MR_z=1) then disp(concat(\"CLASS expected\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
-    return head + body + "$\n" + "pos$\n" * 6 + "no$\n" * 6
+    return head + body + "$\n" + "pos$\n" * 40 + "no$\n" * 20
 
 
 def file_list():
