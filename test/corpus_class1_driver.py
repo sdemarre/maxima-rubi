@@ -198,8 +198,20 @@ def zero_chain(d_expr, var):
     # under 4ac-b^2 > 0 (resid ~1e-16) but "wrong" (resid 0.6-1.6 /
     # exactly d) under 4ac-b^2 < 0. 4*0.9*0.5-1.3^2 = 0.11 > 0 and
     # a+b*x+c*x^2 > 0 at both test points.
+    # p = 2: generic-exponent targets (free p, e.g. 1.2.1.4 e383
+    # x^3(d+e x)(a+b x^2)^p) otherwise defeat the stage — a float eval
+    # carrying the free p returns a float NOUN and the stage declines —
+    # while their formal zero chain cannot close the p-dependent diff
+    # (measured 2026-08-25: e383's answer is CORRECT, verified by
+    # instance at p = 2 / -3 / 5, resid ~1e-17). Substituting p = 2
+    # checks the p=2 instance (same standard as every other numeric
+    # verification); a target whose p=2 instance hits a domain error
+    # declines via the stage's own errcatch exactly as today, and a
+    # target with NO free p is untouched (its 3/2-style exponents are
+    # concrete, not the symbol p). p = 2 avoids the reduction-family
+    # 1/(p+1) / 1/(2p+3) coefficient singularities (p+1 = 3, 2p+3 = 7).
     subs = ("a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, f=0.8, g=1.7, h=0.3, "
-            "A=0.6, B=1.4, C=0.4, D=0.9")
+            "A=0.6, B=1.4, C=0.4, D=0.9, p=2")
     symbolic = "0"
     for s in reversed(stages):
         symbolic = f"MR_d: {s}, if is(MR_d=0) then 1 else (" + symbolic + ")"
