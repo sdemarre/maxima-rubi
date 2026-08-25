@@ -1607,12 +1607,21 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
     else false
   )
   elseif op(t) = "^" then (
-    /* a bare-power term (x^2 as a WHOLE term after expand): a pure
-       x-power only for base x with a positive integer exponent —
-       x^(-1) is 1/x (a fraction), and x^(1/2)/x^a are not polynomial
-       powers (review fix 2026-08-20, bug B) */
-    if is(part(t, 1) = x) and integerp(part(t, 2)) and part(t, 2) > 0
-      then part(t, 2) else false
+    /* a bare-power term as a WHOLE term after expand. base x with a
+       positive integer exponent -> that exponent; x^(-1) is 1/x (a
+       fraction) and x^(1/2)/x^a are not polynomial powers (review fix
+       2026-08-20, bug B). A power with an x-FREE base (d^2, c^3, ...)
+       is a degree-0 monomial — returning false here DROPPED every
+       symbol-power constant term from coefficient/degree walks
+       (measured 2026-08-25, 5.50.0/SBCL: %mr_coeff(d^2 - a*e^2/c, x, 0)
+       lost the d^2, breaking 1.2.1.6 r4 on (e*x+d)^4 — 1.2.1.2 e2202
+       wrong answer, resid 3.19). An x-bearing base that is not x
+       itself ((a+b*x)^2) is not a monomial -> false. */
+    if is(part(t, 1) = x) then (
+      if integerp(part(t, 2)) and part(t, 2) > 0 then part(t, 2) else false
+    )
+    else if freeof(x, part(t, 1)) then 0
+         else false
   )
   else false)$
 
@@ -1646,14 +1655,30 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
     else 0
   )
   elseif op(t) = "^" then (
-    /* a bare-power term x^n: coefficient 1 (the caller ensures
-       %mr_term_xexp(t, x) = n, so t is a pure x-power with exponent n) */
-    1
+    /* a bare-power term (the caller ensures %mr_term_xexp(t, x) = n).
+       A pure x-power has coefficient 1; an x-free-base power (d^2 —
+       see the %mr_term_xexp /-note sibling fix) is its own constant
+       coefficient at n = 0 and nothing elsewhere. */
+    if is(part(t, 1) = x) then 1
+    else if freeof(x, part(t, 1)) then (if n = 0 then t else 0)
+         else 0
   )
   else 0)$
 
+/* w : expand(u) — NOT expand(num(rat(u))) (measured 2026-08-25,
+   5.50.0/SBCL): rat() on a symbolic polynomial EXTRACTS the symbolic
+   content into the denominator (rat((2abc e^4 + ...)*x + ...) put c^3
+   below the line), so num(rat(u)) was a c^3-RESCALED copy of u and
+   every coefficient came back wrong (EQ_f/EQ_g false against the
+   built-in coeff; 1.2.1.6 r4 on 1.2.1.2 e2202). Rubi's Coeff is
+   Coefficient[expr, x, n] directly (Rubi.m, Together only as the
+   fallback when the direct and Together values disagree) — no
+   content manipulation — and every %mr_coeff call site feeds a
+   PolyQ-confirmed polynomial, for which expand(u) is exact. A
+   non-polynomial u yields fraction terms whose %mr_term_xexp is
+   false -> 0 (conservative, matches the no-monomial reading). */
 %mr_coeff3(u, x, n) := block([w, i, t, c, p],
-  w : expand(num(rat(u))),
+  w : expand(u),
   if atom(w) then (
     p : %mr_term_xexp(w, x),
     if p # false and p = n then %mr_term_coeff(w, x, n) else 0
@@ -3213,11 +3238,22 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
  * rule-condition bug, not a division). ArcTanh / ArcSinh / ArcCosh are
  * unbound in this build and get the log forms. */
 
+/* expand() on the result is LOAD-BEARING (measured 2026-08-25,
+   5.50.0/SBCL): for a NON-MONIC divisor with symbolic coefficients
+   (v = a+b*x+c*x^2), the built-in quotient/remainder/divide return
+   the parts as FRACTIONS — the symbolic content (c^3 here) rides in
+   the denominator: op(remainder((e*x+d)^4, a+b*x+c*x^2, x)) = "/"
+   with denom = c^3. Rubi's PolynomialQuotient/Remainder contract is a
+   true polynomial (Mathematica does exact symbolic division); the
+   fraction form corrupts every downstream Coeff/Expon/EqQ consumer
+   (1.2.1.6 r4's f,g came back c^3-scaled -> 1.2.1.2 e2202 wrong
+   answer, resid 3.19). expand() over an x-free denominator restores
+   the true monomial sum (qu*expand(Q) + expand(R) = Pq re-verified). */
 %mr_polyQuotient(u, v, x) := block([r],
   if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
   then (
     r : errcatch(quotient(u, v, x)),
-    if is(r = []) then false else part(r, 1)
+    if is(r = []) then false else expand(part(r, 1))
   )
   else false)$
 
@@ -3225,7 +3261,7 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
   then (
     r : errcatch(remainder(u, v, x)),
-    if is(r = []) then false else part(r, 1)
+    if is(r = []) then false else expand(part(r, 1))
   )
   else false)$
 
@@ -3235,7 +3271,7 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
     r : errcatch(divide(u, v, x)),
     if is(r = [])
     then [false, false]
-    else [part(part(r, 1), 1), part(part(r, 1), 2)]
+    else [expand(part(part(r, 1), 1)), expand(part(part(r, 1), 2))]
   )
   else [false, false])$
 
