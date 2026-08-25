@@ -1,0 +1,35 @@
+/* probes/maxima/probe-times-length.mac  (milestone-1 / matchfix)
+ *
+ * Measures the factor count of a times node in the installed build.
+ * The generic binomial-factor walker (maxima_rubi_utils.mac
+ * %mr_binpowfactors) walks a product's factors with
+ * `for i : 1 thru length(t) do part(t, i)` — the same idiom as the
+ * existing %mr_mbp_* walkers — and this probe pins that the idiom is
+ * sound here: length of a times node is the factor count and part()
+ * reaches every factor in order.
+ *
+ * Run:
+ *   sh probes/maxima/probe-times-length.run
+ *
+ * Stamped 2026-08-25; Maxima 5.50.0, SBCL 2.6.7.
+ */
+
+disp(build_info())$
+
+t2: (a + b*x)^2*(c + d*x)$
+disp(concat("L2  len(", string(t2), ") = ", string(length(t2))))$
+disp(concat("P2  part 1 = ", string(part(t2, 1)), "  part 2 = ", string(part(t2, 2))))$
+
+t3: (a + b*x)^2*(c + d*x)*(e + f*x)$
+disp(concat("L3  len = ", string(length(t3))))$
+disp(concat("P3  p1 = ", string(part(t3, 1)), "  p2 = ", string(part(t3, 2)), "  p3 = ", string(part(t3, 3))))$
+
+t4: (a + b*x)*(c + d*x)*(e + f*x)*(g + h*x)$
+disp(concat("L4  len = ", string(length(t4))))$
+for i : 1 thru length(t4) do disp(concat("P4  p", string(i), " = ", string(part(t4, i))))$
+
+/* a monomial and a bare x in the product */
+t5: x^3*(a + b*x)*2$
+disp(concat("L5  len = ", string(length(t5))))$
+for i : 1 thru length(t5) do disp(concat("P5  p", string(i), " = ", string(part(t5, i))))$
+disp(TLD)$

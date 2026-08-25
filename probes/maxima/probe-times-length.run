@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run the times-length probe (from repo root):
+#   sh probes/maxima/probe-times-length.run
+# Output is redirected to probe-times-length.out with a date/build
+# stamp and committed (measured-claims discipline).
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# probe-times-length output, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  maxima --very-quiet -b probes/maxima/probe-times-length.mac
+} > probes/maxima/probe-times-length.out
+echo "wrote probes/maxima/probe-times-length.out"
