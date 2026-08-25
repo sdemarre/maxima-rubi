@@ -3205,17 +3205,30 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
 
 /* Rubi :4023  ExpandLinearProduct[v, u, a, b, x] — v*u as a sum of
    c*v*(a+b*x)^n terms (u read in the shifted variable (x-a)/b). */
-%mr_expandLinearProduct(v, u, a, b, x) := block([w, L, s, i],
+/* The shifted form w may carry a constant (x-free) denominator (e.g. the
+   b^-k from (x-a)/b). rat() isolates it so the coefficient list of the
+   numerator is scaled back by 1/den — the .m CoefficientList[Expand[w], x]
+   reading, which keeps the factor (the MEASURED 2026-08-25 243x error came
+   from num(rat(u)) dropping it). NOTE: together() is a NOUN in this build
+   (MEASURED 2026-08-25: op(together(x/2+x/3)) = 'together with no preload),
+   so rat() is the combining step. */
+%mr_expandLinearProduct(v, u, a, b, x) := block([w, r, den, L, s, i],
   if freeof(x, a) and freeof(x, b) and %mr_neQ(b, 0)
     and %mr_polynomialQ(u, x)
   then (
     w : subst((x - a)/b, x, u),
-    L : %mr_coefficientList(w, x),
+    r : rat(w),
+    /* expand() reifies the gcrat constant to a plain number — MEASURED
+       2026-08-25: dividing by the raw denom(rat(...)) object (is(d = 243)
+       true, yet distinct) makes Maxima run the rat simplifier and expand
+       (3*x+2)^k into its polynomial, destroying the term structure. */
+    den : expand(denom(r)),
+    L : %mr_coefficientList(expand(num(r)), x),
     if atom(L) then false
     else (
       s : 0,
       for i : 1 thru length(L) do
-        s : s + v*part(L, i)*(a + b*x)^(i - 1),
+        s : s + v*part(L, i)*(a + b*x)^(i - 1)/den,
       s
     )
   )
@@ -3229,53 +3242,61 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   and integerp(part(u, 2))
   and is(part(u, 2) > 0)$
 
+/* Local factor scan for the ExpandIntegrand linear-power search. Same as
+   %mr_product_factors but a "/" node is split into its numerator factors
+   plus each denominator factor as a reciprocal (MEASURED 2026-08-25:
+   (3*x+2)^-8 stores as the "/" node 1/(3*x+2)^8, so the (a+b*x)^-m factor
+   of a quotient is invisible to the opaque-op read). Kept separate from
+   %mr_product_factors so no other predicate's behaviour changes. */
+%mr_ei_factors(u) := block([],
+  if atom(u) then [u]
+  else if op(u) = "-" then append([-1], %mr_ei_factors(part(u, 1)))
+  else if op(u) = "*" then %mr_parts_list(u)
+  else if op(u) = "/" then append(
+      %mr_ei_factors(part(u, 1)),
+      map(lambda([z],
+        if not atom(z) and op(z) = "^" then part(z, 1)^-part(z, 2)
+        else z^-1),
+        %mr_ei_factors(part(u, 2))))
+  else [u])$
+
 /* The linear-power factor of a product at position i, as
    [power, a, b, rest] or false. mode "power" reads an actual
-   (a+b*x)^m node; mode "bare" reads a bare linear factor (the .m's
-   m_. default — a Power is preferred over the bare reading). MEASURED
-   2026-08-23: return() does not escape a for-loop body in this build,
-   so the scan is a flag loop over this helper. */
+   (a+b*x)^m node, or the reciprocal quotient 1/(a+b*x)^m (m a positive
+   integer — the MEASURED 2026-08-25 storage of (a+b*x)^-m as a "/" node,
+   which the opaque-op read of %mr_product_factors cannot see); mode
+   "bare" reads a bare linear factor (the .m's m_. default — a Power is
+   preferred over the bare reading). MEASURED 2026-08-23: return() does
+   not escape a for-loop body in this build, so the scan is a flag loop
+   over this helper. */
 %mr_ei_linear_power_at(F, i, x, mode) :=
-  block([f, base, L, R, j, rest],
+  block([f, base, ok, L, R, j, rest],
     f : part(F, i),
+    ok : false,
     if mode = "power" then (
-      if not atom(f) and op(f) = "^" then (
-        base : part(f, 1),
-        if %mr_linearQ(base, x) then (
-          L : %mr_binomial_parts(base, x),
-          if not atom(L) and is(part(L, 3) = 1)
-            and %mr_neQ(part(L, 2), 0)
-          then (
-            R : [],
-            for j : 1 thru length(F) do
-              if j # i then R : append(R, [part(F, j)]),
-            rest : %mr_product_from_list(R),
-            if %mr_polynomialQ(rest, x)
-            then [f, part(L, 1), part(L, 2), rest]
-            else false
-          )
-          else false
-        )
-        else false
-      )
-      else false
+      if not atom(f) and op(f) = "^"
+      then (base : part(f, 1), ok : true)
+      else if not atom(f) and op(f) = "/" and is(num(f) = 1)
+        and op(denom(f)) = "^"
+        and integerp(part(denom(f), 2))
+        and is(part(denom(f), 2) > 0)
+      then (base : part(denom(f), 1), ok : true)
     )
+    else if not atom(f) and op(f) # "^"
+    then (base : f, ok : true),
+    if ok = false then false
     else (
-      if not atom(f) and op(f) # "^" then (
-        base : f,
-        if %mr_linearQ(base, x) then (
-          L : %mr_binomial_parts(base, x),
-          if not atom(L) and is(part(L, 3) = 1)
-            and %mr_neQ(part(L, 2), 0)
-          then (
-            R : [],
-            for j : 1 thru length(F) do
-              if j # i then R : append(R, [part(F, j)]),
-            rest : %mr_product_from_list(R),
-            if %mr_polynomialQ(rest, x)
-            then [f, part(L, 1), part(L, 2), rest]
-            else false
-          )
+      if %mr_linearQ(base, x) then (
+        L : %mr_binomial_parts(base, x),
+        if not atom(L) and is(part(L, 3) = 1)
+          and %mr_neQ(part(L, 2), 0)
+        then (
+          R : [],
+          for j : 1 thru length(F) do
+            if j # i then R : append(R, [part(F, j)]),
+          rest : %mr_product_from_list(R),
+          if %mr_polynomialQ(rest, x)
+          then [f, part(L, 1), part(L, 2), rest]
           else false
         )
         else false
@@ -3288,7 +3309,7 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
    .m's (a+b*x)^m_. pattern matches a Power first in the class-1 term
    order). */
 %mr_ei_linear_power(u, x) := block([F, i, r],
-  F : %mr_product_factors(u),
+  F : %mr_ei_factors(u),
   r : false,
   for i : 1 thru length(F) do
     if r = false then

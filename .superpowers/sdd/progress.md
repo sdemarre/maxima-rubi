@@ -956,6 +956,87 @@ separate gap: Rubi's 2-arg `Simp[u, x]` (IntegrationUtilityFunctions.m
 error at repl evaluation, errcatched -> those rules silently decline
 (coverage gap, not wrong answers).
 
+## Work item: e1276 speedup — ExpandIntegrand quotient linear-power factor + constant-factor fix (2026-08-25)
+
+Follow-up (1) of the loop-guard item: 1.1.1.3 e1276
+`(1-2*x)^2*(3+5*x)^3/(2+3*x)^8` — correct but ~33 s wall, over the 30 s
+canary cap (FAIL:timeout).
+
+ROOT CAUSE (measured: rubi_verbose trace + shell-side timing, since
+`time()` returns `[]` and `lisp(get-universal-time)` is constant in this
+build): 1.1.1.3_r17 fires on the three linear powers and calls
+`%mr_expandIntegrand`, whose linear-power scan reads factors through the
+SHARED `%mr_product_factors` — which treats a `/` node as one opaque
+factor. In this build `(3*x+2)^-8` stores as the `/` node
+`1/(3*x+2)^8` (MEASURED: op = "/"), so the negative-power factor is
+invisible; the scan finds no linear power and falls to plain `expand(u)`
+— the denominator (3*x+2)^8 expands to the 9-term P8 and the six
+monomial terms each hit the 1.4.2_r24 / 1.3.3_r4 re-dispatch -> loop
+guard -> native integrate, ~5 s x 6 ~= 32 s. (Rubi's own
+TrinomialParts accepts P8 — it only checks the top two and the middle
+coefficient — so the r24 match is faithful, not a port bug.)
+
+FIRST ATTEMPT (rejected): five edits incl. three to SHARED helpers
+(%mr_product_factors, %mr_term_xexp/%mr_term_coeff, %mr_coeff3). Fixed
+e1276 (DIFF = 0, 6.8 s) but regressed the broad canary 85/35 -> 84/36:
+1.1.2.3 e294 PASS:verified -> FAIL:unverified; 1.2.2.8 e2
+PASS:no-answer -> FAIL:error (`Control stack exhausted`, infinite
+recursion); plus three fail-kind timeout -> unverified. Reverted
+`git checkout` and reworked confined to the ExpandIntegrand-local
+functions.
+
+FINAL FIX (all maxima_rubi_utils.mac, all local to the ExpandIntegrand
+path):
+ 1. New `%mr_ei_factors` — like %mr_product_factors but a `/` node splits
+    into numerator factors + each denominator factor as a reciprocal;
+    used ONLY by the %mr_ei_linear_power scan (%mr_product_factors and
+    its other consumers are untouched).
+ 2. `%mr_ei_linear_power_at` "power" mode also reads a reciprocal
+    quotient 1/(a+b*x)^m (num = 1, den a `^` node, m a positive integer,
+    base linear); the rest-must-be-polynomial gate is unchanged.
+ 3. `%mr_expandLinearProduct` reads the shifted form through
+    `r : rat(w)` and scales each coefficient by 1/den
+    (`den : expand(denom(r))`, `L : %mr_coefficientList(expand(num(r)), x)`)
+    — the .m CoefficientList[Expand[w], x] reading, which KEEPS the
+    constant (x-free) denominator. The old `num(rat(w))` read dropped
+    it: measured 243x answer error on e1276 (ratsimp DIFF numerator
+    exactly 242 * the integrand numerator).
+
+TWO STORAGE TRAPS measured while landing fix 3:
+ - `together` is a NOUN in this build (op(together(x/2+x/3)) = 'together,
+   with no preload) — `rat` is the combining step.
+ - `denom(rat(…))` returns a gcrat object: `is(d = 243)` is true yet
+   dividing by `d` (vs the literal 243) makes Maxima run the rat
+   simplifier and EXPAND (3*x+2)^k to its polynomial, silently
+   re-creating the P8-denominator form the fix exists to avoid;
+   `expand(denom(r))` reifies the plain number.
+
+BONUS (latent bug fixed by fix 3): 1.2.1.2 r20 calls
+%mr_expandLinearProduct directly (v = (b/2+c*x)^(2*p), u = (d+e*x)^m,
+a = b/2, b = c) under b^2-4ac = 0 / m-2p+1 = 0 / !integerp(p) — with
+the quadratic = (b/2+c*x)^2/c the shifted form carries a constant c^m
+denominator the old read dropped. Unit check (a = 1/2, b = 2, c = 2,
+d = 1, e = 1, p = 3/2, m = 2, T := (d+e*x)^m*(b/2+c*x)^(2*p)): the new
+read gives ratsimp(ELP - T) = 0, while the old read (same L, no /den)
+gives ratsimp(ELP_old - 4*T) = 0 — off by exactly c^m. So any r20 fire
+with c ≠ 1 previously produced an answer whose derivative is c^m times
+the integrand; it is now Rubi-faithful. (The full-rubi DIFF = 0 probe on
+that integrand ran through 1.2.1.6_r1's cascade, not r20 — rule order
+reaches r20 only where earlier rules decline.) No broad-canary target
+changed kind, so no corpus target's classification moved.
+
+VALIDATION (Maxima 5.50.0 / SBCL 2.6.7):
+ - 1.1.1.3 e1276: ratsimp(diff(F,x)-f) = 0 (answer = 6-term
+   c/(3*x+2)^k sum); canary PASS:expected t=9.8 s (was FAIL:timeout).
+ - e2 (1.2.2.8): PASS:no-answer t=7.5 s — baseline restored (no stack
+   overflow, no timeout); e294 (1.1.2.3): PASS:verified t=6.1 s —
+   baseline restored.
+ - Broad canary (120 targets, --parallel 8): 85/35 -> 86/34, ZERO
+   PASS->FAIL; the ONLY classification change is e1276
+   FAIL:timeout -> PASS:expected; zero fail-kind changes elsewhere.
+   `test/canary.broad.out` regenerated.
+ - Layer A: 511/0, per-test lines byte-identical to baseline.
+
 ## Minor findings (triage at final whole-branch review)
 
 - [Task 6] probes/load_wall/probe-load-wall.out part 5: the echoed
