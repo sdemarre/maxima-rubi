@@ -1509,3 +1509,23 @@ finding of the OrderedQ work item). Fix = custom matcher for the
 m/(Sqrt Sqrt Sqrt) shape and the sibling permutation rules
 (r20/r21/r22/r24/r27/r34); scoping deferred to the clean full
 run's failure count on this pattern family.
+
+WORK ITEM: 1.1.1.4 e99 diagnosed — Group-2 sqrt(linear/linear) open
+family (post-run batch triage)
+2026-08-25, 5.50.0/SBCL. e99 = (a+b x)^(1/2)*sqrt(c+d x)/(sqrt(e+f
+x)*sqrt(g+h x)); canary: FAIL contains-noun. Trace (rubi_verbose):
+fires 1_1_1_4 r30 (the elliptic-Subst .m:28 rule — the right rule),
+then r25/r36/r33 on cascade sub-integrals; the answer = elliptic_e +
+elliptic_f terms + a residue term subscript(unintegrable, ...) whose
+content is a sqrt(linear/linear) product — the SAME shape family as
+the 1.1.1.7 Group-2 P-shapes (P6/P8/P11/P13/P21/P22/P31/P32/P33):
+the 1.2.x cascade reduces the Subst integrand
+1/((h-b x^2)*sqrt(1+c x^2)*sqrt(1+d x^2)) down to a
+sqrt(linear/linear) product for which NO class-1 rule exists in the
+current table. Numeric sanity (e99z8 probe): the residue is a
+genuine nonzero sub-integral (W1 = 3.85e-44 * 'unintegrable[...]'
+term — the diff does not close because of it). Family-level triage
+(which 1.2.x rule emits the sqrt(linear/linear) form, and which .m
+rule owns it — candidates 1.1.3.3 / 1.1.1.2) deferred to the
+post-full-run batch; e99 joins that family's ticket, it is not a
+standalone bug.
