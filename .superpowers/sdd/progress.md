@@ -1697,6 +1697,37 @@ BASELINE, with 1.1.1.4 e1 FAIL->PASS (deferred->verified, the only
 improvement) and 1.1.1.4 e135 verified->unverified (the known
 artifact: answer numerically correct V1 -1.18e-16, zero chain no
 longer closes the different radical form). 1.1.1.4 driver 6/6
-verified; 1.1.1.5 3/4 (e4 deferred); 1.1.1.6 4/4. Full run at
-20747/25697 when this entry was written (mixed-state caveat #2
-still applies — final clean re-run remains planned).
+verified; 1.1.1.5 3/4 (e4 deferred); 1.1.1.6 4/4. Committed 93e3fa0.
+
+CONTINUATION (2026-08-26, committed 98b8036): the first 12-shard
+full run COMPLETED 25697/25697 (mixed-state — 9f5ccef landed
+mid-run; numbers below are directional, not acceptance): pass
+14282/25697 (55.6%), by class verified 14220 / deferred 10488 /
+timeout 461 / unverified 340 / contains-noun 109 / expected 34 /
+no-answer 28 / error 14 / unexpected 3; T3 baseline was 12,798
+verified+expected, so uplift ~ +1,456. Top failing families
+(mixed-state): 1.2.1 Quadratic 3575, 1.1.3 General 2577, 1.1.1
+Linear 1508, 1.1.2 Quadratic 1266, 1.2.2 Quartic 643, 1.2.3 General
+689, 1.3.2 590. UNVERIFIED triage (correctness): sampled entries
+are mostly zero-chain artifacts (1.1.1.3 e799 V1 2.2e-15, 1.1.3.2
+e826 V1 -2.2e-15 — answers numerically correct, chain doesn't close
+the elliptic/atanh form); 1.1.1.7 e1 (the earlier regression)
+VERIFIED again in the driver (25.2 s) once the 1.1.1.7 hybrid was
+reverted — it was the hybrid's, not a pre-existing, fault. 1.3.2
+e151 class (x^2 (a+b x)^n (c+d x^3), n symbolic) = genuine pinned-
+Rubi-4 rule-set gap (no rule covers linear-free-n times cubic-free-p;
+the corpus's expected answer predates the pin — same class as the e5
+gap). NEW BUG FIXED along the way: the walker classifies ANY
+(A+B x^n)^E as an L entry (needed for 1.1.3 free-n), so a cubic
+(0.5+0.9 x^3) came back [0.5,0.9,3,1] and would fill a linear
+phase-1 slot on an E match (wrong-integrand risk); the fallback pool
+loop now tracks linok and declines on the first n # 1 L factor.
+ALSO: 1.1.1.5 e4 (cubic P / sqrt, P in rest) triaged = legit .m
+cond declination (rule-set gap, defmatch matched clean); 4 hung
+Maxima probes from prior sessions (4-34 h elapsed, timeout wrappers
+defeated) were found eating CPU and killed. FIRST full2 re-run on
+93e3fa0 was killed at ~1.5 h when the linok regeneration made it
+mixed-state again; DEFINITIVE full2 relaunched 2026-08-26 05:00 UTC
+on 98b8036 (12 shards, /tmp/opencode/full2/), ETA ~7 h. Gates at
+98b8036: Layer A 511/0; canary 71/49 = baseline + 1.1.1.4 e1
+FAIL->PASS (same single e135 artifact as before).
