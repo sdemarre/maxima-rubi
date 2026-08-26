@@ -457,11 +457,32 @@ def file_list():
 
 def main():
     all_files = file_list()
+    bounds = None
     if SHARD_FILE:
-        idxs = sorted(int(t) for t in open(SHARD_FILE) if t.strip())
-        assert all(0 <= i < len(all_files) for i in idxs), \
+        # Each line is a whole file ("idx") or a chunk of one file
+        # ("idx skip per" -> process entries skip..skip+per-1). Chunks let a
+        # shard hold a slice of a big file together with whole files, which
+        # is what cost-aware balancing needs (the plain start/stop range can
+        # only cap the FIRST file).
+        specs = []
+        for ln in open(SHARD_FILE):
+            ln = ln.strip()
+            if not ln:
+                continue
+            parts = ln.split()
+            idx = int(parts[0])
+            if len(parts) == 1:
+                specs.append((idx, 0, None))
+            elif len(parts) == 3:
+                skip = int(parts[1])
+                specs.append((idx, skip, skip + int(parts[2])))
+            else:
+                raise SystemExit(f"bad shard file line: {ln!r}")
+        specs.sort(key=lambda t: t[0])
+        assert all(0 <= i < len(all_files) for i, _lo, _hi in specs), \
             "shard file index out of range"
-        files = [all_files[i] for i in idxs]
+        files = [all_files[i] for i, _lo, _hi in specs]
+        bounds = [(lo, hi) for _i, lo, hi in specs]
     else:
         files = all_files[START_INDEX:STOP_INDEX]
 
@@ -500,8 +521,12 @@ def main():
         except (AssertionError, UnicodeDecodeError, IndexError):
             out_lines.append(f"SKIP-BADFILE {rel}")
             continue
-        lo = SKIP_FIRST if fi == 0 else 0
-        hi = min(lo + PER_FILE, len(entries))
+        if bounds is not None:
+            lo, hi = bounds[fi]
+            hi = len(entries) if hi is None else min(hi, len(entries))
+        else:
+            lo = SKIP_FIRST if fi == 0 else 0
+            hi = min(lo + PER_FILE, len(entries))
         for idx in range(lo, hi):
             els = split_elements(entries[idx][1:-1])
             label = f"{rel} e{idx + 1} L{line_nos[idx]}"

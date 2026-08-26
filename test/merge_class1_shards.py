@@ -90,7 +90,7 @@ for k, cls, line in seen:
     cls_of[k] = cls
 
 out_lines = [
-    "=== maxima-rubi class-1 corpus run (full, 18 shards merged) ===",
+    f"=== maxima-rubi class-1 corpus run (full, {len(inputs)} shards merged) ===",
     f"merge date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
 ]
 r = subprocess.run(
@@ -102,7 +102,7 @@ for line in r.stdout.splitlines():
     if line.startswith(("Maxima", "Lisp ", "Host ")):
         out_lines.append(f"maxima: {line}")
 out_lines.append(f"filter: {SECTION + '/'!r}  full run  timeout: 30s  "
-                 f"(18 shards, merged here)")
+                 f"({len(inputs)} shards, merged here)")
 out_lines.append("")
 
 for rel in sorted(counts):
