@@ -23,8 +23,13 @@ DRIVER = os.path.join("test", "corpus_class1_driver.py")
 SECTION = "1 Algebraic functions"
 OUT = os.path.join("test", "corpus_class1.out")
 RESULT = re.compile(r"^(\S+)\s+t=\s*([\d.]+)s\s+(.*) e(\d+) L(\d+)$")
+# Keep in sync with corpus_class1_driver.py (guarded by
+# test/test_merge_classes.py): the driver gained `deferred` (ddc88ef) and
+# `contains-noun` (2a0ff92) after this merge was written; both are FAIL
+# classes, as there.
 KNOWN_CLASSES = {"expected", "verified", "unverified",
-                 "no-answer", "unexpected", "error", "timeout"}
+                 "no-answer", "unexpected", "error", "timeout",
+                 "deferred", "contains-noun"}
 PASS_CLASSES = {"expected", "verified", "no-answer"}
 
 sys.argv = ["corpus_class1_driver.py", SECTION + "/", "999999", "30"]
