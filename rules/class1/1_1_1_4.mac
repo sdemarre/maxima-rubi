@@ -92,11 +92,16 @@ _mr_rule_1_1_1_4_r1(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -195,11 +200,16 @@ _mr_rule_1_1_1_4_r2(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -298,11 +308,16 @@ _mr_rule_1_1_1_4_r3(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -401,11 +416,16 @@ _mr_rule_1_1_1_4_r4(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -504,11 +524,16 @@ _mr_rule_1_1_1_4_r5(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -607,11 +632,16 @@ _mr_rule_1_1_1_4_r6(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -712,11 +742,16 @@ _mr_rule_1_1_1_4_r7(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -817,11 +852,16 @@ _mr_rule_1_1_1_4_r8(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -922,11 +962,16 @@ _mr_rule_1_1_1_4_r9(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -1027,11 +1072,16 @@ _mr_rule_1_1_1_4_r10(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -1132,11 +1182,16 @@ _mr_rule_1_1_1_4_r11(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -1237,11 +1292,16 @@ _mr_rule_1_1_1_4_r12(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -1342,11 +1402,16 @@ _mr_rule_1_1_1_4_r13(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -1447,11 +1512,16 @@ _mr_rule_1_1_1_4_r14(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -1550,11 +1620,16 @@ _mr_rule_1_1_1_4_r15(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -1676,11 +1751,16 @@ _mr_rule_1_1_1_4_r17(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -1803,11 +1883,16 @@ _mr_rule_1_1_1_4_r19(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -1904,11 +1989,16 @@ _mr_rule_1_1_1_4_r20(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -2005,11 +2095,16 @@ _mr_rule_1_1_1_4_r21(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -2106,11 +2201,16 @@ _mr_rule_1_1_1_4_r22(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -2229,11 +2329,16 @@ _mr_rule_1_1_1_4_r24(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -2674,11 +2779,16 @@ _mr_rule_1_1_1_4_r40(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -2781,11 +2891,16 @@ _mr_rule_1_1_1_4_r41(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -2888,11 +3003,16 @@ _mr_rule_1_1_1_4_r42(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then
@@ -2997,11 +3117,16 @@ _mr_rule_1_1_1_4_r43(f, x) := block([mm, ok, d, pool, r0, i],
     d : %mr_binpowfactors(f, x),
     if is(d = false) then return(false),
     if is(part(d, 1) # 1) then return(false),
+    linok : true,
     pool : [],
-    for i : 1 thru length(part(d, 4)) do
-      pool : append(pool, [["L", part(part(part(d, 4), i), 1),
-        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
-        part(part(part(d, 4), i), 4)]]),
+    for i : 1 thru length(part(d, 4)) do (
+      if is(part(part(part(d, 4), i), 3) = 1) then
+        pool : append(pool, [["L", part(part(part(d, 4), i), 1),
+          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),
+          part(part(part(d, 4), i), 4)]])
+      else linok : false
+    ),
+    if is(linok = false) then return(false),
     if is(part(d, 3) = 1) = false then
       pool : append(pool, [["R", part(d, 3)]]),
     if is(part(d, 2) = false) = false then

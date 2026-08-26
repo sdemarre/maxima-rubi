@@ -1681,11 +1681,22 @@ def _slot_rule_lines(key, n, rule_vars):
         f"    d : %mr_binpowfactors(f, x),",
         f"    if is(d = false) then return(false),",
         f"    if is(part(d, 1) # 1) then return(false),",
+        # LINEAR-ONLY GUARD (2026-08-26, 1.3.2 e151 class): the walker
+        # classifies ANY (A+B x^n)^E as a binpow L entry — the n=3
+        # cubic (0.5+0.9 x^3) came back [0.5, 0.9, 3, 1]. Every
+        # phase-1 slot family is linear (n=1), so an n # 1 L factor
+        # must decline the fallback instead of filling a linear slot
+        # (E-matching would misbind and integrate the wrong integrand).
+        f"    linok : true,",
         f"    pool : [],",
-        f"    for i : 1 thru length(part(d, 4)) do",
-        f"      pool : append(pool, [[\"L\", part(part(part(d, 4), i), 1),",
-        f"        part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),",
-        f"        part(part(part(d, 4), i), 4)]]),",
+        f"    for i : 1 thru length(part(d, 4)) do (",
+        f"      if is(part(part(part(d, 4), i), 3) = 1) then",
+        f"        pool : append(pool, [[\"L\", part(part(part(d, 4), i), 1),",
+        f"          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),",
+        f"          part(part(part(d, 4), i), 4)]])",
+        f"      else linok : false",
+        f"    ),",
+        f"    if is(linok = false) then return(false),",
         f"    if is(part(d, 3) = 1) = false then",
         f"      pool : append(pool, [[\"R\", part(d, 3)]]),",
         f"    if is(part(d, 2) = false) = false then",
