@@ -61,6 +61,21 @@ SUITE = os.path.join(ROOT, "reference", "maxima-syntax-test-suite")
 SECTION = "1 Algebraic functions"
 PRELOAD = os.path.join("test", "mr_preload.mac")
 
+# Option D (2026-08-26): the rules core — a saved Maxima image carrying the
+# full loaded class-1 rule table, so each integral's subprocess starts from
+# the image instead of re-running load + mr_load_class1_all (~6.2 s warm /
+# ~9.4 s cold — measured probes/image/probe-rule-image.out, where the whole
+# 25k run's 69.2 CPU-h was ~67 h of exactly this load). Built by
+# test/build_rules_core.sh; the fingerprint sidecar must match the current
+# rule files or the core is STALE (it bakes the rules in — using it after a
+# rule edit without a rebuild would silently run the pre-edit rules).
+# MR_RULES_CORE=0 forces the standard load path (A/B baseline).
+RULES_CORE = os.path.join(ROOT, "test", "mr_rules.core")
+RULES_CORE_STAMP = os.path.join(ROOT, "test", "mr_rules.core.stamp")
+SBCL = os.environ.get("MR_SBCL") or subprocess.run(
+    ["sh", "-c", "command -v sbcl"], capture_output=True, text=True
+).stdout.strip() or None
+
 FILTER = sys.argv[1] if len(sys.argv) > 1 else SECTION + "/"
 PER_FILE = int(sys.argv[2]) if len(sys.argv) > 2 else 5
 TIMEOUT = int(sys.argv[3]) if len(sys.argv) > 3 else 30
@@ -78,6 +93,71 @@ KNOWN_CLASSES = {
 }
 PASS_CLASSES = {"expected", "verified", "no-answer"}
 
+
+def _core_fingerprint():
+    """md5 over exactly the files test/build_rules_core.sh bakes into the
+    image (loader + utils + dispatch lisp + every class-1 rule file)."""
+    import glob
+    import hashlib
+    # Canonical order: sorted RELATIVE paths (must match
+    # test/build_rules_core.sh exactly — an order difference makes every
+    # freshly built core look stale, measured 2026-08-26).
+    rels = sorted(["maxima_rubi.mac", "maxima_rubi_utils.mac",
+                   "maxima_rubi_dispatch.lisp"] +
+                  [os.path.relpath(p, ROOT) for p in
+                   glob.glob(os.path.join(ROOT, "rules", "class1", "*.mac"))])
+    h = hashlib.md5()
+    for rel in rels:
+        with open(os.path.join(ROOT, rel), "rb") as fh:
+            h.update(fh.read())
+    return h.hexdigest()
+
+
+def rules_core_state():
+    """'off' | 'on' | 'stale' | 'missing' for the core vs current rules."""
+    if os.environ.get("MR_RULES_CORE", "1") == "0":
+        return "off"
+    if not (os.path.exists(RULES_CORE) and os.path.exists(RULES_CORE_STAMP)):
+        return "missing"
+    fp = None
+    with open(RULES_CORE_STAMP, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("fingerprint "):
+                fp = line.split()[1]
+    if fp is None:
+        return "stale"
+    return "on" if fp == _core_fingerprint() else "stale"
+
+
+def ensure_rules_core():
+    """Make the rules core available; True iff the core path will be used.
+    Builds (single-flight via a flock) when missing or stale; a failed build
+    falls back to the standard load path rather than blocking the run."""
+    st = rules_core_state()
+    if st == "on":
+        return True
+    if st == "off" or SBCL is None:
+        return False
+    import fcntl
+    lock = open(RULES_CORE + ".lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if rules_core_state() == "on":  # built while we waited
+            return True
+        r = subprocess.run(
+            ["sh", os.path.join(ROOT, "test", "build_rules_core.sh")],
+            capture_output=True, text=True, timeout=300, cwd=ROOT)
+        if r.returncode != 0:
+            sys.stderr.write("rules-core build failed; using standard load:\n"
+                             + r.stdout[-800:] + r.stderr[-800:])
+            return False
+        return rules_core_state() == "on"
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+USE_RULES_CORE = ensure_rules_core()
+
 workdir = tempfile.mkdtemp(prefix="maxima-rubi-corpus-")
 mac_file = os.path.join(workdir, "i.mac")
 
@@ -89,9 +169,24 @@ def maxima_run(mac_text, timeout):
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(mac_text)
+        if USE_RULES_CORE:
+            # Option D: start from the rules image (rules + batch_answers_
+            # from_file baked in — no -p preload). The image's SAVED
+            # toplevel is cl-user::run (set at build time), so no --eval is
+            # needed; the bare maxima options after the sbcl options become
+            # the toplevel args the image's arg parser reads, giving a clean
+            # arg context (the stock-wrapper form with --eval/--end-
+            # toplevel-options leaks sbcl meta-args into maxima's parser and
+            # prints "Warning: argument ... not recognized" — measured
+            # 2026-08-26, this minimal form is byte-clean). --tls-limit is
+            # TWO argv tokens for sbcl (one quoted token for maxima -X).
+            cmd = [SBCL, "--tls-limit", "100000", "--core", RULES_CORE,
+                   "--noinform", "--very-quiet", "-b", fpath]
+        else:
+            cmd = ["maxima", "--very-quiet", "-X", "--tls-limit 100000",
+                   "-p", PRELOAD, "-b", fpath]
         r = subprocess.run(
-            ["maxima", "--very-quiet", "-X", "--tls-limit 100000",
-             "-p", PRELOAD, "-b", fpath],
+            cmd,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, timeout=timeout, cwd=ROOT,
         )
