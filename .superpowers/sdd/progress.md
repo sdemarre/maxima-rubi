@@ -1731,3 +1731,90 @@ mixed-state again; DEFINITIVE full2 relaunched 2026-08-26 05:00 UTC
 on 98b8036 (12 shards, /tmp/opencode/full2/), ETA ~7 h. Gates at
 98b8036: Layer A 511/0; canary 71/49 = baseline + 1.1.1.4 e1
 FAIL->PASS (same single e135 artifact as before).
+
+## Work item: option-D rules core + cost-aware 24-shard planner + final clean full run (2026-08-26, committed 3ff58bd + 85b7585)
+
+RUN 3 COMPLETED (correction to the relaunch note above: the definitive
+full2 used the committed planner's N_SHARDS = 18 — the "(12 shards)" was
+stale text carried from the first full2 attempt): 18 count-balanced
+shards, 2026-08-26 05:00 -> 18:12:09 UTC, 13.2 h wall (the ~7 h ETA was
+for balanced shards; count balancing on the load-bound run left a ~2.1x
+spread). Merged 25697/25697 rc=0 (test/full_run3_merge.out):
+Results 16103 passed / 9594 failed — verified 16041 / expected 34 /
+no-answer 28 PASS; deferred 8671 / timeout 438 / unverified 359 /
+contains-noun 111 / error 12 / unexpected 3 FAIL. Entry-time total
+249,000 s (avg 9.69 s/entry; ~6.2 s of it the per-entry rule load — one
+fresh maxima process per entry, so EVERY entry paid the full load).
+Both attack costs (load tax + imbalance) motivated the harness rework
+below; both commits are test-only (test/ + .gitignore + probes/ — zero
+package code), so the package under test is unchanged from 98b8036.
+
+Option D (3ff58bd) — preloaded rules image:
+- test/build_rules_core.sh: loads package + all 72 class-1 files (3026
+  rules) under --tls-limit 100000, resets maxima::*maxima-started*
+  (a missing reset prints a spurious "Maxima restarted." on every
+  restore — measured), saves with :toplevel cl-user::run (mechanism per
+  the installed core, maxima-build.lisp:24) + a fingerprint sidecar
+  (md5 over maxima_rubi.mac / maxima_rubi_utils.mac /
+  maxima_rubi_dispatch.lisp / rules/class1/*.mac, C-locale-sorted
+  relative paths; clean-tree value
+  5998e8712f69f016a2baa67efc0c546c). Core 153,841,824 B; build ~8 s.
+- Driver (USE_RULES_CORE): state off|on|stale|missing; stale ->
+  auto-rebuild (flock single-flight); fallback to the standard load on
+  build failure; MR_RULES_CORE=0 escape hatch. Clean launch form
+  (MEASURED): `sbcl --tls-limit 100000 --core <core> --noinform
+  --very-quiet -b <file>` — NO --eval: the image's saved toplevel IS
+  cl-user::run, and the stock wrapper form leaks sbcl meta-args into
+  maxima's arg parser (spurious "argument eval not recognized").
+  Restore 0.03 s; driver entry via core 0.02 s (vs ~6.2 s load).
+- probes/image/probe-rule-image.run (+.out) -> VERDICT OK
+  (TABLE_AT_BUILD/RESTORE 3026; rubi(x^3,x) = x^4/4; rubi(1/x,x) =
+  log(x)). Staleness guard exercised end-to-end: mutate a rule file ->
+  stale -> auto-rebuild 8.2 s -> on, byte-identical restore.
+
+Cost-aware planner (85b7585):
+- test/launch_class1_shards.py: N_PROCS = MR_N_PROCS or os.cpu_count()
+  (24); per-entry cost from run 3's merged .out (entry_cost =
+  max(t - 6.2, 0.05), 3.5 s fallback when no measurement); files over
+  the per-proc target split into contiguous chunks; LPT packs chunks +
+  whole files (one chunk per proc). Plan: 24 jobs, balance spread 1.03x
+  (count balancing was ~2.1x), max job estimate 3847 s, total estimate
+  89,652 s; coverage-verified (all 25,697 keys, 0 dupes/missing/extra).
+- Driver: the shard file now accepts `idx skip per` chunk lines
+  (backward-compatible with bare `idx`). Merge script: shard count
+  from the .files glob (was hardcoded 18). wait_and_merge.sh /
+  status_logger.sh path-portable + shard-count-generic.
+- PARITY GATE (120-target broad canary, core vs standard, --parallel):
+  ZERO classification diffs (71 verified / 43 deferred / 4
+  contains-noun / 1 unverified / 1 timeout; ~10x faster on core).
+  Pre-existing flaky note: 1.2.1.6 e77 (prompt-heavy) fails IDENTICALLY
+  on both paths — the cascade exhausts the queued pos/no answers ->
+  RETRIEVE EOF, no CLASS line. Not D-specific; named, not fixed.
+
+FINAL RUN (rules core, 24 procs, cost-balanced; 20:24 -> 21:11 UTC,
+46 min wall vs run 3's 13.2 h): 25697/25697 merged OK
+(test/full_core_merge.out, rc=0). Results 16103 passed / 9594 failed.
+Category delta vs run 3: timeout 438 -> 433, unverified 359 -> 362,
+error 12 -> 14; the other SIX classes IDENTICAL (verified 16041 =
+16041). Reading: with the 6.2 s load out of each entry's 30 s budget,
+5 borderline timeouts finish (3 unverified, 2 error) — no semantic
+movement anywhere. Entry-time total 45,275 s (avg 1.76 s) = 5.5x run 3;
+wall 17x. Heaviest shard 2752 s wall vs the 3847 s estimate (model
+conservative, as intended).
+
+ERROR SET CHURN (12 -> 14): stable 8 = 1.1.1.2 e1723, 1.1.3.4
+e156/e164/e172, 1.2.1.2 e2530/e2537/e2538, 1.2.2.3 e111; gone from run
+3 = 1.2.1.2 e2531/e2544, 1.3.2 e870/e871; new = 1.1.1.2 e1700/e1702/
+e1712, 1.2.1.2 e1163/e1165/e2545. Maxima lisp errors in deep
+evaluation, partially timing-sensitive (not rule mismatches) — the
+triage list is the 14 above.
+
+Build quirk (measured, recorded nowhere else): string + concatenation
+is a NOUN in this build ("A "+"B" -> B + A); only concat() works (the
+driver / package already use concat).
+
+GATES: Layer A 511/0 (re-measured on 85b7585); canary parity zero-diff;
+merge completeness OK. Acceptance record: docs/corpus-baseline-uplift.md.
+Run artifacts (test/corpus_class1.shard*, pids, run_status.log) remain
+untracked/disposable; the merged record (test/corpus_class1.out) and
+its transcript (test/full_core_merge.out) are committed.
