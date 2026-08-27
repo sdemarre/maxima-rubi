@@ -24,7 +24,9 @@ e-index)`; run-5 line regex
 
 - `issues/01-slow-zero-chain-forms.md` — 9 verified->timeout: correct
   answers whose zero chain runs 25-35 s solo, over the 30 s per-entry
-  budget under 24-way load.
+  budget under 24-way load. (2026-08-27: all 9 recovered `verified`
+  at the 300 s re-check cap — see its Comments; the remainder is a
+  budget-policy decision.)
 - `issues/02-matcher-state-91-pattern-load.md` — 7 verified->timeout/
   deferred: the section-9.1 PATTERN LOAD perturbs the installed Maxima's
   compiled matcher on specific family chains; Maxima-boundary,
@@ -38,3 +40,10 @@ e-index)`; run-5 line regex
   Maxima matcher (the lever on the 4,361 `deferred` entries, 73% of
   the failures). Findings land in
   `docs/matcher-backtracking-feasibility.md` + `probes/matcher/`.
+- `issues/05-timeout-rerun-death-signatures.md` — from the 300 s
+  timeout re-check (2026-08-27): all 47 `error` entries of the re-check
+  censused — 38 heap-exhausted at the SBCL 1 GB default cap, 6
+  control-stack (clustered near the ticket-02 region), 3
+  verify-integrate-fatal (a driver zero-chain bug with a proposed fix).
+  Re-check record: `test/corpus_class1.timeout5m.out` +
+  `test/timeout_rerun_merge.out`.

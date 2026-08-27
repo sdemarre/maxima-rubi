@@ -47,3 +47,17 @@ run-5 form closed in time; under 24-way load that crosses the driver's
 
 All 9 entries `verified` in a full run at the current budget, with the
 canary broad (120) and Layer A (511) unchanged.
+
+## Comments
+
+2026-08-27 — 300 s timeout re-check (record test/corpus_class1.timeout5m.out):
+ALL 9 entries RECOVER to `verified` at the 300 s cap, measured at 24-way
+load: 1.1.4.3 e228 40.3 s; 1.2.1.3 e1979 71.4 s; 1.2.1.4 e686 49.1 s /
+e687 53.0 s; 1.2.1.5 e59 52.8 s / e66 54.3 s / e73 51.8 s; 1.2.1.9 e308
+44.2 s; 1.2.2.3 e149 31.3 s. Direction 2 (per-entry budget policy) is
+therefore sufficient for this set — the answers were always correct and
+the zero chains always close, at 31-71 s under load. Cost of a blanket
+300 s cap for the WHOLE corpus: the 555 genuine non-terminators of the
+re-check would each burn the full cap (555 x 300 s / 24 procs ~= 9.2 h
+of the 82-min typical run) — a class-conditional or per-entry budget is
+the sane form if this direction is taken.

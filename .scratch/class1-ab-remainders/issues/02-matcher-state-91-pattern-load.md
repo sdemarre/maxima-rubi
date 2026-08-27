@@ -80,3 +80,16 @@ result changes. Not reachable from Maxima-level rule code.
 
 All 7 entries `verified` in a full run; canary broad (120) and Layer A
 (511) unchanged.
+
+## Comments
+
+2026-08-27 — 300 s timeout re-check (record test/corpus_class1.timeout5m.out):
+the 6 entries in this ticket that were `timeout`-class in the accepted run
+CONFIRMED structural — none recovered under the 300 s cap: 1.2.1.2 e2514
+deferred t=44.4 s; e2567 deferred t=127.3 s; e2568 deferred t=126.9 s;
+e2569 deferred t=121.7 s; e2572 timeout t=300.1 s; e2573 timeout t=300.1 s.
+In run-5 all six were `verified` at 4.5-7.1 s. The lost r134+r9 chain
+costs these entries either a 44-127 s wild cascade ending in a top-level
+no-answer noun, or non-termination outright — budget is not the variable.
+(The 7th entry, 1.2.2.4 e223, was `deferred`-class in the accepted run and
+was not in the re-check set.)

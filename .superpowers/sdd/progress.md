@@ -2110,3 +2110,70 @@ Remainder tickets (per-entry details, mechanisms, directions):
 forms (9), issues/02 matcher-state 9.1 pattern load (7, Maxima
 boundary, mailing-list repro), issues/03 corpus Unintegrable now
 integrated (3, numerically verified).
+
+## Work item: 300 s timeout re-check — the 787 accepted-run timeouts (2026-08-27)
+
+Re-ran EXACTLY the 787 entries the accepted A+B run (45fc9b8, core
+f1f0611f) classified `timeout` at a 300 s per-entry cap (24 shards,
+same core, 14:13-16:47 UTC; test/merge_timeout_rerun.py +
+test/wait_timeout_rerun.sh, commit 8de89bf; record test/
+corpus_class1.timeout5m.out + test/timeout_rerun_merge.out; 787/787
+complete, no dupes/missing/extra).
+
+Transitions (all were `timeout` at 30 s):
+  - 90 now-PASS (88 verified + 2 expected), 11.4%;
+  - 555 still timeout at 300 s, 70.5% — GENUINE non-terminators,
+    not budget starvation (the 300 s cap barely shrinks the class);
+  - 88 unverified (an answer was found; the zero chain did not close
+    in budget — the second lever is the verification chain, not the
+    rule set);
+  - 47 error (subprocess deaths — full census below);
+  - 5 deferred, 2 contains-noun.
+Cross vs run-5 on the same 787 (only 15 were PASS in run-5):
+  - ALL 9 ticket-01 slow-correct forms RECOVER to verified at
+    31-71 s under 24-way load (300 s is a sufficient budget for them;
+    1.1.4.3 e228 40.3 s; 1.2.1.3 e1979 71.4 s; 1.2.1.4 e686/e687
+    49.1/53.0 s; 1.2.1.5 e59/e66/e73 51.8-54.3 s; 1.2.1.9 e308
+    44.2 s; 1.2.2.3 e149 31.3 s);
+  - ALL 6 ticket-02 matcher-state entries (1.2.1.2 e2514/e2567/
+    e2568/e2569/e2572/e2573) still FAIL: 4 deferred after 44-127 s
+    of wild cascade, 2 (e2572/e2573) non-terminating at 300 s.
+    Budget does not touch them — structural (the lost r134+r9 chain),
+    confirming the ticket-02 reading.
+Still-timeout hotspots (555, by family): 1.2.1.2 (85), 1.1.2.4 (75),
+1.2.1.3 (67), 1.1.3.8 (42), 1.2.2.2 (41), 1.1.1.3 (30), 1.1.3.2
+(30), 1.1.1.2 (29), 1.1.2.2 (24) — the input set for the ticket-04
+question-3 stratified sample (probes/matcher/).
+
+ERROR CENSUS (all 47 re-run individually with full capture, 8-way
+parallel; captures /tmp/opencode/timeout_recheck/errtriage/, per-
+entry table in ticket 05):
+  - 38 heap-exhausted: "Heap exhausted during garbage collection"
+    -> "fatal error encountered in SBCL ... game over". Per-process
+    OOM at the SBCL DEFAULT 1 GB dynamic-space cap (the core is built
+    without --dynamic-space-size; the GC dump at death shows
+    dynamic_space_size = 1073741824; the box had 53 GB free, no
+    OOM-killer in dmesg). A candidate's ratsimp/factor working set
+    holds >1 GB of live data. The knob exists (raise the cap; budget
+    24 procs x N GB of 62 GB); probe = ticket 05.
+  - 6 control-stack: "Control stack exhausted (no more space for
+    function call frames)" after "Control stack guard page
+    temporarily disabled: proceed with caution" — recursion depth,
+    deep and fast (deaths at 4.4-13.8 s). They cluster near the
+    ticket-02 1.2.1.2 matcher-state region (e2521/e2531/e2540/e2545)
+    and 1.1.1.2 (e1702/e1712) — a possible interaction with the lost
+    chain (a lost rule chain leaves the cascade recursing where the
+    .m pipeline would have stopped); to check against a no-9.1 core
+    (ticket 05).
+  - 3 verify-integrate-fatal: a HARNESS bug, not a matcher one — the
+    numeric zero-chain stage ev(diff, x=0.35) substitutes 0.35 into
+    the variable slot of an INTERIOR integrate(g, x) term of the
+    answer -> "integrate: variable must not be a number; found:
+    0.35". The first occurrence is caught by errcatch (message
+    printed, chain continues); the second is uncatchable in this
+    build and kills the batch before the CLASS line. 1.1.3.8
+    e517/e521, 1.2.1.2 e683. The driver already guards the DIFF
+    analog (materialize MR_de once — driver comment at
+    test/corpus_class1_driver.py:270); the integrate-term analog is
+    unguarded. Fix = zero_chain guard (skip the numeric stage when
+    the answer carries an interior integrate(., x) term); ticket 05.
