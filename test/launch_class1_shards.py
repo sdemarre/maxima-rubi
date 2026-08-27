@@ -118,9 +118,29 @@ if using_measured:
     # one chunk (as its annotated first file) plus whole files, filling it
     # toward the target.
     units = []  # (cost, kind, payload)
+    # A process holds at most ONE chunk, so the heavy-file chunk count must
+    # not exceed N_PROCS. Cost concentrated in a few heavy files (the
+    # measured run-5 times give 25 chunks > 24 procs, 2026-08-27) overflows
+    # it: re-split with a growing cap until it fits.
+    heavy = [i for i in range(len(files)) if file_cost[i] > target]
+    chunked = {}
+    if heavy:
+        cap = target
+        while True:
+            chunked = {i: split_file(i, cap) for i in heavy}
+            nch = sum(len(v) for v in chunked.values())
+            if nch <= N_PROCS:
+                break
+            if cap >= max(file_cost[i] for i in heavy):
+                break  # each heavy file is one chunk; cannot do better
+            cap *= 1.25
+        if sum(len(v) for v in chunked.values()) > N_PROCS:
+            raise SystemExit("launch_class1_shards: too many heavy files "
+                             f"({sum(len(v) for v in chunked.values())}) "
+                             f"for {N_PROCS} processes")
     for i in range(len(files)):
         if file_cost[i] > target:
-            for skip, n in split_file(i, target):
+            for skip, n in chunked[i]:
                 c = sum(file_entry_costs[i][skip:skip + n])
                 units.append((c, "chunk", (i, skip, n)))
         else:
