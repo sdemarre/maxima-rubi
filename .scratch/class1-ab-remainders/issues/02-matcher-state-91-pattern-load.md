@@ -17,7 +17,7 @@ timeout (run, 30 s budget) or deferred (canary solo):
 
 | family | entry | integrand | run-5 | A+B run | canary solo (A+B) |
 |---|---|---|---|---|---|
-| 1.2.2.4 | e223 | `(f*x)^m*(d+e*x^2)/(a+b*x^2+c*x^4)` | verified 7.0 s | timeout 30.0 s | deferred 20.3 s |
+| 1.2.2.4 | e223 | `(f*x)^m*(d+e*x^2)/(a+b*x^2+c*x^4)` | verified 7.0 s | deferred 29.6 s | deferred 20.3 s |
 | 1.2.1.2 | e2514 | `(a+b*x+c*x^2)^(1/4)/(d+e*x)` | verified 7.1 s | timeout 30.0 s | deferred 25.6 s |
 | 1.2.1.2 | e2567 | `(a+b*x+c*x^2)^p/(d+e*x)` | verified 4.5 s | timeout 30.0 s | timeout 60 s |
 | 1.2.1.2 | e2568 | `(a+b*x+c*x^2)^p/(d+e*x)^2` | verified 4.5 s | timeout 30.0 s | timeout 60 s |

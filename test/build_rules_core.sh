@@ -50,6 +50,14 @@ TAB=$(grep -oE 'TABLE_AT_BUILD [0-9]+' "$TMP/build.log" | head -1 | awk '{print 
 mv "$TMP/rules.core" "$OUT"
 { echo "fingerprint $FP"
   echo "git_rev $(git rev-parse HEAD 2>/dev/null || echo n/a)"
+  # Tree-state marker: git_rev alone mislabels a build from a dirty
+  # tree (the baked files can postdate HEAD). write-tree hashes the
+  # CURRENT index contents — clean tree => the HEAD tree hash, so the
+  # stamp is self-describing (measured incident: the 2026-08-27
+  # accepted core was built from a tree carrying the then-uncommitted
+  # 89054b0 fix).
+  echo "git_tree $(git write-tree 2>/dev/null || echo n/a)"
+  echo "git_dirty $(git status --porcelain 2>/dev/null | grep -c . || true)"
   echo "date $(date -u '+%F %T UTC')"
   echo "maxima $(maxima --version 2>&1 | head -1)"
   echo "rules $TAB"

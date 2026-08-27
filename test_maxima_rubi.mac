@@ -1316,5 +1316,8 @@ test_census() := block([saved_table],
   true
 )$
 
-run_all_tests();
+/* $ not ; — the function's value (tests_failed = 0) would otherwise
+   print right under the Results: line, the line the reading protocol
+   exists to be read. */
+run_all_tests()$
 quit();

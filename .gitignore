@@ -25,3 +25,14 @@ __pycache__/
 /test/mr_rules.core
 /test/mr_rules.core.stamp
 /test/mr_rules.core.lock
+
+# Layer B sharded-run artifacts (per-shard outputs, pid files, one-off
+# watcher/merge logs). The committed records are the merged
+# test/corpus_class1*.out and test/*_merge.out files — the patterns
+# below cannot match them.
+/test/corpus_class1.shard*
+/test/w1_ab_shard*
+/test/run_status.log
+/test/wait_and_merge.log
+/test/timeout_rerun_wait.log
+/test/full_run3_merge.out
