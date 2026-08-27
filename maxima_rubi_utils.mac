@@ -283,17 +283,42 @@ mr_top(f, x, fb) := block([ans],
   ans : %mr_dispatch(f, x, mr_rule_table, depth_level),
   %mr_seen : rest(%mr_seen),
   depth_level : depth_level - 1,
-  /* Pass 2 — reverse commutative factor scan (2026-08-26, W1). Maxima's
-     matcher picks, for a pattern factor with a non-atomic base, the FIRST
-     ^-factor of the target in the REVERSED stored-factor order, with no
-     backtracking (matrun.lisp findfun): a monomial-power factor pattern
-     like (c x)^m fires only when that factor happens to be stored last —
-     data-dependent (see maxima_rubi_dispatch.lisp %mr_dispatch_rev for the
-     full diagnosis). The rescan is TOP-LEVEL, fb=false ONLY: nested 0-
-     firings keep the integrate fall-through (design note above), and pass
-     1 is bit-identical, so nothing currently passing can regress. */
-  if ans = false and not fb then
-    ans : %mr_dispatch_rev(f, x, mr_rule_table, depth_level),
+   /* Pass 2 — reverse commutative factor scan (2026-08-26, W1). Maxima's
+      matcher picks, for a pattern factor with a non-atomic base, the FIRST
+      ^-factor of the target in the REVERSED stored-factor order, with no
+      backtracking (matrun.lisp findfun): a monomial-power factor pattern
+      like (c x)^m fires only when that factor happens to be stored last —
+      data-dependent (see maxima_rubi_dispatch.lisp %mr_dispatch_rev for the
+      full diagnosis). The rescan is TOP-LEVEL, fb=false ONLY: nested
+      0-firings keep the integrate fall-through (design note above),
+      and pass 1 is bit-identical, so nothing currently passing can
+      regress. (2026-08-27: the 9.1 port's nested re-dispatches keep
+      the compensation via the dedicated rubi_hybrid entry — see
+      rules/class1/9_1.mac and the rubi_hybrid note below; lifting
+      the fb gate here instead was measured to hang on large
+      integrands — 1.1.2.6 e20 looped in pattern recompilation
+      past 900 s.) */
+   if ans = false and not fb then
+     ans : %mr_dispatch_rev(f, x, mr_rule_table, depth_level),
+   /* Pass 3 — implicit exponent-1 rescan (2026-08-27). Maxima strips a
+      power's exponent 1 at construction and never restores it in
+      matching (matcom.lisp compilematch head check; matrun.lisp
+      findfun explicit-head search), so a family rule with a (...)^m
+      factor 0-fires on a target factor stored bare (x, (a+b*x),
+      5*x*(a+b*x)...) where the identical target integrates in Rubi.
+      %mr_dispatch_i1 (maxima_rubi_implicit1.lisp) rescans the table
+      with the findfun shadow active and, on a 0-firing, on the whole
+      integrand wrapped in one raw (mexpt f 1) object. TOP-LEVEL,
+      fb=false ONLY, after passes 1-2 0-fire: nested mr_int dispatches
+      run with the gate off (verbatim original findfun control flow),
+      so nothing currently passing can change. (2026-08-27: the 9.1
+      port's nested re-dispatches keep the compensation via the
+      dedicated rubi_hybrid entry — see rules/class1/9_1.mac and the
+      rubi_hybrid note below; lifting the fb gate here instead was
+      measured to hang on large integrands — 1.1.2.6 e20 looped in
+      pattern recompilation past 900 s.) */
+   if ans = false and not fb then
+     ans : %mr_dispatch_i1(f, x, mr_rule_table, depth_level),
   if ans = false then (
     if fb then integrate(f, x)
     else mr_unintegrable(f, x)
@@ -314,6 +339,43 @@ mr_int(f, x) := mr_top(f, x, true)$
  * entries), so the two modes must have distinct names. */
 rubi(f, x) := mr_top(f, x, false)$
 rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
+
+/* The 9.1 re-dispatch entry (rules/class1/9_1.mac calls it from every
+ * re-dispatching replacement). The .m's nested Int had the TOP LEVEL'S
+ * full matcher power AND its own residue behavior; no existing entry
+ * has both halves: mr_int (fb=true) has the integrate fall-through
+ * (the run-5 load-bearing native answers on stuck mquot sub-integrals,
+ * e.g. the 1.4.3 r19 T4-cascade x^(n-1)/(2e)) but runs passes 2-3
+ * OFF (a bare-factor sub-integral loses the lift — 1.1.2.6 e20
+ * regresses exactly that way); rubi (fb=false) keeps passes 2-3 but
+ * yields the mr_unintegrable noun (no native). This entry mirrors
+ * mr_top with the pass gates lifted and the integrate fall-through
+ * on both the seen-guard hit and the 0-firing: the 9.1 re-dispatch
+ * keeps whatever rescue the sub-integral had, in either nesting
+ * context. A plain mr_top parameterization was rejected: the fb flag
+ * couples the pass gate and the fall-through, and changing the
+ * coupling for the family entries is the measured-hang configuration
+ * (2026-08-27, 1.1.2.6 e20 looped in pattern recompilation past
+ * 900 s with the gates lifted process-wide). */
+rubi_hybrid(f, x) := block([ans],
+  depth_level : depth_level + 1,
+  if depth_level > %mr_max_depth then (
+    depth_level : depth_level - 1,
+    return(integrate(f, x))
+  ),
+  if %mr_seenp(f) then (
+    depth_level : depth_level - 1,
+    return(integrate(f, x))
+  ),
+  %mr_seen : cons(f, %mr_seen),
+  ans : %mr_dispatch(f, x, mr_rule_table, depth_level),
+  if ans = false then
+    ans : %mr_dispatch_rev(f, x, mr_rule_table, depth_level),
+  if ans = false then
+    ans : %mr_dispatch_i1(f, x, mr_rule_table, depth_level),
+  %mr_seen : rest(%mr_seen),
+  depth_level : depth_level - 1,
+  if ans = false then integrate(f, x) else ans)$
 
 /* ===================== predicate cluster 1 (T5) =====================
  * Ports of Rubi IntegrationUtilityFunctions.m (pinned clone, read-only)

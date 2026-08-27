@@ -9,6 +9,9 @@
 # mechanism (the installed maxima.core is itself built the same way,
 # src/maxima-build.lisp:24).
 #
+# NOTE: the file list below (loader + utils + dispatch lisp + implicit-1
+# lisp + every class-1 rule file) must stay in sync with the driver's
+# _core_fingerprint() (test/corpus_class1_driver.py).
 # The fingerprint sidecar (test/mr_rules.core.stamp) is an md5 over the rule
 # files that define the image. The core BAKES the rules in: after editing a
 # rule .mac, the old core still "works" but silently runs the pre-edit rules.
@@ -28,7 +31,8 @@ trap 'rm -rf "$TMP"' EXIT
 # file list is sorted (C locale) so the byte order matches the driver's
 # _core_fingerprint() (test/corpus_class1_driver.py) exactly — a different
 # order would make every freshly built core look stale.
-FP=$( { printf '%s\n' maxima_rubi.mac maxima_rubi_utils.mac maxima_rubi_dispatch.lisp
+FP=$( { printf '%s\n' maxima_rubi.mac maxima_rubi_utils.mac maxima_rubi_dispatch.lisp \
+        maxima_rubi_implicit1.lisp
         ls rules/class1/*.mac
       } | LC_ALL=C sort | xargs -d '\n' cat | md5sum | cut -d' ' -f1 )
 

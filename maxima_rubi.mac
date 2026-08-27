@@ -62,6 +62,16 @@ mr_witness_dispatch() := is(%mr_binomialQ(1 + x, x) = true)
 
 %mr_load_sibling("maxima_rubi_dispatch.lisp", 'mr_witness_dispatch)$
 
+/* The implicit exponent-1 rescan (maxima_rubi_implicit1.lisp): the
+ * findfun shadow + %mr_lift1 + %mr_dispatch_i1 for Maxima's stripped
+ * exponent-1 storage (see that file's header for the measured gap). */
+mr_witness_implicit1() :=
+  /* %mr_dispatch_i1 on an EMPTY table 0-fires: a missed load leaves it
+   * a noun and this fails loudly. */
+  is(%mr_dispatch_i1(1, x, [], 1) = false)$
+
+%mr_load_sibling("maxima_rubi_implicit1.lisp", 'mr_witness_implicit1)$
+
 /* Milestone-1 core (eager): the 1.1.1.1 rule file — what the Layer A
  * suite verifies behaviorally; 5 rules, safe on any build. */
 %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1)$
@@ -160,7 +170,8 @@ mr_load_class1_all() := block([],
   %mr_load_sibling("rules/class1/1_3_2.mac", 'mr_witness_1_3_2),
   %mr_load_sibling("rules/class1/1_3_4.mac", 'mr_witness_1_3_4),
   %mr_load_sibling("rules/class1/1_4_3.mac", 'mr_witness_1_4_3),
-  mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_1_1_2, mr_rules_1_1_1_3, mr_rules_1_1_1_4, mr_rules_1_1_2_1, mr_rules_1_1_2_2, mr_rules_1_1_2_3, mr_rules_1_1_2_4, mr_rules_1_1_2_5, mr_rules_1_1_2_6, mr_rules_1_1_2_7, mr_rules_1_1_2_8, mr_rules_1_1_2_9, mr_rules_1_1_3_1, mr_rules_1_1_3_2, mr_rules_1_1_3_3, mr_rules_1_1_3_4, mr_rules_1_1_3_5, mr_rules_1_1_3_6, mr_rules_1_2_1_1, mr_rules_1_2_1_2, mr_rules_1_2_1_3, mr_rules_1_2_1_3b, mr_rules_1_2_1_4, mr_rules_1_2_1_4b, mr_rules_1_2_1_5, mr_rules_1_2_1_5b, mr_rules_1_2_2_1, mr_rules_1_2_2_2, mr_rules_1_2_2_3, mr_rules_1_2_2_4, mr_rules_1_2_3_1, mr_rules_1_2_3_2, mr_rules_1_2_3_3, mr_rules_1_2_3_4, mr_rules_1_1_4_1, mr_rules_1_1_4_2, mr_rules_1_1_4_3, mr_rules_1_2_4_1, mr_rules_1_2_4_2, mr_rules_1_2_4_3, mr_rules_1_2_4_4, mr_rules_1_4_1, mr_rules_1_4_2, mr_rules_1_1_1_7, mr_rules_1_1_1_6, mr_rules_1_1_1_5, mr_rules_1_2_1_9, mr_rules_1_2_1_9b, mr_rules_1_2_1_8, mr_rules_1_2_1_7, mr_rules_1_2_1_6, mr_rules_1_2_1_6b, mr_rules_1_2_2_6, mr_rules_1_2_2_5, mr_rules_1_2_2_7, mr_rules_1_2_2_8, mr_rules_1_2_3_6, mr_rules_1_2_3_5, mr_rules_1_1_2_11, mr_rules_1_1_2_10, mr_rules_1_1_2_14, mr_rules_1_1_2_13, mr_rules_1_1_2_12, mr_rules_1_1_3_8, mr_rules_1_1_3_7, mr_rules_1_1_4_4, mr_rules_1_3_3, mr_rules_1_3_1, mr_rules_1_3_2, mr_rules_1_3_4, mr_rules_1_4_3])
+  %mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1),
+  mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_1_1_2, mr_rules_1_1_1_3, mr_rules_1_1_1_4, mr_rules_1_1_2_1, mr_rules_1_1_2_2, mr_rules_1_1_2_3, mr_rules_1_1_2_4, mr_rules_1_1_2_5, mr_rules_1_1_2_6, mr_rules_1_1_2_7, mr_rules_1_1_2_8, mr_rules_1_1_2_9, mr_rules_1_1_3_1, mr_rules_1_1_3_2, mr_rules_1_1_3_3, mr_rules_1_1_3_4, mr_rules_1_1_3_5, mr_rules_1_1_3_6, mr_rules_1_2_1_1, mr_rules_1_2_1_2, mr_rules_1_2_1_3, mr_rules_1_2_1_3b, mr_rules_1_2_1_4, mr_rules_1_2_1_4b, mr_rules_1_2_1_5, mr_rules_1_2_1_5b, mr_rules_1_2_2_1, mr_rules_1_2_2_2, mr_rules_1_2_2_3, mr_rules_1_2_2_4, mr_rules_1_2_3_1, mr_rules_1_2_3_2, mr_rules_1_2_3_3, mr_rules_1_2_3_4, mr_rules_1_1_4_1, mr_rules_1_1_4_2, mr_rules_1_1_4_3, mr_rules_1_2_4_1, mr_rules_1_2_4_2, mr_rules_1_2_4_3, mr_rules_1_2_4_4, mr_rules_1_4_1, mr_rules_1_4_2, mr_rules_1_1_1_7, mr_rules_1_1_1_6, mr_rules_1_1_1_5, mr_rules_1_2_1_9, mr_rules_1_2_1_9b, mr_rules_1_2_1_8, mr_rules_1_2_1_7, mr_rules_1_2_1_6, mr_rules_1_2_1_6b, mr_rules_1_2_2_6, mr_rules_1_2_2_5, mr_rules_1_2_2_7, mr_rules_1_2_2_8, mr_rules_1_2_3_6, mr_rules_1_2_3_5, mr_rules_1_1_2_11, mr_rules_1_1_2_10, mr_rules_1_1_2_14, mr_rules_1_1_2_13, mr_rules_1_1_2_12, mr_rules_1_1_3_8, mr_rules_1_1_3_7, mr_rules_1_1_4_4, mr_rules_1_3_3, mr_rules_1_3_1, mr_rules_1_3_2, mr_rules_1_3_4, mr_rules_1_4_3, mr_rules_9_1])
 )$
 
 mr_witness_maxima_rubi() := true$
