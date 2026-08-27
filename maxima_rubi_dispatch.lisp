@@ -1,5 +1,26 @@
 ;; maxima_rubi_dispatch.lisp
 ;;
+;; $X: the matchfix pattern-argument slot. Every generated matcher
+;; lambda that must locate the pattern argument in a product references
+;; it as a FREE VARIABLE (findexpon <node> $x 'times — the matcher
+;; runner sets it to the actual variable before each match attempt).
+;; It is not declared anywhere visible to the compiler, so SBCL warns
+;; "undefined variable: MAXIMA::$X" for EVERY compilation unit that
+;; references it. That is invisible in batch (load() compiles each rule
+;; file as ONE unit and SBCL dedupes the warning per unit — the full
+;; class-1 load prints 16) but loud in an INTERACTIVE session, where
+;; load() does not compile the matchfix matchers: each match attempt
+;; compiles its matcher lambda as its OWN unit, so a top-level rubi()
+;; call that scans the table prints ~1,300 of the blocks (measured
+;; 2026-08-27, pty session: 1,313 on call 1, 1,273 on call 2 of the
+;; same integrand). SBCL already compiles an undefined free variable
+;; as a dynamic (special) reference — the warning is the only signal —
+;; so declaring the slot special silences it with ZERO codegen change.
+;; This file loads before every rule file (maxima_rubi.mac), and
+;; special declarations are package-level, so it covers both the
+;; batch load-time units and the interactive per-match units.
+(declaim (special $X))
+
 ;; Arity dispatchers for the two Rubi predicates the generated class-1
 ;; rules call at more than one arity: %mr_binomialQ (2 and 3 args) and
 ;; %mr_intBinomialQ (7, 8 and 10 args — the three DISTINCT Rubi
