@@ -283,6 +283,17 @@ mr_top(f, x, fb) := block([ans],
   ans : %mr_dispatch(f, x, mr_rule_table, depth_level),
   %mr_seen : rest(%mr_seen),
   depth_level : depth_level - 1,
+  /* Pass 2 — reverse commutative factor scan (2026-08-26, W1). Maxima's
+     matcher picks, for a pattern factor with a non-atomic base, the FIRST
+     ^-factor of the target in the REVERSED stored-factor order, with no
+     backtracking (matrun.lisp findfun): a monomial-power factor pattern
+     like (c x)^m fires only when that factor happens to be stored last —
+     data-dependent (see maxima_rubi_dispatch.lisp %mr_dispatch_rev for the
+     full diagnosis). The rescan is TOP-LEVEL, fb=false ONLY: nested 0-
+     firings keep the integrate fall-through (design note above), and pass
+     1 is bit-identical, so nothing currently passing can regress. */
+  if ans = false and not fb then
+    ans : %mr_dispatch_rev(f, x, mr_rule_table, depth_level),
   if ans = false then (
     if fb then integrate(f, x)
     else mr_unintegrable(f, x)

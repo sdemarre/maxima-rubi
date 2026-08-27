@@ -1818,3 +1818,73 @@ merge completeness OK. Acceptance record: docs/corpus-baseline-uplift.md.
 Run artifacts (test/corpus_class1.shard*, pids, run_status.log) remain
 untracked/disposable; the merged record (test/corpus_class1.out) and
 its transcript (test/full_core_merge.out) are committed.
+
+---
+
+## matchreverse pass-2 rescan — the (c x)^m factor-order fix (run 5)
+
+User direction 2026-08-27: fix the remaining failures; the corpus's own
+4th element is the reference (25,666 of 25,697 should integrate; 31 have
+a noun as reference answer — 11 CannotIntegrate + 20 Unintegrable, 7
+files).
+
+ROOT CAUSE (measured, probes in-session): Maxima's commutative product
+matcher, for a pattern factor with a non-atomic base, picks the FIRST
+^-factor of the target in the REVERSED stored-factor order, with NO
+backtracking (matrun.lisp findfun; gated on the lisp global
+matchreverse, nil = reverse the factor scan). A defmatch port of a Rubi
+rule whose product pattern carries a monomial-power factor (c x)^m
+therefore 0-fires whenever the monomial power is NOT stored last —
+Maxima's canonical sort, data-dependent. Measured: (_c*x)^_m*_r matches
+(d*x)^m*(c+e*x)^3 iff the monomial power sorts last (PB/PC probes);
+the two-power-factor shapes (1.1.3.x / 1.2.x (c x)^m classes) are dead
+on a data-dependent subset. Not a storage-distribution issue (the corpus
+has zero (product*x)^integer factors — 0 of 25,697; the 7,774 loose
+regex hits were all sum bases, which Maxima keeps as powers), not a
+§9.1 gap, and matchreverse is unreachable from Maxima level in this
+build (defmvar; assigning matchreverse in Maxima leaves the lisp global
+NIL — measured).
+
+FIX (3 files, additive): maxima_rubi_dispatch.lisp gains
+%mr_dispatch_rev (defmfun |$%MR_DISPATCH_REV| — &rest, since fixed-param
+defmfun is not callable in this build, and ALL-UPPERCASE, since an
+all-lowercase Maxima name's canonical lisp symbol is uppercased; both
+measured, see the file comments) that sets matchreverse, rescans the
+whole table via the mlambda call primitive, and restores it in
+unwind-protect. mr_top (maxima_rubi_utils.mac) runs it ONLY after a
+TOP-LEVEL (fb=false) 0-firing — nested 0-firings keep the integrate
+fall-through, pass 1 is bit-identical, so nothing currently passing can
+regress. maxima_rubi.mac witness extended to call it (empty table ->
+false).
+
+GATES (all green): Layer A 511/0; 120-target broad canary 77 pass / 43
+fail vs the run-4 split 71/49 — per-target A/B: all 71 previously
+verified STILL verified, 6 deferred -> verified, ZERO regressions.
+1.2.1.2 family A/B (2,590 entries, 8-way parallel): 617 deferred ->
+verified, 0 regressions, PASS 1453 -> 2071.
+
+RUN 5 (rules core rebuilt, fingerprint f1deb0c9..., 24 procs; 2026-08-26
+22:45 -> 2026-08-27 00:38 UTC, 113 min wall vs run 4's 46 min — pass-2
+doubles the 0-fire cost and the new answers add verification time):
+25,697/25,697 merged OK. Results 18,588 passed (72.3%) / 7,109 failed,
+vs run 4 16,103 (62.7%) = +2,485. Categories: verified 16,041 -> 18,503
+(+2,462), expected 34 -> 57 (+23), deferred 8,671 -> 5,655 (-3,016),
+unverified 362 -> 595 (+233), timeout 433 -> 701 (+268), contains-noun
+111 -> 138 (+27), error 14 -> 17 (+3), no-answer 28 / unexpected 3
+unchanged. Entry-time total 64,018 s (avg 2.49 s vs 1.76 s).
+Transition matrix: 16,040 verified->verified; the ONLY pass->fail flip
+is 1.2.1.2 e92 verified->timeout — a 29.4 s borderline entry (0.6 s
+under the 30 s cap in run 4); re-run under the canary's 60 s budget
+verifies in 17.5 s quiet: load-sensitive borderline, not semantic. ZERO
+semantic regressions.
+
+KNOWN REMAINDER: the +233 unverified / +268 timeout / +27 contains-noun
+are all FAIL->FAIL (a rule now fires where there was a noun; the answer
+then fails the zero-chain, usually radical-form closure, or burns the
+30 s budget). They are the next quality work-stream (verification-chain
+forms + per-entry budget), not a defect of this fix. Top recovery
+families: 1.2.1.3 +641, 1.2.1.2 +617, 1.2.1.4 +229, 1.1.3.2 +190,
+1.2.2.4 +159, 1.2.1.9 +155, 1.1.2.4 +96, 1.1.3.4 +87, 1.3.2 +60.
+
+Uplift vs the T3 integrate() baseline (12,798 verified+expected, 49.8%):
+18,560 (72.2%) = +5,762 (+22.4 pp).
