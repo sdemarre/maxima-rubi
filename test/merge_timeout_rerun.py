@@ -21,8 +21,10 @@ test/timeout_rerun_merge.out):
     hot spots, input to the matcher work).
 
 Usage:
-  merge_timeout_rerun.py [shard-glob]
-      default shard-glob: /tmp/opencode/timeout_recheck/shard*.out
+  merge_timeout_rerun.py [shard-glob] [out-file] [source-record]
+Defaults: /tmp/opencode/timeout_recheck/shard*.out,
+test/corpus_class1.timeout5m.out, test/corpus_class1.out (the accepted
+record — the completeness set is its `timeout` class).
 """
 
 import glob
@@ -34,14 +36,16 @@ from collections import Counter
 from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ACCEPTED = os.path.join(ROOT, "test", "corpus_class1.out")
 RUN5 = os.path.join(ROOT, "test", "corpus_class1.run5-accept.out")
-OUT = os.path.join(ROOT, "test", "corpus_class1.timeout5m.out")
 RESULT = re.compile(r"^(\S+)\s+t=\s*([\d.]+)s\s+(.*) e(\d+) L(\d+)\s*$")
 PASS_CLASSES = {"expected", "verified", "no-answer"}
 
 SHARD_GLOB = (sys.argv[1] if len(sys.argv) > 1
               else "/tmp/opencode/timeout_recheck/shard*.out")
+OUT = (sys.argv[2] if len(sys.argv) > 2
+       else os.path.join(ROOT, "test", "corpus_class1.timeout5m.out"))
+ACCEPTED = (sys.argv[3] if len(sys.argv) > 3
+            else os.path.join(ROOT, "test", "corpus_class1.out"))
 
 
 def parse(path):
@@ -74,6 +78,18 @@ for path in inputs:
         if k in seen:
             dupes += 1
         seen[k] = m
+# The per-entry cap, from the driver's shard header (each shard .out
+# carries "timeout: <n>s") — the merge must not assume the cap.
+cap = None
+for path in inputs:
+    for line in open(path, encoding="utf-8"):
+        m = re.match(r"^filter: .*timeout: (\d+)s", line)
+        if m:
+            cap = m.group(1)
+            break
+    if cap:
+        break
+
 missing = expected - set(seen)
 extra = set(seen) - expected
 if dupes or missing or extra:
@@ -86,7 +102,7 @@ if dupes or missing or extra:
     sys.exit(1)
 
 out_lines = [
-    "=== maxima-rubi class-1 corpus: 300 s timeout re-check "
+    f"=== maxima-rubi class-1 corpus: {cap} s timeout re-check "
     f"({len(inputs)} shards merged) ===",
     f"merge date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
 ]
@@ -99,9 +115,8 @@ for line in r.stdout.splitlines():
     if line.startswith(("Maxima", "Lisp ", "Host ")):
         out_lines.append(f"maxima: {line}")
 out_lines.append(
-    f"re-check of the {len(expected)} `timeout` entries of the accepted "
-    "run (test/corpus_class1.out, commit 45fc9b8, 30 s cap) at a "
-    "300 s per-entry cap, same rules core")
+    f"re-check of the {len(expected)} `timeout` entries of {ACCEPTED} "
+    f"(30 s cap) at a {cap} s per-entry cap, same rules core")
 out_lines.append("")
 
 cls_of = {k: seen[k].group(1) for k in expected}

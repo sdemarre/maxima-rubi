@@ -2177,3 +2177,23 @@ entry table in ticket 05):
     test/corpus_class1_driver.py:270); the integrate-term analog is
     unguarded. Fix = zero_chain guard (skip the numeric stage when
     the answer carries an interior integrate(., x) term); ticket 05.
+
+## Decision: 30 s per-entry cap stays; the re-check is the verification (2026-08-27)
+
+User decision: the driver's 30 s per-entry cap REMAINS the standard.
+The route for the slow-correct entries is matcher speed (the ticket-04
+workstream), not budget. When "is 30 s just at the limit?" is live
+again, the standing verification is the timeout re-check: re-run ONLY
+a record's `timeout` entries at a larger cap and read the transitions.
+The procedure is now fully in-tree and re-runnable (the 2026-08-27
+first use was launched ad hoc; the launcher is its replacement):
+  python3 test/launch_timeout_rerun.py [record] [cap] [run-dir] --launch
+  setsid sh test/wait_timeout_rerun.sh <run-dir> >> <run-dir>/wait.log 2>&1 &
+The launcher deals the record's timeout set round-robin into N driver
+shards at the cap (dry run without --launch; prints the core
+fingerprint so a stale-core comparison is caught); the watcher waits
+for the pids and runs test/merge_timeout_rerun.py <run-dir>/shard*.out
+<out> <record> (all three parameterized; completeness asserted
+against the record's timeout class; cap read from the shard headers,
+not assumed). Validated by re-merging the 2026-08-27 run-dir: 787/787,
+body byte-identical to the committed test/corpus_class1.timeout5m.out.

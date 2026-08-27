@@ -61,3 +61,11 @@ the zero chains always close, at 31-71 s under load. Cost of a blanket
 re-check would each burn the full cap (555 x 300 s / 24 procs ~= 9.2 h
 of the 82-min typical run) — a class-conditional or per-entry budget is
 the sane form if this direction is taken.
+2026-08-27 — policy decision (user): the 30 s per-entry cap STAYS the
+standard; matching speed (ticket 04) is the route, not budget.
+Direction 2 (raise the cap) is therefore declined as policy — the
+300 s re-check above is the standing verification that these 9 are
+budget-limited, and it passed. The 9 remain a known remainder
+(0.035% of the corpus, all correct answers) until the speed work
+lands; the re-check procedure is in-tree (test/launch_timeout_rerun.py
++ test/wait_timeout_rerun.sh + test/merge_timeout_rerun.py).
