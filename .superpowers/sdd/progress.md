@@ -2104,3 +2104,9 @@ Net position: 25,697 entries, +1,162 improvements, 16 PASS->FAIL
 remainders (9 slow-form + 7 matcher-state) out of 18,503 run-5
 verifies (0.09%), 3 corpus-limitation improvements. Phase A+B
 accepted at 19,731/5,966.
+
+Remainder tickets (per-entry details, mechanisms, directions):
+.scratch/class1-ab-remainders/ — spec.md + issues/01 slow zero-chain
+forms (9), issues/02 matcher-state 9.1 pattern load (7, Maxima
+boundary, mailing-list repro), issues/03 corpus Unintegrable now
+integrated (3, numerically verified).
