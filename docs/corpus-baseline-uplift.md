@@ -113,9 +113,12 @@ in-tree: `test/launch_timeout_rerun.py` / `test/wait_timeout_rerun.sh` /
   control-stack, 3 a harness `zero_chain` bug (numeric stage substitutes
   into an interior `integrate(g, x)` term);
 - 5 deferred, 2 contains-noun — the 6 ticket-02 matcher-state entries
-  sit in the deferred/timeout split (4 deferred after 44-127 s of wild
-  cascade; e2572/e2573 non-terminating at 300 s): budget does not touch
-  them — structural, confirming the ticket-02 reading.
+  that were `timeout` in the accepted run sit in the deferred/timeout
+  split here (4 deferred after 44-127 s of wild cascade; e2572/e2573
+  non-terminating at 300 s): budget does not touch them — structural,
+  confirming the ticket-02 reading. (The 7th ticket-02 entry, 1.2.2.4
+  e223, was `deferred`, not `timeout`, in the accepted run and so was
+  not in the re-check set.)
 
 Still-timeout hotspots (555, by family): 1.2.1.2 (85), 1.1.2.4 (75),
 1.2.1.3 (67), 1.1.3.8 (42), 1.2.2.2 (41) — the input set for the

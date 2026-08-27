@@ -29,12 +29,13 @@ The pinned commit (full 40-digit hash) of each is recorded in
 
 ## Maxima version
 
-The installed build is a 5.49-series development version; **5.50 is
-expected soon** and brings significant improvements, including
-pattern-matching *speed* (no new pattern-matching *functionality*).
-The project does **not** pin to 5.49 as a target: every measurement
-is stamped with the build it was taken on, and baselines are
-re-measured on upgrade rather than carried over.
+The installed build is **Maxima 5.50.0** (build date 2026-08-20
+21:36:22) on SBCL 2.6.7 — every milestone-1 measurement is taken on
+it (stamped in the committed records' headers). The research docs'
+5.49-series expectation is superseded. The project does **not** pin
+to any build: every measurement is stamped with the build it was
+taken on, and baselines are re-measured on upgrade rather than
+carried over.
 
 ## Loading rule files: the TLS limit
 
@@ -97,27 +98,63 @@ Four behaviours worth knowing, all measured here (Maxima 5.49, SBCL):
   stubbed ahead of it.
 - Counts and timings are stamped with the date and the Maxima build —
   obtained from `build_info()` (`version` is unbound in the installed
-  5.49-series development build).
+  5.50.0 build — measured 2026-08-27).
 - "Maxima surely has X" is never a claim: look it up per the section above,
   or write a probe.
 
 ## Tests
 
-When the test harness exists (implementation phase), the main suite is one
-batch run:
+Two layers, one reading protocol. Every run ends with
+`Results: <n> passed, <m> failed`. **Read that line** — individual
+assertions print `PASS:`/`FAIL:` above it, and a run can also die
+mid-way with a Maxima error, in which case no `Results:` line is
+printed at all, which is itself a failure.
+
+**Layer A — unit suite** (the per-change gate), one batch run:
 
 ```sh
 maxima --very-quiet -b test_maxima_rubi.mac
 ```
 
-It ends with `Results: <n> passed, <m> failed`. Read that line — individual
-assertions print `PASS:`/`FAIL:` above it, and a run can also die mid-way
-with a Maxima error, in which case no `Results:` line is printed at all,
-which is itself a failure. The harness protocol (per-integral timeout,
-differentiation-based verification) is specified in
-`docs/package-architecture.md` (T5) once that research is done.
+511 targets (green at milestone-1 close: `Results: 511 passed,
+0 failed`).
 
-The research phase has no suite; its discipline is the probe convention above.
+**Layer B — full class-1 corpus** (25,697 entries, 30 s per-entry cap,
+one fresh maxima subprocess per integral, verification by
+differentiation with the corpus expected answer as the secondary
+check). Sharded over 24 processes, ~80 min wall:
+
+```sh
+python3 test/launch_class1_shards.py --launch
+setsid sh test/wait_and_merge.sh
+```
+
+The watcher merges the shards to `test/corpus_class1.out` (completeness
+asserted: 25,697/25,697, no dupes/missing/extra). **The full-run A/B
+against the previous merged record is the regression gate.** The
+120-target canary (`python3 test/canary.py`, 60 s/target) is a smoke,
+not a gate: its broad set is biased toward currently-failing targets
+and cannot gate verified-target regressions.
+
+**Timeout re-check** — the standing answer to "is 30 s at the limit?"
+for any merged record: re-run exactly the record's `timeout` class at
+a larger cap (300 s standing value) and read the transitions:
+
+```sh
+python3 test/launch_timeout_rerun.py [record] [cap] [run-dir] --launch
+setsid sh test/wait_timeout_rerun.sh <run-dir> >> <run-dir>/wait.log 2>&1 &
+```
+
+(the watcher runs `test/merge_timeout_rerun.py`; completeness is
+asserted against the record's timeout class, the cap is read from the
+shard headers). The 30 s per-entry cap STAYS the standard (user
+decision 2026-08-27); the route for slow-correct entries is matcher
+speed, not budget.
+
+The harness protocol (verdict classes, zero-chain verification,
+driver mechanics) is specified in `docs/package-architecture.md` (T5);
+the measured acceptance record and re-run discipline are in
+`docs/corpus-baseline-uplift.md`.
 
 ## Agent skills
 

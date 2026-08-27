@@ -2197,3 +2197,77 @@ for the pids and runs test/merge_timeout_rerun.py <run-dir>/shard*.out
 against the record's timeout class; cap read from the shard headers,
 not assumed). Validated by re-merging the 2026-08-27 run-dir: 787/787,
 body byte-identical to the committed test/corpus_class1.timeout5m.out.
+
+## Milestone 1 close — acceptance confirmed, Task 10 executed (2026-08-27)
+
+User confirmed the acceptance reading (19,731/25,697 = 76.8 % vs the
+T3 49.8 %; all 16 PASS->FAIL remainders triaged; no unexplained
+regressions) and left all follow-up workstreams (ticket 04, the
+section-9.3 port, the ticket-02 mailing-list repro, ticket 05)
+POST-milestone.
+
+Task 10 deliverables:
+- docs/corpus-baseline-uplift.md refreshed to the accepted state
+  (trajectory 49.8 -> 62.7 -> 72.3 -> 76.8; class table from the
+  record's summary block; A/B anatomy 1,162 improvements / 19
+  regressions all triaged; the 300 s re-check summary; the 31
+  noun-expected entries per-entry joined: 25 no-answer + 3
+  contains-noun (1.1.2.5 e103/e107/e110) + 3 unexpected; 30 s cap
+  policy) — commit a1524f4.
+- README.md created (package, the four load paths, rubi/rubi_fallback/
+  rubi_verbose API, the --tls-limit requirement, the measured state,
+  the two-layer protocol, the Rubi MIT notice per Global Constraint 14).
+- AGENTS.md: ## Tests replaced with the live two-layer protocol +
+  timeout re-check; the Maxima-version section updated to the installed
+  5.50.0 (the 5.49 expectation is superseded; `version` verified
+  unbound on 5.50.0, 2026-08-27).
+- handoff/2026-08-27-milestone-1-complete.md (where everything lives,
+  measured state, T5 open measurements closed with values, the
+  post-milestone open items in priority order, the
+  %mr_possible_zeroQ clone-gap note).
+- todo/TODO.md: milestone state + T5's four open measurements closed
+  (load wall: TLS cap unchanged on 5.50.0, tls-limit + rules core the
+  resolution; recursion cap 16; zero chain final state; 30 s cap stays).
+- Plan checkboxes Tasks 1-10 ticked (49 step boxes).
+
+Final gate: fresh Layer A `Results: 511 passed, 0 failed`; milestone
+code review dispatched (whole-branch, 131 commits + close artifacts).
+REVIEW OUTCOME: no Critical; 1 Important + 9 Minor, all addressed:
+- Important: the handoff's acceptance narrative said "6 matcher-state
+  entries" — the measured A/B decomposition is 9 slow + 7
+  matcher-state (the 7th, 1.2.2.4 e223, is verified 7.0 s run-5 ->
+  deferred 29.6 s accepted, re-verified against both records by the
+  reviewer's independent A/B recomputation, which reconciles exactly:
+  1,162 improvements; 15 verified->timeout + 1 verified->deferred + 3
+  no-answer->unexpected). Fixed in the handoff; the uplift doc's
+  re-check sentence now says "6 of the 7" (e223 was deferred, not
+  timeout, so it was not in the 300 s re-check set); ticket 02's table
+  row e223 corrected (timeout 30.0 s -> deferred 29.6 s, matching the
+  record and the ticket's own comment).
+- Minor fixes: the loader's stale 5.49-era load-wall comment rewritten
+  (5.50.0 re-probe, the tls-limit resolution, 72 -> 73 terms —
+  comment-only); README 67 -> 73 files + the 9_1 manual-port
+  exception; the plan's elliptic translation-table row superseded
+  (2026-08-24 native-noun decision); test/build_rules_core.sh stamp
+  gains git_tree + git_dirty fields (the accepted core's stamp
+  git_rev had mislabeled a build from a dirty tree — the fix was
+  committed 7 min after the build); .gitignore now covers the
+  sharded-run artifacts (83 untracked files under test/); Layer A's
+  trailing `0 = 0` (run_all_tests's value printing under the Results:
+  line) suppressed with `$`.
+- Re-review after fixes: n/a (fixes were one-line doc/stamp edits;
+  Layer A re-run green).
+- Known and out of scope (review item 11, ticketed): the driver
+  zero_chain interior-integrate bug (ticket 05), the generator's
+  head-position pattern-variable gap (absent in class 1), mr_top's
+  depth_level decrement on dispatcher throw (bounded by the per-entry
+  subprocesses).
+
+Post-close core rebuild: the comment-only maxima_rubi.mac edit changed
+the fingerprint inputs, so test/mr_rules.core was rebuilt (3055 rules,
+new fingerprint 70074f52d31471ec2ecc89405f3834c3; the accepted run's
+fingerprint f1f0611f803b7b8799853e28e2e1793b is recorded in the
+acceptance docs and git history). Layer A re-run after the rebuild:
+511/0.
+
+MILESTONE 1 CLOSED.
