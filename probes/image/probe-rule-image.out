@@ -1,0 +1,26 @@
+# probe-rule-image output, 2026-08-26 20:16:39 UTC
+# Maxima 5.50.0 / SBCL 2.6.7
+# git: b7c9a4c7851b12df0ed9158063901bd03f6583f1
+
+=== part 1: build the rules core (one-time cost) ===
+build rc=0 wall=8,03s image_bytes=153841824
+
+=== part 2: restore + package witnesses ===
+restore rc=0 wall=0,03s
+disp(concat("TABLE_AT_RESTORE ",string(length(mr_rule_table))))
+                             TABLE_AT_RESTORE 3026
+disp(concat("W1 ",string(mr_r)))
+                                   W1 x^4/4
+disp(concat("W2 ",string(mr_r)))
+                                   W2 log(x)
+
+=== part 3: driver-entry parity (standard load vs rules core) ===
+(b*x+c*x^2)^(7/2)                        | standard CLASS verified rc0 | core CLASS verified rc0 | OK
+(a^2+2*a*b*x^2+b^2*x^4)^(3/4)            | standard CLASS verified rc0 | core CLASS verified rc0 | OK
+(e*x)^m*(a+b*x^n)^3*(A+B*x^n)*(c+d*x^n   | standard CLASS deferred rc0 | core CLASS deferred rc0 | OK
+
+=== part 4: control — standard per-entry load (wrapper + preload) ===
+disp(concat("LOADED ",string(length(mr_rule_table))))
+control load wall=6,12s
+
+VERDICT OK

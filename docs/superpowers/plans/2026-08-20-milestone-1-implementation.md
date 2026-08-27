@@ -189,7 +189,7 @@ Replacements (Rubi token → emitted):
 | Sum | `mr_sum(…)` (formal placeholder — Maxima `sum` evaluates) | package noun |
 | Sqrt / ArcTan / ArcSin / ArcCos | `sqrt` / `atan` / `asin` / `acos` | present |
 | ArcTanh / ArcSinh / ArcCosh | `%mr_atanh(z)` / `%mr_asinh(z)` / `%mr_acosh(z)` (log forms) | shim |
-| EllipticF / EllipticE / EllipticPi | `elliptic_f(…)` / `elliptic_e(…)` / `elliptic_pi(…)` — **emit as package nouns** `mr_elliptic_f(…)` etc.; this build does not bind them, so differentiating an elliptic answer is at risk (T4 §2/§6) — the corpus verdict for those entries is the measurement | noun + verify |
+| EllipticF / EllipticE / EllipticPi | **SUPERSEDED (2026-08-24 human decision):** the shipped generator emits the NATIVE `elliptic_f(…)` / `elliptic_e(…)` / `elliptic_pi(…)` nouns — on 5.50.0 `diff` knows the native derivatives (measured 2026-08-24) and the corpus expected answers use the native names. See `docs/rule-translation.md` §2 (the elliptic row) — re-verify on any build change. | native noun + verify |
 | Hypergeometric2F1[a,b,c,z] | `hypergeometric([a, b], [c], z)` (list form; scalar args warn) | present (shape) |
 | AppellF1 | `mr_appellf1(…)` (no Maxima equivalent) | package noun |
 | With[{a = e}, b] / Module[{a = e}, b] | `block([a], a : e, b)` idiom | present |
@@ -242,7 +242,7 @@ whose source had to be derived, not ported.
   (a run that dies mid-way prints no Results line — that is itself a
   failure, AGENTS.md).
 
-- [ ] **Step 1: Write the harness skeleton**
+- [x] **Step 1: Write the harness skeleton**
 
 ```
 /* test_maxima_rubi.mac — Layer A unit suite (diophantine protocol).
@@ -324,12 +324,12 @@ run_all_tests();
 quit();
 ```
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: `Results: 3 passed, 0 failed` and a clean exit.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```sh
 git add test_maxima_rubi.mac
@@ -361,7 +361,7 @@ git commit -m "test: Layer-A harness skeleton (diophantine Results protocol)"
   - `mr_rule_table` — the global ordered rule list (empty in this task);
   - `%mr_load_sibling(fname, witness)` — the loader's witness-checked load.
 
-- [ ] **Step 1: Write `maxima_rubi_utils.mac` (skeleton)**
+- [x] **Step 1: Write `maxima_rubi_utils.mac` (skeleton)**
 
 ```
 /* maxima_rubi_utils.mac — runner + noun forms + (later) shims and ported
@@ -395,17 +395,26 @@ mr_sum(fun, var, lo, hi) := 'mr_sum[fun, var, lo, hi]$
 /* Ordered first-match-wins whole-expression dispatch (T2 §4.2). rl is a
  * list of rule functions r(f, x) -> replacement | false. The parameter is
  * named rl, never rules (protected symbol, measured 2026-08-20). */
-%mr_dispatch(f, x, rl, depth) := block([i, r, res],
+/* MEASURED Maxima gotcha (2026-08-20): a `return(value)` inside a `for` loop
+   does NOT return from the enclosing block in this build — it is loop-level,
+   so the block fell through to the trailing `false` and dispatch ALWAYS
+   returned false (rubi() was a silent pass-through to integrate). The fix:
+   track the firing result in `ans`, use a BARE `return()` to break the `for`
+   loop, and return `ans` after the loop. Probed: the broken form returns
+   false for [false, 42]; this form returns 42. */
+%mr_dispatch(f, x, rl, depth) := block([i, r, res, ans],
+  ans : false,
   for i : 1 thru length(rl) do (
     r : part(rl, i),
     res : apply(r, [f, x]),
     if res # false then (
       if rubi_verbose then
         print("rubi: rule ", string(r), " fired on ", string(f)),
-      return(res)
+      ans : res,
+      return()
     )
   ),
-  false)$
+  ans)$
 
 /* The recursion counter increments on the way in and decrements on the way
  * out, so nested mr_int calls share one depth budget. A runaway replacement
@@ -425,7 +434,7 @@ mr_int(f, x) := block([ans],
 rubi(f, x) := mr_int(f, x)$
 ```
 
-- [ ] **Step 2: Write `maxima_rubi.mac` (loader)**
+- [x] **Step 2: Write `maxima_rubi.mac` (loader)**
 
 ```
 /* maxima_rubi.mac — public loader (diophantine mould, T5 §2).
@@ -441,6 +450,11 @@ rubi(f, x) := mr_int(f, x)$
  * is(apply(witness, []) = true) is true iff the sibling fully loaded. */
 %mr_load_sibling(fname, witness) := block([dir, ok, w],
   dir : if load_pathname = false then "" else pathname_directory(load_pathname),
+  /* errcatch in THIS build returns [RESULT] on success and [] on error
+     (measured — probes/maxima/probe-errcatch-semantics.out). So the by-name
+     fallback fires when the sibling-dir load FAILED (ok = []). When dir is ""
+     (batched) the first load already IS load(fname); the fallback is then a
+     harmless retry. */
   ok : errcatch(load(sconcat(dir, fname))),
   if ok = [] then ok : errcatch(load(fname)),
   w : apply(witness, []),
@@ -469,14 +483,14 @@ call, not an fboundp). Add the matching witness at the very end of
 mr_witness_utils() := true$
 ```
 
-- [ ] **Step 3: Add Layer-A tests**
+- [x] **Step 3: Add Layer-A tests**
 
 Append to `test_maxima_rubi.mac` before `run_all_tests()`:
 
 ```
 load("maxima_rubi.mac")$
 
-test_load_and_api() := block([r],
+test_load_and_api() := block([r, saved_table],
   print("--- load + API fall-through ---"),
   check_bool("loader witness survived", is(mr_witness_maxima_rubi() = true)),
   /* no rules loaded yet: every call falls through to Maxima's integrate */
@@ -488,11 +502,13 @@ test_load_and_api() := block([r],
              is(atom(r) = false) and is(string(op(r)) = "integrate")),
   /* noun forms are distinct from the fall-through noun */
   check_bool("mr_unintegrable is a noun", is(mr_unintegrable(f, x) = 'unintegrable[f, x])),
-  /* depth cap: a recursive rule that never shrinks must return the noun,
-     not overflow (recursion mechanics are Task 3; here only the cap path) */
+  /* empty table -> fall-through. Save/restore the table so a later test
+     (Task 3+) is not run against a wiped table (measured landmine 2026-08-20). */
+  saved_table : mr_rule_table,
   mr_rule_table : [],
   check_bool("empty table -> noun", is(string(op(rubi(1/x, x))) = "integrate")
              or is(rubi(1/x, x) = log(x))),
+  mr_rule_table : saved_table,
   true
 )$
 ```
@@ -500,14 +516,14 @@ test_load_and_api() := block([r],
 Add `test_load_and_api(),` to the `run_all_tests` call list (after
 `test_smoke(),`).
 
-- [ ] **Step 4: Run Layer A**
+- [x] **Step 4: Run Layer A**
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: `Results: 9 passed, 0 failed` (3 smoke + 6 new) — or adjust the
 count to the actual number of asserts; the gate is `0 failed` plus a clean
 Results line.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```sh
 git add maxima_rubi.mac maxima_rubi_utils.mac test_maxima_rubi.mac
@@ -553,7 +569,7 @@ _mr_rule_1_1_1_1_r1(f, x) := block([mm, ok],
   if is(ok) = true then _mr_repl_1_1_1_1_r1(mm, x) else false)$
 ```
 
-- [ ] **Step 1: Add two hand-written rules to `test_maxima_rubi.mac`**
+- [x] **Step 1: Add two hand-written rules to `test_maxima_rubi.mac`**
 
 Add after `load("maxima_rubi.mac")$`:
 
@@ -625,7 +641,7 @@ _mr_rule_t3_selfrec(f, x) := block([], mr_int(f, x))$
 mr_rule_table : [ _mr_rule_t3_rec, _mr_rule_t3_power ]$
 ```
 
-- [ ] **Step 2: Add the tests**
+- [x] **Step 2: Add the tests**
 
 ```
 test_runner() := block([r, sd, st],
@@ -633,28 +649,47 @@ test_runner() := block([r, sd, st],
   /* Rule A: power, via decomposition (a=1 for x^3, a=5 for 5x^2) */
   check("power x^3", rubi(x^3, x), x^4/4),
   check("power 5x^2", rubi(5*x^2, x), 5*x^3/3),
+  /* direct firing assertions (not just answer-correctness — Maxima's own
+     integrate gives the same x^4/4, so the rubi() checks above can't tell a
+     firing rule from a fall-through). Prove the power rule actually fires and
+     produces its replacement, and rejects a non-match. This exercises the
+     %mr_dispatch `if res # false` (rule-fired) path. */
+  check_bool("power rule fires on x^3", is(_mr_rule_t3_power(x^3, x) # false)),
+  check("power rule returns x^4/4", _mr_rule_t3_power(x^3, x), x^4/4),
+  check_bool("power rule rejects x+1", is(_mr_rule_t3_power(x + 1, x) = false)),
   /* bare x (= x^1) does NOT match a*x^m (Power head dropped) -> fall-through
      to Maxima's own answer; documents the Power-optional structural case */
   check("power x (fall-through)", rubi(x, x), x^2/2),
-  /* Rule B: recursion re-dispatches onto the reduced integrand; the reduced
-     1/(3-12x^2) matches no loaded rule, so it falls through to integrate */
-  r : rubi(1/((1 + 2*x)*(3 - 6*x)), x),
-  check_bool("recursion re-dispatches",
-             is(r = integrate(1/(3 - 12*x^2), x))),
+   /* Rule B, end-to-end: rubi() on the product form yields the reduced-form
+      integral. NOTE this check alone is VACUOUS — integrate of the original
+      1/((1+2x)(3-6x)) and of the reduced 1/(3-12x^2) are equal on this build
+      (both log(2x+1)/12 - log(2x-1)/12, measured 2026-08-20), so it can't tell
+      a firing rule from a fall-through. The firing assertions below fix that. */
+   r : rubi(1/((1 + 2*x)*(3 - 6*x)), x),
+   check_bool("recursion re-dispatches (end-to-end)",
+              is(r = integrate(1/(3 - 12*x^2), x))),
+   /* direct firing assertions on the rec rule (non-vacuous): prove it actually
+      fires on the product form (match + cond + repl) and rejects a non-match. */
+   check_bool("rec rule fires on 1/((1+2x)(3-6x))",
+              is(_mr_rule_t3_rec(1/((1 + 2*x)*(3 - 6*x)), x) # false)),
+   check_bool("rec rule rejects x^2", is(_mr_rule_t3_rec(x^2, x) = false)),
   /* no rule fires -> Maxima's own answer (fall-through, not a package noun) */
   check_bool("no-match -> fall-through",
              is(rubi(x + sin(x), x) = x^2/2 - cos(x))
              or is(string(op(rubi(x + sin(x), x))) = "integrate")),
-  /* depth cap: a runaway self-recursive rule must return the fall-through
-     noun, not stack-overflow. exp(x^2) is Maxima's own noun. */
-  sd : %mr_max_depth, st : mr_rule_table,
-  %mr_max_depth : 8,
-  mr_rule_table : [ _mr_rule_t3_selfrec ],
-  r : rubi(exp(x^2), x),
-  check_bool("runaway recursion -> noun, not overflow",
-             is(string(op(r)) = "integrate")),
-  %mr_max_depth : sd,
-  mr_rule_table : st,
+   /* depth cap: a runaway self-recursive rule must hit the cap and return
+      Maxima's own integrate(f,x) result — not stack-overflow or hang.
+      exp(x^2) is used because on this build integrate solves it to an erf
+      closed form (NOT a noun — measured 2026-08-20); the assertion accepts
+      either the integrate result or a noun (other builds). */
+   sd : %mr_max_depth, st : mr_rule_table,
+   %mr_max_depth : 8,
+   mr_rule_table : [ _mr_rule_t3_selfrec ],
+   r : rubi(exp(x^2), x),
+   check_bool("runaway recursion -> cap result, not overflow",
+              is(r = integrate(exp(x^2), x)) or is(string(op(r)) = "integrate")),
+   %mr_max_depth : sd,
+   mr_rule_table : st,
   /* verbose flag prints the rule identity on fire (T5 §1) */
   rubi_verbose : true,
   rubi(x^3, x),
@@ -665,7 +700,7 @@ test_runner() := block([r, sd, st],
 
 Add `test_runner(),` to `run_all_tests` (after `test_load_and_api(),`).
 
-- [ ] **Step 3: Run Layer A**
+- [x] **Step 3: Run Layer A**
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: `0 failed`, Results line present. If the recursive rule's
@@ -673,7 +708,7 @@ matcher misbinds (the decomposition risk, T2 §3.5), do not paper over it —
 that is the signal the lambda guard or the rule shape is wrong; fix the
 rule, re-run.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```sh
 git add test_maxima_rubi.mac
@@ -721,11 +756,15 @@ Generator algorithm (per T4 §4, steps 1–5):
      else `true`).
    **Drop the `.` from optionals** (plain all-slots-present pattern — the
    matcher's decomposition fills the Plus/Times identity defaults, measured
-   2026-08-20), **except** an optional Power exponent `u_^m_.`: the Power
-   head is dropped when the exponent is 1, which decomposition cannot fill,
-   so the emitter D-duplicates that one slot — emit a second matcher with the
-   exponent removed and `m` bound to `1` (see `power_dups`). Translate the
-   head `Int[expr, x_Symbol]` to the `(f, x)` call shape.
+   2026-08-20). The emitter emits the PLAIN pattern only. For an optional
+   Power exponent `u_^m_.`, the Power head is dropped when the exponent is 1,
+   which decomposition cannot fill; the bare-exponent-1 case therefore falls
+   through to `integrate` (correct answer, not via the rule) — a coverage gap,
+   not a correctness bug. The Power-optional D-duplication (`power_dups`: a
+   second matcher with the exponent removed and `m` bound to 1) is DEFERRED to
+   Task 9's divergence loop, which adds it where the corpus shows the gap
+   (Architecture note). Translate the head `Int[expr, x_Symbol]` to the `(f, x)`
+   call shape.
 3. Conditions: split on top-level `&&`; each atom through the translation
    table (`FreeQ[{a,b}, x]` → `freeof(x, a) and freeof(x, b)`;
    `EqQ`/`NeQ` → `%mr_eqQ`/`%mr_neQ`; comparisons → `is(…)`); emit as the
@@ -745,7 +784,7 @@ rule, and token) on: a token not in the translation table; a pattern
 variable it cannot rename; an unparseable rule run. It prints, per file,
 the rule count; the total across the 67 files must be 2,710 (Task 6).
 
-- [ ] **Step 1: Write `generator/translation_table.py`**
+- [x] **Step 1: Write `generator/translation_table.py`**
 
 The closed table from the Global Constraints section, as two dicts plus
 the argument-shape rules the emitter needs:
@@ -842,7 +881,7 @@ def translate(token):
                    f"before generating")
 ```
 
-- [ ] **Step 2: Write `generator/generate_class1.py`**
+- [x] **Step 2: Write `generator/generate_class1.py`**
 
 Reuse the census parser by path import (the census's own idiom):
 
@@ -1221,13 +1260,13 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 3: Generate 1.1.1.1 and inspect it**
+- [x] **Step 3: Generate 1.1.1.1 and inspect it**
 
 Run: `python3 generator/generate_class1.py --only 1.1.1.1`
 Expected: `rules/class1/1_1_1_1.mac` with 5 rules (the file has exactly 5
 `Int` rules — count them in the source first: `grep -c "^Int\[" "reference/rubi/Rubi/IntegrationRules/1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.1 (a+b x)^m.m"` → 5). The emitted file must show: the pin + MIT header; per-rule `matchdeclare`/`defmatch(_mr_pat_1_1_1_1_r<n>, …, x)`; `_mr_cond_…`/`_mr_repl_…` with the block-local `geteqR` preamble (standalone statements, never nested in a call's args); `_mr_rule_…`; `mr_rules_1_1_1_1 : [ … ]$`; `mr_rules_count_1_1_1_1 : 5$`; `mr_witness_1_1_1_1() := true$` last.
 
-- [ ] **Step 4: Wire the loader**
+- [x] **Step 4: Wire the loader**
 
 In `maxima_rubi.mac`, after the utils load:
 
@@ -1236,7 +1275,7 @@ In `maxima_rubi.mac`, after the utils load:
 mr_rule_table : mr_rules_1_1_1_1$
 ```
 
-- [ ] **Step 5: Swap the hand-written rules for the generated file in Layer A**
+- [x] **Step 5: Swap the hand-written rules for the generated file in Layer A**
 
 In `test_maxima_rubi.mac`: delete the Task-3 hand-written rule block and
 `mr_rule_table : [ _mr_rule_t3_rec, _mr_rule_t3_power ]$` (the loader now
@@ -1256,7 +1295,7 @@ test_rules_1_1_1_1_struct() := block([],
 
 Add `test_rules_1_1_1_1_struct(),` to `run_all_tests`.
 
-- [ ] **Step 6: Run Layer A**
+- [x] **Step 6: Run Layer A**
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: `0 failed` with the Results line. A FAIL here is a generator
@@ -1265,7 +1304,7 @@ count). The generated rules reference `%mr_*` predicates that are not yet
 defined — that is fine at load time (they are noun references inside `:=`
 bodies, not evaluated); their behavior is tested in Task 5 once ported.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```sh
 git add generator/ rules/class1/1_1_1_1.mac maxima_rubi.mac test_maxima_rubi.mac
@@ -1304,7 +1343,7 @@ over Maxima's `coefficient`, which is a **noun in this build**, hence the
 `%mr_coeff` shim), `Subst` at :5140 (the back-substitution form used by
 1.1.1.1's last rule).
 
-- [ ] **Step 1: Write the unit probes first (red)**
+- [x] **Step 1: Write the unit probes first (red)**
 
 Add to `test_maxima_rubi.mac`:
 
@@ -1346,13 +1385,13 @@ test_pred_cluster1() := block([],
 
 Add `test_pred_cluster1(),` to `run_all_tests`.
 
-- [ ] **Step 2: Run to confirm red**
+- [x] **Step 2: Run to confirm red**
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: FAILs naming the missing `%mr_*` functions (or no Results line —
 a hard error on the first undefined call; both are "red").
 
-- [ ] **Step 3: Implement the cluster in `maxima_rubi_utils.mac`**
+- [x] **Step 3: Implement the cluster in `maxima_rubi_utils.mac`**
 
 Each function ports its `.m` source (cited above) to Maxima under the
 house rules; the implementations are small (5–30 lines each). The two with
@@ -1384,7 +1423,7 @@ each function lands with its unit probes green before the next. The
 ratsimp∘factor`, `simplify`/`together` unbound here; `%mr_together` is
 `num(e)/den(e)` after `rat`.)
 
-- [ ] **Step 4: First behavioral test — generated 1.1.1.1 end-to-end**
+- [x] **Step 4: First behavioral test — generated 1.1.1.1 end-to-end**
 
 With cluster 1 ported, the five real 1.1.1.1 rules (Task 4's structural
 file) now run. Add to `test_maxima_rubi.mac`:
@@ -1397,13 +1436,16 @@ test_rules_1_1_1_1_behavior() := block([r],
   check("5x^2", rubi(5*x^2, x), 5*x^3/3),
   /* rule 1: 1/x -> log(x) */
   check("1/x", rubi(1/x, x), log(x)),
-  /* rule 4: (a+b x)^m, m # -1 */
-  check("(1+2x)^3", ratsimp(rubi((1 + 2*x)^3, x)), ratsimp((1 + 2*x)^4/12)),
-  /* rule 3: 1/(a+b x) -> log(RemoveContent[a+b x, x])/b */
-  check("1/(a+b x)", ratsimp(rubi(1/(a + b*x), x)), ratsimp(log(a + b*x)/b)),
-  /* rule 5: (a+b u)^m with u linear in x, via Subst + recursion */
-  r : rubi((1 + 2*(3*x))^2, x),
-  check_bool("linear-in-u via Subst", is(ratsimp(r) = ratsimp((1 + 6*x)^3/9))),
+   /* rule 4: (a+b x)^m, m # -1. d/dx[(1+2x)^4/8] = (1+2x)^3 (verified 2026-08-20;
+      the original /12 in this plan was a wrong antiderivative). */
+   check("(1+2x)^3", ratsimp(rubi((1 + 2*x)^3, x)), ratsimp((1 + 2*x)^4/8)),
+   /* rule 3: 1/(a+b x) -> log(RemoveContent[a+b x, x])/b */
+   check("1/(a+b x)", ratsimp(rubi(1/(a + b*x), x)), ratsimp(log(a + b*x)/b)),
+   /* rule 4 again: (1+2*(3x))^2 simplifies to (1+6x)^2 (linear in x), so rule 4
+      handles it (NOT rule 5 — rule 5's (a+b*u)^m pattern is dead in this build,
+      shadowed by rule 4; see ledger F1). d/dx[(1+6x)^3/18] = (1+6x)^2. */
+   r : rubi((1 + 2*(3*x))^2, x),
+   check_bool("linear base (1+6x)^2", is(ratsimp(r) = ratsimp((1 + 6*x)^3/18))),
   /* NeQ[m, -1]: the m = -1 case must NOT take the power rule (falls to 1/x) */
   check_bool("NeQ guard honored", is(rubi(1/x, x) = log(x))),
   true
@@ -1412,14 +1454,14 @@ test_rules_1_1_1_1_behavior() := block([r],
 
 Add `test_rules_1_1_1_1_behavior(),` to `run_all_tests`.
 
-- [ ] **Step 5: Run Layer A to green**
+- [x] **Step 5: Run Layer A to green**
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: `0 failed`, Results line. A FAIL is a predicate-port defect or a
 generator defect (Power-optional D-duplication for the bare-`x` case, the
 `freeof(x)` matchdeclare guards, the `%mr_subst`/`%mr_removeContent` ports).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```sh
 git add maxima_rubi_utils.mac test_maxima_rubi.mac
@@ -1443,7 +1485,47 @@ git commit -m "feat: predicate cluster 1 + clone-gap eq/neQ + first behavioral 1
   mr_rules_1_1_1_2 concat …`; the **measured `defmatch` load wall** (the
   first implementation milestone includes measuring it — T5 §5).
 
-- [ ] **Step 1: Extend the generator to all 67 files**
+- [x] **Step 0 (PREREQ — the F2 blocker from the Task 5 review): PolyQ overload dispatch**
+
+The generator's table maps ALL `PolyQ` arities 1:1 to the 2-arg `%mr_polyQ`,
+which is wrong for two of the three real shapes in class 1 (measured in the
+Task 5 review):
+- `PolyQ[u, x]` (2-arg, Symbol) → `%mr_polyQ(u, x)` — already correct.
+- `PolyQ[u, x, n]` (3-arg, Symbol) → must become `%mr_polyDegQ(u, x, n)`
+  (already ported + correct after the Task 5 Bug B fix). ~82–100 uses.
+- `PolyQ[u, x^v]` / `PolyQ[u, x^v, n]` (power-form, ~100 2-arg uses, e.g.
+  `PolyQ[Pq, x^(n/2)]`) → a SILENT semantic error today: `%mr_polyQ(u, x^v)`
+  treats `x^v` as the variable, so `PolyQ[x^4+1, x^2]` → false where Rubi →
+  true, flipping negated guards (`Not[PolyQ[…,x^(n/2)]]` in 1.1.3.7.m:41,
+  1.1.3.8.m:21) into wrong-answer paths.
+
+Fix, in this order:
+1. **Port the power-form predicate** into `maxima_rubi_utils.mac` with unit
+   probes (TDD, red→green), reusing the term walkers:
+   - `%mr_polyPowerQ(u, x, v)` — is `u` a polynomial in `x^v`? True iff
+     `expand(u)` has no `x` in any denominator and every term's `x`-exponent
+     (via `%mr_term_xexp`) is a non-negative multiple of `v`.
+    - `%mr_polyDegPowerQ(u, x, v, n)` — `%mr_polyPowerQ(u, x, v)` and the
+      maximum `k/v` (over terms) is `= n` — EXACT degree (Rubi :533
+      `EqQ[Expon[u,x^v],n]`). DECISION 2026-08-23 (Task-6 review finding 4,
+      human): the original `<= n` pin was wrong — it made 15 class-1 rules
+      over-fire on integrands of degree < n; utils + suite probes fixed.
+    Unit probes (Rubi-correct): `polyPowerQ(x^4+1, x, 2)=true`,
+    `polyPowerQ(x^3+1, x, 2)=false`, `polyPowerQ(1/x, x, 2)=false` (denominator),
+    `polyDegPowerQ(x^4+1, x, 2, 2)=true`, `polyDegPowerQ(x^4+1, x, 2, 1)=false`,
+    `polyDegPowerQ(x^2+1, x, 2, 2)=false` (degree 1 < 2 — the exact-degree
+    over-fire case).
+2. **Wire the generator dispatch** in `generate_class1.py`: at translation time
+   the arg count and the second-arg head are known — `(u, x)` → `%mr_polyQ`,
+   `(u, x, n)` → `%mr_polyDegQ`, `(u, x^v[, n])` → `%mr_polyPowerQ` /
+   `%mr_polyDegPowerQ`. (A head that is `x` with a Power argument is the
+   power-form; a bare `x` is the Symbol form.)
+3. **Verify**: a throwaway `.m` with all four `PolyQ` shapes generates the four
+   distinct calls (no silent mis-emit); 1.1.1.1 regenerates byte-identical (it
+   has no `PolyQ`). Do not weaken the loud failure — a shape you cannot map is a
+   `GenError`, not a pass-through.
+
+- [x] **Step 1: Extend the generator to all 67 files**
 
 Run: `python3 generator/generate_class1.py`
 Expected: 67 files under `rules/class1/`; the generator prints per-file
@@ -1452,7 +1534,7 @@ unparseable run) is fixed at the source — extend `translation_table.py`
 only if the census table was wrong (record it in the commit message);
 fix the emitter if the emitter was wrong. Do not weaken the loud failure.
 
-- [ ] **Step 2: Wire the full load list**
+- [x] **Step 2: Wire the full load list**
 
 The generator also emits (or prints) the ordered load list; paste it into
 `maxima_rubi.mac` between the utils load and the table assembly, one
@@ -1465,7 +1547,7 @@ mr_rule_table : mr_rules_1_1_1_1 concat mr_rules_1_1_1_2 concat … $
 
 (67 concat terms, generated — not hand-typed.)
 
-- [ ] **Step 3: Measure the load wall (T5 §5 open item 1)**
+- [x] **Step 3: Measure the load wall (T5 §5 open item 1)**
 
 Create `probes/load_wall/probe-load-wall.run` + the Maxima batch it runs:
 time `load("maxima_rubi.mac")` cold (fresh `maxima --very-quiet -b`),
@@ -1481,7 +1563,7 @@ the decision in the commit message and in `todo/TODO.md`'s T5 note.
 the wall is the bare 2,710 `defmatch` compilations; the measurement
 confirms that is loadable.)
 
-- [ ] **Step 4: Census cross-check in Layer A**
+- [x] **Step 4: Census cross-check in Layer A**
 
 Add to `test_maxima_rubi.mac`:
 
@@ -1503,7 +1585,7 @@ census's own numbers, not re-derived.) Add `test_census(),` to
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: `0 failed`, `2710` confirmed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```sh
 git add generator/ rules/class1/ maxima_rubi.mac test_maxima_rubi.mac probes/load_wall/
@@ -1524,7 +1606,7 @@ git commit -m "feat: full class-1 generation (67 files, 2710 rules) + measured l
   the ~15 shims), each with unit probes. This is the finite utility layer
   of T4 §4 — none of it is per-rule work.
 
-- [ ] **Step 1: Work the cluster order**
+- [x] **Step 1: Work the cluster order**
 
 T4's concentration data orders the work: the 679 MANUAL-bucket rules
 cluster — the top ten files hold 285 of them, and 23 of the 64 files carry
@@ -1541,7 +1623,7 @@ ported). Port in census usage order (PolyQ 376, IntBinomialQ 78, LinearQ
 5. run Layer A (green),
 6. commit per cluster (3–6 functions per commit, message naming them).
 
-- [ ] **Step 2: The shims**
+- [x] **Step 2: The shims**
 
 The ~15 this-binary shims (`%mr_atanh`/`%mr_asinh`/`%mr_acosh` log forms,
 `%mr_ratroot` family via `%mr_rt`, `%mr_cancel`, `%mr_hold`, `%mr_boole`,
@@ -1552,7 +1634,7 @@ probe cycle; on a future 5.50 upgrade, re-run
 `sh probes/translation/02-support-surface.run` and delete whatever became
 a builtin (the table names the shims; they may become pass-throughs).
 
-- [ ] **Step 3: Completion gate**
+- [x] **Step 3: Completion gate**
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: `0 failed`; every `%mr_*` name in `translation_table.py` either
@@ -1578,14 +1660,14 @@ contract makes any miss impossible to ship silently).
   `verified` / `no-answer` → PASS; `unverified` / `unexpected` / `error` /
   `timeout` → FAIL.
 
-- [ ] **Step 1: Write `test/mr_preload.mac`**
+- [x] **Step 1: Write `test/mr_preload.mac`**
 
 ```
 batch_answers_from_file: true$
 load("maxima_rubi.mac")$
 ```
 
-- [ ] **Step 2: Write `test/corpus_class1_driver.py`**
+- [x] **Step 2: Write `test/corpus_class1_driver.py`**
 
 Generalize `probes/corpus/probe-integrate-sample.py` (keep its measured
 mechanics verbatim where they are load-bearing): one fresh
@@ -1611,14 +1693,14 @@ Same CLI shape as the T3 driver (`[filter] [per-file] [timeout] [suite-dir]
 [start-index] [append] [skip-first] [out-file] [stop-index]`) so the
 18-shard planner and `merge-shards.py` carry over unchanged.
 
-- [ ] **Step 3: Smoke — 1.1.1.2, first 20 entries**
+- [x] **Step 3: Smoke — 1.1.1.2, first 20 entries**
 
 Run: `python3 test/corpus_class1_driver.py "1.1.1.2" 20 30`
 Expected: 20 CLASS lines, a `Results:` line, no subprocess deaths. This
 file (1,917 entries, mostly fast — the handoff's suggested smoke) is the
 first real contact between the generated rules and the corpus.
 
-- [ ] **Step 4: Triage the smoke**
+- [x] **Step 4: Triage the smoke**
 
 Every FAIL is one of: a rule that misfired (decomposition, T2 §3.5 — fix
 the rule's predicates or D-duplicate that one rule), a predicate port
@@ -1626,7 +1708,7 @@ error (fix + re-probe), a zero-chain miss (the T4 §4 strengthen loop,
 Task 9), or a genuine divergence (record it). Do not move to the full run
 with untriaged FAILs.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```sh
 git add test/corpus_class1_driver.py test/mr_preload.mac
@@ -1648,14 +1730,14 @@ git commit -m "feat: Layer-B corpus driver (package in place of integrate) + 1.1
 - Produces: the measured class-1 verdict (the milestone's acceptance),
   committed as a re-runnable shard run + merged `.out` (T3 §3.4 machinery).
 
-- [ ] **Step 1: Recursion cap + cap tuning (T5 §5 open items 2, 4)**
+- [x] **Step 1: Recursion cap + cap tuning (T5 §5 open items 2, 4)**
 
 From the smoke and a timed sample, set `%mr_max_depth` against
 corpus-observed recursion depth (candidate 16), and record whether the
 30 s per-integral cap clips the package's own tail (the T3 p95 = 24.2 s
 was `integrate`'s; the package's is measured here).
 
-- [ ] **Step 2: Full run, sharded**
+- [x] **Step 2: Full run, sharded**
 
 Use T3 §3.4's planner rules (partial parts get single-file ranges;
 whole-file chains cap at max length; driver-simulation assert before
@@ -1663,7 +1745,7 @@ launch) to build an 18-worker shard plan over all 40 class-1 files /
 25,697 entries; run it (≈2.2 h wall on this box); `merge-shards.py`
 verifies completeness (25,697/25,697, no dupes/missing/extra).
 
-- [ ] **Step 3: Divergence loop (T4 §4, manual step 3)**
+- [x] **Step 3: Divergence loop (T4 §4, manual step 3)**
 
 Chase FAILs file-by-file using the corpus-file ≡ Rubi-file key:
 misfired rule → fix the rule (predicates or D-duplication in the
@@ -1673,7 +1755,7 @@ ratsimp∘factor` extended only with measured closures (the 23 unverified of
 T3's sample are the expected first divergences). Each fix is committed
 with its file key and the shard re-run that closed it.
 
-- [ ] **Step 4: Acceptance measurement**
+- [x] **Step 4: Acceptance measurement**
 
 Write `docs/corpus-baseline-uplift.md`: the full-run verdict table
 (expected/verified/no-answer/unverified/timeout/error/unexpected), the
@@ -1682,7 +1764,7 @@ no-answer, 3,102 unverified, 1,260 timeout, 240 error, 0 unexpected), the
 31/31 non-integrable agreement re-checked, and the per-section table.
 Stamped with date + `build_info()`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```sh
 git add docs/corpus-baseline-uplift.md rules/ maxima_rubi_utils.mac generator/
@@ -1706,14 +1788,14 @@ git commit -m "feat: class-1 full run + divergence loop + measured uplift (miles
 **Interfaces:**
 - Produces: the milestone-1 record a fresh session resumes from.
 
-- [ ] **Step 1: README + license**
+- [x] **Step 1: README + license**
 
 `README.md`: what the package is, `load("maxima_rubi.mac")`,
 `rubi(f, x)` (antiderivative or the `integrate` noun), `rubi_verbose`,
 the class-1 scope, the Rubi MIT copyright notice (T1 §6 — required), the
 two-layer test protocol.
 
-- [ ] **Step 2: Update AGENTS.md `## Tests`**
+- [x] **Step 2: Update AGENTS.md `## Tests`**
 
 Replace the "when the test harness exists" paragraph with the live
 protocol: Layer A `maxima --very-quiet -b test_maxima_rubi.mac` (read the
@@ -1721,7 +1803,7 @@ protocol: Layer A `maxima --very-quiet -b test_maxima_rubi.mac` (read the
 `python3 test/corpus_class1_driver.py …` (same reading protocol, sharded
 per T3 §3.4).
 
-- [ ] **Step 3: Handoff + TODO**
+- [x] **Step 3: Handoff + TODO**
 
 `handoff/<date>-milestone-1-complete.md`: where everything lives, the
 measured state (uplift table, load wall, cap values), the open items
@@ -1730,7 +1812,7 @@ measured state (uplift table, load wall, cap values), the open items
 known-derived predicate (`%mr_possible_zeroQ`, clone-gap note).
 `todo/TODO.md`: T5's open-measurement rows close with their values.
 
-- [ ] **Step 4: Final gate**
+- [x] **Step 4: Final gate**
 
 Run Layer A: `maxima --very-quiet -b test_maxima_rubi.mac` — read the
 `Results:` line. Then code-review the milestone
@@ -1738,7 +1820,7 @@ Run Layer A: `maxima --very-quiet -b test_maxima_rubi.mac` — read the
 (`verification-before-completion`): no FAILs, Results line present,
 uplift doc committed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```sh
 git add README.md AGENTS.md handoff/ todo/

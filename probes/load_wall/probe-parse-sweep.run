@@ -1,0 +1,70 @@
+#!/bin/sh
+# probes/load_wall/probe-parse-sweep.run — per-file parse/load check of
+# the generated class-1 rule files, one fresh maxima process per file.
+#
+#   sh probes/load_wall/probe-parse-sweep.run
+#
+# WHY THIS PROBE EXISTS (measured 2026-08-22): the generated files can
+# contain LATENT parse bugs — a syntax error mid-file. Two behaviours
+# make those invisible without a proper check:
+#   * batch mode continues after a syntax error and still exits 0 (and
+#     prints whatever disp the driver still runs), so an rc+number
+#     check reports "ok" for a file that failed;
+#     (probe-load-wall.run part 2 had exactly this false-positive —
+#     it reported all 67 files ok while 6 of them fail to parse);
+#   * a syntax error reached while `load`-ing a sibling makes the
+#     OUTER batch silently stop reading the rest of the batch file
+#     (exit 0, no further lines executed) — so a full-load run dies
+#     quietly at the first broken file.
+# Detection therefore greps the per-file log for "incorrect syntax",
+# "could not load" (the witness check) and "Thread local storage".
+#
+# MEASURED 2026-08-22 (Maxima 5.50.0, SBCL 2.6.7): 6 of 67 files fail:
+#   1_1_3_1, 1_1_3_2, 1_1_3_7, 1_2_1_1, 1_2_3_4, 1_4_3
+# (unparenthesized ==/= mixed with and/or; missing ); a generator fix
+# is pending — this sweep is the acceptance check for it).
+#
+# The probe is a STATUS REPORT: it prints the broken set (with the
+# first error per file) and passes on completion. It self-flags only
+# if the run itself breaks (a file log with neither a witness outcome
+# nor a parse error, or a FATAL that is not a parse issue).
+cd "$(dirname "$0")/../.." || exit 1
+OUT=probes/load_wall/probe-parse-sweep.out
+TMPD=$(mktemp -d)
+trap 'rm -rf "$TMPD"' EXIT
+fail=0
+
+{
+  echo "# class-1 per-file parse sweep, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  echo
+  n=0; bad=0
+  for f in rules/class1/*.mac; do
+    k=$(basename "$f" .mac)
+    n=$((n + 1))
+    {
+      echo 'load("maxima_rubi.mac");'
+      printf '%s\n' "%mr_load_sibling(\"$f\", 'mr_witness_$k);"
+    } > "$TMPD/one.mac"
+    maxima --very-quiet -X "--tls-limit 100000" -b "$TMPD/one.mac" > "$TMPD/one.log" 2>&1
+    rc=$?
+    if grep -q "Thread local storage" "$TMPD/one.log"; then
+      echo "  $k: FATAL (unexpected for a single file — re-measure)"; fail=1
+    elif grep -q "incorrect syntax\|could not load" "$TMPD/one.log"; then
+      bad=$((bad + 1))
+      err=$(grep -m1 "incorrect syntax" "$TMPD/one.log" | sed 's/.*class1\///' | cut -c1-100)
+      echo "  $k: PARSEFAIL  $err"
+    elif [ $rc -ne 0 ]; then
+      echo "  $k: UNEXPECTED (exit $rc) — probe broke?"; fail=1
+    fi
+  done
+  echo
+  echo "sweep: $n files, $bad parse-fail, $((n - bad)) clean"
+  if [ $fail -eq 0 ]; then
+    echo "VERDICT: sweep complete (broken set above is the status, not a probe fault)"
+  else
+    echo "VERDICT: DEVIATION — the run itself broke"
+  fi
+} > "$OUT"
+echo "wrote $OUT"
+[ $fail -eq 0 ]

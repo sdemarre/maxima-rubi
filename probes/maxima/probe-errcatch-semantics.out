@@ -1,0 +1,33 @@
+# probe-errcatch-semantics output, 2026-08-20
+# Maxima branch_5_49_base_796_g60186bb22_dirty
+batch("probes/maxima/probe-errcatch-semantics.mac")
+disp(build_info())
+Maxima-version: "branch_5_49_base_796_g60186bb22_dirty"
+Maxima build date: "2026-07-28 18:58:04"
+Host type: "x86_64-pc-linux-gnu"
+Lisp implementation type: "SBCL"
+Lisp implementation version: "2.6.7"
+User dir: "/home/serge/.maxima"
+Temp dir: "/tmp"
+Object dir: "/home/serge/.maxima/binary/branch_5_49_base_796_g60186bb22_dirty/sbcl/2_6_7"
+Frontend: false
+
+disp(concat("errcatch(1+1)            = ",string(errcatch(1+1))))
+                        errcatch(1+1)            = [2]
+
+disp(concat("errcatch(throw)          = ",
+            string(errcatch(block([],error("boom"))))))
+boom
+                         errcatch(throw)          = []
+
+disp(concat("errcatch(load existing)  = ",
+            string(errcatch(load("maxima_rubi_utils.mac")))))
+             errcatch(load existing)  = ["maxima_rubi_utils.mac"]
+
+disp(concat("errcatch(load missing)   = ",
+            string(errcatch(load("no_such_file_xyz_mr.mac")))))
+?file_search1: no_such_file_xyz_mr.mac? not found in 
+                                         ?file_search_maxima,file_search_lisp?.
+                         errcatch(load missing)   = []
+
+quit()

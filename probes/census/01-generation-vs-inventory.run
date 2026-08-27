@@ -1,0 +1,12 @@
+#!/bin/sh
+# probes/census/01-generation-vs-inventory.run — T6 Step 4 (static half).
+#
+#   sh probes/census/01-generation-vs-inventory.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# generation-vs-inventory census cross-check, $(date -u +%F)"
+  python3 probes/census/01-generation-vs-inventory.py
+} > probes/census/01-generation-vs-inventory.out
+rc=$?
+echo "wrote probes/census/01-generation-vs-inventory.out"
+exit $rc

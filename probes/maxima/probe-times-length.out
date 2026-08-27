@@ -1,0 +1,61 @@
+# probe-times-length output, 2026-08-25
+# Maxima 5.50.0
+batch("probes/maxima/probe-times-length.mac")
+disp(build_info())
+Maxima-version: "5.50.0"
+Maxima build date: "2026-08-20 21:36:22"
+Host type: "x86_64-pc-linux-gnu"
+Lisp implementation type: "SBCL"
+Lisp implementation version: "2.6.7"
+User dir: "/home/serge/.maxima"
+Temp dir: "/tmp"
+Object dir: "/home/serge/.maxima/binary/5_50_0/sbcl/2_6_7"
+Frontend: false
+
+t2:(a+b*x)^2*(c+d*x)
+disp(concat("L2  len(",string(t2),") = ",string(length(t2))))
+                        L2  len((b*x+a)^2*(d*x+c)) = 2
+
+disp(concat("P2  part 1 = ",string(part(t2,1)),"  part 2 = ",
+            string(part(t2,2))))
+                    P2  part 1 = (b*x+a)^2  part 2 = d*x+c
+
+t3:(a+b*x)^2*(c+d*x)*(e+f*x)
+disp(concat("L3  len = ",string(length(t3))))
+                                  L3  len = 3
+
+disp(concat("P3  p1 = ",string(part(t3,1)),"  p2 = ",string(part(t3,2)),
+            "  p3 = ",string(part(t3,3))))
+                  P3  p1 = (b*x+a)^2  p2 = d*x+c  p3 = f*x+e
+
+t4:(a+b*x)*(c+d*x)*(e+f*x)*(g+h*x)
+disp(concat("L4  len = ",string(length(t4))))
+                                  L4  len = 4
+
+for i thru length(t4) do
+    disp(concat("P4  p",string(i)," = ",string(part(t4,i))))
+                                P4  p1 = b*x+a
+
+                                P4  p2 = d*x+c
+
+                                P4  p3 = f*x+e
+
+                                P4  p4 = h*x+g
+
+t5:x^3*(a+b*x)*2
+disp(concat("L5  len = ",string(length(t5))))
+                                  L5  len = 3
+
+for i thru length(t5) do
+    disp(concat("P5  p",string(i)," = ",string(part(t5,i))))
+                                  P5  p1 = 2
+
+                                 P5  p2 = x^3
+
+                                P5  p3 = b*x+a
+
+disp(TLD)
+                                      TLD
+
+ /home/serge/src/maxima-rubi/.worktrees/milestone-1/probes/maxima/probe-times-\
+length.mac

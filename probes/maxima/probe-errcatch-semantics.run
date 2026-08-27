@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run the errcatch-semantics probe (from repo root):
+#   sh probes/maxima/probe-errcatch-semantics.run
+# Output is redirected to probe-errcatch-semantics.out with a date/build
+# stamp and committed (measured-claims discipline).
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# probe-errcatch-semantics output, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  maxima --very-quiet -b probes/maxima/probe-errcatch-semantics.mac
+} > probes/maxima/probe-errcatch-semantics.out
+echo "wrote probes/maxima/probe-errcatch-semantics.out"

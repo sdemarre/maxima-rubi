@@ -1,0 +1,34 @@
+/* probes/maxima/probe-errcatch-semantics.mac  (T5 / loader input)
+ *
+ * Measures the return convention of errcatch in the installed build.
+ * The package loader (maxima_rubi.mac %mr_load_sibling) relies on it to
+ * decide when to fall back from a sibling-dir load to a by-name load, so
+ * the convention must be measured, not assumed.
+ *
+ * Run:
+ *   sh probes/maxima/probe-errcatch-semantics.run
+ *
+ * Interpretation: in this build errcatch(EXPR) returns a ONE-ELEMENT
+ * list [RESULT] when EXPR evaluates without error, and the EMPTY list []
+ * when EXPR throws. (This is the OPPOSITE of the convention some Maxima
+ * documentation describes.) The loader's by-name fallback therefore fires
+ * on `ok = []` (the sibling-dir load FAILED), not on `ok # []`.
+ *
+ * Stamped 2026-08-20; build branch_5_49_base_796_g60186bb22_dirty
+ * (2026-07-28), SBCL 2.6.7.
+ */
+
+disp(build_info())$
+
+/* a clean value -> one-element list holding the value */
+disp(concat("errcatch(1+1)            = ", string(errcatch(1 + 1))))$
+/* a thrown error -> empty list */
+disp(concat("errcatch(throw)          = ",
+            string(errcatch(block([], error("boom"))))))$
+/* load of an existing sibling -> one-element list */
+disp(concat("errcatch(load existing)  = ",
+            string(errcatch(load("maxima_rubi_utils.mac")))))$
+/* load of a missing file -> empty list */
+disp(concat("errcatch(load missing)   = ",
+            string(errcatch(load("no_such_file_xyz_mr.mac")))))$
+quit();

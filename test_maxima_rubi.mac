@@ -1,0 +1,1323 @@
+/* test_maxima_rubi.mac — Layer A unit suite (diophantine protocol).
+ * Gate: maxima --very-quiet -b test_maxima_rubi.mac
+ * Ends with "Results: <n> passed, <m> failed"; a mid-run death prints no
+ * Results line, which is itself a failure. */
+display2d : false$
+
+tests_passed : 0$
+tests_failed : 0$
+
+/* actual = expected (equations evaluate in if-conditions, T16). */
+check(test_name, actual, expected) := block([],
+  if actual = expected then (
+    tests_passed : tests_passed + 1,
+    print("  PASS: ", test_name)
+  ) else (
+    tests_failed : tests_failed + 1,
+    print("  FAIL: ", test_name),
+    print("    expected: ", expected),
+    print("    actual:   ", actual)
+  ),
+  true
+)$
+
+/* Three-valued boolean assertion (diophantine item 19): is() gives
+   true/false/unknown in this build; unknown is a broken assertion,
+   counted as a failure so it cannot hide. */
+check_bool(test_name, actual) := block([v],
+  v : is(actual),
+  if v = true then (
+    tests_passed : tests_passed + 1,
+    print("  PASS: ", test_name)
+  ) elseif v = false then (
+    tests_failed : tests_failed + 1,
+    print("  FAIL: ", test_name)
+  ) else (
+    tests_failed : tests_failed + 1,
+    print("  FAIL (non-boolean): ", test_name),
+    print("    actual:   ", actual)
+  ),
+  true
+)$
+
+check_not(test_name, actual) := block([v],
+  v : is(actual),
+  if v = false then (
+    tests_passed : tests_passed + 1,
+    print("  PASS: ", test_name)
+  ) elseif v = true then (
+    tests_failed : tests_failed + 1,
+    print("  FAIL: ", test_name)
+  ) else (
+    tests_failed : tests_failed + 1,
+    print("  FAIL (non-boolean): ", test_name),
+    print("    actual:   ", actual)
+  ),
+  true
+)$
+
+test_smoke() := block([],
+  print("--- smoke ---"),
+  check("smoke equality", 1 + 1, 2),
+  check_bool("smoke true", true),
+  check_not("smoke false", false),
+  true
+)$
+
+run_all_tests() := block([],
+  test_smoke(),
+  test_load_and_api(),
+  test_dispatch(),
+  test_rules_1_1_1_1_struct(),
+  test_pred_cluster1(),
+  test_numeric_predicates(),
+  test_structural_predicates(),
+  test_matchQ_predicates(),
+  test_int_family_predicates(),
+  test_sum_simpler_predicates(),
+  test_cluster_d_predicates(),
+  test_cluster_e_predicates(),
+  test_cluster_f_predicates(),
+  test_cluster_g_shims(),
+  test_cluster_h_shims(),
+  test_cluster_i_expandIntegrand(),
+  test_cluster_j_shims(),
+  test_cluster_k_shims(),
+  test_cluster_l_powered_form(),
+  test_rules_1_1_1_1_behavior(),
+  test_census(),
+  print(""),
+  print("========================================"),
+  print("Results: ", tests_passed, " passed, ", tests_failed, " failed"),
+  print("========================================"),
+  tests_failed = 0
+)$
+
+load("maxima_rubi.mac")$
+
+test_load_and_api() := block([r, saved_table],
+  print("--- load + API fallback gate ---"),
+  check_bool("loader witness survived", is(mr_witness_maxima_rubi() = true)),
+  /* 5 fires no class-1 rule with the full table (measured 2026-08-24 —
+     the 1.1.1.1 family is (a+b x)^m / x^m / 1/x forms only; x^2 DOES
+     fire rule r2), so it exercises the two top-level fall-throughs
+     directly. The default (2-arg) rubi is rules-only: a 0-firing
+     returns the no-answer noun, not Maxima's integrate; rubi_fallback
+     with fb = true restores the status-quo integrate fall-through. */
+  check_bool("default off: constant -> unintegrable noun",
+             is(rubi(5, x) = mr_unintegrable(5, x))),
+  check("fallback on: rubi_fallback(5, x, true)",
+        rubi_fallback(5, x, true), integrate(5, x)),
+  /* the no-fallback noun is the package's own, list-structured */
+  r : rubi(sin(x)^x, x),
+  check_bool("no-fallback noun detect",
+             is(atom(r) = false) and is(string(op(r)) = "unintegrable")),
+  /* noun forms are distinct from the fall-through noun */
+  check_bool("mr_unintegrable is a noun", is(mr_unintegrable(f, x) = 'unintegrable[f, x])),
+  /* empty table -> no rule can fire -> no-answer noun (default off).
+     Save/restore the table so a later test (Task 3+) is not run against
+     a wiped table (measured landmine 2026-08-20). */
+  saved_table : mr_rule_table,
+  mr_rule_table : [],
+  check_bool("empty table -> noun",
+             is(string(op(rubi(1/x, x))) = "unintegrable")),
+  mr_rule_table : saved_table,
+    true
+)$
+
+/* Non-vacuous dispatch regression test (guards the loop-level-return bug):
+   %mr_dispatch must return the FIRING rule's result, not false. Uses
+   controlled lambda rules so the result does not depend on any answer
+   coinciding with Maxima's own integrate. */
+test_dispatch() := block([saved_table],
+  print("--- dispatch mechanism (non-vacuous) ---"),
+  check("dispatch returns firing rule's result",
+        %mr_dispatch(x^2, x, [lambda([f, x], false), lambda([f, x], 42)], 1), 42),
+  check("dispatch returns false when no rule fires",
+        %mr_dispatch(x^2, x, [lambda([f, x], false)], 1), false),
+  check("dispatch: first firing rule wins (order)",
+        %mr_dispatch(x^2, x, [lambda([f, x], 42), lambda([f, x], false)], 1), 42),
+  /* end-to-end: rubi() must return the firing rule's result, not the
+     fall-through (integrate(x^7,x) = x^8/8, not 99) — save/restore the table */
+  saved_table : mr_rule_table,
+  mr_rule_table : [lambda([f, x], if f = x^7 then 99 else false)],
+  check("rubi uses the table (end-to-end, not fall-through)", rubi(x^7, x), 99),
+  mr_rule_table : saved_table,
+  true
+)$
+
+/* The behavioral test of the five rules needs the Task 5 predicates
+   (%mr_neQ, %mr_linearQ, %mr_removeContent, …) and lands there; this
+   asserts the generated file loaded intact. */
+test_rules_1_1_1_1_struct() := block([],
+  print("--- generated 1.1.1.1 (structural) ---"),
+  check_bool("witness survived", is(mr_witness_1_1_1_1() = true)),
+  check("count cross-check", mr_rules_count_1_1_1_1, 5),
+  check_bool("table is the file's rules", is(mr_rule_table = mr_rules_1_1_1_1)),
+  true
+)$
+
+test_pred_cluster1() := block([],
+  print("--- predicate cluster 1 ---"),
+  /* %mr_coeff: Maxima's coefficient is a noun here; %mr_coeff works */
+  check("coeff x^2+2x+1", %mr_coeff(x^2 + 2*x + 1, x, 1), 2),
+  check("coeff 3x", %mr_coeff(3*x, x, 1), 3),
+  check("coeff missing", %mr_coeff(3*x, x, 2), 0),
+  /* %mr_polyQ / %mr_linearQ: degree tests */
+  check_bool("polyQ x^2+x", %mr_polyQ(x^2 + x, x)),
+  check_not("polyQ 1/x", %mr_polyQ(1/x, x)),
+  check_bool("linearQ a+b x", %mr_linearQ(a + b*x, x)),
+  check_not("linearQ x^2", %mr_linearQ(x^2, x)),
+  /* monic-term regression probes (review bugs A/B: the term walkers
+     dropped the bare x term at n = 1 and bare x^n terms whose whole
+     is ^-headed — the most common shape in class 1) */
+  check("coeff x^2", %mr_coeff(x^2, x, 2), 1),
+  check("coeff x^2+2x+1 (x^2)", %mr_coeff(x^2 + 2*x + 1, x, 2), 1),
+  check("coeff x", %mr_coeff(x, x, 1), 1),
+  check("coeff x+1", %mr_coeff(x + 1, x, 1), 1),
+  check_bool("degree x^2", is(%mr_degree(x^2, x) = 2)),
+  check_bool("degree x^2+1", is(%mr_degree(x^2 + 1, x) = 2)),
+  /* totality: a non-polynomial returns the -1 sentinel, never a boolean */
+  check_bool("degree 1/x (total)", is(%mr_degree(1/x, x) = -1)),
+  check_bool("polyDegQ x^2+x deg 2", %mr_polyDegQ(x^2 + x, x, 2)),
+  /* %mr_polyPowerQ / %mr_polyDegPowerQ (Task 6 Step 0 — Rubi's PolyQ
+     power forms, IntegrationUtilityFunctions.m :512/:522/:532). The base
+     is an EXPRESSION (x or a capture such as a + b*x): u is a polynomial
+     in base^v iff expand(subst(t, base, u)) is a t-polynomial whose term
+     exponents are all non-negative multiples of v. */
+  check_bool("polyPowerQ x^4+1 in x^2", %mr_polyPowerQ(x^4 + 1, x, 2)),
+  check_not("polyPowerQ x^3+1 in x^2", %mr_polyPowerQ(x^3 + 1, x, 2)),
+  check_not("polyPowerQ 1/x in x^2", %mr_polyPowerQ(1/x, x, 2)),
+  check_bool("polyPowerQ 5 in x^2", %mr_polyPowerQ(5, x, 2)),
+  check_bool("polyPowerQ (x^2+1)^2 in x^2", %mr_polyPowerQ((x^2 + 1)^2, x, 2)),
+  check_not("polyPowerQ sin(x)+x^4 in x^2", %mr_polyPowerQ(sin(x) + x^4, x, 2)),
+  check_bool("polyPowerQ capture base 1+v^4 in v^2", %mr_polyPowerQ(1 + (a + b*x)^4, a + b*x, 2)),
+  check_not("polyPowerQ capture base 1+v^3 in v^2", %mr_polyPowerQ(1 + (a + b*x)^3, a + b*x, 2)),
+  check_bool("polyDegPowerQ x^4+1 in x^2 deg 2", %mr_polyDegPowerQ(x^4 + 1, x, 2, 2)),
+  check_not("polyDegPowerQ x^4+1 in x^2 deg 1", %mr_polyDegPowerQ(x^4 + 1, x, 2, 1)),
+  /* exact degree (Rubi :533 EqQ[Expon,n]): degree strictly less than n is
+     false — the <= n over-fire (15 class-1 rules) */
+  check_not("polyDegPowerQ x^2+1 in x^2 deg 2 (deg 1 < 2)", %mr_polyDegPowerQ(x^2 + 1, x, 2, 2)),
+  check_not("polyDegPowerQ x^2+1 in x^2 deg 5 (deg 1 < 5)", %mr_polyDegPowerQ(x^2 + 1, x, 2, 5)),
+  /* zero polynomial: Rubi Expon[0, x^v] = -Infinity, so NO degree form
+     holds (the atom-0 term reads as a degree-0 monomial and would
+     over-fire at n = 0); a nonzero constant is degree 0 */
+  check_not("polyDegPowerQ 0 in x^2 deg 0 (zero poly)", %mr_polyDegPowerQ(0, x, 2, 0)),
+  check_bool("polyDegPowerQ 5 in x^2 deg 0", %mr_polyDegPowerQ(5, x, 2, 0)),
+  /* captured base (the production call-site shape) */
+  check_not("polyDegPowerQ (a+b x)^2+1 in (a+b x)^2 deg 2", %mr_polyDegPowerQ((a + b*x)^2 + 1, a + b*x, 2, 2)),
+  check_bool("linearQ x", %mr_linearQ(x, x)),
+  check_bool("linearQ x+1", %mr_linearQ(x + 1, x)),
+  check_bool("linearQ a+x", %mr_linearQ(a + x, x)),
+  /* %mr_removeContent: strips the x-free content factor */
+  check("removeContent 3(x+1)", ratsimp(%mr_removeContent(3*(x + 1), x)), x + 1),
+  /* %mr_sign / posQ / negQ: the pos/neg/pnz mapping */
+  check("sign pos", %mr_sign(3), 1),
+  check("sign neg", %mr_sign(-3), -1),
+  check("sign zero", %mr_sign(0), 0),
+  check_bool("posQ a (undecidable -> false)", not %mr_posQ(a)),
+  check_bool("posQ 3", %mr_posQ(3)),
+  /* %mr_subst: Rubi's back-substitution (Subst[ans, x, u]) */
+  check("subst", ratsimp(%mr_subst(x^2/2, x, 2*y)), ratsimp(2*y^2)),
+  /* clone-gap equality pair (derived from usage — see clone-gap note) */
+  check_bool("possible_zero 0", %mr_possible_zeroQ(0)),
+  check_bool("possible_zero (x-x)", %mr_possible_zeroQ(x - x)),
+  check_not("possible_zero 5", %mr_possible_zeroQ(5)),
+  check_bool("possible_zero a (undecidable)", %mr_possible_zeroQ(a)),
+  check_bool("neQ 1 2", %mr_neQ(1, 2)),
+  check_not("neQ 1 1", %mr_neQ(1, 1)),
+  check_bool("neQ a b (undecidable -> loose true)", %mr_neQ(a, b)),
+   check_bool("eqQ a a", %mr_eqQ(a, a)),
+   check_not("eqQ 1 2", %mr_eqQ(1, 2)),
+   true
+ )$
+
+/* Task 7a cluster A1 — the explicit-number predicates (Rubi :70 IntegersQ,
+   :87 FractionQ, :97 RationalQ). The generator emits 1-arg calls: scalar
+   for one Rubi arg, a LIST for several (generate_class1.py :877-884), so
+   the ports accept both shapes. Negative rationals are "-" nodes in this
+   build (measured 2026-08-23: op(-1/2) = "-"), which the committed
+   "/"-only %mr_rationalQ missed. */
+test_numeric_predicates() := block([],
+  print("--- numeric predicates (integersQ/fractionQ/rationalQ) ---"),
+  check_bool("integersQ 3", %mr_integersQ(3)),
+  check_bool("integersQ -5", %mr_integersQ(-5)),
+  check_bool("integersQ [2, -5]", %mr_integersQ([2, -5])),
+  check_not("integersQ 1/2", %mr_integersQ(1/2)),
+  check_not("integersQ x", %mr_integersQ(x)),
+  check_not("integersQ [2, x]", %mr_integersQ([2, x])),
+  check_not("integersQ [1/2, 3]", %mr_integersQ([1/2, 3])),
+  check_bool("fractionQ 1/2", %mr_fractionQ(1/2)),
+  check_bool("fractionQ -1/2", %mr_fractionQ(-1/2)),
+  check_not("fractionQ 2", %mr_fractionQ(2)),
+  check_not("fractionQ 1", %mr_fractionQ(1)),
+  check_not("fractionQ x", %mr_fractionQ(x)),
+  check_bool("rationalQ 3", %mr_rationalQ(3)),
+  check_bool("rationalQ 1/2", %mr_rationalQ(1/2)),
+  check_bool("rationalQ -1/2", %mr_rationalQ(-1/2)),
+  check_not("rationalQ x", %mr_rationalQ(x)),
+  check_not("rationalQ (m+1)/2", %mr_rationalQ((m + 1)/2)),
+  check_bool("rationalQ [1/2, 3]", %mr_rationalQ([1/2, 3])),
+  check_not("rationalQ [x, 3]", %mr_rationalQ([x, 3])),
+  check_not("rationalQ [(m+1)/2, 3]", %mr_rationalQ([(m + 1)/2, 3])),
+  true
+ )$
+
+/* Task 7a cluster A2 — the structural shape predicates (PolynomialQ /
+   AtomQ / MonomialQ / LeafCount). PolynomialQ is the STRICT port
+   (Mathematica semantics: no cancellation — (x^2+x)/(x+1) is not a
+   polynomial even though rat() cancels it to x, measured 2026-08-23),
+   in contrast to %mr_polyQ (Rubi's PolyQ) which takes the Together
+   route. MonomialQ is the .m usage semantics (a*x^n, n!=0, a!=0 —
+   bare x and bare x^k are monomials). LeafCount counts the head as a
+   leaf (Mathematica: LeafCount[1+x] = 3). */
+test_structural_predicates() := block([],
+  print("--- structural predicates (polynomialQ/atomQ/monomialQ/leafCount) ---"),
+  check_bool("polynomialQ x^2+x", %mr_polynomialQ(x^2 + x, x)),
+  check_bool("polynomialQ x/2", %mr_polynomialQ(x/2, x)),
+  check_bool("polynomialQ 5", %mr_polynomialQ(5, x)),
+  check_not("polynomialQ 1/x", %mr_polynomialQ(1/x, x)),
+  check_not("polynomialQ (x^2+x)/(x+1)", %mr_polynomialQ((x^2 + x)/(x + 1), x)),
+  check_not("polynomialQ x+sqrt(x)", %mr_polynomialQ(x + sqrt(x), x)),
+  /* quotients with x-free denominators ARE polynomials, at any depth
+     (Maxima does not auto-combine x/2 + 1 — measured 2026-08-23) */
+  check_bool("polynomialQ x/2+1", %mr_polynomialQ(x/2 + 1, x)),
+  check_bool("polynomialQ x*y/2+1", %mr_polynomialQ(x*y/2 + 1, x)),
+  check_bool("polynomialQ (x+1)/(y+2)", %mr_polynomialQ((x + 1)/(y + 2), x)),
+  check_bool("atomQ x", %mr_atomQ(x)),
+  check_bool("atomQ 3", %mr_atomQ(3)),
+  check_not("atomQ x+1", %mr_atomQ(x + 1)),
+  check_not("atomQ [1,2]", %mr_atomQ([1, 2])),
+  check_bool("monomialQ x", %mr_monomialQ(x, x)),
+  check_bool("monomialQ x^2", %mr_monomialQ(x^2, x)),
+  check_bool("monomialQ 5*x^3", %mr_monomialQ(5*x^3, x)),
+  check_bool("monomialQ x*y", %mr_monomialQ(x*y, x)),
+  check_bool("monomialQ -3*x", %mr_monomialQ(-3*x, x)),
+  check_not("monomialQ 5", %mr_monomialQ(5, x)),
+  check_not("monomialQ 3*x+1", %mr_monomialQ(3*x + 1, x)),
+  check_not("monomialQ x^2+x", %mr_monomialQ(x^2 + x, x)),
+  check_bool("monomialQ x*y^2 (a=y^2, n=1)", %mr_monomialQ(x*y^2, x)),
+  check_not("monomialQ (x+1)^2", %mr_monomialQ((x + 1)^2, x)),
+  check_not("monomialQ x^(1/x)", %mr_monomialQ(x^(1/x), x)),
+  check("leafCount x", %mr_leafCount(x), 1),
+  check("leafCount 1+x", %mr_leafCount(1 + x), 3),
+  check("leafCount f(x)", %mr_leafCount(f(x)), 2),
+  check("leafCount x^2", %mr_leafCount(x^2), 3),
+  check("leafCount a+b*x", %mr_leafCount(a + b*x), 5),
+  true
+ )$
+
+/* Task 7a cluster A3 — %mr_matchQ: the structural matcher for Rubi's
+   MatchQ (matchq is a NOUN in this build). Contract (generate_class1.py
+   _emit_matchq): 3-arg %mr_matchQ(u, pattern, cond), the pattern
+   UNQUOTED with fresh marker atoms _mr_<key>_r<n>mq<k>_<v> as wildcards
+   (detected by name — the generator mints exactly that shape); the
+   pattern may embed COMPUTED values (captures, %mr_expon results).
+   Semantics: structural match with flat partition matching on "*" and
+   "+" (a pattern factor absorbs a consecutive run of factors, possibly
+   empty — the empty run binds the group identity, 1 for "*", 0 for
+   "+"); a marker matches anything and binds; a literal atom must be
+   =-equal; a "^" pattern against a power-less expression takes the
+   exponent as 1 (Maxima drops ^1 — the .m optional r_. reading).
+   A re-occurring marker must bind consistently. DEVIATION (documented):
+   the empty-run binding and the flat partition order are the
+   operational reading of the .m MatchQ uses at the 17 class-1 call
+   sites; a lone power vs the Times-pattern corner (MonomialQ x^a) is
+   pinned by the monomialQ probes, not here. */
+ test_matchQ_predicates() := block([],
+   print("--- matchQ (structural matcher) ---"),
+    /* marker test: MEMBERSHIP, not name-shape (see %mr_isMQMarker, maxima_rubi_utils.mac); unit markers register here */
+    %mr_register_markers([ _mr_1_1_2_10_r2mq1_m, _mr_9_r1mq1_m, _mr_9_r1mq1_u, _mr_9_r2mq1_m, _mr_9_r2mq1_u ]),
+    %mr_register_markers([ _mr_9_r3mq1_m, _mr_9_r3mq1_u, _mr_9_r4mq1_m, _mr_9_r4mq1_u, _mr_9_r5mq1_f, _mr_9_r5mq1_g, _mr_9_r5mq1_r ]),
+    %mr_register_markers([ _mr_9_r6mq1_f, _mr_9_r6mq1_g, _mr_9_r6mq1_r, _mr_9_r7mq1_f, _mr_9_r8mq1_a, _mr_9_r8mq1_b, _mr_9_r8mq1_v ]),
+    %mr_register_markers([ _mr_9_r9mq9_z, _mr_9_r12mq1_v, _mr_9_r13mq1_f, _mr_9_r13mq1_g, _mr_9_r20mq1_m ]),
+    check_bool("isMQMarker real rule-file marker",
+               %mr_isMQMarker(_mr_1_1_2_10_r2mq1_m)),
+   check_bool("isMQMarker unit-shape marker",
+              %mr_isMQMarker(_mr_9_r1mq1_m)),
+   check_not("isMQMarker capture (no mq)",
+             %mr_isMQMarker(_mr_9_r1_c)),
+   check_not("isMQMarker mq not digit-flanked (var named mq1)",
+             %mr_isMQMarker(_mr_9_r1_mq1)),
+   check_not("isMQMarker integration variable", %mr_isMQMarker(x)),
+   check_not("isMQMarker number", %mr_isMQMarker(5)),
+   /* x^m_*u_. at the 6 1.1.2.10/1.2.2.7 guard sites */
+   /* binding-list lookup: found / absent (fails closed) */
+   check_bool("mk found", is(%mr_mk(_mr_9_r1mq1_m,
+                                    [_mr_9_r1mq1_m = 3]) = 3)),
+   check_not("mk absent", %mr_mk(_mr_9_r9mq9_z, [_mr_9_r1mq1_m = 3])),
+   /* the cond is a LAMBDA over the binding list (generator contract,
+      FIX E7 + A3): the marker-dependent parts must survive to the
+      binding (Maxima evaluates call args eagerly; this build's ev()
+      does not strip quotes) */
+    /* we bind m=1, u=x^2; Rubi's search order binds m=2, u=1 — the
+       cond (integerp m) holds under either reading */
+    check_bool("matchQ x^2 = x^m*u, m integer",
+               %mr_matchQ(x^2, x^_mr_9_r1mq1_m*_mr_9_r1mq1_u,
+                          lambda([%mr_mqb],
+                                 integerp(%mr_mk(_mr_9_r1mq1_m, %mr_mqb))))),
+    /* orderless: the stored-order search binds m=1, u=x^3*y first;
+       Rubi's order binds m=3, u=y — the cond holds under either
+       reading (what matters: the match SUCCEEDS where the old
+       stored-order partition missed it) */
+    check_bool("matchQ x^3*y = x^m*u, m integer",
+               %mr_matchQ(x^3*y, x^_mr_9_r2mq1_m*_mr_9_r2mq1_u,
+                          lambda([%mr_mqb],
+                                 integerp(%mr_mk(_mr_9_r2mq1_m, %mr_mqb))))),
+    /* the held cond evaluated on the binding (m := y, forced by the
+       bare-power pattern — no Optional-absent route) must be false;
+       note x^y vs x^m_*u_. matches in Rubi too (x^m_. absent, m=1,
+       u=x^y, IntegerQ[1]), so the u factor must NOT be there */
+    check_not("matchQ cond false after binding (m -> y)",
+              %mr_matchQ(x^y, x^_mr_9_r20mq1_m,
+                         lambda([%mr_mqb],
+                                integerp(%mr_mk(_mr_9_r20mq1_m, %mr_mqb))))),
+    /* orderless (commutative) match, Rubi-faithful: MatchQ[5 x^2,
+       x^m_. u_. /; IntegerQ[m]] is TRUE in Rubi (m=2, u=5), so the
+       1.1.2.10 guard blocks Pq = 5 x^2; the coefficient is
+       absorbed by u, it does not block the match */
+    check_bool("matchQ 5*x^2 = x^m*u (m=2, u=5)",
+               %mr_matchQ(5*x^2, x^_mr_9_r3mq1_m*_mr_9_r3mq1_u, true)),
+    /* x^2 + x^3 is one multiplicative factor: the whole sum goes to
+       u, m takes the Optional default 1 — Rubi's own binding
+       (m=1, u=x^2+x^3); the guard's Not[MatchQ[...]] blocks it */
+    check_bool("matchQ x^2+x^3 = x^m*u (m=1, u=x^2+x^3)",
+               %mr_matchQ(x^2 + x^3, x^_mr_9_r4mq1_m*_mr_9_r4mq1_u, true)),
+   /* (f_ + g_*x^2)^r_. at the 4 positive 1.2.2.7 sites: the power-less
+      base takes r = 1 (Maxima drops ^1 — the optional r_. reading) */
+   check_bool("matchQ 3+5x^2 = (f+g x^2)^r, freeofs (r=1)",
+              %mr_matchQ(3 + 5*x^2,
+                         (_mr_9_r5mq1_f + _mr_9_r5mq1_g*x^2)^_mr_9_r5mq1_r,
+                         lambda([%mr_mqb],
+                                freeof(x, %mr_mk(_mr_9_r5mq1_f, %mr_mqb))
+                                and freeof(x, %mr_mk(_mr_9_r5mq1_g, %mr_mqb))
+                                and freeof(x, %mr_mk(_mr_9_r5mq1_r, %mr_mqb))))),
+   check_not("matchQ trinomial vs (f+g x^2)^r",
+             %mr_matchQ(3 + 5*x^2 + 7*x^4,
+                        (_mr_9_r6mq1_f + _mr_9_r6mq1_g*x^2)^_mr_9_r6mq1_r,
+                        true)),
+   /* re-occurring marker binds consistently (f + f*x^2 vs 3 + 5x^2:
+      f would need to be 3 and 5) */
+   check_not("matchQ consistent re-binding",
+             %mr_matchQ(3 + 5*x^2, _mr_9_r7mq1_f + _mr_9_r7mq1_f*x^2, true)),
+   /* a_+b_*v_ at the 1.3.4 site: the marker binds a whole sub-expression */
+   check_bool("matchQ c+d*y = a+b*v (v=y, freeofs)",
+              %mr_matchQ(c + d*y, _mr_9_r8mq1_a + _mr_9_r8mq1_b*_mr_9_r8mq1_v,
+                         lambda([%mr_mqb],
+                                freeof(x, %mr_mk(_mr_9_r8mq1_a, %mr_mqb))
+                                and freeof(x, %mr_mk(_mr_9_r8mq1_b, %mr_mqb))
+                                and freeof(x, %mr_mk(_mr_9_r8mq1_v, %mr_mqb))))),
+   /* literals: the integration variable and numbers are not markers */
+   check_bool("matchQ x = x", %mr_matchQ(x, x, true)),
+   check_not("matchQ y = x", %mr_matchQ(y, x, true)),
+   check_bool("matchQ 2 = 2", %mr_matchQ(2, 2, true)),
+   check_not("matchQ 3 = 2", %mr_matchQ(3, 2, true)),
+   /* a marker cannot be hidden: an unbound-elsewhere literal symbol in
+      the pattern is a literal, not a wildcard */
+   check_not("matchQ literal symbol is not a wildcard",
+             %mr_matchQ(y, z, true)),
+   /* power base binds a whole sub-expression */
+   check_bool("matchQ (a+b x)^2 = v^2",
+              %mr_matchQ((a + b*x)^2, _mr_9_r12mq1_v^2, true)),
+    check_not("matchQ 3+5x^2 = (f+g x^2)^2 (literal exponent 2)",
+              %mr_matchQ(3 + 5*x^2,
+                         (_mr_9_r13mq1_f + _mr_9_r13mq1_g*x^2)^2, true)),
+    true
+   )$
+
+ /* Task 7a cluster B — the int-family + binomial predicates. The
+    binomialQ / intBinomialQ probes go through the LISP dispatchers
+    (maxima_rubi_dispatch.lisp) — a dispatcher miss leaves the calls
+    as nouns and these checks fail loudly. Expected values are
+    hand-computed from the pinned Rubi definitions (provenance in
+    maxima_rubi_utils.mac). */
+ test_int_family_predicates() := block([],
+   print("--- int-family + binomial predicates (cluster B) ---"),
+   check_bool("binomialQ 3+5x^2 (a=3, b=5, n=2)",
+              %mr_binomialQ(3 + 5*x^2, x)),
+   check_bool("binomialQ x^2 (a=0 branch)", %mr_binomialQ(x^2, x)),
+   check_not("binomialQ x+x^2 (exps {1,2}, no constant)",
+             %mr_binomialQ(x + x^2, x)),
+   check_not("binomialQ constant (Exponent 0)", %mr_binomialQ(5, x)),
+   check_bool("binomialQ sqrt(x) (stored collapsed 1/2 power, n=1/2)",
+              %mr_binomialQ(x^(1/2), x)),
+   check_bool("binomialQ x^(3/2) (stored fractional power, n=3/2)",
+              %mr_binomialQ(x^(3/2), x)),
+   /* the reciprocal-power deviation: 1/x stores as a "/" node here,
+      not x^(-1); the port accepts it as a = 0, b = 1, n = -1 */
+   check_bool("binomialQ 1/x (a=0, n=-1)", %mr_binomialQ(1/x, x)),
+   check_bool("binomialQ 1+1/x (sum branch over reciprocal)",
+              %mr_binomialQ(1 + 1/x, x)),
+   check_bool("binomialQ 5(1+x^2) (product branch)",
+              %mr_binomialQ(5*(1 + x^2), x)),
+   check_not("binomialQ 5x+5x^3 (not a+b x^n)",
+             %mr_binomialQ(5*x + 5*x^3, x)),
+   check_bool("binomialQ list arg, all binomials",
+              %mr_binomialQ([3 + x, x^2], x)),
+   check_not("binomialQ list arg, one not",
+             %mr_binomialQ([3 + x, x + x^2], x)),
+   check_bool("binomialQ3 n matches (3+5x^2, n=2)",
+              %mr_binomialQ(3 + 5*x^2, x, 2)),
+   check_not("binomialQ3 n differs (3+5x^2, n=3)",
+             %mr_binomialQ(3 + 5*x^2, x, 3)),
+   /* intLinearQ (fixed 7-arg; a-d unused, as in the .m) */
+   check_bool("intLinearQ m>0 (m=2, n=-1)",
+              %mr_intLinearQ(1, 1, 1, 1, 2, -1, x)),
+   check_bool("intLinearQ IntegersQ[4m,4n] (m=1/2, n=-1/2)",
+              %mr_intLinearQ(1, 1, 1, 1, 1/2, -1/2, x)),
+   check_bool("intLinearQ ILtQ[m+n,-1] (m=n=-2)",
+              %mr_intLinearQ(1, 1, 1, 1, -2, -2, x)),
+   check_bool("intLinearQ IntegerQ[m+n]&&RationalQ[m] (m+n=1)",
+              %mr_intLinearQ(1, 1, 1, 1, 1/10, 9/10, x)),
+   check_not("intLinearQ no disjunct (m=1/2, n=1/5)",
+             %mr_intLinearQ(1, 1, 1, 1, 1/2, 1/5, x)),
+   /* intQuadraticQ (fixed 8-arg) */
+   check_bool("intQuadraticQ IntegerQ[p] (p=3)",
+              %mr_intQuadraticQ(1, 1, 1, 1, 1, 1/2, 3, x)),
+   check_bool("intQuadraticQ IGtQ[m,0] (m=1)",
+              %mr_intQuadraticQ(1, 1, 1, 1, 1, 1, 1/2, x)),
+   check_bool("intQuadraticQ IntegersQ[m,4p] (m=-1, p=1/4)",
+              %mr_intQuadraticQ(1, 1, 1, 1, 1, -1, 1/4, x)),
+   check_bool("intQuadraticQ [m,p+1/3] + 2nd EqQ (a=2/9)",
+              %mr_intQuadraticQ(2/9, 1, 1, 1, 1, -1, 2/3, x)),
+   check_not("intQuadraticQ same exponents, EqQs fail (a=1)",
+             %mr_intQuadraticQ(1, 1, 1, 1, 1, -1, 2/3, x)),
+   check_not("intQuadraticQ no disjunct (m=1/2, p=1/3)",
+             %mr_intQuadraticQ(1, 1, 1, 1, 1, 1/2, 1/3, x)),
+   /* intBinomialQ (Lisp-dispatched 7/8/10-arg) */
+   check_bool("intBinomialQ7 IGtQ[p,0] (p=2)",
+              %mr_intBinomialQ(1, 1, 1, 2, -5, 2, x)),
+   check_bool("intBinomialQ7 RationalQ[m]&&IntegersQ[n,2p] (n=2, p=-1)",
+              %mr_intBinomialQ(1, 1, 1, 2, 1/2, -1, x)),
+   check_bool("intBinomialQ7 n=4&&IntegersQ[2m,4p] (m=1/2, p=-1/4)",
+              %mr_intBinomialQ(1, 1, 1, 4, 1/2, -1/4, x)),
+   check_bool("intBinomialQ7 n=2&&IntegerQ[6p]&&IntegerQ[m] (p=1/6, m=1)",
+              %mr_intBinomialQ(1, 1, 1, 2, 1, 1/6, x)),
+   check_not("intBinomialQ7 no disjunct (m=sqrt(2), p=-1/4)",
+             %mr_intBinomialQ(1, 1, 1, 2, sqrt(2), -1/4, x)),
+   /* the n = 0 guard: Maxima hard-errors (m+1)/0 where Mathematica's
+      Infinity answers false — the guard must suppress it and fail
+      closed, not crash the batch */
+   check_not("intBinomialQ7 n=0 (no crash, fails closed)",
+             %mr_intBinomialQ(1, 1, 1, 0, 1/3, -1/4, x)),
+   check_bool("intBinomialQ8 IntegersQ[p,q] (p=1, q=-3)",
+              %mr_intBinomialQ(1, 1, 1, 1, 2, 1, -3, x)),
+   check_bool("intBinomialQ8 n=4&&IntegersQ[4p,q] (p=-1/2, q=-1)",
+              %mr_intBinomialQ(1, 1, 1, 1, 4, -1/2, -1, x)),
+   check_bool("intBinomialQ8 n=2&&IntegersQ[p,3q]&&3bc+ad=0 (a=3, d=-1)",
+              %mr_intBinomialQ(3, 1, 1, -1, 2, -1, -1/3, x)),
+   check_not("intBinomialQ8 no disjunct (n=3, p=1/3, q=-1/2)",
+             %mr_intBinomialQ(1, 1, 1, 1, 3, 1/3, -1/2, x)),
+   check_bool("intBinomialQ10 IntegersQ[p,q] (p=-1, q=2)",
+              %mr_intBinomialQ(1, 1, 1, 1, 1, 1, 2, -1, 2, x)),
+   check_bool("intBinomialQ10 n=2&&IntegersQ[m,2p,2q] (m=-1, p=q=-1/2)",
+              %mr_intBinomialQ(1, 1, 1, 1, 1, -1, 2, -1/2, -1/2, x)),
+   check_bool("intBinomialQ10 n=4&&IntegersQ[m,p,2q] (p=-1, q=-1/2)",
+              %mr_intBinomialQ(1, 1, 1, 1, 1, -1, 4, -1, -1/2, x)),
+   check_bool("intBinomialQ10 n=2&&[m/2,p+1/3,q]&&bc+3ad=0 (b=3, d=-1)",
+              %mr_intBinomialQ(1, 3, 1, -1, 1, -2, 2, 2/3, -1, x)),
+   check_bool("intBinomialQ10 n=3&&[(m-1)/3,q,p-1/2]&&bc-4ad=0 (d=1/4)",
+              %mr_intBinomialQ(1, 1, 1, 1/4, 1, 4, 3, 3/2, -1, x)),
+   check_not("intBinomialQ10 no disjunct (m=1/2, n=3, p=1/3, q=-1/2)",
+             %mr_intBinomialQ(1, 1, 1, 1, 1, 1/2, 3, 1/3, -1/2, x)),
+   true
+   )$
+
+ test_sum_simpler_predicates() := block([],
+  print("--- sum/simpler predicates (cluster C) ---"),
+  /* SumQ (Rubi :176 — SumQ[_Plus] = True, else False) */
+  check_bool("sumQ 1+x", %mr_sumQ(1 + x)),
+  check_bool("sumQ 1+x+y", %mr_sumQ(1 + x + y)),
+  check_not("sumQ x", %mr_sumQ(x)),
+  check_not("sumQ 5", %mr_sumQ(5)),
+  check_not("sumQ x*y", %mr_sumQ(x*y)),
+  check_not("sumQ x^2", %mr_sumQ(x^2)),
+  /* FractionalPowerFactorQ (Rubi :658; the NiceSqrtQ dependency —
+     pulled forward from cluster F) */
+  check_not("fpfQ 2", %mr_fractionalPowerFactorQ(2)),
+  check_bool("fpfQ %i (complex atom)", %mr_fractionalPowerFactorQ(%i)),
+  check_not("fpfQ x", %mr_fractionalPowerFactorQ(x)),
+  check_bool("fpfQ x^(1/2) (stored sqrt node)", %mr_fractionalPowerFactorQ(x^(1/2))),
+  check_bool("fpfQ x^(3/2) (stored fractional power)", %mr_fractionalPowerFactorQ(x^(3/2))),
+  check_not("fpfQ x^2 (integer exponent)", %mr_fractionalPowerFactorQ(x^2)),
+  check_not("fpfQ 2*x", %mr_fractionalPowerFactorQ(2*x)),
+  check_bool("fpfQ sqrt(2)*sqrt(x) (product)", %mr_fractionalPowerFactorQ(sqrt(2)*sqrt(x))),
+  check_bool("fpfQ 1/sqrt(2) (/ node — Maxima stores x^(-1/2) this way)",
+             %mr_fractionalPowerFactorQ(1/sqrt(2))),
+  check_bool("fpfQ x^(-1/2) (stored 1/sqrt(x))", %mr_fractionalPowerFactorQ(x^(-1/2))),
+  check_bool("fpfQ -sqrt(2) (unary - node)", %mr_fractionalPowerFactorQ(-sqrt(2))),
+  check_not("fpfQ abs(x) (Maxima stores sqrt(x^2) as abs(x) — Rubi: Sqrt[x^2] is a fractional power)",
+            %mr_fractionalPowerFactorQ(abs(x))),
+  check_not("fpfQ 1/x (integer reciprocal)", %mr_fractionalPowerFactorQ(1/x)),
+  /* NiceSqrtQ (Rubi :647) */
+  check_bool("niceSqrtQ 4 (positive rational)", %mr_niceSqrtQ(4)),
+  check_not("niceSqrtQ 0 (rational, not > 0)", %mr_niceSqrtQ(0)),
+  check_not("niceSqrtQ -1 (rational, not > 0)", %mr_niceSqrtQ(-1)),
+  check_not("niceSqrtQ x (sqrt(x) has a sqrt node)", %mr_niceSqrtQ(x)),
+  /* DEVIATION (measured 2026-08-23): Maxima's sqrt(x^2) -> abs(x) while
+     Mathematica keeps Sqrt[x^2] — the Rubi answer for x^2 is false,
+     the port answers true. Unreachable at the class-1 sites: the
+     discriminants passed are sums/products of distinct parameters,
+     never structural perfect squares. */
+  check_bool("niceSqrtQ x^2 (abs corner — Rubi: false)", %mr_niceSqrtQ(x^2)),
+  check_bool("niceSqrtQ x^4 (sqrt -> x^2, integer exponent; Rubi: true)",
+             %mr_niceSqrtQ(x^4)),
+  check_not("niceSqrtQ 2*x (sqrt distributes: sqrt(2)*sqrt(x))", %mr_niceSqrtQ(2*x)),
+  check_not("niceSqrtQ 4*x (2*sqrt(x))", %mr_niceSqrtQ(4*x)),
+  check_not("niceSqrtQ -4 (2*%i — complex factor)", %mr_niceSqrtQ(-4)),
+  check_not("niceSqrtQ 1/(2*x) (1/(sqrt(2)*sqrt(x)) — / branch)",
+            %mr_niceSqrtQ(1/(2*x))),
+  check_not("niceSqrtQ b^2-4*a*c (generic discriminant)",
+            %mr_niceSqrtQ(b^2 - 4*a*c)),
+  check_not("niceSqrtQ -a*c (generic discriminant)", %mr_niceSqrtQ(-a*c)),
+  /* SimplerQ (Rubi :677) */
+  check_bool("simplerQ 1 2 (abs 1 < abs 2)", %mr_simplerQ(1, 2)),
+  check_not("simplerQ 2 1", %mr_simplerQ(2, 1)),
+  check_not("simplerQ 1 1 (equal)", %mr_simplerQ(1, 1)),
+  check_not("simplerQ -1 1 (u = -v, v not < 0)", %mr_simplerQ(-1, 1)),
+  check_bool("simplerQ 1 -1 (u = -v, v < 0)", %mr_simplerQ(1, -1)),
+  check_not("simplerQ x 2 (v integer, u not)", %mr_simplerQ(x, 2)),
+  check_bool("simplerQ 1/2 1/3 (denom 2 < 3)", %mr_simplerQ(1/2, 1/3)),
+  check_not("simplerQ 1/3 1/2 (denom 3 > 2)", %mr_simplerQ(1/3, 1/2)),
+  check_bool("simplerQ 1/2 3/2 (equal denoms, num 1 < 3)", %mr_simplerQ(1/2, 3/2)),
+  check_not("simplerQ 3/2 1/2 (equal denoms, num 3 > 1)", %mr_simplerQ(3/2, 1/2)),
+  check_not("simplerQ 2*i i (pure imaginary: Im 2 vs 1)", %mr_simplerQ(2*%i, %i)),
+  check_bool("simplerQ i 2*i (pure imaginary: Im 1 vs 2)", %mr_simplerQ(%i, 2*%i)),
+  check_bool("simplerQ 1+i 2+i (Re 1 vs 2)", %mr_simplerQ(1 + %i, 2 + %i)),
+  check_bool("simplerQ 1+i 1+2*i (equal Re, Im 1 vs 2)",
+             %mr_simplerQ(1 + %i, 1 + 2*%i)),
+  check_bool("simplerQ %pi x (both atoms, %pi sorts first)", %mr_simplerQ(%pi, x)),
+  check_not("simplerQ x %pi", %mr_simplerQ(x, %pi)),
+  check_bool("simplerQ x 2*x (atom before non-atom)", %mr_simplerQ(x, 2*x)),
+  check_not("simplerQ 1+x x (non-atom after atom)", %mr_simplerQ(1 + x, x)),
+  check_bool("simplerQ 1+x 1+y (scan: equal 1s, x before y)",
+             %mr_simplerQ(1 + x, 1 + y)),
+  check_not("simplerQ 1+y 1+x (scan: y after x)", %mr_simplerQ(1 + y, 1 + x)),
+  check_bool("simplerQ 1+x 1+x*y (leafcount 3 < 4)", %mr_simplerQ(1 + x, 1 + x*y)),
+  check_not("simplerQ 1+x+y 1+x (length 3 > 2)", %mr_simplerQ(1 + x + y, 1 + x)),
+  check_not("simplerQ x^2 1+x (heads differ, leafcounts equal, 1+x sorts first)",
+            %mr_simplerQ(x^2, 1 + x)),
+  check_bool("simplerQ 1+x x^2 (heads differ, 1+x sorts first)",
+             %mr_simplerQ(1 + x, x^2)),
+  /* SimplerSqrtQ (Rubi :732) */
+  check_not("simplerSqrtQ -4 9 (u < 0, v not)", %mr_simplerSqrtQ(-4, 9)),
+  check_bool("simplerSqrtQ 9 -4 (v < 0, u not)", %mr_simplerSqrtQ(9, -4)),
+  check_bool("simplerSqrtQ 4 9 (sqrt 2 < sqrt 3, both integer)",
+             %mr_simplerSqrtQ(4, 9)),
+  check_not("simplerSqrtQ 9 4 (sqrt 3 > sqrt 2)", %mr_simplerSqrtQ(9, 4)),
+  /* the .m PosQ[u] && PosQ[v] branch is the BARE LeafCount comparison
+     (a tie answers false — the Not[OrderedQ] tiebreak is only reached
+     when neither u nor v is posQ) */
+  check_not("simplerSqrtQ 2 3 (both posQ, equal leafcounts -> false)",
+            %mr_simplerSqrtQ(2, 3)),
+  check_not("simplerSqrtQ 3 2 (both posQ, equal leafcounts -> false)",
+            %mr_simplerSqrtQ(3, 2)),
+  /* undecidable signs: Rubi's If stays pending (decline); the port
+     must fail closed with false, not fall through to the leafcount
+     comparison */
+  check_not("simplerSqrtQ -b/a -d/c (undecidable signs -> false)",
+            %mr_simplerSqrtQ(-b/a, -d/c)),
+  check_not("simplerSqrtQ x y (undecidable signs -> false)",
+            %mr_simplerSqrtQ(x, y)),
+  /* SumSimplerQ (Rubi :767) — the 36 call sites pass
+     (exponent-parameter, integer-constant) */
+  check_not("sumSimplerQ 5 1 (rational, v > 0, 5 not < -1)",
+            %mr_sumSimplerQ(5, 1)),
+  check_bool("sumSimplerQ -3 1 (rational, v > 0, -3 < -1)",
+             %mr_sumSimplerQ(-3, 1)),
+  check_bool("sumSimplerQ 1 -1 (v <= 0, 1 >= 1)", %mr_sumSimplerQ(1, -1)),
+  check_bool("sumSimplerQ 2 -2 (v <= 0, 2 >= 2)", %mr_sumSimplerQ(2, -2)),
+  check_not("sumSimplerQ -1 -1 (v <= 0, -1 not >= 1)", %mr_sumSimplerQ(-1, -1)),
+  check_not("sumSimplerQ m 1 (NNF m vs 1)", %mr_sumSimplerQ(m, 1)),
+  check_not("sumSimplerQ m+1 1 (sum split: 1 rational, aux(m,1) fails)",
+            %mr_sumSimplerQ(m + 1, 1)),
+  check_bool("sumSimplerQ -3*m 2*m (NNF m = m, NF ratio -3/2 < -1/2)",
+             %mr_sumSimplerQ(-3*m, 2*m)),
+  check_not("sumSimplerQ m -2*m (ratio -1/2 but NF[m] = 1 not < 0)",
+            %mr_sumSimplerQ(m, -2*m)),
+  check_not("sumSimplerQ -3*m -4*m (ratio 3/4)", %mr_sumSimplerQ(-3*m, -4*m)),
+  check_not("sumSimplerQ m 1+x (v sum: 1 rational, aux(m,x) fails)",
+            %mr_sumSimplerQ(m, 1 + x)),
+  check_not("sumSimplerQ 2*m 1+m (aux(2m,m): NNF m = m, NF ratio 2)",
+            %mr_sumSimplerQ(2*m, 1 + m)),
+  true
+  )$
+
+  /* Task 7a cluster D — the trinomial/quadratic/binomial-degree
+     predicates. Expected values hand-computed from the pinned Rubi
+     definitions (provenance in maxima_rubi_utils.mac). The *MatchQ
+     conds are threaded through the matcher's structural backtracking,
+     so the unit-coefficient bare-power cases now answer as in Rubi.
+     The remaining port-false pins are the matcher's absent-rule
+     corner: a product factor containing a literal (b_*x, c_*x^2)
+     cannot be deleted as a whole by its optional coefficient. */
+  test_cluster_d_predicates() := block([],
+   print("--- trinomial/quadratic/binomial-degree predicates (cluster D) ---"),
+   /* quadraticQ (Rubi :1380) — PolyQ[u,x,2] && Not[c0===0 && c1===0] */
+   check_bool("quadraticQ 1+x+x^2", %mr_quadraticQ(1 + x + x^2, x)),
+   check_bool("quadraticQ 1+x^2 (c0 nonzero, c1 = 0)",
+              %mr_quadraticQ(1 + x^2, x)),
+   check_bool("quadraticQ 3*x+5*x^2 (c0 = 0, c1 nonzero)",
+              %mr_quadraticQ(3*x + 5*x^2, x)),
+   check_not("quadraticQ 5*x^2 (a*x^2 monomial)", %mr_quadraticQ(5*x^2, x)),
+   check_not("quadraticQ 1+2*x (degree 1)", %mr_quadraticQ(1 + 2*x, x)),
+   check_not("quadraticQ 1+x+x^2+x^3 (degree 3)",
+             %mr_quadraticQ(1 + x + x^2 + x^3, x)),
+   check_bool("quadraticQ (1+x)^2 (unexpanded power, coeffs via expand)",
+              %mr_quadraticQ((1 + x)^2, x)),
+   check_bool("quadraticQ list, all quadratic",
+              %mr_quadraticQ([1 + x + x^2, 3*x + 5*x^2], x)),
+   check_not("quadraticQ list, one not",
+             %mr_quadraticQ([1 + x + x^2, 5*x^2], x)),
+   /* binomialDegree (Rubi :846) — BinomialParts[u,x][[3]] */
+   check("binomialDegree 3+5x^2", %mr_binomialDegree(3 + 5*x^2, x), 2),
+   check("binomialDegree x^2 (a = 0)", %mr_binomialDegree(x^2, x), 2),
+   check("binomialDegree 1/x (reciprocal corner, n = -1)",
+         %mr_binomialDegree(1/x, x), -1),
+   /* the .m False[[3]] hard-errors on a non-binomial; the port fails
+      closed (call sites gate on BinomialQ first) */
+   check_not("binomialDegree x+x^2 (non-binomial, fails closed)",
+             %mr_binomialDegree(x + x^2, x)),
+   /* linearMatchQ (Rubi :1420) — MatchQ[u, a_.+b_.*x /; FreeQ[{a,b},x]] */
+   check_bool("linearMatchQ 1+2*x", %mr_linearMatchQ(1 + 2*x, x)),
+   check_bool("linearMatchQ 2*x+3 (stored term order)",
+              %mr_linearMatchQ(2*x + 3, x)),
+   check_bool("linearMatchQ x (a = 0 absent)", %mr_linearMatchQ(x, x)),
+    /* Rubi: TRUE (a = 1+x^2, b = 0 — the absent x term). The port's
+       matcher cannot make a product factor (b_*x) absent in a sum:
+       the x literal has no Optional default, so no structural
+       binding exists. Unreachable at the call sites: the LinearQ
+       guard guarantees a real b*x term. */
+    check_not("linearMatchQ 1+x^2 (Rubi true, b = 0 absent-corner)",
+             %mr_linearMatchQ(1 + x^2, x)),
+   check_bool("linearMatchQ list, all linear",
+              %mr_linearMatchQ([1 + x, 3*x], x)),
+   check_not("linearMatchQ list, one not (x^2+2*x)",
+             %mr_linearMatchQ([1 + x, x^2 + 2*x], x)),
+   /* quadraticMatchQ (Rubi :1427) — the a_.+b_*x+c_*x^2 pattern OR
+      the a_.+c_*x^2 pattern */
+   check_bool("quadraticMatchQ 1+2x+3x^2",
+              %mr_quadraticMatchQ(1 + 2*x + 3*x^2, x)),
+   check_bool("quadraticMatchQ 1+3x^2 (2-term pattern)",
+              %mr_quadraticMatchQ(1 + 3*x^2, x)),
+   check_bool("quadraticMatchQ 2x+3x^2 (a = 0)",
+              %mr_quadraticMatchQ(2*x + 3*x^2, x)),
+   check_bool("quadraticMatchQ x^2 (a = 0, c = 1)",
+              %mr_quadraticMatchQ(x^2, x)),
+   check_not("quadraticMatchQ 1+x+x^2+x^3 (degree 3)",
+             %mr_quadraticMatchQ(1 + x + x^2 + x^3, x)),
+   /* Rubi: TRUE (a = 1, c = 0 — the absent x^2 term). Unreachable at
+      the call sites: the QuadraticQ guard guarantees a real x^2 term. */
+   check_not("quadraticMatchQ 1+2*x (Rubi true, c = 0 absent-corner)",
+             %mr_quadraticMatchQ(1 + 2*x, x)),
+   check_bool("quadraticMatchQ list, all",
+              %mr_quadraticMatchQ([1 + 2*x + 3*x^2, x^2], x)),
+   check_not("quadraticMatchQ list, one not",
+             %mr_quadraticMatchQ([1 + 2*x + 3*x^2, 1 + x + x^2 + x^3], x)),
+    /* binomialMatchQ (Rubi :1444) — MatchQ[u, a_.+b_.*x^n_. /;
+       FreeQ[{a,b,n},x]]. The orderless partition search plus the
+       threaded freeof cond finds the Rubi-faithful binding even when
+       Maxima's stored order presents the coefficient-absorbing
+       binding first. */
+    check_bool("binomialMatchQ 3+5x^2", %mr_binomialMatchQ(3 + 5*x^2, x)),
+    check_bool("binomialMatchQ 5x^2 (a = 0)", %mr_binomialMatchQ(5*x^2, x)),
+    check_bool("binomialMatchQ 7+2x^(1/3) (fractional n)",
+               %mr_binomialMatchQ(7 + 2*x^(1/3), x)),
+    check_not("binomialMatchQ 1+x+x^2 (not a binomial)",
+              %mr_binomialMatchQ(1 + x + x^2, x)),
+    /* Rubi: TRUE (a = 0, b = 1, n = 3). The coefficient-absorbing
+       binding (b = x^3, n = 1) fails freeof and is backtracked away;
+       the search continues to b = 1, n = 3. */
+    check_bool("binomialMatchQ x^3 (b = 1, n = 3)",
+               %mr_binomialMatchQ(x^3, x)),
+    /* Rubi: TRUE (a = 1, b = 1, n = 3/2) — same unit-coefficient
+       corner. */
+    check_bool("binomialMatchQ 1+x^(3/2) (b = 1, fractional n)",
+               %mr_binomialMatchQ(1 + x^(3/2), x)),
+   check_bool("binomialMatchQ list, all",
+              %mr_binomialMatchQ([3 + 5*x^2, 5*x^2], x)),
+   check_not("binomialMatchQ list, one not",
+             %mr_binomialMatchQ([3 + 5*x^2, 1 + x + x^2], x)),
+    /* trinomialMatchQ (Rubi :1458) — MatchQ[u, a_.+b_*x^n_.+c_*x^j_.
+       /; FreeQ[{a,b,c,n},x] && EqQ[j-2*n,0]]. The orderless
+       partition search plus the threaded j = 2*n cond finds the
+       Rubi-faithful n/j assignment regardless of Maxima's stored
+       term order. */
+    check_bool("trinomialMatchQ 1+2x^2+3x^4 (n = 2)",
+               %mr_trinomialMatchQ(1 + 2*x^2 + 3*x^4, x)),
+    check_bool("trinomialMatchQ 5x^2+7x^4 (a = 0)",
+               %mr_trinomialMatchQ(5*x^2 + 7*x^4, x)),
+    check_bool("trinomialMatchQ 1+2x+3x^2 (n = 1)",
+               %mr_trinomialMatchQ(1 + 2*x + 3*x^2, x)),
+    check_not("trinomialMatchQ 1+x^2+x^3 (j # 2*n)",
+              %mr_trinomialMatchQ(1 + x^2 + x^3, x)),
+    /* Rubi: TRUE (a = 1, b = 1, n = 2, c = 1, j = 4). Unit
+       coefficients: the coefficient-absorbing bindings fail freeof
+       and are backtracked away; the search continues to b = c = 1
+       with the real exponents. */
+    check_bool("trinomialMatchQ 1+x^2+x^4 (b = c = 1, n = 2, j = 4)",
+               %mr_trinomialMatchQ(1 + x^2 + x^4, x)),
+   /* Rubi: TRUE (a = 1, b = 2, n = 1, c = 0, j = 2 — the c = 0
+      absent-corner). Unreachable: TrinomialQ[1+2x, x] is false. */
+   check_not("trinomialMatchQ 1+2*x (Rubi true, c = 0 absent-corner)",
+             %mr_trinomialMatchQ(1 + 2*x, x)),
+   check_bool("trinomialMatchQ list, all",
+              %mr_trinomialMatchQ([1 + 2*x^2 + 3*x^4, 5*x^2 + 7*x^4], x)),
+   check_not("trinomialMatchQ list, one not",
+             %mr_trinomialMatchQ([1 + 2*x^2 + 3*x^4, 1 + x^2 + x^3], x)),
+   /* trinomial_parts (Rubi :929) — [a, b, c, n] iff u = a + b*x^n +
+      c*x^(2*n), else false */
+   check("trinomial_parts 3+2x^2+5x^4 (polynomial branch)",
+         %mr_trinomial_parts(3 + 2*x^2 + 5*x^4, x), [3, 2, 5, 2]),
+   check("trinomial_parts 1+x^(1/2)+2*x (sum branch, n = 1/2)",
+         %mr_trinomial_parts(1 + x^(1/2) + 2*x, x), [1, 1, 2, 1/2]),
+   check("trinomial_parts (1+x^(1/2))^2 (power branch)",
+         %mr_trinomial_parts((1 + x^(1/2))^2, x), [1, 2, 1, 1/2]),
+   check("trinomial_parts 2*(1+x^(1/2)+x) (product branch)",
+         %mr_trinomial_parts(2*(1 + x^(1/2) + x), x), [2, 2, 2, 1/2]),
+   check("trinomial_parts 4+x^(1/2)+7*x (auto-combined sum terms)",
+         %mr_trinomial_parts(3 + 2*x + 1 + x^(1/2) + 5*x, x), [4, 1, 7, 1/2]),
+   check("trinomial_parts 1+1/x+1/x^2 (reciprocal trinomial, n = -1)",
+         %mr_trinomial_parts(1 + 1/x + 1/x^2, x), [1, 1, 1, -1]),
+   check_not("trinomial_parts 1+x (coeff list length 2 < 3)",
+             %mr_trinomial_parts(1 + x, x)),
+   check_not("trinomial_parts 1+x^2 (middle coefficient 0)",
+             %mr_trinomial_parts(1 + x^2, x)),
+   /* the minus branch (cluster D dependency fix on %mr_binomial_parts:
+      Maxima stores -x^(1/2) as a unary "-" node; the .m's Times[-1,
+      x^(1/2)] goes through the ProductQ branch with the -1 factor) */
+   check("binomial_parts -x^(1/2) (minus branch)",
+         %mr_binomial_parts(-x^(1/2), x), [0, -1, 1/2]),
+   check("binomial_parts -2(1+x^(1/2)) (minus over product)",
+         %mr_binomial_parts(-2*(1 + x^(1/2)), x), [-2, -2, 1/2]),
+   check("binomial_parts -(3+5x^2) (sum with minus terms, pre-existing)",
+         %mr_binomial_parts(-(3 + 5*x^2), x), [-3, -5, 2]),
+   /* trinomialQ (Rubi :568) — ListQ[TrinomialParts[u,x]] &&
+      Not[QuadraticQ[u,x]] && Not[MatchQ[u, w_^2 /; BinomialQ[w,x]]] */
+   check_bool("trinomialQ 1+x^2+x^4", %mr_trinomialQ(1 + x^2 + x^4, x)),
+   check_bool("trinomialQ 3+2x^2+5x^4", %mr_trinomialQ(3 + 2*x^2 + 5*x^4, x)),
+   check_bool("trinomialQ x^2+x^4 (a = 0)", %mr_trinomialQ(x^2 + x^4, x)),
+   /* the .m Drop chain leaves the x^(n+1) coefficient unchecked —
+      Rubi-faithful laxness, pinned */
+   check_bool("trinomialQ 1+x^2+x^3+x^4 (Rubi lax scan: x^3 unchecked)",
+              %mr_trinomialQ(1 + x^2 + x^3 + x^4, x)),
+   check_bool("trinomialQ 1+x^(1/2)+x (fractional, unit coefficients)",
+              %mr_trinomialQ(1 + x^(1/2) + x, x)),
+   check_bool("trinomialQ 1+1/x+1/x^2 (reciprocal trinomial)",
+              %mr_trinomialQ(1 + 1/x + 1/x^2, x)),
+   check_not("trinomialQ 1+x (coeff list length 2)",
+             %mr_trinomialQ(1 + x, x)),
+   check_not("trinomialQ 1+2x+x^2 (a quadratic)",
+             %mr_trinomialQ(1 + 2*x + x^2, x)),
+   check_not("trinomialQ (1+x^2)^2 (a binomial square)",
+             %mr_trinomialQ((1 + x^2)^2, x)),
+   check_not("trinomialQ (1+x^(1/2))^2 (a binomial square, power branch)",
+             %mr_trinomialQ((1 + x^(1/2))^2, x)),
+   check_bool("trinomialQ list, all",
+              %mr_trinomialQ([1 + x^2 + x^4, x^2 + x^4], x)),
+   check_not("trinomialQ list, one not",
+             %mr_trinomialQ([1 + x^2 + x^4, 1 + 2*x + x^2], x)),
+   true
+  )$
+
+  /* Task 7a cluster E — the generalized binomial/trinomial predicates.
+     Expected values hand-computed from the pinned Rubi definitions
+     (GeneralizedBinomialParts :1022-1045, GeneralizedTrinomialParts
+     :1058-1088, the Q/MatchQ/Degree wrappers at :579-593, :1016-1054,
+     :1450-1468). */
+  test_cluster_e_predicates() := block([],
+    print("--- generalized binomial/trinomial predicates (cluster E) ---"),
+    /* generalizedBinomial_parts (Rubi :1022-1045) — [a, b, n, q] iff
+       u ~ a*x^q + b*x^n with n - q > 0 */
+    check("gbp x+x^2",
+          %mr_generalizedBinomial_parts(x + x^2, x), [1, 1, 2, 1]),
+    check("gbp x^2+x (orderless)",
+          %mr_generalizedBinomial_parts(x^2 + x, x), [1, 1, 2, 1]),
+    check("gbp fractional exponents",
+          %mr_generalizedBinomial_parts(2*x^(1/3) + 3*x^(2/3), x),
+          [2, 3, 2/3, 1/3]),
+    check("gbp x^m*(x+x^2) (shift)",
+          %mr_generalizedBinomial_parts(x^m*(x + x^2), x),
+          [1, 1, m + 2, m + 1]),
+    check_not("gbp 3 terms",
+              %mr_generalizedBinomial_parts(x + x^2 + x^3, x)),
+    check_not("gbp single term",
+              %mr_generalizedBinomial_parts(x^2, x)),
+    /* generalizedBinomialQ (Rubi :579) */
+    check_bool("gbQ x+x^2",
+               %mr_generalizedBinomialQ(x + x^2, x)),
+    check_bool("gbQ fractional",
+               %mr_generalizedBinomialQ(2*x^(1/3) + 3*x^(2/3), x)),
+    check_bool("gbQ x^m*(x+x^2) (shift)",
+               %mr_generalizedBinomialQ(x^m*(x + x^2), x)),
+    check_not("gbQ 3 terms",
+              %mr_generalizedBinomialQ(x + x^2 + x^3, x)),
+    check_bool("gbQ list, all",
+               %mr_generalizedBinomialQ([x + x^2, x^(1/2) + x], x)),
+    check_not("gbQ list, one not",
+              %mr_generalizedBinomialQ([x + x^2, x + x^2 + x^3], x)),
+    /* generalizedBinomialDegree (Rubi :1017) — n - q */
+    check("gbDeg x+x^2",
+          %mr_generalizedBinomialDegree(x + x^2, x), 1),
+    check("gbDeg x^2+x (orderless)",
+          %mr_generalizedBinomialDegree(x^2 + x, x), 1),
+    check("gbDeg fractional",
+          %mr_generalizedBinomialDegree(2*x^(1/3) + 3*x^(2/3), x), 1/3),
+    check("gbDeg shift invariant",
+          %mr_generalizedBinomialDegree(x^m*(x + x^2), x), 1),
+    check_not("gbDeg non-gb",
+              %mr_generalizedBinomialDegree(x + x^2 + x^3, x)),
+    /* generalizedBinomialMatchQ (Rubi :1451) — the surface two-power
+       sum, no PosQ gate */
+    check_bool("gbM x+x^2",
+               %mr_generalizedBinomialMatchQ(x + x^2, x)),
+    check_bool("gbM descending exponents (no PosQ)",
+               %mr_generalizedBinomialMatchQ(x^(1/3) + x^(1/2), x)),
+    check_not("gbM product surface",
+              %mr_generalizedBinomialMatchQ(x^m*(x + x^2), x)),
+    check_not("gbM 3 terms",
+              %mr_generalizedBinomialMatchQ(x + x^2 + x^3, x)),
+    check_bool("gbM list, all",
+               %mr_generalizedBinomialMatchQ(
+                 [x + x^2, x^(1/3) + x^(1/2)], x)),
+    check_not("gbM list, one not",
+              %mr_generalizedBinomialMatchQ(
+                [x + x^2, x + x^2 + x^3], x)),
+    /* generalizedTrinomial_parts (Rubi :1058-1088) — [a, b, c, n, q]
+       iff u ~ a*x^q + b*x^n + c*x^(2*n-q) */
+    check("gtp x+x^2+x^3",
+          %mr_generalizedTrinomial_parts(x + x^2 + x^3, x),
+          [1, 1, 1, 2, 1]),
+    check("gtp x^3+x^2+x (orderless)",
+          %mr_generalizedTrinomial_parts(x^3 + x^2 + x, x),
+          [1, 1, 1, 2, 1]),
+    check("gtp fractional exponents",
+          %mr_generalizedTrinomial_parts(
+            2*x^(1/3) + 3*x^(2/3) + 4*x, x),
+          [2, 3, 4, 2/3, 1/3]),
+    /* q = 0 is the ORDINARY trinomial, not generalized: the .m's
+       PolyQ/Expon case carries NeQ[q,0] (usage: n, q, b, c nonzero).
+       The x^m shift below is what generalizes it (q := m). */
+    check_not("gtp 1+x^2+x^4 (q = 0 is ordinary, NeQ[q,0])",
+              %mr_generalizedTrinomial_parts(1 + x^2 + x^4, x)),
+    check("gtp x^m*(1+x^2+x^4) (shift of the q = 0 case)",
+          %mr_generalizedTrinomial_parts(x^m*(1 + x^2 + x^4), x),
+          [1, 1, 1, m + 2, m]),
+    check_not("gtp no progression",
+              %mr_generalizedTrinomial_parts(x + x^2 + x^4, x)),
+    /* generalizedTrinomialQ (Rubi :590) */
+    check_bool("gtQ x+x^2+x^3",
+               %mr_generalizedTrinomialQ(x + x^2 + x^3, x)),
+    check_not("gtQ 1+x^2+x^4 (q = 0 is ordinary)",
+              %mr_generalizedTrinomialQ(1 + x^2 + x^4, x)),
+    check_bool("gtQ x^m*(1+x^2+x^4) (shift)",
+               %mr_generalizedTrinomialQ(x^m*(1 + x^2 + x^4), x)),
+    check_not("gtQ no progression",
+              %mr_generalizedTrinomialQ(x + x^2 + x^4, x)),
+    check_bool("gtQ list, all",
+               %mr_generalizedTrinomialQ(
+                 [x + x^2 + x^3,
+                  2*x^(1/3) + 3*x^(2/3) + 4*x], x)),
+    check_not("gtQ list, one not",
+              %mr_generalizedTrinomialQ(
+                [x + x^2 + x^3, x + x^2 + x^4], x)),
+    /* generalizedTrinomialDegree (Rubi :1053) — n - q */
+    check("gtDeg x+x^2+x^3",
+          %mr_generalizedTrinomialDegree(x + x^2 + x^3, x), 1),
+    check_not("gtDeg 1+x^2+x^4 (q = 0 is ordinary)",
+              %mr_generalizedTrinomialDegree(1 + x^2 + x^4, x)),
+    check("gtDeg shift invariant",
+          %mr_generalizedTrinomialDegree(x^m*(1 + x^2 + x^4), x), 2),
+    check_not("gtDeg non-gt",
+              %mr_generalizedTrinomialDegree(x + x^2 + x^4, x)),
+    /* generalizedTrinomialMatchQ (Rubi :1465) — the surface three-power
+       sum with the progression gate, no product/PolyQ recursion */
+    check_bool("gtM x+x^2+x^3",
+               %mr_generalizedTrinomialMatchQ(x + x^2 + x^3, x)),
+    check_bool("gtM fractional",
+               %mr_generalizedTrinomialMatchQ(
+                 2*x^(1/3) + 3*x^(2/3) + 4*x, x)),
+    check_not("gtM 1+x^2+x^4 (q = 0 is not a surface power term)",
+              %mr_generalizedTrinomialMatchQ(1 + x^2 + x^4, x)),
+    check_not("gtM no progression",
+              %mr_generalizedTrinomialMatchQ(x + x^2 + x^4, x)),
+    check_bool("gtM list, all",
+               %mr_generalizedTrinomialMatchQ(
+                 [x + x^2 + x^3, 2*x^(1/3) + 3*x^(2/3) + 4*x], x)),
+    check_not("gtM list, one not",
+              %mr_generalizedTrinomialMatchQ(
+                [x + x^2 + x^3, x + x^2 + x^4], x)),
+    true
+   )$
+
+  test_cluster_f_predicates() := block([],
+    print("--- cluster F predicates ---"),
+    /* linearPairQ (Rubi :1387) */
+    check_bool("lP parallel",
+               %mr_linearPairQ(2*x + 1, 4*x + 2, x)),
+    check_bool("lP v = x is allowed",
+               %mr_linearPairQ(2*x, x, x)),
+    check_not("lP u = x is excluded (NeQ[u,x])",
+              %mr_linearPairQ(x, 2*x, x)),
+    check_not("lP not parallel",
+              %mr_linearPairQ(2*x + 1, 3*x + 4, x)),
+    check_not("lP nonlinear",
+              %mr_linearPairQ(x^2 + 1, 2*x^2 + 2, x)),
+    /* perfectSquareQ — clone-gap predicate (no .m definition in the
+       pinned clone); the class-1 usage is on numeric discriminants, so
+       the port is a factor-exponent square test */
+    check_bool("pS 4", %mr_perfectSquareQ(4)),
+    check_bool("pS 9/4", %mr_perfectSquareQ(9/4)),
+    check_bool("pS a^2", %mr_perfectSquareQ(a^2)),
+    check_bool("pS (a+b)^2", %mr_perfectSquareQ((a + b)^2)),
+    check_bool("pS pi^2", %mr_perfectSquareQ(%pi^2)),
+    check_not("pS 2", %mr_perfectSquareQ(2)),
+    check_not("pS -4", %mr_perfectSquareQ(-4)),
+    check_not("pS a^2+b^2", %mr_perfectSquareQ(a^2 + b^2)),
+    /* rationalFunctionQ (Rubi :1578) */
+    check_bool("rFQ poly", %mr_rationalFunctionQ(x^2 + 1, x)),
+    check_bool("rFQ quotient", %mr_rationalFunctionQ(1/x, x)),
+    check_bool("rFQ power/quotient mix",
+               %mr_rationalFunctionQ(x^2/(x + 1), x)),
+    check_bool("rFQ param coefficient", %mr_rationalFunctionQ(a*x + b, x)),
+    check_not("rFQ sqrt", %mr_rationalFunctionQ(1/sqrt(x), x)),
+    check_not("rFQ sin", %mr_rationalFunctionQ(sin(x), x)),
+    check_not("rFQ x^x", %mr_rationalFunctionQ(x^x, x)),
+    /* splitProduct (Rubi :7658) with the class-1 SumBaseQ argument */
+    check("sp sum factor",
+          %mr_splitProduct('SumBaseQ, a*(x + 1)), [x + 1, a]),
+    check("sp bare sum",
+          %mr_splitProduct('SumBaseQ, x + 1), [x + 1, 1]),
+    check("sp negative product",
+          %mr_splitProduct('SumBaseQ, -a*(x + 1)), [x + 1, -a]),
+    check_not("sp no sum factor",
+              %mr_splitProduct('SumBaseQ, a*b)),
+    /* pseudoBinomialPairQ (Rubi :1507) — both bases
+       a + b*(c + d*x)^n with the same [c, d, n] tail */
+    check("pBp parts",
+          %mr_pseudoBinomial_parts(x^3 + 3*x^2 + 3*x + 2, x),
+          [1, 1, 1, 1, 3]),
+    check_bool("pBQ same tail",
+               %mr_pseudoBinomialPairQ(
+                 x^3 + 3*x^2 + 3*x + 2,
+                 x^3 + 3*x^2 + 3*x + 3, x)),
+    check_not("pBQ different n",
+              %mr_pseudoBinomialPairQ(
+                x^3 + 3*x^2 + 3*x + 2,
+                x^4 + 4*x^3 + 6*x^2 + 4*x + 3, x)),
+    check_not("pBQ non-polynomial",
+              %mr_pseudoBinomialPairQ(x^3 + 1/x, x^3 + 1/x, x)),
+    /* inverseFunctionQ (Rubi :303) */
+    check_bool("iFQ log", %mr_inverseFunctionQ(log(x))),
+    check_bool("iFQ asin", %mr_inverseFunctionQ(asin(x))),
+    check_bool("iFQ atan one-arg", %mr_inverseFunctionQ(atan(x))),
+    check_not("iFQ atan2 (two-arg inverse trig)",
+              %mr_inverseFunctionQ(atan2(y, x))),
+    check_bool("iFQ asinh", %mr_inverseFunctionQ(asinh(x))),
+    check_not("iFQ sin", %mr_inverseFunctionQ(sin(x))),
+    check_not("iFQ x", %mr_inverseFunctionQ(x)),
+    /* algebraicFunctionQ (Rubi :1681, flag = false) */
+    check_bool("aFQ x", %mr_algebraicFunctionQ(x, x)),
+    check_bool("aFQ sqrt", %mr_algebraicFunctionQ(sqrt(x), x)),
+    check_bool("aFQ 1/sqrt", %mr_algebraicFunctionQ(1/sqrt(x), x)),
+    check_bool("aFQ rational power",
+               %mr_algebraicFunctionQ((x + 1)^(1/3), x)),
+    check_bool("aFQ sum", %mr_algebraicFunctionQ(x + sqrt(x), x)),
+    check_bool("aFQ list",
+               %mr_algebraicFunctionQ([sqrt(x), x^2], x)),
+    check_not("aFQ x^x", %mr_algebraicFunctionQ(x^x, x)),
+    check_not("aFQ sin", %mr_algebraicFunctionQ(sin(x), x)),
+    check_not("aFQ log", %mr_algebraicFunctionQ(log(x), x)),
+    true
+   )$
+
+  test_cluster_g_shims() := block([],
+    print("--- cluster G shims ---"),
+    /* rt (Rubi :7513/:7549) */
+    check("rt 16 4", %mr_rt(16, 4), 2),
+    check("rt 8 3", %mr_rt(8, 3), 2),
+    check("rt -8 3", %mr_rt(-8, 3), -2),
+    check("rt 4/9 2", %mr_rt(4/9, 2), 2/3),
+    check("rt -4 2", %mr_rt(-4, 2), 2*%i),
+    check("rt power", %mr_rt(x^4, 2), x^2),
+    check("rt sqrt node", %mr_rt(sqrt(x), 2), x^(1/4)),
+    check("rt sum square", %mr_rt((a + b)^2, 2), a + b),
+    check("rt negative power odd", %mr_rt(-a^2, 3), -a^(2/3)),
+    /* expon (Rubi :1239) */
+    check("expon poly", %mr_expon(x^3 + x, x), 3),
+    check("expon param poly", %mr_expon(a*x^2 + b*x^4, x), 4),
+    check("expon 1/x", %mr_expon(1/x, x), -1),
+    check("expon 0", %mr_expon(0, x), 0),
+    /* expandToSum (Rubi :3329/:3343) — 2-arg and 3-arg */
+    check("eTS poly",
+          %mr_expandToSum((x + 1)^2, x), x^2 + 2*x + 1),
+    check("eTS sum", %mr_expandToSum(x + x^2, x), x + x^2),
+    check("eTS ordinary trinomial",
+          %mr_expandToSum(1 + x^2 + x^4, x), 1 + x^2 + x^4),
+    check("eTS generalized binomial",
+          %mr_expandToSum(2*x^(1/3) + 3*x^(2/3), x),
+          2*x^(1/3) + 3*x^(2/3)),
+    check("eTS generalized trinomial",
+          %mr_expandToSum(x^m*(1 + x^2 + x^4), x),
+          x^m + x^(m + 2) + x^(m + 4)),
+    check("eTS 3-arg free",
+          %mr_expandToSum(3, 1 + x, x), 3 + 3*x),
+    check("eTS 3-arg no free",
+          %mr_expandToSum(2, x + 1, x), 2 + 2*x),
+    /* intPart (Rubi :2952) */
+    check("iP 3/2", %mr_intPart(3/2), 1),
+    check("iP -3/2", %mr_intPart(-3/2), -2),
+    check("iP 2", %mr_intPart(2), 2),
+    check("iP x", %mr_intPart(x), 0),
+    check("iP 3/2*x", %mr_intPart(3/2*x), 0),
+    check("iP sum", %mr_intPart(3/2 + x), 1),
+    /* fracPart (Rubi :2969) */
+    check("fP 3/2", %mr_fracPart(3/2), 1/2),
+    check("fP -3/2", %mr_fracPart(-3/2), 1/2),
+    check("fP 2", %mr_fracPart(2), 0),
+    check("fP x", %mr_fracPart(x), x),
+    check("fP 3/2*x", %mr_fracPart(3/2*x), 3/2*x),
+    check("fP sum", %mr_fracPart(3/2 + x), 1/2 + x),
+    true
+   )$
+
+  test_cluster_h_shims() := block([],
+    print("--- cluster H shims ---"),
+    /* polyQuotient / polyRemainder / polyDivide — the Maxima quotient /
+       remainder / divide builtins under the project names */
+    check("pQ basic",
+          %mr_polyQuotient(x^3 + x, x^2 + 1, x), x),
+    check("pQ by x",
+          %mr_polyQuotient(x^3 + x, x, x), x^2 + 1),
+    check("pR basic",
+          %mr_polyRemainder(x^3 + 1, x^2 + 1, x), 1 - x),
+    check("pR by x",
+          %mr_polyRemainder(x^3 + 1, x, x), 1),
+    /* polyDivide returns the ONE expression quo + rem/v (Rubi :3298
+       contract, consumed by the generated mr_int repls) */
+    /* the unexpanded form is (1-x)/(x^2+1)+x (sum-term order is
+       canonical, not source order — a source-order `= check would
+       fail); the identity u = v*PolyDivide[u,v,x] is the contract. */
+    check("pDiv identity",
+          is(ratsimp((x^3 + 1) - (x^2 + 1)*%mr_polyDivide(x^3 + 1, x^2 + 1, x)) = 0), true),
+    /* inverse-hyperbolic log shims (unbound in this build) */
+    check("atanh 1/2", %mr_atanh(1/2), 1/2*log(3)),
+    check("atanh 0", %mr_atanh(0), 0),
+    check("asinh 0", %mr_asinh(0), 0),
+    check("asinh 1", %mr_asinh(1), log(1 + sqrt(2))),
+    check("acosh 1", %mr_acosh(1), 0),
+    check("acosh 2", %mr_acosh(2), log(2 + sqrt(3))),
+    true
+   )$
+
+  test_cluster_i_expandIntegrand() := block([],
+    print("--- cluster I expandIntegrand (algebraic surface) ---"),
+    /* 2-arg: a positive-integer power of a sum expands */
+    check("eI2 power of sum",
+          %mr_expandIntegrand((x + 1)^2, x), x^2 + 2*x + 1),
+    check("eI2 nonlinear power",
+          %mr_expandIntegrand((x^2 + 1)^2, x), x^4 + 2*x^2 + 1),
+    check("eI2 rational power stays",
+          %mr_expandIntegrand((x + 1)^(1/2), x), (x + 1)^(1/2)),
+    /* 2-arg: polynomial * linear-power stays in linear-power form
+       (ExpandLinearProduct), not expanded to monomials */
+    check("eI2 linear product x",
+          %mr_expandIntegrand(x*(x + 1)^2, x),
+          (x + 1)^3 - (x + 1)^2),
+    check("eI2 linear product const",
+          %mr_expandIntegrand(3*(x + 1)^2, x), 3*(x + 1)^2),
+    check("eI2 linear product poly",
+          %mr_expandIntegrand((x + 2)*(x + 1)^2, x),
+          (x + 1)^3 + (x + 1)^2),
+    /* 3-arg: distribute over the expanded v WITHOUT expanding the
+       power factors (DistributeOverTerms / MergeMonomials surface) */
+    check("eI3 distribute power",
+          %mr_expandIntegrand(x, (x + 1)^2, x), x^3 + 2*x^2 + x),
+    check("eI3 distribute plain",
+          %mr_expandIntegrand(x, x + 1, x), x^2 + x),
+    check("eI3 distribute const",
+          %mr_expandIntegrand(2, x^2 + 2*x + 1, x),
+          2*x^2 + 4*x + 2),
+    true
+   )$
+
+  test_cluster_j_shims() := block([],
+    print("--- cluster J shims ---"),
+    /* substFor — the algebraic surface (the .m's trig/inverse-function
+       branches are not ported) */
+    check("substFor x^n",
+          %mr_substFor(x^2, x^4 + x^2 + 1, x), x^2 + x + 1),
+    check("substFor linear",
+          %mr_substFor(x + 1, (x + 1)^2 + 1, x), x^2 + 1),
+    check("substFor atom",
+          %mr_substFor(t, t^2 + 1, x), x^2 + 1),
+    check("substFor 4-arg",
+          %mr_substFor(2, x^2, x^4 + 1, x), 2*(x^2 + 1)),
+    /* substPower */
+    check("substPower",
+          %mr_substPower(x^4 + x^2 + 1, x, 1/2), x^2 + x + 1),
+    /* dist — distribute the first argument over a Plus sum, leave a
+       noun Sum multiplied */
+    check("dist sum", %mr_dist(2, x + x^2, x), 2*x + 2*x^2),
+    check("dist noun sum",
+          %mr_dist(2, mr_sum(u, k, 1, 3), x), 2*mr_sum(u, k, 1, 3)),
+    /* normalizePseudoBinomial */
+    check("normalizePB",
+          %mr_normalizePseudoBinomial(x^3 + 3*x^2 + 3*x + 2, x),
+          1 + (x + 1)^3),
+    /* cancel */
+    check("cancel",
+          %mr_cancel((x + 1)/(x^2 + 2*x + 1)), 1/(x + 1)),
+    /* polyGCD — monic, x-dependent factors only */
+    check("polyGCD",
+          %mr_polyGCD((x + 1)*(x + 2), (x + 1)*x, x), x + 1),
+    check("polyGCD none",
+          %mr_polyGCD(x + 1, x + 2, x), 1),
+    /* rationalFunctionExpand — the algebraic-ExpandIntegrand surface */
+    check("rFE power",
+          %mr_rationalFunctionExpand((x + 1)^2, x), x^2 + 2*x + 1),
+    check("rFE linear product",
+          %mr_rationalFunctionExpand(x*(x + 1)^2, x),
+          (x + 1)^3 - (x + 1)^2),
+    true
+   )$
+
+  test_cluster_k_shims() := block([],
+    print("--- cluster K shims ---"),
+    /* root — the rational k-th root of an explicit-rational polynomial
+       (the Mathematica Root object, reduced to the rational reading) */
+    check("root k=1",
+          %mr_root(x^3 - 6*x^2 + 11*x - 6, 1), 1),
+    check("root k=2",
+          %mr_root(x^3 - 6*x^2 + 11*x - 6, 2), 2),
+    check("root k=3",
+          %mr_root(x^3 - 6*x^2 + 11*x - 6, 3), 3),
+    check("root non-monic",
+          %mr_root(2*x^3 - 3*x^2 - 2*x + 3, 3), 3/2),
+    check("root none",
+          %mr_root(x^3 - 2, 1), false),
+    check("root out of range",
+          %mr_root(x - 1, 2), false),
+    /* intSum / intTerm */
+    check("intSum const", %mr_intSum(3, x), 3*x),
+    check("intSum sum", %mr_intSum(x + 1, x), x^2/2 + x),
+    check("intSum linear", %mr_intSum(2*x + 1, x), x^2 + x),
+    check("intSum power", %mr_intSum((x + 1)^2, x), (x + 1)^3/3),
+    check("intSum const power",
+          %mr_intSum(2*(x + 1)^2, x), 2*(x + 1)^3/3),
+    check("intSum -1 power", %mr_intSum(1/(x + 1), x), log(x + 1)),
+    check("intSum const -1 power",
+          %mr_intSum(2/(x + 1), x), 2*log(x + 1)),
+    check("intSum content -1 power",
+          %mr_intSum(1/(2*x + 2), x), log(x + 1)/2),
+    check("intSum fallback",
+          %mr_intSum(x*(x + 1), x), (2*x^3 + 3*x^2)/6),
+    /* hold — the ShowStep wrapper, identity outside ShowStep */
+    check("hold", %mr_hold(1 + 1), 2),
+    true
+   )$
+
+  test_cluster_l_powered_form() := block([],
+    print("--- cluster L powered-form coeff/expon ---"),
+    check("coeff4 const",
+          %mr_coeff(x^4 + 3*x^2 + 5, x, 2, 0), 5),
+    check("coeff4 mid",
+          %mr_coeff(x^4 + 3*x^2 + 5, x, 2, 1), 3),
+    check("coeff4 lead",
+          %mr_coeff(x^4 + 3*x^2 + 5, x, 2, 2), 1),
+    check("coeff4 absent",
+          %mr_coeff(x^4 + 3*x^2 + 5, x, 2, 3), 0),
+    check("expon3 even",
+          %mr_expon(x^4 + 3*x^2 + 5, x, 2), 2),
+    check("expon3 odd",
+          %mr_expon(x^3 + x, x, 2), -1),
+    check("expon3 const",
+          %mr_expon(5, x, 2), 0),
+    check("degree algebraic const",
+          %mr_degree(%pi/sqrt(16 - %e^2), x), 0),
+    check("expon algebraic const",
+          %mr_expon(%pi/sqrt(16 - %e^2), x), 0),
+    check("polyQ algebraic const",
+          %mr_polyQ(%pi/sqrt(16 - %e^2), x), true),
+    true
+   )$
+
+  test_rules_1_1_1_1_behavior() := block([r],
+    print("--- generated 1.1.1.1 (behavioral) ---"),
+  /* rule 2: the power rule x^m (m free of x, m # -1) */
+  check("x^3", rubi(x^3, x), x^4/4),
+  /* 5*x^2 fires no class-1 rule (the 1.1.1.1 family is (a+b x)^m forms
+     only; no a*x^n / constant-factor rule in the ported set, measured
+     2026-08-24) — this probe pins the integrate fall-through, so it is
+     full-coverage. */
+  check("5x^2 (full coverage)", rubi_fallback(5*x^2, x, true), 5*x^3/3),
+  /* rule 1: 1/x -> log(x) */
+  check("1/x", rubi(1/x, x), log(x)),
+  /* rule 4: (a+b x)^m, m # -1. BRIEF DEVIATION (measured 2026-08-20):
+     the brief's expected (1+2x)^4/12 is not an antiderivative —
+     ratsimp(diff((1+2x)^4/12, x) - (1+2x)^3)
+       = -((8*x^3+12*x^2+6*x+1)/3) # 0,
+     while (1+2x)^4/8 closes (diff - integrand -> 0) and equals
+     Maxima's own integrate up to a constant. Expected fixed to /8
+     (the value rule 4 emits: (a+b x)^(m+1)/(b (m+1))). */
+  check("(1+2x)^3", ratsimp(rubi((1 + 2*x)^3, x)), ratsimp((1 + 2*x)^4/8)),
+  /* rule 3: 1/(a+b x) -> log(RemoveContent[a+b x, x])/b */
+  check("1/(a+b x)", ratsimp(rubi(1/(a + b*x), x)), ratsimp(log(a + b*x)/b)),
+  /* rule 5 shape (a+b u)^m, u linear in x. MEASURED (2026-08-20):
+     (1 + 2*(3*x))^2 auto-simplifies to (1 + 6*x)^2, which rule 4
+     matches directly — and the emitted rule-5 pattern
+     (a + b*u)^m (a product of two pattern variables) matches NOTHING
+     in this Maxima build (defmatch warning: "will be matched uniquely
+     since sub-parts would otherwise be ambiguous"; all probe inputs
+     -> false). So this input exercises rule 4, and rule 5 / the
+     %mr_subst-via-rule path is NOT exercised end-to-end here
+     (%mr_subst itself has a unit probe above). Generator/matcher
+     finding — see task-5 report.
+     BRIEF DEVIATION (measured): the brief's expected (1+6x)^3/9 is not
+     an antiderivative — ratsimp(diff((1+6x)^3/9, x) - (1+6x)^2)
+       = 36*x^2+12*x+1 # 0,
+     while (1+6x)^3/18 closes to 0. Expected fixed to /18. */
+   r : rubi((1 + 2*(3*x))^2, x),
+   check_bool("linear base (1+6x)^2", is(ratsimp(r) = ratsimp((1 + 6*x)^3/18))),
+  /* NeQ[m, -1]: the m = -1 case must NOT take the power rule (falls to 1/x) */
+   check_bool("NeQ guard honored", is(rubi(1/x, x) = log(x))),
+   true
+)$
+
+/* The dead-rule name-corruption regression (2026-08-24: drop_optionals
+   ran post-translate and a capture named `r` mangled the `_mr_` prefix
+   of every renamed capture, killing 138 rules across 17 files) is a
+   generator defect. It is covered by the static name-integrity half of
+   probes/census/01-generation-vs-inventory. A behavioral defmatch probe
+   here would conflate it with the separate Maxima matcher under-match on
+   multi-factor products (measured 2026-08-24: 1.1.2.6 r3 declines even
+   with intact names). */
+
+/* Census cross-check (T6 Step 4). BRIEF DEVIATION (measured 2026-08-20,
+   probes/load_wall/probe-load-wall.out, build
+   branch_5_49_base_796_g60186bb22_dirty): the brief's global check
+   (length(mr_rule_table) = 2710) cannot run in-process on this build —
+   the defmatch budget is exhausted partway through file 8 of 67, so
+   2710 patterns cannot be held in one process. The global cross-check
+   lives in the static probe probes/census/01-generation-vs-inventory
+   (generator per-file counts vs the T1 inventory, all 67 files, total
+   2710). Here: the loadable spot checks — 1.1.1.2 (count 40, the T1
+   inventory per-file number) loaded with the table saved/restored,
+   plus the core count re-verified. */
+test_census() := block([saved_table],
+  print("--- census cross-check (loadable subset; see docstring) ---"),
+  saved_table : mr_rule_table,
+  %mr_load_sibling("rules/class1/1_1_1_2.mac", 'mr_witness_1_1_1_2),
+  check("1.1.1.2 count = 40 (T1 inventory)", mr_rules_count_1_1_1_2, 40),
+  check_bool("1.1.1.2 witness survived", is(mr_witness_1_1_1_2() = true)),
+  check("core 1.1.1.1 count still 5", mr_rules_count_1_1_1_1, 5),
+  check("table (saved core) length 5", length(saved_table), 5),
+  mr_rule_table : saved_table,
+  true
+)$
+
+/* $ not ; — the function's value (tests_failed = 0) would otherwise
+   print right under the Results: line, the line the reading protocol
+   exists to be read. */
+run_all_tests()$
+quit();

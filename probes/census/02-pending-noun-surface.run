@@ -1,0 +1,13 @@
+#!/bin/sh
+# probes/census/02-pending-noun-surface.run — pending-noun surface of
+# the committed class-1 rules (static; Task-6 review finding 2 evidence).
+#
+#   sh probes/census/02-pending-noun-surface.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# pending-noun surface, $(date -u +%F)"
+  python3 probes/census/02-pending-noun-surface.py
+} > probes/census/02-pending-noun-surface.out
+rc=$?
+echo "wrote probes/census/02-pending-noun-surface.out"
+exit $rc

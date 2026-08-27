@@ -224,19 +224,32 @@ The code lives under these, each one earned by a measurement:
 
 ## 5. Scale and open measurements
 
-- Load: `defmatch` compilation for 2,710 rules (+ the D-fan-out
-  tail: 2,684 rules carry ≥1 optional; the fan-out histogram is in
-  the T4 census) happens at load time and its wall is **not yet
-  measured** — the first implementation milestone includes measuring
-  it (if load exceeds ~1 minute, the D tail moves to N-only).
+- Load: `defmatch` compilation happens at load time, and its wall is
+  MEASURED (2026-08-20, build branch_5_49_base_796_g60186bb22_dirty,
+  probes/load_wall/probe-load-wall.out). It is a hard process-level
+  PATTERN BUDGET, not a timing problem: 1,200 plain `defmatch`
+  patterns load, 1,600 die with SBCL's fatal "Thread local storage
+  exhausted" (uncatchable by `errcatch`). A real class-1 rule costs
+  between about 3.3 and about 5.4 plain patterns (the two bounds from
+  the 1200/1600 budget and the 294/361 wall). Consequences on this
+  build: the class-1 load list holds files 1-7 (294 rules, ~0.6 s) in
+  one process; file 8 (361 cumulative) is FATAL; so the loader does
+  NOT call `mr_load_class1_all()` (it exists, for a build with the
+  headroom — 5.50 is expected to improve pattern matching). Each
+  generated file loads fine alone (67/67 verified, one process per
+  file), and `unload()` releases a file's patterns from the budget, so
+  files can be swapped. The D-fan-out tail question (2,684 rules carry
+  ≥1 optional; histogram in the T4 census) is moot on this build — the
+  wall is hit on pattern count long before it is a time problem.
 - Test wall: the class-1 corpus suite is ~12.1 h serial-equivalent at
   T3's measured rate; the full run took 2.2 h wall on 18 parallel
   workers (T3 §3.4) — the standing cost of the yardstick, paid a few
   times per class, not per change. The per-change gate is Layer A
   (seconds).
 - Open (implementation-phase, not research-phase): the recursion cap
-  value, the zero-test chain's adequacy against the T3 23-unverified
-  sample (the strengthen-the-chain loop of T4 §4), and whether
-  corpus-expected elliptic answers differentiate back in this build
-  (T4 §2 flagged `elliptic_f`'s missing binding as a verification
-  risk, not an answer-emission risk).
+  value and the zero-test chain's adequacy against the T3 23-unverified
+  sample (the strengthen-the-chain loop of T4 §4). RESOLVED 2026-08-24
+  on 5.50.0: the elliptic question — `diff` DOES differentiate the
+  native `elliptic_f/e/pi` nouns, so the generator emits the native
+  names (not `mr_elliptic_*`) and elliptic answers can close the
+  verified chain.

@@ -124,15 +124,15 @@ Replacements (token → used by N rules → state):
 | Subst / SubstFor / SubstPower | 389 / 15 / 1 | `subst` for the atom case; For/Power forms = small ports | port |
 | Simp / Simplify / SimplifyIntegrand | 346 / 58 / 8 | T2's chain `ratsimp` → `ratsimp∘expand` → `factor` → `ratsimp∘factor` (`simplify` **unbound**) | shim (policy) |
 | Rt | 335 | `ratroot` **noun**; Maxima real-root folding gives the odd-n behaviour for `r^(1/n)`, so the shim is a tiny function handling even n → `sqrt`-family and odd n → signed real root | shim |
-| ExpandToSum / ExpandIntegrand / ExpandLinearProduct | 230 / 203 / 1 | `expand` present; the "to sum / integrand" split logic is Rubi's (ports) | port |
+| ExpandToSum / ExpandIntegrand / ExpandLinearProduct | 230 / 203 / 1 | `expand` present; the "to sum / integrand" split logic is Rubi's (ports). **ExpandLinearProduct** (2026-08-25, e1276): reads the shifted form through `rat(w)` and scales the coefficient list by `1/expand(denom(r))` — the .m `CoefficientList[Expand[w], x]` reading, which KEEPS the constant (x-free) denominator; the prior `num(rat(w))` read dropped it (measured 243x answer error on 1.1.1.3 e1276; latent `c^m` factor error on the other call site, 1.2.1.2 r20, for `c ≠ 1` — reproduced, factor 4 at `c = 2`). The ExpandIntegrand linear-power scan uses a LOCAL factorizer `%mr_ei_factors` (splits `/` nodes — `(a+b*x)^-m` stores as the `/` node `1/(a+b*x)^m`, MEASURED) and reads the reciprocal quotient `1/(a+b*x)^m` (m a positive integer) as a linear-power factor; the shared `%mr_product_factors` is untouched. Two storage traps, MEASURED 2026-08-25: `together` is a NOUN in this build (`op(together(x/2+x/3)) = 'together`), so `rat` is the combining step; dividing by the raw `denom(rat(…))` object (`is(d = 243)` true, yet a distinct gcrat object) triggers rat-form simplification and EXPANDS `(3*x+2)^k` to its polynomial — `expand(denom(r))` reifies the plain number | port |
 | Coeff / Coefficient | 198 / 46 | `coefficient` **noun here** | shim + port (Rubi's `Coeff` = leading-ish coefficient with var order) |
 | FracPart / IntPart / FractionalPart / IntegerPart | 180 / 121 / 1 / 1 | Laurent-part operators (Rubi's, not Maxima's numeric `fractpart` — **noun anyway**); `truncate`/`floor` present for the scalar cases | port |
 | PolynomialQuotient / PolynomialRemainder / PolynomialDivide / Quotient | 108 / 74 / 8 / 2 | `pquoto`/`pmodulo`/`quo`/`(poly) rem` **all nouns** (the bound `rem` is the `put`-property remover and *errors* on polynomial args) | shim (3 small functions over `coefficient`) |
 | Denominator / Denom / Numerator / Numer | 88 / 11 / 24 / 11 | `denom` / `num` | present |
 | ArcTan / ArcSin / ArcCos | 78 / 43 / 6 | `atan` `asin` `acos` | present |
 | ArcTanh / ArcSinh / ArcCosh | 35 / 2 / 1 | **nouns in this build** → log-form shims (`atanh(z) = log((1+z)/(1-z))/2` …) | shim |
-| EllipticF / EllipticE / EllipticPi | 33 / 28 / 9 | `elliptic_f/e/pi` **nouns in this build but documented in its manual**; emit as package nouns, differentiation of the answer is at risk here (§6) | noun + verify |
-| Sum | 28 | `sum` present but *evaluates definite sums* — Rubi's `Sum` is a formal placeholder → package noun `mr_sum` | package noun |
+| EllipticF / EllipticE / EllipticPi | 33 / 28 / 9 | **native** `elliptic_f/e/pi` answer-side nouns. On 5.49 they were emitted as `mr_elliptic_*` package nouns because the calls stayed nouns; on 5.50.0 `diff` knows the native derivatives (measured 2026-08-24), and the corpus expected answers use the native names, so the generator now emits them natively (the anti-masking rule applies only to package-DEFINED shims) | native noun + verify |
+| Sum | 28 | `sum` present but *evaluates definite sums* — Rubi's `Sum` is a formal placeholder → package **function** `mr_sum(fun, var, lo, hi)`: numeric bounds are **concretized** per integer index (a non-identifier summand arrives as `lambda([var], <summand>)` — Maxima evaluates call arguments eagerly, so the generator wraps it — and is applied per index; a bare-identifier summand (Rubi's `Module`-local-u shape) is resolved through its value; symbolic bounds keep the noun `mr_sum[fun, var, lo, hi]`). The lambda test must compare against the unquoted symbol (`op(lam) = lambda`; the string form is false in this build) — measured 2026-08-25 | package function (concretizing) |
 | Hypergeometric2F1 | 18 | `hypergeometric([a,b],[c],z)` **bound** (list form; warns on scalar args: audit) | present (shape translation) |
 | AppellF1 | 8 | no Maxima equivalent at all | package noun (+ deriv rule if corpus needs it) |
 | GCD / PolyGCD | 10 / 2 | `gcd` present; `gcf` noun | port (trivial) |
@@ -215,8 +215,23 @@ Mechanical (a Python generator; the census script already contains the
 4. Replacements: `Subst[...]` → ported subst forms; `Simp[...]` → the
    package simplify policy; `Int[smaller, x]` → `mr_int(smaller, x)`
    (recursion handled by the runner's T2 dispatch, max-recursion
-   capped); `Sum` → `mr_sum`; 2F1/AppellF1/elliptic in their Maxima
-   forms.
+   capped); `Sum` → `mr_sum`, with a non-identifier summand
+   lambda-wrapped so it survives Maxima's eager argument evaluation and
+   is concretized per integer index (a bare-identifier summand — Rubi's
+   `Module`-local-u shape — stays bare and resolves through its value);
+   2F1/AppellF1/elliptic in their Maxima forms.
+   **Capture snapshots** (2026-08-25, e44 wrong-answer fix): Maxima
+   `block` scoping is dynamic and a `defmatch` matcher assigns the
+   pattern symbols as a side effect of every match attempt, so a nested
+   `mr_int` in the repl re-dispatches the whole rule list, re-matches
+   THIS rule's pattern on the cascade's intermediate integrands, and
+   clobbers the capture bindings the repl still reads afterwards (e44:
+   the even-part cascade rebound `…_b`/`…_c` to `-240`/`348` and the
+   odd-part integrand was built from the wrong quartic). The repl
+   therefore reads each capture from the immutable matchlist `mm` into a
+   fresh `<cap>__s` local — a name no matcher can assign — and the body
+   is rewritten to those locals. The cond keeps the capture names (it
+   runs before any nested dispatch).
 5. Emit the `.mac` triple table; a loader `load`s one file per rule
    section and registers triples into the section's rule list; a
    `mr_rules_count` per section cross-checks the census (2,710).
@@ -322,9 +337,13 @@ local edits. Consequences, all measured 2026-08-18:
   ratroot, pquoto/pmodulo/quo/polynomial-rem, cancel, holdform, boole,
   gcf, factorterm, rootof) is a property of **this binary**. On the
   5.50 release, re-run `sh probes/translation/02-support-surface.run`
-  and shrink the shims to whatever still nouns; the generator's
-  translation table does not change either way (it names the shims;
-  the shims may become one-line pass-throughs).
+  and shrink the shims to whatever still nouns. For PACKAGE-DEFINED
+  shims the translation table keeps the `%mr_*` names (the shims may
+  become one-line pass-throughs). MEASURED 2026-08-24 on 5.50.0: the
+  answer-side elliptic entries are the exception that DID change —
+  `elliptic_f/e/pi` still stay nouns on numeric calls, but `diff`
+  knows their derivatives, so the generator now emits the native
+  names rather than `mr_elliptic_*` package nouns.
 - `is(…)` returns `unknown` as a third value (audit: `is(x > 0)` →
   `unknown`); every generated guard and every C-tier port must treat
   unknown as not-true.

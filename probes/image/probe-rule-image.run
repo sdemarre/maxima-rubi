@@ -1,0 +1,120 @@
+#!/bin/sh
+# probes/image/probe-rule-image.run — option D: a saved Maxima image carrying
+# the loaded class-1 rule table, so per-integral startup skips the rule load.
+#
+# Usage (from the worktree root):  sh probes/image/probe-rule-image.run
+# Output: probes/image/probe-rule-image.out (date/build stamped, committed).
+# Self-flagging: exits 1 if any witness fails.
+#
+# Mechanism precedent (not a new facility): the installed maxima.core is
+# itself a saved image — src/maxima-build.lisp:24 builds it with
+# sb-ext:save-lisp-and-die :toplevel (symbol-function 'cl-user::run).
+#
+# Launch form (measured 2026-08-26, this is what the driver uses):
+#   sbcl --tls-limit 100000 --core <core> --noinform --very-quiet -b <file>
+# The SAVED toplevel is cl-user::run, so no --eval is needed; the bare
+# maxima options become the toplevel args the image's arg parser reads.
+# The stock-wrapper form (--end-runtime-options --eval '(cl-user::run)'
+# --end-toplevel-options ...) leaks sbcl meta-args into maxima's parser and
+# prints "Warning: argument ... not recognized"; this minimal form is
+# byte-clean. Two build-session resets are required for a clean restore:
+#   *maxima-started* -> nil   (else a spurious "Maxima restarted." line)
+# --tls-limit takes TWO argv tokens for sbcl (ONE quoted token for maxima -X).
+#
+# 2026-08-26, 5.50.0/SBCL 2.6.7. Re-stamp on build change.
+set -u
+cd "$(dirname "$0")/../.." || exit 1
+OUT=probes/image/probe-rule-image.out
+TMP=$(mktemp -d)
+CORE="$TMP/rules.core"
+SBCL=$(command -v sbcl)
+FAIL=0
+trap 'rm -rf "$TMP"' EXIT
+
+{
+  echo "# probe-rule-image output, $(date -u '+%F %T UTC')"
+  echo "# $(maxima --version 2>&1 | head -1) / $(sbcl --version 2>&1 | head -1)"
+  echo "# git: $(git rev-parse HEAD 2>/dev/null || echo n/a)"
+  echo
+
+  echo "=== part 1: build the rules core (one-time cost) ==="
+  t0=$(date +%s.%N)
+  printf 'batch_answers_from_file: true$\nload("maxima_rubi.mac")$\nmr_load_class1_all()$\ndisp(concat("TABLE_AT_BUILD ", string(length(mr_rule_table))))$\n:lisp (setq maxima::*maxima-started* nil)$\n:lisp (sb-ext:save-lisp-and-die "%s" :toplevel (symbol-function %s))\n' \
+    "$CORE" "'cl-user::run" | maxima -X "--tls-limit 100000" > "$TMP/build.log" 2>&1
+  rc=$?
+  t1=$(date +%s.%N)
+  echo "build rc=$rc wall=$(awk "BEGIN{printf \"%.2f\", $t1-$t0}")s image_bytes=$(stat -c%s "$CORE" 2>/dev/null || echo 0)"
+  grep -q 'TABLE_AT_BUILD 3026' "$TMP/build.log" \
+    || { echo "FAIL: table witness at build (see build.log tail)"; tail -3 "$TMP/build.log"; FAIL=1; }
+
+  echo
+  echo "=== part 2: restore + package witnesses ==="
+  printf 'disp(concat("TABLE_AT_RESTORE ", string(length(mr_rule_table))))$\nmr_f : x^3$\nmr_r : rubi(mr_f, x)$\ndisp(concat("W1 ", string(mr_r)))$\nmr_f : 1/x$\nmr_r : rubi(mr_f, x)$\ndisp(concat("W2 ", string(mr_r)))$\nquit()$\n' > "$TMP/entry.mac"
+  t0=$(date +%s.%N)
+  "$SBCL" --tls-limit 100000 --core "$CORE" --noinform --very-quiet \
+    -b "$TMP/entry.mac" > "$TMP/restore.log" 2>&1
+  rc=$?
+  t1=$(date +%s.%N)
+  echo "restore rc=$rc wall=$(awk "BEGIN{printf \"%.2f\", $t1-$t0}")s"
+  grep -E 'TABLE_AT|W1 |W2 ' "$TMP/restore.log"
+  grep -q 'TABLE_AT_RESTORE 3026' "$TMP/restore.log" \
+    || { echo "FAIL: table witness at restore"; FAIL=1; }
+  grep -q 'W1 x^4/4' "$TMP/restore.log" || { echo "FAIL: W1 (rubi x^3)"; FAIL=1; }
+  grep -q 'W2 log(x)' "$TMP/restore.log" || { echo "FAIL: W2 (rubi 1/x)"; FAIL=1; }
+
+  echo
+  echo "=== part 3: driver-entry parity (standard load vs rules core) ==="
+  python3 - "$CORE" "$SBCL" <<'PYEOF'
+import importlib.util, os, subprocess, sys, tempfile
+core, sbcl = sys.argv[1], sys.argv[2]
+real = sys.argv[:]; sys.argv = ["d", "1 Algebraic functions/", "999999", "30"]
+spec = importlib.util.spec_from_file_location(
+    "driver", os.path.join("test", "corpus_class1_driver.py"))
+d = importlib.util.module_from_spec(spec); spec.loader.exec_module(d)
+sys.argv = real
+CORECMD = [sbcl, "--tls-limit", "100000", "--core", core, "--noinform",
+           "--very-quiet"]
+def build(filt, idx):
+    for p, rel in d.file_list():
+        if filt in rel:
+            entries, _ = d.extract_entries(p); e = entries[idx]; break
+    els = d.split_elements(e[1:-1])
+    return els[0][:38], d.build_text(els[0], els[1], els[3],
+                                     els[4] if len(els) == 5 else None)
+def run(cmd, text):
+    fd, mac = tempfile.mkstemp(suffix=".mac"); os.close(fd)
+    open(mac, "w").write(text)
+    r = subprocess.run(cmd + ["-b", mac], capture_output=True, text=True)
+    os.unlink(mac)
+    cls = [l.strip() for l in r.stdout.splitlines()
+           if l.strip().startswith("CLASS")]
+    return (cls[0] if cls else "NO-CLASS"), r.returncode
+fail = 0
+for filt, idx in [("1.2.1.1", 0), ("1.2.2.2", 0), ("1.1.3.6", 0)]:
+    integ, text = build(filt, idx)
+    a = run(["maxima", "--very-quiet", "-X", "--tls-limit 100000",
+             "-p", "test/mr_preload.mac"], text)
+    b = run(CORECMD, text)
+    tag = "OK" if a[0] == b[0] else "*** MISMATCH ***"
+    if a[0] != b[0]: fail = 1
+    print(f"{integ:40s} | standard {a[0]:11s} rc{a[1]} | core {b[0]:11s} rc{b[1]} | {tag}")
+sys.exit(fail)
+PYEOF
+  [ $? -ne 0 ] && FAIL=1
+
+  echo
+  echo "=== part 4: control — standard per-entry load (wrapper + preload) ==="
+  printf 'disp(concat("LOADED ", string(length(mr_rule_table))))$\nquit()$\n' > "$TMP/load.mac"
+  t0=$(date +%s.%N)
+  maxima --very-quiet -X "--tls-limit 100000" -p test/mr_preload.mac \
+    -b "$TMP/load.mac" > "$TMP/load.log" 2>&1
+  t1=$(date +%s.%N)
+  grep 'LOADED' "$TMP/load.log" | head -1
+  echo "control load wall=$(awk "BEGIN{printf \"%.2f\", $t1-$t0}")s"
+
+  echo
+  if [ "$FAIL" = 0 ]; then echo "VERDICT OK"; else echo "VERDICT FAIL"; fi
+} > "$OUT" 2>&1
+grep -q 'VERDICT OK' "$OUT" \
+  || { echo "probe-rule-image: FAIL (see $OUT)"; exit 1; }
+echo "wrote $OUT"

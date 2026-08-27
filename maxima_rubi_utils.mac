@@ -1,0 +1,4464 @@
+/* maxima_rubi_utils.mac — runner + noun forms + (later) shims and ported
+ * predicates. Loaded by maxima_rubi.mac. House rules: AGENTS.md + T5 §4;
+ * the measured traps of T2 §3 are the reason for %mr_b, the block-local
+ * rebind in the rule shape, and the never-kill naming policy. */
+
+rubi_verbose : false$
+
+/* Port of ShowStepRoutines.m :3  SimplifyFlag = True; — the class-1
+ * rule 1.4.1's ShowStep guard references it; the default is on, and
+ * the harness never switches it. */
+mr_simplify_flag : true$
+
+/* Capture lookup on the [var = value] equation list (order unspecified,
+ * measured T2 §3.6). Quoted symbol on both sides (house rule 1). */
+geteqR(mm, nm) := block([],
+  if length(mm) = 0 then false
+    else if is(part(part(mm, 1), 1) = nm) then part(part(mm, 1), 2)
+         else geteqR(rest(mm), nm))$
+
+/* Boolean resolver (house rule 2): is()'s third value unknown is not true. */
+%mr_b(e) := block([v],
+  v : is(e),
+  if v = true then true else false)$
+
+/* Package noun forms (house rule 10 — distinct from the fall-through
+ * integrate noun and from corpus-expected nouns). */
+mr_unintegrable(f, x) := 'unintegrable[f, x]$
+
+/* Rubi's finite Sum, concretized (2026-08-25 divergence fix). Maxima
+   evaluates function arguments eagerly, so the generator hands the
+   summand over in held form: a NON-identifier summand arrives as
+   lambda([var], <summand>) and is applied per index (the body then
+   evaluates the total package functions, e.g. %mr_coeff(Pq, x, 2*k),
+   at a CONCRETE index — the eager call with k free returns 0 and
+   destroyed every even/odd-split sum, leaving degenerate
+   mr_sum[0,k,0,0] nouns in answers); a bare IDENTIFIER summand (the
+   Rubi Module-local-u shape, 1.1.3.1 r13 family) is resolved through
+   its value, which carries the index: ev(subst(i, var, ev(fun))). A
+   lambda body of one bare symbol does NOT get the index bound into
+   the value (measured 2026-08-25, probe mech_decisive D1) — hence the
+   two paths. Numeric bounds: per-integer i over ceiling(lo)..floor(hi);
+   an empty range is 0. Non-numeric bounds keep the noun. A plain
+    (already-evaluated, non-lambda) expression summand — hand-written
+    call sites only, never the generator's — gets the index substituted
+    and re-evaluated. The lambda test must compare against the UNQUOTED
+    symbol: in this build op() on a lambda form only compares true with
+    `lambda` — `op(lam) = "lambda"` is false, while for ordinary
+    operators the string idiom is the one that holds; symbols and
+    strings never compare equal here (measured 2026-08-25, probes
+    op_cmp_probe / op_typeof_probe, Maxima 5.50.0 SBCL). A dead lambda
+    branch is worse than an error: subst then descends into the lambda
+    and fatals replacing its parameter. */
+mr_sum(fun, var, lo, hi) := block([a, b, i, s, t],
+  if numberp(lo) and numberp(hi) then (
+    a : ceiling(lo),
+    b : floor(hi),
+    if a > b then 0
+    else (
+      s : 0,
+      for i : a thru b do (
+        if atom(fun) then t : ev(subst(i, var, ev(fun)))
+        else if (op(fun) = lambda or op(fun) = "lambda") then t : apply(fun, [i])
+        else t : ev(subst(i, var, fun)),
+        s : s + t
+      ),
+      s
+    )
+  )
+  else 'mr_sum[fun, var, lo, hi])$
+
+/* Recursion cap (T5 §1 candidate; re-tuned in Task 9). A runaway
+ * replacement becomes the fall-through noun, not a stack overflow. */
+%mr_max_depth : 16$
+
+/* Kill-switch for the boolean-leak misfire check (debug). */
+%mr_boolcheck : true$
+
+/* Ordered first-match-wins whole-expression dispatch (T2 §4.2). rl is a
+ * list of rule functions r(f, x) -> replacement | false. The parameter is
+ * named rl, never rules (protected symbol, measured 2026-08-20). */
+/* MEASURED Maxima gotcha (2026-08-20): a `return(value)` inside a `for` loop
+   does NOT return from the enclosing block in this build — it is loop-level,
+   so the block fell through to the trailing `false` and dispatch ALWAYS
+   returned false (rubi() was a silent pass-through to integrate). The fix:
+   track the firing result in `ans`, use a BARE `return()` to break the `for`
+   loop, and return `ans` after the loop. */
+/* A boolean (true/false) anywhere in a replacement is a port bug, not a
+   result: it means a predicate's `false` sentinel (e.g.
+   %mr_polyRemainder on a non-polynomial) flowed into the repl's
+   arithmetic, where Maxima booleans do NOT collapse to 0/1 — 126*false
+   stays 126*false (measured 2026-08-25, 5.50.0/SBCL: 1.2.2.6 r8 on
+   1.2.2.6 e123, m = -2, x^m*Pq non-polynomial -> the .m rule is
+   vacuous there in Mathematica — PolynomialRemainder stays a noun and
+   the firing dead-ends — but the port computed d = %mr_coeff(false, x,
+   0) = false and the corrupted terms reached the final answer as
+   `false` factors under a deferred integrate noun). The faithful
+   port behavior for a vacuous firing is a DECLINE, so any boolean in
+   the replacement downgrades the fire to a misfire and lets the next
+   rule (or the integrate fall-through) handle the integrand. No
+   early exit: `return` inside a `for` is loop-level in this build
+   (measured 2026-08-20, the %mr_dispatch ans/return() note above). */
+/* The boolean test is by STRING, not by = (measured 2026-08-25,
+   5.50.0/SBCL): a `false` factor inside a Times node is retrieved by
+   part() as an atom whose string is "false" but which is NEITHER
+   =-nor # -equal to the boolean false NOR to the symbol 'false
+   (a distinct reified object — identical() is an unevaluated noun
+   here, featurep misses it, is(p = false)/is(p = 'false) both
+   false, is(string(p) = "false") true) — so only the name test
+   catches all three presentations (literal boolean, symbol, and the
+   part()-reified factor). Atoms are cheap; the non-atom arm never
+   calls string(). */
+/* Control structures are OPAQUE leaves (measured 2026-08-25): generated
+   replacements legally CONTAIN booleans as code — e.g. the 1.4.1 r70
+   repl carries an (if is(...) = true then (...) else false) that
+   evaluates away when the condition decides, and stays boolean-bearing
+   when it does not. Walking into if/block/lambda bodies misfired every
+   such rule (1.2.1.3 e1058 verified -> unverified). A leaked boolean
+   instead sits under arithmetic (+ * / ^) or a list/noun — descending
+   everything EXCEPT the control heads is the right cut. */
+%mr_containsBoolean(e) := block([i, hit],
+  if atom(e) then is(string(e) = "true") or is(string(e) = "false")
+  else if op(e) = "if" or op(e) = "block" or op(e) = "lambda"
+    or op(e) = "let" or op(e) = "letf" or op(e) = "do"
+    or op(e) = "for" or op(e) = "while" or op(e) = "when"
+  then false
+  else if op(e) = "-" then (
+    /* a negation node: length() reports 2 but part(e, 2) ERRORS in
+       this build (measured 2026-08-25: part(-(1/2), 2) killed the
+       walk on the 1.2.2.1 r13 repl's elliptic_f(atan(x), -1/2) — the
+       1.2.1.3 e1058 cascade silently derailed). Only part 1 exists. */
+    %mr_containsBoolean(part(e, 1))
+  )
+  else (
+    hit : false,
+    for i : 1 thru length(e) do (
+      if %mr_containsBoolean(part(e, i)) then hit : true
+    ),
+    hit))$
+
+%mr_dispatch(f, x, rl, depth) := block([i, r, res, ans, leak, bc],
+  ans : false,
+  for i : 1 thru length(rl) do (
+    r : part(rl, i),
+    /* A rule that CRASHES on a binding is a misfire, not a result. Maxima's
+       matcher degenerate-binds zero coefficients (a monomial read as the
+       binomial 0 + c*x), and the affected rule's condition/replacement then
+       divides by 0 (measured 2026-08-24: the 1_1_1_2_r34 / 1_2_1_2_r134 /
+       1_2_3_5_r20 family killed the process across the full class-1 run).
+       A crashing rule must decline so the next rule (or the integrate
+       fall-through) handles the integrand. errcatch in this build returns
+       [value] on success and [] on error (probe-errcatch-semantics). */
+    res : errcatch(apply(r, [f, x])),
+    if res = [] then res : false else res : part(res, 1),
+    leak : false,
+    if %mr_boolcheck and res # false then (
+      bc : errcatch(%mr_containsBoolean(res)),
+      if bc = [] then (
+        if rubi_verbose then
+          print("rubi: rule ", string(r), " BOOLWALK-CRASH on ", string(f)),
+        leak : true
+      )
+      else leak : part(bc, 1)
+    ),
+    if leak then (
+      if rubi_verbose then
+        print("rubi: rule ", string(r), " misfire (boolean leaked) on ", string(f)),
+      res : false
+    ),
+    if res # false then (
+      if rubi_verbose then
+        print("rubi: rule ", string(r), " fired on ", string(f)),
+      ans : res,
+      return()
+    )
+  ),
+  ans)$
+
+/* The recursion counter increments on the way in and decrements on the way
+ * out, so nested mr_int calls share one depth budget. A runaway replacement
+ * becomes the fall-through noun, not a stack overflow. */
+depth_level : 0$
+
+/* No-op / self-match loop guard (2026-08-24, divergence loop). A rule whose
+   replacement re-dispatches the SAME integrand — e.g. the 1.4.2
+   normalization rules, whose repl is Px*ExpandToSum[z]^q*ExpandToSum[u]^p,
+   the identity when z,u are already a binomial/trinomial, so the term
+   re-matches the rule forever — would spin to the depth cap, a full ~2705-
+   rule scan per level, before the integrate fall-through. The expanded
+   single-term rationals the linearity split produces for 1.1.1.3
+   (a+bx)^m(c+dx)^n(e+fx)^p hit this and blew the 30s canary cap (1.1.1.3
+   e1276: the 500 x^5/(3x+2)^8 term cycled 14x identically). Cut the cycle at
+   the first repeat and fall through now. member/ = is the membership test
+   (isequal and identical do NOT evaluate to a boolean in this build —
+   measured 2026-08-24, they stay unevaluated nouns). */
+%mr_seen : []$
+
+/* The top-level entry. fb gates the two top-level fall-throughs
+ * (recursion cap, no rule fired). fb = false — the default `rubi(f, x)` —
+ * returns the package no-answer noun instead of calling integrate: a
+ * top-level 0-firing is a port/matcher-gap signal (2026-08-24 divergence
+ * loop), not a job for Maxima's integrate, which is slow on generic
+ * parameters and prompts for sign assumptions (one standalone run 92 s
+ * before EOF, measured 2026-08-24). fb = true restores the status-quo
+ * integrate fall-through.
+ *
+ * The flag governs ONLY the top level. mr_int — the entry the generated
+ * rule replacements call for NESTED sub-integrals — keeps the status-quo
+ * integrate fall-through: a nested 0-firing is a different case, and
+ * corpus entries currently verified through nested fallback must not
+ * regress (2026-08-24 design decision, handoff Step 1 open question). */
+/* Native-integrate fall-through design (measured 2026-08-25): the
+   integrate call in the fb=true branches below is BARE — deliberately
+   not errcatched. (a) Sign prompts are a designed input channel: the
+   test harness (corpus_class1_driver.build_text) runs with
+   batch_answers_from_file true and pre-queues prompt answers (six
+   "pos" + six "no" lines; the flag must be set via -p preload, not in
+   the batch) — retrieve() reads the next batch line as the answer, so
+   integrate returns an assumption-conditional result the harness's
+   formal diff check verifies. (b) An ERRORING integrate (a Lisp-level
+   crash, or the uncatchable RETRIEVE input-EOF when the 12 queued
+   answers are exhausted) must PROPAGATE: it kills the rule's
+   replacement, %mr_dispatch's errcatch turns that into a misfire, and
+   the next rule gets the integrand. errcatching it instead bakes the
+   no-answer noun into the answer and regresses targets that the
+   declining rule's successor handles (measured 2026-08-25: broad
+   canary 88/32 -> 86/34, five expected/no-answer -> unverified
+   flips, e.g. 1.1.4.3 e119 A/B'd against the bare call). The
+   seen-guard branch below is the SAME bare call — the productive
+   loop resolution, not a fall-through (see there). */
+/* Normalization-aware loop guard helper. %mr_seen membership alone
+   (exact match) misses the measured float/rat normalization cycle:
+   (104*(3/10*x+17/10)^4)/3 and (104*(0.3*x+1.7)^4)/3 are the same
+   integrand in two forms — member() = false, is(f2 = f1) = false,
+   ratsimp(f2-f1) = 0 (measured 2026-08-25, /tmp/opencode/looptest).
+   The r25/r7 reduction chain 1.1.1.4 e1 walks that cycle: the seen
+   list then grows one drifted copy per lap and the guard never fires
+   (e1 timed out at 500 s, 2.5M-line trace). The per-dispatch cost is
+   O(depth) ratsimps on small polynomials — depth caps at
+   %mr_max_depth = 16. */
+%mr_seenp(f) := block([looped, d, i],
+  looped : false,
+  if member(f, %mr_seen) then return(true),
+  for i : 1 thru length(%mr_seen) do
+    if is(looped) = false then (
+      d : errcatch(ratsimp(part(%mr_seen, i) - f)),
+      /* errcatch in this build returns [value] / []
+         (probe-errcatch-semantics); the %mr_dispatch idiom */
+      if d # [] and is(part(d, 1) = 0) then looped : true
+    ),
+  looped)$
+
+mr_top(f, x, fb) := block([ans],
+  depth_level : depth_level + 1,
+  if depth_level > %mr_max_depth then (
+    depth_level : depth_level - 1,
+    if fb then return(integrate(f, x))
+    else return(mr_unintegrable(f, x))
+  ),
+  if %mr_seenp(f) then (
+    depth_level : depth_level - 1,
+    /* A re-dispatch of an integrand already on the dispatch path is
+       a pure rule loop (static table, deterministic matcher -> the
+       same rule re-fires; e.g. the 1.1.1.2 r12 ExpandIntegrand-
+       identity repl). MEASURED 2026-08-25: the fb fall-through to
+       bare integrate(f, x) is LOAD-BEARING, not a bug — targets
+       whose nested sub-integrals loop (1.1.4.3 e119: ten seen-guard
+       hits on its productive 1.3.3/1.4.1/1.3.2 cascade) build their
+       VERIFIED answer from those integrate results (assumption-
+       conditional, from the driver's queued prompt answers). The
+       seen guard fires once per cycle (it returns the integrate
+       result instead of re-dispatching), so there is no per-cycle
+       re-entry to cut. An ERROR here instead (measured same day)
+       declines the outer rule and drops those targets to unverified
+       (broad canary 88/32 -> 86/34). The manual-batch prompt-EOF
+       death ("RETRIEVE: End of file encountered." when no answer
+       lines are queued) is inherent to bare integrate in a batch —
+       vanilla Maxima integrate dies identically — and is not
+       regressed or fixed here. */
+    if fb then return(integrate(f, x))
+    else return(mr_unintegrable(f, x))
+  ),
+  %mr_seen : cons(f, %mr_seen),
+  ans : %mr_dispatch(f, x, mr_rule_table, depth_level),
+  %mr_seen : rest(%mr_seen),
+  depth_level : depth_level - 1,
+   /* Pass 2 — reverse commutative factor scan (2026-08-26, W1). Maxima's
+      matcher picks, for a pattern factor with a non-atomic base, the FIRST
+      ^-factor of the target in the REVERSED stored-factor order, with no
+      backtracking (matrun.lisp findfun): a monomial-power factor pattern
+      like (c x)^m fires only when that factor happens to be stored last —
+      data-dependent (see maxima_rubi_dispatch.lisp %mr_dispatch_rev for the
+      full diagnosis). The rescan is TOP-LEVEL, fb=false ONLY: nested
+      0-firings keep the integrate fall-through (design note above),
+      and pass 1 is bit-identical, so nothing currently passing can
+      regress. (2026-08-27: the 9.1 port's nested re-dispatches keep
+      the compensation via the dedicated rubi_hybrid entry — see
+      rules/class1/9_1.mac and the rubi_hybrid note below; lifting
+      the fb gate here instead was measured to hang on large
+      integrands — 1.1.2.6 e20 looped in pattern recompilation
+      past 900 s.) */
+   if ans = false and not fb then
+     ans : %mr_dispatch_rev(f, x, mr_rule_table, depth_level),
+   /* Pass 3 — implicit exponent-1 rescan (2026-08-27). Maxima strips a
+      power's exponent 1 at construction and never restores it in
+      matching (matcom.lisp compilematch head check; matrun.lisp
+      findfun explicit-head search), so a family rule with a (...)^m
+      factor 0-fires on a target factor stored bare (x, (a+b*x),
+      5*x*(a+b*x)...) where the identical target integrates in Rubi.
+      %mr_dispatch_i1 (maxima_rubi_implicit1.lisp) rescans the table
+      with the findfun shadow active and, on a 0-firing, on the whole
+      integrand wrapped in one raw (mexpt f 1) object. TOP-LEVEL,
+      fb=false ONLY, after passes 1-2 0-fire: nested mr_int dispatches
+      run with the gate off (verbatim original findfun control flow),
+      so nothing currently passing can change. (2026-08-27: the 9.1
+      port's nested re-dispatches keep the compensation via the
+      dedicated rubi_hybrid entry — see rules/class1/9_1.mac and the
+      rubi_hybrid note below; lifting the fb gate here instead was
+      measured to hang on large integrands — 1.1.2.6 e20 looped in
+      pattern recompilation past 900 s.) */
+   if ans = false and not fb then
+     ans : %mr_dispatch_i1(f, x, mr_rule_table, depth_level),
+  if ans = false then (
+    if fb then integrate(f, x)
+    else mr_unintegrable(f, x)
+  ) else ans)$
+
+/* Nested sub-integral entry (generated replacements call mr_int by
+ * name): the status-quo integrate fall-through, exactly what mr_int
+ * did before the fallback gate. */
+mr_int(f, x) := mr_top(f, x, true)$
+
+/* Two-arg rubi is the rules-only entry (fast no-answer noun on a
+ * 0-firing). The integrate fall-through is the separate explicit entry
+ * rubi_fallback(f, x, fb). MEASURED (2026-08-24, this build): Maxima
+ * has NO arity overloading — a second same-name definition with a
+ * different arg count REPLACES the first (the 2-arg call then errors
+ * "Too few arguments supplied to rubi(f, x, fb)") — and no variadic
+ * syntax (`b...` is a parse error; `argc`/`arglist` have no manual
+ * entries), so the two modes must have distinct names. */
+rubi(f, x) := mr_top(f, x, false)$
+rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
+
+/* The 9.1 re-dispatch entry (rules/class1/9_1.mac calls it from every
+ * re-dispatching replacement). The .m's nested Int had the TOP LEVEL'S
+ * full matcher power AND its own residue behavior; no existing entry
+ * has both halves: mr_int (fb=true) has the integrate fall-through
+ * (the run-5 load-bearing native answers on stuck mquot sub-integrals,
+ * e.g. the 1.4.3 r19 T4-cascade x^(n-1)/(2e)) but runs passes 2-3
+ * OFF (a bare-factor sub-integral loses the lift — 1.1.2.6 e20
+ * regresses exactly that way); rubi (fb=false) keeps passes 2-3 but
+ * yields the mr_unintegrable noun (no native). This entry mirrors
+ * mr_top with the pass gates lifted and the integrate fall-through
+ * on both the seen-guard hit and the 0-firing: the 9.1 re-dispatch
+ * keeps whatever rescue the sub-integral had, in either nesting
+ * context. A plain mr_top parameterization was rejected: the fb flag
+ * couples the pass gate and the fall-through, and changing the
+ * coupling for the family entries is the measured-hang configuration
+ * (2026-08-27, 1.1.2.6 e20 looped in pattern recompilation past
+ * 900 s with the gates lifted process-wide). */
+/* mode = "alg": the full %mr_seenp (exact member + the ratsimp
+ * algebraic comparison — the float/rat normalization-drift guard,
+ * 891240b, load-bearing). mode = "exact": the exact member check
+ * only. The exact mode is for the 9.1 COLLAPSE re-dispatches
+ * (rules/class1/9_1.mac r7, r22-r26, r28, r29) whose replacement
+ * is algebraically EQUAL to the calling integrand in a different
+ * stored form (the perfect-discriminant quadratic collapse, the
+ * proportional-linear monic rewrite, the like-term combine) — the
+ * algebraic comparison false-positives as a loop (measured
+ * 2026-08-27: 1.2.1.3 e839 — x^m(A+B x)/(a+b x)^2 stored expanded;
+ * r28 collapses it factored; the seen guard ratsimps the difference
+ * to 0 and bails to the native noun, while the .m's cascade would
+ * hand the factored form to the 1.1.1.3 family). The collapse rules
+ * are one-shot on their own output (the collapsed form cannot
+ * re-trigger their pattern), so the exact mode cannot self-cycle;
+ * the depth cap bounds any foreign cycle, and the drift-cycle guard
+ * stays intact on every non-collapse entry (the measured drift
+ * chain runs family rules on mr_int, never through these). */
+%mr_hybrid_body(f, x, mode) := block([ans, sp],
+  sp : if mode = "exact" then is(member(f, %mr_seen) # false)
+       else %mr_seenp(f),
+  depth_level : depth_level + 1,
+  if depth_level > %mr_max_depth then (
+    depth_level : depth_level - 1,
+    return(integrate(f, x))
+  ),
+  if is(sp) then (
+    depth_level : depth_level - 1,
+    return(integrate(f, x))
+  ),
+  %mr_seen : cons(f, %mr_seen),
+  ans : %mr_dispatch(f, x, mr_rule_table, depth_level),
+  if ans = false then
+    ans : %mr_dispatch_rev(f, x, mr_rule_table, depth_level),
+  if ans = false then
+    ans : %mr_dispatch_i1(f, x, mr_rule_table, depth_level),
+  %mr_seen : rest(%mr_seen),
+  depth_level : depth_level - 1,
+  if ans = false then integrate(f, x) else ans)$
+rubi_hybrid(f, x) := %mr_hybrid_body(f, x, "alg")$
+rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
+
+/* ===================== predicate cluster 1 (T5) =====================
+ * Ports of Rubi IntegrationUtilityFunctions.m (pinned clone, read-only)
+ * under the house rules. Each cites its .m source line; deviations from
+ * the source are noted per function. */
+
+/* ---- clone-gap equality pair --------------------------------------
+ * PossibleZeroQ is referenced by EqQ/NeQ (IntegrationUtilityFunctions.m
+ * :365/:370) but defined NOWHERE in the pinned clone (clone-gap note,
+ * measured 2026-08-20); the contract is derived from usage: "possibly
+ * zero" = "could be zero" (loose — the harness derivative check catches
+ * over-firing).
+ * MEASURED (2026-08-20, this build): is(e # 0) DECIDES true for any
+ * expression containing a bare symbol (is(a # 0) -> true, is(a+b # 0)
+ * -> true) — Maxima's is() assumes symbols are generically nonzero, so
+ * `not is(e # 0)` (the plan's formula) would return false for the
+ * symbol a, contradicting the unit probe "possible_zero a -> true".
+ * The operational contract instead: substitute 0 for every variable
+ * symbol of e; the result 0 (or a diverging substitution, caught) is
+ * the "possibly zero" witness. */
+%mr_isVarSym(a) := block([],
+  if atom(a) and not numberp(a)
+    and a # '%pi and a # '%e and a # '%i and a # 'inf and a # 'minf
+    and a # 'true and a # 'false and a # 'unknown
+    and a # '%lambda and a # 'undefined and a # 'und
+  then true else false)$
+
+%mr_symbols(e) := block([i, lst],
+  if atom(e) then (
+    if %mr_isVarSym(e) then [e] else []
+  )
+  /* MEASURED (2026-08-23): a rational is NOT an atom, and a negative
+     rational has length 2 but only ONE part (the unary-minus quirk) —
+     numberp is the exact-number guard, and op "-" recurses on its
+     operand before the parts loop. */
+  else if numberp(e) then []
+  else if op(e) = "-" then %mr_symbols(part(e, 1))
+  else (
+    lst : [],
+    for i : 1 thru length(e) do
+      lst : append(lst, %mr_symbols(part(e, i))),
+    lst
+  ))$
+
+/* MEASURED (2026-08-20): the LIST form of subst is a silent NO-OP in
+   this build (subst([0], [a], a+b) -> a+b) — scalar form in a loop. */
+%mr_zeroSubst(e, syms) := block([i, z],
+  z : e,
+  for i : 1 thru length(syms) do
+    z : subst(0, part(syms, i), z),
+  z)$
+
+%mr_possible_zeroQ(e) := block([syms, z],
+  syms : %mr_symbols(e),
+  /* errcatch: a zero-substitution that diverges (1/x at x=0) is not a
+     zero-witness -> not possibly zero */
+  z : errcatch(%mr_zeroSubst(e, syms)),
+  if is(z = []) then false
+  else if is(part(z, 1) = 0) then true else false)$
+
+ /* EqQ is the STRICT equality guard: u-v must simplify to 0. The earlier
+  * loose reading (%mr_eqQ := %mr_possible_zeroQ(u-v), the clone-gap
+  * "fire when the condition could hold" philosophy) over-fired at scale:
+  * %mr_possible_zeroQ zero-substitutes EVERY variable symbol, so a generic
+  * parameter product like -10*a*b*c read as "possibly zero" and the EqQ
+  * guards of the 1.1.1.x/1.2.x rules fired on integrands they did not
+  * cover (the 2026-08-24 full class-1 run: 19,454 FAILs, many of them
+  * this). The harness derivative check cannot recover a wrong answer that
+  * a misfired rule already returned. NeQ stays "not provably zero" (a
+  * symbolic m must let the power rule fire), which is independent of the
+  * EqQ reading. */
+%mr_eqQ(u, v) := %mr_b(u - v = 0)$
+%mr_neQ(u, v) := block([z],
+  z : is(u - v = 0),
+  if z = true then false else true)$
+
+/* ---- simp / together shims ----------------------------------------
+ * simplify and together are UNBOUND in this build (measured, T2/T4;
+ * probes/translation/02-support-surface.mac S4). */
+%mr_together(e) := block([r],
+  r : errcatch(rat(e)),
+  if is(r = []) then e
+  else num(part(r, 1))/denom(part(r, 1)))$
+
+/* the zero-chain (Q3, docs/corpus-baseline.md): apply in order, return
+   the last stage. Rubi's 2-arg Simp[u_,x_] (IntegrationUtilityFunctions.m
+   :2265) is TimeConstrained[NormalizeSumFactors[SimpHelp[u,x]],$TimeLimit,u]
+   — a value-preserving sum-factor sign/content normalization. DEVIATION:
+   the port accepts the variable argument (Maxima optional-arg idiom,
+   [v] collects it as a list, [] when absent — MEASURED 2026-08-25) but
+   ignores it and runs the same zero-chain; value-preserving is the hard
+   requirement, shape parity is not. MEASURED 2026-08-25: with a
+   1-arg-only definition every 2-arg call site fatal'd
+   "Too many arguments" at repl evaluation — errcatched, so the 32 rules
+   carrying a 2-arg %mr_simp (39 call sites: 1.1.1.4, 1.1.2.7, 1.1.2.9,
+   1.2.1.1, 1.2.1.2, 1.2.1.3, 1.2.1.5, 1.2.2.3, 1.2.2.4, 1.2.3.4, 1.4.1)
+   silently DECLINED. */
+%mr_simp(e, [v]) := block([a],
+  a : ratsimp(e),
+  a : ratsimp(expand(a)),
+  a : factor(a),
+  ratsimp(a))$
+
+/* ---- sign / posQ / negQ -------------------------------------------
+ * Sign (Maxima sign() is bound; it returns the five-valued
+ * pos/neg/zero/pnz/pz — pz = "positive or zero", measured). posQ is the
+ * STRICT reading the unit probe pins: undecidable sign -> false
+ * (Rubi's PosAux falls through to True for a bare symbol; the project
+ * probe deliberately differs — documented deviation). */
+%mr_sign(e) := block([s],
+  s : sign(e),
+  if s = 'pos then 1
+  elseif s = 'neg then -1
+  elseif s = 'zero then 0
+  else s)$
+%mr_posQ(e) := block([s],
+  s : sign(e),
+  if s = 'pos then true else false)$
+/* Rubi :642  NegQ[u] := Not[PosQ[u]] && NeQ[u, 0] */
+%mr_negQ(e) := block([v],
+  v : (not %mr_posQ(e)) and %mr_neQ(e, 0),
+  if is(v) = true then true else false)$
+
+/* ---- explicit-number predicates (Task 7a) ----------------------------
+ * Rubi's IntegerQ/FractionQ/IntegersQ/RationalQ test EXPLICIT numbers
+ * (Head === Integer / Rational — a captured symbolic expression is
+ * never "explicit" no matter what it could become). Maxima keeps
+ * rationals in reduced form, so the structural test for an explicit
+ * rational is op = "/" with integer num/denom — plus the "-" wrapper,
+ * because MEASURED (2026-08-23) a negative rational is op "-" in this
+ * build (op(-1/2) = "-", num(-1/2) = -1, denom = 2). rationalp is a
+ * NOUN in this build (measured, 02-support-surface S1a).
+ *
+ * Call shape (generate_class1.py :877-884): the generator emits a 1-arg
+ * call — the scalar for one Rubi arg, a LIST for several (Rubi's
+ * IntegersQ[u__]/RationalQ[u__] are variadic) — so the ports accept
+ * scalar-or-list. FractionQ is NOT in the list-packing branch: its 83
+ * class-1 uses are all scalar. */
+
+/* scalar half of %mr_rationalQ — one explicit integer or fraction */
+%mr_rationalQ_scalar(e) := block([],
+  if integerp(e) then true
+  else if not atom(e) and (op(e) = "/" or op(e) = "-")
+    and integerp(num(e)) and integerp(denom(e))
+    then true else false)$
+
+/* Rubi :97  RationalQ[u__]. Task 7a update: the committed 1-arg port
+ * answered false on the LIST calls the generator emits (49 class-1
+ * sites — silent dead rules) and on negative rationals (the "/"-only
+ * test missed the "-" wrapper); both fixed here. */
+%mr_rationalQ(e) := block([i, v],
+  if atom(e) then %mr_rationalQ_scalar(e)
+  /* a non-list non-atom (x/2, sqrt(1/2), ...) takes the scalar test —
+     the list walk must not misread a "/" node's num/denom as elements.
+     MEASURED (2026-08-23): the list op is the string "[" (not "list"). */
+  else if op(e) = "[" then (
+    v : true,
+    for i : 1 thru length(e) do
+      if %mr_rationalQ_scalar(part(e, i)) = false then v : false,
+    v
+  )
+  else %mr_rationalQ_scalar(e))$
+
+/* Rubi :70  IntegersQ[u__] — all args explicit integers */
+%mr_integersQ(u) := block([i, v],
+  if atom(u) then integerp(u)
+  else if op(u) = "[" then (
+    if length(u) = 0 then false
+    else (
+      v : true,
+      for i : 1 thru length(u) do
+        if integerp(part(u, i)) = false then v : false,
+      v)
+  )
+  else false)$
+
+/* Rubi :87  FractionQ[u__] — all args explicit PROPER fractions
+ * (Rational head, not Integer): a reduced rational in this build is a
+ * "/" or "-" node with integer num/denom and is never an integer, so
+ * the explicit-rational test minus integerp IS the proper-fraction
+ * test. */
+%mr_fractionQ(e) := block([],
+  if integerp(e) then false
+  else if not atom(e) and (op(e) = "/" or op(e) = "-")
+    and integerp(num(e)) and integerp(denom(e))
+    then true else false)$
+
+/* ---- structural shape predicates (Task 7a cluster A2) ----------------
+ * PolynomialQ / AtomQ / MonomialQ / LeafCount — the Mathematica builtins
+ * the census tiered C (no .m source; semantics from the manual entries
+ * and, for MonomialQ, the .m usage comment). */
+
+/* PolynomialQ[u, x] — u is MANIFESTLY a polynomial in x. STRICTER than
+ * %mr_polyQ (Rubi's PolyQ, the Together route): no cancellation. MEASURED
+ * (2026-08-23): this build keeps (x^2+x)/(x+1) as a "/" node (no
+ * auto-cancel) while rat() DOES cancel it — so the %mr_polyQ route would
+ * over-accept, and %mr_polyformQ under-accepts (its else branch rejects
+ * every quotient, even x/2 whose denominator is x-free). The walker
+ * below differs from %mr_polyformQ in exactly that one branch: a
+ * quotient is polynomial in x iff the denominator is x-free and the
+ * numerator is (x/2 -> true; 1/x -> false), at any depth — Maxima does
+ * not auto-combine x/2 + 1 (measured). A nonnegative-INTEGER-exponent
+ * power is required, as in %mr_polyformQ (x^a with symbolic a is not a
+ * polynomial). */
+%mr_polystrictQ(e, x) := block([i, ok],
+  if atom(e) then (
+    is(e = x) or freeof(x, e)
+  )
+  elseif op(e) = "-" then %mr_polystrictQ(part(e, 1), x)
+  elseif op(e) = "+" then (
+    ok : true,
+    for i : 1 thru length(e) do
+      if is(%mr_polystrictQ(part(e, i), x)) = false then ok : false,
+    ok
+  )
+  elseif op(e) = "*" then (
+    ok : true,
+    for i : 1 thru length(e) do
+      if is(%mr_polystrictQ(part(e, i), x)) = false then ok : false,
+    ok
+  )
+  elseif op(e) = "/" then
+    freeof(x, part(e, 2)) and %mr_polystrictQ(part(e, 1), x)
+  elseif op(e) = "^" then
+    if integerp(part(e, 2)) and is(part(e, 2) >= 0)
+      and freeof(x, part(e, 2))
+    then %mr_polystrictQ(part(e, 1), x)
+    else false
+  else freeof(x, e))$
+
+%mr_polynomialQ(u, x) := %mr_polystrictQ(u, x)$
+
+/* AtomQ[e] — e has no subparts (Mathematica builtin). Maxima's atom()
+ * is the direct analog (measured: atom([1,2]) = false). */
+%mr_atomQ(e) := block([], atom(e))$
+
+/* Rubi :1391  MonomialQ[u, x] — "u is of the form a*x^n where n!=0 and
+ * a!=0". The .m definition is MatchQ[u, a_.*x^n_. /; FreeQ[{a,n},x]]:
+ * the OPTIONAL pattern args make bare x (n -> 1, a -> empty/1) and bare
+ * x^k match. The class-1 call sites (1.3.3 x2, 1.4.1) feed PolyQ-
+ * confirmed polynomials, so the operational test is structural: exactly
+ * one x-power (x, or x^n with n x-free and not 0 — integer for a
+ * polynomial; the lone-power case is the bare-x^n reading of the usage)
+ * and every other factor x-free. DEVIATION (documented): a lone x^a
+ * with SYMBOLIC a returns true here, where the .m MatchQ (Power head
+ * vs the Times pattern) returns false — unreachable at the call sites
+ * (PolynomialQ-guarded). a = 0 needs no test: a zero product is the
+ * atom 0 in this build. */
+%mr_monomialQ(u, x) := block([i, f, nx, ok],
+  if atom(u) then is(u = x)
+  elseif op(u) = "-" then %mr_monomialQ(part(u, 1), x)
+  elseif op(u) = "^" then
+    is(part(u, 1) = x) and freeof(x, part(u, 2))
+      and not is(part(u, 2) = 0)
+  elseif op(u) = "*" then (
+    /* atom-first: op() is a hard error on atoms in this build */
+    nx : 0, ok : true,
+    for i : 1 thru length(u) do (
+      f : part(u, i),
+      if atom(f) then (
+        if is(f = x) then nx : nx + 1
+        elseif freeof(x, f) then true
+        else ok : false
+      )
+      elseif op(f) = "^" and is(part(f, 1) = x)
+        and freeof(x, part(f, 2)) and not is(part(f, 2) = 0)
+      then nx : nx + 1
+      elseif freeof(x, f) then true
+      else ok : false
+    ),
+    ok and is(nx = 1)
+  )
+  else false)$
+
+/* LeafCount[e] — the number of leaves in the expression tree
+ * (Mathematica builtin: a leaf is a part with no subparts — the head
+ * of a non-atom is a symbol, hence a leaf; LeafCount[1+x] = 3). */
+%mr_leafCount(e) := block([i, s],
+  if atom(e) then 1
+  else (
+    s : 1,
+    for i : 1 thru length(e) do
+      s : s + %mr_leafCount(part(e, i)),
+    s))$
+
+/* ---- MatchQ structural matcher (Task 7a cluster A3) ------------------
+ * Rubi's MatchQ[u, pattern /; cond] (Mathematica builtin). matchq is a
+ * NOUN in this build (measured 2026-08-20), so the matcher is custom.
+ * Contract (generate_class1.py _emit_matchq, FIX E7): the generator
+ * emits the uniform 3-arg call %mr_matchQ(u, pattern, cond) with the
+ * pattern UNQUOTED — its pattern variables are fresh marker atoms
+ * _mr_<key>_r<n>mq<k>_<v> (mints per file/rule/occurrence/var), which
+ * stay literal at call time (a bare symbol not matchdeclare'd in an
+ * active defmatch pattern is just a symbol), while computed parts
+ * (renamed outer captures, %mr_expon results) evaluate to values.
+ *
+ * Matching semantics (the operational reading of the 17 class-1 call
+ * sites; DEVIATION documented where the .m MatchQ corner is
+ * unmeasurable without Mathematica):
+ *  - a marker atom matches ANY sub-expression and binds it;
+ *  - a literal atom (x, a number, a capture value) must be =-equal
+ *    (this build's is(a = b) is true/false, never unknown — RC1);
+ *  - a "*" (or "+") pattern matches its expression by FLAT PARTITION:
+ *    the expression's factors (a power-less single term counts as one
+ *    factor) are split into consecutive groups, one per pattern
+ *    factor. Times/Plus are commutative and Maxima stores each side in
+ *    its own canonical factor order (measured 2026-08-23: x^m*u
+ *    stores [u, x^m] — a symbolic-exponent power sorts after a bare
+ *    symbol — while x^3*y stores [x^3, y]), so EVERY permutation of
+ *    the pattern factors is tried (the stored order first) — the
+ *    Rubi/Mathematica orderless reading;
+ *  - NON-EMPTY groups are tried before the empty one (the Mathematica
+ *    preference: a real factor before the Optional fallback — this is
+ *    what gives the Rubi-faithful a=c, b=d, v=y binding at the 1.3.4
+ *    site instead of a=0, b=1, v=c+d*y);
+ *  - an EMPTY group means the pattern factor is absent (the .m
+ *    optional reading, a_./u_./r_.): a marker takes the group
+ *    identity (1 for "*", 0 for "+"); a power with a marker exponent
+ *    records the Optional default (exponent := 1) and skips its base;
+ *    a literal or literal-power factor CANNOT be absent;
+ *  - a "^" pattern against a power-less (real) expression takes the
+ *    expression as base with exponent 1 (Maxima drops ^1 — the
+ *    optional-r_. reading), binding a marker exponent to 1;
+ *  - a marker re-occurring in one pattern must bind consistently.
+ * On a successful match the cond — emitted by the generator as
+ * lambda([%mr_mqb], <cond with each marker rewritten to a %mr_mk(m,
+ * %mr_mqb) lookup>) or bare true — is called with the binding list
+ * (Maxima evaluates call arguments eagerly and this build's ev() does
+ * not strip quotes, so a plain or quoted cond cannot be held —
+ * measured 2026-08-23). A non-trivial cond is threaded through the
+ * structural search: the match stands iff SOME structural binding
+ * makes the cond true (false, an error, or a cond that is not true —
+ * a pending predicate noun — fails closed, the existing pending-noun
+ * contract). The backtracking continuation is carried as an explicit
+ * list (["final" | "match" | "part", ...]), not a lambda: Maxima
+ * lambdas in this build do not capture the local variables of the
+ * function that created them (measured 2026-08-23), so a closure over
+ * the search state would resolve the wrong P/E/k at call time. */
+
+/* a pattern marker: an atom the generator minted for a MatchQ pattern
+ * variable — name shape _mr_<key>_r<n>mq<k>_<v> (generate_class1.py
+ * _emit_matchq). Distinguishes markers from rule captures
+ * (_mr_<key>_r<n>_<v> — no "mq") and pattern literals (x, numbers,
+ * computed values).
+ *
+ * Membership, not name-shape (measured 2026-08-25, 5.50.0/SBCL): the
+ * name-shape test the scan below used (char-by-char substring probes)
+ * is unsound on this build — the COMPILED substring ERRORS on
+ * out-of-range bounds (interpreted substring clamps; the same
+ * (:=) function's scan probes one past the end), and inside the
+ * nested compiled context of a matchfix defmatch that error is
+ * FATAL — Maxima's errcatch cannot catch it: 1.2.1.6 e77's batch
+ * died mid-target after 15 printed "substring: unsuitable start or
+ * end position" lines (no CLASS line; a shallower probe caught the
+ * identical error). The generator mints the marker names, so each
+ * generated rule file REGISTERS its exact markers at load time and
+ * the test is a membership scan — no strings, no probes, no errors.
+ * (member() in this build returns a boolean, true/false, not the
+ * sublist — measured 2026-08-23 — which is what the test wants.) */
+%mr_marker_registry : []$
+
+%mr_register_markers(list) :=
+  %mr_marker_registry : append(%mr_marker_registry, list)$
+
+%mr_isMQMarker(s) := block([],
+  if not atom(s) or numberp(s) then false
+  else member(s, %mr_marker_registry))$
+
+/* the util-side predicates above (linearMatchQ / quadraticMatchQ /
+ * binomialMatchQ / trinomialMatchQ / trinomialQ / gbp / gbm / gtp /
+ * gtm) mint their own markers inline — register them here, at load,
+ * so the membership test above sees them (the generated rule files
+ * register their own in the trailing %mr_register_markers line). */
+%mr_register_markers([ _mr_binMq_r1mq1_a, _mr_binMq_r1mq1_b, _mr_binMq_r1mq1_n, _mr_gbm1_r1mq1_a, _mr_gbm1_r1mq1_b, _mr_gbm1_r1mq1_n, _mr_gbm1_r1mq1_q, _mr_gbp1_r1mq1_a, _mr_gbp1_r1mq1_b, _mr_gbp1_r1mq1_n, _mr_gbp1_r1mq1_q, _mr_gbp2_r1mq1_a, _mr_gbp2_r1mq1_u, _mr_gbp3_r1mq1_m, _mr_gbp3_r1mq1_u, _mr_gbp4_r1mq1_m, _mr_gbp4_r1mq1_u, _mr_gtm1_r1mq1_a, _mr_gtm1_r1mq1_b, _mr_gtm1_r1mq1_c, _mr_gtm1_r1mq1_n, _mr_gtm1_r1mq1_q, _mr_gtm1_r1mq1_r ])$
+%mr_register_markers([ _mr_gtp1_r1mq1_a, _mr_gtp1_r1mq1_b, _mr_gtp1_r1mq1_c, _mr_gtp1_r1mq1_n, _mr_gtp1_r1mq1_q, _mr_gtp1_r1mq1_r, _mr_gtp2_r1mq1_a, _mr_gtp2_r1mq1_u, _mr_gtp3_r1mq1_m, _mr_gtp3_r1mq1_u, _mr_gtp4_r1mq1_m, _mr_gtp4_r1mq1_u, _mr_linMq_r1mq1_a, _mr_linMq_r1mq1_b, _mr_quadMq_r1mq1_a, _mr_quadMq_r1mq1_b, _mr_quadMq_r1mq1_c, _mr_quadMq_r2mq1_a, _mr_quadMq_r2mq1_c, _mr_triMq_r1mq1_a, _mr_triMq_r1mq1_b, _mr_triMq_r1mq1_c, _mr_triMq_r1mq1_j, _mr_triMq_r1mq1_n, _mr_triQ_r1mq1_w ])$
+
+/* bind a marker to a value in the binding list [marker = value, ...];
+ * a re-bound marker must agree. false on conflict. (No return() inside
+ * loops — loop-level return landmine, task 4 F1.) */
+%mr_mq_bind(B, m, v) := block([i, found],
+  i : 1, found : false,
+  while i <= length(B) and not found do (
+    if is(part(part(B, i), 1) = m) then found : true
+    else i : i + 1
+  ),
+  if found then is(part(part(B, i), 2) = v) and B
+  else append(B, [m = v]))$
+
+/* match two sub-patterns in sequence, threading the bindings. Success
+ * values are always binding lists (a list is non-atom; false is the
+ * only atom a match returns — = / # on lists never evaluate on their
+ * own in this build, so success is tested with atom()). */
+%mr_mq_seq(P1, E1, P2, E2, B) := block([b],
+  b : %mr_mq_match(P1, E1, B),
+  if atom(b) then false
+  else %mr_mq_match(P2, E2, b))$
+
+/* match pattern factor P against an ABSENT group — the empty
+ * partition group, the Optional u_. reading: the factor is simply not
+ * there. NOT the powerless rule in %mr_mq_match (a real E with no
+ * power, where the base must still match): here the base is skipped.
+ * A marker takes the group identity (1 for "*", 0 for "+"); a literal
+ * must already BE the identity; a power with a marker exponent records
+ * the Optional default (exponent := 1); a nested same-op sub-pattern
+ * must itself be absent factor by factor. A sub-pattern with a literal
+ * part (g_*x^2) cannot be absent — the literal has no default. */
+%mr_mq_absent(P, opname, B) := block([id],
+  id : if opname = "*" then 1 else 0,
+  if atom(P) then (
+    if %mr_isMQMarker(P) then %mr_mq_bind(B, P, id)
+    else if is(P = id) then B else false
+  )
+  elseif op(P) = "^" then (
+    if %mr_isMQMarker(part(P, 2)) then %mr_mq_bind(B, part(P, 2), 1)
+    else false
+  )
+  elseif op(P) = opname then %mr_mq_absent_seq(P, 1, opname, B)
+  else false)$
+
+%mr_mq_absent_seq(P, i, opname, B) := block([b],
+  if i > length(P) then B
+  else (
+    b : %mr_mq_absent(part(P, i), opname, B),
+    if atom(b) then false
+    else %mr_mq_absent_seq(P, i + 1, opname, b)))$
+
+/* the product (or sum) of ef factors j..k-1; the empty group is the
+ * group identity (1 for "*", 0 for "+") */
+%mr_mq_group(ef, j, k, opname) := block([i, v],
+  if k = j then (if opname = "*" then 1 else 0)
+  else (
+    v : part(ef, j),
+    for i : j + 1 thru k - 1 do
+      v : if opname = "*" then v * part(ef, i) else v + part(ef, i),
+    v))$
+
+/* insert h at position i of list L (1..length(L) + 1) */
+%mr_perm_insert(h, L, i) := block([j, out],
+  out : [],
+  for j : 1 thru i - 1 do out : append(out, [part(L, j)]),
+  out : append(out, [h]),
+  for j : i thru length(L) do out : append(out, [part(L, j)]),
+  out)$
+
+/* all permutations of L, the identity (stored) order first —
+ * insert first(L) at every position of each permutation of rest(L);
+ * n is tiny (the class-1 patterns carry at most ~5 factors), so the
+ * plain n! enumeration is fine */
+%mr_perm(L) := block([P, i, j, R],
+  if length(L) <= 1 then [L]
+  else (
+    P : %mr_perm(rest(L)),
+    R : [],
+    for i : 1 thru length(P) do
+      for j : 1 thru length(L) do
+        R : append(R, [%mr_perm_insert(first(L), part(P, i), j)]),
+    R))$
+
+/* pattern factors pf[i..] vs expression factors ef[j..]: a consecutive
+ * partition, backtracking over the group sizes. Non-empty groups are
+ * tried first and the empty (Optional-identity) group LAST: that is
+ * the Mathematica preference (a real factor before the Optional
+ * fallback), and it is what gives the Rubi-faithful binding at the
+ * 1.3.4 site — a_ + b_*v_ vs c + d*y binds a=c, b=d, v=y, not
+ * a=0, b=1, v=c+d*y. Success values are binding lists (non-atom);
+ * false is the only atom a match returns, so the loop tests success
+ * with atom() (= / # on lists never evaluate on their own in this
+ * build — measured 2026-08-23). */
+%mr_mq_part(pf, i, ef, j, B, opname) := block([k, b, res],
+  if i > length(pf) then (if is(j = length(ef) + 1) then B else false)
+  else (
+    res : false, k : j + 1,
+    while atom(res) and k <= length(ef) + 1 do (
+      b : %mr_mq_match(part(pf, i), %mr_mq_group(ef, j, k, opname), B),
+      if atom(b) then k : k + 1
+      else (
+        res : %mr_mq_part(pf, i + 1, ef, k, b, opname),
+        if atom(res) then k : k + 1
+      )),
+    if atom(res) then (
+      b : %mr_mq_absent(part(pf, i), opname, B),
+      if atom(b) then false else %mr_mq_part(pf, i + 1, ef, j, b, opname)
+    ) else res))$
+
+/* the expression's flat factors for a "*" / "+" match. A non-flat
+ * single term is one factor; the ONE extra Maxima-surface expansion
+ * (cluster E, measured 2026-08-23): a unary-minus term (-x, -x^2,
+ * -(a+b)) is Mathematica's Times[-1, ...], so against a TIMES pattern
+ * it splits into the factors [-1, <subterm>] — that is what lets the
+ * a_*x^q summand pattern bind a = -1 on a negative sum term (the
+ * generic matcher otherwise sees the "-" node as one indivisible
+ * factor). The "+" side is left as is: a negative SUM TERM is still
+ * one sum term, and the product pattern matched against that term
+ * takes the "*" branch above. */
+%mr_mq_flat_ef(opname, E) := block([i, ef],
+  ef : [],
+  if opname = "*" then (
+    if not atom(E) and is(op(E) = "-") then (
+      ef : append(ef, [-1]),
+      ef : append(ef, [part(E, 1)])
+    )
+    else if atom(E) or not is(op(E) = "*") then ef : append(ef, [E])
+    else for i : 1 thru length(E) do
+      ef : append(ef, [part(E, i)])
+  )
+  else (
+    if atom(E) or not is(op(E) = "+") then ef : append(ef, [E])
+    else for i : 1 thru length(E) do
+      ef : append(ef, [part(E, i)])
+  ),
+  ef)$
+
+/* a power-shaped expression as [base, exponent]: a "^" node as is, or
+ * the collapsed sqrt node (Maxima stores x^(1/2) as 'sqrt(x) — the
+ * op is the SYMBOL 'sqrt, measured in the cluster-B note) as exponent
+ * 1/2. false otherwise. This is what lets a x^q_ pattern term match
+ * the stored sqrt(x) shape (cluster E: the generalized-binomial
+ * fractional-exponent probes). */
+%mr_mq_power_exp(E) := block([],
+  if not atom(E) then (
+    if is(op(E) = "^") then [part(E, 1), part(E, 2)]
+    else if is(op(E) = 'sqrt) then [part(E, 1), 1/2]
+    else false
+  )
+  else false)$
+
+/* flat "*" / "+" match: the expression's factors (a non-flat single
+ * term is one factor) partitioned over the pattern's factors.
+ * Times and Plus are commutative, and Maxima stores each side in its
+ * own canonical factor order — measured 2026-08-23: x^m*u stores as
+ * [u, x^m] (a symbolic-exponent power sorts AFTER a bare symbol)
+ * while x^3*y stores as [x^3, y] — so a stored-order partition
+ * depends on where the long _mr_ marker names happen to sort, and
+ * misses matches the Rubi (Mathematica) orderless matcher finds
+ * (x^3*y vs x^m*u must match with m=3, u=y). Try every permutation
+ * of the pattern factors, the stored (identity) order first. */
+%mr_mq_flat(P, E, B, opname) := block([ef, i, pf, perm, r],
+  pf : [],
+  for i : 1 thru length(P) do pf : append(pf, [part(P, i)]),
+  ef : %mr_mq_flat_ef(opname, E),
+  r : false,
+  for perm in %mr_perm(pf) do
+    if atom(r) then
+      r : %mr_mq_part(perm, 1, ef, 1, B, opname),
+  r)$
+
+%mr_mq_match(P, E, B) := block([PE],
+  if atom(P) then (
+    if %mr_isMQMarker(P) then %mr_mq_bind(B, P, E)
+    else if is(P = E) then B else false
+  )
+  elseif op(P) = "*" then %mr_mq_flat(P, E, B, "*")
+  elseif op(P) = "+" then %mr_mq_flat(P, E, B, "+")
+  elseif op(P) = "^" then (
+    PE : %mr_mq_power_exp(E),
+    if not atom(PE) then
+      %mr_mq_seq(part(P, 1), part(PE, 1), part(P, 2), part(PE, 2), B)
+    else (
+      /* power-less E = exponent 1 (Maxima drops ^1): a literal 1
+         exponent or a marker exponent (which binds 1 — the .m
+         optional r_. reading) */
+      if is(part(P, 2) = 1) then
+        %mr_mq_match(part(P, 1), E, B)
+      elseif %mr_isMQMarker(part(P, 2)) then
+        block([b],
+          b : %mr_mq_bind(B, part(P, 2), 1),
+          if atom(b) then false
+          else %mr_mq_match(part(P, 1), E, b))
+      else false
+    )
+  )
+  else false)$
+
+/* lookup a marker's bound value in the binding list
+ * [m1 = v1, m2 = v2, ...]; false if absent (a cond that references
+ * an unmatched marker fails closed) */
+%mr_mk(m, B) := block([i, r, found],
+  i : 1, r : false, found : false,
+  while i <= length(B) and not found do
+    if is(part(part(B, i), 1) = m) then block([],
+      r : part(part(B, i), 2), found : true)
+    else i : i + 1,
+  r)$
+
+/* Rubi's MatchQ[u, pattern /; cond] — the public 3-arg form the
+ * generator emits (FIX E7). Maxima evaluates call arguments eagerly,
+ * so the generator emits a non-empty cond as a LAMBDA taking the
+ * binding list: lambda([%mr_mqb], <cond with each marker m rewritten
+ * to %mr_mk(m, %mr_mqb)>); an empty cond is bare true. The lambda
+ * body is held until called (measured 2026-08-23, task 7a A3: an
+ * unquoted cond evaluates its marker-dependent parts — integerp(m),
+ * is(m > 1), freeof(x, m) — on the unbound marker symbols before the
+ * match; and this build's ev() does not strip quotes, so the
+ * quote-based variant is dead). The cond's references to the OUTER
+ * rule captures (a, b, n, ...) resolve through Maxima's ordinary
+ * variable resolution at call time. On each COMPLETE structural match
+ * the closure is called with the binding list; while it answers false
+ * (or errors), the search continues to the next structural binding.
+ * false on no match, on a closure error, or a cond that is not true
+ * (unknown / a pending predicate noun fails closed — the existing
+ * pending-noun contract). No marker ordering is coupled between
+ * generator and matcher: every marker reference is a named lookup,
+ * not a positional argument.
+ *
+ * The cond = true guard is measured (2026-08-23): true = true
+ * evaluates to true, while a lambda = true stays a pending relation,
+ * which Maxima's if treats as false — so the bare-true and closure
+ * cases split without is() (is(lambda = true) would risk unknown). */
+%mr_matchQ(u, pattern, cond) := block([b],
+  if cond = true then (
+    b : %mr_mq_match(pattern, u, []),
+    if atom(b) then false else true
+  )
+  else %mr_mq_search(pattern, u, [], ["final", cond]))$
+
+/* the MatchQ cond, evaluated on a complete binding list. The cond is
+ * the generator's lambda over the binding list; a cond error, a false
+ * answer, or a pending noun all fail closed. */
+%mr_cond_ok(cond, B) := block([r],
+  r : errcatch(cond(B)),
+  if r = [] then false
+  else if is(first(r)) = true then true
+  else false)$
+
+/* apply a search continuation to a binding list. The continuation is
+ * an explicit list (no lambda — see the matcher note):
+ *   ["final", cond]        — the top level: test the MatchQ cond
+ *   ["match", P, E, G]     — match sub-pattern P against E, then G
+ *   ["part", pf, i, ef, j, opname, G]
+ *                           — resume the flat partition at pf[i..]
+ */
+%mr_mq_apply_goal(G, B) := block([t],
+  t : part(G, 1),
+  if is(t = "final") then %mr_cond_ok(part(G, 2), B)
+  else if is(t = "match") then
+    %mr_mq_search(part(G, 2), part(G, 3), B, part(G, 4))
+  else if is(t = "part") then
+    %mr_mq_part_search(part(G, 2), part(G, 3), part(G, 4),
+      part(G, 5), B, part(G, 6), part(G, 7))
+  else false)$
+
+/* the cond-threading structural search: true iff SOME structural
+ * binding of P against E (extending B) makes the continuation G
+ * succeed. The first-success %mr_mq_match family above is kept for the
+ * cond = true fast path; this is the Rubi MatchQ[u, pat /; cond]
+ * semantics where the cond participates in the backtracking. */
+%mr_mq_search(P, E, B, G) := block([PE],
+  if atom(P) then (
+    if %mr_isMQMarker(P) then
+      block([b],
+        b : %mr_mq_bind(B, P, E),
+        if atom(b) then false else %mr_mq_apply_goal(G, b)
+      )
+    else if is(P = E) then %mr_mq_apply_goal(G, B)
+    else false
+  )
+  elseif op(P) = "*" then %mr_mq_flat_search(P, E, B, "*", G)
+  elseif op(P) = "+" then %mr_mq_flat_search(P, E, B, "+", G)
+  elseif op(P) = "^" then (
+    PE : %mr_mq_power_exp(E),
+    if not atom(PE) then
+      %mr_mq_search(part(P, 1), part(PE, 1), B,
+        ["match", part(P, 2), part(PE, 2), G]
+      )
+    else (
+      if is(part(P, 2) = 1) then
+        %mr_mq_search(part(P, 1), E, B, G)
+      elseif %mr_isMQMarker(part(P, 2)) then
+        block([b],
+          b : %mr_mq_bind(B, part(P, 2), 1),
+          if atom(b) then false
+          else %mr_mq_search(part(P, 1), E, b, G)
+        )
+      else false
+    )
+  )
+  else false)$
+
+%mr_mq_flat_search(P, E, B, opname, G) := block([ef, i, pf, perm, r],
+  pf : [],
+  for i : 1 thru length(P) do pf : append(pf, [part(P, i)]),
+  ef : %mr_mq_flat_ef(opname, E),
+  r : false,
+  for perm in %mr_perm(pf) do
+    if not r then
+      r : %mr_mq_part_search(perm, 1, ef, 1, B, opname, G),
+  r)$
+
+%mr_mq_part_search(pf, i, ef, j, B, opname, G) := block([k, b, res],
+  if i > length(pf) then (
+    if is(j = length(ef) + 1) then %mr_mq_apply_goal(G, B) else false
+  )
+  else (
+    res : false, k : j + 1,
+    while not res and k <= length(ef) + 1 do (
+      if %mr_mq_search(part(pf, i), %mr_mq_group(ef, j, k, opname), B,
+            ["part", pf, i + 1, ef, k, opname, G])
+      then res : true
+      else k : k + 1
+    ),
+    if not res then (
+      b : %mr_mq_absent(part(pf, i), opname, B),
+      if not atom(b) and
+         %mr_mq_part_search(pf, i + 1, ef, j, b, opname, G)
+      then res : true
+    ),
+    res))$
+
+/* ---- int-family + binomial predicates (Task 7a cluster B) -----------
+ * Rubi's integrability guards (IntLinearQ / IntQuadraticQ /
+ * IntBinomialQ — True iff the product integrates in terms of
+ * non-hypergeometric / non-Appell functions) and the BinomialQ shape
+ * test (a + b*x^n). Line-ports of the pinned Rubi definitions
+ * (provenance in each comment); the .m IntegerQ / IGtQ / ILtQ /
+ * RationalQ / IntegersQ / EqQ map onto the A1 ports — IntegerQ is
+ * integerp on an exact value (Maxima auto-simplifies exact rational
+ * arithmetic, MEASURED 2026-08-23: 1/2 + 1/2 -> 1, so IntegerQ[m+n]
+ * is integerp(m+n)). Arity (class-1 census 2026-08-23): binomialQ
+ * 2/3 and intBinomialQ 7/8/10 are the two multi-arity names — the Lisp
+ * dispatchers in maxima_rubi_dispatch.lisp re-dispatch onto the
+ * fixed-arity bodies here, named <name><arity>; intLinearQ (7) and
+ * intQuadraticQ (8) are fixed-arity and need no dispatcher. */
+
+/* Rubi :70/:379/:384 — IntegerQ, IGtQ[u,n] := IntegerQ[u] && u>n,
+ * ILtQ[u,n] := IntegerQ[u] && u<n. Exact integers only (floats and
+ * symbols fail, as in Mathematica). */
+%mr_integerQ(e) := integerp(e)$
+%mr_IGtQ(u, n) := %mr_integerQ(u) and is(u > n)$
+%mr_ILtQ(u, n) := %mr_integerQ(u) and is(u < n)$
+
+/* the distinct x-exponents of a CONFIRMED polynomial (callers gate on
+ * %mr_polynomialQ), ascending — MEASURED 2026-08-23: sort() orders
+ * exact rationals, member() on numbers returns a boolean, and op()
+ * hard-errors on ATOMS (symbols included) in this build, so the
+ * single-term case is gated on atom() first (expand(x) = x). */
+%mr_exp_list(u, x) := block([e, i, p, L],
+  e : expand(u),
+  L : [],
+  if atom(e) then (
+    p : %mr_term_xexp(e, x),
+    if p # false then L : append(L, [p])
+  )
+  else if op(e) = "+" then (
+    for i : 1 thru length(e) do
+      (
+        p : %mr_term_xexp(part(e, i), x),
+        if p # false and not member(p, L) then L : append(L, [p])
+      )
+  )
+  else (
+    p : %mr_term_xexp(e, x),
+    if p # false then L : append(L, [p])),
+  sort(L))$
+
+/* Rubi :851  BinomialParts[u, x] — [a, b, n] iff u is equivalent to
+ * a + b*x^n (n, b nonzero), else false. LINE port; the branches follow
+ * the .m If-chain (polynomial / power / product / sum; First/Rest
+ * split as first factor-or-term over the rest). DEVIATIONS, both
+ * forced by Maxima's surface, documented:
+ *  - 1/x stores as a "/" node [1, x], NOT a power x^(-1) (MEASURED
+ *    2026-08-23), so the power branch also accepts the num = 1
+ *    reciprocal shape (1/x -> [0, 1, -1]; 1/x^k -> [0, 1, -k]);
+ *  - c/x (Mathematica's Times[c, x^(-1)] — the .m ProductQ branch)
+ *    stores as ONE "/" node [c, x] and is NOT accepted; no class-1
+ *    call site passes that shape (the factors of the (cx)^m (a+bx^n)^p
+ *    products are powers and binomials, never bare reciprocals). */
+%mr_binomial_parts(u, x) := block([d, L, i, f1, r1, L1, L2],
+  if %mr_polynomialQ(u, x) then (
+    d : %mr_degree(u, x),
+    if d = 0 then false
+    else (
+      L : %mr_exp_list(u, x),
+      if length(L) = 1 then [0, %mr_coeff(u, x, d), d]
+      else if length(L) = 2 and is(part(L, 1) = 0)
+      then [%mr_coeff(u, x, 0), %mr_coeff(u, x, d), d]
+      else false
+    )
+  )
+  elseif op(u) = "^" and is(part(u, 1) = x) and freeof(x, part(u, 2))
+  then [0, 1, part(u, 2)]
+  elseif op(u) = 'sqrt and is(part(u, 1) = x)
+  /* Mathematica stores Sqrt[x] AS x^(1/2) (PowerQ is true); this
+     Maxima build collapses exactly the 1/2 power to a sqrt node
+     (MEASURED 2026-08-23: op(x^(1/2)) = 'sqrt, op(x^(3/2)) = "^") —
+     accept the collapsed shape with the same reading (b = 1, n = 1/2).
+     NOTE: op() in this build returns the SYMBOL 'sqrt for the sqrt
+     head (is(op(sqrt(x)) = 'sqrt) is true; the string "sqrt" never
+     matches) while special heads (^, +, *, /, -, [) stay strings. */
+  then [0, 1, 1/2]
+   elseif op(u) = "/" and is(num(u) = 1) then (
+     if is(denom(u) = x) then [0, 1, -1]
+     else if op(denom(u)) = "^" and is(part(denom(u), 1) = x)
+       and freeof(x, part(denom(u), 2))
+     then [0, 1, -part(denom(u), 2)]
+     else false
+   )
+   /* unary minus: Maxima stores -x^(1/2) / -2*(1+x^(1/2)) as a "-"
+      node (the .m's Times[-1, ...] goes through the ProductQ branch
+      with the -1 factor: {-1*a, -1*b, n}). Polynomial minus terms
+      (-x^2) never reach this branch — the polynomial branch above
+      handles them. Cluster D dependency: %mr_trinomial_parts sum
+      branch passes unary-minus terms (1 - x^(1/2) + ...). */
+   elseif op(u) = "-" then (
+     L : %mr_binomial_parts(part(u, 1), x),
+     if atom(L) then false else [-part(L, 1), -part(L, 2), part(L, 3)]
+   )
+   elseif op(u) = "*" then (
+    f1 : part(u, 1),
+    r1 : part(u, 2),
+    for i : 3 thru length(u) do r1 : r1 * part(u, i),
+    if freeof(x, f1) then (
+      L2 : %mr_binomial_parts(r1, x),
+      if atom(L2) then false
+      else [f1*part(L2, 1), f1*part(L2, 2), part(L2, 3)]
+    )
+    else if freeof(x, r1) then (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else [r1*part(L1, 1), r1*part(L1, 2), part(L1, 3)]
+    )
+    else (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else (
+        L2 : %mr_binomial_parts(r1, x),
+        if atom(L2) then false
+        else if %mr_eqQ(part(L1, 1), 0) then (
+          if %mr_eqQ(part(L2, 1), 0)
+          then [0, part(L1, 2)*part(L2, 2), part(L1, 3) + part(L2, 3)]
+          else if %mr_eqQ(part(L1, 3) + part(L2, 3), 0)
+          then [part(L1, 2)*part(L2, 2), part(L1, 2)*part(L2, 1), part(L1, 3)]
+          else false
+        )
+        else if %mr_eqQ(part(L2, 1), 0) then (
+          if %mr_eqQ(part(L1, 3) + part(L2, 3), 0)
+          then [part(L1, 2)*part(L2, 2), part(L1, 1)*part(L2, 2), part(L2, 3)]
+          else false
+        )
+        else if is(part(L1, 3) = part(L2, 3))
+          and %mr_eqQ(part(L1, 1)*part(L2, 2) + part(L1, 2)*part(L2, 1), 0)
+        then [part(L1, 1)*part(L2, 1), part(L1, 2)*part(L2, 2), 2*part(L1, 3)]
+        else false
+      )
+    )
+  )
+  elseif op(u) = "+" then (
+    f1 : part(u, 1),
+    r1 : part(u, 2),
+    for i : 3 thru length(u) do r1 : r1 + part(u, i),
+    if freeof(x, f1) then (
+      L2 : %mr_binomial_parts(r1, x),
+      if atom(L2) then false
+      else [f1 + part(L2, 1), part(L2, 2), part(L2, 3)]
+    )
+    else if freeof(x, r1) then (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else [r1 + part(L1, 1), part(L1, 2), part(L1, 3)]
+    )
+    else (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else (
+        L2 : %mr_binomial_parts(r1, x),
+        if atom(L2) then false
+        else if is(part(L1, 3) = part(L2, 3))
+        then [part(L1, 1) + part(L2, 1), part(L1, 2) + part(L2, 2), part(L1, 3)]
+        else false
+      )
+    )
+  )
+  else false)$
+
+/* Rubi :549/:555  BinomialQ[u, x] / BinomialQ[u, x, n] — the 2/3-arg
+ * dispatch targets (maxima_rubi_dispatch.lisp); the list-first-arg arm
+ * is the .m ListQ[u] branch (the generator's list-packing). */
+%mr_binomialQ2(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_binomialQ2(part(u, i), x) then v : false,
+    v
+  )
+  else not atom(%mr_binomial_parts(u, x)))$
+
+%mr_binomialQ3(u, x, n) := block([L, i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_binomialQ3(part(u, i), x, n) then v : false,
+    v
+  )
+  else (
+    L : %mr_binomial_parts(u, x),
+    if atom(L) then false else is(part(L, 3) = n)))$
+
+/* Rubi 1.1.1.2:44  IntLinearQ[a, b, c, d, m, n, x] — True iff
+ * (a+b*x)^m (c+d*x)^n integrates in non-hypergeometric terms.
+ * Fixed 7-arg (census: 4 call sites, all 7-arg); a-d unused by the
+ * body, as in the .m. */
+%mr_intLinearQ(a, b, c, d, m, n, x) :=
+  %mr_IGtQ(m, 0) or %mr_IGtQ(n, 0)
+  or %mr_integersQ([3*m, 3*n]) or %mr_integersQ([4*m, 4*n])
+  or %mr_integersQ([2*m, 6*n]) or %mr_integersQ([6*m, 2*n])
+  or %mr_ILtQ(m + n, -1)
+  or %mr_integerQ(m + n) and %mr_rationalQ(m)$
+
+/* Rubi 1.2.1.2:151  IntQuadraticQ[a, b, c, d, e, m, p, x] — True iff
+ * (d+e*x)^m (a+b*x+c*x^2)^p integrates in non-Appell terms.
+ * Fixed 8-arg (census: 21 call sites, all 8-arg). */
+%mr_intQuadraticQ(a, b, c, d, e, m, p, x) :=
+  %mr_integerQ(p) or %mr_IGtQ(m, 0)
+  or %mr_integersQ([2*m, 2*p]) or %mr_integersQ([m, 4*p])
+  or %mr_integersQ([m, p + 1/3])
+     and (%mr_eqQ(c^2*d^2 - b*c*d*e + b^2*e^2 - 3*a*c*e^2, 0)
+          or %mr_eqQ(c^2*d^2 - b*c*d*e - 2*b^2*e^2 + 9*a*c*e^2, 0))$
+
+/* Rubi 1.1.3.2:118  IntBinomialQ[a, b, c, n, m, p, x] — True iff
+ * (c*x)^m (a+b*x^n)^p integrates in non-hypergeometric terms. The
+ * 7-arg dispatch target. The (m+1)/n disjunct is guarded on n # 0:
+ * Maxima hard-errors 3/0 ("expt: undefined: 0 to a negative exponent",
+ * MEASURED 2026-08-23) where Mathematica's Infinity answers
+ * IntegerQ -> false. */
+%mr_intBinomialQ7(a, b, c, n, m, p, x) :=
+  %mr_IGtQ(p, 0)
+  or (%mr_rationalQ(m) and %mr_integersQ([n, 2*p]))
+  or is(n # 0) and %mr_integerQ((m + 1)/n + p)
+  or (is(n = 2) or is(n = 4)) and %mr_integersQ([2*m, 4*p])
+  or is(n = 2) and %mr_integerQ(6*p)
+     and (%mr_integerQ(m) or %mr_integerQ(m - p))$
+
+/* Rubi 1.1.3.3:73  IntBinomialQ[a, b, c, d, n, p, q, x] — True iff
+ * (a+b*x^n)^p (c+d*x^n)^q integrates in non-Appell terms.
+ * The 8-arg dispatch target. */
+%mr_intBinomialQ8(a, b, c, d, n, p, q, x) :=
+  %mr_integersQ([p, q])
+  or %mr_IGtQ(p, 0) or %mr_IGtQ(q, 0)
+  or (is(n = 2) or is(n = 4))
+     and (%mr_integersQ([p, 4*q]) or %mr_integersQ([4*p, q]))
+  or is(n = 2)
+     and (%mr_integersQ([2*p, 2*q])
+          or (%mr_integersQ([3*p, q]) and %mr_eqQ(b*c + 3*a*d, 0))
+          or (%mr_integersQ([p, 3*q]) and %mr_eqQ(3*b*c + a*d, 0)))
+  or is(n = 3) and (%mr_integersQ([p + 1/3, q]) or %mr_integersQ([q + 1/3, p]))
+  or is(n = 3) and (%mr_integersQ([p + 2/3, q]) or %mr_integersQ([q + 2/3, p]))
+     and %mr_eqQ(b*c + a*d, 0)$
+
+/* Rubi 1.1.3.4:89  IntBinomialQ[a, b, c, d, e, m, n, p, q, x] —
+ * True iff (e*x)^m (a+b*x^n)^p (c+d*x^n)^q integrates in non-Appell
+ * terms. The 10-arg dispatch target. */
+%mr_intBinomialQ10(a, b, c, d, e, m, n, p, q, x) :=
+  %mr_integersQ([p, q])
+  or %mr_IGtQ(p, 0) or %mr_IGtQ(q, 0)
+  or is(n = 2)
+     and (%mr_integersQ([m, 2*p, 2*q])
+          or %mr_integersQ([2*m, p, 2*q])
+          or %mr_integersQ([2*m, 2*p, q]))
+  or is(n = 4) and (%mr_integersQ([m, p, 2*q]) or %mr_integersQ([m, 2*p, q]))
+  or is(n = 2) and %mr_integersQ([m/2, p + 1/3, q])
+     and (%mr_eqQ(b*c + 3*a*d, 0) or %mr_eqQ(b*c - 9*a*d, 0))
+  or is(n = 2) and %mr_integersQ([m/2, q + 1/3, p])
+     and (%mr_eqQ(a*d + 3*b*c, 0) or %mr_eqQ(a*d - 9*b*c, 0))
+  or is(n = 3) and %mr_integersQ([(m - 1)/3, q, p - 1/2])
+     and (%mr_eqQ(b*c - 4*a*d, 0) or %mr_eqQ(b*c + 8*a*d, 0)
+          or %mr_eqQ(b^2*c^2 - 20*a*b*c*d - 8*a^2*d^2, 0))
+  or is(n = 3) and %mr_integersQ([(m - 1)/3, p, q - 1/2])
+     and (%mr_eqQ(4*b*c - a*d, 0) or %mr_eqQ(8*b*c + a*d, 0)
+          or %mr_eqQ(8*b^2*c^2 + 20*a*b*c*d - a^2*d^2, 0))
+  or is(n = 3)
+     and (%mr_integersQ([m, q, 3*p]) or %mr_integersQ([m, p, 3*q]))
+     and %mr_eqQ(b*c + a*d, 0)
+   or is(n = 3)
+      and (%mr_integersQ([(m + 2)/3, p + 2/3, q])
+           or %mr_integersQ([m/3, q + 1/3, p]))$
+
+ /* ---- sum / simpler predicates (Task 7a cluster C) -------------------
+  * SumQ (:176) · SumSimplerQ (:774) + SumSimplerAuxQ (:784, the three
+  * .m definitions: split-v, split-u, base) · SimplerQ (:677) ·
+  * SimplerSqrtQ (:732) · NiceSqrtQ (:647) · FractionalPowerFactorQ
+  * (:658 — the NiceSqrtQ dependency, pulled forward from cluster F) ·
+  * NumericFactor (:1096) / NonnumericFactors (:1125) + the rest-of-sum
+  * helper the SumSimplerAuxQ splits need.
+  *
+  * 5.50.0 representation traps pinned here (measured 2026-08-23):
+  *  - is() returns the SYMBOL unknown for an undecidable relation and
+  *    `if <unknown>` stays unevaluated — every relation is therefore
+  *    `is(a op b) = true` (the bare `(a op b) = true` is NOT evaluated:
+  *    it stays an equation);
+  *  - complexp is a NOUN; the only atomic complex value is %i (-%i is
+  *    a unary "-" node, not an atom) — the "Head === Complex" test is
+  *    is(u = %i) plus its unary-minus form;
+  *  - numberp covers exactly the real explicit numbers (integers,
+  *    rationals — 1/2 is a "/" node and numberp is TRUE — and floats);
+  *    %i / %pi / E / %inf are not numberp, and neither is a symbol;
+  *  - sqrt normalizes aggressively where Mathematica holds:
+  *    sqrt(x^2) -> abs(x) (Rubi: Sqrt[x^2] stays a power — the
+  *    FractionalPowerFactorQ/niceSqrtQ x^2 probes pin the divergence),
+  *    sqrt(2*x) -> sqrt(2)*sqrt(x), sqrt(1/(2*x)) ->
+  *    1/(sqrt(2)*sqrt(x)), x^(1/2) -> a 'sqrt node, x^(-1/2) ->
+  *    1/sqrt(x). Hence FractionalPowerFactorQ carries 'sqrt, "/" and
+  *    unary "-" branches (the .m PowerQ branch alone cannot see the
+  *    Maxima shapes);
+  *  - Map[f, expr] keeps a non-list head in Mathematica — the
+  *    NumericFactor/NonnumericFactors product branches are for-loops
+  *    over the parts;
+  *  - SimplerSqrtQ's LtQ sign tests stay pending on symbolic args in
+  *    Rubi (the whole If declines, the rule does not fire) — the port
+  *    reproduces the decline by answering false (never true) when
+  *    either sign is unknown;
+  *  - NumericFactor/NonnumericFactors sum branches take the .m's GCD
+  *    fallback path; the LeafCount<50 ContentFactor kludge is omitted
+  *    (a sum only reaches them through a product-of-sums inside a
+  *    captured exponent — no class-1 corpus site has one), and the
+  *    rational-denominator corner of the power branch (Maxima stores
+  *    (1/2)^(1/2) as 1/sqrt(2), a "/" node the .m sees as the power
+  *    2^(-1/2)) is unreachable at the 36 call sites (v is always an
+  *    integer constant, u a symbol/number/monomial/integer-power).
+  */
+
+ /* Rubi :176  SumQ[_Plus] = True; SumQ[_] = False. A Maxima "+" node
+    always has >= 2 parts (Mathematica's Plus flattens single terms). */
+ %mr_sumQ(u) := block([],
+   if atom(u) then false else is(op(u) = "+"))$
+
+ /* NumberQ (Mathematica builtin) — explicit numbers only. numberp
+    covers the reals (integer/rational/float, incl. the non-atom "/"
+    node); %pi/E/symbols are not numbers (NumberQ[Pi] is false in
+    Mathematica too); the complex forms are %i, -%i, a + b*i with both
+    parts explicit reals. */
+ %mr_numberQ(u) := block([],
+   if numberp(u) then true
+   else if is(u = %i) then true
+   else if atom(u) then false
+   else if is(op(u) = "-") then is(part(u, 1) = %i)
+   else if is(op(u) = "+")
+    then numberp(realpart(u)) and numberp(imagpart(u))
+     and is(imagpart(u) # 0)
+   else false)$
+
+ /* ComplexNumberQ (Mathematica builtin) — an explicit complex with a
+    nonzero imaginary part. complexp is a noun in this build. */
+ %mr_complexNumberQ(u) := block([],
+   if is(u = %i) then true
+   else if atom(u) then false
+   else if is(op(u) = "-") then is(part(u, 1) = %i)
+   else if numberp(u) then is(imagpart(u) # 0) = true
+   else if is(op(u) = "+")
+    then numberp(realpart(u)) and numberp(imagpart(u))
+     and is(imagpart(u) # 0) = true
+   else false)$
+
+  /* OrderedQ[{u, v}] — u and v in canonical order. Maxima has no
+     canonical-order predicate; sort() is a total canonical order here
+     (numbers first, %pi before bare symbols, x before 2*x — measured
+     2026-08-23). UPSTREAM-BUG NOTE (measured 2026-08-25): OrderedQ is
+     never defined anywhere in the pinned Rubi 4 clone (whole-clone and
+     whole-git-history grep; its only uses are the SimplerQ :710/:716/:727
+     tie-breaks and SimplerSqrtQ :764 of IntegrationUtilityFunctions.m),
+     so in the pinned Rubi those tie-breaks are unevaluated nouns and
+     rules like 1.1.1.4's Not[SimplerQ[...]]-guarded rule decline on
+     every symbolic binding. The acceptance corpus
+     (MaximaSyntaxTestSuite) was generated by a Rubi build with a
+     WORKING OrderedQ: e.g. 1.1.1.7 e4's expected elliptic answer
+     exists only if the 1.1.1.4 rule 1/((a+b x) Sqrt[c+d x] Sqrt[e+f x]
+     Sqrt[g+h x]) /; Not[SimplerQ[e+f x, c+d x]] && Not[SimplerQ[g+h x,
+     c+d x]] FIRES on the sub-integral (it is the rule's binding
+     guard — the .m derivation assumes the (c+d x) slot holds the
+     first sqrt factor; the guard declines the swapped binding, which
+     would make the Subst repl algebraically wrong). The sort() total
+     order is the corpus-target reading, not the pinned-Rubi reading —
+     the corpus is the acceptance target. sort() failure
+     (errcatch -> []) fails closed. */
+  %mr_orderedQ(u, v) := block([s],
+    s : errcatch(sort([u, v])),
+    if is(s = []) then false
+    else is(part(s, 1) = [u, v]))$
+
+ /* Rest[u] for a sum — Maxima has no Rest; the sum of parts 2..n. A
+    one-part "sum" cannot occur ("+" nodes have >= 2 parts). */
+ %mr_rest_sum(u) := block([i, n, lst],
+   n : length(u),
+   if is(n = 1) then part(u, 1)
+   else (
+     lst : [],
+     for i : 2 thru n do lst : append(lst, [part(u, i)]),
+     apply("+", lst)))$
+
+ /* Rubi :1096  NumericFactor[u] — the real numeric factor. */
+ %mr_numericFactor(u) := block([i, n, r, b, ex],
+   if %mr_numberQ(u) then (
+     if is(imagpart(u) = 0) then u
+     else if is(realpart(u) = 0) then imagpart(u)
+     else 1
+   )
+   /* a non-numeric atom (a symbol) has no numeric factor — the .m's
+      final else */
+   else if atom(u) then 1
+   else if is(op(u) = "^") or is(op(u) = 'sqrt) then (
+     b : part(u, 1),
+     ex : if is(op(u) = 'sqrt) then 1/2 else part(u, 2),
+     if %mr_rationalQ(b) and %mr_fractionQ(ex)
+     then (
+       if is(ex > 0) = true then 1/denom(b) else 1/denom(1/b)
+     )
+     else 1
+   )
+   else if is(op(u) = "*") then (
+     n : length(u),
+     r : 1,
+     for i : 1 thru n do r : r * %mr_numericFactor(part(u, i)),
+     r
+   )
+   /* a unary minus wraps the (non-numeric) product: the .m reads it as
+      a product with a -1 factor, whose NumericFactor is -1 */
+   else if is(op(u) = "-") then -%mr_numericFactor(part(u, 1))
+   else if %mr_sumQ(u) then
+     block([m, nst],
+       m : %mr_numericFactor(part(u, 1)),
+       nst : %mr_numericFactor(%mr_rest_sum(u)),
+       if is(m < 0) = true and is(nst < 0) = true
+       then -gcd(-m, -nst) else gcd(m, nst))
+   else 1)$
+
+ /* Rubi :1125  NonnumericFactors[u] — the product of the factors that
+    are not real numbers. The .m's GCD-path sum shape keeps the Plus
+    head (a sum of term/NF[u] — Map preserves non-list heads). */
+ %mr_nonnumericFactors(u) := block([i, n, r, d, lst],
+   if %mr_numberQ(u) then (
+     if is(imagpart(u) = 0) then 1
+     else if is(realpart(u) = 0) then %i
+     else u
+   )
+   /* a non-numeric atom (a symbol) is its own nonnumeric factor */
+   else if atom(u) then u
+   /* a unary minus wraps the product: the .m's -1 factor has
+      NonnumericFactors 1, so the nonnumeric factors pass through */
+   else if is(op(u) = "-") then %mr_nonnumericFactors(part(u, 1))
+   else if is(op(u) = "^") or is(op(u) = 'sqrt) then (
+     if %mr_rationalQ(part(u, 1))
+    and %mr_fractionQ(if is(op(u) = 'sqrt) then 1/2 else part(u, 2))
+     then u / %mr_numericFactor(u)
+     else u
+   )
+   else if is(op(u) = "*") then (
+     n : length(u),
+     r : 1,
+     for i : 1 thru n do r : r * %mr_nonnumericFactors(part(u, i)),
+     r
+   )
+   else if %mr_sumQ(u) then (
+     d : %mr_numericFactor(u),
+     lst : [],
+     n : length(u),
+     for i : 1 thru n do lst : append(lst, [part(u, i)/d]),
+     apply("+", lst)
+   )
+   else u)$
+
+ /* Rubi :658  FractionalPowerFactorQ — a factor is a complex constant
+    or a fractional power. The 'sqrt / "/" / "-" branches are the Maxima
+    shape adaptations (see the section note). */
+ %mr_fractionalPowerFactorQ(u) := block([i, n, r],
+   if atom(u) then is(u = %i)
+   else if is(op(u) = "^") then %mr_fractionQ(part(u, 2))
+   else if is(op(u) = 'sqrt) then true
+   else if is(op(u) = "*") then (
+     n : length(u),
+     i : 0,
+     r : false,
+     while is(r = false) and i < n do (
+       i : i + 1,
+       r : %mr_fractionalPowerFactorQ(part(u, i))),
+     r
+   )
+   else if is(op(u) = "/")
+    then %mr_fractionalPowerFactorQ(num(u))
+     or %mr_fractionalPowerFactorQ(denom(u))
+   else if is(op(u) = "-") then %mr_fractionalPowerFactorQ(part(u, 1))
+   else false)$
+
+ /* Rubi :647  NiceSqrtQ — positive rational, or a squareroot without
+    fractional-power / complex factors. Rt[u, 2] is sqrt(u) here;
+    sqrt(x^2) -> abs(x) is the documented divergence corner (Rubi says
+    false for x^2, the port says true — unreachable at the class-1
+    discriminant sites). */
+ %mr_niceSqrtQ(u) := block([],
+   /* u is an explicit rational here — decidable, clean boolean */
+   if %mr_rationalQ(u) then is(u > 0)
+   else not(%mr_fractionalPowerFactorQ(sqrt(u))))$
+
+ /* the SimplerQ part scan — Catch[Do[If[eq, Null, Throw[SimplerQ]]];
+    False]: SimplerQ of the FIRST differing part pair, false if none
+    (a return()/break() is loop-scoped in this build — the Task 4 trap —
+    hence the found-flag while loop). */
+ %mr_simplerQ_scan(u, v) := block([i, n, r, found],
+   n : length(u),
+   i : 0,
+   r : false,
+   found : false,
+   while is(found = false) and i < n do (
+     i : i + 1,
+     if is(part(u, i) = part(v, i)) = false then (
+       r : %mr_simplerQ(part(u, i), part(v, i)),
+       found : true)),
+   r)$
+
+ /* Rubi :677  SimplerQ[u, v] — the structural simplicity order. The
+    Re/Im, ComplexNumberQ, NumberQ, OrderedQ readings are the Maxima
+    stand-ins pinned in the section note. */
+ %mr_simplerQ(u, v) := block([],
+   if integerp(u) then (
+     if integerp(v) then (
+       if is(u = v) then false
+       /* value position: u, v are concrete integers, so the comparison
+          is decidable — return the clean boolean (is(X) = true would
+          leak the equation false = true on a false answer). */
+       else if is(u = -v) then is(v < 0)
+       else is(abs(u) < abs(v))
+     )
+     else true
+   )
+   else if integerp(v) then false
+   else if %mr_fractionQ(u) then (
+     if %mr_fractionQ(v) then (
+       if is(denom(u) = denom(v))
+       then %mr_simplerQ(num(u), num(v))
+       else is(denom(u) < denom(v))
+     )
+     else true
+   )
+   else if %mr_fractionQ(v) then false
+   else if is(realpart(u) = 0) and is(realpart(v) = 0)
+    then %mr_simplerQ(imagpart(u), imagpart(v))
+   else if %mr_complexNumberQ(u) then (
+     if %mr_complexNumberQ(v) then (
+       if is(realpart(u) = realpart(v))
+       then %mr_simplerQ(imagpart(u), imagpart(v))
+       else %mr_simplerQ(realpart(u), realpart(v))
+     )
+     else false
+   )
+   else if %mr_numberQ(u) then (
+     if %mr_numberQ(v) then %mr_orderedQ(u, v) else true
+   )
+   else if %mr_numberQ(v) then false
+   else if atom(u) then (
+     if atom(v) then %mr_orderedQ(u, v) else true
+   )
+   else if atom(v) then false
+   else if is(op(u) = op(v)) then (
+     if is(length(u) = length(v)) then (
+       if is(%mr_leafCount(u) = %mr_leafCount(v))
+       then %mr_simplerQ_scan(u, v)
+       /* leafcounts are concrete integers — decidable */
+       else is(%mr_leafCount(u) < %mr_leafCount(v))
+     )
+     else is(length(u) < length(v))
+   )
+   else (
+     if is(%mr_leafCount(u) = %mr_leafCount(v))
+     then not(%mr_orderedQ(v, u))
+     else is(%mr_leafCount(u) < %mr_leafCount(v))))$
+
+ /* Rubi :732  SimplerSqrtQ[u, v] — Rt[u,2] simpler than Rt[v,2]. The
+    pending-sign decline (Rubi's If unevaluated on undecidable LtQ) is
+    reproduced by the unknown guard: undecidable sign -> false. */
+ %mr_simplerSqrtQ(u, v) := block([sqrtu, sqrtv, zu, zv],
+   zu : is(u < 0),
+   zv : is(v < 0),
+   if is(zv = true) and is(zu = false) then true
+   else if is(zu = true) and is(zv = false) then false
+   else if is(zv = 'unknown) or is(zu = 'unknown) then false
+   else (
+     sqrtu : sqrt(u),
+     sqrtv : sqrt(v),
+     if integerp(sqrtu) then (
+       /* concrete integers / rationals / integer leafcounts — the
+          comparisons are decidable, so a clean boolean is returned
+          (the .m's PosQ[u]&&PosQ[v] branch is the BARE LeafCount
+          comparison: a tie answers false, no OrderedQ tiebreak) */
+       if integerp(sqrtv) then is(sqrtu < sqrtv) else true
+     )
+     else if integerp(sqrtv) then false
+     else if %mr_rationalQ(sqrtu) then (
+       if %mr_rationalQ(sqrtv) then is(sqrtu < sqrtv)
+       else true
+     )
+     else if %mr_rationalQ(sqrtv) then false
+     else if %mr_posQ(u) then (
+       if %mr_posQ(v)
+       then is(%mr_leafCount(sqrtu) < %mr_leafCount(sqrtv))
+       else true
+     )
+     else if %mr_posQ(v) then false
+     else if is(%mr_leafCount(sqrtu) < %mr_leafCount(sqrtv)) = true
+      then true
+     else if is(%mr_leafCount(sqrtv) < %mr_leafCount(sqrtu)) = true
+      then false
+     else not(%mr_orderedQ(v, u))))$
+
+ /* Rubi :784  SumSimplerAuxQ — the three .m definitions in dispatch
+    order: v a sum -> AND over v's terms (rational or aux(u, term)); u
+    a sum -> OR over u's terms; base -> v # 0, equal NonnumericFactors,
+    NF[u]/NF[v] < -1/2 (or = -1/2 with NF[u] < 0). */
+ %mr_sumSimplerAuxQ(u, v) := block([i, n, r, m, nf],
+   if %mr_sumQ(v) then (
+     r : true,
+     i : 0,
+     n : length(v),
+     while is(r = true) and i < n do (
+       i : i + 1,
+       if not(%mr_rationalQ(part(v, i)))
+       and not(%mr_sumSimplerAuxQ(u, part(v, i)))
+       then r : false),
+     r
+   )
+   else if %mr_sumQ(u) then (
+     r : false,
+     i : 0,
+     n : length(u),
+     while is(r = false) and i < n do (
+       i : i + 1,
+       if is(%mr_sumSimplerAuxQ(part(u, i), v) = true) then r : true),
+     r
+   )
+   else (
+     m : %mr_numericFactor(u),
+     nf : %mr_numericFactor(v),
+     if is(v # 0) = true
+    and is(%mr_nonnumericFactors(u) = %mr_nonnumericFactors(v)) = true
+    and (is(m/nf < -1/2) = true
+    or (is(m/nf = -1/2) = true and is(m < 0) = true))
+     then true else false))$
+
+ /* Rubi :774  SumSimplerQ[u, v] — is u + v simpler than u. The 36
+    class-1 sites pass (exponent-parameter, integer-constant). */
+ %mr_sumSimplerQ(u, v) := block([],
+   if %mr_rationalQ(u) and %mr_rationalQ(v) then (
+     if is(v = 0) then false
+     else if is(v > 0) = true then is(u < -1) = true
+     else is(u >= -v) = true
+   )
+   else %mr_sumSimplerAuxQ(expand(u), expand(v)))$
+
+ /* ---- coefficient / degree machinery --------------------------------
+ * Maxima's coefficient/degree/maxexpt are NOUNS in this build (T4 §6,
+ * re-measured 2026-08-20), so %mr_coeff and the degree-based %mr_polyQ
+ * are implemented over the term structure of the expanded numerator
+ * (Rubi's Coeff :1246 works on Together[expr] too — same reduction). */
+
+/* exponent of x in one monomial term of an expanded expression, or
+   false if the term is not a monomial in x (x inside a function, a
+   sum, a fraction, or a fractional/negative power) */
+/* MEASURED (2026-08-20): op() and length() are hard errors on atoms in
+   this build, so every structural walk tests atom() first. */
+%mr_term_xexp(t, x) := block([i, f, p, ok],
+  if atom(t) then (
+    if is(t = x) then 1 else 0
+  )
+  elseif op(t) = "-" then %mr_term_xexp(part(t, 1), x)
+  elseif op(t) = "*" then (
+    p : 0,
+    ok : true,
+    for i : 1 thru length(t) do (
+      f : part(t, i),
+      if freeof(x, f) then true
+      elseif is(f = x) then p : p + 1
+      elseif op(f) = "^" and is(part(f, 1) = x)
+        and integerp(part(f, 2)) and part(f, 2) > 0 then p : p + part(f, 2)
+      else ok : false
+    ),
+    if ok then p else false
+  )
+  elseif op(t) = "/" then (
+    /* a rational-coefficient term: Maxima stores 3/4*x^3 as the
+       QUOTIENT node 3*x^3/4 (expand(3/4*x^3) = 3*x^3/4, measured
+       2026-08-25 on 5.50.0/SBCL — this is what sent %mr_degree of
+       (3/4)*x^3 to -1, derailing the 1.2.1.6 r5 reduction on 1.2.1.3
+       e1058). The x-exponent lives entirely in the numerator; an
+       x-bearing denominator makes the term a fraction, not a
+       polynomial monomial. */
+    if freeof(x, part(t, 2))
+    then %mr_term_xexp(part(t, 1), x)
+    else false
+  )
+  elseif op(t) = "^" then (
+    /* a bare-power term as a WHOLE term after expand. base x with a
+       positive integer exponent -> that exponent; x^(-1) is 1/x (a
+       fraction) and x^(1/2)/x^a are not polynomial powers (review fix
+       2026-08-20, bug B). A power with an x-FREE base (d^2, c^3, ...)
+       is a degree-0 monomial — returning false here DROPPED every
+       symbol-power constant term from coefficient/degree walks
+       (measured 2026-08-25, 5.50.0/SBCL: %mr_coeff(d^2 - a*e^2/c, x, 0)
+       lost the d^2, breaking 1.2.1.6 r4 on (e*x+d)^4 — 1.2.1.2 e2202
+       wrong answer, resid 3.19). An x-bearing base that is not x
+       itself ((a+b*x)^2) is not a monomial -> false. */
+    if is(part(t, 1) = x) then (
+      if integerp(part(t, 2)) and part(t, 2) > 0 then part(t, 2) else false
+    )
+    else if freeof(x, part(t, 1)) then 0
+         else false
+  )
+  else false)$
+
+/* the x-free coefficient of x^n in one monomial term (caller ensures
+   %mr_term_xexp(t, x) = n) */
+%mr_term_coeff(t, x, n) := block([i, f, c],
+  if atom(t) then (
+    /* the atom being x itself has coefficient 1 at n = 1 (the atom
+       branch of %mr_term_xexp already knows x has exponent 1 — mirror
+       it here; review fix 2026-08-20, bug A) */
+    if is(t = x) then (if n = 1 then 1 else 0)
+    else (if n = 0 then t else 0)
+  )
+  elseif op(t) = "-" then -%mr_term_coeff(part(t, 1), x, n)
+  elseif op(t) = "*" then (
+    c : 1,
+    for i : 1 thru length(t) do (
+      f : part(t, i),
+      if freeof(x, f) then c : c * f
+      elseif is(f = x) then n : n - 1
+      elseif op(f) = "^" and is(part(f, 1) = x) then n : n - part(f, 2)
+    ),
+    c
+  )
+  elseif op(t) = "/" then (
+    /* quotient node (3*x^3/4 — see the %mr_term_xexp /-case note);
+       the caller ensures %mr_term_xexp(t, x) = n, which for an
+       x-free denominator is the numerator's x-exponent */
+    if freeof(x, part(t, 2))
+    then %mr_term_coeff(part(t, 1), x, n)/part(t, 2)
+    else 0
+  )
+  elseif op(t) = "^" then (
+    /* a bare-power term (the caller ensures %mr_term_xexp(t, x) = n).
+       A pure x-power has coefficient 1; an x-free-base power (d^2 —
+       see the %mr_term_xexp /-note sibling fix) is its own constant
+       coefficient at n = 0 and nothing elsewhere. */
+    if is(part(t, 1) = x) then 1
+    else if freeof(x, part(t, 1)) then (if n = 0 then t else 0)
+         else 0
+  )
+  else 0)$
+
+/* w : expand(u) — NOT expand(num(rat(u))) (measured 2026-08-25,
+   5.50.0/SBCL): rat() on a symbolic polynomial EXTRACTS the symbolic
+   content into the denominator (rat((2abc e^4 + ...)*x + ...) put c^3
+   below the line), so num(rat(u)) was a c^3-RESCALED copy of u and
+   every coefficient came back wrong (EQ_f/EQ_g false against the
+   built-in coeff; 1.2.1.6 r4 on 1.2.1.2 e2202). Rubi's Coeff is
+   Coefficient[expr, x, n] directly (Rubi.m, Together only as the
+   fallback when the direct and Together values disagree) — no
+   content manipulation — and every %mr_coeff call site feeds a
+   PolyQ-confirmed polynomial, for which expand(u) is exact. A
+   non-polynomial u yields fraction terms whose %mr_term_xexp is
+   false -> 0 (conservative, matches the no-monomial reading). */
+%mr_coeff3(u, x, n) := block([w, i, t, c, p],
+  w : expand(u),
+  if atom(w) then (
+    p : %mr_term_xexp(w, x),
+    if p # false and p = n then %mr_term_coeff(w, x, n) else 0
+  )
+  elseif op(w) = "+" then (
+    c : 0,
+    for i : 1 thru length(w) do (
+      t : part(w, i),
+      p : %mr_term_xexp(t, x),
+      if p # false and p = n then c : c + %mr_term_coeff(t, x, n)
+    ),
+    c
+  )
+  else (
+    p : %mr_term_xexp(w, x),
+    if p # false and p = n then %mr_term_coeff(w, x, n) else 0
+  ))$
+
+/* The generator's powered-form Coeff: Coeff[u, base^power, n] is the
+   coefficient of x^(power*n) when base is the integration variable. */
+%mr_coeff4(u, base, power, n) := %mr_coeff3(u, base, power*n)$
+
+%mr_coeff : lambda([u, base, a, [b]],
+  if length(b) = 0 then %mr_coeff3(u, base, a)
+  else %mr_coeff4(u, base, a, part(b, 1)))$
+
+/* degree in x of a (confirmed) polynomial; degree(0) := 0 by contract
+   (the 3-arg PolyQ's NeQ[Coeff[...],0] guard is what rejects 0).
+   TOTAL (review fix 2026-08-20, bug B): never leaks a boolean — a term
+   that is not a pure x-power (fraction, fractional/symbolic power, x
+   inside a function) contributes the sentinel -1, so a non-polynomial
+   whole yields -1 (Mathematica Degree parity: Degree[1/x, x] -> -1) */
+%mr_degree(u, x) := block([e, i, d, p],
+  e : expand(u),
+  if is(e = 0) then 0
+  elseif freeof(x, e) then 0
+  elseif atom(e) then %mr_term_xexp(e, x)
+  elseif op(e) = "+" then (
+    d : -1,
+    for i : 1 thru length(e) do (
+      p : %mr_term_xexp(part(e, i), x),
+      if p # false and p > d then d : p
+    ),
+    d
+  )
+  else (
+    p : %mr_term_xexp(e, x),
+    if p # false then p else -1))$
+
+/* ---- PolyQ / LinearQ ------------------------------------------------
+ * Maxima has no function overloading and no ... rest args in this
+ * build (both measured 2026-08-20), and a wrong-arity call is a hard
+ * error (measured) — so the 2-arg form (the probed form, and Rubi's
+ * PolyQ[u,x]) owns the %mr_polyQ name; the 3-arg form (Rubi's
+ * PolyQ[u,x,n], :505) is the internal %mr_polyDegQ. The generator's
+ * table maps both arities to %mr_polyQ (1:1 rename) — an open
+ * generator/gap for the Task 6 full-class generation (82 3-arg uses in
+ * class 1); see the task-5 report. */
+%mr_polyformQ(e, x) := block([i, ok],
+  if atom(e) then (
+    is(e = x) or freeof(x, e)
+  )
+  elseif op(e) = "-" then %mr_polyformQ(part(e, 1), x)
+  elseif op(e) = "+" then (
+    ok : true,
+    for i : 1 thru length(e) do
+      if is(%mr_polyformQ(part(e, i), x)) = false then ok : false,
+    ok
+  )
+  elseif op(e) = "*" then (
+    ok : true,
+    for i : 1 thru length(e) do
+      if is(%mr_polyformQ(part(e, i), x)) = false then ok : false,
+    ok
+  )
+  elseif op(e) = "^" then (
+    /* a polynomial power needs an explicit nonnegative integer exponent
+       (x^a with symbolic a is not a polynomial, as in Mathematica's
+       PolynomialQ) */
+    if integerp(part(e, 2)) and is(part(e, 2) >= 0)
+      and freeof(x, part(e, 2))
+    then %mr_polyformQ(part(e, 1), x)
+    else false
+  )
+  else freeof(x, e))$
+
+/* Rubi :501  PolyQ[u,x] := PolynomialQ[u,x] || PolynomialQ[Together[u],x]
+   For a rational u the two disjuncts coincide (Together changes only
+   the num/den split), so one together + a structural numerator check.
+   The denominator-free check catches the pseudo-polynomial case the
+   .m comment warns about (PolynomialQ on an uncancelled pseudo-rat). */
+%mr_polyQ(u, x) := block([v],
+  v : %mr_together(u),
+  freeof(x, denom(v)) and %mr_polyformQ(num(v), x))$
+
+/* Rubi :505  PolyQ[u,x,n] := PolyQ[u,x] && EqQ[Exponent[u,x],n]
+                        && NeQ[Coefficient[u,x,n],0]
+   (the If/With split in the source is equivalent once v = Together[u]
+   is computed once) */
+%mr_polyDegQ(u, x, n) := block([v],
+  v : %mr_together(u),
+  %mr_polyQ(v, x) and %mr_eqQ(%mr_degree(v, x), n)
+    and %mr_neQ(%mr_coeff(v, x, n), 0))$
+
+/* ---- PolyQ power forms (Task 6 Step 0) ------------------------------
+ * Rubi :512/:522/:533  PolyQ[u, x^n] / PolyQ[u, x^v] / PolyQ[u, x^v, n].
+ * The base is an EXPRESSION B (x, or a capture value such as a + b*x —
+ * the class-1 uses PolyQ[Pq, v^n] pass the capture v as base): u is a
+ * polynomial in B^v iff, with t a fresh symbol,
+ *   r = expand(subst(t, B, u))
+ * has no t in any denominator and every term is a t-monomial whose t-
+ * exponent k is a non-negative multiple of v. For B = x this is exactly
+ * the brief's contract (no x in a denominator, every term's x-exponent
+ * a non-negative multiple of v). The degree form matches Rubi :533
+ * exactly: EqQ[Expon[u,x^v],n] is max k/v = n (strict). The
+ * NeQ[Coeff[u,x^v,n],0] clause is subsumed — when d = n some term has
+ * k/v = n, and its coefficient is structurally nonzero after expand
+ * (a zero coefficient would drop the term). u = 0 is rejected by
+ * guard (Rubi's Expon[0,x^v] is -Infinity, so no degree form holds). */
+%mr_polyPowerQ(u, B, v) := block([t, r, i, term, k, ok],
+  t : gensym("mrp"),
+  r : expand(subst(t, B, u)),
+  if is(freeof(t, denom(r))) = false then false
+  else if not numberp(v) or v < 0 then false
+  else (
+    if v = 0 then is(freeof(t, r))
+    else (
+      /* %mr_term_xexp returns false (never negative) on a term that is
+         not a pure non-negative power of the variable, so k >= 0 holds
+         whenever k # false */
+      ok : true,
+      if atom(r) then (
+        k : %mr_term_xexp(r, t),
+        if k = false or not integerp(k/v) then ok : false
+      )
+      else (
+        for i : 1 thru length(r) do (
+          term : part(r, i),
+          k : %mr_term_xexp(term, t),
+          if k = false or not integerp(k/v) then ok : false
+        )
+      ),
+      ok
+    )
+  ))$
+
+%mr_polyDegPowerQ(u, B, v, n) := block([t, r, i, term, k, d],
+  if is(%mr_polyPowerQ(u, B, v)) = false then false
+  else (
+    /* recompute r identically to %mr_polyPowerQ and take the maximum
+       k/v (the degree in B^v); a non-monomial term cannot occur here
+       (polyPowerQ true), so k # false for every term */
+     t : gensym("mrp"),
+     r : expand(subst(t, B, u)),
+     /* u = 0: Rubi's Expon[0, x^v] is -Infinity, so no degree form
+        holds (the atom-0 term would read as a degree-0 monomial and
+        over-fire at n = 0) */
+     if is(r = 0) = true then false
+     else (
+       d : 0,
+       if atom(r) then (
+         k : %mr_term_xexp(r, t),
+         if k # false and k/v > d then d : k/v
+       )
+       else (
+         for i : 1 thru length(r) do (
+           term : part(r, i),
+           k : %mr_term_xexp(term, t),
+           if k # false and k/v > d then d : k/v
+         )
+       ),
+       is(d = n)
+     )
+   ))$
+
+/* Rubi :1373  LinearQ[u,x] := PolyQ[u,x,1] (list form dropped — no
+   list-valued integrands in the emitted conds) */
+%mr_linearQ(u, x) := %mr_polyDegQ(u, x, 1)$
+
+/* ---- trinomial/quadratic/binomial-degree predicates (Task 7a
+ * cluster D) ----------------------------------------------------------
+ * The shape predicates of the 1.3/1.4 normalization rule families:
+ * QuadraticQ, TrinomialQ (+ TrinomialParts), BinomialDegree, and the
+ * four *MatchQ "simple shape" tests. Line-ports of the pinned Rubi
+ * definitions (provenance per function); the .m ListQ[u] arm is the
+ * generator's list-packing. The *MatchQ ports call the cluster-A3
+ * matcher with fresh marker atoms (the %mr_mq_ family binds by
+ * identity); the cond is the lambda-over-bindings-list form the
+ * matcher contract requires.
+ *
+ * The *MatchQ conds are threaded through the matcher's structural
+ * backtracking (the ["final"]/["match"]/["part"] continuation search
+ * in %mr_mq_search), so a unit-coefficient term (a bare x^n / x^(2n)
+ * summand) no longer traps the search on the coefficient-absorbing
+ * binding: the freeof cond fails on that binding and the search
+ * continues to the b := 1 / real-exponent binding. REMAINING DIVERGENCE
+ * (the matcher's absent rule, not the cond search): a product/sum
+ * factor that contains a literal (b_*x, c_*x^2) cannot be treated as
+ * ABSENT as a whole, so the .m corner where the optional coefficient
+ * defaults to 0 and deletes the whole literal-base term still answers
+ * false here. Those corners are unreachable at the class-1 call sites
+ * (the LinearQ / QuadraticQ / TrinomialQ guards guarantee a real
+ * literal-base term). */
+
+/* Rubi :846  BinomialDegree[u,x] := BinomialParts[u,x][[3]]. The .m
+   False[[3]] hard-errors on a non-binomial; the port fails closed
+   with false (every class-1 call site gates on BinomialQ[u,x] first). */
+%mr_binomialDegree(u, x) := block([L],
+  L : %mr_binomial_parts(u, x),
+  if atom(L) then false else part(L, 3))$
+
+/* Rubi :1380  QuadraticQ[u,x] — a degree-2 polynomial that is not the
+   a*x^2 monomial. The .m ===0 (IdentityQ) maps onto is(c = 0): this
+   build's is(a = b) is true/false, never unknown (RC1), and
+   is(e = 0) = true iff e simplifies to the structural 0. */
+%mr_quadraticQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_quadraticQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_polyDegQ(u, x, 2)
+       and not (is(%mr_coeff(u, x, 0) = 0)
+                and is(%mr_coeff(u, x, 1) = 0)))$
+
+/* Rubi :929  TrinomialParts[u,x] — [a, b, c, n] iff u is equivalent
+   to a + b*x^n + c*x^(2*n) (n, b, c nonzero), else false. LINE port
+   of the .m If-chain (polynomial / power / product / sum; First/Rest
+   split as first term-or-factor over the rest). CoefficientList is
+   the [c0..cd] walk over %mr_coeff (degree-gated; %mr_coeff is exact
+   on a confirmed polynomial). DEVIATIONS, documented:
+    - the .m's Drop chain Drop[Drop[lst,{m}],1],-1 (m = (Length+1)/2)
+     scans coefficients x^(n+2)..x^(2n-1) ONLY — the coefficients
+     x^(n-1) and x^(n+1) (the ones adjacent to the middle term) are
+     UNCHECKED; the port reproduces the scan exactly (the 1+x^2+x^3+x^4
+     probe pins the Rubi-faithful laxness);
+   - the .m's :994 b-slot (lst3[[2]] where the reconstruction says
+     lst2[[2]] — a typo in the pinned clone, the branch reachable only
+     through a binomial-first/trinomial-rest sum split that
+     auto-combining makes unreachable) is ported as written. */
+%mr_trinomial_parts(u, x) := block([d, L, i, m, ok, f1, r1, L1, L2, L3, L4],
+  if %mr_polynomialQ(u, x) then (
+    d : %mr_degree(u, x),
+    L : [],
+    for i : 0 thru d do L : append(L, [%mr_coeff(u, x, i)]),
+    if is(length(L) < 3) or evenp(length(L))
+    or %mr_eqQ(part(L, (length(L) + 1)/2), 0)
+    then false
+    else (
+      m : (length(L) + 1)/2,
+      ok : true,
+      for i : m + 2 thru 2*m - 2 do
+        if %mr_eqQ(part(L, i), 0) then ok : false,
+      if ok
+      then [part(L, 1), part(L, m), part(L, length(L)), (length(L) - 1)/2]
+      else false
+    )
+  )
+  elseif not atom(u) and op(u) = "^" then (
+    /* PowerQ[u] && EqQ[u[[2]], 2]: the square of a binomial */
+    if %mr_eqQ(part(u, 2), 2) then (
+      L1 : %mr_binomial_parts(part(u, 1), x),
+      if atom(L1) or %mr_eqQ(part(L1, 1), 0) then false
+      else [part(L1, 1)^2, 2*part(L1, 1)*part(L1, 2), part(L1, 2)^2, part(L1, 3)]
+    )
+    else false
+  )
+  elseif op(u) = "-" then (
+    /* the .m's Times[-1, u] goes through the ProductQ branch with
+       the -1 factor: {-1*a, -1*b, -1*c, n} */
+    L : %mr_trinomial_parts(part(u, 1), x),
+    if atom(L) then false
+    else [-part(L, 1), -part(L, 2), -part(L, 3), part(L, 4)]
+  )
+  elseif not atom(u) and op(u) = "*" then (
+    f1 : part(u, 1),
+    r1 : part(u, 2),
+    for i : 3 thru length(u) do r1 : r1 * part(u, i),
+    if freeof(x, f1) then (
+      L2 : %mr_trinomial_parts(r1, x),
+      if atom(L2) then false
+      else [f1*part(L2, 1), f1*part(L2, 2), f1*part(L2, 3), part(L2, 4)]
+    )
+    else if freeof(x, r1) then (
+      L1 : %mr_trinomial_parts(f1, x),
+      if atom(L1) then false
+      else [r1*part(L1, 1), r1*part(L1, 2), r1*part(L1, 3), part(L1, 4)]
+    )
+    else (
+      L1 : %mr_binomial_parts(f1, x),
+      if atom(L1) then false
+      else (
+        L2 : %mr_binomial_parts(r1, x),
+        if atom(L2) then false
+        else if %mr_eqQ(part(L1, 3), part(L2, 3))
+          and %mr_neQ(part(L1, 1)*part(L2, 2) + part(L1, 2)*part(L2, 1), 0)
+        then [part(L1, 1)*part(L2, 1),
+              part(L1, 1)*part(L2, 2) + part(L1, 2)*part(L2, 1),
+              part(L1, 2)*part(L2, 2), part(L1, 3)]
+        else false
+      )
+    )
+  )
+  elseif %mr_sumQ(u) then (
+    f1 : part(u, 1),
+    r1 : %mr_rest_sum(u),
+    if freeof(x, f1) then (
+      L2 : %mr_trinomial_parts(r1, x),
+      if atom(L2) then false
+      else [f1 + part(L2, 1), part(L2, 2), part(L2, 3), part(L2, 4)]
+    )
+    else if freeof(x, r1) then (
+      L1 : %mr_trinomial_parts(f1, x),
+      if atom(L1) then false
+      else [r1 + part(L1, 1), part(L1, 2), part(L1, 3), part(L1, 4)]
+    )
+    else (
+      L1 : %mr_trinomial_parts(f1, x),
+      if atom(L1) then (
+        L3 : %mr_binomial_parts(f1, x),
+        if atom(L3) then false
+        else (
+          L2 : %mr_trinomial_parts(r1, x),
+          if atom(L2) then (
+            L4 : %mr_binomial_parts(r1, x),
+            if atom(L4) then false
+            else if %mr_eqQ(part(L3, 3), 2*part(L4, 3))
+              then [part(L3, 1) + part(L4, 1), part(L4, 2),
+                    part(L3, 2), part(L4, 3)]
+              else if %mr_eqQ(part(L4, 3), 2*part(L3, 3))
+              then [part(L3, 1) + part(L4, 1), part(L3, 2),
+                    part(L4, 2), part(L3, 3)]
+              else false
+          )
+          else if %mr_eqQ(part(L3, 3), part(L2, 4))
+            and %mr_neQ(part(L3, 2) + part(L2, 2), 0)
+          then [part(L3, 1) + part(L2, 1), part(L3, 2) + part(L2, 2),
+                part(L2, 3), part(L2, 4)]
+          /* the .m :994 b-slot as written (see the DEVIATIONS note) */
+          else if %mr_eqQ(part(L3, 3), 2*part(L2, 4))
+            and %mr_neQ(part(L3, 2) + part(L2, 3), 0)
+          then [part(L3, 1) + part(L2, 1), part(L3, 2),
+                part(L3, 2) + part(L2, 3), part(L2, 4)]
+          else false
+        )
+      )
+      else (
+        L2 : %mr_trinomial_parts(r1, x),
+        if atom(L2) then (
+          L4 : %mr_binomial_parts(r1, x),
+          if atom(L4) then false
+          else if %mr_eqQ(part(L4, 3), part(L1, 4))
+            and %mr_neQ(part(L1, 2) + part(L4, 2), 0)
+          then [part(L1, 1) + part(L4, 1), part(L1, 2) + part(L4, 2),
+                part(L1, 3), part(L1, 4)]
+          else if %mr_eqQ(part(L4, 3), 2*part(L1, 4))
+            and %mr_neQ(part(L1, 3) + part(L4, 2), 0)
+          then [part(L1, 1) + part(L4, 1), part(L1, 2),
+                part(L1, 3) + part(L4, 2), part(L1, 4)]
+          else false
+        )
+        else if %mr_eqQ(part(L1, 4), part(L2, 4))
+          and %mr_neQ(part(L1, 2) + part(L2, 2), 0)
+          and %mr_neQ(part(L1, 3) + part(L2, 3), 0)
+        then [part(L1, 1) + part(L2, 1), part(L1, 2) + part(L2, 2),
+              part(L1, 3) + part(L2, 3), part(L1, 4)]
+        else false
+      )
+    )
+  )
+  else false)$
+
+/* Rubi :568  TrinomialQ[u,x] — ListQ[TrinomialParts[u,x]] &&
+   Not[QuadraticQ[u,x]] && Not[MatchQ[u, w_^2 /; BinomialQ[w,x]]]: a
+   trinomial that is neither a quadratic (the n = 1 corner) nor the
+   square of a binomial (the perfect-square corner the Chebyshev
+   rules handle separately). */
+%mr_trinomialQ(u, x) := block([i, v, L],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_trinomialQ(part(u, i), x) then v : false,
+    v
+  )
+  else (
+    L : %mr_trinomial_parts(u, x),
+    not atom(L) and not %mr_quadraticQ(u, x)
+    and not %mr_matchQ(u, _mr_triQ_r1mq1_w^2,
+      lambda([%mr_mqb],
+        %mr_binomialQ2(%mr_mk(_mr_triQ_r1mq1_w, %mr_mqb), x)))))$
+
+/* Rubi :1420  LinearMatchQ[u,x] — MatchQ[u, a_.+b_.*x /; FreeQ[{a,b},x]].
+   The x literal in the product factor cannot be absent (see the
+   section note for the corner where the WHOLE b_*x term is absent —
+   unreachable at the call sites, LinearQ-guarded). */
+%mr_linearMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_linearMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(u, _mr_linMq_r1mq1_a + _mr_linMq_r1mq1_b * x,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_linMq_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_linMq_r1mq1_b, %mr_mqb)))))$
+
+/* Rubi :1427  QuadraticMatchQ[u,x] — MatchQ[u, a_.+b_.*x+c_.*x^2 /;
+   FreeQ[{a,b,c},x]] || MatchQ[u, a_.+c_.*x^2 /; FreeQ[{a,c},x]]. The
+   literal x / x^2 powers cannot be absent (the a + b*x corner is the
+   2nd pattern's absent x^2 term — unreachable at the call sites,
+   QuadraticQ-guarded). */
+%mr_quadraticMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_quadraticMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(u,
+    _mr_quadMq_r1mq1_a + _mr_quadMq_r1mq1_b * x + _mr_quadMq_r1mq1_c * x^2,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_quadMq_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_quadMq_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_quadMq_r1mq1_c, %mr_mqb))))
+  or %mr_matchQ(u, _mr_quadMq_r2mq1_a + _mr_quadMq_r2mq1_c * x^2,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_quadMq_r2mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_quadMq_r2mq1_c, %mr_mqb)))))$
+
+/* Rubi :1444  BinomialMatchQ[u,x] — MatchQ[u, a_.+b_.*x^n_. /;
+   FreeQ[{a,b,n},x]]. The orderless partition search tries every
+   stored order of the pattern factors, and the freeof cond is
+   threaded through the search, so a bare x^n term binds b = 1 and
+   the real n (the coefficient-absorbing binding fails freeof and is
+   backtracked away). */
+%mr_binomialMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_binomialMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(u, _mr_binMq_r1mq1_a + _mr_binMq_r1mq1_b * x^_mr_binMq_r1mq1_n,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_binMq_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_binMq_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_binMq_r1mq1_n, %mr_mqb)))))$
+
+/* Rubi :1458  TrinomialMatchQ[u,x] — MatchQ[u, a_.+b_.*x^n_.+c_.*x^j_.
+   /; FreeQ[{a,b,c,n},x] && EqQ[j-2*n,0]] (j is not FreeQ'd: j = 2n
+   and n x-free implies it). The orderless partition search tries
+   every stored order of the three pattern factors, and the j = 2*n
+   cond is threaded through the search, so the Rubi-faithful n/j
+   assignment is found even when Maxima's stored order presents the
+   other assignment first (and a unit-coefficient term no longer
+   traps the search on the coefficient-absorbing binding). */
+%mr_trinomialMatchQ(u, x) := block([i, v],
+   if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_trinomialMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(u,
+    _mr_triMq_r1mq1_a
+    + _mr_triMq_r1mq1_b * x^_mr_triMq_r1mq1_n
+    + _mr_triMq_r1mq1_c * x^_mr_triMq_r1mq1_j,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_triMq_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_triMq_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_triMq_r1mq1_c, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_triMq_r1mq1_n, %mr_mqb))
+      and %mr_eqQ(%mr_mk(_mr_triMq_r1mq1_j, %mr_mqb)
+            - 2*%mr_mk(_mr_triMq_r1mq1_n, %mr_mqb), 0))))$
+
+/* ---- generalized binomial/trinomial predicates (Task 7a cluster E) --
+ * The six Generalized* shapes of the 1.4.2 normalization rules:
+ * GeneralizedBinomialQ/MatchQ/Degree and GeneralizedTrinomialQ/MatchQ/
+ * Degree (pinned Rubi :579-593, :1016-1088, :1450-1468). The .m Parts
+ * definitions are pattern rules, so the ports run the cluster-A3
+ * matcher with fresh marker atoms and read the binding back. The
+ * binding capture is global-state based (the %mr_mq_capture family):
+ * the Maxima lambda the matcher calls cannot return the binding list
+ * to the caller (its body is a fixed expression), so the cond lambda
+ * stashes the winning binding in %mr_mq_capture and answers true.
+ *
+ * The product cases (a_*u_, x^m_*u_) are guarded against the trivial
+ * no-progress binding (a := 1 / u := self, x^m := x^1 absent / u :=
+ * self) with the %mr_mq_capture_self check: without it the .m's
+ * optional-factor reading recurses on the unchanged u.
+ *
+ * GeneralizedTrinomialParts pins the POSITIVE orientation (n - q > 0)
+ * in the sum-pattern cond: the .m's EqQ[r, 2*n-q] is satisfied by
+ * either endpoint as q, and Maxima's stored (descending) term order
+ * otherwise traps the search on the negative-gap binding, while the
+ * GeneralizedTrinomialDegree use at the 1.4.2 call sites (EqQ against
+ * a BinomialDegree) can only see the positive gap. The boolean
+ * GeneralizedTrinomialQ / MatchQ answers are unchanged (a 3-term
+ * progression always has a positive orientation). */
+
+/* capture the binding list of the first structural match whose cond
+   is true (the cond is a lambda over the binding list, as in
+   %mr_matchQ). %mr_mq_capture_cond / %mr_mq_capture_self are globals
+   because the fixed capture lambda below cannot close over locals
+   (the Maxima lambda-scope limitation, matcher section note). */
+%mr_mq_capture : false$
+%mr_mq_capture_cond : false$
+%mr_mq_capture_self : false$
+
+%mr_mq_capture_lambda : lambda([%mr_mqb],
+  block([r],
+    r : errcatch(%mr_mq_capture_cond(%mr_mqb)),
+    if r = [] then false
+    else if is(first(r)) = true then (
+      %mr_mq_capture : %mr_mqb,
+      true
+    )
+    else false))$
+
+%mr_mq_capture_binding(u, pattern, cond) := block([r],
+  %mr_mq_capture : false,
+  %mr_mq_capture_cond : cond,
+  r : %mr_matchQ(u, pattern, %mr_mq_capture_lambda),
+  if r then %mr_mq_capture else false)$
+
+/* Rubi :1022-1045  GeneralizedBinomialParts[u,x] — [a, b, n, q] iff
+   u ~ a*x^q + b*x^n with n - q > 0 (the .m's PosQ[n-q]), else false.
+   Branch order: unary minus / sum pattern / a_*u_ (scale) /
+   x^m_*u_ over a generalized binomial (shift) / x^m_*u_ over an
+   ordinary binomial (the q := m shift of a + b*x^n). */
+%mr_generalizedBinomial_parts(u, x) := block([r, B, A, U, L, M],
+  if not atom(u) and is(op(u) = "-") then (
+    L : %mr_generalizedBinomial_parts(part(u, 1), x),
+    if atom(L) then false
+    else [-part(L, 1), -part(L, 2), part(L, 3), part(L, 4)]
+  )
+  else (
+    r : false,
+    if not atom(u) and is(op(u) = "+") then (
+      B : %mr_mq_capture_binding(
+        u,
+        _mr_gbp1_r1mq1_a * x^_mr_gbp1_r1mq1_q
+        + _mr_gbp1_r1mq1_b * x^_mr_gbp1_r1mq1_n,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gbp1_r1mq1_a, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gbp1_r1mq1_b, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gbp1_r1mq1_n, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gbp1_r1mq1_q, %mr_mqb))
+          and %mr_posQ(
+            %mr_mk(_mr_gbp1_r1mq1_n, %mr_mqb)
+            - %mr_mk(_mr_gbp1_r1mq1_q, %mr_mqb)))
+      ),
+      if not atom(B) then r : [
+        %mr_mk(_mr_gbp1_r1mq1_a, B),
+        %mr_mk(_mr_gbp1_r1mq1_b, B),
+        %mr_mk(_mr_gbp1_r1mq1_n, B),
+        %mr_mk(_mr_gbp1_r1mq1_q, B)
+      ]
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        _mr_gbp2_r1mq1_a * _mr_gbp2_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gbp2_r1mq1_a, %mr_mqb))
+          and not is(%mr_mk(_mr_gbp2_r1mq1_a, %mr_mqb) = 1)
+          and not is(
+            %mr_mk(_mr_gbp2_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        A : %mr_mk(_mr_gbp2_r1mq1_a, B),
+        U : %mr_mk(_mr_gbp2_r1mq1_u, B),
+        L : %mr_generalizedBinomial_parts(U, x),
+        if atom(L) then false
+        else r : [A*part(L, 1), A*part(L, 2), part(L, 3), part(L, 4)]
+      )
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        x^_mr_gbp3_r1mq1_m * _mr_gbp3_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gbp3_r1mq1_m, %mr_mqb))
+          and not is(
+            %mr_mk(_mr_gbp3_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        M : %mr_mk(_mr_gbp3_r1mq1_m, B),
+        U : %mr_mk(_mr_gbp3_r1mq1_u, B),
+        L : %mr_generalizedBinomial_parts(U, x),
+        if atom(L) then false
+        else if %mr_neQ(M + part(L, 3), 0)
+          and %mr_neQ(M + part(L, 4), 0)
+        then r : [part(L, 1), part(L, 2),
+                  M + part(L, 3), M + part(L, 4)]
+      )
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        x^_mr_gbp4_r1mq1_m * _mr_gbp4_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gbp4_r1mq1_m, %mr_mqb))
+          and not is(
+            %mr_mk(_mr_gbp4_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        M : %mr_mk(_mr_gbp4_r1mq1_m, B),
+        U : %mr_mk(_mr_gbp4_r1mq1_u, B),
+        L : %mr_binomial_parts(U, x),
+        if atom(L) then false
+        else if %mr_neQ(M + part(L, 3), 0)
+        then r : [part(L, 1), part(L, 2), M + part(L, 3), M]
+      )
+    ),
+    if atom(r) then false else r
+  ))$
+
+/* Rubi :579  GeneralizedBinomialQ[u,x] — ListQ[GeneralizedBinomialParts]
+   (the ListQ[u] arm is the generator's list-packing). */
+%mr_generalizedBinomialQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_generalizedBinomialQ(part(u, i), x) then v : false,
+    v
+  )
+  else not atom(%mr_generalizedBinomial_parts(u, x)))$
+
+/* Rubi :1017  GeneralizedBinomialDegree[u,x] := Parts[[3]] - Parts[[4]]
+   (n - q). The .m False[[3]] hard-errors on a non-generalized-binomial;
+   the port fails closed with false (every class-1 call site gates on
+   GeneralizedBinomialQ first). */
+%mr_generalizedBinomialDegree(u, x) := block([L],
+  L : %mr_generalizedBinomial_parts(u, x),
+  if atom(L) then false else part(L, 3) - part(L, 4))$
+
+/* Rubi :1451  GeneralizedBinomialMatchQ[u,x] — MatchQ[u,
+   a_.*x^q_.+b_.*x^n_. /; FreeQ[{a,b,n,q},x]]: the SURFACE two-power
+   sum, no PosQ gate and no product/PolyQ recursion. */
+%mr_generalizedBinomialMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_generalizedBinomialMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(
+    u,
+    _mr_gbm1_r1mq1_a * x^_mr_gbm1_r1mq1_q
+    + _mr_gbm1_r1mq1_b * x^_mr_gbm1_r1mq1_n,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_gbm1_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gbm1_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gbm1_r1mq1_n, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gbm1_r1mq1_q, %mr_mqb)))))$
+
+/* Rubi :1058-1088  GeneralizedTrinomialParts[u,x] — [a, b, c, n, q]
+   iff u ~ a*x^q + b*x^n + c*x^(2*n-q), else false. Branch order:
+   unary minus / sum pattern (positive orientation, section note) /
+    a_*u_ (scale) / the PolyQ+Expon List case (the .m's polynomial
+    fallback; NeQ[q,0] — the q := 0 form is the ORDINARY trinomial,
+    NOT generalized) / x^m_*u_ over a generalized trinomial (shift) /
+    x^m_*u_ over an ordinary trinomial (the q := m shift of
+    a + b*x^n + c*x^(2n), which is what generalizes the q := 0 form). */
+%mr_generalizedTrinomial_parts(u, x) := block([r, B, A, U, L, M, EL],
+  if not atom(u) and is(op(u) = "-") then (
+    L : %mr_generalizedTrinomial_parts(part(u, 1), x),
+    if atom(L) then false
+    else [-part(L, 1), -part(L, 2), -part(L, 3),
+          part(L, 4), part(L, 5)]
+  )
+  else (
+    r : false,
+    if not atom(u) and is(op(u) = "+") then (
+      B : %mr_mq_capture_binding(
+        u,
+        _mr_gtp1_r1mq1_a * x^_mr_gtp1_r1mq1_q
+        + _mr_gtp1_r1mq1_b * x^_mr_gtp1_r1mq1_n
+        + _mr_gtp1_r1mq1_c * x^_mr_gtp1_r1mq1_r,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gtp1_r1mq1_a, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gtp1_r1mq1_b, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gtp1_r1mq1_c, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gtp1_r1mq1_n, %mr_mqb))
+          and freeof(x, %mr_mk(_mr_gtp1_r1mq1_q, %mr_mqb))
+          and %mr_posQ(
+            %mr_mk(_mr_gtp1_r1mq1_n, %mr_mqb)
+            - %mr_mk(_mr_gtp1_r1mq1_q, %mr_mqb))
+          and %mr_eqQ(
+            %mr_mk(_mr_gtp1_r1mq1_r, %mr_mqb)
+            - (2*%mr_mk(_mr_gtp1_r1mq1_n, %mr_mqb)
+               - %mr_mk(_mr_gtp1_r1mq1_q, %mr_mqb)),
+            0))
+      ),
+      if not atom(B) then r : [
+        %mr_mk(_mr_gtp1_r1mq1_a, B),
+        %mr_mk(_mr_gtp1_r1mq1_b, B),
+        %mr_mk(_mr_gtp1_r1mq1_c, B),
+        %mr_mk(_mr_gtp1_r1mq1_n, B),
+        %mr_mk(_mr_gtp1_r1mq1_q, B)
+      ]
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        _mr_gtp2_r1mq1_a * _mr_gtp2_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gtp2_r1mq1_a, %mr_mqb))
+          and not is(%mr_mk(_mr_gtp2_r1mq1_a, %mr_mqb) = 1)
+          and not is(
+            %mr_mk(_mr_gtp2_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        A : %mr_mk(_mr_gtp2_r1mq1_a, B),
+        U : %mr_mk(_mr_gtp2_r1mq1_u, B),
+        L : %mr_generalizedTrinomial_parts(U, x),
+        if atom(L) then false
+        else r : [A*part(L, 1), A*part(L, 2), A*part(L, 3),
+                  part(L, 4), part(L, 5)]
+      )
+    ),
+    if atom(r) and %mr_polynomialQ(u, x) then (
+      EL : %mr_exp_list(u, x),
+      if length(EL) = 3
+        and %mr_neQ(part(EL, 1), 0)
+        and %mr_eqQ(
+          part(EL, 3),
+          2*part(EL, 2) - part(EL, 1))
+      then r : [
+        %mr_coeff(u, x, part(EL, 1)),
+        %mr_coeff(u, x, part(EL, 2)),
+        %mr_coeff(u, x, part(EL, 3)),
+        part(EL, 2),
+        part(EL, 1)
+      ]
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        x^_mr_gtp3_r1mq1_m * _mr_gtp3_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gtp3_r1mq1_m, %mr_mqb))
+          and not is(
+            %mr_mk(_mr_gtp3_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        M : %mr_mk(_mr_gtp3_r1mq1_m, B),
+        U : %mr_mk(_mr_gtp3_r1mq1_u, B),
+        L : %mr_generalizedTrinomial_parts(U, x),
+        if atom(L) then false
+        else if %mr_neQ(M + part(L, 4), 0)
+          and %mr_neQ(M + part(L, 5), 0)
+        then r : [part(L, 1), part(L, 2), part(L, 3),
+                  M + part(L, 4), M + part(L, 5)]
+      )
+    ),
+    if atom(r) and not atom(u) and is(op(u) = "*") then (
+      %mr_mq_capture_self : u,
+      B : %mr_mq_capture_binding(
+        u,
+        x^_mr_gtp4_r1mq1_m * _mr_gtp4_r1mq1_u,
+        lambda([%mr_mqb],
+          freeof(x, %mr_mk(_mr_gtp4_r1mq1_m, %mr_mqb))
+          and not is(
+            %mr_mk(_mr_gtp4_r1mq1_u, %mr_mqb) = %mr_mq_capture_self))
+      ),
+      if not atom(B) then (
+        M : %mr_mk(_mr_gtp4_r1mq1_m, B),
+        U : %mr_mk(_mr_gtp4_r1mq1_u, B),
+        L : %mr_trinomial_parts(U, x),
+        if atom(L) then false
+        else if %mr_neQ(M + part(L, 4), 0)
+        then r : [part(L, 1), part(L, 2), part(L, 3),
+                  M + part(L, 4), M]
+      )
+    ),
+    if atom(r) then false else r
+  ))$
+
+/* Rubi :590  GeneralizedTrinomialQ[u,x] — ListQ[GeneralizedTrinomialParts]. */
+%mr_generalizedTrinomialQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_generalizedTrinomialQ(part(u, i), x) then v : false,
+    v
+  )
+  else not atom(%mr_generalizedTrinomial_parts(u, x)))$
+
+/* Rubi :1053  GeneralizedTrinomialDegree[u,x] := Parts[[4]] - Parts[[5]]
+   (n - q). Fails closed with false on a non-generalized-trinomial
+   (the .m False[[4]] hard-errors; the call sites gate on Q first). */
+%mr_generalizedTrinomialDegree(u, x) := block([L],
+  L : %mr_generalizedTrinomial_parts(u, x),
+  if atom(L) then false else part(L, 4) - part(L, 5))$
+
+/* Rubi :1465  GeneralizedTrinomialMatchQ[u,x] — MatchQ[u,
+   a_.*x^q_.+b_.*x^n_.+c_.*x^r_. /;
+   FreeQ[{a,b,c,n,q},x] && EqQ[r-(2*n-q),0]]: the SURFACE three-power
+   sum, no product/PolyQ recursion and (unlike the Parts port) no
+   PosQ orientation gate. */
+%mr_generalizedTrinomialMatchQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_generalizedTrinomialMatchQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_matchQ(
+    u,
+    _mr_gtm1_r1mq1_a * x^_mr_gtm1_r1mq1_q
+    + _mr_gtm1_r1mq1_b * x^_mr_gtm1_r1mq1_n
+    + _mr_gtm1_r1mq1_c * x^_mr_gtm1_r1mq1_r,
+    lambda([%mr_mqb],
+      freeof(x, %mr_mk(_mr_gtm1_r1mq1_a, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gtm1_r1mq1_b, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gtm1_r1mq1_c, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gtm1_r1mq1_n, %mr_mqb))
+      and freeof(x, %mr_mk(_mr_gtm1_r1mq1_q, %mr_mqb))
+      and %mr_eqQ(
+        %mr_mk(_mr_gtm1_r1mq1_r, %mr_mqb)
+        - (2*%mr_mk(_mr_gtm1_r1mq1_n, %mr_mqb)
+           - %mr_mk(_mr_gtm1_r1mq1_q, %mr_mqb)),
+        0))))$
+
+/* ---- RemoveContent family ------------------------------------------
+ * Rubi :1152  RemoveContent[u,x] := with v = NonfreeFactors[u,x],
+ *   w = Together[v]: if EqQ[FreeFactors[w,x],1] then Aux[v,x]
+ *   else Aux[NonfreeFactors[w,x],x] */
+%mr_nonfreeFactors(u, x) := block([r, i, t],
+  if atom(u) then (
+    if freeof(x, u) then 1 else u
+  )
+  /* a leading minus is dropped with the x-free content (the .m
+     ProductQ factor map replaces x-free factors by 1, -1 included) */
+  elseif op(u) = "-" then %mr_nonfreeFactors(part(u, 1), x)
+  elseif op(u) = "*" then (
+    r : 1,
+    for i : 1 thru length(u) do (
+      t : part(u, i),
+      if is(freeof(x, t)) = false then r : r * t
+    ),
+    r
+  )
+  else if freeof(x, u) then 1 else u)$
+
+%mr_freeFactors(u, x) := block([r, i, t],
+  if atom(u) then (
+    if freeof(x, u) then u else 1
+  )
+  elseif op(u) = "-" then -%mr_freeFactors(part(u, 1), x)
+  elseif op(u) = "*" then (
+    r : 1,
+    for i : 1 thru length(u) do (
+      t : part(u, i),
+      if freeof(x, t) then r : r * t
+    ),
+    r
+  )
+  else if freeof(x, u) then u else 1)$
+
+/* one monomial term as [base, exponent, rest] with base free of x:
+   a literal power factor (a^k) is the base candidate first (the .m
+   pattern a_^m_. binds the power), else the first free factor (base^1).
+   false if no x-free factor exists (x^2, x, sin(x)*x, ...). */
+%mr_termPower(t, x) := block([i, f, base, e, bi, rest, s],
+  s : 1,
+  if not atom(t) and op(t) = "-" then (s : -1, t : part(t, 1)),
+  if atom(t) then (
+    if freeof(x, t) then [t, 1, s] else false
+  )
+  elseif op(t) = "^" then (
+    /* a bare power: base candidate iff x-free (the .m a_^m_ binding);
+       a symbolic exponent is fine here — the %mr_rationalQ guard in
+       %mr_rcAuxCommon rejects it, as Rubi's RationalQ[m] would */
+    if freeof(x, t) then [part(t, 1), part(t, 2), s]
+    else false
+  )
+  elseif op(t) = "*" then (
+    base : false, e : 1, bi : 0,
+    for i : 1 thru length(t) do (
+      f : part(t, i),
+      if bi = 0 and not atom(f) and op(f) = "^" and freeof(x, f) then (
+        base : part(f, 1), e : part(f, 2), bi : i
+      )
+    ),
+    if bi = 0 then
+      for i : 1 thru length(t) do (
+        f : part(t, i),
+        if bi = 0 and freeof(x, f) then (
+          base : f, e : 1, bi : i
+        )
+      ),
+    if base = false then false
+    else (
+      rest : s,
+      for i : 1 thru length(t) do (
+        if i # bi then rest : rest * part(t, i)
+      ),
+      [base, e, rest]
+    )
+  )
+  else false)$
+
+/* the two/three-term RemoveContentAux pattern a^m u + a^n v (+ a^p w):
+   one shared x-free base, rational exponents, all >= the minimum ->
+   factor a^m out and recurse. DEVIATION (documented): the .m pattern
+   also matches a NUMERIC base hiding in an integer (4 + 2*x: base 2
+   with 4 = 2^2); Maxima integers are not Power-headed and this build
+   has no integer factorizer, so 4 and 2x resolve to different bases
+   and no factoring happens. The answer is unchanged up to an additive
+   constant (it is consumed inside a Log by the rule), which the
+   harness derivative check verifies. */
+%mr_rcAuxCommon(s, x) := block([i, d, a, m, ok, r, nterms, ds],
+  if atom(s) or op(s) # "+" then false
+  else (
+    nterms : length(s),
+    if nterms = 2 or nterms = 3 then (
+    ok : true,
+    a : false,
+    m : false,
+    ds : [],
+    for i : 1 thru nterms do (
+      d : %mr_termPower(part(s, i), x),
+      if is(d = false) then ok : false
+      else (
+        if a = false then (
+          a : part(d, 1), m : part(d, 2)
+        ) else (
+          if is(part(d, 1) = a) = false then ok : false,
+          if part(d, 2) < m then m : part(d, 2)
+        ),
+        /* [d]: append flattens one level — ds must stay a list of the
+           [base, exponent, rest] triples */
+        ds : append(ds, [d])
+      )
+    ),
+    if ok and a # false and freeof(x, a)
+      and %mr_rationalQ(part(part(ds, 1), 2))
+      and (nterms < 3 or %mr_rationalQ(part(part(ds, 2), 2)))
+      and (nterms # 3 or %mr_rationalQ(part(part(ds, 3), 2)))
+    then (
+      r : 0,
+      for i : 1 thru nterms do
+        r : r + part(part(ds, i), 3) * a^(part(part(ds, i), 2) - m),
+      %mr_removeContentAux(r, x)
+    )
+    else false
+    )
+    else false
+  ))$
+
+/* RemoveContentAux (:1160-:1180): the shared-base patterns above, then
+   the sign fallback (the .m NegQ[First[u]] — in Rubi semantics NegQ is
+   false for any term with an undetermined sign, so the flip fires only
+   on an EXPLICITLY negative leading term; %mr_sign = 'neg is the
+   faithful port of that effective behavior). Maxima's term order
+   differs from Mathematica's, so "leading" is Maxima's first arg. */
+%mr_removeContentAux(u, x) := block([c, s],
+  c : %mr_rcAuxCommon(u, x),
+  if is(c # false) then c
+  else (
+    s : if not atom(u) and op(u) = "+" then %mr_sign(part(u, 1)) else 'pos,
+    if s = 'neg then -u else u
+  ))$
+
+%mr_removeContent(u, x) := block([v, w],
+  v : %mr_nonfreeFactors(u, x),
+  w : %mr_together(v),
+  if %mr_eqQ(%mr_freeFactors(w, x), 1) then %mr_removeContentAux(v, x)
+  else %mr_removeContentAux(%mr_nonfreeFactors(w, x), x))$
+
+/* ---- Subst ----------------------------------------------------------
+ * Rubi :5140  Subst[u,x,v] — back-substitution. CLUSTER SCOPE: the
+ * core "replace all occurrences of x by v, then simplify" (SubstAux's
+ * final simp stage). SubstAux's special cases (trig-identity folding,
+ * Defer'd dummy variables inside integrate/sum nouns, the binomial
+ * flag) are Task 7 scope; a dummy x inside a noun WOULD be replaced by
+ * this port — the 1.1.1.1 rule-5 antiderivative is a closed form, so
+ * no dummy occurs in this cluster's usage. */
+%mr_subst(u, x, v) := block([r],
+  r : subst(v, x, u),
+  %mr_simp(r))$
+
+/* ===================== predicate cluster F (Task 7a) ====================
+ * LinearPairQ / PerfectSquareQ / RationalFunctionQ / SplitProduct /
+ * PseudoBinomialPairQ / InverseFunctionQ / AlgebraicFunctionQ. Each cites
+ * its .m source line; PerfectSquareQ is a clone-gap predicate (referenced
+ * by class-1 rules but defined nowhere in the pinned clone). */
+
+/* Rubi :1387  LinearPairQ[u, v, x] — both linear in x, u not the bare
+   variable, and the two slope/offset pairs proportional. The .m guard is
+   NeQ[u, x] (u only, not v); the port keeps that asymmetry. */
+%mr_linearPairQ(u, v, x) := block([],
+  %mr_linearQ(u, x) and %mr_linearQ(v, x) and %mr_neQ(u, x)
+    and %mr_eqQ(
+      %mr_coeff(u, x, 0)*%mr_coeff(v, x, 1)
+        - %mr_coeff(u, x, 1)*%mr_coeff(v, x, 0), 0))$
+
+/* Clone-gap predicate (no .m definition in the pinned clone). The class-1
+   uses are PerfectSquareQ[b^2 - 4*a*c] and PerfectSquareQ[a^2 + b^2] on
+   x-free constants, so the port is a factor-exponent square test: after
+   factor(), every factor's exponent is an even integer (a quotient needs
+   both sides square; a negative content is not a real square). Exact
+   rationals are a special case: this build's factor(9/4) stays the
+   rational 9/4, so the numerator and denominator are tested as integer
+   squares. */
+%mr_integer_squareQ(n) := block([r],
+  if n < 0 then false
+  else if n = 0 or n = 1 then true
+  else (
+    r : sqrt(n),
+    integerp(r) and is(r^2 = n)))$
+
+%mr_perfectSquareQ_factor(e) := block([i, ok],
+  if is(e = 0) then true
+  else if is(e = 1) then true
+  else if atom(e) then false
+  else if op(e) = "-" then false
+  else if op(e) = "*" then (
+    ok : true,
+    for i : 1 thru length(e) do
+      if %mr_perfectSquareQ_factor(part(e, i)) = false then ok : false,
+    ok
+  )
+  else if op(e) = "/"
+    and numberp(part(e, 1)) and numberp(part(e, 2))
+  then %mr_integer_squareQ(abs(part(e, 1)))
+       and %mr_integer_squareQ(part(e, 2))
+  else if op(e) = "/"
+  then %mr_perfectSquareQ_factor(part(e, 1))
+       and %mr_perfectSquareQ_factor(part(e, 2))
+  else if op(e) = "^"
+  then integerp(part(e, 2)) and evenp(part(e, 2))
+  else false)$
+
+%mr_perfectSquareQ(u) := block([f],
+  u : ratsimp(u),
+  if is(u = 0) then true
+  else (
+    f : factor(u),
+    if atom(f) then is(f = 1)
+    else %mr_perfectSquareQ_factor(f)))$
+
+/* Rubi :1578  RationalFunctionQ[u, x]. Maxima stores x^(-1) as a "/" node
+   and x^(1/2) as a 'sqrt node, so the IntegerPowerQ branch reads "/" as a
+   rational step and rejects 'sqrt (and every other function head). */
+%mr_rationalFunctionQ(u, x) := block([i, ok],
+  if %mr_atomQ(u) or freeof(x, u) then true
+  else if op(u) = "/"
+  then %mr_rationalFunctionQ(part(u, 1), x)
+       and %mr_rationalFunctionQ(part(u, 2), x)
+  else if op(u) = "-"
+  then %mr_rationalFunctionQ(part(u, 1), x)
+  else if op(u) = "^"
+  then %mr_rationalFunctionQ(part(u, 1), x) and integerp(part(u, 2))
+  else if op(u) = "*" or op(u) = "+" then (
+    ok : true,
+    for i : 1 thru length(u) do
+      if %mr_rationalFunctionQ(part(u, i), x) = false then ok : false,
+    ok
+  )
+  else false)$
+
+/* Rubi :7617  SumBaseQ[u] — a sum, or a sum raised to an odd power. The
+   generated class-1 call passes the bare Rubi name as the SplitProduct
+   function argument (Maxima has no first-class Rubi predicates here), so
+   %mr_split_call special-cases that one name. */
+%mr_sumBaseQ(u) := block([],
+  if not atom(u) and op(u) = "+" then true
+  else if not atom(u) and op(u) = "^"
+    and integerp(part(u, 2)) and oddp(part(u, 2))
+    and %mr_sumBaseQ(part(u, 1))
+  then true
+  else false)$
+
+%mr_split_call(func, v) := block([],
+  if atom(func) and is(func = 'SumBaseQ)
+  then %mr_sumBaseQ(v)
+  else apply(func, [v]))$
+
+%mr_parts_list(e) := block([i, L],
+  L : [],
+  for i : 1 thru length(e) do
+    L : append(L, [part(e, i)]),
+  L)$
+
+%mr_product_factors(u) := block([L],
+  if atom(u) then [u]
+  else if op(u) = "-" then append([-1], %mr_product_factors(part(u, 1)))
+  else if op(u) = "*" then %mr_parts_list(u)
+  else [u])$
+
+%mr_product_from_list(L) := block([p, i],
+  p : 1,
+  for i : 1 thru length(L) do
+    p : p*part(L, i),
+  p)$
+
+/* Rubi :7658  SplitProduct[func, u] — the first factor v of u with
+   func[v] true, as [v, u/v]; false when no factor qualifies. A unary minus
+   is read as the leading -1 factor (Mathematica's Times[-1, ...]). */
+%mr_splitProduct_aux(func, u) := block([F, p, r],
+  F : %mr_product_factors(u),
+  if length(F) > 1 then (
+    if %mr_split_call(func, part(F, 1)) = true
+    then [part(F, 1), %mr_product_from_list(rest(F))]
+    else (
+      p : %mr_product_from_list(rest(F)),
+      r : %mr_splitProduct_aux(func, p),
+      if r # false
+      then [part(r, 1), part(F, 1)*part(r, 2)]
+      else false
+    )
+  )
+  else if %mr_split_call(func, u) = true then [u, 1]
+  else false)$
+
+%mr_splitProduct(func, u) := %mr_splitProduct_aux(func, u)$
+
+/* Local real-root form for PseudoBinomialParts. This is deliberately NOT
+   the public %mr_rt port (a later cluster): it only supplies the [c, d, n]
+   tail that PseudoBinomialPairQ compares. */
+%mr_pseudoRoot(u, n) := block([],
+  if n = 2 then sqrt(u)
+  else if oddp(n) and is(u < 0) then -(-u)^(1/n)
+  else u^(1/n))$
+
+/* Rubi :1524  PseudoBinomialParts[u, x] — [a, 1, c, d, n] iff u is a
+   polynomial of degree n > 2 of the form a + b*(c + d*x)^n with a, b
+   nonzero. Expon is read by %mr_degree under the %mr_polynomialQ gate
+   (the only form this helper accepts). */
+%mr_pseudoBinomial_parts(u, x) := block([n, d, c, a],
+  if %mr_polynomialQ(u, x) then (
+    n : %mr_degree(u, x),
+    if is(n > 2) then (
+      d : %mr_pseudoRoot(%mr_coeff(u, x, n), n),
+      c : %mr_coeff(u, x, n - 1)/(n*d^(n - 1)),
+      a : %mr_simp(u - expand((c + d*x)^n)),
+      if %mr_neQ(a, 0) and freeof(x, a)
+      then [a, 1, c, d, n]
+      else false
+    )
+    else false
+  )
+  else false)$
+
+/* Rubi :1507  PseudoBinomialPairQ[u, v, x] — both have PseudoBinomialParts
+   and the same [c, d, n] tail. The .m uses IdentityQ on the tail; the port
+   keeps the exact-structure reading (loose %mr_eqQ would over-accept
+   distinct symbolic constants). */
+%mr_pseudoBinomialPairQ(u, v, x) := block([l1, l2],
+  l1 : %mr_pseudoBinomial_parts(u, x),
+  if l1 = false then false
+  else (
+    l2 : %mr_pseudoBinomial_parts(v, x),
+    if l2 = false then false
+    else %mr_b(part(l1, 3) = part(l2, 3))
+         and %mr_b(part(l1, 4) = part(l2, 4))
+         and %mr_b(part(l1, 5) = part(l2, 5))
+  ))$
+
+/* Rubi :303  InverseFunctionQ[u]. The Maxima head set follows the .m
+   $InverseTrigFunctions / $InverseHyperbolicFunctions lists; the two-arg
+   inverse tangent is atan2 (absent from the one-arg list, so the .m
+   Length[u] <= 1 gate is met structurally). */
+%mr_inverseFunctionQ(u) := block([v],
+  v : if %mr_atomQ(u) then u else op(u),
+  if is(v = 'log) then true
+  else if not %mr_atomQ(u) and length(u) <= 1
+    and member(v, ['asin, 'acos, 'atan, 'acot, 'asec, 'acsc]) # false
+  then true
+  else if not %mr_atomQ(u)
+    and member(v, ['asinh, 'acosh, 'atanh, 'acoth, 'asech, 'acsch]) # false
+  then true
+  else if not %mr_atomQ(u)
+    and (is(v = 'mod) or is(v = 'polylog) or is(v = 'productlog))
+  then true
+  else false)$
+
+/* Rubi :1681  AlgebraicFunctionQ[u, x, flag_ = False]. The generated
+   class-1 call is the 2-arg form, so flag is false: a power counts only
+   with an explicit rational exponent (the 'sqrt node is the collapsed
+   1/2 power). */
+%mr_algebraicFunctionQ(u, x) := block([i, ok],
+  if %mr_atomQ(u) or freeof(x, u) then true
+  else if op(u) = "/"
+  then %mr_algebraicFunctionQ(part(u, 1), x)
+       and %mr_algebraicFunctionQ(part(u, 2), x)
+  else if op(u) = "-"
+  then %mr_algebraicFunctionQ(part(u, 1), x)
+  else if op(u) = "^"
+  then %mr_algebraicFunctionQ(part(u, 1), x)
+       and %mr_rationalQ(part(u, 2))
+  else if op(u) = 'sqrt
+  then %mr_algebraicFunctionQ(part(u, 1), x)
+  else if op(u) = "*" or op(u) = "+" then (
+    ok : true,
+    for i : 1 thru length(u) do
+      if %mr_algebraicFunctionQ(part(u, i), x) = false then ok : false,
+    ok
+  )
+  else if op(u) = "[" then (
+    ok : true,
+    for i : 1 thru length(u) do
+      if %mr_algebraicFunctionQ(part(u, i), x) = false then ok : false,
+    ok
+  )
+  else false)$
+
+/* ---- cluster G: the first B-tier shims -------------------------------
+ * Rt (:7513/:7549) · Expon (:1239) · ExpandToSum (:3329/:3343) ·
+ * IntPart (:2952) · FracPart (:2969).
+ *
+ * 5.50.0 representation traps pinned here (measured 2026-08-23):
+ *  - lambda([a, b, [c]], ...) is this build's variable-arity form;
+ *    generated rules call ExpandToSum with 2 and 3 args under one name;
+ *  - the .m's TogetherSimplify is NOT ported into %mr_rt: Maxima's
+ *    ratsimp/factor expand or factor the argument ((a+b)^2 ->
+ *    a^2+2*a*b+b^2, x^2-1 -> (x-1)*(x+1)), destroying the PowerQ /
+ *    non-product reading. The port feeds the argument to RtAux as stored;
+ *  - Maxima's sign() answers pz for a^2, so the .m's LtQ[#,0] split is
+ *    the strict is(# < 0) reading (Rubi's PosQ/NegQ remain sign-based). */
+
+%mr_sum_from_list(L) := block([s, i],
+  s : 0,
+  for i : 1 thru length(L) do
+    s : s + part(L, i),
+  s)$
+
+%mr_rt_power_parts(u) := block([],
+  if not atom(u) and op(u) = "^"
+  then [part(u, 1), part(u, 2)]
+  else if not atom(u) and op(u) = 'sqrt
+  /* the collapsed 1/2 power node (see the %mr_binomial_parts note) */
+  then [part(u, 1), 1/2]
+  else false)$
+
+%mr_rt_powerQ(u) := not atom(%mr_rt_power_parts(u))$
+
+%mr_rt_power_base(u) := part(%mr_rt_power_parts(u), 1)$
+
+%mr_rt_power_exp(u) := part(%mr_rt_power_parts(u), 2)$
+
+/* the .m's LtQ[#,0] — strict, unknown -> false (NOT Rubi's NegQ) */
+%mr_rt_ltQ(u) := is(u < 0) = true$
+
+/* Rubi :7612  AtomBaseQ[u] */
+%mr_rt_atomBaseQ(u) := block([],
+  if %mr_atomQ(u) then true
+  else if %mr_rt_powerQ(u) then block([e],
+    e : %mr_rt_power_exp(u),
+    integerp(e) and oddp(e)
+    and %mr_rt_atomBaseQ(%mr_rt_power_base(u)))
+  else false)$
+
+/* Rubi :7622  NegSumBaseQ[u] */
+%mr_rt_negSumBaseQ(u) := block([],
+  if not atom(u) and op(u) = "+"
+  then %mr_negQ(part(u, 1))
+  else if %mr_rt_powerQ(u) then block([e],
+    e : %mr_rt_power_exp(u),
+    integerp(e) and oddp(e)
+    and %mr_rt_negSumBaseQ(%mr_rt_power_base(u)))
+  else false)$
+
+/* Rubi :7627  AllNegTermQ[u] */
+%mr_rt_allNegTermQ(u) := block([],
+  if %mr_rt_powerQ(u) then block([e],
+    e : %mr_rt_power_exp(u),
+    if integerp(e) and oddp(e)
+    then %mr_rt_allNegTermQ(%mr_rt_power_base(u))
+    else false)
+  else if not atom(u) and op(u) = "+"
+  then %mr_negQ(part(u, 1)) and %mr_rt_allNegTermQ(rest(u))
+  else %mr_negQ(u))$
+
+/* Rubi :7636  SomeNegTermQ[u] */
+%mr_rt_someNegTermQ(u) := block([],
+  if %mr_rt_powerQ(u) then block([e],
+    e : %mr_rt_power_exp(u),
+    if integerp(e) and oddp(e)
+    then %mr_rt_someNegTermQ(%mr_rt_power_base(u))
+    else false)
+  else if not atom(u) and op(u) = "+"
+  then %mr_negQ(part(u, 1)) or %mr_rt_someNegTermQ(rest(u))
+  else %mr_negQ(u))$
+
+/* Rubi :7676  SplitSum[func, u] — the first TERM v of u for which
+   func[v] is nonatomic, as [func[v], u-v]; false otherwise. rest() of a
+   Maxima sum is the remaining sum (or the last atom), matching the .m
+   Rest[u] reading. */
+%mr_splitSum_aux(func, u) := block([r],
+  if not atom(u) and op(u) = "+" then (
+    r : apply(func, [part(u, 1)]),
+    if not atom(r)
+    then [r, rest(u)]
+    else (
+      r : %mr_splitSum_aux(func, rest(u)),
+      if r # false
+      then [part(r, 1), part(u, 1) + part(r, 2)]
+      else false
+    )
+  )
+  else (
+    r : apply(func, [u]),
+    if not atom(r) then [r, 0] else false
+  ))$
+
+%mr_splitSum(func, u) := %mr_splitSum_aux(func, u)$
+
+/* Rubi :7649  TrigSquareQ[u] — Sin[z]^2 or Cos[z]^2 */
+%mr_trigSquareQ(u) := block([b],
+  if %mr_rt_powerQ(u) and is(%mr_rt_power_exp(u) = 2)
+  then (
+    b : %mr_rt_power_base(u),
+    not atom(b) and (is(op(b) = 'sin) or is(op(b) = 'cos))
+  )
+  else false)$
+
+/* Rubi :7530  TrigSquare[u] — a-a*Sin[z]^2 -> a*Cos[z]^2 (and the Cos
+   twin); false when the non-trig parts do not cancel. */
+%mr_trigSquare(u) := block([lst, tr, z],
+  if not atom(u) and op(u) = "+" then (
+    lst : %mr_splitSum(
+      lambda([z],
+        %mr_splitProduct(lambda([w], %mr_trigSquareQ(w)), z)),
+      u),
+    if lst # false
+      and %mr_eqQ(part(part(lst, 1), 2) + part(lst, 2), 0)
+    then (
+      tr : part(part(part(lst, 1), 1), 1),
+      if is(op(tr) = 'sin)
+      then part(lst, 2)*cos(part(tr, 1))^2
+      else part(lst, 2)*sin(part(tr, 1))^2
+    )
+    else false
+  )
+  else false)$
+
+/* Rubi :7549  RtAux[u, n] — the structural nth-root split. See the
+   cluster note on the omitted TogetherSimplify. */
+%mr_rt_aux(u, n) := block([F, lst, v, Fv, p, i],
+  F : %mr_product_factors(u),
+  if %mr_rt_powerQ(u)
+  then %mr_rt_power_base(u)^(%mr_rt_power_exp(u)/n)
+  else if length(F) > 1 then (
+    lst : %mr_splitProduct(lambda([z], %mr_posQ(z)), u),
+    if lst # false
+    then %mr_rt_aux(part(lst, 1), n)*%mr_rt_aux(part(lst, 2), n)
+    else (
+      lst : %mr_splitProduct(lambda([z], %mr_rt_ltQ(z)), u),
+      if lst # false then (
+        if %mr_eqQ(part(lst, 1), -1) then (
+          v : part(lst, 2),
+          if %mr_rt_powerQ(v) and is(%mr_rt_power_exp(v) < 0)
+          then 1/%mr_rt_aux(
+            -%mr_rt_power_base(v)^(-%mr_rt_power_exp(v)), n)
+          else (
+            Fv : %mr_product_factors(v),
+            if length(Fv) > 1 then (
+              if %mr_splitProduct(
+                    lambda([z], %mr_sumBaseQ(z)), v) # false
+              then (
+                lst : %mr_splitProduct(
+                  lambda([z], %mr_rt_allNegTermQ(z)), v),
+                if lst # false
+                then %mr_rt_aux(-part(lst, 1), n)
+                     *%mr_rt_aux(part(lst, 2), n)
+                else (
+                  lst : %mr_splitProduct(
+                    lambda([z], %mr_rt_negSumBaseQ(z)), v),
+                  if lst # false
+                  then %mr_rt_aux(-part(lst, 1), n)
+                       *%mr_rt_aux(part(lst, 2), n)
+                  else (
+                    lst : %mr_splitProduct(
+                      lambda([z], %mr_rt_someNegTermQ(z)), v),
+                    if lst # false
+                    then %mr_rt_aux(-part(lst, 1), n)
+                         *%mr_rt_aux(part(lst, 2), n)
+                    else (
+                      lst : %mr_splitProduct(
+                        lambda([z], %mr_sumBaseQ(z)), v),
+                      %mr_rt_aux(-part(lst, 1), n)
+                           *%mr_rt_aux(part(lst, 2), n)
+                    )
+                  )
+                )
+              )
+              else (
+                lst : %mr_splitProduct(
+                  lambda([z], %mr_rt_atomBaseQ(z)), v),
+                if lst # false
+                then %mr_rt_aux(-part(lst, 1), n)
+                     *%mr_rt_aux(part(lst, 2), n)
+                else %mr_rt_aux(-part(Fv, 1), n)
+                     *%mr_rt_aux(%mr_product_from_list(rest(Fv)), n)
+              )
+            )
+            else if oddp(n) then -%mr_rt_aux(v, n)
+            else u^(1/n)
+          )
+        )
+        else %mr_rt_aux(-part(lst, 1), n)
+             *%mr_rt_aux(-part(lst, 2), n)
+      )
+      else (
+        lst : %mr_splitProduct(
+          lambda([z], %mr_rt_allNegTermQ(z)), u),
+        if lst # false
+          and %mr_splitProduct(
+                lambda([z], %mr_sumBaseQ(z)), part(lst, 2)) # false
+        then %mr_rt_aux(-part(lst, 1), n)
+             *%mr_rt_aux(-part(lst, 2), n)
+        else (
+          lst : %mr_splitProduct(
+            lambda([z], %mr_rt_negSumBaseQ(z)), u),
+          if lst # false
+            and %mr_splitProduct(
+                  lambda([z], %mr_rt_negSumBaseQ(z)),
+                  part(lst, 2)) # false
+          then %mr_rt_aux(-part(lst, 1), n)
+               *%mr_rt_aux(-part(lst, 2), n)
+          else (
+            p : 1,
+            for i : 1 thru length(F) do
+              p : p*%mr_rt_aux(part(F, i), n),
+            p
+          )
+        )
+      )
+    )
+  )
+  else (
+    lst : %mr_trigSquare(u),
+    if lst # false then %mr_rt_aux(lst, n)
+    else if oddp(n) and %mr_rt_ltQ(u) then -%mr_rt_aux(-u, n)
+    else if oddp(n) and %mr_negQ(u) and %mr_posQ(-u)
+    then -%mr_rt_aux(-u, n)
+    else u^(1/n)
+  ))$
+
+/* Rubi :7513  Rt[u, n] — the simplest nth root of u. */
+%mr_rt(u, n) := %mr_rt_aux(u, n)$
+
+/* Rubi :1239  Expon[expr, form] := Exponent[Together[expr], form].
+   The 3-arg form is declared (the generator's Expon mapping allows it)
+   but fails closed: no class-1 call site uses the exponent-list form. */
+%mr_expon2(u, x) := %mr_degree(%mr_together(u), x)$
+
+/* The generator's powered-form Expon: Expon[u, base^power] is the degree
+   in base^power (the degree in base divided by power, when that is an
+   integer; -1 otherwise, the Exponent parity). */
+%mr_expon3(u, base, power) := block([d],
+  d : %mr_degree(%mr_together(u), base),
+  if integerp(power) and is(power > 0) and d >= 0
+    and is(mod(d, power) = 0)
+  then d/power
+  else -1)$
+
+%mr_expon : lambda([u, form, [h]],
+  if length(h) = 0 then %mr_expon2(u, form)
+  else %mr_expon3(u, form, part(h, 1)))$
+
+/* Rubi :1242  Expon[expr, form, Min] — the MINIMUM x-exponent of
+   Together[expr] (Mathematica Exponent[_, _, Min]). The generator maps
+   it to %mr_exponMin (1.3.3 r17 / 1.4.1 r25 — the Px minimum-power
+   split). %mr_degree's term walker cannot be reused: %mr_term_xexp
+   returns FALSE on x-bearing denominators (1/x -> false, the
+   polynomial-monomial reading), which DROPS exactly the terms the
+   minimum is about — a local walker below handles negative powers
+   (1/x -> -1, x^2/x^5 -> -3) and x-free bases (d^2 -> 0), mirroring
+   %mr_term_xexp's atom/minus/times/quote cases. Edge parity with
+   %mr_degree: 0 -> 0, x-free -> 0, no x-power term at all -> -1. */
+%mr_exponMin_term(t, x) := block([i, f, p, ok],
+  if atom(t) then (
+    if is(t = x) then 1 else 0
+  )
+  elseif op(t) = "-" then %mr_exponMin_term(part(t, 1), x)
+  elseif op(t) = "*" then (
+    p : 0,
+    ok : true,
+    for i : 1 thru length(t) do (
+      f : part(t, i),
+      if freeof(x, f) then true
+      elseif is(f = x) then p : p + 1
+      elseif op(f) = "^" and is(part(f, 1) = x)
+        and integerp(part(f, 2)) then p : p + part(f, 2)
+      else ok : false
+    ),
+    if ok then p else false
+  )
+  elseif op(t) = "/" then block([n, d],
+    n : %mr_exponMin_term(part(t, 1), x),
+    d : %mr_exponMin_term(part(t, 2), x),
+    if n # false and d # false then n - d else false
+  )
+  elseif op(t) = "^" then (
+    if is(part(t, 1) = x) and integerp(part(t, 2))
+    then part(t, 2)
+    else if freeof(x, part(t, 1)) then 0 else false
+  )
+  else false)$
+
+%mr_exponMin(u, x) := block([e, i, m, p, found],
+  e : expand(%mr_together(u)),
+  if is(e = 0) then 0
+  elseif freeof(x, e) then 0
+  elseif atom(e) then %mr_exponMin_term(e, x)
+  elseif op(e) = "+" then (
+    m : -1, found : false,
+    for i : 1 thru length(e) do (
+      p : %mr_exponMin_term(part(e, i), x),
+      if p # false then (
+        if not found then (m : p, found : true)
+        elseif p < m then m : p
+      )
+    ),
+    if found then m else -1
+  )
+  else (
+    p : %mr_exponMin_term(e, x),
+    if p # false then p else -1))$
+
+/* Rubi :3343  ExpandToSum[u, x] — u expanded into a sum of monomials of
+   x. The .m's Simp is NOT %mr_simp here: %mr_simp factors (the cluster's
+   whole point is the MONOMIAL-SUM shape, so (x+1)^2 must stay
+   x^2+2*x+1). Rubi :3329  ExpandToSum[u, v, x] is the distribute form. */
+%mr_expandToSum2(u, x) := block([L],
+  if %mr_polyQ(u, x) then expand(u)
+  else if %mr_binomialQ(u, x) then (
+    L : %mr_binomial_parts(u, x),
+    if atom(L) then expand(u)
+    else part(L, 1) + part(L, 2)*x^part(L, 3)
+  )
+  else if %mr_trinomialQ(u, x) then (
+    L : %mr_trinomial_parts(u, x),
+    if atom(L) then expand(u)
+    else part(L, 1) + part(L, 2)*x^part(L, 4)
+         + part(L, 3)*x^(2*part(L, 4))
+  )
+  else if %mr_generalizedBinomialQ(u, x) then (
+    L : %mr_generalizedBinomial_parts(u, x),
+    if atom(L) then expand(u)
+    else part(L, 1)*x^part(L, 4) + part(L, 2)*x^part(L, 3)
+  )
+  else if %mr_generalizedTrinomialQ(u, x) then (
+    L : %mr_generalizedTrinomial_parts(u, x),
+    if atom(L) then expand(u)
+    else part(L, 1)*x^part(L, 5) + part(L, 2)*x^part(L, 4)
+         + part(L, 3)*x^expand(2*part(L, 4) - part(L, 5))
+  )
+  else expand(u))$
+
+%mr_expandToSum : lambda([a, b, [c]],
+  if length(c) = 0
+  then %mr_expandToSum2(a, b)
+  else expand(a*%mr_expandToSum2(b, part(c, 1))))$
+
+/* Rubi :2952  IntPart[u, n_ = 1] — the sum of the integer terms of u.
+   The m_*u_ arm absorbs an EXPLICIT rational leading factor into n;
+   IntegerPart is the floor reading (IntPart + FracPart = u). */
+%mr_intPart_aux(u, n) := block([F, m],
+  if not atom(u) and (op(u) = "*" or op(u) = "-")
+  then (
+    F : %mr_product_factors(u),
+    m : part(F, 1),
+    if length(F) > 1 and %mr_rationalQ(m)
+    then %mr_intPart_aux(%mr_product_from_list(rest(F)), m*n)
+    else 0
+  )
+  else if %mr_rationalQ(u) then floor(n*u)
+  else if not atom(u) and op(u) = "+"
+  then apply("+", map(
+    lambda([z], %mr_intPart_aux(z, n)), %mr_parts_list(u)))
+  else 0)$
+
+%mr_intPart : lambda([u, [n]],
+  %mr_intPart_aux(u, if length(n) = 0 then 1 else part(n, 1)))$
+
+/* Rubi :2969  FracPart[u, n_ = 1] — the sum of the non-integer terms of
+   u (FractionalPart is the floor complement, so FracPart[-3/2] = 1/2). */
+%mr_fracPart_aux(u, n) := block([F, m, r],
+  if not atom(u) and (op(u) = "*" or op(u) = "-")
+  then (
+    F : %mr_product_factors(u),
+    m : part(F, 1),
+    if length(F) > 1 and %mr_rationalQ(m)
+    then %mr_fracPart_aux(%mr_product_from_list(rest(F)), m*n)
+    else n*u
+  )
+  else if %mr_rationalQ(u) then (
+    r : n*u,
+    r - floor(r)
+  )
+  else if not atom(u) and op(u) = "+"
+  then apply("+", map(
+    lambda([z], %mr_fracPart_aux(z, n)), %mr_parts_list(u)))
+  else n*u)$
+
+%mr_fracPart : lambda([u, [n]],
+  %mr_fracPart_aux(u, if length(n) = 0 then 1 else part(n, 1)))$
+
+/* ---- cluster H: the small remaining B-tier shims --------------------
+ * PolyQuotient / PolyRemainder / PolyDivide are the Maxima quotient /
+ * remainder / divide builtins under the project names (the fail-closed
+ * guard is the %mr_polynomialQ pair — a non-polynomial argument is a
+ * rule-condition bug, not a division). ArcTanh / ArcSinh / ArcCosh are
+ * unbound in this build and get the log forms. */
+
+/* expand() on the result is LOAD-BEARING (measured 2026-08-25,
+   5.50.0/SBCL): for a NON-MONIC divisor with symbolic coefficients
+   (v = a+b*x+c*x^2), the built-in quotient/remainder/divide return
+   the parts as FRACTIONS — the symbolic content (c^3 here) rides in
+   the denominator: op(remainder((e*x+d)^4, a+b*x+c*x^2, x)) = "/"
+   with denom = c^3. Rubi's PolynomialQuotient/Remainder contract is a
+   true polynomial (Mathematica does exact symbolic division); the
+   fraction form corrupts every downstream Coeff/Expon/EqQ consumer
+   (1.2.1.6 r4's f,g came back c^3-scaled -> 1.2.1.2 e2202 wrong
+   answer, resid 3.19). expand() over an x-free denominator restores
+   the true monomial sum (qu*expand(Q) + expand(R) = Pq re-verified). */
+%mr_polyQuotient(u, v, x) := block([r],
+  if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
+  then (
+    r : errcatch(quotient(u, v, x)),
+    if is(r = []) then false else expand(part(r, 1))
+  )
+  else false)$
+
+%mr_polyRemainder(u, v, x) := block([r],
+  if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
+  then (
+    r : errcatch(remainder(u, v, x)),
+    if is(r = []) then false else expand(part(r, 1))
+  )
+  else false)$
+
+/* Rubi :3298  PolynomialDivide[u, v, x] — the POLYNOMIAL quotient PLUS
+   the remainder over v, as ONE expression: quo + rem/v. The generated
+   repls call mr_int(%mr_polyDivide(...), x) and integrate that single
+   expression (Rubi: Int[PolynomialDivide[u, v, x], x]); the earlier
+   [Q, R] list contract integrated the LIST (a noun/garbage answer —
+   measured 2026-08-25: 1.1.3.3 e5, resid ~0.33/1.6). `divide(u, v, x)`
+   is NOT used: in this build it divides by a RECIPROCAL by multiplying
+   and dropping the remainder (divide(a+b*x^3, 1/(c+d*x^3), x) =
+   [[b*d*x^6 + ..., 0]] — the "remainder" is a sum, not a < v-degree
+   remainder, measured 2026-08-25). */
+%mr_polyDivide(u, v, x) := block([q, r],
+  if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
+  then (
+    q : errcatch(quotient(u, v, x)),
+    if is(q = []) then false
+    else (
+      r : errcatch(remainder(u, v, x)),
+      if is(r = []) then false
+      /* no expand(): this build's expand DISTRIBUTES a sum over a
+         denominator term (expand(Q + R/v) = Q + R1/v - R2/... per
+         summand, measured 2026-08-25: x + (1-x)/(x^2+1) became
+         -(x/(x^2+1)) + 1/(x^2+1) + x) — the unexpanded form is the
+         canonical one the cascade and the zero-tests expect. */
+      else part(q, 1) + part(r, 1)/v
+    )
+  )
+  else false)$
+
+%mr_atanh(u) := 1/2*log((1 + u)/(1 - u))$
+
+%mr_asinh(u) := log(u + sqrt(u^2 + 1))$
+
+/* sqrt(z-1)*sqrt(z+1) (not sqrt(z^2-1)): the branch reading the .m's
+   ArcCosh wants on the real axis, and the acosh(1) probe pins the
+   sqrt(0) corner. */
+%mr_acosh(u) := log(u + sqrt(u - 1)*sqrt(u + 1))$
+
+/* ---- cluster I: the algebraic surface of ExpandIntegrand ------------
+ * The .m's ExpandIntegrand is a large pattern set (log/trig/smart-apart
+ * branches included); this port is the ALGEBRAIC surface the class-1
+ * call sites need:
+ *   - a positive-integer power of a sum expands,
+ *   - polynomial * (a+b*x)^m is kept in linear-power form by
+ *     ExpandLinearProduct (the .m's u_*(a+b*x)^m rule),
+ *   - the 3-arg form distributes over the expanded v without expanding
+ *     the power factors (the DistributeOverTerms / MergeMonomials
+ *     surface). The remaining .m branches (CollectRecipTerms,
+ *     ExpandExpression / SmartApart, the F^u and Log rules) are NOT
+ *     ported here; the fallback is plain expand(). */
+
+%mr_coefficientList(u, x) := block([d, i, L],
+  if %mr_polynomialQ(u, x) then (
+    d : %mr_degree(u, x),
+    L : [],
+    for i : 0 thru d do
+      L : append(L, [%mr_coeff(u, x, i)]),
+    L
+  )
+  else false)$
+
+/* Rubi :4023  ExpandLinearProduct[v, u, a, b, x] — v*u as a sum of
+   c*v*(a+b*x)^n terms (u read in the shifted variable (x-a)/b). */
+/* The shifted form w may carry a constant (x-free) denominator (e.g. the
+   b^-k from (x-a)/b). rat() isolates it so the coefficient list of the
+   numerator is scaled back by 1/den — the .m CoefficientList[Expand[w], x]
+   reading, which keeps the factor (the MEASURED 2026-08-25 243x error came
+   from num(rat(u)) dropping it). NOTE: together() is a NOUN in this build
+   (MEASURED 2026-08-25: op(together(x/2+x/3)) = 'together with no preload),
+   so rat() is the combining step. */
+%mr_expandLinearProduct(v, u, a, b, x) := block([w, r, den, L, s, i],
+  if freeof(x, a) and freeof(x, b) and %mr_neQ(b, 0)
+    and %mr_polynomialQ(u, x)
+  then (
+    w : subst((x - a)/b, x, u),
+    r : rat(w),
+    /* expand() reifies the gcrat constant to a plain number — MEASURED
+       2026-08-25: dividing by the raw denom(rat(...)) object (is(d = 243)
+       true, yet distinct) makes Maxima run the rat simplifier and expand
+       (3*x+2)^k into its polynomial, destroying the term structure. */
+    den : expand(denom(r)),
+    L : %mr_coefficientList(expand(num(r)), x),
+    if atom(L) then false
+    else (
+      s : 0,
+      for i : 1 thru length(L) do
+        s : s + v*part(L, i)*(a + b*x)^(i - 1)/den,
+      s
+    )
+  )
+  else false)$
+
+/* A positive-integer power of a sum (the .m's u_^p_. rule with
+   SumQ[u] && IGtQ[p,0]). */
+%mr_ei_pos_power_sum(u, x) :=
+  not atom(u) and op(u) = "^"
+  and %mr_sumQ(part(u, 1))
+  and integerp(part(u, 2))
+  and is(part(u, 2) > 0)$
+
+/* Local factor scan for the ExpandIntegrand linear-power search. Same as
+   %mr_product_factors but a "/" node is split into its numerator factors
+   plus each denominator factor as a reciprocal (MEASURED 2026-08-25:
+   (3*x+2)^-8 stores as the "/" node 1/(3*x+2)^8, so the (a+b*x)^-m factor
+   of a quotient is invisible to the opaque-op read). Kept separate from
+   %mr_product_factors so no other predicate's behaviour changes. */
+%mr_ei_factors(u) := block([],
+  if atom(u) then [u]
+  else if op(u) = "-" then append([-1], %mr_ei_factors(part(u, 1)))
+  else if op(u) = "*" then %mr_parts_list(u)
+  else if op(u) = "/" then append(
+      %mr_ei_factors(part(u, 1)),
+      map(lambda([z],
+        if not atom(z) and op(z) = "^" then part(z, 1)^-part(z, 2)
+        else z^-1),
+        %mr_ei_factors(part(u, 2))))
+  else [u])$
+
+/* The linear-power factor of a product at position i, as
+   [power, a, b, rest] or false. mode "power" reads an actual
+   (a+b*x)^m node, or the reciprocal quotient 1/(a+b*x)^m (m a positive
+   integer — the MEASURED 2026-08-25 storage of (a+b*x)^-m as a "/" node,
+   which the opaque-op read of %mr_product_factors cannot see); mode
+   "bare" reads a bare linear factor (the .m's m_. default — a Power is
+   preferred over the bare reading). MEASURED 2026-08-23: return() does
+   not escape a for-loop body in this build, so the scan is a flag loop
+   over this helper. */
+%mr_ei_linear_power_at(F, i, x, mode) :=
+  block([f, base, ok, L, R, j, rest],
+    f : part(F, i),
+    ok : false,
+    if mode = "power" then (
+      if not atom(f) and op(f) = "^"
+      then (base : part(f, 1), ok : true)
+      else if not atom(f) and op(f) = "/" and is(num(f) = 1)
+        and op(denom(f)) = "^"
+        and integerp(part(denom(f), 2))
+        and is(part(denom(f), 2) > 0)
+      then (base : part(denom(f), 1), ok : true)
+    )
+    else if not atom(f) and op(f) # "^"
+    then (base : f, ok : true),
+    if ok = false then false
+    else (
+      if %mr_linearQ(base, x) then (
+        L : %mr_binomial_parts(base, x),
+        if not atom(L) and is(part(L, 3) = 1)
+          and %mr_neQ(part(L, 2), 0)
+        then (
+          R : [],
+          for j : 1 thru length(F) do
+            if j # i then R : append(R, [part(F, j)]),
+          rest : %mr_product_from_list(R),
+          if %mr_polynomialQ(rest, x)
+          then [f, part(L, 1), part(L, 2), rest]
+          else false
+        )
+        else false
+      )
+      else false
+    ))$
+
+/* The linear-power factor of a product, as [power, a, b, rest]: an
+   actual (a+b*x)^m node is preferred over a bare linear factor (the
+   .m's (a+b*x)^m_. pattern matches a Power first in the class-1 term
+   order). */
+%mr_ei_linear_power(u, x) := block([F, i, r],
+  F : %mr_ei_factors(u),
+  r : false,
+  for i : 1 thru length(F) do
+    if r = false then
+      r : %mr_ei_linear_power_at(F, i, x, "power"),
+  if r # false then r
+  else (
+    for i : 1 thru length(F) do
+      if r = false then
+        r : %mr_ei_linear_power_at(F, i, x, "bare"),
+    r
+  ))$
+
+/* Distribute u over a sum v term-by-term WITHOUT expanding the terms
+   (the MergeMonomials surface: a plain product is left as a product). */
+%mr_ei_distribute(u, v, x) := block([],
+  if not atom(v) and op(v) = "+"
+  then apply("+", map(lambda([z], u*z), %mr_parts_list(v)))
+  else u*v)$
+
+%mr_expandIntegrand2(u, x) := block([L],
+  if %mr_ei_pos_power_sum(u, x)
+  then expand(u)
+  else (
+    L : %mr_ei_linear_power(u, x),
+    if L # false
+    then %mr_expandLinearProduct(
+      part(L, 1), part(L, 4), part(L, 2), part(L, 3), x)
+    else expand(u)
+  ))$
+
+%mr_expandIntegrand3(u, v, x) :=
+  %mr_ei_distribute(u, %mr_expandIntegrand2(v, x), x)$
+
+%mr_expandIntegrand : lambda([a, b, [c]],
+  if length(c) = 0
+  then %mr_expandIntegrand2(a, b)
+  else %mr_expandIntegrand3(a, b, part(c, 1)))$
+
+/* ---- cluster J: the remaining high-usage B-tier shims ---------------
+ * SubstFor / SubstPower are the ALGEBRAIC surface: x^n and linear-v
+ * substitutions (the .m's trig / inverse-function branches are not
+ * ported). Dist is the DistributeOverTerms surface. Cancel is factor()
+ * (the unbound builtin, measured). PolyGCD is the monic x-dependent
+ * gcd. RationalFunctionExpand is the algebraic-ExpandIntegrand surface
+ * (the .m's RationalFunctionFactors / NonrationalFunctionFactors split
+ * is deferred). */
+
+/* Rubi :6142  SubstPower[F[x], x, n] — x^m -> x^(m*n), x -> x^n. */
+%mr_substPower(u, x, n) := block([],
+  if atom(u) then (
+    if is(u = x) then x^n else u
+  )
+  else if numberp(u) then u
+  else if not atom(u) and op(u) = "^" then (
+    if is(part(u, 1) = x) and freeof(x, part(u, 2))
+    then x^(n*part(u, 2))
+    else %mr_substPower(part(u, 1), x, n)
+         ^%mr_substPower(part(u, 2), x, n)
+  )
+  else if not atom(u) and op(u) = "*"
+  then apply("*", map(lambda([z], %mr_substPower(z, x, n)),
+    %mr_parts_list(u)))
+  else if not atom(u) and op(u) = "+"
+  then apply("+", map(lambda([z], %mr_substPower(z, x, n)),
+    %mr_parts_list(u)))
+  else if not atom(u) and op(u) = "/"
+  then %mr_substPower(part(u, 1), x, n)
+       /%mr_substPower(part(u, 2), x, n)
+  else if not atom(u) and op(u) = "-"
+  then -%mr_substPower(part(u, 1), x, n)
+  else if not atom(u) and op(u) = "["
+  then map(lambda([z], %mr_substPower(z, x, n)), %mr_parts_list(u))
+  else (
+    /* generic head — MEASURED 2026-08-25 on 5.50.0/SBCL: sqrt(e) is
+       its OWN head (op = "sqrt", NOT "^"), so the explicit cases
+       above miss it and the old `else u` left sqrt(3*x^2+5*x+2)
+       untouched under SubstPower[., x, 2] (derailing 1.4.1 r34 on
+       1.2.1.3 e1058: the inner integrand kept a quadratic radical
+       where the substitution needs the quartic). Rubi's SubstPower
+       is Map over every subpart (IntegrationUtilityFunctions.m:6142),
+       so walk args generically. */
+    apply(op(u), map(lambda([z], %mr_substPower(z, x, n)), args(u)))))$
+
+/* Rubi :5980  SubstFor[v, u, x] — u (a function of v) with v replaced
+   by x. The algebraic surface: an atom is a plain subst, x^n is the
+   SubstPower reading with factor 1/n, a linear v is the shifted
+   variable (x-a)/b, and the fallback is the plain subst. */
+%mr_substFor3(v, u, x) := block([L],
+  if %mr_atomQ(v)
+  then subst(x, v, u)
+  else if not atom(v) and op(v) = "^"
+    and is(part(v, 1) = x) and freeof(x, part(v, 2))
+  then %mr_substPower(u, x, 1/part(v, 2))
+  else if %mr_linearQ(v, x) then (
+    L : %mr_binomial_parts(v, x),
+    if not atom(L) and is(part(L, 3) = 1)
+    then subst((x - part(L, 1))/part(L, 2), x, u)
+    else subst(x, v, u)
+  )
+  else subst(x, v, u))$
+
+%mr_substFor4(w, v, u, x) := w*%mr_substFor3(v, u, x)$
+
+%mr_substFor : lambda([a, b, c, [d]],
+  if length(d) = 0
+  then %mr_substFor3(a, b, c)
+  else %mr_substFor4(a, b, c, part(d, 1)))$
+
+/* Rubi's Dist — distribute the first argument over a Plus sum, leave
+   everything else (a noun Sum in particular) multiplied. */
+%mr_dist : lambda([a, b, [c]],
+  %mr_ei_distribute(a, b, 0))$
+
+/* Rubi :1518  NormalizePseudoBinomial[u, x] — a + b*(c+d*x)^n. Fails
+   closed to u (the .m's False[[1]] hard-errors; the class-1 call sites
+   gate on PseudoBinomialPairQ first). */
+%mr_normalizePseudoBinomial(u, x) := block([L],
+  L : %mr_pseudoBinomial_parts(u, x),
+  if atom(L) then u
+  else part(L, 1) + part(L, 2)*(part(L, 3) + part(L, 4)*x)^part(L, 5))$
+
+/* Rubi's Cancel — the builtin is unbound in this build (measured);
+   factor() is the closest cancel-without-expand reading. */
+%mr_cancel(u) := block([r],
+  r : errcatch(factor(u)),
+  if is(r = []) then u else part(r, 1))$
+
+/* Rubi :1668  PolyGCD[u, v, x] — the monic x-dependent gcd. The .m's
+   PolynomialGCD is monic; Maxima's gcd carries the content, so the
+   leading coefficient is divided out (the NonfreeFactors reading then
+   drops any surviving free factor). */
+%mr_polyGCD(u, v, x) := block([g, d, lc],
+  if %mr_polynomialQ(u, x) and %mr_polynomialQ(v, x)
+  then (
+    g : errcatch(gcd(u, v, x)),
+    if is(g = []) then false
+    else (
+      g : part(g, 1),
+      if freeof(x, g) then 1
+      else (
+        d : %mr_degree(g, x),
+        lc : %mr_coeff(g, x, d),
+        g/lc
+      )
+    )
+  )
+  else false)$
+
+/* Rubi :1644  RationalFunctionExpand[u, x] — the algebraic
+   ExpandIntegrand surface (the .m's RationalFunctionFactors /
+   NonrationalFunctionFactors split is deferred). */
+%mr_rationalFunctionExpand(u, x) := %mr_expandIntegrand2(u, x)$
+
+/* ---- cluster K: the last B-tier names --------------------------------
+ * Root is the rational reading of the Mathematica Root object (the
+ * k-th root, in ascending real-part order, when it is an explicit
+ * rational). IntSum / IntTerm are the .m definitions (:7694/:7699) over
+ * the already-ported FreeFactors / NonfreeFactors / RemoveContent
+ * surface. Hold is the ShowStep wrapper — identity outside the
+ * (unported) ShowStep machinery. */
+
+%mr_freeTerms(u, x) := block([],
+  if %mr_sumQ(u)
+  then apply("+", map(
+    lambda([z], if freeof(x, z) then z else 0), %mr_parts_list(u)))
+  else if freeof(x, u) then u else 0)$
+
+%mr_nonfreeTerms(u, x) := block([],
+  if %mr_sumQ(u)
+  then apply("+", map(
+    lambda([z], if freeof(x, z) then 0 else z), %mr_parts_list(u)))
+  else if freeof(x, u) then 0 else u)$
+
+%mr_intTerm_linear_at(F, i, x, mode) :=
+  block([f, base, m, R, j, rest],
+    f : part(F, i),
+    if mode = "power" then (
+      if not atom(f) and op(f) = "^" then (
+        base : part(f, 1),
+        m : part(f, 2),
+        if %mr_linearQ(base, x) and freeof(x, m)
+        then (
+          R : [],
+          for j : 1 thru length(F) do
+            if j # i then R : append(R, [part(F, j)]),
+          rest : %mr_product_from_list(R),
+          if freeof(x, rest) then [rest, base, m] else false
+        )
+        else false
+      )
+      else false
+    )
+    else (
+      if not atom(f) and op(f) # "^" and %mr_linearQ(f, x)
+      then (
+        R : [],
+        for j : 1 thru length(F) do
+          if j # i then R : append(R, [part(F, j)]),
+        rest : %mr_product_from_list(R),
+        if freeof(x, rest) then [rest, f, 1] else false
+      )
+      else false
+    ))$
+
+/* c*v^m (v linear in x, c and m free of x) as [c, v, m], or false. A
+   quotient is read as the negative-power form (Maxima stores c/v^m as
+   a / node, not a ProductQ). */
+%mr_intTerm_linear(u, x) := block([F, i, r, num, den],
+  if not atom(u) and op(u) = "/" then (
+    num : part(u, 1),
+    den : part(u, 2),
+    if freeof(x, num)
+    then (
+      if %mr_linearQ(den, x) then [num, den, -1]
+      else if not atom(den) and op(den) = "^"
+        and %mr_linearQ(part(den, 1), x)
+        and freeof(x, part(den, 2))
+      then [num, part(den, 1), -part(den, 2)]
+      else false
+    )
+    else false
+  )
+  else (
+    F : %mr_product_factors(u),
+    r : false,
+    for i : 1 thru length(F) do
+      if r = false then
+        r : %mr_intTerm_linear_at(F, i, x, "power"),
+    if r # false then r
+    else (
+      for i : 1 thru length(F) do
+        if r = false then
+          r : %mr_intTerm_linear_at(F, i, x, "bare"),
+      r
+    )
+  ))$
+
+/* Rubi :7699  IntTerm[u, x] */
+%mr_intTerm(u, x) := block([L, c, base, m, u1, ff, nf],
+  if %mr_sumQ(u)
+  then apply("+", map(lambda([z], %mr_intTerm(z, x)),
+    %mr_parts_list(u)))
+  else (
+    L : %mr_intTerm_linear(u, x),
+    if L # false
+    then (
+      c : part(L, 1),
+      base : part(L, 2),
+      m : part(L, 3),
+      u1 : %mr_cancel(base),
+      if is(m = -1)
+      then c*log(%mr_removeContent(u1, x))/%mr_coeff(u1, x, 1)
+      else if is(m = 1) and %mr_eqQ(c, 1) and %mr_sumQ(u1)
+      then %mr_intSum(u1, x)
+      else c*u1^(m + 1)/(%mr_coeff(u1, x, 1)*(m + 1))
+    )
+    else (
+      ff : %mr_freeFactors(u, x),
+      nf : %mr_nonfreeFactors(u, x),
+      ff*mr_int(nf, x)
+    )
+  ))$
+
+/* Rubi :7694  IntSum[u, x] */
+%mr_intSum(u, x) :=
+  %mr_freeTerms(u, x)*x + %mr_intTerm(%mr_nonfreeTerms(u, x), x)$
+
+/* The rational-root reading of the Mathematica Root object: the k-th
+   root of an explicit-rational polynomial (ascending, with multiplicity)
+   when it is an explicit rational, else false (the rule declines). */
+%mr_root_roots(e, var, acc) := block([base, exp, i],
+  if atom(e) then acc
+  else if numberp(e) then acc
+  else if op(e) = "^" then (
+    base : part(e, 1),
+    exp : part(e, 2),
+    if integerp(exp) and is(exp > 0)
+    then (
+      for i : 1 thru exp do
+        acc : %mr_root_roots(base, var, acc),
+      acc
+    )
+    else acc
+  )
+  else if op(e) = "*" then (
+    for i : 1 thru length(e) do
+      acc : %mr_root_roots(part(e, i), var, acc),
+    acc
+  )
+  else if %mr_polynomialQ(e, var) and is(%mr_degree(e, var) = 1)
+  then append(acc,
+    [-%mr_coeff(e, var, 0)/%mr_coeff(e, var, 1)])
+  else acc)$
+
+%mr_root(poly, k) := block([d, i, ok, r, roots],
+  if integerp(k) and %mr_polynomialQ(poly, x)
+  then (
+    d : %mr_degree(poly, x),
+    ok : true,
+    for i : 0 thru d do
+      if not %mr_rationalQ(%mr_coeff(poly, x, i)) then ok : false,
+    if ok
+    then (
+      r : errcatch(factor(poly)),
+      if is(r = []) then false
+      else (
+        roots : %mr_root_roots(part(r, 1), x, []),
+        roots : sort(roots),
+        if length(roots) >= k
+          and %mr_rationalQ(part(roots, k))
+        then part(roots, k)
+        else false
+      )
+    )
+    else false
+  )
+  else false)$
+
+/* Manual matcher for the two-binomial-power shape
+   (A1 + B1*x^n)^E1 * (A2 + B2*x^n)^E2 (shared n != 0) — the 1.1.3.3
+   (a+b x^n)^p (c+d x^n)^q family. matchfix CANNOT match the free-n
+   pattern: it binds (a + b*x^3) against (A + B*x_^n) degenerately as
+   n := 0 with B := b*x^3 (the coefficient absorbs the power), and the
+   freeof(x) matchdeclare predicate that kills the degenerate binding
+   also kills the match — no backtracking to the correct (a, b, 3)
+   reading (measured 2026-08-25, 5.50.0/SBCL, /tmp/opencode/n1133b.mac:
+   with true-declared coeffs the pattern returns the degenerate
+   binding; with freeof(x)-declared coeffs it returns false). The
+   1.1.3.3 free-n rules (27 of 67) therefore decline every integrand
+   (191/286 family no-answers in the 2026-08-25 full run). This
+   matcher walks the integrand structurally instead.
+   Build quirk honored throughout (measured 2026-08-25, 5.50.0/SBCL):
+   op() on an ATOM is FATAL ("part: argument must be a non-atomic
+   expression") — every op() call below is guarded by an atom() test;
+   and op(t) = "sqrt" (a FUNCTION head) never evaluates true inside a
+   compiled if while op(t) = "^" / "*" / "/" / "+" (operator heads)
+   do — the sqrt head is tested via string(op(t)) = "sqrt".
+   Returns [A1, B1, n, E1, A2, B2, n, E2] (E signed: denominator
+   factors carry a negative exponent) or false. Factor order is
+   Maxima's canonical times order — the generated rule wrapper retries
+   the swapped slot assignment. */
+
+/* Build quirk honored in the %mr_mbp* walkers below (measured
+   2026-08-25, 5.50.0/SBCL): return() inside a for-loop is LOOP-LEVEL
+   in this build — it exits the loop, not the function (probe:
+   for i : 1 thru 4 do (if is(i = 2) then return(false), ...) then
+   "DONE" returns "DONE", not false). Every early bail-out below is
+   therefore a flag + `thru 1` exit; no return() appears inside a
+   loop. The same build also leaves `var = false` unevaluated in a
+   compiled if (the lazy-boolean trap), so every such comparison goes
+   through is(...). */
+
+/* one term of a binomial base: [c, 0] (constant) or [c, n] (monomial
+   c*x^n, n nonzero and free of x), else false. The `res : <expr>`
+   assignment-bail idiom (measured 2026-08-25, 5.50.0/SBCL): a bare
+   `if ... then false else ...` used as the block's value evaluates
+   to UNDEFINED inside a compiled function (the 5.50.0 dev-build
+   if-then-else-value trap), so every branch assigns res. */
+%mr_mbp_term(t, x) := block([i, u, k, b, ok, res],
+  t : expand(t),
+  if freeof(x, t) then return([t, 0]),
+  if t = x then return([1, 1]),
+  if atom(t) then return(false),
+  if op(t) = "^" then (
+    if part(t,1) = x then return([1, part(t,2)])
+    else return(false)
+  ),
+  if op(t) = "*" then (
+    k : false, b : 1, ok : true,
+    for i : 1 thru length(t) do (
+      u : part(t, i),
+      if is(ok = true) then (
+        if u = x then (
+          if k # false then ok : false else k : 1
+        ) else (
+          if atom(u) then (
+            if freeof(x, u) then b : b*u
+            else ok : false
+          ) else (
+            if op(u) = "^" then (
+              if part(u,1) = x then (
+                if k # false then ok : false else k : part(u,2)
+              )
+              else ok : false
+            ) else (
+              if freeof(x, u) then b : b*u
+              else ok : false
+            )
+          )
+        )
+      )
+    ),
+    if is(ok = false) then (
+      res : false
+    ) else (
+      if k = false then (
+        res : false
+      ) else (
+        res : [b, k]
+      )
+    )
+  ) else (
+    if op(t) = "/" then (
+      res : %mr_mbp_mono2(t, x)
+    ) else (
+      res : false
+    )
+  ),
+  res)$
+
+/* (c1*x^n1)/(c2*x^n2) style quotient monomial -> [c, n]. */
+%mr_mbp_mono2(t, x) := block([num, den, nr, dr, res],
+  num : part(t,1), den : part(t,2),
+  nr : %mr_mbp_term(num, x),
+  dr : %mr_mbp_term(den, x),
+  if is(nr = false) or is(dr = false) then (
+    res : false
+  ) else (
+    if is(part(nr,2) = 0) or is(part(dr,2) = 0) then (
+      res : false
+    ) else (
+      res : [part(nr,1)/part(dr,1), part(nr,2) - part(dr,2)]
+    )
+  ),
+  res)$
+
+/* base = A + B*x^n (exactly two terms: one constant, one nonzero
+   power monomial) -> [A, B, n], else false. */
+%mr_mbp_base(base, x) := block([t1, t2, r1, r2, res],
+  if atom(base) then (
+    res : false
+  ) else (
+    if op(base) # "+" or length(base) # 2 then (
+      res : false
+    ) else (
+      t1 : part(base,1), t2 : part(base,2),
+      r1 : %mr_mbp_term(t1, x), r2 : %mr_mbp_term(t2, x),
+      if is(r1 = false) or is(r2 = false) then (
+        res : false
+      ) else (
+        if is(part(r1,2) = 0) and is(part(r2,2) # 0) then (
+          if is(part(r2,2) = 0) then (
+            res : false
+          ) else (
+            if not freeof(x, part(r2,2)) then (
+              res : false
+            ) else (
+              res : [part(r1,1), part(r2,1), part(r2,2)]
+            )
+          )
+        ) else (
+          if is(part(r2,2) = 0) and is(part(r1,2) # 0) then (
+            if not freeof(x, part(r1,2)) then (
+              res : false
+            ) else (
+              res : [part(r2,1), part(r1,1), part(r1,2)]
+            )
+          ) else (
+            res : false
+          )
+        )
+      )
+    )
+  ),
+  res)$
+
+/* one factor of a times node (or the whole of a non-times side).
+   sgn = 1 (numerator) or -1 (denominator); t may be a binomial sum,
+   a power of one, or a sqrt of one. Returns [A, B, n, sgn*E]. */
+%mr_mbp_factor(t, x, sgn) := block([base, E, r, res],
+  if atom(t) then (
+    res : false
+  ) else (
+    E : 1, base : t,
+    if op(t) = "^" then (base : part(t,1), E : part(t,2)),
+    if string(op(t)) = "sqrt" then (base : part(t,1), E : 1/2),
+    r : %mr_mbp_base(base, x),
+    if is(r = false) then (
+      res : false
+    ) else (
+      res : [part(r,1), part(r,2), part(r,3), sgn*E]
+    )
+  ),
+  res)$
+
+/* one side of a quotient -> list of [A, B, n, sgn*E] factors, or
+   false on the first non-binpow factor. A side that is not a "*"
+   node is a single factor. */
+%mr_mbp_side(e, x, sgn) := block([facs, i, r, ok, res],
+  if atom(e) then (
+    res : false
+  ) else (
+    facs : [], ok : true,
+    if op(e) = "*" then (
+      for i : 1 thru length(e) do (
+        if is(ok = true) then (
+          r : %mr_mbp_factor(part(e, i), x, sgn),
+          if is(r = false) then (
+            ok : false
+          ) else (
+            facs : cons(r, facs)
+          )
+        )
+      )
+    ) else (
+      r : %mr_mbp_factor(e, x, sgn),
+      if is(r = false) then (
+        ok : false
+      ) else (
+        facs : [r]
+      )
+    ),
+    if is(ok = false) then (
+      res : false
+    ) else (
+      res : facs
+    )
+  ),
+  res)$
+
+/* the shared-n / exactly-two / n-free-of-x checks on a factor list. */
+%mr_mbp2_tail(facs, x) := block([res],
+  if length(facs) # 2 then (
+    res : false
+  ) else (
+    if part(part(facs,1),3) # part(part(facs,2),3) then (
+      res : false
+    ) else (
+      if not freeof(x, part(facs,1), 3) then (
+        res : false
+      ) else (
+        res : facs
+      )
+    )
+  ),
+  res)$
+
+/* f -> [A1, B1, n, E1, A2, B2, n, E2]: f is EXACTLY two binpow
+   factors with a shared n, else false (a third factor — a stray
+   constant, another power — declines, the same way the .m pattern
+   would). */
+%mr_mbp2(f, x) := block([facs, s, res],
+  if atom(f) then (
+    res : false
+  ) else (
+    if op(f) = "/" then (
+      s : %mr_mbp_side(part(f,1), x, 1),
+      if is(s = false) then (
+        res : false
+      ) else (
+        facs : %mr_mbp_side(part(f,2), x, -1),
+        if is(facs = false) then (
+          res : false
+        ) else (
+          res : %mr_mbp2_tail(append(s, facs), x)
+        )
+      )
+    ) else (
+      facs : %mr_mbp_side(f, x, 1),
+      if is(facs = false) then (
+        res : false
+      ) else (
+        res : %mr_mbp2_tail(facs, x)
+      )
+    )
+  ),
+  res)$
+
+/* ---- generic binomial-power factor decomposition ----------------------
+ * %mr_binpowfactors(f, x) -> false | [c, M, rest, L]
+ *   c    x-free constant factor (1 when none)
+ *   M    the monomial factor c2*x^k as [c2, k], false when none
+ *   rest product of the factors that are NEITHER binomial powers nor a
+ *        monomial (1 when none) — the slot the .m's P(x) pattern
+ *        variable consumes
+ *   L    list of [A, B, n, E], one per binomial-power factor (A + B*x^n)^E
+ *        (a bare factor is E=1; sqrt(A + B*x^n) is E=1/2; a factor in the
+ *        DENOMINATOR carries the sign of E — the same convention as the
+ *        two-factor %mr_mbp2). n is x-free for every factor.
+ *
+ * The generalization of %mr_mbp2 (which stays for the committed 1.1.3.1/
+ * 1.1.3.3 rules): any NUMBER of binpow factors, plus the monomial and
+ * P(x) slots the 1.1.1.x (m-free linear) and 1.1.3.2/4/6/8 (free n,
+ * (c x)^m) families need. The generated manual-matcher rule body assigns
+ * the factors of L to the rule's slots and takes `rest` for its P(x)
+ * slot.
+ *
+ * Measured 2026-08-25, 5.50.0/SBCL (the walker's two premises):
+ *  - length() of a times node is the factor count and part() reaches
+ *    every factor (probes/maxima/probe-times-length.out);
+ *  - a free-exponent pattern slot (pa + pb*x)^pm does NOT match a BARE
+ *    target factor (a + b*x): Maxima's canonical form strips (expr)^1,
+ *    so the target has no Power node — probes/maxima/
+ *    probe-matchfix-bare-factor.out. This walker recovers the implicit
+ *    E=1 that the matcher cannot see.
+ *
+ * Build quirks observed while writing this (see the %mr_mbp2 block):
+ * op() on an atom is fatal (every op() is atom()-guarded); sqrt heads
+ * are tested via string(op(t)); every branch assigns res (a bare
+ * if/then/else as the block value evaluates UNDEFINED); comparisons go
+ * through is(); no return() inside for-loops (loop-level only). */
+/* Split an expression into IRREDUCIBLE factors, carrying a sign: a
+   factor from the NUMERATOR has sgn=1, from the DENOMINATOR sgn=-1.
+   A times node distributes over its factors; a quotient recurses into
+   both sides. Everything else (atoms, powers, sqrt, sums) is one
+   factor — the classifier below decides what it is. */
+%mr_bpf_walk(e, x, sgn) := block([facs, i, res],
+  if atom(e) then (
+    res : [[e, sgn]]
+  ) else (
+    if op(e) = "*" then (
+      facs : [],
+      for i : 1 thru length(e) do
+        facs : append(facs, %mr_bpf_walk(part(e, i), x, sgn)),
+      res : facs
+    ) else (
+      if op(e) = "/" then (
+        res : append(%mr_bpf_walk(part(e, 1), x, sgn),
+                     %mr_bpf_walk(part(e, 2), x, -sgn))
+      ) else (
+        res : [[e, sgn]]
+      )
+    )
+  ),
+  res)$
+
+/* a monomial factor: bare x^k, (c0*x)^k, or x -> [c0, k*sgn], else
+   false. (c0*x)^k is the .m's (c_.*x_)^m_ slot: c0 binds to c_, k to
+   m_. */
+%mr_bpf_monomial(t, sgn, x) := block([base, k, res],
+  if is(t = x) then (
+    res : [1, sgn]
+  ) else (
+    if op(t) = "^" then (
+      base : part(t, 1), k : part(t, 2),
+      if is(base = x) then (
+        res : [1, sgn*k]
+      ) else (
+        if op(base) = "*" and is(length(base) = 2) and is(part(base, 2) = x)
+           and is(freeof(x, part(base, 1))) then (
+          res : [part(base, 1), sgn*k]
+        ) else (
+          res : false
+        )
+      )
+    ) else (
+      res : false
+    )
+  ),
+  res)$
+
+/* a binomial-power factor (A + B*x^n)^E, incl. the BARE form (implicit
+   E=1 — the case the matchfix cannot see, probe-matchfix-bare-factor)
+   and sqrt (E=1/2); the denominator sign is folded into E.
+   -> [A, B, n, E], else false. */
+%mr_bpf_factor(t, sgn, x) := block([base, E, r, res],
+  base : t, E : sgn,
+  if op(t) = "^" then (
+    E : sgn*part(t, 2),
+    base : part(t, 1)
+  ),
+  if string(op(base)) = "sqrt" then (
+    E : E/2,
+    base : part(base, 1)
+  ),
+  /* sqrt of a power: 1/sqrt((A+B x^n)^k) may stay uncombined */
+  if op(base) = "^" then (
+    E : E*part(base, 2),
+    base : part(base, 1)
+  ),
+  r : %mr_mbp_base(base, x),
+  if is(r = false) then (
+    res : false
+  ) else (
+    res : [part(r, 1), part(r, 2), part(r, 3), E]
+  ),
+  res)$
+
+/* One walk factor [t, sgn] -> a list of [A, B, n, E] binomial-power
+   factors (empty list: not a binpow factor). The exponent distributes
+   over a PRODUCT base: Sqrt[(A+B x)(C+D x)] is the .m's single factor
+   Sqrt[(a_+b_.*x_)*(c_+d_.*x_)] and equals (A+B x)^(1/2)*(C+D x)^(1/2);
+   (c0*(A+B x)^E1*(C+D x)^E2)^p expands the same way. Each sub-factor
+   must itself be binpow or monomial — anything else (a polynomial
+   base, a nested product) declines the whole factor. */
+%mr_bpf_factorlist(t, sgn, x) := block([base, E, i, u, r, out, res],
+  base : t, E : sgn,
+  if op(t) = "^" then (
+    E : sgn*part(t, 2),
+    base : part(t, 1)
+  ),
+  if string(op(base)) = "sqrt" then (
+    E : E/2,
+    base : part(base, 1)
+  ),
+  if op(base) = "^" then (
+    E : E*part(base, 2),
+    base : part(base, 1)
+  ),
+  if op(base) = "*" then (
+    out : [],
+    for i : 1 thru length(base) do (
+      u : part(base, i),
+      if is(freeof(x, u)) then (
+        /* a constant inside the product base: the .m has no constant
+           slot — a stray constant declines the factor */
+        out : false
+      ) else (
+        r : %mr_bpf_monomial(u, 1, x),
+        if is(r = false) then (
+          r : %mr_bpf_factor(u, 1, x),
+          if is(r = false) or is(out = false) then (
+            out : false
+          ) else (
+            out : append(out,
+                         [[part(r, 1), part(r, 2), part(r, 3),
+                           part(r, 4)*E]])
+          )
+        ) else (
+          if is(out = false) then (
+            true
+          ) else (
+            out : false
+          )
+        )
+      )
+    ),
+    if is(out = false) then (
+      res : []
+    ) else (
+      res : out
+    )
+  ) else (
+    r : %mr_mbp_base(base, x),
+    if is(r = false) then (
+      res : []
+    ) else (
+      res : [[part(r, 1), part(r, 2), part(r, 3), E]]
+    )
+  ),
+  res)$
+
+/* f -> [c, M, rest, L]
+   c    product of the x-free factors (1 when none)
+   M    [c0, k] the combined monomial factor, false when none
+   rest product of the factors that are NEITHER monomial NOR binomial
+        power (1 when none) — what the .m's P(x) pattern variable
+        consumes, times any lin factors a rule body leaves unassigned
+   L    [A, B, n, E] per binomial-power factor, part order
+ * The generalization of the two-factor %mr_mbp2 (which stays for the
+   committed 1.1.3.1/1.1.3.3 rules): any number of binpow factors,
+   plus the monomial and P(x) slots the 1.1.1.x (m-free linear) and
+   1.1.3.2/4/6/8 ((c x)^m, free n) families need.
+ * Measured 2026-08-25, 5.50.0/SBCL: length() of a times node is the
+   factor count (probe-times-length.out); a free-exponent pattern slot
+   declines bare (exponent-1) factors (probe-matchfix-bare-factor.out).
+ * Build quirks applied (see the %mr_mbp2 block): op() atom-guarded,
+   sqrt tested via string(op), every branch assigns res, comparisons
+   through is(), no return() in for-loops. */
+%mr_binpowfactors(f, x) := block([facs, c, M, rest, L, i, t, sgn, r, res],
+  facs : %mr_bpf_walk(f, x, 1),
+  c : 1, M : false, rest : 1, L : [],
+  for i : 1 thru length(facs) do (
+    t : part(part(facs, i), 1),
+    sgn : part(part(facs, i), 2),
+    if is(freeof(x, t)) then (
+      c : c*t^sgn
+    ) else (
+      r : %mr_bpf_monomial(t, sgn, x),
+      if is(r = false) then (
+        r : %mr_bpf_factorlist(t, sgn, x),
+        if is(length(r) = 0) then (
+          rest : rest*t^sgn
+        ) else (
+          L : append(L, r)
+        )
+      ) else (
+        if is(M = false) then (
+          M : r
+        ) else (
+          M : [part(M, 1)*part(r, 1), part(M, 2) + part(r, 2)]
+        )
+      )
+    )
+  ),
+  res : [c, M, rest, L],
+  res)$
+
+/* Rubi's ShowStep Hold wrapper — identity outside the (unported)
+   ShowStep machinery. */
+%mr_hold(u) := u$
+
+mr_witness_utils() := true$

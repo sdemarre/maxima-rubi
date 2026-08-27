@@ -1,0 +1,167 @@
+#!/bin/sh
+# probes/load_wall/probe-load-curve.run — per-file TLS cost curve of the
+# generated class-1 rule set: how many special vars each file's rules
+# consume in one process, the average cost per rule, and the --tls-limit
+# needed to hold the class-1 / full-Rubi rule sets in a single process.
+#
+#   sh probes/load_wall/probe-load-curve.run
+#
+# MEASURED 2026-08-22 (Maxima 5.50.0, SBCL 2.6.7):
+#   * 2,269 of the 2,710 class-1 rules measured directly (the 6
+#     parse-broken files, 436 rules, are estimated at the measured
+#     average — see probe-parse-sweep.run for their set);
+#   * cost per rule: mean ~9.6 special vars (per-file range ~5..14.5);
+#   * required limits (fresh-process baseline included): class 1
+#     (2,710 rules) >= ~27.1k; the always-loaded layer (2,805) >= ~28.1k;
+#     ALL loaded Rubi classes (7,432 rules, T1 count, classes 2-9
+#     extrapolated at the class-1 mean) >= ~72.7k;
+#   * the project standard since 2026-08-22: run any maxima process that
+#     loads rule files with -X "--tls-limit 100000" (AGENTS.md).
+#
+# Mechanics: the water level (sb-vm::*free-tls-index*, masked, 8 index
+# units per special var — probe-tls-calibration.run) is marked after
+# each file via a one-line lisp defun (the :lisp/package dance: see
+# probe-tls-calibration.run). Parse-broken files (phase 1) are skipped,
+# so the run is not killed by the silent batch-stop on mid-file syntax
+# errors (probe-parse-sweep.run). The curve runs at the standard limit.
+cd "$(dirname "$0")/../.." || exit 1
+OUT=probes/load_wall/probe-load-curve.out
+TMPD=$(mktemp -d)
+trap 'rm -rf "$TMPD"' EXIT
+fail=0
+LIMIT=100000
+
+MARK_DEFS=':lisp (setf *package* (cl:find-package :cl))
+:lisp (defun %mr-tls-mark (label) (let ((idx (logand (symbol-value (find-symbol "*FREE-TLS-INDEX*" (find-package :sb-vm))) most-positive-fixnum))) (format t "TLSMARK ~A ~A~%" label idx)))
+:lisp (export '"'"'(%mr-tls-mark))'
+
+{
+  echo "# class-1 per-file TLS cost curve, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  echo
+
+  echo "=== 0. parse sweep (files to skip) ==="
+  broken=""
+  for f in rules/class1/*.mac; do
+    k=$(basename "$f" .mac)
+    {
+      echo 'load("maxima_rubi.mac");'
+      printf '%s\n' "%mr_load_sibling(\"$f\", 'mr_witness_$k);"
+    } > "$TMPD/one.mac"
+    maxima --very-quiet -X "--tls-limit $LIMIT" -b "$TMPD/one.mac" > "$TMPD/one.log" 2>&1
+    if grep -q "incorrect syntax\|could not load" "$TMPD/one.log"; then
+      broken="$broken $k"
+      echo "  skip $k (parse-broken)"
+    fi
+  done
+  echo
+
+  echo "=== 1. curve at --tls-limit $LIMIT ==="
+  python3 - "$TMPD/curve.mac" "$broken" <<'PYEOF'
+import re, sys
+tmp, broken = sys.argv[1], set(sys.argv[2].split())
+src = open("maxima_rubi.mac").read()
+raw = re.findall(r'%mr_load_sibling\("rules/class1/(\w+)\.mac"', src)
+order = list(dict.fromkeys(raw))
+assert len(order) == 67, len(order)
+L = []
+L.append(':lisp (setf *package* (cl:find-package :cl))')
+L.append(':lisp (defun %mr-tls-mark (label) (let ((idx (logand (symbol-value (find-symbol "*FREE-TLS-INDEX*" (find-package :sb-vm))) most-positive-fixnum))) (format t "TLSMARK ~A ~A~%" label idx)))')
+L.append(":lisp (export '(%mr-tls-mark))")
+L.append(':lisp (cl:%mr-tls-mark "start")')
+L.append('load("maxima_rubi.mac");')
+L.append(':lisp (cl:%mr-tls-mark "core")')
+for k in order[1:]:
+    if k in broken:
+        continue
+    L.append(f"%mr_load_sibling(\"rules/class1/{k}.mac\", 'mr_witness_{k});")
+    L.append(f':lisp (cl:%mr-tls-mark "{k}")')
+L.append('build_info();')
+L.append('quit;')
+open(tmp, "w").write("\n".join(L) + "\n")
+print("loaded", 67 - len(broken) - 1, "files after the core's file 1")
+PYEOF
+  maxima --very-quiet -X "--tls-limit $LIMIT" -b "$TMPD/curve.mac" > "$TMPD/curve.log" 2>&1
+  rc=$?
+  if [ $rc -ne 0 ] || grep -q "Thread local storage" "$TMPD/curve.log"; then
+    echo "  curve run FATAL/failed (exit $rc) — the limit or the budget moved"; fail=1
+  elif grep -q "incorrect syntax\|could not load" "$TMPD/curve.log"; then
+    echo "  curve run hit a parse error the sweep missed — sweep broke?"; fail=1
+  else
+    echo "  curve run clean"
+  fi
+  grep -h "Maxima-version\|Maxima build date\|Lisp implementation version" "$TMPD/curve.log" | sed 's/^/  /'
+  echo
+
+  echo "=== 2. analysis ==="
+  python3 - "$TMPD/curve.log" "$broken" <<'PYEOF'
+import re, sys
+logpath, broken = sys.argv[1], set(sys.argv[2].split())
+marks = {}
+for line in open(logpath):
+    m = re.search(r"TLSMARK (\S+) ([0-9]+)", line)
+    if m:
+        marks[m.group(1)] = int(m.group(2))
+UP = 8  # index units per special var (probe-tls-calibration.run)
+src = open("maxima_rubi.mac").read()
+raw = re.findall(r'%mr_load_sibling\("rules/class1/(\w+)\.mac"', src)
+order = list(dict.fromkeys(raw))
+rules = {k: open(f"rules/class1/{k}.mac").read().count("defmatch(") for k in order}
+assert sum(rules.values()) == 2710, sum(rules.values())
+
+start = marks["start"]
+core = marks["core"]
+core_vars = (core - start) / UP  # loader + core's file 1 (5 rules)
+print(f"  fresh-process water level: {start} units; core (loader + file 1): {core_vars:.0f} vars")
+
+total_rules = 0
+total_vars = 0.0
+rows = []
+prev = core
+for k in order[1:]:
+    if k in broken or k not in marks:
+        continue
+    dv = (marks[k] - prev) / UP
+    dr = rules[k]
+    rows.append((k, dr, dv, dv / dr))
+    total_vars += dv
+    total_rules += dr
+    prev = marks[k]
+c = total_vars / total_rules
+broken_rules = sum(rules[k] for k in broken)
+print(f"  measured: {total_rules} rules (67 - {len(broken)} broken files minus the core's file 1)")
+print(f"  per-file vars/rule: min {min(r[3] for r in rows):.2f}, max {max(r[3] for r in rows):.2f}")
+print(f"  mean cost c = {c:.2f} vars/rule")
+print(f"  broken files ({len(broken)}): {sorted(broken)} = {broken_rules} rules (estimated at c)")
+print()
+startup_vars = start / UP
+for n, label in [(2710, "class 1 (generated)"),
+                 (2805, "always-loaded layer (class 1 + 9.2 + 9.3)"),
+                 (7432, "ALL loaded Rubi classes (T1; 2-9 at class-1 mean)")]:
+    v = n * c
+    print(f"  {label}: {n} rules ~ {v:.0f} vars -> --tls-limit >= {startup_vars + v:.0f}")
+# cross-check: predicted default-limit death (baked limit ~4098, see
+# probe-tls-calibration.run; coarse bound from the 1200/1600-pattern
+# check recorded in probe-load-wall.out)
+w = start + core_vars * UP
+cum = 5
+death = None
+for k, dr, dv, _ in rows:
+    w += dv * UP
+    cum += dr
+    if w >= 8 * 4098 and death is None:
+        death = (k, cum)
+print(f"  cross-check: default-limit death predicted inside {death[0]} (cumulative ~{death[1]})"
+      if death else "  cross-check: predicted death past the measured curve (limit grew?)")
+print("  (probe-load-wall pins the measured band: files 1-7 / 294 rules load,")
+print("   file 8 at 361 cumulative dies — the prediction must sit inside it)")
+PYEOF
+  echo
+  if [ $fail -eq 0 ]; then
+    echo "VERDICT: curve clean on this build (numbers above are the record)"
+  else
+    echo "VERDICT: DEVIATION — the run itself broke"
+  fi
+} > "$OUT"
+echo "wrote $OUT"
+[ $fail -eq 0 ]

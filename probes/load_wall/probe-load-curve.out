@@ -1,0 +1,27 @@
+# class-1 per-file TLS cost curve, 2026-08-24
+# Maxima 5.50.0
+
+=== 0. parse sweep (files to skip) ===
+
+=== 1. curve at --tls-limit 100000 ===
+loaded 66 files after the core's file 1
+  curve run clean
+  Maxima-version: "5.50.0"
+  Maxima build date: "2026-08-20 21:36:22"
+  Lisp implementation version: "2.6.7"
+
+=== 2. analysis ===
+  fresh-process water level: 8516 units; core (loader + file 1): 19 vars
+  measured: 2705 rules (67 - 0 broken files minus the core's file 1)
+  per-file vars/rule: min 4.00, max 18.80
+  mean cost c = 9.92 vars/rule
+  broken files (0): [] = 0 rules (estimated at c)
+
+  class 1 (generated): 2710 rules ~ 26893 vars -> --tls-limit >= 27957
+  always-loaded layer (class 1 + 9.2 + 9.3): 2805 rules ~ 27835 vars -> --tls-limit >= 28900
+  ALL loaded Rubi classes (T1; 2-9 at class-1 mean): 7432 rules ~ 73751 vars -> --tls-limit >= 74816
+  cross-check: default-limit death predicted inside 1_1_2_4 (cumulative ~361)
+  (probe-load-wall pins the measured band: files 1-7 / 294 rules load,
+   file 8 at 361 cumulative dies — the prediction must sit inside it)
+
+VERDICT: curve clean on this build (numbers above are the record)

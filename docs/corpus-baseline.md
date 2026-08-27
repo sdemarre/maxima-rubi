@@ -231,6 +231,36 @@ baseline, per entry:
   per-entry bisect tool from the load sweep is the diagnostic if a
   batch form is ever needed.
 
+### 4.1 The 1.1.1.7 e5 class: a matchfix pattern limit (NOT a
+rule-set gap) — 2026-08-25
+
+~9 corpus entries (1.1.1.7 e5/e10/e15/e19/e20/e24/e25/e30/e35 —
+the P(x)-poison sub-integral map) reduce to the pure 1.1.1.4 shape
+`(a+b x)^m / (Sqrt[c+d x] Sqrt[e+f x] Sqrt[g+h x])` with
+m ∈ {-2, -3, -5/2, -7/2}; the corpus expects elliptic-integral
+answers, and the package defers them (contains-noun). The initial
+hypothesis — a corpus-vs-Rubi rule-set version gap (no pinned rule
+covers the shape) — is FALSE.
+`probes/rubi/01-1114-e5-gap-census.py` (static census of the pinned
+.m, re-runnable) shows the shape IS covered: the rule
+`Int[(a_.+b_.*x_)^m_/(Sqrt[...]Sqrt[...]Sqrt[...]) /;
+IntegerQ[2*m] && LeQ[m,-2]]` (probe class A4 — its twin with
+`GeQ[m,2]` is the m≥2 half) is in the pinned file and ported as
+1_1_1_4 r32 (cond `integerp(2*m) and is(m <= -2)`).
+The real blocker is the matchfix pattern limit (probes
+`/tmp/opencode/r32fix.mac`, `r32bis.mac`, `pq.mac`, 5.50.0/SBCL):
+a product pattern with a FREE-exponent power factor `(a+b x)^_m`
+plus a sibling factor of fixed FRACTIONAL exponent or Sqrt head
+does NOT match — `(pa+pb x)^_m/(sqrt(pc+pd x)...)` = false,
+`(pa+pb x)^_m*(pc+pd x)^(-1/2)` = false,
+`(pa+pb x)^_m*sqrt(pc+pd x)` = false — while all-fixed exponents
+match (P1), free+free match (P3, with name-ordered slot binding),
+and a fixed INTEGER exponent in the DENOMINATOR matches (Q3).
+A custom matcher for the m/(Sqrt Sqrt Sqrt) shape (and the sibling
+permutation rules r20/r21/r22/r24/r27/r34) is the fix; scoping
+decision deferred until the clean full run counts how many corpus
+entries sit on this pattern family.
+
 Q5 (sympy_rubi as oracle for doubtful expected-answers): superseded
 by T4 §5 — sympy's Rubi port is dead prior art (removed 2022,
 generator and utility layer buggy), so no independent oracle exists

@@ -1,0 +1,17 @@
+# TLS calibration (units per special var + default-limit boundary), 2026-08-22
+# Maxima 5.50.0
+
+=== A. fresh-process water level + units per plain pattern ===
+  fresh-process water level W0 = 8516 units
+  Maxima-version: "5.50.0"
+  Maxima build date: "2026-08-20 21:36:22"
+  Lisp implementation version: "2.6.7"
+  500 patterns: 8516 -> 16516 (delta 8000 units)
+  units per plain pattern (2 vars + 1 defmatch) = 16.0
+  units per special var = 8.0
+
+=== B. default-limit plain-pattern boundary (binary search) ===
+  boundary: 1516 patterns load, 1517 FATALs
+  baked-in limit (special vars): in [4096, 4098)
+
+VERDICT: calibration as expected on this build (8 units/var; baked limit ~4098)
