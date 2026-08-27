@@ -119,3 +119,85 @@
                 args
                 '|$%MR_DISPATCH| t nil))
     (setf matchreverse nil)))
+
+;; Pattern-variable slot declarations (the second per-match warning
+;; class, after $X above). A pattern variable that the generated
+;; matcher references as a FREE variable — the structurally
+;; significant slots, i.e. a power's base inside a product (the
+;; u^m*(...) families: the matcher code is
+;; (findexpon <node> $SLOT 'times) — the code that locates the power
+;; of the matched base reads the slot) — makes each compilation unit
+;; that contains it print "undefined variable: MAXIMA::<slot>". $X
+;; covers the pattern-ARGUMENT slot only; the pattern-VARIABLE slots
+;; (20,847 in class 1) each need their own declaration.
+;;
+;; %mr_load_sibling scans each rule file's matchdeclare lines and
+;; declares every slot special BEFORE the load. A runtime-evaluated
+;; (declaim (special ...)) reaches SBCL's later compilations — the
+;; declaim must merely be executed before the unit that references the
+;; slot is compiled: in batch, load() compiles the .mac at load time
+;; (so the declaim precedes it), in interactive the per-match units
+;; are compiled later, at call time. Measured 2026-08-27 (pty
+;; sessions, foo_u^foo_m*(...) probe rule): a verified-executed
+;; runtime declaim before the rule-file load -> 0 warnings (a static
+;; declaim in a loaded .lisp file works too; the runtime form was
+;; kept — no 21k-line generated artifact to desync from the rules).
+;; Same zero-codegen property as $X: SBCL already compiles the free
+;; reference as a dynamic (special) lookup.
+;;
+;; Every matchdeclare line in rules/class1 (generated + the manual
+;; 9_1 port) is single-variable and column-0
+;; "matchdeclare(<name>, <pred>)$" with <pred> in {freeof(x), true}
+;; (20,847 + 149 lines, verified 2026-08-27) — the name is the first
+;; comma-delimited field, which can never contain a comma.
+;;
+;; Maxima -> lisp name mapping for the slots (measured against the
+;; observed warning symbols): "$" + the name, uppercased when the name
+;; is all lowercase (foo_u -> $FOO_U, _mr_1_2_4_2_r21_u ->
+;; $_MR_1_2_4_2_R21_U), typed case kept when it contains an uppercase
+;; (_mr_1_4_1_r24_Pq -> $_mr_1_4_1_r24_Pq).
+;;
+;; The defmfun below is |$%MR_DECLAIM_MATCHVARS| — the Maxima name
+;; %mr_declaim_matchvars carries its % into the lisp symbol ($ prefix,
+;; % kept, no underscore inserted); a $-only symbol is defined but
+;; never found and the call silently stays a noun (measured 2026-08-27).
+;;
+;; The scanner's with-open-file uses the all-keyword form
+;; (:direction :input ...): the positional direction arg (the usual
+;; `(in path nil ...)`) compiles but throws "odd number of &KEY
+;; arguments" at run time in the installed 5.50.0 build (measured
+;; 2026-08-27).
+(defun |$mr-scan-matchvars| (path)
+  (let ((names '()))
+    (when (probe-file path)
+      (with-open-file (in path :direction :input :if-does-not-exist nil)
+        (loop for line = (read-line in nil nil)
+              while line
+              when (string= (if (>= (length line) 13)
+                                (subseq line 0 13)
+                                "")
+                            "matchdeclare(") do
+              (let ((comma (position #\, (subseq line 13))))
+                ;; position is relative to the subseq — add the 13 back
+                ;; for the absolute end index; comma = 0 (no name) is
+                ;; skipped so the bare $ symbol is never touched
+                (when (and comma (plusp comma))
+                  (push (subseq line 13 (+ 13 comma)) names))))))
+    (nreverse names)))
+
+(defun |$mr-declaim-matchvars| (path)
+  (dolist (name (remove-duplicates (|$mr-scan-matchvars| path)
+                                   :test #'string=))
+    (eval `(declaim (special
+                     ,(intern (concatenate 'string "$"
+                                           (if (string= name
+                                                        (string-downcase name))
+                                               (string-upcase name)
+                                               name)))))))
+  nil)
+
+(defmfun |$%MR_DECLAIM_MATCHVARS| (&rest args)
+  (unless (= (length args) 1)
+    (merror (intl:gettext "%mr_declaim_matchvars: expected 1 arg, found ~A")
+            (length args)))
+  (|$mr-declaim-matchvars| (first args)))
