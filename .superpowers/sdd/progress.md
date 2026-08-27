@@ -1915,3 +1915,192 @@ Now: noun -> no-answer; interior marker -> contains-noun; else
 unexpected. Both reclassifying classes are FAIL, so PASS counts are
 unaffected; the 28 no-answer PASS entries re-verified unchanged
 (1.1.2.5 e112/e115 spot-checked).
+
+## Work item: Phase A implicit-1 matcher fix + Phase B section-9.1 port (2026-08-27)
+
+Two work-streams closed in one session: Phase A (the Maxima-vs-
+Mathematica power-storage gap) and Phase B (the legacy 9.1 Integrand
+simplification rules, dropped from the pinned Rubi.m's LoadRules in
+2023-12, hence a manual port).
+
+PHASE A (maxima_rubi_implicit1.lisp, uncommitted): Maxima strips a
+power's exponent 1 at construction and the match compiler hard-rejects
+a top-level MEXPT pattern against a bare target (measured: x^pm vs x
+-> false; (a+b*x)^pm vs (a+b*x) -> false; the factor path finds only
+explicit mexpt factors). Fix: a findfun shadow, gated by
+*mr-implicit1-active*, that wraps the first eligible non-mexpt factor
+in a raw (MEXPT f 1) when the original search 0-fires; the emitted
+(mquotient e (car p)) division strips F with the bound exponent.
+Single-candidate semantics inherited (no backtracking added). The
+shadow is active ONLY in the top-level pass-3 rescan (mr_top,
+fb=false, after passes 1-2 0-fire): nested mr_int dispatches run with
+the gate off (unwind-protected), so nothing currently passing can
+change. GATES: Layer A 511/0; canary broad 120: 85/35 vs run-5 77/43;
+per-target A/B vs run-5: 120/120 matched, ZERO regressions, 8
+improvements (all deferred->verified).
+
+PHASE B (rules/class1/9_1.mac, uncommitted): 29 rules (r1-r29, source
+L4-L35) appended at the END of mr_rule_table (faithful file order).
+Structural ports where the matcher cannot express the .m pattern:
+r13 const-factor split (a_*u_ fills the unfilled factor slot with 1),
+r15 monomial-power x sum ((c_*x_)^m_*u_ 0-fires systematically —
+p6.out). r17-r25 dead in Maxima (shared-v power slots return clean
+false), ported 1:1 as zero-fire. MEASURED regression fixes (the
+degenerate-binding class — the matcher's 0-fill on short sums has no
+Mathematica equivalent):
+ - r1 (L4): plus-pattern vs atomic base binds v := 0 (zero-fill) ->
+   self-repl loop; guard is(v # 0).
+ - r2/r3/r5/r6 (L5-L9): the .m's purpose (a stored base with a
+   literal 0 term) is UNREPRESENTABLE — Maxima simplifies it at
+   construction. The only reachable reading is the degenerate
+   atomic-base one (measured on the 1.4.3 r19 T4-cascade sub-integral
+   x^(n-1)/(2e), reverse scan: a := e, b := 0, n := 0 — cond passes,
+   repl is the integrand verbatim, and the firing blocks the
+   load-bearing native fall-through on mquot sub-integrals the family
+   0-fires). Guard is(op(base reconstruction) = "+") on all four.
+ - r4 (L7): the .m's repl is the stored integrand verbatim on its
+   only reachable shape (measured: (2 x^2 + 3 x)^2 binds a := 0,
+   b := 3, n := 1, c := 2, j := 2) — a loop in the .m world too
+   (CannotIntegrate residue); here the equivalent rescue is the
+   pass-3 lift, which a pass-1 terminal would block -> the rule
+   DECLINES (false).
+ - r11 (L14): -u_ on a positive target synthesizes u := -f as a UNARY
+   MINUS NODE (op "-"), not mtimes(-1, f) — the original op(u) # "*"
+   guard missed it; cycle via the -f re-dispatch; guard op(u) # "-".
+ - Re-dispatch entry: every re-dispatching replacement calls
+   rubi_hybrid (new, maxima_rubi_utils.mac) — the mr_top mirror with
+   the pass gates lifted and the integrate fall-through on both the
+   seen-guard hit and the 0-firing. No existing entry had both halves
+   the .m's nested Int had: mr_int (fb=true) keeps native but drops
+   passes 2-3 (1.1.2.6 e20 regressed exactly that way); rubi (fb=
+   false) keeps passes 2-3 but yields the mr_unintegrable noun (1.1.2.
+   6 e43's r16 re-dispatch regressed to contains-noun on it). The .m's
+   Int was self-contained (Rubi.m:490 CannotIntegrate := Defer[Int])
+   but the corpus acceptance standard is the run-5 pipeline, whose
+   nested native answers are load-bearing.
+ - REJECTED: lifting the fb pass gate globally (mr_top passes 2-3 on
+   nested dispatches too) — measured HANG: 1.1.2.6 e20 retest looped
+   in pattern recompilation past 900 s (2.6M-line output).
+GATES: Layer A 511/0; canary broad 120: 89/31; per-target A/B vs
+run-5: 120/120 matched, ZERO regressions, 12 improvements (all
+deferred->verified); the four canary-regression targets (1.1.2.6
+e20/e43, 1.2.2.4 e351, 1.3.2 e354) all verified (3.1/6.3/4.1/2.8 s).
+
+RUN-6 CONTAMINATION (the 07:22-08:24 UTC full run, discarded): the
+run was launched before the 9_1 work finished, and test/mr_rules.core
+was SWAPPED MID-RUN (the experimental 9_1 build 256942d1 went in at
+~08:1x while the 24 shard drivers were still writing). The driver's
+fingerprint check is at DRIVER START, but each entry launches a FRESH
+sbcl that reloads test/mr_rules.core from disk at entry start — so
+entries after the swap ran on the broken pre-guard 9_1 core. The 7,052
+verified->deferred "regressions" (t=0.0-0.1s — the degenerate-binding
+self-loops) are the contamination signature: they ramp with in-file
+entry position (per-decile counts 54, 52, 225, 560, 1126, 1184, 1172,
+1087, 741, 851 — ~0 in the first two deciles), and a 40-target
+stratified sample re-ran 40/40 VERIFIED on a reconstructed Phase-A
+core (9_1 wiring excised, built to /tmp) + current driver. LESSON:
+never modify test/mr_rules.core or any rule file while a sharded run
+is in flight.
+
+SECOND LESSON: the 120-target canary broad is biased toward currently-
+FAILING targets (few verified members) — it cannot gate verified-
+target regressions; the full-run A/B is the real gate. (The run-6
+contamination was found by the full A/B, not the canary.)
+
+First clean A+B full run (09:15-11:23 UTC, core 9ce4bad1, 3055
+rules): 19,665 passed / 6,032 failed vs run-5 18,588/7,109
+(verified 19,585 vs 18,503). Per-target A/B: 25,697 matched,
+1,162 improvements, 85 regressions. Regression anatomy:
+ - 49 verified->timeout + 13 in the 1.1.3.8/1.3.1 clusters:
+   CORRECT-BUT-SLOW — the 9.1 rules (r16/r11) changed the quartic-
+   radical answer FORM; the new form's zero chain runs 23-26 s
+   solo, over the 30 s budget under 24-way load (canary 60 s
+   verifies them: e125/e127/e129/e485/e491, 1.3.1 e110/e394/e408
+   all verified 23-26 s).
+ - ~26 in the 1.2.1.2/1.2.1.3 clusters + 1.1.3.8 e156-class:
+   TWO real mechanisms, both measured:
+   (a) r11 (the .m L14 sign rule) fires on NEGATED mid-cascade
+       forms in nested dispatches; the .m's full table handles the
+       stripped form, our partial table mishandles it three ways
+       (1.2.1.2 e313: stripped form hits the 1.1.1.4 slot catch-
+       all -> embedded Unintegrable marker; 1.2.1.2 e825:
+       unverified radical form; 1.1.3.8 e156: the cascade
+       terminates in a CONSTANT — sub-answer differentiates to
+       exactly 0, numerically wrong). Unpeeled, the negated form
+       0-fires to the native fall-through (the verifiable explicit-
+       integral residue run-5 builds verified answers from).
+   (b) the COLLAPSE rules (r7 like-term combine, r22-r26
+       proportional-linear, r28/r29 perfect-discriminant) re-
+       dispatch a form algebraically EQUAL to the calling
+       integrand (different stored form); the normalization-aware
+       seen guard (891240b) ratsimp-compares and false-positives a
+       loop -> native noun (1.2.1.3 e839: x^m(A+B x)/(a+b x)^2
+       stored expanded; r28 collapses factored; the family 1.1.1.3
+       r8 would handle the factored form — measured directly).
+
+FIXES (committed in the 9d9a3e7 lineage, core f1f0611f):
+ - r11: cond gains is(depth_level = 1) — TOP-LEVEL ONLY. Nested
+   peels restored the Phase-A/run-5 0-fire->native path.
+ - rubi_hybrid split into %mr_hybrid_body(f, x, mode) + entries:
+   rubi_hybrid (mode "alg", the full seen check — load-bearing
+   drift guard) and rubi_hybrid_exact (mode "exact", exact member
+   check only) — the 8 collapse rules re-dispatch via the exact
+   entry. The collapse rules are one-shot on their own output
+   (the collapsed form cannot re-trigger the pattern), so exact
+   cannot self-cycle; the depth cap bounds foreign cycles; the
+   measured drift chain (family rules on mr_int) never routes
+   through them, so the drift guard stays intact everywhere it
+   matters.
+Gate re-run on f1f0611f: Layer A 511/0; canary broad 120: 120/120
+matched, ZERO regressions, same 12 improvements; the 12 sampled
+regressions (e839/e840/e313/e825/e156/e158/e164/e166/e125/e127/
+e394/e408) all verified — the 23-26 s slow cluster now runs 6.8-
+7.7 s (the r11 gate removed the deep cascade); 5/5 no-answer
+spot-check unchanged.
+
+Clean A+B full run #2 (11:40-13:02 UTC, core f1f0611f, 3055
+rules): 19,731 passed / 5,966 failed (run-5: 18,588/7,109; verified
+19,644 vs 18,503). Per-target A/B: 25,697 matched, 1,162
+improvements, 19 regressions — the 85-regression pre-fix set is down
+to 19. Anatomy of the 19:
+ - 9 verified->timeout, CORRECT-BUT-SLOW: canary (60 s cap)
+   verifies them at 25-35 s solo (1.1.4.3 e228 26.1 s; 1.2.1.3
+   e1979 35.2 s; 1.2.1.4 e686/e687 28-30 s; 1.2.1.5 e59/e66/e73
+   29-32 s; 1.2.1.9 e308 26.3 s; 1.2.2.3 e149 25.3 s) — the 9.1
+   rules changed the quartic/trinomial radical answer FORM; the
+   zero chain on the new form runs 25-35 s, over the 30 s budget
+   under 24-way load. Several were borderline in run-5 already
+   (t5 = 23.8-27.8 s). Known remainder: the zero-chain-form /
+   per-entry-budget quality workstream.
+ - 7 verified->timeout-or-deferred, MATCHER-STATE: the 9.1 PATTERN
+   LOAD changes the Maxima compiled matcher's behavior on a small
+   set of family patterns, which then 0-fire (1.2.2.4 e223 —
+   1.2.2.6 r3's matchreverse pass-2 rescan firing; 1.2.1.2
+   e2514/e2567/e2568/e2569/e2572/e2573 — the 1.2.1.2 r134
+   (a+b x+c x^2)^p/(d+e x)^k chain with 1.4.2 r9). Bisected with
+   three control cores built the same day, same Maxima/SBCL, same
+   utils except the 9.1 wiring: no-9.1 core (3026 rules) fires
+   both chains (r3 via the matchreverse pass-2 rescan; r134+r9);
+   a second no-9.1 core with the CURRENT utils (the rubi_hybrid
+   split) also fires them — ruling out the utils edit; the A+B
+   core (3055) 0-fires all of them (20-60 s of clean scanning,
+   no misfire/BOOLWALK lines with rubi_verbose on); a 9.1-FIRST-
+   HALF-only core (r1-r14 loaded, 3040 rules) CHANGES the result
+   again (a different rule fires first and embeds an
+   _mr_rule_9_1_r12 noun) — so ANY 9.1 pattern load perturbs the
+   rescan. Load-ORDER cannot fix it (a 9.1-first build, family
+   patterns compiled in the 9.1 state, still 0-fires). The
+   interaction is in the installed Maxima's compiled matcher /
+   matchfix state — not reachable from Maxima-level rule code; a
+   mailing-list repro (minimal defmatch/matchdeclare count +
+   matchreverse flip) is the follow-up.
+ - 3 no-answer->unexpected (1.2.3.4 e86/e155/e156): the corpus
+   expects Unintegrable; the package now returns an answer that is
+   NUMERICALLY CORRECT (sampled |diff(ans)-f| <= 3e-10 at three
+   points each) — improvements the 2018 corpus cannot accept
+   (its PASS class for these entries is no-answer only).
+
+Net position: 25,697 entries, +1,162 improvements, 16 PASS->FAIL
+remainders (9 slow-form + 7 matcher-state) out of 18,503 run-5
+verifies (0.09%), 3 corpus-limitation improvements. Phase A+B
+accepted at 19,731/5,966.
