@@ -395,7 +395,16 @@ def build_text(f_text, var_text, e_text, e_text2=None):
             f"mr_r: {call}$\n"
             + "pos$\n" * 40 + "no$\n" * 20)
     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
+        # Interior-marker check FIRST (the other branch's has_noun): the
+        # top-level noun detector only sees op(mr_r), so a partial
+        # reduction whose interior carries the `unintegrable` catch-all
+        # marker is NOT a top-level noun and would misclassify `unexpected`
+        # — it is contains-noun (measured 2026-08-27: 1.1.2.5 e103/e107/
+        # e110, the pinned Rubi's r30 p<0,q>0 reduction whose nested
+        # integrals fall to the file catch-all; their zero chains cannot
+        # close because the markers' integrands survive diff).
         body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
+                f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                 f"else disp(concat(\"CLASS unexpected\"))")
     else:
         # The corpus expected text is inlined into the subtraction and MUST

@@ -1888,3 +1888,30 @@ families: 1.2.1.3 +641, 1.2.1.2 +617, 1.2.1.4 +229, 1.1.3.2 +190,
 
 Uplift vs the T3 integrate() baseline (12,798 verified+expected, 49.8%):
 18,560 (72.2%) = +5,762 (+22.4 pp).
+
+UNEXPECTED TRIAGE (the 3 of 3, all 1.1.2.5 e103/e107/e110 — the "Not
+sure this is not integrable" corpus entries): the user asked whether
+they verify. No — the full zero chain (both stage orders) does NOT
+close on any of the three, by construction: our answer is the pinned
+Rubi's own partial reduction. Rule r30 (source rule 31, the p<0,q>0
+triple-quadratic reduction d/b*Int[..^(p+1)..^(q-1)..] + (bc-ad)/b*
+Int[..]) fires; its two nested sub-integrals are uncovered (the
+dedicated Sqrt-form rules cover only p=1/2, these are p=3/2) and fall
+to the file catch-all (source rule 40, Unintegrable marker = our r39).
+Port completeness re-verified on 1.1.2.5: source has 40 Code cells =
+39 live rules + 1 COMMENTED-OUT rule (the front-end keeps a disabled
+duplicate of the PosQ[d/c] elliptic-pi rule); the port has 39 = all
+live rules, r38 = source 39 (ExpandIntegrand/SumQ), r39 = source 40
+(catch-all). The 2018 corpus says Unintegrable because the 2018 Rubi
+pre-dates the r30 reduction (corpus steps=0); the pinned 2026 Rubi
+returns the partial reduction + markers — neither version has a closed
+form. So: not false answers, not verifiable, faithful to the pin.
+
+Driver fix (corpus_class1_driver.py): the noun-reference branch
+classified "not a top-level noun" -> unexpected WITHOUT the interior
+freeof(unintegrable, ...) check (that check only ran in the
+non-noun-reference branch), so interior-marker answers misclassified.
+Now: noun -> no-answer; interior marker -> contains-noun; else
+unexpected. Both reclassifying classes are FAIL, so PASS counts are
+unaffected; the 28 no-answer PASS entries re-verified unchanged
+(1.1.2.5 e112/e115 spot-checked).
