@@ -33,3 +33,8 @@ e-index)`; run-5 line regex
   unexpected: the package now returns NUMERICALLY CORRECT answers where
   the 2018 corpus expects Unintegrable; the corpus cannot accept them
   (its PASS class for those entries is `no-answer` only).
+- `issues/04-matcher-backtracking-feasibility.md` — research
+  (ready-for-agent): feasibility of adding backtracking to the
+  Maxima matcher (the lever on the 4,361 `deferred` entries, 73% of
+  the failures). Findings land in
+  `docs/matcher-backtracking-feasibility.md` + `probes/matcher/`.
