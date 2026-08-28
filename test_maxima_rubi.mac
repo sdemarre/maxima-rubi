@@ -87,6 +87,7 @@ run_all_tests() := block([],
   test_cluster_l_powered_form(),
   test_class2_cluster_a(),
   test_class2_cluster_b(),
+  test_class2_cluster_c(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -1448,6 +1449,54 @@ test_class2_cluster_b() := block([],
   check("monomialExponent bare x", %mr_monomialExponent(5*X, X), 1),
   check("monomialExponent x itself", %mr_monomialExponent(X, X), 1),
   check_bool("signOfFactor minus wrap", is(%mr_signOfFactor(-3*X) = [-1, 3*X])),
+  true
+)$
+
+/* Class-2 cluster C — the FunctionOfExponential family (milestone-2
+   plan Task 6). F/G/A/… are free symbols; X the variable.
+   Two RED-shape corrections vs the brief (task-6 report):
+   * the sinh "tests true" check uses listp — the brief's
+     `not atom(…)` would PASS at RED, since an undefined-function noun
+     is non-atom; listp is false for a noun and true for the
+     [flag, F, v] state list, so it RED-fails and GREEN-passes.
+   * the x-free check expects Q = false — the .m's Q (:4266) is
+     Test && $exponFlag$ and the FreeQ arm (:4308-4309) never sets the
+     flag, so Q(x-free u) = false; the brief's `= true` is wrong per
+     the .m. */
+test_class2_cluster_c() := block([],
+  print("--- class-2 cluster C: FunctionOfExponential family ---"),
+  check_bool("foE: F^(c (a+b x))", is(%mr_functionOfExponentialQ(F^(C*(A + B*X)), X) = true)),
+  check_bool("foE: %e^(a+b x)", is(%mr_functionOfExponentialQ(%e^(A + B*X), X) = true)),
+  check_bool("foE: sinh(a+b x) returns a state (list)",
+    is(listp(%mr_foE_test(sinh(A + B*X), X)) = true)),
+  check_bool("foE: sinh(a+b x) flag false (no explicit power)",
+    is(part(%mr_foE_test(sinh(A + B*X), X), 1) = false)),
+  check_bool("foE: free of X is not a function-of-exponential (.m Q=false)",
+    is(%mr_functionOfExponentialQ(F^C, X) = false)),
+  check_bool("foE: two different bases refused",
+    is(%mr_functionOfExponentialQ(F^(A + B*X)*G^(C + D*X), X) = false)),
+  check_bool("foE: non-exponential refused", is(%mr_functionOfExponentialQ(A*X^2, X) = false)),
+  check_bool("foE: the variable itself refused", is(%mr_functionOfExponentialQ(X, X) = false)),
+  check("foE: returns F^v (first call keeps full expon)",
+    %mr_functionOfExponential(F^(C*(A + B*X)), X), F^(C*(A + B*X))),
+  check_bool("foEF: F^(b x) -> X (v through the origin)",
+    is(%mr_functionOfExponentialFunction(F^(B*X), X) = X)),
+  /* Step 4 (2026-08-28, 5.50.0/SBCL): the emitted form is pinned
+     exactly — %mr_functionOfExponentialFunction(sinh(B*X), X) reduces
+     under %mr_simp to (X^2 - 1)/(2*X); the A/B corpus comparison relies
+     on this form being deterministic. */
+  check("foEF: sinh(b x) exact",
+    %mr_functionOfExponentialFunction(sinh(B*X), X), (X^2 - 1)/(2*X)),
+  check_bool("functionExpand: gamma(3) case value",
+    is(abs(float(%mr_functionExpand(gamma_incomplete(3, 1.7)))
+           - float(gamma_incomplete(3, 1.7))) < 1e-9)),
+  check_bool("functionExpand: passthrough", is(%mr_functionExpand(F^X) = F^X)),
+  /* is(sym # 0) is unknown (not true) on free symbols — the
+     value-equality form is the sound assertion: ratsimp of the
+     difference closes iff the quotient survived as a quotient. */
+  check_bool("fullSimplify: quotient keeps quotient",
+    is(ratsimp(denom(%mr_fullSimplify(G1*H1*log(G2)/(D1*E1*log(F1))))
+               - D1*E1*log(F1)) = 0)),
   true
 )$
 
