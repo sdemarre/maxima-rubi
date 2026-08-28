@@ -227,7 +227,8 @@ def main():
                         examples[t] = (n + 1, label +
                                        "   | cond: " + cond[:80])
 
-    print("=== class-1 rule syntax census (only Rubi.m-loaded files) ===")
+    print(f"=== class-{classp.strip()} rule syntax census "
+          f"(only Rubi.m-loaded files) ===")
     print(f"loaded rule files: {len(loaded)}   rules: {n_rules}   "
           f"with /; condition: {n_cond}")
     print("optional-capture histogram (rules by # distinct a_. names):")
@@ -241,34 +242,34 @@ def main():
     print()
     print("== condition tokens: tier | rules | uses | token "
           "(U = unlistied) ==")
-    for t, c in cond_rules.most_common():
+    for t, c in sorted(cond_rules.items(), key=lambda kv: (-kv[1], kv[0])):
         mark = "U" if is_unlistied(t) else tier_of(t)
-        print(f"  {mark}   rules={cond_rules[t]:4d}  uses={c:5d}  {t}")
+        print(f"  {mark}   rules={cond_rules[t]:4d}  uses={cond_use[t]:5d}  {t}")
     print()
     print("== replacement tokens: tier | rules | uses | token "
           "(U = unlistied) ==")
-    for t, c in repl_rules.most_common():
+    for t, c in sorted(repl_rules.items(), key=lambda kv: (-kv[1], kv[0])):
         mark = "U" if is_unlistied(t) else tier_of(t)
-        print(f"  {mark}   rules={repl_rules[t]:4d}  uses={c:5d}  {t}")
+        print(f"  {mark}   rules={repl_rules[t]:4d}  uses={repl_use[t]:5d}  {t}")
     print()
     print("== pattern features ==")
     for f_, c in sorted(pat_feats.items()):
         print(f"  {c:5d}  {f_}")
     print()
     print("== C-tier tokens in conditions/rules (rules containing) ==")
-    for t, c in c_cond_tok.most_common():
+    for t, c in sorted(c_cond_tok.items(), key=lambda kv: (-kv[1], kv[0])):
         print(f"  {c:4d}  {t}")
     if c_repl_tok:
         print("== C-tier tokens in replacements ==")
-        for t, c in c_repl_tok.most_common():
+        for t, c in sorted(c_repl_tok.items(), key=lambda kv: (-kv[1], kv[0])):
             print(f"  {c:4d}  {t}")
     if unlistied:
         print("== UNLISTIED tokens (not in any tier — need triage) ==")
-        for t, c in unlistied.most_common():
+        for t, c in sorted(unlistied.items(), key=lambda kv: (-kv[1], kv[0])):
             print(f"  {c:4d}  {t}")
     print()
     print("== manual bucket by file (rules / distinct token-sets) ==")
-    for rel, c in manual_files.most_common():
+    for rel, c in sorted(manual_files.items(), key=lambda kv: (-kv[1], kv[0])):
         tsets = len(manual_tokens_per_file[rel])
         print(f"  rules={c:3d}  distinct-sets={tsets}  {rel}")
     print()

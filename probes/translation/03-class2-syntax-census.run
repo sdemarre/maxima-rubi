@@ -1,6 +1,10 @@
 #!/bin/sh
-# Class-2 syntax census (the token closure for the class-2 translation
-# table). Re-run from the worktree root; stamp before comparing.
+# probes/translation/03-class2-syntax-census.run — class-2 census driver.
+#
+#   sh probes/translation/03-class2-syntax-census.run
 cd "$(dirname "$0")/../.." || exit 1
-echo "maxima $(maxima --version 2>&1 | head -1)  date $(date -u '+%F %T UTC')"
-python3 probes/translation/01-class1-syntax-census.py reference/rubi "2 "
+{
+  echo "# class-2 rule syntax census, $(date -u +%F)"
+  python3 probes/translation/01-class1-syntax-census.py reference/rubi "2 "
+} > probes/translation/03-class2-syntax-census.out
+echo "wrote probes/translation/03-class2-syntax-census.out"

@@ -1,4 +1,5 @@
-=== class-1 rule syntax census (only Rubi.m-loaded files) ===
+# class-2 rule syntax census, 2026-08-28
+=== class-2 rule syntax census (only Rubi.m-loaded files) ===
 loaded rule files: 3   rules: 125   with /; condition: 125
 optional-capture histogram (rules by # distinct a_. names):
   0 optional names: 2 rules
@@ -19,84 +20,84 @@ rule classification: AUTO (tokens all BUILTIN/B_TIER): 80 ( 64.0%)
                       MANUAL (>=1 C-tier token/exotic pattern): 45 ( 36.0%)
 
 == condition tokens: tier | rules | uses | token (U = unlistied) ==
-  B   rules= 124  uses=  124  FreeQ
-  b   rules=  35  uses=   35  EqQ
-  B   rules=  33  uses=   33  Not
-  B   rules=  29  uses=   29  IntegerQ
-  b   rules=  23  uses=   23  NeQ
+  B   rules= 124  uses=  125  FreeQ
+  b   rules=  35  uses=   44  EqQ
+  B   rules=  33  uses=   35  Not
+  B   rules=  29  uses=   35  IntegerQ
+  b   rules=  23  uses=   26  NeQ
   C   rules=  21  uses=   21  LinearQ
   B   rules=  18  uses=   18  IGtQ
-  B   rules=  14  uses=   14  GtQ
-  B   rules=  14  uses=   14  LtQ
-  C   rules=  11  uses=   11  PolynomialQ
+  B   rules=  14  uses=   15  GtQ
+  B   rules=  14  uses=   17  LtQ
+  C   rules=  11  uses=   13  PolynomialQ
   B   rules=  10  uses=   10  ILtQ
+  B   rules=   9  uses=   12  Log
   U   rules=   9  uses=    9  TrueQ
-  B   rules=   9  uses=    9  Log
-  U   rules=   6  uses=    6  PowerOfLinearQ
   C   rules=   6  uses=    6  LinearMatchQ
+  U   rules=   6  uses=    6  PowerOfLinearQ
   b   rules=   6  uses=    6  RationalQ
-  b   rules=   4  uses=    4  Simplify
-  U   rules=   3  uses=    3  PowerOfLinearMatchQ
+  b   rules=   4  uses=    6  Simplify
   B   rules=   3  uses=    3  LeQ
-  C   rules=   2  uses=    2  SumSimplerQ
+  U   rules=   3  uses=    3  PowerOfLinearMatchQ
   C   rules=   2  uses=    2  BinomialQ
+  B   rules=   2  uses=    4  Coefficient
+  U   rules=   2  uses=    5  Exponent
   C   rules=   2  uses=    2  QuadraticMatchQ
   C   rules=   2  uses=    2  QuadraticQ
-  B   rules=   2  uses=    2  Coefficient
-  U   rules=   2  uses=    2  Exponent
-  B   rules=   1  uses=    1  PosQ
-  B   rules=   1  uses=    1  NegQ
-  b   rules=   1  uses=    1  FractionQ
+  C   rules=   2  uses=    2  SumSimplerQ
   C   rules=   1  uses=    1  BinomialMatchQ
-  B   rules=   1  uses=    1  GeQ
-  b   rules=   1  uses=    1  IntegersQ
-  C   rules=   1  uses=    1  SumQ
-  C   rules=   1  uses=    1  LeafCount
-  B   rules=   1  uses=    1  If
-  C   rules=   1  uses=    1  MatchQ
-  U   rules=   1  uses=    1  F
-  C   rules=   1  uses=    1  InverseFunctionQ
-  U   rules=   1  uses=    1  FunctionOfExponentialQ
   B   rules=   1  uses=    1  D
+  U   rules=   1  uses=    1  F
+  b   rules=   1  uses=    1  FractionQ
+  U   rules=   1  uses=    1  FunctionOfExponentialQ
+  B   rules=   1  uses=    1  GeQ
+  B   rules=   1  uses=    1  If
+  b   rules=   1  uses=    1  IntegersQ
+  C   rules=   1  uses=    1  InverseFunctionQ
+  C   rules=   1  uses=    2  LeafCount
+  C   rules=   1  uses=    2  MatchQ
+  B   rules=   1  uses=    1  NegQ
+  B   rules=   1  uses=    1  PosQ
+  C   rules=   1  uses=    1  SumQ
 
 == replacement tokens: tier | rules | uses | token (U = unlistied) ==
-  b   rules=  94  uses=   94  Int
-  B   rules=  64  uses=   64  Log
+  b   rules=  94  uses=  106  Int
+  B   rules=  64  uses=  142  Log
   b   rules=  18  uses=   18  Subst
   b   rules=  18  uses=   18  With
-  b   rules=  16  uses=   16  ExpandToSum
+  b   rules=  16  uses=   23  ExpandToSum
   b   rules=  13  uses=   13  ExpandIntegrand
-  B   rules=   8  uses=    8  Sqrt
+  B   rules=   8  uses=   23  Sqrt
   b   rules=   8  uses=    8  Unintegrable
-  b   rules=   7  uses=    7  Simplify
+  b   rules=   7  uses=    9  Simplify
   U   rules=   6  uses=    6  NormalizePowerOfLinear
+  B   rules=   5  uses=   11  Denominator
   U   rules=   5  uses=    5  Gamma
-  b   rules=   5  uses=    5  Rt
-  B   rules=   5  uses=    5  Denominator
+  b   rules=   5  uses=    7  Rt
+  B   rules=   3  uses=    4  D
   U   rules=   3  uses=    3  ExpIntegralEi
-  b   rules=   3  uses=    3  IntHide
   b   rules=   3  uses=    3  FullSimplify
-  B   rules=   3  uses=    3  Numerator
   B   rules=   3  uses=    3  Hypergeometric2F1
-  B   rules=   3  uses=    3  D
+  b   rules=   3  uses=    3  IntHide
+  B   rules=   3  uses=    3  Numerator
+  B   rules=   2  uses=    7  Coefficient
   b   rules=   2  uses=    2  Dist
+  U   rules=   2  uses=    3  Erf
+  B   rules=   2  uses=    2  Expand
+  B   rules=   2  uses=    2  FreeQ
+  B   rules=   2  uses=    2  If
   b   rules=   2  uses=    2  Module
   U   rules=   2  uses=    2  PowerQ
-  B   rules=   2  uses=    2  If
-  B   rules=   2  uses=    2  FreeQ
-  B   rules=   2  uses=    2  Coefficient
-  U   rules=   2  uses=    2  Erf
-  B   rules=   2  uses=    2  Expand
-  b   rules=   1  uses=    1  IntPart
-  b   rules=   1  uses=    1  FracPart
   U   rules=   1  uses=    1  Erfi
-  U   rules=   1  uses=    1  FunctionExpand
+  U   rules=   1  uses=    2  Exp
   b   rules=   1  uses=    1  ExpandLinearProduct
-  U   rules=   1  uses=    1  Exp
-  U   rules=   1  uses=    1  FunctionOfExponentialFunction
+  U   rules=   1  uses=    2  Exponent
+  b   rules=   1  uses=    2  FracPart
+  U   rules=   1  uses=    1  FunctionExpand
   U   rules=   1  uses=    1  FunctionOfExponential
+  U   rules=   1  uses=    1  FunctionOfExponentialFunction
+  b   rules=   1  uses=    1  IntPart
   U   rules=   1  uses=    1  NormalizeIntegrand
-  U   rules=   1  uses=    1  Exponent
 
 == pattern features ==
      15  head in pattern: Log
@@ -109,51 +110,51 @@ rule classification: AUTO (tokens all BUILTIN/B_TIER): 80 ( 64.0%)
     21  LinearQ
     11  PolynomialQ
      9  TrueQ
-     6  PowerOfLinearQ
      6  LinearMatchQ
+     6  PowerOfLinearQ
      3  PowerOfLinearMatchQ
-     2  SumSimplerQ
      2  BinomialQ
+     2  Exponent
      2  QuadraticMatchQ
      2  QuadraticQ
-     2  Exponent
+     2  SumSimplerQ
      1  BinomialMatchQ
-     1  SumQ
+     1  F
+     1  FunctionOfExponentialQ
+     1  InverseFunctionQ
      1  LeafCount
      1  MatchQ
-     1  F
-     1  InverseFunctionQ
-     1  FunctionOfExponentialQ
+     1  SumQ
 == C-tier tokens in replacements ==
      6  NormalizePowerOfLinear
      5  Gamma
      3  ExpIntegralEi
-     2  PowerQ
      2  Erf
+     2  PowerQ
      1  Erfi
-     1  FunctionExpand
      1  Exp
-     1  FunctionOfExponentialFunction
-     1  FunctionOfExponential
-     1  NormalizeIntegrand
      1  Exponent
+     1  FunctionExpand
+     1  FunctionOfExponential
+     1  FunctionOfExponentialFunction
+     1  NormalizeIntegrand
 == UNLISTIED tokens (not in any tier — need triage) ==
      9  TrueQ
-     6  PowerOfLinearQ
      6  NormalizePowerOfLinear
+     6  PowerOfLinearQ
      5  Gamma
      3  ExpIntegralEi
-     3  PowerOfLinearMatchQ
      3  Exponent
-     2  PowerQ
+     3  PowerOfLinearMatchQ
      2  Erf
+     2  PowerQ
      1  Erfi
-     1  FunctionExpand
      1  Exp
      1  F
-     1  FunctionOfExponentialQ
-     1  FunctionOfExponentialFunction
+     1  FunctionExpand
      1  FunctionOfExponential
+     1  FunctionOfExponentialFunction
+     1  FunctionOfExponentialQ
      1  NormalizeIntegrand
 
 == manual bucket by file (rules / distinct token-sets) ==
