@@ -2347,9 +2347,9 @@ adjudication — spec ✅, quality Approved)
     case comment omits the unary-minus deviation note (search variant
     has it).
 
-Task 4: complete (commits 77da405..4cc259e, TDD red-green; review pending
-at ledger-write time — see review dispatch; spec deltas below are
-controller-verified against the .m call sites)
+Task 4: complete (commits 77da405..0850fb5, TDD red-green; reviewer
+APPROVED, spec + quality; fix round 0850fb5; controller-verified
+independently: Layer A 542/0, no trailers)
   - RED: 519 passed / 20 failed (all 20 = new checks) -> GREEN:
     539 passed / 0 failed.
   - Brief defects found by measurement (each probed before fixing,
@@ -2387,3 +2387,13 @@ controller-verified against the .m call sites)
     behavior — remove if judged speculative at final review); r35/r38
     self-refire cost for implicit-exponent v is bounded by the runner
     depth cap (watch for timeout mass in the class-2 run).
+
+  - Fix round (0850fb5): reviewer minor-1 — regression anchors for the
+    new branches: powerOfLinearQ sqrt-linear true / atom false,
+    powerOfLinearMatchQ sqrt-false (the 2.3 r38 firing case). Layer A
+    539 -> 542. Plan test block + counts updated (20 -> 23).
+  - Reviewer minors closed/recorded: report stat corrected (+31/0);
+    check name "free of X" misnomer (plan-mandated, cosmetic, recorded);
+    everyQ unknown-handling theoretical (plan-mandated, recorded);
+    sqrt-branch reachability question -> carried to final review
+    (unreachable from committed patterns today; contract faithfulness).
