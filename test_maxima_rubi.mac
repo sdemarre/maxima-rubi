@@ -1427,6 +1427,27 @@ test_class2_cluster_b() := block([],
     is(%mr_normalizeIntegrand(%e^(A + B*X + C*X^2), X) = %e^(A + B*X + C*X^2))),
   check_bool("mergeMonomials linear cancel",
     is(%mr_mergeMonomials((A + B*X), X) = (A + B*X))),
+  /* Fix round 1 (2026-08-28 review): FactorBase last-branch head-
+     preserving reconstruction (apply(op(u), …) — the .m's Map keeps
+     the head), bare-x monomial exponents (Maxima strips exponent-1
+     powers; the .m's x_^n_. matches bare x at n = 1), and the
+     signOfFactor minus-wrap branch (smoke-probed only before). */
+  check("factorBase power head kept", %mr_normalizeIntegrandFactorBase(x^5, x), x^5),
+  /* SHAPE ADJUSTMENT (measured 2026-08-28, 5.50.0/SBCL): the review's
+     original shape -(x^2+3*x)^3 is classified a TRINOMIAL by M1's
+     %mr_trinomial_parts polynomial branch (zero-check inverted and
+     under-ranged vs the .m's TrinomialParts :929-:937 — trinomialQ
+     TRUE where the .m says FALSE; pre-existing M1 defect, reported in
+     the task-5 report fix-round section) and is routed to the
+     trinomial branch (expandToSum) before ever reaching the last
+     branch — pinning it would pin that defect. -(x+1)^5 is
+     minus-wrapped (op "-"), not binomial/trinomial, and a degree-5
+     polynomial (degree>4), so it reaches the last branch: head and
+     value preserved. */
+  check("factorBase minus wrap kept", %mr_normalizeIntegrandFactorBase(-(x+1)^5, x), -(x+1)^5),
+  check("monomialExponent bare x", %mr_monomialExponent(5*X, X), 1),
+  check("monomialExponent x itself", %mr_monomialExponent(X, X), 1),
+  check_bool("signOfFactor minus wrap", is(%mr_signOfFactor(-3*X) = [-1, 3*X])),
   true
 )$
 

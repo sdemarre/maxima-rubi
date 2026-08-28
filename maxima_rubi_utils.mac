@@ -4853,7 +4853,15 @@ mr_use_gamma_flag : false$
    r=0 do if i=2 then return(99), r) -> 0, not 99), so the first-
    match scan is a for-thru guarded by is(r = 0) — the guard also
    stays a no-op NOUN if a symbolic exponent was captured (the .m's
-   n_ may be x-free symbolic). */
+   n_ may be x-free symbolic). The .m's x_^n_. matches BARE x (n
+   defaulting to 1); Maxima strips exponent-1 powers, so a bare-x
+   factor is an ATOM — the scan's powerQ test misses it (fix round 1,
+   2026-08-28 review; measured before the fix on 5.50.0/SBCL:
+   monomialExponent(5*X, X) = 0, monomialExponent(X, X) = 0, where
+   the .m gives 1) — the atom(f) and is(f = x) scan arm and the
+   is(u = x) whole-u arm are that default. M1 precedent: the
+   monomialQ product scan counts bare x the same way (this file's
+   line 661). */
 %mr_monomialExponent(u, x) := block([f, r, i, n],
   if freeof(x, u) then 0
   else if not atom(u) and is(op(u) = "*") then (
@@ -4863,11 +4871,13 @@ mr_use_gamma_flag : false$
       f : part(args(u), i),
       if is(r = 0) then (
         if %mr_powerQ(f) and is(part(f, 1) = x) and freeof(x, part(f, 2))
-        then r : part(f, 2))),
+        then r : part(f, 2)
+        else if atom(f) and is(f = x) then r : 1)),
     r
   )
   else if %mr_powerQ(u) and is(part(u, 1) = x) and freeof(x, part(u, 2))
   then part(u, 2)
+  else if is(u = x) then 1
   else 0)$
 
 /* Rubi :1399  MinimumMonomialExponent — u is a sum whose terms are
@@ -4964,11 +4974,20 @@ mr_use_gamma_flag : false$
    QuadraticQ is true on symbolic coefficients — Coefficient[u,x,0]
    === 0 is FALSE for a symbol — so the .m's own TrinomialQ is
    false), and the quadratic base reaches the polynomial/degree<=4 ->
-   ExpandToSum branch, exactly as in the .m. The last branch reads
-   the .m's Map-over-parts as apply("+") over the terms: faithful for
-   the sum-shaped leftovers (degree>4 polynomials) — Maxima stores
-   quotients as products of an inverse-power factor, which the
-   product branch above already handles. */
+   ExpandToSum branch, exactly as in the .m. The last branch is the
+   .m's Map-over-parts (:2048) — Map KEEPS THE HEAD, so the port
+   reconstructs with apply(op(u), …) (Maxima's op/args decomposition
+   round-trips any non-list expression: "^", "sqrt", "-", function
+   heads). Fix round 1 (2026-08-28 review): the branch previously
+   read apply("+", …), destroying the head (measured on this build
+   5.50.0/SBCL: sqrt(a+b*x) -> a+b*x, -(x^2+3*x)^3 -> the expanded
+   -x^6-9*x^5-27*x^4-27*x^3). Reachable domain (sums never reach it —
+   the sumQ branch above catches them; products and degree<=4
+   polynomials are caught earlier): powers with x in the base whose
+   degree exceeds 4 or whose base is not a (match) binomial/trinomial
+   ((x+1)^5 — x^5 is a binomial, a = 0), sqrt nodes, minus-wrapped
+   powers, other function heads. Quotients are stored as products of
+   an inverse-power factor, which the product branch above handles. */
 %mr_normalizeIntegrandFactorBase(u, x) := block([v],
   if atom(u) then u
   else if %mr_binomialQ(u, x) then
@@ -4986,7 +5005,7 @@ mr_use_gamma_flag : false$
     then %mr_unifySum(u, x)
     else %mr_normalizeIntegrandFactorBase(v, x)
   )
-  else apply("+", map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u))))$
+  else apply(op(u), map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u))))$
 
 /* Rubi :2007  NormalizeIntegrandFactor. The .m's last branch maps
    #/x^min without Simplify while the integer-power branch maps
