@@ -817,8 +817,8 @@ test_class2_cluster_a() := block([],
   check_bool("calculusQ product", is(%mr_calculusQ(f*x) = false)),
   check_bool("hyperbolicQ sinh", is(%mr_hyperbolicQ(sinh(x)) = true)),
   check_bool("hyperbolicQ sin", is(%mr_hyperbolicQ(sin(x)) = false)),
-  check_bool("everyQ all", is(%mr_everyQ(lambda([q]) : integerp(q), [1, 2, 3]) = true)),
-  check_bool("everyQ one false", is(%mr_everyQ(lambda([q]) : integerp(q), [1, %i]) = false)),
+  check_bool("everyQ all", is(%mr_everyQ(lambda([q], integerp(q)), [1, 2, 3]) = true)),
+  check_bool("everyQ one false", is(%mr_everyQ(lambda([q], integerp(q)), [1, %i]) = false)),
   check_bool("powerOfLinearQ linear", is(%mr_powerOfLinearQ(a + b*X, X) = true)),
   check_bool("powerOfLinearQ rational power", is(%mr_powerOfLinearQ((a + b*X)^(3/2), X) = true)),
   check_bool("powerOfLinearQ non-linear base", is(%mr_powerOfLinearQ((a + b*X^2)^(1/2), X) = false)),
@@ -863,55 +863,99 @@ Append to `maxima_rubi_utils.mac`:
    mr_simplify_flag precedent, this file's line 11). */
 mr_use_gamma_flag : false$
 
-/* Rubi PowerQ (:162) — the Power-head test. Maxima strips the
-   exponent-1 Power head (x^1 -> x), so a bare linear form reaches this
-   as an atom/sum — the %mr_linearQ branch of the PowerOfLinear family
-   covers that case; this predicate sees only kept powers. */
+/* Rubi PowerQ (:162) — the Power-head test. MEASURED 2026-08-28
+   (5.50.0/SBCL): a power's op is the STRING "^" (stringp(op(x^2))
+   true, symbolp false; is(op(x^2) = "^") true — this file's house
+   idiom, e.g. line 624; is(op(x^2) = power) false, the symbol
+   power # the string "^"). Maxima strips the exponent-1 Power head
+   (x^1 -> x), so a bare linear form reaches this as an atom/sum —
+   the %mr_linearQ branch of the PowerOfLinear family covers that
+   case; and x^(1/2) is stored as a 'sqrt node (the line-1242 note),
+   so PowerQ(sqrt(x)) is false by design — this predicate sees only
+   kept power nodes. */
 %mr_powerQ(u) := block([],
   if atom(u) then false
-  else is(op(u) = power))$
+  else is(op(u) = "^"))$
 
 /* Rubi CalculusQ — head in the calculus list ($CalculusFunctions =
    {D, Integrate, Sum, Product, Int, Unintegrable, CannotIntegrate,
-   Dif, Subst}). The package nouns stand in: mr_int (the recursion
-   call), the 'unintegrable[f, x] noun (the catch-all marker,
-   mr_unintegrable, this file's line 27). Dif has no package
-   counterpart. member() returns a boolean in this build (note at
-   line 758). MEASURED 2026-08-28 (5.50.0/SBCL): the stored DIFF noun's
-   op is `derivative` (NOT `diff` — op(diff(f(x), x)) = derivative);
-   and integrate/sum/product of an x-INDEPENDENT summand EVALUATE to
-   ordinary products/powers (integrate(f, x) = f*x, op * — even
-   quoted), so a calculus noun only exists when the summed/integrated
-   object depends on the variable. */
-%mr_calculusQ(u) := block([],
+   Dif, Subst}). The package nouns stand in: the diff/integrate/
+   sum/product nouns, and the 'unintegrable[f, x] noun (the catch-all
+   marker, mr_unintegrable, this file's line 27); mr_int and %mr_subst
+   are evaluated functions (no noun forms) but their names stay in the
+   list for the stand-in mapping. Dif and CannotIntegrate have no
+   package counterpart.
+   MEASURED 2026-08-28 (5.50.0/SBCL): a NOUN's op is an internal
+   symbol whose string() is the head name — NOT the function symbol
+   (is(op('integrate[f(x),x]) = 'integrate) false, likewise for
+   'diff/'sum/'product/'unintegrable), so a member() over function
+   symbols never matches; the test runs on string(op(u)) — a member
+   over the string list (is(string(op('diff[f(x),x])) = "diff")
+   true; the diff noun's internal symbol DISPLAYS as `derivative` in
+   math mode but string()s to "diff"). For operator heads op()
+   already returns a string (op(f*x) is "*"), and string() of a
+   string is the identity, so one test covers both. member() returns
+   a boolean in this build (note at line 758). Also measured:
+   integrate/sum of an x-INDEPENDENT summand EVALUATE to an ordinary
+   product (integrate(f, x) = f*x, sum(f, x, 1, n) = f*n even at
+   symbolic bound, op "*"), so a calculus noun only exists when the
+   summed/integrated object depends on the variable. */
+%mr_calculusQ(u) := block([s],
   if atom(u) then false
-  else is(member(op(u), [integrate, derivative, sum, product,
-                         mr_int, mr_subst, 'unintegrable]) = true))$
+  else (
+    s : string(op(u)),
+    is(member(s, ["integrate", "diff", "sum", "product",
+                  "mr_int", "mr_subst", "unintegrable"]) = true)
+  ))$
 
 /* Rubi HyperbolicQ — the six hyperbolic heads (the
    FunctionOfExponential machinery's explicit-exponential detection).
-   All six are native in this build (5.50.0). */
+   All six are native in this build (5.50.0). MEASURED 2026-08-28: an
+   ordinary function application's op IS the function symbol
+   (is(op(sinh(x)) = sinh) true — unlike the noun heads above), so
+   member() over the symbol list matches directly. */
 %mr_hyperbolicQ(u) := block([],
   if atom(u) then false
   else is(member(op(u), [sinh, cosh, tanh, coth, sech, csch]) = true))$
 
-/* Rubi EveryQ — func over every element, true iff all true. */
+/* Rubi EveryQ — func over every element, true iff all true.
+   MEASURED 2026-08-28 (5.50.0/SBCL): list iteration is `for e in
+   lst` — `for e : lst` parses as `for e from lst` (the definition
+   echo shows it), which iterates the whole list as ONE element and
+   made everyQ([1,2,3]) false. f(e) applies the lambda parameter
+   directly (measured equal to apply(f, [e])). */
 %mr_everyQ(f, lst) := block([r],
   r : true,
-  for e : lst while r do r : is(f(e)),
+  for e in lst while r do r : is(f(e)),
   r)$
 
 /* PowerOfLinearQ / PowerOfLinearMatchQ / NormalizePowerOfLinear —
    UNDEFINED in the pinned Rubi 4 clone (measured 2026-08-28: no
    definition in IntegrationUtilityFunctions.m or anywhere in the
    clone; absent from the Rubi-5 stub too), yet called by 2.1 r17/r18
-   and 2.3 r8/r9/r10/r38. Ported from the call-site contract:
-   u is a rational power of a linear form in x; a bare linear form
-   counts (Maxima strips its exponent-1 Power head, so the
-   %mr_linearQ branch is the exponent-1 case). The MatchQ variant is
-   the same test on the matched value — the generator runs the
-   condition on bound captures, where match structure and value
-   coincide (the implicit-exponent case is the %mr_linearQ branch).
+   and 2.3 r8/r9/r10/r38 (upstream numbers; the generated call sites
+   are 2.1 r12/r13 and 2.3 r5/r6/r7/r35). Ported from the call-site
+   contract: u is a rational power of a linear form in x.
+   Storage adaptations, MEASURED 2026-08-28 (5.50.0/SBCL):
+   * Maxima strips the exponent-1 Power head (x^1 -> x), so a bare
+     linear form counts (the %mr_linearQ branch is the exponent-1
+     case);
+   * (linear)^(1/2) is stored as a 'sqrt node (the op string of
+     (a+b*X)^(1/2) is "sqrt"), so the sqrt-of-linear branch is the
+     exponent-1/2 case;
+   * the EXONENT is the part that must be x-free (freeof(x,
+     part(u, 2))): the base is linear in x by construction, and the
+     generated replacement code itself tests freeof(x, part(uu, 2))
+     (rules/class2/2_1.mac r13, 2.3 r7).
+   The MatchQ variant is the same test WITHOUT the implicit-exponent
+   branches — the strict stored-power structure (%mr_powerQ, x-free
+   rational exponent, linear base). It must not be identical to the
+   value test: the 2.3 r35 condition
+   %mr_powerOfLinearQ(v, x) and not(%mr_powerOfLinearMatchQ(v, x))
+   is unsatisfiable (Q and not Q) if the two coincide, which would
+   kill the rule; the strict reading fires exactly for the
+   implicit-exponent v (bare linear / sqrt-linear), whose
+   replacement re-dispatches into the F^(linear) rules.
    NormalizePowerOfLinear is the identity: the progress the recursion
    needs (u^m combining into a simpler power) comes from Maxima's own
    power combining — ((a+b x)^(p/q))^m -> (a+b x)^(p m/q) — which the
@@ -920,16 +964,39 @@ mr_use_gamma_flag : false$
    wrong answers; bounded cost) — revisit if the class-2 run shows
    timeout mass in these shapes (ledger: milestone-2). */
 %mr_powerOfLinearQ(u, x) := block([],
-  if %mr_linearQ(u, x) then true
-  else if %mr_powerQ(u) and freeof(x, part(u, 1))
+  if atom(u) then false
+  else if %mr_linearQ(u, x) then true
+  else if string(op(u)) = "sqrt" and %mr_linearQ(part(u, 1), x) then true
+  else if %mr_powerQ(u) and freeof(x, part(u, 2))
        and %mr_linearQ(part(u, 1), x) and %mr_rationalQ(part(u, 2))
   then true
   else false)$
 
-%mr_powerOfLinearMatchQ(u, x) := %mr_powerOfLinearQ(u, x)$
+%mr_powerOfLinearMatchQ(u, x) := block([],
+  if atom(u) then false
+  else if %mr_powerQ(u) and freeof(x, part(u, 2))
+       and %mr_linearQ(part(u, 1), x) and %mr_rationalQ(part(u, 2))
+  then true
+  else false)$
 
 %mr_normalizePowerOfLinear(u, x) := u$
 ```
+
+_Task-4 post-implementation correction (2026-08-28, commit 4cc259e):
+the original draft of this step carried five build defects found by
+measurement during the TDD runs — `lambda([q]) : expr` is not Maxima
+syntax (colon form dies the run; the comma form is used above),
+`for e : lst` parses as `for e from lst`, the power op is the string
+`"^"` (not the symbol `power`), noun ops are internal symbols so
+calculusQ tests `string(op(u))` against a string list, and the
+PowerOfLinear exponent check is `freeof(x, part(u, 2))` (the base is
+linear-in-x by construction). Plus two design corrections:
+PowerOfLinearMatchQ is the strict stored-power test (NOT an alias of
+Q — the alias makes the 2.3 r38 condition `Q and not MatchQ`
+unsatisfiable, killing the rule; verified against the .m call sites
+2.1 r17/r18 and 2.3 r8-r10/r38), and the sqrt-of-linear branch
+covers the stored `(linear)^(1/2)` case. The block above is the
+committed code, verbatim._
 
 - [ ] **Step 4: Run — verify it passes**
 
