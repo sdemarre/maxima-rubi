@@ -45,6 +45,45 @@ T5's open measurements, closed with values (Maxima 5.50.0 / SBCL
   et seq.) is the standing verification (555/787 re-run timeouts are
   genuine non-terminators at 300 s).
 
+## Milestone 2 (pilot) — closed 2026-08-28
+
+The pipeline generalized and proven end-to-end on class 2
+(exponentials), so classes 3–8 are runbook tickets (spec
+`docs/superpowers/specs/2026-08-28-milestone-2-class2-pilot-design.md`,
+plan `docs/superpowers/plans/2026-08-28-milestone-2-class2-pilot.md`,
+Tasks 1–11 done, branch `milestone-2`). Measured acceptance (965-entry
+class-2 corpus, 30 s cap): **`integrate` baseline 593/965 (61.5 %) vs
+package 500/965 (51.8 %)** (PASS = {expected, verified, no-answer}; of
+the 309 PASS→FAIL, 178 are genuine `deferred` declines and 131 are
+yardstick reclassifications — the probe-vs-driver yardstick errs
+slightly conservative for the package, plan Task-10 margin note).
+Record: `docs/corpus-class2-baseline-uplift.md` (run
+`test/corpus_class2.out`, baseline `test/corpus_class2.baseline.out`,
+300 s re-check `test/corpus_class2.timeout-rerun/`); runbook:
+`docs/class-porting.md`. The class-1 accepted record stands untouched.
+
+Open follow-ups (tickets against the runbook):
+
+- Class 3 (logarithms, 3,085 entries) — open
+- Class 8 (special functions, 1,949 entries — shares class 2's head
+  table) — open
+- Class 5 (inverse trig, 4,585 entries) — open
+- Class 6 (hyperbolic, 5,080 entries) — open
+- Class 7 (inverse hyperbolic, 6,552 entries) — open
+- Class 4 (trig, 22,472 entries — largest, deliberately last) — open
+- polylog/AppellF1 residue decision — deferred to the first class
+  that needs it (spec §3.4; class-2 measured: no rule emits them, the
+  structural ceiling stands)
+- PowerOfLinear semantics revisit — conditional: the class-2 residue
+  shows the strict reading is decline-consistent with upstream (the
+  upstream condition is an undefined predicate → a symbol → the same
+  shapes decline in Mathematica too); revisit only if a follow-up
+  class shows the shapes material
+- SBCL heap exhaustion on quotients of exponentials (2.3 e56/e57
+  error at 71.4/95.4 s under the 300 s re-check, e68 error at 17.4 s
+  in the run; reproducible; matcher/rule-bug candidate) — open, its
+  own ticket
+
 ## Pinned reference clones
 
 - `reference/rubi` @ `61e9c18ea248061cd83c67882f7c91a73cef912d` (cloned 2026-08-17)
