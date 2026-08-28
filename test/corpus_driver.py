@@ -545,7 +545,6 @@ def main():
     out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
                      f"timeout: {TIMEOUT}s  files: {len(files)}"
                      + (f"  shard: {SHARD_FILE}" if SHARD_FILE else ""))
-    out_lines.append(f"head rewrites: {REWRITE_STATS or '{}'}")
     out_lines.append("")
 
     counts = {}
@@ -611,6 +610,10 @@ def main():
 
     out_lines.append("")
     out_lines.append("=== summary ===")
+    # AFTER the entry loop: the header is built before any
+    # normalize_heads() ran, so the line would read {} there even when
+    # rewrites fired (measured 2026-08-28, review of a3ee89c).
+    out_lines.append(f"head rewrites: {REWRITE_STATS or '{}'}")
     for k in sorted(counts):
         out_lines.append(f"{k:14s} {counts[k]}")
     out_lines.append(f"total integrals: {total}")
