@@ -41,7 +41,17 @@ KNOWN_CLASSES = {"expected", "verified", "unverified",
                  "deferred", "contains-noun"}
 PASS_CLASSES = {"expected", "verified", "no-answer"}
 
-sys.argv = [DRIVER, SECTION + "/", "999999", "30"]
+# The suite-dir positional (the driver's 5th) is REQUIRED, not just a
+# default: without it the driver's file_list() walks SUITE/<its OWN
+# default section> (class 1) regardless of FILTER, so a class-2 merge
+# asserted completeness against an EMPTY set and flagged every shard
+# entry extra (measured 2026-08-28, task 9: 0 files / 965 extras).
+# Relative (not absolute): an absolute path string-equals the driver's
+# SUITE and re-triggers the default-section walk; the relative form is
+# what launch_class_shards.py passes too, and this script runs from the
+# repo root (its OUT positional is already root-relative).
+sys.argv = [DRIVER, SECTION + "/", "999999", "30",
+            "reference/maxima-syntax-test-suite"]
 _spec = importlib.util.spec_from_file_location("driver",
                                                os.path.join(ROOT, DRIVER))
 assert _spec is not None and _spec.loader is not None
