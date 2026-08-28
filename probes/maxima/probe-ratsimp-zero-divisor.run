@@ -1,0 +1,15 @@
+#!/bin/sh
+# Run the ratsimp zero-divisor repro probe (from repo root):
+#   sh probes/maxima/probe-ratsimp-zero-divisor.run
+# Output is redirected to probe-ratsimp-zero-divisor.out with a date/
+# build stamp and committed (measured-claims discipline). On the
+# 5.50.0 build (2026-08-20) the two errcatched ratsimp calls CRASH
+# (`quotient' by `zero', printed ~20 s each); a fixed build would
+# print the simplified values.
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# probe-ratsimp-zero-divisor output, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  maxima --very-quiet -X "--tls-limit 100000" -b probes/maxima/probe-ratsimp-zero-divisor.mac
+} > probes/maxima/probe-ratsimp-zero-divisor.out
+echo "wrote probes/maxima/probe-ratsimp-zero-divisor.out"

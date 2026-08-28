@@ -1,0 +1,60 @@
+# probe-ratsimp-zero-divisor-variants output, 2026-08-28
+# Maxima 5.50.0
+batch("probes/maxima/probe-ratsimp-zero-divisor-variants.mac")
+t1p(i,j):=(3^(1/4)*(2-sqrt(3))*sqrt(sqrt(3)+2)*(j*sqrt(3)-i))
+    /(2*(sqrt(3)-2)*sqrt(x+2)
+       *((3^(1/4)*sqrt(2-sqrt(3))*sqrt(x+2)+sqrt(2-sqrt(3))*sqrt(sqrt(3)+2))^2
+        /(sqrt(3)-2)^2
+        +1))
+t2p(i,j):=(3^(1/4)*(2-sqrt(3))*sqrt(sqrt(3)+2)*(j*sqrt(3)-i))
+    /(2*(sqrt(3)-2)*sqrt(x+2)
+       *((3^(1/4)*sqrt(2-sqrt(3))*sqrt(x+2)-sqrt(2-sqrt(3))*sqrt(sqrt(3)+2))^2
+        /(sqrt(3)-2)^2
+        +1))
+t3p(k,l):=((l*sqrt(3)-k)*((sqrt(3)*sqrt(sqrt(3)+2))/sqrt(x+2)+3^(3/4)))
+    /(2*sqrt(3)*sqrt(sqrt(3)+2)*sqrt(x+2)+3^(3/4)*x+2*3^(3/4)+4*3^(1/4))
+t4p(k,l):=((k-l*sqrt(3))*(3^(3/4)-(sqrt(3)*sqrt(sqrt(3)+2))/sqrt(x+2)))
+    /(-(2*sqrt(3)*sqrt(sqrt(3)+2)*sqrt(x+2))+3^(3/4)*x+2*3^(3/4)+4*3^(1/4))
+check(name,e):=block([r],r:errcatch(ratsimp(e)),
+      printf(true,"== ~s: ~a~%",name,if r = [] then "RED" else "green"))
+printf(true,"== (2+sqrt(3))^8   : ~a~%",expand((2+sqrt(3))^8))
+== (2+sqrt(3))^8   : 10864*sqrt(3)+18817
+printf(true,"== 2*(2+sqrt(3))^7 : ~a~%",expand(2*(2+sqrt(3))^7))
+== 2*(2+sqrt(3))^7 : 5822*sqrt(3)+10084
+printf(true,"== (2+sqrt(3))^9   : ~a~%",expand((2+sqrt(3))^9))
+== (2+sqrt(3))^9   : 4505*3^(5/2)+70226
+printf(true,"== 2*(2+sqrt(3))^8 : ~a~%",expand(2*(2+sqrt(3))^8))
+== 2*(2+sqrt(3))^8 : 21728*sqrt(3)+37634
+check("V1 original (10084,5822) (18817,10864)",
+      t1p(10084,5822)+t2p(10084,5822)+t3p(18817,10864)+t4p(18817,10864))
+`quotient' by `zero'
+== "V1 original (10084,5822) (18817,10864)": RED
+check("V2 18817->18818",
+      t1p(10084,5822)+t2p(10084,5822)+t3p(18818,10864)+t4p(18818,10864))
+== "V2 18817->18818": green
+check("V3 10084->10085",
+      t1p(10085,5822)+t2p(10085,5822)+t3p(18817,10864)+t4p(18817,10864))
+== "V3 10084->10085": green
+check("V4 both neighbors",
+      t1p(10085,5822)+t2p(10085,5822)+t3p(18818,10864)+t4p(18818,10864))
+== "V4 both neighbors": green
+check("V5 successor unit powers (37634,21728) (70226,40545)",
+      t1p(37634,21728)+t2p(37634,21728)+t3p(70226,40545)+t4p(70226,40545))
+`quotient' by `zero'
+== "V5 successor unit powers (37634,21728) (70226,40545)": RED
+check("V6 pairs swapped",
+      t1p(18817,10864)+t2p(18817,10864)+t3p(10084,5822)+t4p(10084,5822))
+== "V6 pairs swapped": green
+check("V7 k=6 (2702,1560) (5042,2911)",
+      t1p(2702,1560)+t2p(2702,1560)+t3p(5042,2911)+t4p(5042,2911))
+`quotient' by `zero'
+== "V7 k=6 (2702,1560) (5042,2911)": RED
+check("V8 k=9 (140452,81090) (262087,151316)",
+      t1p(140452,81090)+t2p(140452,81090)+t3p(262087,151316)
+                       +t4p(262087,151316))
+`quotient' by `zero'
+== "V8 k=9 (140452,81090) (262087,151316)": RED
+printf(true,"== DONE~%")
+== DONE
+ /home/serge/src/maxima-rubi/probes/maxima/probe-ratsimp-zero-divisor-variants\
+.mac
