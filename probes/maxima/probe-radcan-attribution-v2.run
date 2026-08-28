@@ -1,0 +1,17 @@
+#!/bin/sh
+# Run the corrected full-370 attribution probe (from repo root):
+#   sh probes/maxima/probe-radcan-attribution-v2.run
+# Re-decomposes every entry that flipped FAIL->PASS in the
+# 2026-08-28 full-corpus A/B around the zero-chain radcan(rat())
+# fallback: numeric stage (the driver's leading stage, omitted by
+# v1), the corrected apply(freeof, ...) gate (v1 mirrored the
+# no-op list-form gate), the 8-stage chain replay, and the UNGATED
+# fallback (the post run's actual mechanism). Separates
+# rule-change flips from true fallback rescues, and flags which
+# gains the corrected gate would give back.
+# 370 fresh maxima subprocesses, 24-way parallel, 150 s per-entry
+# cap — wall ~15-40 min. Output:
+# probe-radcan-attribution-v2.out (stamped, committed —
+# measured-claims discipline).
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/maxima/probe-radcan-attribution-v2.py

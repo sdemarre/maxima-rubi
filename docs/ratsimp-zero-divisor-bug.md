@@ -20,10 +20,13 @@ Committed evidence:
 - `probes/maxima/probe-ratsimp-zero-divisor-variants.{mac,run,out}` —
   the constant-variant sweep: the crash tracks the unit-power pattern
   across consecutive powers, not specific integers (§3.1);
-- `probes/maxima/probe-radcan-attribution.{py,run,out}` +
+- `probes/maxima/probe-radcan-attribution.{py,run,out}` (v1) +
+  `probes/maxima/probe-radcan-attribution-v2.{py,run,out}` (v2) +
   `docs/corpus-radcan-fallback-attribution.md` — the full-370
-  attribution run that identified and message-confirmed the 23 corpus
-  crash victims;
+  attribution runs that identified and message-confirmed the 23
+  corpus entries whose zero-diff crashes the old chain (v2 carries
+  the corrected decomposition — the no-op gate and the A/B rule-
+  confound corrected);
 - Maxima source at `/home/serge/src/external/maxima/src/` (5.50.0).
 
 The intermediate probes (repro → dump → bisect → trap → backtrace →
@@ -186,9 +189,10 @@ zero-chain stages; B5 = first direct `ratsimp` of the raw diff, B3 =
 | 0a | `diff(rubi(sqrt(x+2)/(3*x^2+4), x), x)` | `ratsimp` |
 | 0b | `t1+t2+t3+t4` and the scaled variant §3 (minimal form) | `ratsimp` |
 
-### 5.2 The 23 corpus crash victims (all crashed with the identical
+### 5.2 The 23 corpus entries whose zero-diff (today's rules)
+crashes the old symbolic chain (all crashed with the identical
 message `` `quotient' by `zero' ``; captured in
-`probes/maxima/probe-radcan-attribution.out`)
+`probes/maxima/probe-radcan-attribution-v2.out`)
 
 | file | entry | stage | integrand `f` (crashing argument = `diff(rubi(f,x),x) - f`) |
 |---|---|---|---|
@@ -220,6 +224,17 @@ The 1.1.3.8 block (e214, e529–e546) is the family
 `P(x)·(a+b·x⁴)^(±½,±¾)` — quartic binomials whose `rubi` answers
 carry the `3^(1/4)`+`√3`-type generator mix.
 
+Forensic caveat (measured 2026-08-28): the A/B baseline
+(`test/corpus_class1.pre-radcan-fallback.out`, 2026-08-27 13:02 UTC)
+ran on pre-`89054b0` rules — a different answer on the affected
+entries. Of the 23, only 4 had pre-run times consistent with a
+pre-run crash (e540 30.0 s timeout, e541 20.7 s, e543 17.8 s,
+e544 17.4 s); the other 19 pre-times are 0.6–5.6 s (fast
+non-closures on the old answer). The crash is real and reproduced on
+**today's** zero-diff for all 23 (v2 replay), but "victim of the
+pre-run" holds only for those 4. Crash latency is diff-dependent:
+<1 s on these diffs, ~20 s on the hand-minimal repro §3.
+
 ### 5.3 Via `radcan(rat())` (the second entry point)
 
 | file | entry | path | integrand `f` |
@@ -227,26 +242,61 @@ carry the `3^(1/4)`+`√3`-type generator mix.
 | 1.1.1.2 (a+b x)^m (c+d x)^n | e1501 | `radcan(rat(diff(rubi(f,x),x) - f))` | `1/((a+b*x)^(11/2)*(c+d*x)^(1/2))` |
 
 e1501 is a **double victim**: the old zero-chain died at B5 (pre-
-fallback record: `unverified t=20.1s`) and the new harness's
-`radcan(rat())` fallback crashes on the same diff too (post-fallback
-record: `timeout t=30.0s` — the chain plus the crashing fallback
-exhaust the 30 s cap). It remains unpassable by the current harness:
-every algebraic-simplifier entry point available here hits the bug on
-its zero-diff.
+fallback record: `unverified t=20.1s` — consistent with the B5
+crash latency on that diff; the pre-record predates rule commit
+`89054b0`, so the pre-diff may differ from today's) and the new
+harness's `radcan(rat())` fallback crashes on today's diff too
+(measured directly; post-fallback record: `timeout t=30.0s`). Its
+diff is not elliptic, so the corrected gate admits the fallback —
+e1501 stays `unverified`/`timeout` under either gate state. It
+remains unpassable by the current harness: every
+algebraic-simplifier entry point available here hits the bug on its
+zero-diff.
 
 ## 6. Harness consequences (measured)
 
 - The zero-chain fallback is **errcatched** (a crash → 0 → entry
-  unverified, never a false pass) and **elliptic-gated** (the elliptic
-  family hits a different, slow crash class `PTPTQUOTIENT: Polynomial
-  quotient is not exact` under `radcan(rat())` — 30–100 s each — and
-  cannot close there anyway).
-- The 23 crash victims §5.2 all now PASS via the fallback (their
+  unverified, never a false pass) and **elliptic-gated**. The gate
+  as shipped (fe7f1c8) was `freeof([the six elliptic_* symbols],
+  MR_de)` — a list first argument, which is not a documented `freeof`
+  call and a silently no-op gate (returns true on elliptic-carrying
+  diffs; measured 2026-08-28: `freeof([elliptic_f],
+  elliptic_f(x, -4))` = true). Fixed 2026-08-28 to
+  `apply(freeof, [syms…, MR_de])` (the documented variadic form
+  spliced over the symbol list;
+  `test/test_driver_radcan_fallback.py` carries construction,
+  gate-semantics, rescue, and gate-blocks checks).
+- The gate's purpose is real: the elliptic family hits a different,
+  slow crash class `PTPTQUOTIENT: Polynomial quotient is not exact`
+  under `radcan(rat())` — 30–100 s each. Under the no-op gate that
+  protection failed: 28 `unverified` entries regressed to
+  `timeout` in the A/B (18 in 1.2.1.3, 4 in 1.1.2.4, 2 in 1.2.1.4,
+  1 each in 1.1.1.2/1.1.1.3/1.3.1; traced: 1.2.1.3 e455, 1.1.2.4
+  e800), and 4 `verified` entries tipped to `timeout` on borderline
+  cap variance (their chains close just past the cap; the fallback
+  never runs on them). Under the corrected gate those budget-burners
+  revert to their pre-fallback classes (e800: 5.1 s unverified,
+  measured).
+- Cost of the corrected gate: it also blocks the fallback on the 35
+  A/B gains with elliptic-carrying zero-diffs that `radcan(rat())`
+  *does* close in 1–2 s — 22 of the §5.2 crash entries (all but
+  e2588) plus 13 chain-FINISHED gap entries (1.1.3.2 e821/e862/
+  e871/e2910, 1.1.3.8 e210/e213, 1.1.4.3 e252, 1.2.2.2 e1007,
+  1.3.2 e191/e192/e198/e199/e864) — which revert to `unverified`
+  (full decomposition:
+  `docs/corpus-radcan-fallback-attribution.md`, v2).
+- The §5.2 entries that PASS under the no-op gate do so via the
+  fallback (their diffs close under `radcan(rat())`); under the
+  corrected gate 22 of the 23 revert to `unverified` (only e2588's
+  diff is non-elliptic). The remaining 344 of the 370 A/B flips were
+  plain simplifier gaps, not this bug.
+- Distinct crash classes in the same harness (for disambiguation):
   diffs close under `radcan(rat())` — `docs/corpus-radcan-fallback-attribution.md`); the remaining 344 of the 370 flips were plain
   simplifier gaps, not this bug.
 - Distinct crash classes in the same harness (for disambiguation):
-  `` `quotient' by `zero' `` (this bug, ~20 s in),
-  `expt: undefined: 0 to a negative exponent` (1.3.1 e147's
+  `` `quotient' by `zero' `` (this bug — latency diff-dependent:
+  ~20 s on the §3 hand-minimal repro, <1 s on the §5.2 corpus
+  diffs), `expt: undefined: 0 to a negative exponent` (1.3.1 e147's
   exp-diff, immediate), `PTPTQUOTIENT: Polynomial quotient is not
   exact` (elliptic family, 30–100 s).
 
