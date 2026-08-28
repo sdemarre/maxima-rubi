@@ -99,6 +99,12 @@ slightly conservative for the package, plan Task-10 margin note).
   error at 71.4/95.4 s under the 300 s re-check, e68 error at 17.4 s
   in the run; reproducible; matcher/rule-bug candidate) — open, its
   own ticket
+- Class-2 deferred residue (178 genuine declines: 2.3 154, 2.2 18,
+  2.1 6 — all `deferred`) — ticket store
+  `.scratch/class2-deferred-remainders/` (ticket 01: the 5
+  commented-out rules in Rubi's `2.3 Miscellaneous exponentials.m` —
+  incl. the two recursive quotient-of-exponentials reductions — as a
+  candidate coverage source; needs-triage)
 
 ## Pinned reference clones
 
