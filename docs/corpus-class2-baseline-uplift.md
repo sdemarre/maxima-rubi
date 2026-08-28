@@ -11,7 +11,9 @@ Inputs:
 
 - `test/corpus_class2.out` — the merged package record (965/965 entries,
   3 files, 26 shards, no dupes/missing/extra; build-stamped header,
-  merged 2026-08-28 13:26 UTC);
+  merged 2026-08-28 13:26 UTC). **Re-measured post-pilot under the
+  radcan-fallback harness chain: now 594/965 (§8); the 500/965 pilot
+  record is preserved at `test/corpus_class2.pre-radcan-fallback.out`.**
 - `test/corpus_class2.baseline.out` — the merged `integrate` baseline
   (965/965, 3 per-file shards, merged 2026-08-28 12:53 UTC);
 - `test/corpus_class2.timeout-rerun/corpus_class2.timeout5m.out` +
@@ -368,9 +370,16 @@ families):
 
 ## 6. Class-1 status — the accepted record stands
 
+> **Superseded for going-forward acceptance (§8):** the post-pilot
+> harness port re-measured class 1 on the 3,180-rule core under the
+> radcan-fallback chain — **20,069/25,697 (78.1 %)** now stands. §6
+> remains the correct statement *as of the pilot close* (no re-run was
+> in the pilot's scope).
+
 **The class-1 accepted record (19,731/25,697 = 76.8 % vs the T3 49.8 %
 baseline; `docs/corpus-baseline-uplift.md`, accepted run
-`test/corpus_class1.out`, commit `45fc9b8`) is untouched and stands.**
+`test/corpus_class1.out`, commit `45fc9b8`) is untouched and stands,
+as of the pilot close.**
 Per the pilot design (§3.6), the class-1 record was not re-run — no
 build change, no class-1 rule change — and the pilot's shared-code
 changes are gated against it:
@@ -447,10 +456,137 @@ Tasks 2–10 entries):
    class-1 shards (787/787, all lines identical); class-1 merge line
    byte-identical; class-1 walk unchanged (full suite walk + FILTER
    yields the same rel set).
-7. **Task-10 script fixes** (`wait_and_merge.sh` merge-argument
-   pass-through — the brief's `${@:4}` is dash-incompatible and the
-   while-loop replacement off-by-one; final form three guarded
-   `shift`s; `launch_timeout_rerun.py` section positional + the
-   in-process driver exec's relative suite-dir; DRIVER stays an
-   absolute path). Commit `fe5364a`. No-regression: dump-tested both
-   polarities; class-1 merge line byte-identical; `sh -n` clean.
+ 7. **Task-10 script fixes** (`wait_and_merge.sh` merge-argument
+    pass-through — the brief's `${@:4}` is dash-incompatible and the
+    while-loop replacement off-by-one; final form three guarded
+    `shift`s; `launch_timeout_rerun.py` section positional + the
+    in-process driver exec's relative suite-dir; DRIVER stays an
+    absolute path). Commit `fe5364a`. No-regression: dump-tested both
+    polarities; class-1 merge line byte-identical; `sh -n` clean.
+
+## 8. Post-pilot harness re-measurement — the radcan(rat()) fallback
+(2026-08-28)
+
+The pilot above closed with the milestone-1 zero chain (numeric + two
+ratsimp/factor chains, no fallback). A later harness fix — the
+elliptic-gated, errcatched `radcan(rat())` fallback in `zero_chain()`
+plus the corrected `apply(freeof, …)` gate (the list-first-arg form was
+a silent no-op) — was developed on the `harness-radcan-fallback` branch
+and ported into the generalized driver for this re-measurement. **This
+is a verification-harness change only: no rule, generator, or package
+file changed; the rule set is still 3,180 (core fingerprint
+`aa53741f7ac802e2c3b8bd93720b219d`), so both classes run the identical
+rules as §4.** The acceptance numbers moved because the zero chain now
+closes more correct answers, not because the rules got better.
+
+Commits: `5035d4e` (port the fallback + gate into
+`test/corpus_driver.py`; `zero_chain` byte-identical to the class-1
+fixed form; `test/test_driver_radcan_fallback.py` 4/4 through the
+shim), `2f6ca1e` (merge `harness-port`), `60c6f94` (merge
+`harness-radcan-fallback`; the one conflict,
+`test/corpus_class1_driver.py`, resolved to the shim — the fixes live
+in the generalized driver). Build: Maxima 5.50.0 (2026-08-20
+21:36:22), SBCL 2.6.7.
+
+### 8.1 Class 2 re-measured: 594/965 (61.6 %)
+
+`test/corpus_class2.out` re-run on the 3,180-rule core under the
+fallback chain: 965/965, 22 shards, merged 2026-08-28 18:45:40 UTC,
+completeness asserted. The pre-port record is preserved as
+`test/corpus_class2.pre-radcan-fallback.out` (the §4 500/965 record).
+
+| class | pilot (§4) | re-measured | Δ |
+|---|---|---|---|
+| `verified` | 320 | 521 | +201 |
+| `expected` | 116 | 9 | −107 |
+| `no-answer` | 64 | 64 | 0 |
+| `deferred` | 314 | 314 | 0 |
+| `unverified` | 125 | 32 | −93 |
+| `contains-noun` | 14 | 14 | 0 |
+| `unexpected` | 4 | 4 | 0 |
+| `timeout` | 7 | 6 | −1 |
+| `error` | 1 | 1 | 0 |
+| **PASS total** | **500 (51.8 %)** | **594 (61.6 %)** | **+94** |
+
+Entry-level A/B (pilot 500 → re-measured 594; PASS = {verified,
+expected, no-answer}; 965/965, key sets equal, recomputed 2026-08-28
+from the two records): **PASS→FAIL 0** (no regression); FAIL→PASS 94 =
+`unverified→verified` 89 + `unverified→expected` 4 +
+`timeout→verified` 1; plus `expected→verified` 111 (a stronger
+verdict, still PASS — the fallback closes the zero-diff the
+probe-form match had only recognized structurally). The `deferred`
+mass (314, rule coverage) is untouched, as expected: the fallback
+affects verification, not rule firing.
+
+Against the native-`integrate` baseline (§3, 593/965, 61.5 %): the
+re-measured package (594, 61.6 %) now reaches parity-and-a-fraction,
+vs the pilot's clear deficit (500, −9.6 pts). Per the §4 margin note
+the two yardsticks differ (the driver is slightly conservative for the
+package), so this is **not** a strict like-for-like win — a strict
+comparison would re-run the native baseline through the driver
+harness (not done). It is the direction, and the size of the closing
+gap (93 of the 125 `unverified` now verify), that is the signal.
+
+**300 s re-check of the re-measured run's 6 `timeout` entries**
+(`test/corpus_class2.timeout-rerun-2026-08-28/`, 6/6, merged 2026-08-28
+19:04:45 UTC): `verified` 2 (2.3 e595, e610 — the 30 s cap was the
+limit; correct-but-slow), `error` 3 (2.3 e56, e57, e195 — the
+heap-exhaustion crash family, §5), `unverified` 1 (2.2 e60). **now-PASS
+2; 0 still-timeout at 300 s.** (The pilot's §4 re-check had found
+now-PASS 0 on the *old* 7-entry timeout set; the fallback changed both
+the timeout set and the transitions — e612, `unverified` under the old
+chain, no longer times out at all.)
+
+### 8.2 Class 1 re-measured: 20,069/25,697 (78.1 %)
+
+`test/corpus_class1.out` re-run on the 3,180-rule core under the
+fallback chain: 25,697/25,697, 24 shards, merged 2026-08-28 18:32:34
+UTC, completeness asserted. The immediately-prior record (the
+`harness-radcan-fallback` 20,066, fixed chain but the 3,055-rule
+class-1-only table) is preserved as
+`test/corpus_class1.pre-3180-table.out`.
+
+- Re-measured **20,069** vs the prior 20,066: **+3** — the
+  3,055→3,180 table effect (class 2 loads after class 1 in LoadRules
+  order; it adds no class-1 rule firing, §6).
+- Re-measured **20,069** vs the milestone-1 accepted 19,731 (§6, the
+  pre-fallback chain on the 3,055 table): **+338** — the total port
+  effect (fallback + gate fix, +335 on the 3,055 table, +3 table).
+
+Entry-level A/B (20,066 → 20,069; 25,697/25,697, key sets equal):
+`timeout→verified` 5 (gain), `timeout→error` 4, `verified→timeout` 2,
+`unverified→timeout` 2, `deferred→timeout` 1, `error→timeout` 1,
+`timeout→unverified` 1, `unverified→error` 1. **No true logic
+regression**: the 2 `verified→timeout` (1.1.3.8 e187, 1.2.1.2 e2580)
+are the documented borderline-timing class (~25–30 s entries that flip
+with load, cf. the fe7f1c8 A/B note) — both are in the 782-entry
+`timeout` set and re-run at 300 s below.
+
+**300 s re-check of the 782 `timeout` entries**
+(`test/corpus_class1.timeout-rerun-2026-08-28/`, 782/782, merged
+2026-08-28 21:30:15 UTC): transitions `verified` 91 + `expected` 2
+(**now-PASS 93** — slow-correct, the 30 s cap was their limiter),
+`unverified` 87, `error` 49, `timeout` 546 (genuinely non-terminating
+at 300 s), `deferred` 5, `contains-noun` 2. The 2 A/B
+`verified→timeout` entries re-verify: **1.1.3.8 e187 → verified at
+37.9 s, 1.2.1.2 e2580 → verified at 21.0 s** — both correct, i.e. the
+port introduces **no true regression** (the 30 s timeouts are
+load/borderline, not wrong answers). The re-check's run-5 baseline
+block (`test/corpus_class1.run5-accept.out`, the M1-era record) lists
+6 entries PASS-in-run-5-but-failing-now (2 of them, 1.2.1.2 e2572/e2573,
+still `timeout` at 300.1 s); that drift **predates this port** — both
+were already `timeout` in the pre-port 20,066 record, so it is not
+attributable to the fallback change.
+
+### 8.3 What this changes in the standing record
+
+- The **class-2 accepted record is now 594/965 (61.6 %)**
+  (`test/corpus_class2.out`); the pilot's 500/965 stands as §4 history
+  (preserved at `test/corpus_class2.pre-radcan-fallback.out`).
+- The **class-1 accepted record is now 20,069/25,697 (78.1 %)**
+  (`test/corpus_class1.out`), superseding §6's "19,731 stands" for
+  going-forward acceptance (§6 remains the correct pilot-era statement).
+- The zero chain is now: numeric → two ratsimp/factor chains →
+  elliptic-gated `radcan(rat())` fallback (all errcatched). This is the
+  harness for every class-N run from here on (`docs/class-porting.md`
+  Step 8 references `corpus_driver.py`, which now carries it).

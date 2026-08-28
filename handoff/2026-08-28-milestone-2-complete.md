@@ -58,6 +58,23 @@ unverified 125 = largely the baseline-inherited verify gap; the 2
 re-check `error`s + 2.3 e68 = the heap-exhaustion finding):
 `docs/corpus-class2-baseline-uplift.md` §5.
 
+### Post-pilot update — the radcan(rat()) fallback re-measurement
+(2026-08-28)
+
+The harness-radcan-fallback zero-chain fix (elliptic-gated
+`radcan(rat())` fallback + the corrected `apply(freeof, …)` gate) was
+ported into `test/corpus_driver.py` and merged to master
+(`5035d4e`/`2f6ca1e`/`60c6f94`). Harness-only — no rule/package
+change; the 3,180-rule core is untouched. Both classes re-measured on
+it: **class-2 594/965 (61.6 %)** (was 500, +94, 0 regressions — 89
+unverified→verified, 4 unverified→expected, 1 timeout→verified, 111
+expected→verified; now at parity with the integrate baseline 593) and
+**class-1 20,069/25,697 (78.1 %)** (was 20,066 on the 3,055 table;
++338 over the M1 19,731). Class-2 300 s re-check: 6/6, now-PASS 2
+(e595, e610), 3 error (heap-exhaustion), 1 unverified, 0 still-timeout.
+Full record: `docs/corpus-class2-baseline-uplift.md` §8. This is now
+the going-forward zero chain for every class-N run.
+
 ## Open items (the follow-ups, in the runbook's order)
 
 1. **Class 3** (logarithms, 3,085 entries) — runbook ticket, open.

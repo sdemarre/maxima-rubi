@@ -57,12 +57,28 @@ package 500/965 (51.8 %)** (PASS = {expected, verified, no-answer}; of
 the 309 PASS→FAIL, 178 are genuine `deferred` declines and 131 are
 yardstick reclassifications — the probe-vs-driver yardstick errs
 slightly conservative for the package, plan Task-10 margin note).
-Record: `docs/corpus-class2-baseline-uplift.md` (run
-`test/corpus_class2.out`, baseline `test/corpus_class2.baseline.out`,
-300 s re-check `test/corpus_class2.timeout-rerun/`); runbook:
-`docs/class-porting.md`. The class-1 accepted record stands untouched.
+ Record: `docs/corpus-class2-baseline-uplift.md` (run
+ `test/corpus_class2.out`, baseline `test/corpus_class2.baseline.out`,
+ 300 s re-check `test/corpus_class2.timeout-rerun/`); runbook:
+ `docs/class-porting.md`. The class-1 accepted record stands untouched,
+ as of the pilot close.
 
-Open follow-ups (tickets against the runbook):
+ Post-pilot (2026-08-28): the harness-radcan-fallback zero-chain fix
+ (elliptic-gated `radcan(rat())` fallback + corrected `apply(freeof, …)`
+ gate) was ported into `test/corpus_driver.py` and both classes
+ re-measured on the 3,180-rule core under the fallback chain — a
+ verification-harness change only (rules/package unchanged). Re-measured
+ acceptance: **class-2 594/965 (61.6 %)** (was 500, +94, 0
+ regressions; now at parity-with-the-integrate-baseline 593) and
+ **class-1 20,069/25,697 (78.1 %)** (was 20,066 on the 3,055 table,
+ +338 over the M1 19,731). Record: `docs/corpus-class2-baseline-uplift.md`
+ §8; runs `test/corpus_class1.out` / `test/corpus_class2.out` (+
+ `.pre-…` pre-snapshots), 300 s re-checks
+ `test/corpus_class{1,2}.timeout-rerun-2026-08-28/`. Merged to master
+ (`5035d4e`, `2f6ca1e`, `60c6f94`). The zero chain is now the harness
+ for every class-N run.
+
+ Open follow-ups (tickets against the runbook):
 
 - Class 3 (logarithms, 3,085 entries) — open
 - Class 8 (special functions, 1,949 entries — shares class 2's head
