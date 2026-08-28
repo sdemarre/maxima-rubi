@@ -812,7 +812,8 @@ test_class2_cluster_a() := block([],
   check_bool("powerQ power", is(%mr_powerQ(x^2) = true)),
   check_bool("powerQ bare x", is(%mr_powerQ(x) = false)),
   check_bool("powerQ sum", is(%mr_powerQ(a + b*x) = false)),
-  check_bool("calculusQ integrate noun", is(%mr_calculusQ('integrate(f, x)) = true)),
+  check_bool("calculusQ integrate noun", is(%mr_calculusQ(integrate(f(x), x)) = true)),
+  check_bool("calculusQ diff noun", is(%mr_calculusQ(diff(f(x), x)) = true)),
   check_bool("calculusQ product", is(%mr_calculusQ(f*x) = false)),
   check_bool("hyperbolicQ sinh", is(%mr_hyperbolicQ(sinh(x)) = true)),
   check_bool("hyperbolicQ sin", is(%mr_hyperbolicQ(sin(x)) = false)),
@@ -838,7 +839,7 @@ And in `run_all_tests()`, after `test_cluster_l_powered_form(),`:
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: the `test_class2_cluster_a` checks print `FAIL` (the functions
 are undefined — a noun, `is(noun = true)` = false) and the Results line
-shows 19 failures. (If Maxima dies mid-run with no Results line, the
+shows 20 failures. (If Maxima dies mid-run with no Results line, the
 failure is a parse error in the test block — fix syntax first.)
 
 - [ ] **Step 3: Implement the cluster**
@@ -876,10 +877,15 @@ mr_use_gamma_flag : false$
    call), the 'unintegrable[f, x] noun (the catch-all marker,
    mr_unintegrable, this file's line 27). Dif has no package
    counterpart. member() returns a boolean in this build (note at
-   line 758). */
+   line 758). MEASURED 2026-08-28 (5.50.0/SBCL): the stored DIFF noun's
+   op is `derivative` (NOT `diff` — op(diff(f(x), x)) = derivative);
+   and integrate/sum/product of an x-INDEPENDENT summand EVALUATE to
+   ordinary products/powers (integrate(f, x) = f*x, op * — even
+   quoted), so a calculus noun only exists when the summed/integrated
+   object depends on the variable. */
 %mr_calculusQ(u) := block([],
   if atom(u) then false
-  else is(member(op(u), [diff, integrate, sum, product,
+  else is(member(op(u), [integrate, derivative, sum, product,
                          mr_int, mr_subst, 'unintegrable]) = true))$
 
 /* Rubi HyperbolicQ — the six hyperbolic heads (the
@@ -929,7 +935,7 @@ mr_use_gamma_flag : false$
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: every `test_class2_cluster_a` check `PASS`; Results line
-`<511 + Task-3's marker-head delta + 19> passed, 0 failed`.
+`<511 + Task-3's marker-head delta + 20> passed, 0 failed`.
 
 - [ ] **Step 5: Commit**
 
