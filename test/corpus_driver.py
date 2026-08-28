@@ -293,6 +293,15 @@ def zero_chain(d_expr, var):
     Each chain keeps the errcatch-crash semantics; a crash in either
     chain is an unverified zero-test, not a fatality. The canary cap
     is 60 s (test/canary.py) to hold both chains.
+
+    Fallback (measured 2026-08-28, 5.50.0/SBCL): when the chain did
+    not close, an elliptic-gated, errcatched `radcan(rat(MR_de))`
+    attempt runs — it closes zero-diffs of the `quotient' by 'zero'
+    zero-divisor class that no ratsimp/factor stage closes (1.1.3.8
+    e541/e543/e544, 1.2.1.4 e764). The gate skips elliptic-carrying
+    diffs (radcan(rat()) burns 30-100 s crashing on them — see the
+    measured note in the code below); a chain that closed returns 1
+    without running the fallback.
     """
     # Stage list: (expr to assign to MR_d, ...) — each stage reworks the
     # previous MR_d; stage 1 of chain 2 restarts from the raw diff
@@ -382,9 +391,54 @@ def zero_chain(d_expr, var):
                "and is(abs(part(MR_z2, 1)) < 1e-9) = true "
                "then 1 else (" + symbolic + ")))")
     inner = numeric
+    # Fallback (measured 2026-08-28, 5.50.0/SBCL): if the chain above
+    # did not close, try `radcan(rat(MR_de))` — a different algorithm
+    # (full rational-function reduction over the algebraic extension +
+    # radical normalization). The redundant algebraic-generator
+    # zero-divisor bug (`quotient' by 'zero' in ratsimp's gcd
+    # reduction; minimal hand-typed repro:
+    # probes/maxima/probe-ratsimp-zero-divisor.mac) defeats every
+    # ratsimp/factor stage on some zero-diffs while radcan(rat())
+    # closes the same diff: measured 2026-08-28, 1.1.3.8 e541/e543/
+    # e544 and 1.2.1.4 e764 (`unverified` in the 2026-08-27 record)
+    # close under the fallback. Gated on a no-elliptic diff:
+    # measured 2026-08-28 — radcan(rat()) crashes with
+    # `PTPTQUOTIENT: Polynomial quotient is not exact' after
+    # burning 30-100 s on elliptic-family zero-diffs (1.2.1.3
+    # e455-e484 family). Trade measured by probe v2 (docs/corpus-
+    # radcan-fallback-attribution.md): the gate also blocks 35 A/B
+    # gains whose elliptic-carrying diffs radcan(rat()) DOES close
+    # in 1-2 s (22 crash entries of 1.1.3.x/1.2.2.x/1.3.2 plus 13
+    # chain-FINISHED entries) — a static elliptic gate cannot
+    # separate the fast-closers from the 30-100 s burners. The
+    # other crash classes measured on `unverified`-entry zero-diffs
+    # are immediate and errcatched:
+    # `expt: undefined: 0 to a negative exponent' (1.3.1 e147) and
+    # the zero-divisor bug via the fallback itself (1.1.1.2 e1501).
+    # The gate is apply(freeof, [syms..., MR_de]) — the documented
+    # variadic form `freeof(x1, ..., xn, expr)` == `freeof(x1, expr)
+    # and ... and freeof(xn, expr)` (freeof manual entry, 5.50.0),
+    # spliced over the symbol list. The earlier list-first-arg form
+    # freeof([syms], expr) is NOT a documented freeof call: it is read
+    # as "does the LIST occur in expr" and returned true on
+    # elliptic-carrying diffs (measured 2026-08-28: freeof(
+    # [elliptic_f], elliptic_f(x, -4)) = true) — a silently no-op
+    # gate that let radcan(rat()) run on elliptic-diffs, burning the
+    # 30 s cap on 28 entries (18 of them 1.2.1.3 e440-e484
+    # unverified->timeout) in the 2026-08-28 A/B.
+    fallback = ("if apply(freeof, [elliptic_f, elliptic_e, elliptic_pi, "
+                "elliptic_ec, elliptic_eu, elliptic_kc, MR_de]) = true "
+                "then block([MR_fb], "
+                "MR_fb : errcatch(radcan(rat(MR_de))), "
+                "if MR_fb = [] then 0 "
+                "else (MR_fb : part(MR_fb, 1), "
+                "if is(MR_fb = 0) then 1 else 0)) "
+                "else 0")
     return (
-        "block([MR_zr], MR_zr : errcatch(" + inner + "), "
-        "if MR_zr = [] then 0 else part(MR_zr, 1))"
+        "block([MR_zr, MR_zf], MR_zr : errcatch(" + inner + "), "
+        "if MR_zr # [] and part(MR_zr, 1) = 1 then 1 "
+        "else (MR_zf : errcatch(" + fallback + "), "
+        "if MR_zf = [] then 0 else part(MR_zf, 1)))"
     )
 
 
