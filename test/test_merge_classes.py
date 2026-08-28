@@ -16,7 +16,7 @@ Two construction checks (no Maxima, source-level):
   2. the merge's PASS_CLASSES is EXACTLY the driver's — the merge's
      `Results:` line must agree with the driver's per-line PASS:/FAIL:.
 
-The sets are read with ast (not import): merge_class1_shards.py executes
+The sets are read with ast (not import): merge_class_shards.py executes
 its whole merge at module level (sys.exit on an incomplete corpus), so it
 cannot be imported as a test dependency.
 
@@ -55,9 +55,11 @@ def _sets(path, names):
 
 def main():
     failures = []
-    drv = _sets(os.path.join(HERE, "corpus_class1_driver.py"),
+    # Milestone 2 (a3ee89c): the implementation moved to the generalized
+    # driver/merger; the class-1 names are now shims without the sets.
+    drv = _sets(os.path.join(HERE, "corpus_driver.py"),
                 {"KNOWN_CLASSES", "PASS_CLASSES"})
-    mrg = _sets(os.path.join(HERE, "merge_class1_shards.py"),
+    mrg = _sets(os.path.join(HERE, "merge_class_shards.py"),
                 {"KNOWN_CLASSES", "PASS_CLASSES"})
 
     # 1. superset: every driver-emittable class is merge-classifiable.

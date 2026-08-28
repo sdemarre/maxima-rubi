@@ -187,7 +187,23 @@ mr_load_class1_all() := block([],
   %mr_load_sibling("rules/class1/1_3_4.mac", 'mr_witness_1_3_4),
   %mr_load_sibling("rules/class1/1_4_3.mac", 'mr_witness_1_4_3),
   %mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1),
-  mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_1_1_2, mr_rules_1_1_1_3, mr_rules_1_1_1_4, mr_rules_1_1_2_1, mr_rules_1_1_2_2, mr_rules_1_1_2_3, mr_rules_1_1_2_4, mr_rules_1_1_2_5, mr_rules_1_1_2_6, mr_rules_1_1_2_7, mr_rules_1_1_2_8, mr_rules_1_1_2_9, mr_rules_1_1_3_1, mr_rules_1_1_3_2, mr_rules_1_1_3_3, mr_rules_1_1_3_4, mr_rules_1_1_3_5, mr_rules_1_1_3_6, mr_rules_1_2_1_1, mr_rules_1_2_1_2, mr_rules_1_2_1_3, mr_rules_1_2_1_3b, mr_rules_1_2_1_4, mr_rules_1_2_1_4b, mr_rules_1_2_1_5, mr_rules_1_2_1_5b, mr_rules_1_2_2_1, mr_rules_1_2_2_2, mr_rules_1_2_2_3, mr_rules_1_2_2_4, mr_rules_1_2_3_1, mr_rules_1_2_3_2, mr_rules_1_2_3_3, mr_rules_1_2_3_4, mr_rules_1_1_4_1, mr_rules_1_1_4_2, mr_rules_1_1_4_3, mr_rules_1_2_4_1, mr_rules_1_2_4_2, mr_rules_1_2_4_3, mr_rules_1_2_4_4, mr_rules_1_4_1, mr_rules_1_4_2, mr_rules_1_1_1_7, mr_rules_1_1_1_6, mr_rules_1_1_1_5, mr_rules_1_2_1_9, mr_rules_1_2_1_9b, mr_rules_1_2_1_8, mr_rules_1_2_1_7, mr_rules_1_2_1_6, mr_rules_1_2_1_6b, mr_rules_1_2_2_6, mr_rules_1_2_2_5, mr_rules_1_2_2_7, mr_rules_1_2_2_8, mr_rules_1_2_3_6, mr_rules_1_2_3_5, mr_rules_1_1_2_11, mr_rules_1_1_2_10, mr_rules_1_1_2_14, mr_rules_1_1_2_13, mr_rules_1_1_2_12, mr_rules_1_1_3_8, mr_rules_1_1_3_7, mr_rules_1_1_4_4, mr_rules_1_3_3, mr_rules_1_3_1, mr_rules_1_3_2, mr_rules_1_3_4, mr_rules_1_4_3, mr_rules_9_1])
+   mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_1_1_2, mr_rules_1_1_1_3, mr_rules_1_1_1_4, mr_rules_1_1_2_1, mr_rules_1_1_2_2, mr_rules_1_1_2_3, mr_rules_1_1_2_4, mr_rules_1_1_2_5, mr_rules_1_1_2_6, mr_rules_1_1_2_7, mr_rules_1_1_2_8, mr_rules_1_1_2_9, mr_rules_1_1_3_1, mr_rules_1_1_3_2, mr_rules_1_1_3_3, mr_rules_1_1_3_4, mr_rules_1_1_3_5, mr_rules_1_1_3_6, mr_rules_1_2_1_1, mr_rules_1_2_1_2, mr_rules_1_2_1_3, mr_rules_1_2_1_3b, mr_rules_1_2_1_4, mr_rules_1_2_1_4b, mr_rules_1_2_1_5, mr_rules_1_2_1_5b, mr_rules_1_2_2_1, mr_rules_1_2_2_2, mr_rules_1_2_2_3, mr_rules_1_2_2_4, mr_rules_1_2_3_1, mr_rules_1_2_3_2, mr_rules_1_2_3_3, mr_rules_1_2_3_4, mr_rules_1_1_4_1, mr_rules_1_1_4_2, mr_rules_1_1_4_3, mr_rules_1_2_4_1, mr_rules_1_2_4_2, mr_rules_1_2_4_3, mr_rules_1_2_4_4, mr_rules_1_4_1, mr_rules_1_4_2, mr_rules_1_1_1_7, mr_rules_1_1_1_6, mr_rules_1_1_1_5, mr_rules_1_2_1_9, mr_rules_1_2_1_9b, mr_rules_1_2_1_8, mr_rules_1_2_1_7, mr_rules_1_2_1_6, mr_rules_1_2_1_6b, mr_rules_1_2_2_6, mr_rules_1_2_2_5, mr_rules_1_2_2_7, mr_rules_1_2_2_8, mr_rules_1_2_3_6, mr_rules_1_2_3_5, mr_rules_1_1_2_11, mr_rules_1_1_2_10, mr_rules_1_1_2_14, mr_rules_1_1_2_13, mr_rules_1_1_2_12, mr_rules_1_1_3_8, mr_rules_1_1_3_7, mr_rules_1_1_4_4, mr_rules_1_3_3, mr_rules_1_3_1, mr_rules_1_3_2, mr_rules_1_3_4, mr_rules_1_4_3, mr_rules_9_1])
+)$
+
+/* Full table load (Rubi.m LoadRules order): class 1 (the 73-term
+   flatten above) then class 2 — the first $LoadElementaryFunctionRules
+   block (3 files, 125 rules; measured 2026-08-28). The table is the
+   76-term flatten (3,180 rules). MR: the driver and the rules core
+   call this; Layer A still loads only the 1.1.1.1 core file above (the
+   defmatch budget of a plain process holds a handful of rules — see
+   the load-wall note above). */
+mr_load_all() := block([],
+  mr_load_class1_all(),
+  %mr_load_sibling("rules/class2/2_1.mac", 'mr_witness_2_1),
+  %mr_load_sibling("rules/class2/2_2.mac", 'mr_witness_2_2),
+  %mr_load_sibling("rules/class2/2_3.mac", 'mr_witness_2_3),
+  mr_rule_table : flatten([mr_rule_table, mr_rules_2_1,
+                           mr_rules_2_2, mr_rules_2_3])
 )$
 
 mr_witness_maxima_rubi() := true$

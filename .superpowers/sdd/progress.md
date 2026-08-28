@@ -2271,3 +2271,422 @@ acceptance docs and git history). Layer A re-run after the rebuild:
 511/0.
 
 MILESTONE 1 CLOSED.
+
+## Plan: 2026-08-28 milestone-2 class-2 pilot (11 tasks; branch base b78d5aa)
+# NOTE: the "Task N: complete" lines above this header belong to an EARLIER
+# plan (milestone-1 era) — do not confuse them with this plan's tasks.
+
+Task 1: complete (commits b78d5aa..bd0fa70, review clean after 1 fix round — spec ✅, quality Approved)
+  - Fix round 1 addressed: census .run/.out reproducibility + date stamps,
+    true uses= occurrence counts (re-captured class-1 + class-2 records),
+    deterministic tie order, answer-heads guards (atom-charset lookbehind,
+    hard-fail on empty section, section-total native lines).
+  - Class-1 record change anatomy verified: stamp + 62 uses= increases +
+    tie reorders only; headline 67/2710/2709 and AUTO 2032/MANUAL 678 unchanged.
+  - Controller adjudications (recorded in plan): Task-1 Step-2 byte gate
+    structurally unattainable -> standing gate = same-day .run re-capture
+    byte-identical + headline/token-set unchanged; census closure: Expand =
+    builtin passthrough (no table entry), F = extractor artifact (pattern
+    var in InverseFunctionQ[F[x]]) -> class-2 token set CLOSED.
+  - Minor (carried to final review): task-1-report.md:173 per-table split
+    "Erf cond 1 / repl 2" is wrong (record: cond 0 / repl 3; total 3 correct);
+    answer-heads self-stamp is minute-precision (brief-mandated, accepted —
+    re-run stable except the stamp's minute field).
+  - Pre-existing census script "uses" column bug (milestone-1 d8abbb4) fixed
+    in this task as part of the fix round; docs/rule-translation.md citations
+    (rule counts) unaffected.
+Task 2: complete (commits bd0fa70..ae20582, review clean — spec ✅, quality Approved)
+  - generate_rules.py = drift-free copy + 6 brief edit sites (mechanically
+    verified old->new diff); shim generate_class1.py (12 lines, --only +
+    no-arg preserved); class-1 byte-identity gate green (3026 rules, 67
+    files, empty git status); class-2 smoke fails at table boundary on
+    'TrueQ' (Task-3 table token, plan line 573).
+  - Brief conflict resolved + reviewer-endorsed: generated-header
+    Regenerate line class-gated (class 1 keeps the committed
+    `generate_class1.py --only {key}` command verbatim; other classes get
+    the `--class` form).
+  - Minor (carried to final review): (1) generate_rules.py:2-10 module
+    docstring still describes the old class-1 tool; (2) GenError prefix
+    still reads `generate_class1:`; (4) bare trailing `--class` gives a
+    raw IndexError (brief-verbatim); (5) a failed class-N run leaves an
+    empty rules/classN/ dir (benign, git ignores it). Reviewer Minor 3
+    (unused import sys in shim) is a FALSE POSITIVE — sys.path.insert at
+    line 8 uses it.
+Task 3: complete (commits 2ad70cc..70e6f58, review clean after controller
+adjudication — spec ✅, quality Approved)
+  - r96 BLOCKER adjudication (2026-08-28): defmatch in 5.50.0 REJECTS
+    pattern variables in head position ("defmatch: some pattern variables
+    are not atoms" — predicate never defined) -> the fix is a new pattern
+    form in the CUSTOM %mr_matchQ matcher (runtime of all 16 class-1
+    MatchQ rules), not Maxima's matcher. Plan amended f8178f0 (Task 3
+    gains Step 4: generator emission + matcher case + Layer A tests).
+  - Marker-head semantics: op(P) a registered marker -> E non-atomic,
+    op(E) atomic, strict arity, ordered args (no permutation). Documented
+    deviation: Maxima unary-minus storage ("-" 1-arg node vs .m
+    Times[-1,u]) — a multi-slot marker head cannot match -u; no pilot
+    rule needs it (r96's 1-slot case fails closed to the same Not[false]).
+  - Reviewer-endorsed deviations: (1) the cond-side marker guard landed
+    in emit_head (both cond routes converge there; the brief's nested-
+    head branch site is subsumed); (2) the brief's verbatim
+    %mr_mq_seqargs_search hard-errors at i = length(P) — part() off the
+    end ERRORS in this build ("part: fell off the end.") — implemented
+    with a seqargs_tail helper (one "match" goal per remaining arg; no
+    %mr_mq_apply_goal change).
+  - Class-2 generated: 14/4/107 = 125; Step-6 statics all match (9
+    mr_use_gamma_flag, 8 gamma_incomplete|expintegral_ei, part() sites,
+    no \$[A-Za-z]). Controller-verified independently: class-1 gate
+    clean (generate --class 1, empty git status), Layer A 519/0 (511+8
+    new marker-head checks).
+  - Minor (carried to final review): (1) utils:810-817 "load-bearing"
+    comment miscounts the trigger (the off-end part() needs a 0-arg
+    call; the real latent hazard is silent trailing-arg drop) — comment
+    accuracy only, implementation correct at all arities; (2) Layer A
+    test 5 re-types the r96 pattern instead of extracting it from
+    2_3.mac (character-identical today; future-emission drift risk);
+    (3) whitespace churn on unrelated test lines; (4) the match-variant
+    case comment omits the unary-minus deviation note (search variant
+    has it).
+
+Task 4: complete (commits 77da405..0850fb5, TDD red-green; reviewer
+APPROVED, spec + quality; fix round 0850fb5; controller-verified
+independently: Layer A 542/0, no trailers)
+  - RED: 519 passed / 20 failed (all 20 = new checks) -> GREEN:
+    539 passed / 0 failed.
+  - Brief defects found by measurement (each probed before fixing,
+    documented in-code with date/build): (1) lambda colon form is not
+    Maxima syntax ("lambda: no body present" — comma form); (2)
+    `for e : lst` parses as `for e from lst` (whole list as one
+    element) -> `for e in lst`; (3) a power's op is the STRING "^"
+    (is(op(x^2) = power) false; house idiom op(u) = "^"); (4) a noun's
+    op is an internal symbol NOT the function symbol (member over
+    function symbols never matches; string() of the op is the head
+    name — calculusQ tests string(op(u)) over a string list; the diff
+    noun DISPLAYS as `derivative` but string()s to "diff"); (5)
+    powerOfLinearQ's x-freeness check is freeof(x, part(u, 2)) — the
+    base is linear-in-x by construction, the brief's part(u,1) form was
+    dead (always false).
+  - Design corrections (controller-verified against the .m): (6)
+    PowerOfLinearMatchQ is the STRICT stored-power test, NOT an alias
+    of PowerOfLinearQ — the alias makes 2.3 r38's (.m:38) condition
+    `PowerOfLinearQ[v,x] && Not[PowerOfLinearMatchQ[v,x]]`
+    unsatisfiable (dead rule); the strict reading fires exactly for
+    implicit-exponent v (bare linear / sqrt-linear) and matches the
+    class-1 LinearQ/LinearMatchQ duality (2.1 r17/r18 exclusion).
+    (7) sqrt-of-linear branch: (linear)^(1/2) stores as a 'sqrt node
+    (house precedent %mr_mq_power_exp); unreachable from current
+    patterns — contract faithfulness, flagged for final-review triage.
+  - Plan corrected to the committed code (plan commit after 4cc259e) so
+    Tasks 5-7 don't re-derive the defects.
+  - Controller-verified: is() trichotomy (is(true)/is(false)/is(noun)
+    = true/false/unknown), member(op(noun), [symbols]) false +
+    string(op) route, integrate(f,x) EVALUATES to f*x (true nouns need
+    x-dependent summand), op storage shapes (integrate noun = integrate,
+    diff noun string = "diff", sqrt node = "sqrt").
+  - Minor (carried to final review): the sqrt branch is currently
+    unreachable from committed patterns (contract faithfulness, not
+    behavior — remove if judged speculative at final review); r35/r38
+    self-refire cost for implicit-exponent v is bounded by the runner
+    depth cap (watch for timeout mass in the class-2 run).
+
+  - Fix round (0850fb5): reviewer minor-1 — regression anchors for the
+    new branches: powerOfLinearQ sqrt-linear true / atom false,
+    powerOfLinearMatchQ sqrt-false (the 2.3 r38 firing case). Layer A
+    539 -> 542. Plan test block + counts updated (20 -> 23).
+  - Reviewer minors closed/recorded: report stat corrected (+31/0);
+    check name "free of X" misnomer (plan-mandated, cosmetic, recorded);
+    everyQ unknown-handling theoretical (plan-mandated, recorded);
+    sqrt-branch reachability question -> carried to final review
+    (unreachable from committed patterns today; contract faithfulness).
+
+Task 5: complete (commits 1c15bab..4a31b8d, TDD red-green; reviewer
+APPROVED conditional on plan amendment — resolved; fix round 4a31b8d;
+controller-verified independently: Layer A 561/0, zero deletions,
+minus-wrap storage probes, no trailers)
+  - RED 545/11 (NOT the predicted 542/14 — M1 collision, see below);
+    GREEN 556/0; fix round -> 561/0 (controller re-ran both).
+  - M1 collision (decided: drop the brief's definition):
+    %mr_numericFactor ALREADY EXISTS in M1 (utils line 1547, Rubi
+    :1100) and passes all three spec tests (sum branch = direct gcd of
+    term factors — no ContentFactor round-trip, which Maxima's
+    auto-expansion breaks: 2*((4+6x)/2) -> 6x+4). Redefining would
+    shadow M1 consumers (%mr_nonnumericFactors, sumSimplerQ family).
+    Pure-addition diff (0 deletions) verified.
+  - 6 systemic build defects applied (lambda comma x8, for-in,
+    %mr_powerQ for all power tests, cons() (no prepend in Maxima),
+    apply("*",map) (no prod(list)), direct-gcd numericFactor).
+  - 7 measured new findings, each stamped: return()-in-for does not
+    escape (probe recorded); while is(undecidable) ERRORS vs if-is
+    no-op NOUN; negative products store as unary-minus node (op "-",
+    args [3 X]) -> signOfFactor minus-wrap branch; 2*(-a-bX) STAYS a
+    product (brief's design note refuted by measurement); A+B*X
+    binomial / A+B*X+C*X^2 NOT a trinomial in the .m's own definition
+    (quadratic base -> PolynomialQ/degree<=4 branch, as in .m);
+    .m SimplifyTerm active in both branches (LeafCount choice
+    commented upstream); brief's .m line citations corrected against
+    pinned 61e9c18e.
+  - Fix round (4a31b8d, reviewer findings): (1) FactorBase last
+    branch apply("+",...) was HEAD-DESTROYING (measured: sqrt(a+bX)
+    -> a+bX, minus-wrapped power -> expanded sum, minus lost) ->
+    apply(op(u), ...) (M1 precedent line 3811); (2) monomialExponent
+    missed bare-x factors (Maxima strips x^1) -> is(f=x)/is(u=x)
+    arms; (3) minus-wrap regression test added. 5 new checks, 561/0.
+  - TRIAGE FLAG (pre-existing M1 defect, out of scope): M1
+    %mr_trinomial_parts misclassifies some shapes (zero-check inverted
+    + under-ranged vs .m TrinomialParts :929-:937) — surfaced via the
+    fix-round shape -(x^2+3*x)^3 routing to the trinomial branch;
+    carried to final review; class-1 record accepted with it.
+  - Minor carried: unifyTerm %mr_simp hot path may be slow on large
+    sums (watch in the class-2 corpus run); layer-B run is the real
+    gate for the chain's untested branches.
+
+Task 6: complete (commits ed6d413..0028d82, TDD red-green; reviewer
+NEEDS-FIXES -> fix round 0028d82; controller-verified independently:
+Layer A 578/0, ifactor-unbound probe, hunk region audit, no trailers)
+  - RED 561/14; GREEN 575/0; fix round -> 578/0 (controller re-ran).
+  - CONTROLLER PREFLIGHT WAS WRONG on FreeQ (corrected by the
+    implementer against the pinned .m and re-verified by the
+    controller): Q (:4264-4266) = Test && $exponFlag$ — NO FreeQ arm;
+    Test(x-free) = true but flag stays false -> Q(x-free) = FALSE;
+    the non-Q .m functions return Null^Null garbage for x-free input
+    -> the port declines with u (documented). Brief's test corrected
+    to `= false`.
+  - 9 deviations: 1 colon-lambda; for-in; if/or decidability
+    verified (all conditions structural/literal/rational-gated; the
+    if-unknown->NOUN quirk documented); FreeQ per .m; check-3
+    not-atom -> listp (RED false-green hazard); local expon -> exn
+    (Maxima option-variable collision); Maxima NESTS comments
+    (/* inside a comment kills the draft); branch A uses the
+    STORED-expon coefficient (.m :4336-4340, sign-flip test same);
+    IGtQ base-swap DROPPED per brief (reachable for positive integer
+    bases; correctness preserved — any valid t works —
+    canonicalization lost; layer-B flag).
+  - Fix round (0028d82, reviewer findings, all controller-verified):
+    (i) ratsimp CANNOT reduce log-identities (ratsimp(log(4)/log(2))
+    stays unreduced — brief's FullSimplify=ratsimp claim false) ->
+    TestAux declined commensurable integer-base products (2^X*4^X)
+    where the .m accepts; fixed with %mr_logRatio (positive integers
+    only; ifactor UNBOUND in 5.50.0 — factor + re-factoring step,
+    MEASURED) at both tmp sites; pinned
+    functionOfExponential(2^X*4^X, X) = 2^X (.m's value for the
+    stored order [2^X, 4^X]; Denominator[2] = 1). (ii)
+    foEFunctionAux final arm was head-restricted to */+ (silent
+    WRONG rewrite for Q-true inputs; r104 is Q-gated alone) ->
+    .m-faithful apply(op(u), map(...)) (M1 precedent :3811); pinned
+    foEF(sin(F^(B*X)), X) = sin(X). (iii) branch B sign-flip
+    (:4346-4349) added on the stored-value test. (iv)
+    functionOfExponential atom(st) decline guard. (v) stamps
+    normalized to date + build.
+  - Reviewer's branch-B %e example auto-combines in Maxima
+    (%e^a*%e^b -> one power) — branch B probed with non-combining
+    integer bases instead (2^(1-2X)*4^(-1/2+X) -> [true, 2, 2X-1],
+    matches independent .m trace).
+  - Layer-B flags (carried): swap drop (integer-base multi-factor
+    integrands — form difference, zero-chain still verifies);
+    commensurable shapes beyond positive integers remain declined;
+    sinh pin (X^2 - 1)/(2*X) is the deterministic A/B form.
+
+Task 7: complete (commit d964fdb, reviewer APPROVED — no Critical/
+Important; controller-verified independently: 7 files, no trailers,
+probe .out genuine + TABLE_AT_LOAD 3180, Layer A 581/0, flatten line
+semantically intact)
+  - mr_load_all() (76-term flatten, 3180 = 3055 + 125); TLS probe
+    triplet (TABLE_AT_LOAD 3180, .out committed, 4247 lines);
+    build_rules_core.sh FP list + image script (mr_load_all) + header
+    NOTE; driver _core_fingerprint class-2 glob + docstring; core
+    rebuilt (160659304 bytes, rules=3180, fingerprint
+    aa53741f…, rules_core_state() = on — the shell/python sync proof);
+    census spot check (2_2 count 4, witness, 1.1.1.1 still 5).
+  - Brief defect (controller preflight): Step 7 commit list wrongly
+    included the GITIGNORED core + stamp (disposable 154 MB image;
+    ensure_rules_core auto-rebuilds) — excluded per controller;
+    plan corrected.
+  - Minor recorded: maxima_rubi.mac:190 flatten line re-indented 3
+    spaces (cosmetic, semantically identical); probe .out header is a
+    bare echo line (sibling records use # headers — spec-compliant,
+    style note).
+  - Re-entrance note (no action): mr_load_all twice re-runs all 76
+    loads — same posture as M1's mr_load_class1_all (package-accepted).
+
+Task 8: complete (commits 222ebc6..c00b5d9; reviewer NEEDS-FIXES ->
+fix round c00b5d9 verified; controller-verified independently: 9
+files, no trailers, unit 7/0, launcher dry-run through the shim,
+Layer A 581/0 (a3ee89c), test_merge_classes 2/0 after re-point)
+  - corpus_driver.py = class-1 copy + 4 deltas (import re +
+    HEAD_REWRITES/normalize_heads; normalization at integrand +
+    primary + secondary expected texts — els[2] steps excluded,
+    display-only, never reaches Maxima; head-rewrites summary line;
+    fingerprint already class1+class2 from Task 7).
+  - Shims: driver shim re-exports 7 attrs (brief named 2 — audit A
+    found 3 more consumers: canary.py, test_driver_parens.py,
+    test_mr_sum_concrete.py) + PEP 562 __getattr__ that fails loudly
+    on typos (reviewer live-verified: identity re-exports, clean
+    AttributeError); launcher/merger shims argv-forward with class-1
+    defaults; wait_and_merge.sh parameterized (POSIX, AGENTS.md
+    no-arg invocation byte-identical).
+  - launch/merge_class_shards.py: parameterized SECTION/MERGED/DRIVER
+    (+SHARD_GLOB for the merger), SLUG = "class" + section.split()[0],
+    cost model / completeness / verdict logic line-identical
+    (reviewer-verified — no class-1 drift possible).
+  - Evidence: head-rewrites unit 7/0; 50/50 (file,entry)->class
+    identical to test/corpus_class1.out (dict diff; the brief's
+    Step-7 commands omitted stop-index — re-run with 1/2/3 for the
+    intended 17+17+16=50); launcher dry run 40 files/25697 entries.
+  - Audit B (implementer, controller-confirmed in review): the
+    merger's skip tuple did NOT skip the new header line (3/3
+    records would have been INCOMPLETE) — prefix added, re-measured.
+  - Fix round (c00b5d9, reviewer's single Important): the
+    `head rewrites:` line was frozen at {} (f-string evaluated in the
+    header block, before the loop mutated REWRITE_STATS — a
+    BRIEF-DESIGN flaw in Delta 3) -> moved to the post-loop summary
+    block; both polarities proven: class-1 slice -> {}, class-2
+    slice -> {'gamma_incomplete(': 1} (the entry classified
+    `expected` — two-sided normalization closing its zero chain
+    live). Plan Delta 3 corrected.
+  - Controller fix (7afde83, flagged by implementer as out-of-scope):
+    test_merge_classes.py AST guard re-pointed to the generalized
+    driver/merger (the shims lost the set literals).
+  - Minor recorded: run-header style drift `class-1` -> `class1`
+    (brief-specified); build_rules_core.sh:15,19,33,45 comments still
+    name corpus_class1_driver.py (comment-only, out of scope);
+    merge_class1_shards.py --help now dies at the no-shards assert
+    (safer than the old full-merge-on-help; brief's || fallback).
+
+Task 9: complete (commits 3b843fc..a2f54c1; reviewer Approved, 2
+minors; controller-verified: both dry runs, merge-classes 2/0,
+record tally re-counted)
+  - Class-2 integrate baseline: 965 entries, 30 s cap, 3 per-file
+    shards (walls 5.6/38.2/46.3 s — the maxima launch here is ~29 ms,
+    image build; per-entry cost is solve-dominated).
+  - BASELINE (the Task-10 A/B yardstick): Results 593 passed,
+    372 failed. expected 123 / verified 186 / no-answer 284 /
+    unverified 357 / unexpected 14 / timeout 1 (2.2 e58 L75, t=30.1s).
+  - probe-integrate-sample.py: derived ROOT + section as 10th
+    positional (brief Step 1, verbatim).
+  - Merger fix (ec62741, the brief anticipated this file): the
+    in-process driver needs the suite-dir positional (5th) — with the
+    default, file_list() (corpus_driver.py:477) walks
+    SUITE/<hardcoded class-1 SECTION> regardless of FILTER (the
+    SUITE_DIR == SUITE branch); relative form required (an absolute
+    equal to SUITE string-equals and re-triggers it). Pre-fix
+    measured: 0 files / 965 extras.
+  - LAUNCHER bug (found by controller preflight after the commit,
+    fixed a2f54c1): launch_class_shards.py had the same missing
+    suite-dir — the class-2 package run would have resolved 0 files /
+    0 jobs and CRASHED (ZeroDivisionError in the balance-spread
+    print at :268-269). Fix: SUITE_REL appended to the argv rewrite;
+    class-1 plan byte-identical (40 files / 25697, rel sets
+    byte-compared); tiny 5-entry class-2 shard through the fixed
+    launcher: 5 real T3 lines.
+  - Carried minor 1 (Task-10 A/B readout margin note): baseline =
+    probe mechanics (4-stage symbolic chain, no head rewrites,
+    noun-on-answer-expected = PASS no-answer); Task-10 run = driver
+    mechanics (8-stage + numeric chain, head rewrites,
+    deferred/contains-noun FAIL classes). Net: the yardstick errs
+    slightly CONSERVATIVE for the package (2 of 3 asymmetries flatter
+    it). A stricter comparison = re-run the native baseline through
+    the driver harness.
+  - Carried minor 2 (nit): task-9-report.md:191 cites a pre-fix line
+    number (262; final-tree 268-269) — the measurement was pre-fix,
+    left as-is.
+
+Task 10: complete (commits db89195..50cce22; reviewer Approved, 2
+minors — one fixed (50cce22), one carried; controller-verified:
+A/B script re-run, record tallies, re-check merge.out, sh -n,
+dump-tested the watcher pass-through)
+  - Class-2 PACKAGE run: 965/965, 26 shards / 24 procs, wall
+    8 min 07 s. Results: 500 passed, 465 failed.
+    Tally: expected 116 / verified 320 / no-answer 64 / unverified
+    125 / deferred 314 / contains-noun 14 / unexpected 4 / timeout 7 /
+    error 1.
+  - A/B vs the Task-9 integrate baseline: 500/965 (51.8%) vs
+    593/965 (61.5%). Entry-level (reviewer-verified arithmetic):
+    PASS->FAIL 309 = 178 GENUINE declines (baseline expected/verified
+    -> package, ALL `deferred`: the rules return a top-level noun
+    where native integrate had an answer) + 131 yardstick
+    reclassification (baseline no-answer = PASS under the probe;
+    FAIL deferred/unverified/timeout/contains-noun under the driver);
+    FAIL->PASS 216. The margin note (probe-vs-driver asymmetry)
+    applies — see the plan's Task-10 note.
+  - 300 s timeout re-check (7 entries): 7/7 re-checked; transitions
+    error 2 + unverified 5; now-PASS 0 — the 30 s cap is NOT the
+    limit for class 2.
+  - FINDING (triage candidate): reproducible SBCL HEAP EXHAUSTION on
+    quotient-of-exponentials integrands — 2.3 e56/e57 (timeout at 30 s
+    -> error 71.4s/95.4s at 300 s) + 2.3 e68 (error 17.4s in the run).
+    Matcher/rule bug candidate; the pilot's findings input.
+  - Brief defects fixed (measured): D1 the brief's ${@:4} is
+    dash-incompatible (/bin/sh = dash; Bad substitution) AND the
+    controller-proposed while-loop was off-by-one — final form =
+    three guarded shifts (dump-tested both polarities, class-1
+    merge line byte-identical); D2 launch_timeout_rerun.py's
+    in-process driver exec gained the relative suite-dir positional
+    (subprocess cmd already had it; class-1 walk unchanged — full
+    suite walk + FILTER yields the same rel set); D3
+    wait_timeout_rerun.sh derives the merge output name from the
+    source basename (class-1 name byte-identical, dash-verified);
+    D4 DRIVER stays an absolute path (the brief's bare name would
+    break the spec load + subprocess argv).
+  - Fix round 2 (50cce22, reviewer minor): merge_timeout_rerun.py
+    hard-coded "class-1" in the re-check record header -> SLUG
+    derived from the source basename (corpus_classN.out -> class-N;
+    the class1->class-1 hyphen insertion was caught by the string
+    check); record regenerated (header + merge-date lines only;
+    7/7 entry lines byte-identical); class-1 no-regression proven
+    by a REAL re-merge of the still-on-disk class-1 shards
+    (787/787, all lines identical).
+  - Carried minor: the MERGED record carries no `head rewrites:`
+    aggregate (the merger skips per-shard stats lines — pre-existing
+    Task-8 behavior; class-1 merged record has the same property).
+    Per-shard lines remain on disk (e.g. {'gamma_incomplete(': 9,
+    'expintegral_ei(': 9}); a merge-header aggregate is an optional
+    future improvement for A/B margin work.
+
+Task 11: complete (commits bb74cb6..b2b4cb7; reviewer Needs-fixes ->
+fix round b2b4cb7; controller re-verified the two Important fixes
+against the records before closing)
+  - docs/corpus-class2-baseline-uplift.md (433 lines) — the
+    measured acceptance record: header (build stamps, 3,180 rules,
+    fingerprint, branch), rule set (125 = 14/4/107, census), the two
+    head rewrites + class-1 no-op, baseline 593/965 (61.5 %), package
+    500/965 (51.8 %), per-file A/B table (2.1 59.2->31.6, 2.2
+    35.5->35.5, 2.3 64.9->56.3; total -9.6 pts), entry-level split
+    (309 = 178 deferred genuine + 131 reclassification; 216
+    FAIL->PASS), residues by file with example entries, class-1
+    stands (byte-identity + spot check + no-op), ledger flags with
+    per-commit no-regression evidence.
+  - docs/class-porting.md (357 lines) — the runbook: 10 steps as
+    executed for class 2 (census -> table -> generator -> utils ->
+    generate -> loader/core -> driver rewrites -> baseline -> package
+    run -> close) + standing constraints. Reviewer: a class-3 porter
+    is unblocked by the runbook alone (two one-line clarifications
+    added in the fix round).
+  - todo/TODO.md — Milestone-2 (pilot) closed section (the two %
+    lines, record paths, follow-ups: classes 3-8 as runbook tickets
+    in spec order, polylog/AppellF1 deferred, PowerOfLinear revisit
+    conditional, the SBCL heap-exhaustion bug as its own item).
+  - Final gates: Layer A 581/0; class-1 regen byte-identical (empty
+    porcelain); head-rewrites 7/0.
+  - Reviewer findings (all fixed in b2b4cb7, controller-reverified):
+    F1 (Important) the 2.2 squared/cubed-denominator examples — the
+    original "e56-e63" was false (e56/e57 unexpected, e58/e59
+    unverified, e60 timeout, e61 verified, e62/e63 unexpected — zero
+    deferred); the deferred set is e9-e12, e15-e20, e23-e24 (12) +
+    the e64-e66 numerator powers; e13/e14/e21/e22 are the
+    no-answer expected-Unintegrable entries (controller re-listed
+    the 2.2 record: matches). F2 (Important) the 2.1 attribution —
+    e20-e22 bases are stored expanded, so they decline at the
+    stored-form %mr_powerOfLinearQ (utils:4638) before r12/r13's
+    clauses are reached; split 8 PoL-gated (e16-e18, e20-e22,
+    e25-e26) + 23 coverage gaps (e55, e60-e64, e69-e73, e78-e89)
+    (controller re-listed the 2.1 deferred set: matches). F3 the
+    total delta -9.7 -> -9.6 pts (exact). F4 e68 numerator c->f
+    (suite 2.3 L85: F^(e*(f+d*x)) numerator, c+d*x denominator).
+    F5 "67 files" -> "72 generated files" (67 T1 + 5 EXTRA b; 73 on
+    disk incl. the manual 9_1.mac) in 3 places. F6/F7 runbook
+    clarifications: the (rel,entry) join is a method (no committed
+    script) with the worked example; shard bounds are START/STOP
+    file indices, STOP exclusive.
+  - Note: controller's own first verification pass of F1/F2 briefly
+    read the 2.3 record (the heap-exhaustion e56/e57 share their
+    entry numbers with 2.2's e56/e57) — the docs and the fix round
+    were correct; the bullet's entry numbers are 2.2's.

@@ -11,10 +11,11 @@ accepted run, 300 s cap) is recorded in test/corpus_class1.timeout5m.out
 + .scratch/class1-ab-remainders/issues/05.
 
 Usage:
-  launch_timeout_rerun.py [source-record] [cap-s] [run-dir] [--launch]
+  launch_timeout_rerun.py [source-record] [cap-s] [run-dir] [section]
+                          [--launch]
 Defaults: test/corpus_class1.out (the accepted record), 300 s cap,
-run-dir /tmp/opencode/timeout_recheck-<utc-stamp>. Without --launch
-this is a dry run (prints the plan only).
+run-dir /tmp/opencode/timeout_recheck-<utc-stamp>, section "1 Algebraic
+functions". Without --launch this is a dry run (prints the plan only).
 Env: MR_N_PROCS process count (default os.cpu_count()).
 
 Mechanics: the timeout entries of the source record (sorted by file,
@@ -43,8 +44,6 @@ import sys
 from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DRIVER = os.path.join(ROOT, "test", "corpus_class1_driver.py")
-SECTION = "1 Algebraic functions"
 SUITE_REL = "reference/maxima-syntax-test-suite"
 N_PROCS = int(os.environ.get("MR_N_PROCS") or os.cpu_count() or 24)
 RESULT = re.compile(r"^timeout\s+t=\s*[\d.]+s\s+(.*) e(\d+) L(\d+)\s*$")
@@ -54,11 +53,21 @@ pos = [a for a in sys.argv[1:] if a != "--launch"]
 SRC = os.path.abspath(pos[0] if len(pos) > 0 else
                       os.path.join(ROOT, "test", "corpus_class1.out"))
 CAP = int(pos[1]) if len(pos) > 1 else 300
+SECTION = pos[3] if len(pos) > 3 else "1 Algebraic functions"
 STAMP = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 RUN_DIR = (pos[2] if len(pos) > 2
            else f"/tmp/opencode/timeout_recheck-{STAMP}")
+# The class-1 section keeps the re-exporting shim (behaviorally the
+# same module); class 2 points at the generalized driver directly.
+# The path stays ABSOLUTE: the subprocess cmd below runs it by bare
+# name (a bare filename here would not resolve).
+DRIVER = os.path.join(ROOT, "test",
+                      "corpus_class1_driver.py"
+                      if SECTION == "1 Algebraic functions"
+                      else "corpus_driver.py")
 
-sys.argv = ["corpus_class1_driver.py", SECTION + "/", "999999", str(CAP)]
+sys.argv = ["corpus_class1_driver.py", SECTION + "/", "999999", str(CAP),
+            SUITE_REL]
 _spec = importlib.util.spec_from_file_location("driver", DRIVER)
 assert _spec is not None and _spec.loader is not None
 driver = importlib.util.module_from_spec(_spec)

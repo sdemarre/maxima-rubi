@@ -1,0 +1,16 @@
+probe: answer-side-identities   date: 2026-08-28 15:20 UTC
+Maxima-version: "5.50.0"
+Maxima build date: "2026-08-20 21:36:22"
+Host type: "x86_64-pc-linux-gnu"
+Lisp implementation type: "SBCL"
+Lisp implementation version: "2.6.7"
+A1 diff rule general a = -(%e^-z*z^(a-1))
+A2 ratsimp diff resid general a = 0
+A3 chain diff resid general a = 1
+A4 ratsimp gamma(1,z) - %e^-z = %e^-z*(%e^z*gamma_incomplete(1,z)-1)
+A4 chain gamma(1,z) - %e^-z = 1
+A5 ratsimp gamma(2,z) - (z+1)%e^-z = -(%e^-z*(z-%e^z*gamma_incomplete(2,z)+1))
+A5 chain gamma(2,z) - (z+1)%e^-z = 1
+B1 diff rule Ei = %e^z/z
+B2 ratsimp diff resid Ei = 0
+B3 chain diff resid Ei = 1

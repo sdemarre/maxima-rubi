@@ -45,7 +45,7 @@ Build notes (5.49-series dev, measured 2026-08-17):
 
 Usage: probe-integrate-sample.py [file-substring] [per-file N] [timeout S]
         [suite-dir] [start-file-index] [append] [skip-first-entries]
-        [out-file] [stop-file-index]
+        [out-file] [stop-file-index] [section]
 Defaults survey "1 Algebraic functions/", 5 entries per file, 30 s cap.
 Phase-2 resume (after a killed/timeouted phase 1): pass the suite dir,
 the 0-based file index to start at (see sorted file list below),
@@ -64,9 +64,10 @@ import tempfile
 import time
 from datetime import datetime, timezone
 
-ROOT = "/home/serge/src/maxima-rubi"
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))
 SUITE = os.path.join(ROOT, "reference", "maxima-syntax-test-suite")
-SECTION = "1 Algebraic functions"
+SECTION = sys.argv[10] if len(sys.argv) > 10 else "1 Algebraic functions"
 
 FILTER = sys.argv[1] if len(sys.argv) > 1 else SECTION + "/"
 PER_FILE = int(sys.argv[2]) if len(sys.argv) > 2 else 5

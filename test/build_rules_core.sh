@@ -2,16 +2,17 @@
 # test/build_rules_core.sh — build the option-D rules core.
 #
 # The rules core (test/mr_rules.core) is a saved Maxima image carrying the
-# full loaded class-1 rule table + batch_answers_from_file, so the driver's
-# per-integral subprocess starts from the image instead of re-running
-# load("maxima_rubi.mac") + mr_load_class1_all() (~6.2 s warm / ~9.4 s cold,
-# measured probes/image/probe-rule-image.out). See that probe for the
+# full loaded rule table (class 1 + class 2, 3180 rules) +
+# batch_answers_from_file, so the driver's per-integral subprocess starts
+# from the image instead of re-running load("maxima_rubi.mac") +
+# mr_load_all() (class-1 load alone: ~6.2 s warm / ~9.4 s cold, measured
+# probes/image/probe-rule-image.out). See that probe for the
 # mechanism (the installed maxima.core is itself built the same way,
 # src/maxima-build.lisp:24).
 #
 # NOTE: the file list below (loader + utils + dispatch lisp + implicit-1
-# lisp + every class-1 rule file) must stay in sync with the driver's
-# _core_fingerprint() (test/corpus_class1_driver.py).
+# lisp + every class-1 AND class-2 rule file) must stay in sync with the
+# driver's _core_fingerprint() (test/corpus_class1_driver.py).
 # The fingerprint sidecar (test/mr_rules.core.stamp) is an md5 over the rule
 # files that define the image. The core BAKES the rules in: after editing a
 # rule .mac, the old core still "works" but silently runs the pre-edit rules.
@@ -27,13 +28,13 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
 # Fingerprint over exactly the files the image is built from: the loader,
-# the utils, the dispatch lisp, and every generated class-1 rule file. The
-# file list is sorted (C locale) so the byte order matches the driver's
-# _core_fingerprint() (test/corpus_class1_driver.py) exactly — a different
-# order would make every freshly built core look stale.
+# the utils, the dispatch lisp, and every generated class-1 AND class-2
+# rule file. The file list is sorted (C locale) so the byte order matches
+# the driver's _core_fingerprint() (test/corpus_class1_driver.py) exactly
+# — a different order would make every freshly built core look stale.
 FP=$( { printf '%s\n' maxima_rubi.mac maxima_rubi_utils.mac maxima_rubi_dispatch.lisp \
         maxima_rubi_implicit1.lisp
-        ls rules/class1/*.mac
+        ls rules/class1/*.mac rules/class2/*.mac
       } | LC_ALL=C sort | xargs -d '\n' cat | md5sum | cut -d' ' -f1 )
 
 # The image is saved from a session that has ALREADY run a top-level, so
@@ -42,7 +43,7 @@ FP=$( { printf '%s\n' maxima_rubi.mac maxima_rubi_utils.mac maxima_rubi_dispatch
 # restored image behaves like a fresh maxima startup. The saved toplevel is
 # cl-user::run, so the driver launches it with bare maxima options (no
 # --eval) — see maxima_run in test/corpus_class1_driver.py.
-printf 'batch_answers_from_file: true$\nload("maxima_rubi.mac")$\nmr_load_class1_all()$\ndisp(concat("TABLE_AT_BUILD ", string(length(mr_rule_table))))$\n:lisp (setq maxima::*maxima-started* nil)$\n:lisp (sb-ext:save-lisp-and-die "%s" :toplevel (symbol-function %s))\n' \
+printf 'batch_answers_from_file: true$\nload("maxima_rubi.mac")$\nmr_load_all()$\ndisp(concat("TABLE_AT_BUILD ", string(length(mr_rule_table))))$\n:lisp (setq maxima::*maxima-started* nil)$\n:lisp (sb-ext:save-lisp-and-die "%s" :toplevel (symbol-function %s))\n' \
   "$TMP/rules.core" "'cl-user::run" | maxima -X "--tls-limit 100000" > "$TMP/build.log" 2>&1 || {
     echo "rules-core build failed:"; tail -5 "$TMP/build.log"; exit 1; }
 TAB=$(grep -oE 'TABLE_AT_BUILD [0-9]+' "$TMP/build.log" | head -1 | awk '{print $2}')

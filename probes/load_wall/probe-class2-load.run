@@ -1,0 +1,4 @@
+#!/bin/sh
+cd "$(dirname "$0")/../.." || exit 1
+echo "maxima $(maxima --version 2>&1 | head -1)  date $(date -u '+%F %T UTC')"
+maxima --very-quiet -X "--tls-limit 100000" -b probes/load_wall/probe-class2-load.mac
