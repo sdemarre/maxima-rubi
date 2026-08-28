@@ -221,6 +221,17 @@ Run: `python3 probes/translation/01-class1-syntax-census.py reference/rubi > /tm
 Expected: `/tmp/c1.out` byte-identical to `probes/translation/01-class1-syntax-census.out`
 (`cmp /tmp/c1.out probes/translation/01-class1-syntax-census.out` — no output).
 
+_Post-review correction (2026-08-28, verified): the literal byte gate was
+structurally unattainable as written — the committed .out carries the
+`.run`'s dated header line (which the bare python run does not print) and
+the pre-fix script hash-randomized equal-count tie order
+(PYTHONHASHSEED). The standing substantive gate, verified on the
+generalized script: the `.run` re-capture is deterministic (deterministic
+tie sort + dated header), so a same-day `sh …-census.run` reproduces the
+committed .out byte-for-byte, and the class-1 headline (67 files / 2,710
+rules / 2,709 with condition) and the token set are unchanged by the
+generalization (line multiset identical, verified 2026-08-28)._
+
 - [ ] **Step 3: Run and commit the class-2 census**
 
 Run:
@@ -536,6 +547,13 @@ git commit -m "feat: generalized rule generator (--class) + Part handler; class-
 - Produces: the three generated class-2 rule files (14 / 4 / 107 rules)
   and the printed load list (3 `%mr_load_sibling` lines + the flatten
   term list) that Task 7 pastes into `maxima_rubi.mac`.
+- Task-1 census closure adjudication (2026-08-28, recorded per the
+  closure gate): `Expand` — direct builtin (the census BUILTIN tier →
+  Maxima `expand`), no table entry; `F` — token-extractor artifact (the
+  single-letter pattern variable in `InverseFunctionQ[F[x]]`, 2.3 line
+  104), not a function token, no table entry. The class-2 token set is
+  CLOSED: every token is a Measured-basis token, a class-1-shared token,
+  `Expand`, or the `F` artifact.
 
 - [ ] **Step 1: The RENAME additions**
 
