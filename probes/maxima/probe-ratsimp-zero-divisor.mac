@@ -1,0 +1,19 @@
+/* probe-ratsimp-zero-divisor.mac — minimal hand-typed repro of the
+   Maxima ratsimp `quotient' by `zero' crash on redundant algebraic
+   generators (3^(1/4) + sqrt(3) in the same varlist).
+   Maxima 5.50.0 (build 2026-08-20 21:36:22), SBCL 2.6.7.
+   No rubi, no dump-load: four radical terms whose sum is the
+   derivative of rubi's answer to sqrt(x+2)/(3*x^2+4).
+   Each ratsimp is errcatched: the crash returns [] (the batch
+   continues); a fix upstream would print the simplified value. */
+t1 : (3^(1/4)*(2-sqrt(3))*sqrt(sqrt(3)+2)*(5822*sqrt(3)-10084))
+     /(2*(sqrt(3)-2)*sqrt(x+2)*((3^(1/4)*sqrt(2-sqrt(3))*sqrt(x+2)+sqrt(2-sqrt(3))*sqrt(sqrt(3)+2))^2/(sqrt(3)-2)^2+1))$
+t2 : (3^(1/4)*(2-sqrt(3))*sqrt(sqrt(3)+2)*(5822*sqrt(3)-10084))
+     /(2*(sqrt(3)-2)*sqrt(x+2)*((3^(1/4)*sqrt(2-sqrt(3))*sqrt(x+2)-sqrt(2-sqrt(3))*sqrt(sqrt(3)+2))^2/(sqrt(3)-2)^2+1))$
+t3 : ((10864*sqrt(3)-18817)*((sqrt(3)*sqrt(sqrt(3)+2))/sqrt(x+2)+3^(3/4)))
+     /(2*sqrt(3)*sqrt(sqrt(3)+2)*sqrt(x+2)+3^(3/4)*x+2*3^(3/4)+4*3^(1/4))$
+t4 : ((18817-10864*sqrt(3))*(3^(3/4)-(sqrt(3)*sqrt(sqrt(3)+2))/sqrt(x+2)))
+     /(-(2*sqrt(3)*sqrt(sqrt(3)+2)*sqrt(x+2))+3^(3/4)*x+2*3^(3/4)+4*3^(1/4))$
+printf(true, "== T1234: ~a~%", errcatch(ratsimp(t1+t2+t3+t4)))$
+printf(true, "== T1234x2: ~a~%", errcatch(ratsimp(2*(t1+t2+t3+t4)*sqrt(sqrt(3)+2)*(150536*3^(3/4)-86912*3^(5/4)))))$
+printf(true, "== DONE~%")$

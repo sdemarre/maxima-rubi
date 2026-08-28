@@ -1,0 +1,28 @@
+# probe-ratsimp-zero-divisor output, 2026-08-28
+# Maxima 5.50.0
+batch("probes/maxima/probe-ratsimp-zero-divisor.mac")
+t1:(3^(1/4)*(2-sqrt(3))*sqrt(sqrt(3)+2)*(5822*sqrt(3)-10084))
+   /(2*(sqrt(3)-2)*sqrt(x+2)
+      *((3^(1/4)*sqrt(2-sqrt(3))*sqrt(x+2)+sqrt(2-sqrt(3))*sqrt(sqrt(3)+2))^2
+       /(sqrt(3)-2)^2
+       +1))
+t2:(3^(1/4)*(2-sqrt(3))*sqrt(sqrt(3)+2)*(5822*sqrt(3)-10084))
+   /(2*(sqrt(3)-2)*sqrt(x+2)
+      *((3^(1/4)*sqrt(2-sqrt(3))*sqrt(x+2)-sqrt(2-sqrt(3))*sqrt(sqrt(3)+2))^2
+       /(sqrt(3)-2)^2
+       +1))
+t3:((10864*sqrt(3)-18817)*((sqrt(3)*sqrt(sqrt(3)+2))/sqrt(x+2)+3^(3/4)))
+   /(2*sqrt(3)*sqrt(sqrt(3)+2)*sqrt(x+2)+3^(3/4)*x+2*3^(3/4)+4*3^(1/4))
+t4:((18817-10864*sqrt(3))*(3^(3/4)-(sqrt(3)*sqrt(sqrt(3)+2))/sqrt(x+2)))
+   /(-(2*sqrt(3)*sqrt(sqrt(3)+2)*sqrt(x+2))+3^(3/4)*x+2*3^(3/4)+4*3^(1/4))
+printf(true,"== T1234: ~a~%",errcatch(ratsimp(t1+t2+t3+t4)))
+`quotient' by `zero'
+== T1234: []
+printf(true,"== T1234x2: ~a~%",
+       errcatch(ratsimp(2*(t1+t2+t3+t4)*sqrt(sqrt(3)+2)
+                         *(150536*3^(3/4)-86912*3^(5/4)))))
+`quotient' by `zero'
+== T1234x2: []
+printf(true,"== DONE~%")
+== DONE
+   /home/serge/src/maxima-rubi/probes/maxima/probe-ratsimp-zero-divisor.mac
