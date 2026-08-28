@@ -2295,22 +2295,20 @@ Task 1: complete (commits b78d5aa..bd0fa70, review clean after 1 fix round — s
   - Pre-existing census script "uses" column bug (milestone-1 d8abbb4) fixed
     in this task as part of the fix round; docs/rule-translation.md citations
     (rule counts) unaffected.
-Task 2: implemented (commit ae20582)
-  - generate_rules.py = copy of generate_class1.py + configure(class_num)
-    (CLASS/CLASS_PREFIX/OUT/EXPECTED_TOTAL), load_class_files (class-prefix
-    selector; gated flag not a filter — verified no-op for class 1: gated
-    block holds 0 "1 " files), main(class_num=None) with --class,
-    EXTRA_CLASS1 loop class-1-gated, Part [[n]] handler in translate().
-  - Brief step-5 header conflict resolved: the brief's verbatim header
-    (generate_rules.py --class N) would have broken the class-1 byte gate
-    (all 72 committed generated files carry the old Regenerate line); the
-    Regenerate line is class-gated — class 1 keeps the committed
-    generate_class1.py command byte-identical, other classes document the
-    --class form.
-  - Gate green: generate_rules.py --class 1 -> TOTAL 3026 OK,
-    git status --porcelain rules/ EMPTY, no rule-file diff; same via the
-    generate_class1.py shim (no-arg and --only; old argv handling = --only
-    only, preserved).
-  - Step-9 class-2 smoke (expected failure, table boundary):
-    GenError "2_1 r1: unlisted head 'TrueQ'" — failing token TrueQ, a
-    Task-3 table token. Empty rules/class2/ dir from the failed run removed.
+Task 2: complete (commits bd0fa70..ae20582, review clean — spec ✅, quality Approved)
+  - generate_rules.py = drift-free copy + 6 brief edit sites (mechanically
+    verified old->new diff); shim generate_class1.py (12 lines, --only +
+    no-arg preserved); class-1 byte-identity gate green (3026 rules, 67
+    files, empty git status); class-2 smoke fails at table boundary on
+    'TrueQ' (Task-3 table token, plan line 573).
+  - Brief conflict resolved + reviewer-endorsed: generated-header
+    Regenerate line class-gated (class 1 keeps the committed
+    `generate_class1.py --only {key}` command verbatim; other classes get
+    the `--class` form).
+  - Minor (carried to final review): (1) generate_rules.py:2-10 module
+    docstring still describes the old class-1 tool; (2) GenError prefix
+    still reads `generate_class1:`; (4) bare trailing `--class` gives a
+    raw IndexError (brief-verbatim); (5) a failed class-N run leaves an
+    empty rules/classN/ dir (benign, git ignores it). Reviewer Minor 3
+    (unused import sys in shim) is a FALSE POSITIVE — sys.path.insert at
+    line 8 uses it.
