@@ -2397,3 +2397,44 @@ independently: Layer A 542/0, no trailers)
     everyQ unknown-handling theoretical (plan-mandated, recorded);
     sqrt-branch reachability question -> carried to final review
     (unreachable from committed patterns today; contract faithfulness).
+
+Task 5: complete (commits 1c15bab..4a31b8d, TDD red-green; reviewer
+APPROVED conditional on plan amendment — resolved; fix round 4a31b8d;
+controller-verified independently: Layer A 561/0, zero deletions,
+minus-wrap storage probes, no trailers)
+  - RED 545/11 (NOT the predicted 542/14 — M1 collision, see below);
+    GREEN 556/0; fix round -> 561/0 (controller re-ran both).
+  - M1 collision (decided: drop the brief's definition):
+    %mr_numericFactor ALREADY EXISTS in M1 (utils line 1547, Rubi
+    :1100) and passes all three spec tests (sum branch = direct gcd of
+    term factors — no ContentFactor round-trip, which Maxima's
+    auto-expansion breaks: 2*((4+6x)/2) -> 6x+4). Redefining would
+    shadow M1 consumers (%mr_nonnumericFactors, sumSimplerQ family).
+    Pure-addition diff (0 deletions) verified.
+  - 6 systemic build defects applied (lambda comma x8, for-in,
+    %mr_powerQ for all power tests, cons() (no prepend in Maxima),
+    apply("*",map) (no prod(list)), direct-gcd numericFactor).
+  - 7 measured new findings, each stamped: return()-in-for does not
+    escape (probe recorded); while is(undecidable) ERRORS vs if-is
+    no-op NOUN; negative products store as unary-minus node (op "-",
+    args [3 X]) -> signOfFactor minus-wrap branch; 2*(-a-bX) STAYS a
+    product (brief's design note refuted by measurement); A+B*X
+    binomial / A+B*X+C*X^2 NOT a trinomial in the .m's own definition
+    (quadratic base -> PolynomialQ/degree<=4 branch, as in .m);
+    .m SimplifyTerm active in both branches (LeafCount choice
+    commented upstream); brief's .m line citations corrected against
+    pinned 61e9c18e.
+  - Fix round (4a31b8d, reviewer findings): (1) FactorBase last
+    branch apply("+",...) was HEAD-DESTROYING (measured: sqrt(a+bX)
+    -> a+bX, minus-wrapped power -> expanded sum, minus lost) ->
+    apply(op(u), ...) (M1 precedent line 3811); (2) monomialExponent
+    missed bare-x factors (Maxima strips x^1) -> is(f=x)/is(u=x)
+    arms; (3) minus-wrap regression test added. 5 new checks, 561/0.
+  - TRIAGE FLAG (pre-existing M1 defect, out of scope): M1
+    %mr_trinomial_parts misclassifies some shapes (zero-check inverted
+    + under-ranged vs .m TrinomialParts :929-:937) — surfaced via the
+    fix-round shape -(x^2+3*x)^3 routing to the trinomial branch;
+    carried to final review; class-1 record accepted with it.
+  - Minor carried: unifyTerm %mr_simp hot path may be slow on large
+    sums (watch in the class-2 corpus run); layer-B run is the real
+    gate for the chain's untested branches.
