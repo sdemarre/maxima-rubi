@@ -55,7 +55,14 @@ EST_ENTRY = 3.5
 RESULT = re.compile(r"^(\S+)\s+t=\s*([\d.]+)s\s+(.*) e(\d+) L(\d+)\s*$")
 
 LAUNCH = "--launch" in sys.argv
-sys.argv = [DRIVER, SECTION + "/", "999999", "30"]
+# The suite-dir positional (the driver's 5th) is REQUIRED for any
+# non-default section: without it the in-process driver's file_list()
+# bounds the walk to SUITE/<its hardcoded class-1 SECTION> regardless
+# of FILTER, so a class-2 plan resolved 0 files / 0 jobs and the
+# balance-spread print crashed with ZeroDivisionError (measured
+# 2026-08-28, task-9 fix round). merge_class_shards.py carries the
+# same fix and the reason the form is relative.
+sys.argv = [DRIVER, SECTION + "/", "999999", "30", SUITE_REL]
 _spec = importlib.util.spec_from_file_location("driver",
                                                os.path.join(ROOT, DRIVER))
 assert _spec is not None and _spec.loader is not None
