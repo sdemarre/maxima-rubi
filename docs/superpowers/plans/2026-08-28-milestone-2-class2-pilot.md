@@ -824,6 +824,13 @@ test_class2_cluster_a() := block([],
   check_bool("powerOfLinearQ non-linear base", is(%mr_powerOfLinearQ((a + b*X^2)^(1/2), X) = false)),
   check_bool("powerOfLinearQ free of X", is(%mr_powerOfLinearQ(a*X, X) = true)),
   check_bool("powerOfLinearMatchQ agrees", is(%mr_powerOfLinearMatchQ((a + b*X)^(3/2), X) = true)),
+  /* Fix round 1 (2026-08-28 review): regression anchors for the
+     atom gate and the sqrt-of-linear branch (deviation 7) — the
+     stored (linear)^(1/2) sqrt form, Q/MatchQ duality on it (the
+     2.3 r38 firing case: Q true, MatchQ false), and an atom. */
+  check_bool("powerOfLinearQ sqrt linear", is(%mr_powerOfLinearQ(sqrt(a + b*X), X) = true)),
+  check_bool("powerOfLinearQ atom", is(%mr_powerOfLinearQ(5, X) = false)),
+  check_bool("powerOfLinearMatchQ sqrt not a power", is(%mr_powerOfLinearMatchQ(sqrt(a + b*X), X) = false)),
   check("normalizePowerOfLinear identity", %mr_normalizePowerOfLinear((a + b*X)^(3/2), X), (a + b*X)^(3/2)),
   true
 )$
@@ -839,7 +846,7 @@ And in `run_all_tests()`, after `test_cluster_l_powered_form(),`:
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: the `test_class2_cluster_a` checks print `FAIL` (the functions
 are undefined — a noun, `is(noun = true)` = false) and the Results line
-shows 20 failures. (If Maxima dies mid-run with no Results line, the
+shows 23 failures. (If Maxima dies mid-run with no Results line, the
 failure is a parse error in the test block — fix syntax first.)
 
 - [ ] **Step 3: Implement the cluster**
@@ -1002,7 +1009,7 @@ committed code, verbatim._
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: every `test_class2_cluster_a` check `PASS`; Results line
-`<511 + Task-3's marker-head delta + 20> passed, 0 failed`.
+`<511 + Task-3's marker-head delta + 23> passed, 0 failed`.
 
 - [ ] **Step 5: Commit**
 
