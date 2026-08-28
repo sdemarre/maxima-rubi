@@ -2484,3 +2484,25 @@ Layer A 578/0, ifactor-unbound probe, hunk region audit, no trailers)
     integrands — form difference, zero-chain still verifies);
     commensurable shapes beyond positive integers remain declined;
     sinh pin (X^2 - 1)/(2*X) is the deterministic A/B form.
+
+Task 7: complete (commit d964fdb, reviewer APPROVED — no Critical/
+Important; controller-verified independently: 7 files, no trailers,
+probe .out genuine + TABLE_AT_LOAD 3180, Layer A 581/0, flatten line
+semantically intact)
+  - mr_load_all() (76-term flatten, 3180 = 3055 + 125); TLS probe
+    triplet (TABLE_AT_LOAD 3180, .out committed, 4247 lines);
+    build_rules_core.sh FP list + image script (mr_load_all) + header
+    NOTE; driver _core_fingerprint class-2 glob + docstring; core
+    rebuilt (160659304 bytes, rules=3180, fingerprint
+    aa53741f…, rules_core_state() = on — the shell/python sync proof);
+    census spot check (2_2 count 4, witness, 1.1.1.1 still 5).
+  - Brief defect (controller preflight): Step 7 commit list wrongly
+    included the GITIGNORED core + stamp (disposable 154 MB image;
+    ensure_rules_core auto-rebuilds) — excluded per controller;
+    plan corrected.
+  - Minor recorded: maxima_rubi.mac:190 flatten line re-indented 3
+    spaces (cosmetic, semantically identical); probe .out header is a
+    bare echo line (sibling records use # headers — spec-compliant,
+    style note).
+  - Re-entrance note (no action): mr_load_all twice re-runs all 76
+    loads — same posture as M1's mr_load_class1_all (package-accepted).

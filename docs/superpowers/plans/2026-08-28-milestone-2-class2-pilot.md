@@ -1563,12 +1563,17 @@ total grown by the cluster A+B+C+census additions.
 ```
 git add maxima_rubi.mac test/build_rules_core.sh test/corpus_class1_driver.py \
         probes/load_wall/probe-class2-load.mac probes/load_wall/probe-class2-load.run \
-        probes/load_wall/probe-class2-load.out test_maxima_rubi.mac test/mr_rules.core test/mr_rules.core.stamp
+        probes/load_wall/probe-class2-load.out test_maxima_rubi.mac
 git commit -m "feat: mr_load_all (class1+class2, 3180 rules) + core/fingerprint wiring + TLS full-load probe"
 ```
-(Commit the rebuilt core and stamp — they are generated artifacts the
-driver consumes by fingerprint; the stamp's `git_dirty`/`git_tree`
-lines make the build self-describing.)
+_DO NOT commit `test/mr_rules.core` / `test/mr_rules.core.stamp`: they
+are gitignored by design (.gitignore 22-27 — a 154 MB disposable saved
+image) and the driver's `ensure_rules_core()` auto-rebuilds a
+missing/stale core under flock (300 s timeout, standard-load fallback).
+The build's own stamp (`fingerprint`/`rules`/`git_tree`/`git_dirty`
+lines) makes the on-disk core self-describing without committing it.
+The original draft listed them for commit — refuted by the repo's own
+gitignore (measured 2026-08-28).
 
 ---
 
