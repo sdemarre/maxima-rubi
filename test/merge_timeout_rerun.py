@@ -121,8 +121,15 @@ for line in r.stdout.splitlines():
     line = line.strip()
     if line.startswith(("Maxima", "Lisp ", "Host ")):
         out_lines.append(f"maxima: {line}")
+# The MERGED record carries the source path RELATIVE to the repo root
+# (the class-1 precedent form); the launcher's <run-dir>/source file
+# may hold an absolute path (the watcher relies on it resolving).
+try:
+    accepted_rel = os.path.relpath(ACCEPTED, ROOT)
+except ValueError:
+    accepted_rel = ACCEPTED
 out_lines.append(
-    f"re-check of the {len(expected)} `timeout` entries of {ACCEPTED} "
+    f"re-check of the {len(expected)} `timeout` entries of {accepted_rel} "
     f"(30 s cap) at a {cap} s per-entry cap, same rules core")
 out_lines.append("")
 

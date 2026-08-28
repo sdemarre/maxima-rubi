@@ -65,9 +65,11 @@ HEAD_REWRITES = [
     # carry the same (native, differentiable) head. Measured 2026-08-28
     # on 5.50.0: gamma_incomplete(a, z) is the UPPER 2-arg (d/dz =
     # -z^(a-1) %e^-z — the corpus GAMMA(a, z) convention), d/dz
-    # expintegral_ei(z) = %e^z/z (probes/corpus/02-class2-answer-heads).
-    # The lookbehind keeps longer names (e.g. a free function named
-    # "XEi") intact.
+    # expintegral_ei(z) = %e^z/z (probes/answer-side/
+    # 01-answer-side-identities — the identities probed within the
+    # harness zero chain; probes/corpus/02-class2-answer-heads
+    # measures the head COUNTS only). The lookbehind keeps longer names
+    # (e.g. a free function named "XEi") intact.
     (re.compile(r"(?<![A-Za-z0-9_])GAMMA\("), "gamma_incomplete("),
     (re.compile(r"(?<![A-Za-z0-9_])Ei\("), "expintegral_ei("),
 ]

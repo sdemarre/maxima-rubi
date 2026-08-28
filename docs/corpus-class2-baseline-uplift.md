@@ -23,6 +23,10 @@ Inputs:
   (Task 1);
 - `probes/corpus/02-class2-answer-heads.out` — the section's
   answer-head census (Task 1);
+- `probes/answer-side/01-answer-side-identities.out` — the
+  answer-side identities probe: the two normalization conventions
+  (UPPER `gamma_incomplete`, the `expintegral_ei` derivative) measured
+  within the harness zero chain (final-review close-out);
 - `docs/superpowers/specs/2026-08-28-milestone-2-class2-pilot-design.md`
   (commit `ff814e9`) and
   `docs/superpowers/plans/2026-08-28-milestone-2-class2-pilot.md`
@@ -122,12 +126,18 @@ and their port decisions:
   corpus; `F0(` 14 is a **free function symbol**, not a 0F1
   hypergeometric, and `polylog`/`AppellF1` have no native — not
   renamed):
-  - `GAMMA(` → `gamma_incomplete(` — the measured convention:
+  - `GAMMA(` → `gamma_incomplete(` — the measured convention
+    (`probes/answer-side/01-answer-side-identities.out`, A1–A5):
     `gamma_incomplete(a, z)` in this build is the **2-arg UPPER**
-    incomplete gamma, `diff(gamma_incomplete(a, z), z) = -z^(a-1) %e^-z`
-    — the corpus `GAMMA(a, z)` convention maps straight over;
-  - `Ei(` → `expintegral_ei(` — the measured convention:
-    `diff(expintegral_ei(z), z) = %e^z/z`.
+    incomplete gamma, `diff(gamma_incomplete(a, z), z) = -z^(a-1) %e^-z`,
+    and the value pins `gamma_incomplete(1, z) = %e^-z` /
+    `gamma_incomplete(2, z) = (z+1) %e^-z` close within the harness zero
+    chain (they do not close symbolically — the build does not auto-
+    reduce `gamma_incomplete(1, z)` — they close on the chain's numeric
+    stage) — the corpus `GAMMA(a, z)` convention maps straight over;
+  - `Ei(` → `expintegral_ei(` — the measured convention (the probe's
+    B1–B3): `diff(expintegral_ei(z), z) = %e^z/z`, the residual
+    closing to 0 within the chain.
   The rewrites are idempotent (native forms untouched) and guarded by a
   `(?<![A-Za-z0-9_])` lookbehind so longer names stay intact
   (`test/test_head_rewrites.py`: `XEi(2)` untouched, free `F0(x)`

@@ -116,8 +116,8 @@ printed at all, which is itself a failure.
 maxima --very-quiet -b test_maxima_rubi.mac
 ```
 
-511 targets (green at milestone-1 close: `Results: 511 passed,
-0 failed`).
+581 targets (green at milestone-2 close: `Results: 581 passed,
+0 failed`; the count grew 511 → 581 across the pilot's clusters).
 
 **Layer B — full class-1 corpus** (25,697 entries, 30 s per-entry cap,
 one fresh maxima subprocess per integral, verification by
@@ -135,6 +135,22 @@ against the previous merged record is the regression gate.** The
 120-target canary (`python3 test/canary.py`, 60 s/target) is a smoke,
 not a gate: its broad set is biased toward currently-failing targets
 and cannot gate verified-target regressions.
+
+**Layer B — full class-2 corpus** (965 entries, 30 s per-entry cap,
+one fresh maxima subprocess per integral, verification by
+differentiation with the corpus expected answer as the secondary
+check). Sharded over 24 processes, ~8 min wall:
+
+```sh
+python3 test/launch_class_shards.py "2 Exponentials" test/corpus_class2.out test/corpus_driver.py --launch
+setsid sh test/wait_and_merge.sh test/corpus_class2.shard-pids test/merge_class_shards.py test/class2_merge.out "2 Exponentials" test/corpus_class2.out test/corpus_driver.py "corpus_class2.shard*.out" &
+```
+
+The watcher merges the shards to `test/corpus_class2.out`
+(completeness asserted: 965/965, no dupes/missing/extra). The
+class-N mechanics are runbooked in `docs/class-porting.md`
+(Steps 8-9); the measured acceptance is
+`docs/corpus-class2-baseline-uplift.md`.
 
 **Timeout re-check** — the standing answer to "is 30 s at the limit?"
 for any merged record: re-run exactly the record's `timeout` class at
