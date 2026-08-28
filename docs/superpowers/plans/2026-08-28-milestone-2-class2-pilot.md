@@ -1233,11 +1233,18 @@ test_class2_cluster_c() := block([],
   print("--- class-2 cluster C: FunctionOfExponential family ---"),
   check_bool("foE: F^(c (a+b x))", is(%mr_functionOfExponentialQ(F^(C*(A + B*X)), X) = true)),
   check_bool("foE: %e^(a+b x)", is(%mr_functionOfExponentialQ(%e^(A + B*X), X) = true)),
+  /* listp, not `not atom`: at RED the undefined-noun form is
+     non-atom too, so the brief's `not atom` would have falsely
+     PASSED at RED (fix-round finding). */
   check_bool("foE: sinh(a+b x) tests true",
-    is(not atom(%mr_foE_test(sinh(A + B*X), X)) = true)),
+    is(listp(%mr_foE_test(sinh(A + B*X), X)) = true)),
   check_bool("foE: sinh(a+b x) flag false (no explicit power)",
     is(part(%mr_foE_test(sinh(A + B*X), X), 1) = false)),
-  check_bool("foE: free of X", is(%mr_functionOfExponentialQ(F^C, X) = true)),
+  /* .m-faithful: Q = Test && $exponFlag$ — the Test is true for
+     x-free u but the flag stays false (no explicit power), so
+     Q(x-free) = FALSE (the brief's `= true` expectation was
+     refuted by the pinned .m :4264-4266/:4308-4309). */
+  check_bool("foE: free of X", is(%mr_functionOfExponentialQ(F^C, X) = false)),
   check_bool("foE: two different bases refused",
     is(%mr_functionOfExponentialQ(F^(A + B*X)*G^(C + D*X), X) = false)),
   check_bool("foE: non-exponential refused", is(%mr_functionOfExponentialQ(A*X^2, X) = false)),
@@ -1260,6 +1267,23 @@ test_class2_cluster_c() := block([],
   check_bool("fullSimplify: quotient keeps quotient",
     is(ratsimp(denom(%mr_fullSimplify(G1*H1*log(G2)/(D1*E1*log(F1))))
                - D1*E1*log(F1)) = 0)),
+  /* Fix round 1: ratsimp cannot reduce log-identities
+     (ratsimp(log(4)/log(2)) stays unreduced — the brief's
+     FullSimplify=ratsimp claim was false for this), so the
+     TestAux tmp sites need an explicit commensurable-base
+     rational (fix-round %mr_logRatio). These pin it: */
+  check_bool("foE: commensurable numeric bases accepted",
+    is(%mr_functionOfExponentialQ(2^X*4^X, X) = true)),
+  /* args(2^X*4^X) = [2^X, 4^X] — 2 first-seen; the dropped .m
+     swap would keep 2 here too; Denominator[2] = 1, so the
+     stored expon survives as X (the .m's value for this order).
+     The form is factor-order dependent — flagged for layer B. */
+  check("foE: commensurable output pinned",
+    %mr_functionOfExponential(2^X*4^X, X), 2^X),
+  /* The .m's Map rewrites ANY non-atomic head (the brief's
+     */+ restriction was a wrong rewrite for Q-true inputs). */
+  check("foEF: sin head preserved",
+    %mr_functionOfExponentialFunction(sin(F^(B*X)), X), sin(X)),
   true
 )$
 ```
@@ -1276,169 +1300,98 @@ In `run_all_tests()`, after `test_class2_cluster_b(),`:
 - [ ] **Step 2: Run — verify it fails**
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
-Expected: cluster-C checks FAIL (undefined nouns).
+Expected: cluster-C checks FAIL (undefined nouns). MEASURED
+(561-baseline run, 2026-08-28): RED line `561 passed, 14 failed` —
+note check 3 must use `listp` (the brief's `not atom` form would
+have falsely PASSED at RED: an undefined-function noun is
+non-atom).
 
 - [ ] **Step 3: Implement the family**
 
-Append to `maxima_rubi_utils.mac`:
+Append to `maxima_rubi_utils.mac` (after the Task-5 cluster, before
+`mr_witness_utils()`): the state-threaded family. The COMMITTED CODE
+IS AUTHORITATIVE — `maxima_rubi_utils.mac` lines ~5050-5400 (commit
+c845057) plus fix round 1 (commit 0028d82: `%mr_logRatio` + the two
+TestAux tmp sites, foEFunctionAux's final arm, branch B's sign flip,
+the `%mr_functionOfExponential` decline guard, stamps). The original
+draft of this step is superseded — 9 measured deviations + fix round
+1. Summary:
 
-```maxima
-/* ---- class-2 cluster C: the FunctionOfExponential family ----------
- * Pinned definitions: IntegrationUtilityFunctions.m :4264 (Q), :4270
- * (FunctionOfExponential), :4277 (FunctionOfExponentialFunction),
- * :4284 (FunctionOfExponentialFunctionAux), :4200-ish
- * (FunctionOfExponentialTest / TestAux). The .m uses three FLUID
- * variables ($base$, $expon$, $exponFlag$) set inside Block; Maxima
- * has no dynamic variables, so the state is threaded explicitly as the
- * list [flag, F, v] — the same information, no globals, safe under the
- * runner's re-entrant rule evaluation.
- * FunctionExpand: the .m calls it only on Gamma[p, z] with p a
- * positive integer (2.3 r28, IGtQ[p, 0]); Maxima does not auto-expand
- * gamma_incomplete(n, z) (measured 2026-08-28: noun survives, diff
- * works), so the port expands Gamma[n, z] = gamma(n) %e^-z
- * sum_{k=0}^{n-1} z^k/k! via the concretizing mr_sum, and returns
- * other shapes unchanged (decline-safe).
- * FullSimplify: ratsimp — on the TestAux/Aux shapes (quotients of
- * logs and coefficients) ratsimp preserves the quotient and cancels
- * common factors; the unit test pins the denom behavior. */
-
-%mr_fullSimplify(u) := ratsimp(u)$
-
-%mr_foE_test(u, x) := block([], %mr_foE_test2(u, x, [false, false, false]))$
-
-%mr_foE_test2(u, x, st) := block([base, expon, r],
-  if freeof(x, u) then st
-  else if is(u = x) or %mr_calculusQ(u) then false
-  else if %mr_powerQ(u) and freeof(x, part(u, 1))
-       and %mr_linearQ(part(u, 2), x) then (
-    base : part(u, 1), expon : part(u, 2),
-    /* $exponFlag$ = True — an explicit F^v power occurred. */
-    r : %mr_foE_testAux(base, expon, x, [true, part(st, 2), part(st, 3)]),
-    if atom(r) then false else r
-  )
-  else if %mr_hyperbolicQ(u) and %mr_linearQ(part(u, 1), x) then (
-    /* Hyperbolic of a linear form: base %e, flag UNCHANGED (no
-       explicit power). */
-    r : %mr_foE_testAux(%e, part(u, 1), x, st),
-    if atom(r) then false else r
-  )
-  else if %mr_powerQ(u) and freeof(x, part(u, 1))
-       and %mr_sumQ(part(u, 2)) then (
-    /* F^(v1 + v2 + …) = F^v1 F^v2 … — test the split factors, thread
-       the state. */
-    r : %mr_foE_test2(part(u, 1)^part(part(u, 2), 1), x, st),
-    if atom(r) then false
-    else %mr_foE_test2(part(u, 1)^rest(part(u, 2)), x, r)
-  )
-  else (
-    /* Catch[Scan[If[Not[FunctionOfExponentialTest[#, x]], Throw[False]]],
-       u]; True — every subpart must test, state threaded through. */
-    block([st2, p],
-      st2 : st,
-      for p : args(u) while not atom(st2) do
-        st2 : %mr_foE_test2(p, x, st2),
-      st2)))$
-
-%mr_foE_testAux(base, expon, x, st) := block([F, v, tmp],
-  if is(part(st, 2) = false) then
-    /* $base$ === Null — first base seen: take it, keep the full
-       expon. */
-    [part(st, 1), base, expon]
-  else (
-    F : part(st, 2), v : part(st, 3),
-    tmp : %mr_fullSimplify(log(base)*%mr_coeff(expon, x, 1)
-                           /(log(F)*%mr_coeff(v, x, 1))),
-    if not %mr_rationalQ(tmp) then false
-    else if %mr_eqQ(%mr_coeff(v, x, 0), 0)
-          or %mr_neQ(tmp, %mr_fullSimplify(
-               log(base)*%mr_coeff(expon, x, 0)
-               /(log(F)*%mr_coeff(v, x, 0))))
-    then (
-      /* The constant-term ratio is inconsistent (or the stored expon
-         has none): the common expon is through the origin, v =
-         coeff(x)*x/denom(tmp). The .m's IGtQ[base, 0] && IGtQ[$base$,
-         0] && base < $base$ swap is false for symbolic free constants
-         (IGtQ requires integers) — dropped as unreachable (documented).
-         The sign flip: tmp < 0 && coeff < 0 -> -v. */
-      block([e],
-        e : %mr_coeff(expon, x, 1)*x/denom(tmp),
-        if is(tmp < 0) and %mr_negQ(%mr_coeff(expon, x, 1))
-        then [part(st, 1), F, -e]
-        else [part(st, 1), F, e])
-    )
-    else (
-      /* Consistent: fold both expons to the common expon/denom(tmp). */
-      [part(st, 1), F, v/denom(tmp)])))$
-
-%mr_functionOfExponentialQ(u, x) := block([st],
-  st : %mr_foE_test(u, x),
-  is(not atom(st) and part(st, 1) = true))$
-
-%mr_functionOfExponential(u, x) := block([st],
-  st : %mr_foE_test(u, x),
-  part(st, 2)^part(st, 3))$
-
-%mr_functionOfExponentialFunction(u, x) := block([st],
-  st : %mr_foE_test(u, x),
-  if atom(st) then u
-  else %mr_simp(%mr_foEFunctionAux(u, x, st), [x]))$
-
-%mr_foEFunctionAux(u, x, st) := block([F, v, tmp],
-  F : part(st, 2), v : part(st, 3),
-  if atom(u) then u
-  else if %mr_powerQ(u) and freeof(x, part(u, 1))
-       and %mr_linearQ(part(u, 2), x) then (
-    /* u = F0^(m x + c0) -> (F0/F)^… X^ratio: the .m's two branches on
-       EqQ[Coefficient[$expon$, x, 0], 0]. */
-    if %mr_eqQ(%mr_coeff(v, x, 0), 0) then
-      part(u, 1)^%mr_coeff(part(u, 2), x, 0)
-      *x^%mr_fullSimplify(log(part(u, 1))*%mr_coeff(part(u, 2), x, 1)
-                          /(log(F)*%mr_coeff(v, x, 1)))
-    else
-      x^%mr_fullSimplify(log(part(u, 1))*%mr_coeff(part(u, 2), x, 1)
-                         /(log(F)*%mr_coeff(v, x, 1)))
-  )
-  else if %mr_hyperbolicQ(u) and %mr_linearQ(part(u, 1), x) then (
-    /* The .m's Switch on Head[u]: sinh/cosh/tanh/coth/sech/csch of the
-       tmp = X^(coeff ratio) form. */
-    tmp : x^%mr_fullSimplify(%mr_coeff(part(u, 1), x, 1)
-                             /(log(F)*%mr_coeff(v, x, 1))),
-    if is(op(u) = sinh) then tmp/2 - 1/(2*tmp)
-    else if is(op(u) = cosh) then tmp/2 + 1/(2*tmp)
-    else if is(op(u) = tanh) then (tmp - 1/tmp)/(tmp + 1/tmp)
-    else if is(op(u) = coth) then (tmp + 1/tmp)/(tmp - 1/tmp)
-    else if is(op(u) = sech) then 2/(tmp + 1/tmp)
-    else if is(op(u) = csch) then 2/(tmp - 1/tmp)
-  )
-  else if %mr_powerQ(u) and freeof(x, part(u, 1))
-       and %mr_sumQ(part(u, 2)) then
-    /* F^(v1+v2) -> the product of the rewrites (Map over the Power's
-       sum splits multiplicatively in the .m too). */
-    %mr_foEFunctionAux(part(u, 1)^part(part(u, 2), 1), x, st)
-    *%mr_foEFunctionAux(part(u, 1)^rest(part(u, 2)), x, st)
-  else (
-    /* Map[Function[FunctionOfExponentialFunctionAux[#, x]], u] —
-       head-preserving over +/* (the r104 call path sees only
-       products/sums of powers and hyperbolics); any other head
-       returns u unchanged (decline-safe). */
-    if is(op(u) = "*") then
-      apply("*", map(lambda([p]) : %mr_foEFunctionAux(p, x, st), args(u)))
-    else if is(op(u) = "+") then
-      apply("+", map(lambda([p]) : %mr_foEFunctionAux(p, x, st), args(u)))
-    else u))$
-
-%mr_functionExpand(u) := block([n, z],
-  if not atom(u) and is(op(u) = gamma_incomplete)
-     and length(args(u)) = 2 then (
-    n : part(args(u), 1), z : part(args(u), 2),
-    if integerp(n) and is(n > 0) then
-      /* Gamma[n, z] = gamma(n) %e^-z sum_{k=0}^{n-1} z^k/k! — mr_sum
-         concretizes the numeric bounds (this file's line 53). */
-      gamma(n)*exp(-z)*mr_sum(z^k/factorial(k), 'k, 0, n - 1)
-    else u
-  )
-  else u)$
-```
+- **FreeQ semantics — the controller's preflight claim was WRONG and
+  the .m governs** (pinned :4264-4266/:4270-4280/:4307-4319): Q has
+  NO FreeQ arm — it is `Test[u,x] && $exponFlag$`; the Test returns
+  True for x-free u but the flag stays false, so **Q(x-free) =
+  false** (the usage string: an explicit exponential must occur). The
+  non-Q functions have no FreeQ arm either — the .m returns
+  `$base$^$expon$` = `Null^Null` garbage for x-free input; the port
+  declines with `u` (documented Maxima substitute for the .m's
+  Null). The brief's `foE: free of X` test (`= true`) was corrected
+  to `= false`.
+- **Nine deviations (each stamped at its code site):** (1) one
+  colon-lambda (comma form); (2) `for p in args(u)` (colon+list =
+  `for p from lst`); (3) if/or decidability verified — every
+  condition is structural `=` / literal flag / rational-gated
+  relational (the build's `if <unknown>` → NOUN quirk is documented
+  in the header); (4) FreeQ per the .m (above); (5) check 3
+  `not atom` → `listp` (RED false-green hazard); (6) local `expon` →
+  `exn` — `expon` is a Maxima option variable (measured collision);
+  (7) Maxima NESTS comments (a `/*` inside a comment kills the
+  draft); (8) TestAux branch A uses the .m's STORED-expon coefficient
+  (:4336-4340 — the brief's new-expon form was not followed; the
+  sign-flip test uses the same stored value); (9) the .m's IGtQ
+  base-swap (:4332-4335/:4341-4344) is DROPPED per the brief —
+  reachable for positive integer bases (e.g. 4^X*2^X); dropping it
+  preserves correctness (any valid t = F^v works — u is a function
+  of both the with-swap and without-swap t; deterministic per input;
+  the harness verifies by differentiation) but loses canonicalization
+  — answer form may differ from Rubi on integer-base multi-factor
+  integrands (layer-B flag).
+- **Fix round 1 (0028d82) — review findings:** (i) `ratsimp` as
+  `%mr_fullSimplify` CANNOT reduce log-identities (measured:
+  `ratsimp(log(4)/log(2))` stays unreduced) — TestAux declined every
+  product of powers of distinct commensurable positive-integer bases
+  (2/4, 3/9, …) where the .m accepts (FullSimplify[Log[4]/Log[2]] =
+  2); fixed with `%mr_logRatio(base, F)` — the exact rational r with
+  base = F^r for positive integers (MEASURED build quirk: `ifactor`
+  is UNBOUND in 5.50.0 — the helper uses `factor` with a
+  re-factoring step because `factor` stores prime powers
+  inconsistently: `factor(4)` = the power node 2^2 but the 2^2
+  factor of `factor(12)` is the atom 4), else false — applied at
+  BOTH tmp sites (the x-coefficient tmp :4328 and the constant-term
+  comparison tmp :4331); scope: positive integers only (positive
+  rationals / other commensurable shapes remain declined —
+  layer-B flag). Pinned: `functionOfExponential(2^X*4^X, X) = 2^X`
+  (args order [2^X, 4^X] — 2 first-seen; the .m's value for this
+  order; form is factor-order dependent, swap dropped). (ii)
+  foEFunctionAux's final arm was head-restricted to `*`/`+`
+  (returning u unchanged — a SILENT WRONG REWRITE for Q-true inputs;
+  the r104 call site is conditioned on Q alone) — now the .m-faithful
+  head-preserving `apply(op(u), map(…))` (M1 precedent, this
+  file's line 3811); pinned: `foEF(sin(F^(B*X)), X) = sin(X)`.
+  (iii) branch B (the consistent arm) was missing the .m's sign-flip
+  (:4346-4349) while citing it — added, on the stored-value test
+  (branch A's `%mr_negQ(%mr_coeff(v, x, 1))`; Maxima denominators are
+  positive, so the sign is the stored coefficient's). (iv)
+  `%mr_functionOfExponential` gained the `if atom(st) then u`
+  decline guard (match the sibling's contract). (v) MEASURED stamps
+  normalized to date + build.
+- **Invariants Tasks 7+ rely on:** the state list is `[flag, F, v]`;
+  the flag is true IFF an explicit F^v power occurred (the
+  hyperbolic arm leaves it unchanged — .m :4313 vs :4315-4316);
+  refusal is the atom `false` with `if atom(r) then false` guards at
+  every recursive site (the .m's Throw[False]); a stored v always
+  has a nonzero x-coefficient (`%mr_linearQ` = degree exactly 1 —
+  the :4328 division-by-zero is closed); Q(x-free) = false; the
+  non-Q functions decline (→ u) on x-free and failing inputs;
+  `functionExpand` is decline-safe (positive-integer n only — the
+  2.3 r28 call site is IGtQ-gated, so the util only ever gets
+  concrete n).
+- **Layer-B flags (carried):** the swap drop (integer-base
+  multi-factor integrands — form difference, differentiation-verified
+  answers stay correct); commensurable shapes beyond positive
+  integers (positive rationals, symbolic related bases) remain
+  declined; the sinh pin `(X^2 - 1)/(2*X)` is the deterministic form
+  the runner will produce (A/B relies on it).
 
 - [ ] **Step 4: Run, read the actual forms, tighten the loose checks**
 
@@ -1450,8 +1403,9 @@ package files the way the suite does), and replace the loose
 `check_bool` with `check("foEF: sinh(b x) exact", <actual expression
 read from the output>, <same expression>)` — the exact form is the
 one the runner will produce on real corpus entries, and the A/B
-comparison relies on it being deterministic. Expected final: every
-cluster-C check PASS, Results line `0 failed`.
+comparison relies on it being deterministic. MEASURED: the pin is
+`(X^2 - 1)/(2*X)`; final `Results: <561 + 17> passed, 0 failed`
+(578 = 561 + 14 + 3 fix-round checks).
 
 - [ ] **Step 5: Commit**
 
