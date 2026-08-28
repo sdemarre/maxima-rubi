@@ -113,7 +113,8 @@ in the running build is the arbiter.
 **Acceptance.** The **byte-identity gate** for every already-accepted
 class: `python3 generator/generate_rules.py --class <M> && git status
 --porcelain rules/` EMPTY for each accepted class M (class-2:
-`--class 1`, 3,026 rules / 67 files).
+`--class 1`, 3,026 rules over 72 generated files (67 LoadRules +
+5 `EXTRA_CLASS1` b files)).
 
 **Class-2 evidence.** Task 2 (commit `ae20582`): the generalized
 generator is a drift-free copy + 6 edit sites; gate green on commit.
@@ -262,6 +263,10 @@ python3 probes/corpus/probe-integrate-sample.py "2 Exponentials/" 999999 30 refe
 python3 test/merge_class_shards.py "2 Exponentials" test/corpus_class2.baseline.out test/corpus_driver.py "corpus_class2.baseline.shard*.out"
 ```
 
+The shard-plan bounds are **START/STOP file indices into the
+section's sorted file list, STOP EXCLUSIVE** (slice semantics — the
+pilot's 3-file section ran as (0,1), (1,2), (2,3)).
+
 **Acceptance.** Merged record with build-stamped header; completeness
 asserted N/N (class-2: 965/965); the Results line read.
 
@@ -276,9 +281,14 @@ unexpected 14 / timeout 1).
 carries over; a fresh section balances by count until measured times
 exist). Merge, read the Results line, then the **full A/B against the
 Step-8 baseline** (per verdict class + entry-level transitions,
-PASS = {expected, verified, no-answer}; every PASS→FAIL remainder
-triaged into genuine declines vs yardstick reclassification — the
-milestone-1 discipline), then the **300 s timeout re-check** (read the
+PASS = {expected, verified, no-answer} — the entry-level part is a
+**(rel, entry)-keyed comparison of the two records' T3 lines**,
+method as executed in the pilot (ledger Task-10; the uplift doc's
+309/216 split is the worked example) — reconstructible from the two
+records, not a committed script (the plan's Task-10 Step-3 python
+does the per-class tallies only); every PASS→FAIL remainder triaged
+into genuine declines vs yardstick reclassification — the milestone-1
+discipline), then the **300 s timeout re-check** (read the
 transitions; now-PASS 0 = the cap is not the limit; `error` = the
 death census — a reproducible build bug is its own ticket).
 
@@ -286,7 +296,7 @@ death census — a reproducible build bug is its own ticket).
 ```
 python3 test/launch_class_shards.py "2 Exponentials" test/corpus_class2.out test/corpus_driver.py --launch
 setsid sh test/wait_and_merge.sh test/corpus_class2.shard-pids test/merge_class_shards.py test/class2_merge.out "2 Exponentials" test/corpus_class2.out test/corpus_driver.py "corpus_class2.shard*.out" &
-# ...A/B (the plan's Task-10 Step-3 python over the two records)...
+# ...A/B (per-class: the plan's Task-10 Step-3 python; entry-level: the (rel,entry) join, method per the paragraph above)...
 python3 test/launch_timeout_rerun.py test/corpus_class2.out 300 test/corpus_class2.timeout-rerun "2 Exponentials" --launch
 setsid sh test/wait_timeout_rerun.sh test/corpus_class2.timeout-rerun >> test/corpus_class2.timeout-rerun/wait.log 2>&1 &
 ```

@@ -203,7 +203,7 @@ line; recomputed 2026-08-28):
 | 2.1 `u (F^(c (a+b x)))^n` | 98 | 58/98 (59.2 %) | 31/98 (31.6 %) | −27 (−27.6 pts) |
 | 2.2 `(c+d x)^m (F^(g (e+f x)))^n (a+b (…))^p` | 93 | 33/93 (35.5 %) | 33/93 (35.5 %) | 0 |
 | 2.3 `Exponential functions` | 774 | 502/774 (64.9 %) | 436/774 (56.3 %) | −66 (−8.5 pts) |
-| **total** | **965** | **593/965 (61.5 %)** | **500/965 (51.8 %)** | **−93 (−9.7 pts)** |
+| **total** | **965** | **593/965 (61.5 %)** | **500/965 (51.8 %)** | **−93 (−9.6 pts)** |
 
 Entry-level A/B (reviewer-verified arithmetic, ledger Task 10;
 recomputed against the two records 2026-08-28): **PASS→FAIL 309 = 178
@@ -283,24 +283,35 @@ families):
   deferred entries are top-level 0-firings: no ported rule matches
   (or every match is rejected by a cond), so `rubi()` returns the
   `unintegrable[f, x]` noun on an answer-expected entry.
-  - 2.1 (31; 6 genuine declines): the 14 ported rules cover specific
-    exponent shapes. The deferred stored-power shapes
-    (`F^(c (a+b x)) ((d+e x)^k)^m`, e.g. e20–e22) are declined by the
-    PowerOfLinear family's strict-duality exclusion — r12's
-    `integerp(m)` is undecidable for a free `m`, and r13's
-    `Not[LinearMatchQ[v,x] && PowerOfLinearMatchQ[u,x]]` is false for a
-    stored-power `u` over a strict-linear `v`. **Likely cause: the
-    ported PowerOfLinear semantics — but decline-consistent with
-    upstream**: the identical upstream condition carries a predicate
-    undefined in the pinned clone, which stays a symbol in
-    Mathematica, so the rule declines there too (the §1 upstream-gap
-    measurement). Not a port bug on the available evidence; the
-    revisit ticket stays conditional (TODO).
-  - 2.2 (31; 18 genuine declines): the 2.2 rule file is **4 rules**;
-    the deferred shapes include the squared/cubed denominators
-    `(a+b (F^(g (e+f x)))^n)^k` (k ≥ 2, e.g. e56–e63) that the 4-rule
-    set does not cover. Likely cause: rule coverage (4 rules against
-    93 corpus shapes).
+   - 2.1 (31; 6 genuine declines): the deferred set splits into two
+     populations. **8 PowerOfLinear-gated shapes** (e16–e18, e20–e22,
+     e25–e26 — `F^(c (a+b x)) (d+e x)^k` and `…^m`): the suite stores
+     the base **expanded** (`d^4+4 d^3 e x+…`, e.g. e20–e22), so the
+     ported `%mr_powerOfLinearQ(u, x)` stored-form test
+     (`maxima_rubi_utils.mac:4638`) — the first PowerOfLinear-family
+     clause in 2.1 r12/r13's conditions — declines them before the
+     rules' `integerp(m)` / `Not[LinearMatchQ[v,x] &&
+     PowerOfLinearMatchQ[u,x]]` clauses are ever reached. **Likely
+     cause: the ported PowerOfLinear semantics — but decline-consistent
+     with upstream**: the identical upstream condition carries a
+     predicate undefined in the pinned clone, which stays a symbol in
+     Mathematica, so the rule declines there too (the §1 upstream-gap
+     measurement). Not a port bug on the available evidence; the
+     revisit ticket stays conditional (TODO). **23 coverage gaps**
+     (e55, e60–e64, e69–e73, e78–e89 — the `e^(-a-b x)(a+b x)^k / x^j`,
+     `F^(a+b (c+d x))(e+f x)^2 / x^j`, `e^(-a-b x)(a+b x)^4 /
+     (c+d x)^k`, and `F^(c (a+b x)) x^j log(d x)^n (…)` shapes): no
+     rule of the 14-rule 2.1 set covers them (likely cause: rule
+     coverage, as 2.3).
+   - 2.2 (31; 18 genuine declines): the 2.2 rule file is **4 rules**;
+     the deferred shapes include the squared/cubed denominators
+     `(a+b (F^(g (e+f x)))^n)^k` (k ≥ 2): the 12 deferred entries
+     e9–e12, e15–e20, e23–e24 (`x^j/(a+b F^(…))^2` and
+     `x^j/(a+b F^(…))^3`, j = 0…3 incl. the sign variants — the
+     in-range e13/e14/e21/e22 are the 4 `Unintegrable`-expected
+     entries, `no-answer` PASS), and the `(a+b F^x)^k sqrt(c+d x)`
+     numerator powers e64–e66. Likely cause: rule coverage (4 rules
+     against 93 corpus shapes).
   - 2.3 (252; 154 genuine declines): 107 rules against 774 shapes whose
     expected answers span the section's full head variety (the
     `Ei`/`GAMMA`/`polylog`/`erfi`/`hypergeometric` mix of
@@ -330,8 +341,8 @@ families):
   Re-checked at 300 s: now-PASS 0 (§4). The 5 `unverified` transitions
   are the chain not closing in 300 s. The 2 `error`s (2.3 e56
   `x^2/(b/f^x+a f^x)`, e57 `x^3/(b/f^x+a f^x)`) plus **2.3 e68
-  (`F^(e (c+d x)) H^(t (r+s x))/(a+b F^(e (c+d x)))`, `error` at
-  17.4 s in the run)** are the **reproducible SBCL heap exhaustion on
+   (`F^(e (f+d x)) H^(t (r+s x))/(a+b F^(e (c+d x)))`, `error` at
+   17.4 s in the run)** are the **reproducible SBCL heap exhaustion on
   quotient-of-exponentials integrands** (ledger Task 10 finding):
   matcher/rule-bug candidate, root cause not yet measured — a
   standalone follow-up item (TODO), the pilot's principal finding.
@@ -358,7 +369,8 @@ changes are gated against it:
   (`git log master..HEAD --name-only` over that path is empty) — the
   class-1 rule files are byte-identical across the whole branch.
 - **Byte-identity gate green** at the generator generalization
-  (`ae20582`: 3,026 rules, 67 files, empty `git status --porcelain
+  (`ae20582`: 3,026 rules over 72 generated files (67 LoadRules + 5
+  `EXTRA_CLASS1` b files), empty `git status --porcelain
   rules/`), re-verified at the table closure + marker-head work
   (`70e6f58`, controller-verified "class-1 gate clean (generate
   `--class 1`, empty git status)"), and re-asserted by this task's
@@ -385,8 +397,9 @@ Tasks 2–10 entries):
 
 1. **Generalized generator** — `generator/generate_rules.py`
    (`--class N`), `generate_class1.py` → shim. Commit `ae20582`.
-   No-regression: class-1 byte-identity gate green (3,026 rules, 67
-   files, empty `git status` on `rules/`).
+   No-regression: class-1 byte-identity gate green (3,026 rules over
+   72 generated files (67 LoadRules + 5 `EXTRA_CLASS1` b files),
+   empty `git status` on `rules/`).
 2. **Generator table closure + `Part` handler + the `%mr_matchQ`
    marker-head case** (shared matcher — the runtime of all 16 class-1
    MatchQ rules). Commit `70e6f58`. No-regression: Layer A 519/0
