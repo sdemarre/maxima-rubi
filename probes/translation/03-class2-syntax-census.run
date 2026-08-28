@@ -1,0 +1,6 @@
+#!/bin/sh
+# Class-2 syntax census (the token closure for the class-2 translation
+# table). Re-run from the worktree root; stamp before comparing.
+cd "$(dirname "$0")/../.." || exit 1
+echo "maxima $(maxima --version 2>&1 | head -1)  date $(date -u '+%F %T UTC')"
+python3 probes/translation/01-class1-syntax-census.py reference/rubi "2 "

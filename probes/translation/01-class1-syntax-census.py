@@ -135,12 +135,13 @@ def tokens(s):
 
 def main():
     root = Path(sys.argv[1] if len(sys.argv) > 1 else "reference/rubi")
+    classp = sys.argv[2] if len(sys.argv) > 2 else "1 "
     rubi_m = (root / "Rubi" / "Rubi.m").read_text()
     rule_dir = root / "Rubi" / "IntegrationRules"
 
     loaded = []
     for parts, _gated in parse_load_rules(rubi_m):
-        if parts[0].startswith("$") or not parts[0].startswith("1 "):
+        if parts[0].startswith("$") or not parts[0].startswith(classp):
             continue
         p = rule_dir.joinpath(*parts)
         if not p.name.endswith(".m"):
