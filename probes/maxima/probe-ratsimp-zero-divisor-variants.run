@@ -1,0 +1,16 @@
+#!/bin/sh
+# Run the ratsimp zero-divisor constant-variant sweep (from repo root):
+#   sh probes/maxima/probe-ratsimp-zero-divisor-variants.run
+# Companion to probe-ratsimp-zero-divisor.mac. Output is redirected to
+# probe-ratsimp-zero-divisor-variants.out with a date/build stamp and
+# committed (measured-claims discipline). On the 5.50.0 build (2026-08-20)
+# V1 (the original unit-power pairs) CRASHES (`quotient' by `zero');
+# the neighbor-constant variants are expected green — the crash tracks
+# the specific Diophantine pairs, not any large integers.
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# probe-ratsimp-zero-divisor-variants output, $(date -u +%F)"
+  echo "# $(maxima --version)"
+  maxima --very-quiet -X "--tls-limit 100000" -b probes/maxima/probe-ratsimp-zero-divisor-variants.mac
+} > probes/maxima/probe-ratsimp-zero-divisor-variants.out
+echo "wrote probes/maxima/probe-ratsimp-zero-divisor-variants.out"
