@@ -1479,6 +1479,18 @@ test_class2_cluster_c() := block([],
   check_bool("foE: the variable itself refused", is(%mr_functionOfExponentialQ(X, X) = false)),
   check("foE: returns F^v (first call keeps full expon)",
     %mr_functionOfExponential(F^(C*(A + B*X)), X), F^(C*(A + B*X))),
+  /* Fix round 1: commensurable numeric bases — the .m accepts them
+     (FullSimplify reduces Log[4]/Log[2] -> 2; ratsimp does not). The
+     stored factor order decides which base is first-seen
+     (args(2^X*4^X) = [2^X, 4^X] on this build), and with the IGtQ
+     swap dropped the port keeps the first-seen base — 2 here, and
+     Denominator[2] = 1, so the stored expon is kept: 2^X (the .m
+     returns 2^X for this factor order too; a different order without
+     the swap would keep 4 with expon 2 X — form-only difference). */
+  check_bool("foE: commensurable numeric bases accepted",
+    is(%mr_functionOfExponentialQ(2^X*4^X, X) = true)),
+  check("foE: commensurable numeric bases state",
+    %mr_functionOfExponential(2^X*4^X, X), 2^X),
   check_bool("foEF: F^(b x) -> X (v through the origin)",
     is(%mr_functionOfExponentialFunction(F^(B*X), X) = X)),
   /* Step 4 (2026-08-28, 5.50.0/SBCL): the emitted form is pinned
@@ -1487,6 +1499,12 @@ test_class2_cluster_c() := block([],
      on this form being deterministic. */
   check("foEF: sinh(b x) exact",
     %mr_functionOfExponentialFunction(sinh(B*X), X), (X^2 - 1)/(2*X)),
+  /* Fix round 1: the :4303 head-preserving Map — the r104 call site
+     is conditioned on Q alone, so any Q-true head must be rewritten
+     (the old * / +-only arms would have returned sin(F^(b x))
+     unchanged — a silent wrong rewrite). */
+  check("foEF: sin head preserved",
+    %mr_functionOfExponentialFunction(sin(F^(B*X)), X), sin(X)),
   check_bool("functionExpand: gamma(3) case value",
     is(abs(float(%mr_functionExpand(gamma_incomplete(3, 1.7)))
            - float(gamma_incomplete(3, 1.7))) < 1e-9)),

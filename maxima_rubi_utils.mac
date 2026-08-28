@@ -5105,7 +5105,8 @@ mr_use_gamma_flag : false$
  * Exponent sum-split (.m Test :4317-4318, Aux :4301-4302): F^(v1+v2)
  * splits into F^First * F^Rest. Maxima sum storage is degree-descending
  * (args(a+b*X) = [b*X, a]; part(a+b*X, 1) = b*X; rest(a+b*X) = a;
- * MEASURED 2026-08-28), so part(sum, 1) is the highest-degree term and
+ * MEASURED 2026-08-28 (5.50.0/SBCL)), so part(sum, 1) is the
+ * highest-degree term and
  * rest(sum) the remainder — a disjoint partition mirroring the .m's
  * First/Rest in stored order. The %mr_linearQ branch fires BEFORE the
  * sum-split branch, so only NON-linear sum exponents reach the split,
@@ -5122,13 +5123,38 @@ mr_use_gamma_flag : false$
  *     integer power of the returned F^v. The flip's NegQ is the house
  *     %mr_negQ port (Rubi :642) — the documented strict-sign deviation
  *     applies here too.
+ *   * Commensurable bases (fix round 1): the .m's :4328/:4331
+ *     Log[base]/Log[$base$] factor reduces under FullSimplify to a
+ *     rational for commensurable bases (Log[4]/Log[2] -> 2); ratsimp
+ *     does NOT (see the FullSimplify note), so %mr_logRatio(base, F)
+ *     supplies the exact rational r with base = F^r — 1 for base = F,
+ *     false otherwise — for positive-integer bases whose prime
+ *     supports match with proportional exponent vectors (factor
+ *     prime-power decomposition, cross-multiplied in exact integers:
+ *     e_b_i * e_F_1 = e_F_i * e_b_1). ifactor is UNBOUND in this build
+ *     (describe: no exact match; MEASURED 2026-08-28 (5.50.0/SBCL)) —
+ *     factor(n) is the decomposition (a prime with exponent 1 stays a
+ *     bare atom; the factors come out in canonical order). Scope:
+ *     positive integers only — positive rationals and other
+ *     commensurable shapes remain declined at the RationalQ gate (flag
+ *     for layer B / future classes; the class-2 corpus is
+ *     integer-base in this pattern).
  *   * The .m's IGtQ base-swap (:4332-4335 / :4341-4344 — adopt the
- *     smaller of two positive-integer bases) is DROPPED per the brief.
- *     The brief's "unreachable" rationale is incomplete: the swap fires
- *     when both bases are explicit positive integers with base < F (e.g.
- *     2 vs 4), which is reachable for integer-base integrands (4^X*2^X);
- *     dropping it is a canonical-form deviation, flagged for layer B
- *     (task-6 report).
+ *     smaller of two positive-integer bases, then tmp = 1/tmp) is
+ *     DROPPED per the brief. Pre fix round 1, commensurable numeric
+ *     bases never reached the swap decision: the RationalQ gate
+ *     declined them outright (the ratsimp gap above). Now
+ *     %mr_logRatio supplies the ratio, so commensurable numeric bases
+ *     DO reach the reconciliation; without the swap the port keeps the
+ *     FIRST-SEEN base — 2^X*4^X -> 2^X here: args(2^X*4^X) =
+ *     [2^X, 4^X] (MEASURED 2026-08-28 (5.50.0/SBCL)) so 2 is
+ *     first-seen, and the .m's construction
+ *     Coefficient[$expon$,x,1]*x/Denominator[tmp] with tmp = 2 keeps
+ *     the stored expon (Denominator[2] = 1) — the same answer the .m
+ *     gives for this factor order (its swap fires only on a LATER
+ *     smaller base); where a larger base is stored first the .m would
+ *     re-base onto the smaller one — a form-only difference, flagged
+ *     for layer B (task-6 report).
  *
  * If/or safety (MEASURED 2026-08-28, 5.50.0/SBCL): an if whose condition
  * is `unknown` STAYS A NOUN in this build (it does not take the else
@@ -5137,20 +5163,82 @@ mr_use_gamma_flag : false$
  * (is(x^2 = x) = is(a*x = x) = is(x+1 = x) = false; is(x = x) = true);
  * is(part(st, 2) = false) is likewise decidable; is(tmp < 0) sits under
  * the %mr_rationalQ(tmp) gate, so tmp is an explicit rational when it is
- * reached (decidable); the flag is always the literal true/false.
+ * reached (decidable); the flag is always the literal true/false;
+ * is(k # false) is decidable because k is the atom false or an explicit
+ * rational (an atom), MEASURED 2026-08-28 (5.50.0/SBCL); the
+ * %mr_logRatio guards (is(base = F), is(base > 0), ...) are evaluated
+ * only after integerp(base) and integerp(F) short-circuit the and-chain,
+ * so they see explicit integers.
  *
  * FunctionExpand: the .m calls it only on Gamma[p, z] with p a positive
  * integer; Maxima does not auto-expand gamma_incomplete(n, z) — for a
  * symbolic z the noun survives (op stays gamma_incomplete; expand and
- * diff leave it, MEASURED 2026-08-28) — so the port expands
- * Gamma[n, z] = gamma(n) %e^-z sum_{k=0}^{n-1} z^k/k! via the
+ * diff leave it, MEASURED 2026-08-28 (5.50.0/SBCL)) — so the port
+ * expands Gamma[n, z] = gamma(n) %e^-z sum_{k=0}^{n-1} z^k/k! via the
  * concretizing mr_sum (this file's line 53) and returns other shapes
  * unchanged (decline-safe).
- * FullSimplify: ratsimp — on the Aux shapes (quotients of logs and
+ * FullSimplify: ratsimp — on the Aux shapes (quotients of
  * coefficients) ratsimp preserves the quotient and cancels common
- * factors; the unit test pins the denom behavior. */
+ * factors; the unit test pins the denom behavior. ratsimp does NOT
+ * reduce log identities (ratsimp(log(4)/log(2)) stays log(4)/log(2),
+ * MEASURED 2026-08-28 (5.50.0/SBCL)) — that gap is what %mr_logRatio
+ * covers for commensurable positive-integer bases (see above). */
 
 %mr_fullSimplify(u) := ratsimp(u)$
+
+/* One prime-power factor of factor output as [prime, exponent]. factor
+   stores the same prime-power inconsistently (MEASURED 2026-08-28
+   (5.50.0/SBCL): factor(4) is the power node 2^2, while the 2^2 factor
+   of factor(12) is the ATOM 4, and factor(400)'s factors are the atoms
+   16 and 25) — an atom factor is re-factored to recover the prime and
+   exponent. A factor of factor(n) is always a single prime power, so
+   the re-factoring yields an atom (a prime) or one power node. */
+%mr_logFactorExp(p) := block([g],
+  if %mr_powerQ(p) then [part(p, 1), part(p, 2)]
+  else (
+    g : factor(p),
+    if atom(g) then [g, 1]
+    else [part(g, 1), part(g, 2)]))$
+
+/* The factor prime-power decomposition of an explicit integer n > 1 as
+   [[prime, exponent], ...] (factor; ifactor is unbound in this build).
+   The factors come out in canonical (ascending-prime) order, so
+   position-wise comparison of two decompositions is sound. */
+%mr_logFactorPairs(n) := block([g],
+  g : factor(n),
+  if atom(g) then [[g, 1]]
+  else if %mr_powerQ(g) then [[part(g, 1), part(g, 2)]]
+  else map(%mr_logFactorExp, args(g)))$
+
+/* The exact rational r with base = F^r, for commensurable positive-
+   integer bases; false otherwise (the .m's Log[base]/Log[$base$]
+   factor at :4328/:4331, which FullSimplify reduces but ratsimp does
+   not). base = F -> 1 before any factorization. The exponent vectors
+   must be proportional: with r = e_b_1/e_F_1, cross-multiply in exact
+   integers (e_b_i * e_F_1 = e_F_i * e_b_1 for every i). */
+%mr_logRatio(base, F) := block([pb, pf, i, ok, r],
+  if is(base = F) then 1
+  else if not (integerp(base) and integerp(F)
+              and is(base > 0) and is(F > 0)
+              and not is(base = 1) and not is(F = 1)) then false
+  else (
+    pb : %mr_logFactorPairs(base),
+    pf : %mr_logFactorPairs(F),
+    if length(pb) # length(pf) then false
+    else (
+      ok : true,
+      for i : 1 thru length(pb) do
+        if not is(part(part(pb, i), 1) = part(part(pf, i), 1))
+        then ok : false,
+      if not ok then false
+      else (
+        r : part(part(pb, 1), 2)/part(part(pf, 1), 2),
+        ok : true,
+        for i : 1 thru length(pb) do
+          if not is(part(part(pb, i), 2)*part(part(pf, 1), 2)
+                    = part(part(pf, i), 2)*part(part(pb, 1), 2))
+          then ok : false,
+        if ok then r else false))))$
 
 %mr_foE_test(u, x) := block([], %mr_foE_test2(u, x, [false, false, false]))$
 
@@ -5181,28 +5269,46 @@ mr_use_gamma_flag : false$
   else (
     /* :4319 — Catch[Scan[If[Not[Test[#,x]],Throw[False]],u]; True:
        every subpart must test, state threaded through. `for p in` is the
-       list idiom (`for p : lst` parses as `from`, MEASURED 2026-08-28). */
+       list idiom (`for p : lst` parses as `from`, MEASURED
+       2026-08-28 (5.50.0/SBCL)). */
     block([st2, p],
       st2 : st,
       for p in args(u) while not atom(st2) do
         st2 : %mr_foE_test2(p, x, st2),
       st2)))$
 
-%mr_foE_testAux(base, exn, x, st) := block([F, v, tmp, e],
+%mr_foE_testAux(base, exn, x, st) := block([F, v, tmp, e, k],
   if is(part(st, 2) = false) then
     /* :4323-4326 — $base$ === Null: first base seen; take it, keep the
        full expon. */
     [part(st, 1), base, exn]
   else (
     F : part(st, 2), v : part(st, 3),
-    /* :4328 */
-    tmp : %mr_fullSimplify(log(base)*%mr_coeff(exn, x, 1)
-                           /(log(F)*%mr_coeff(v, x, 1))),
+    /* :4328 — the Log[base]/Log[$base$] factor: the exact rational
+       log-ratio for commensurable positive-integer bases, else the
+       symbolic ratsimp quotient (which stays a log-quotient for
+       distinct numeric bases — the RationalQ gate below declines it).
+       is(k # false) is decidable: k is the atom false or an explicit
+       rational (an atom), MEASURED 2026-08-28 (5.50.0/SBCL). */
+    k : %mr_logRatio(base, F),
+    if is(k # false) then
+      tmp : k*%mr_coeff(exn, x, 1)/%mr_coeff(v, x, 1)
+    else
+      tmp : %mr_fullSimplify(log(base)*%mr_coeff(exn, x, 1)
+                             /(log(F)*%mr_coeff(v, x, 1))),
     if not %mr_rationalQ(tmp) then false
     else if %mr_eqQ(%mr_coeff(v, x, 0), 0)
-           or %mr_neQ(tmp, %mr_fullSimplify(
-                 log(base)*%mr_coeff(exn, x, 0)
-                /(log(F)*%mr_coeff(v, x, 0))))
+           /* :4331 — the constant-term ratio carries the same log
+              factor, so the same exact-rational treatment. Its second
+              operand divides by %mr_coeff(v, x, 0) — `or`
+              short-circuits in this build (MEASURED 2026-08-28
+              (5.50.0/SBCL)), so it is evaluated only when that
+              coefficient is nonzero. */
+           or %mr_neQ(tmp, if is(k # false) then
+                          k*%mr_coeff(exn, x, 0)/%mr_coeff(v, x, 0)
+                        else
+                          %mr_fullSimplify(log(base)*%mr_coeff(exn, x, 0)
+                                           /(log(F)*%mr_coeff(v, x, 0))))
     then (
       /* :4331-4340 — the constant-term ratio is inconsistent (or the
          stored expon has no constant term): the common expon is through
@@ -5215,9 +5321,15 @@ mr_use_gamma_flag : false$
       else [part(st, 1), F, e]
     )
     else (
-      /* :4341-4350 — consistent: fold both expons to the common
-         expon/denom(tmp). */
-      [part(st, 1), F, v/denom(tmp)])))$
+      /* :4346-4349 — consistent: fold both expons to v/denom(tmp),
+         then the :4347-4349 sign flip (tmp < 0 and the stored
+         coefficient < 0 -> -v) — the SAME stored-value test as branch
+         A (Maxima rational denominators are positive, so the folded
+         value carries the stored coefficient's sign). The :4341-4344
+         swap is dropped (see header). */
+      if is(tmp < 0) and %mr_negQ(%mr_coeff(v, x, 1))
+      then [part(st, 1), F, -(v/denom(tmp))]
+      else [part(st, 1), F, v/denom(tmp)])))$
 
 %mr_functionOfExponentialQ(u, x) := block([st],
   st : %mr_foE_test(u, x),
@@ -5227,7 +5339,8 @@ mr_use_gamma_flag : false$
   if freeof(x, u) then u
   else (
     st : %mr_foE_test(u, x),
-    part(st, 2)^part(st, 3)))$
+    if atom(st) then u
+    else part(st, 2)^part(st, 3)))$
 
 %mr_functionOfExponentialFunction(u, x) := block([st],
   if freeof(x, u) then u
@@ -5271,18 +5384,17 @@ mr_use_gamma_flag : false$
     *%mr_foEFunctionAux(part(u, 1)^rest(part(u, 2)), x, st)
   )
   else (
-    /* :4303 — Map[Function[FunctionOfExponentialFunctionAux[#,x]],u],
-       head-preserving over the Plus and Times heads (the r104 call path
-       sees only products and sums of powers and hyperbolics); any other
-       head returns u unchanged (decline-safe). Comma-form lambdas
-       (lambda([p], …) — the colon form is a parse error, MEASURED
-       2026-08-28). The slash-star opener sequence must not appear
-       inside a comment: Maxima nests comments, MEASURED 2026-08-28. */
-    if is(op(u) = "*") then
-      apply("*", map(lambda([p], %mr_foEFunctionAux(p, x, st)), args(u)))
-    else if is(op(u) = "+") then
-      apply("+", map(lambda([p], %mr_foEFunctionAux(p, x, st)), args(u)))
-    else u))$
+    /* :4303 — Map[Function[FunctionOfExponentialFunctionAux[#,x]],u]
+       preserves the head over ANY non-atomic head; op/args
+       round-trips it (M1 precedent maxima_rubi_utils.mac:3811, the
+       Task-5 FactorBase fix). The r104 call site is conditioned on
+       FunctionOfExponentialQ[u,x] alone, so a Q-true input with any
+       head must be rewritten — the old * / +-only arms returned u
+       unchanged for other heads, a silent wrong rewrite (sin(F^(b x))
+       must become sin(x)). Comma-form lambda (the colon form is a
+       parse error) and no slash-star opener sequence inside a comment
+       (Maxima nests comments), MEASURED 2026-08-28 (5.50.0/SBCL). */
+    apply(op(u), map(lambda([p], %mr_foEFunctionAux(p, x, st)), args(u)))))$
 
 %mr_functionExpand(u) := block([n, z],
   if not atom(u) and is(op(u) = gamma_incomplete)
