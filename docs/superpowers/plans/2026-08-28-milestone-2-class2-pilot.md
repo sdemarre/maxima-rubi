@@ -2047,6 +2047,15 @@ shards are intermediates, as in class 1.)
 
 **Files:**
 - Create: `test/corpus_class2.out` (the merged package record)
+- MEASURED follow-ons (not in the original list): `test/wait_and_merge.sh`
+  (the brief's `${@:4}` pass-through is dash-incompatible AND the
+  natural while-loop replacement is off-by-one — final form is three
+  guarded `shift`s), `test/launch_timeout_rerun.py` (section as 4th
+  positional; DRIVER must stay an absolute path; the in-process driver
+  exec gains the relative suite-dir positional the subprocess cmd
+  already carried), `test/wait_timeout_rerun.sh` + `test/merge_timeout_rerun.py`
+  (the re-check record name/header slug derive from the source-record
+  basename). See the ledger Task-10 entry.
 
 **Interfaces:**
 - Consumes: the rules core (Task 7), the generalized launcher/driver

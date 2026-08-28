@@ -2588,3 +2588,55 @@ record tally re-counted)
   - Carried minor 2 (nit): task-9-report.md:191 cites a pre-fix line
     number (262; final-tree 268-269) — the measurement was pre-fix,
     left as-is.
+
+Task 10: complete (commits db89195..50cce22; reviewer Approved, 2
+minors — one fixed (50cce22), one carried; controller-verified:
+A/B script re-run, record tallies, re-check merge.out, sh -n,
+dump-tested the watcher pass-through)
+  - Class-2 PACKAGE run: 965/965, 26 shards / 24 procs, wall
+    8 min 07 s. Results: 500 passed, 465 failed.
+    Tally: expected 116 / verified 320 / no-answer 64 / unverified
+    125 / deferred 314 / contains-noun 14 / unexpected 4 / timeout 7 /
+    error 1.
+  - A/B vs the Task-9 integrate baseline: 500/965 (51.8%) vs
+    593/965 (61.5%). Entry-level (reviewer-verified arithmetic):
+    PASS->FAIL 309 = 178 GENUINE declines (baseline expected/verified
+    -> package, ALL `deferred`: the rules return a top-level noun
+    where native integrate had an answer) + 131 yardstick
+    reclassification (baseline no-answer = PASS under the probe;
+    FAIL deferred/unverified/timeout/contains-noun under the driver);
+    FAIL->PASS 216. The margin note (probe-vs-driver asymmetry)
+    applies — see the plan's Task-10 note.
+  - 300 s timeout re-check (7 entries): 7/7 re-checked; transitions
+    error 2 + unverified 5; now-PASS 0 — the 30 s cap is NOT the
+    limit for class 2.
+  - FINDING (triage candidate): reproducible SBCL HEAP EXHAUSTION on
+    quotient-of-exponentials integrands — 2.3 e56/e57 (timeout at 30 s
+    -> error 71.4s/95.4s at 300 s) + 2.3 e68 (error 17.4s in the run).
+    Matcher/rule bug candidate; the pilot's findings input.
+  - Brief defects fixed (measured): D1 the brief's ${@:4} is
+    dash-incompatible (/bin/sh = dash; Bad substitution) AND the
+    controller-proposed while-loop was off-by-one — final form =
+    three guarded shifts (dump-tested both polarities, class-1
+    merge line byte-identical); D2 launch_timeout_rerun.py's
+    in-process driver exec gained the relative suite-dir positional
+    (subprocess cmd already had it; class-1 walk unchanged — full
+    suite walk + FILTER yields the same rel set); D3
+    wait_timeout_rerun.sh derives the merge output name from the
+    source basename (class-1 name byte-identical, dash-verified);
+    D4 DRIVER stays an absolute path (the brief's bare name would
+    break the spec load + subprocess argv).
+  - Fix round 2 (50cce22, reviewer minor): merge_timeout_rerun.py
+    hard-coded "class-1" in the re-check record header -> SLUG
+    derived from the source basename (corpus_classN.out -> class-N;
+    the class1->class-1 hyphen insertion was caught by the string
+    check); record regenerated (header + merge-date lines only;
+    7/7 entry lines byte-identical); class-1 no-regression proven
+    by a REAL re-merge of the still-on-disk class-1 shards
+    (787/787, all lines identical).
+  - Carried minor: the MERGED record carries no `head rewrites:`
+    aggregate (the merger skips per-shard stats lines — pre-existing
+    Task-8 behavior; class-1 merged record has the same property).
+    Per-shard lines remain on disk (e.g. {'gamma_incomplete(': 9,
+    'expintegral_ei(': 9}); a merge-header aggregate is an optional
+    future improvement for A/B margin work.
