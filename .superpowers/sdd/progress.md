@@ -2550,3 +2550,41 @@ Layer A 581/0 (a3ee89c), test_merge_classes 2/0 after re-point)
     name corpus_class1_driver.py (comment-only, out of scope);
     merge_class1_shards.py --help now dies at the no-shards assert
     (safer than the old full-merge-on-help; brief's || fallback).
+
+Task 9: complete (commits 3b843fc..a2f54c1; reviewer Approved, 2
+minors; controller-verified: both dry runs, merge-classes 2/0,
+record tally re-counted)
+  - Class-2 integrate baseline: 965 entries, 30 s cap, 3 per-file
+    shards (walls 5.6/38.2/46.3 s — the maxima launch here is ~29 ms,
+    image build; per-entry cost is solve-dominated).
+  - BASELINE (the Task-10 A/B yardstick): Results 593 passed,
+    372 failed. expected 123 / verified 186 / no-answer 284 /
+    unverified 357 / unexpected 14 / timeout 1 (2.2 e58 L75, t=30.1s).
+  - probe-integrate-sample.py: derived ROOT + section as 10th
+    positional (brief Step 1, verbatim).
+  - Merger fix (ec62741, the brief anticipated this file): the
+    in-process driver needs the suite-dir positional (5th) — with the
+    default, file_list() (corpus_driver.py:477) walks
+    SUITE/<hardcoded class-1 SECTION> regardless of FILTER (the
+    SUITE_DIR == SUITE branch); relative form required (an absolute
+    equal to SUITE string-equals and re-triggers it). Pre-fix
+    measured: 0 files / 965 extras.
+  - LAUNCHER bug (found by controller preflight after the commit,
+    fixed a2f54c1): launch_class_shards.py had the same missing
+    suite-dir — the class-2 package run would have resolved 0 files /
+    0 jobs and CRASHED (ZeroDivisionError in the balance-spread
+    print at :268-269). Fix: SUITE_REL appended to the argv rewrite;
+    class-1 plan byte-identical (40 files / 25697, rel sets
+    byte-compared); tiny 5-entry class-2 shard through the fixed
+    launcher: 5 real T3 lines.
+  - Carried minor 1 (Task-10 A/B readout margin note): baseline =
+    probe mechanics (4-stage symbolic chain, no head rewrites,
+    noun-on-answer-expected = PASS no-answer); Task-10 run = driver
+    mechanics (8-stage + numeric chain, head rewrites,
+    deferred/contains-noun FAIL classes). Net: the yardstick errs
+    slightly CONSERVATIVE for the package (2 of 3 asymmetries flatter
+    it). A stricter comparison = re-run the native baseline through
+    the driver harness.
+  - Carried minor 2 (nit): task-9-report.md:191 cites a pre-fix line
+    number (262; final-tree 268-269) — the measurement was pre-fix,
+    left as-is.

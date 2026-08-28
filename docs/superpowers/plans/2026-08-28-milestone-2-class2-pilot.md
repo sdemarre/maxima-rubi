@@ -1948,6 +1948,13 @@ git commit -m "feat: generalized corpus driver/launcher/merger + two-sided answe
 **Files:**
 - Modify: `probes/corpus/probe-integrate-sample.py` (section argv)
 - Create: `test/corpus_class2.baseline.out` (the merged baseline record)
+- MEASURED follow-ons (not in the original list): `test/merge_class_shards.py`
+  AND `test/launch_class_shards.py` both had to gain the suite-dir
+  positional in their in-process `sys.argv` rewrite (the driver's
+  `file_list()` default walk is bounded to its hardcoded class-1
+  SECTION — a class-2 plan resolved 0 files; the launcher variant
+  crashed the balance-spread print with ZeroDivisionError). Relative
+  form required. See the ledger Task-9 entry.
 
 **Interfaces:**
 - Produces: the merged class-2 `integrate` baseline (965 entries,
@@ -2029,6 +2036,14 @@ shards are intermediates, as in class 1.)
 ---
 
 ### Task 10: Full class-2 package run + A/B + timeout re-check
+
+> A/B margin note (measured, Task-9 close): the baseline record was
+> produced by the probe (4-stage symbolic zero-chain, no head
+> rewrites, noun-on-answer-expected = PASS `no-answer`), while the
+> package run uses the driver (8-stage + numeric chain, head
+> rewrites, `deferred`/`contains-noun` FAIL classes). Net: the
+> yardstick errs slightly conservative for the package. Quote this
+> in the Task-10 uplift readout.
 
 **Files:**
 - Create: `test/corpus_class2.out` (the merged package record)
