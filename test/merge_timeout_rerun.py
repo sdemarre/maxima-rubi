@@ -46,6 +46,13 @@ OUT = (sys.argv[2] if len(sys.argv) > 2
        else os.path.join(ROOT, "test", "corpus_class1.timeout5m.out"))
 ACCEPTED = (sys.argv[3] if len(sys.argv) > 3
             else os.path.join(ROOT, "test", "corpus_class1.out"))
+# Section slug for the record header, from the source-record basename
+# (the D3 $(basename "$SRC" .out) idiom in wait_timeout_rerun.sh):
+# corpus_class1.out -> class-1, corpus_class2.out -> class-2.
+SRC_BASE = os.path.basename(ACCEPTED)
+SLUG = re.sub(r"^(class)(\d+)$", r"\1-\2",
+              re.sub(r"^corpus_", "",
+                     SRC_BASE[:-4] if SRC_BASE.endswith(".out") else SRC_BASE))
 
 
 def parse(path):
@@ -102,7 +109,7 @@ if dupes or missing or extra:
     sys.exit(1)
 
 out_lines = [
-    f"=== maxima-rubi class-1 corpus: {cap} s timeout re-check "
+    f"=== maxima-rubi {SLUG} corpus: {cap} s timeout re-check "
     f"({len(inputs)} shards merged) ===",
     f"merge date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
 ]
