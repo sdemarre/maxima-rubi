@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run the full-370 radcan(rat()) fallback attribution probe (from
+# repo root):
+#   sh probes/maxima/probe-radcan-attribution.run
+# Classifies the OLD failure mode (crash / plain non-closure / budget)
+# of every entry that flipped FAIL->PASS in the 2026-08-28
+# full-corpus A/B around the zero-chain radcan(rat()) fallback.
+# 370 fresh maxima subprocesses, 24-way parallel, 150 s per-entry cap
+# — wall ~1-2 h. Output: probe-radcan-attribution.out (stamped,
+# committed — measured-claims discipline).
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/maxima/probe-radcan-attribution.py
