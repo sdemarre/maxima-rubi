@@ -2265,6 +2265,12 @@ python3 test/test_head_rewrites.py                 # 0 failed
 git add docs/corpus-class2-baseline-uplift.md docs/class-porting.md todo/TODO.md
 git commit -m "docs: milestone-2 pilot close — class-2 acceptance record + the class-porting runbook"
 ```
+> Close note (measured): the residues section's example entries and
+> their likely-cause attributions needed a fix round (b2b4cb7) —
+> every example's (file, entry, class) triple and every mechanism
+> attribution must be re-listed from the merged record before
+> printing (the pilot's residue analysis is the input to the follow-up
+> tickets; a wrong attribution would poison them).
 
 ---
 

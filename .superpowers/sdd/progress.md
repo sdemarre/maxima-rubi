@@ -2640,3 +2640,53 @@ dump-tested the watcher pass-through)
     Per-shard lines remain on disk (e.g. {'gamma_incomplete(': 9,
     'expintegral_ei(': 9}); a merge-header aggregate is an optional
     future improvement for A/B margin work.
+
+Task 11: complete (commits bb74cb6..b2b4cb7; reviewer Needs-fixes ->
+fix round b2b4cb7; controller re-verified the two Important fixes
+against the records before closing)
+  - docs/corpus-class2-baseline-uplift.md (433 lines) — the
+    measured acceptance record: header (build stamps, 3,180 rules,
+    fingerprint, branch), rule set (125 = 14/4/107, census), the two
+    head rewrites + class-1 no-op, baseline 593/965 (61.5 %), package
+    500/965 (51.8 %), per-file A/B table (2.1 59.2->31.6, 2.2
+    35.5->35.5, 2.3 64.9->56.3; total -9.6 pts), entry-level split
+    (309 = 178 deferred genuine + 131 reclassification; 216
+    FAIL->PASS), residues by file with example entries, class-1
+    stands (byte-identity + spot check + no-op), ledger flags with
+    per-commit no-regression evidence.
+  - docs/class-porting.md (357 lines) — the runbook: 10 steps as
+    executed for class 2 (census -> table -> generator -> utils ->
+    generate -> loader/core -> driver rewrites -> baseline -> package
+    run -> close) + standing constraints. Reviewer: a class-3 porter
+    is unblocked by the runbook alone (two one-line clarifications
+    added in the fix round).
+  - todo/TODO.md — Milestone-2 (pilot) closed section (the two %
+    lines, record paths, follow-ups: classes 3-8 as runbook tickets
+    in spec order, polylog/AppellF1 deferred, PowerOfLinear revisit
+    conditional, the SBCL heap-exhaustion bug as its own item).
+  - Final gates: Layer A 581/0; class-1 regen byte-identical (empty
+    porcelain); head-rewrites 7/0.
+  - Reviewer findings (all fixed in b2b4cb7, controller-reverified):
+    F1 (Important) the 2.2 squared/cubed-denominator examples — the
+    original "e56-e63" was false (e56/e57 unexpected, e58/e59
+    unverified, e60 timeout, e61 verified, e62/e63 unexpected — zero
+    deferred); the deferred set is e9-e12, e15-e20, e23-e24 (12) +
+    the e64-e66 numerator powers; e13/e14/e21/e22 are the
+    no-answer expected-Unintegrable entries (controller re-listed
+    the 2.2 record: matches). F2 (Important) the 2.1 attribution —
+    e20-e22 bases are stored expanded, so they decline at the
+    stored-form %mr_powerOfLinearQ (utils:4638) before r12/r13's
+    clauses are reached; split 8 PoL-gated (e16-e18, e20-e22,
+    e25-e26) + 23 coverage gaps (e55, e60-e64, e69-e73, e78-e89)
+    (controller re-listed the 2.1 deferred set: matches). F3 the
+    total delta -9.7 -> -9.6 pts (exact). F4 e68 numerator c->f
+    (suite 2.3 L85: F^(e*(f+d*x)) numerator, c+d*x denominator).
+    F5 "67 files" -> "72 generated files" (67 T1 + 5 EXTRA b; 73 on
+    disk incl. the manual 9_1.mac) in 3 places. F6/F7 runbook
+    clarifications: the (rel,entry) join is a method (no committed
+    script) with the worked example; shard bounds are START/STOP
+    file indices, STOP exclusive.
+  - Note: controller's own first verification pass of F1/F2 briefly
+    read the 2.3 record (the heap-exhaustion e56/e57 share their
+    entry numbers with 2.2's e56/e57) — the docs and the fix round
+    were correct; the bullet's entry numbers are 2.2's.
