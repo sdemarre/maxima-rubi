@@ -2438,3 +2438,49 @@ minus-wrap storage probes, no trailers)
   - Minor carried: unifyTerm %mr_simp hot path may be slow on large
     sums (watch in the class-2 corpus run); layer-B run is the real
     gate for the chain's untested branches.
+
+Task 6: complete (commits ed6d413..0028d82, TDD red-green; reviewer
+NEEDS-FIXES -> fix round 0028d82; controller-verified independently:
+Layer A 578/0, ifactor-unbound probe, hunk region audit, no trailers)
+  - RED 561/14; GREEN 575/0; fix round -> 578/0 (controller re-ran).
+  - CONTROLLER PREFLIGHT WAS WRONG on FreeQ (corrected by the
+    implementer against the pinned .m and re-verified by the
+    controller): Q (:4264-4266) = Test && $exponFlag$ — NO FreeQ arm;
+    Test(x-free) = true but flag stays false -> Q(x-free) = FALSE;
+    the non-Q .m functions return Null^Null garbage for x-free input
+    -> the port declines with u (documented). Brief's test corrected
+    to `= false`.
+  - 9 deviations: 1 colon-lambda; for-in; if/or decidability
+    verified (all conditions structural/literal/rational-gated; the
+    if-unknown->NOUN quirk documented); FreeQ per .m; check-3
+    not-atom -> listp (RED false-green hazard); local expon -> exn
+    (Maxima option-variable collision); Maxima NESTS comments
+    (/* inside a comment kills the draft); branch A uses the
+    STORED-expon coefficient (.m :4336-4340, sign-flip test same);
+    IGtQ base-swap DROPPED per brief (reachable for positive integer
+    bases; correctness preserved — any valid t works —
+    canonicalization lost; layer-B flag).
+  - Fix round (0028d82, reviewer findings, all controller-verified):
+    (i) ratsimp CANNOT reduce log-identities (ratsimp(log(4)/log(2))
+    stays unreduced — brief's FullSimplify=ratsimp claim false) ->
+    TestAux declined commensurable integer-base products (2^X*4^X)
+    where the .m accepts; fixed with %mr_logRatio (positive integers
+    only; ifactor UNBOUND in 5.50.0 — factor + re-factoring step,
+    MEASURED) at both tmp sites; pinned
+    functionOfExponential(2^X*4^X, X) = 2^X (.m's value for the
+    stored order [2^X, 4^X]; Denominator[2] = 1). (ii)
+    foEFunctionAux final arm was head-restricted to */+ (silent
+    WRONG rewrite for Q-true inputs; r104 is Q-gated alone) ->
+    .m-faithful apply(op(u), map(...)) (M1 precedent :3811); pinned
+    foEF(sin(F^(B*X)), X) = sin(X). (iii) branch B sign-flip
+    (:4346-4349) added on the stored-value test. (iv)
+    functionOfExponential atom(st) decline guard. (v) stamps
+    normalized to date + build.
+  - Reviewer's branch-B %e example auto-combines in Maxima
+    (%e^a*%e^b -> one power) — branch B probed with non-combining
+    integer bases instead (2^(1-2X)*4^(-1/2+X) -> [true, 2, 2X-1],
+    matches independent .m trace).
+  - Layer-B flags (carried): swap drop (integer-base multi-factor
+    integrands — form difference, zero-chain still verifies);
+    commensurable shapes beyond positive integers remain declined;
+    sinh pin (X^2 - 1)/(2*X) is the deterministic A/B form.
