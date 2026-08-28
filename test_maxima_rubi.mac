@@ -85,6 +85,7 @@ run_all_tests() := block([],
   test_cluster_j_shims(),
   test_cluster_k_shims(),
   test_cluster_l_powered_form(),
+  test_class2_cluster_a(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -1364,6 +1365,36 @@ test_census() := block([saved_table],
   check("table (saved core) length 5", length(saved_table), 5),
   mr_rule_table : saved_table,
   true
+)$
+
+/* Class-2 cluster A — the small predicates (milestone-2 plan Task 4). */
+test_class2_cluster_a() := block([],
+   print("--- class-2 cluster A: small predicates ---"),
+   check_bool("trueQ true", is(%mr_trueQ(true) = true)),
+   check_bool("trueQ false", is(%mr_trueQ(false) = false)),
+   check_bool("trueQ noun", is(%mr_trueQ('f(x)) = false)),
+   check("use-gamma flag default", mr_use_gamma_flag, false),
+   check_bool("powerQ power", is(%mr_powerQ(x^2) = true)),
+   check_bool("powerQ bare x", is(%mr_powerQ(x) = false)),
+   check_bool("powerQ sum", is(%mr_powerQ(a + b*x) = false)),
+   check_bool("calculusQ integrate noun", is(%mr_calculusQ(integrate(f(x), x)) = true)),
+   check_bool("calculusQ diff noun", is(%mr_calculusQ(diff(f(x), x)) = true)),
+   check_bool("calculusQ product", is(%mr_calculusQ(f*x) = false)),
+   check_bool("hyperbolicQ sinh", is(%mr_hyperbolicQ(sinh(x)) = true)),
+   check_bool("hyperbolicQ sin", is(%mr_hyperbolicQ(sin(x)) = false)),
+   /* BRIEF DEVIATION (measured): the brief's lambda([q]) : integerp(q)
+      is not Maxima syntax (lambda body separator is a comma) — the
+      colon form dies the run: "lambda: no body present" (2026-08-28,
+      5.50.0/SBCL). Comma form: lambda([q], integerp(q)). */
+   check_bool("everyQ all", is(%mr_everyQ(lambda([q], integerp(q)), [1, 2, 3]) = true)),
+   check_bool("everyQ one false", is(%mr_everyQ(lambda([q], integerp(q)), [1, %i]) = false)),
+   check_bool("powerOfLinearQ linear", is(%mr_powerOfLinearQ(a + b*X, X) = true)),
+   check_bool("powerOfLinearQ rational power", is(%mr_powerOfLinearQ((a + b*X)^(3/2), X) = true)),
+   check_bool("powerOfLinearQ non-linear base", is(%mr_powerOfLinearQ((a + b*X^2)^(1/2), X) = false)),
+   check_bool("powerOfLinearQ free of X", is(%mr_powerOfLinearQ(a*X, X) = true)),
+   check_bool("powerOfLinearMatchQ agrees", is(%mr_powerOfLinearMatchQ((a + b*X)^(3/2), X) = true)),
+   check("normalizePowerOfLinear identity", %mr_normalizePowerOfLinear((a + b*X)^(3/2), X), (a + b*X)^(3/2)),
+   true
 )$
 
 /* $ not ; — the function's value (tests_failed = 0) would otherwise
