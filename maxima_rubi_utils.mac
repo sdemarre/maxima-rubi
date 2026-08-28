@@ -4653,4 +4653,394 @@ mr_use_gamma_flag : false$
 
 %mr_normalizePowerOfLinear(u, x) := u$
 
+/* ---- class-2 cluster B: the NormalizeIntegrand chain ---------------
+ * Pinned definitions (IntegrationUtilityFunctions.m @
+ * 61e9c18ea248061cd83c67882f7c91a73cef912d): :1988 (NormalizeIntegrand),
+ * :1999 (Aux), :2007 (Factor), :2025/:2030 (FactorBase),
+ * :2060 (NormalizeLeadTermSigns), :2068-:2075 (AbsorbMinusSign),
+ * :2093 (SignOfFactor), :2111-:2133 (MergeMonomials), :2168
+ * (SimplifyTerm), :2178 (TogetherSimplify), :1399 (MinimumMonomial-
+ * Exponent), :1406-:1410 (MonomialExponent), :3996-:4009 (UnifySum /
+ * UnifyTerms / UnifyTerm), :2995 (ContentFactorAux), :162 (PowerQ),
+ * :198 (IntegerPowerQ).
+ * The only class-2 call site is 2.3 r60 (upstream number; generated
+ * 2.3 r101, rules/class2/2_3.mac:2231): Int[u*F^v*G^w, x] ->
+ * Int[u*NormalizeIntegrand[E^z, x], x] with z binomial or quadratic —
+ * the FactorBase base reaching this chain is %e (atom) or a
+ * linear/quadratic sum.
+ * Documented deviations:
+ *   (a) TogetherSimplify drops TimeConstrained/$TimeLimit (Maxima has
+ *       no time-constrained evaluator) and FixSimplify (its GCD power
+ *       combining is subsumed by Maxima's own power combining on
+ *       re-simplification) — the ratsimp/together chain is the
+ *       measured Maxima equivalent.
+ *   (b) ContentFactorAux's product-branch negative-sum-factor sign
+ *       extraction and the UnifyNegativeBaseFactors deep branch
+ *       (:3016, negative-base factor unification) are unreachable on
+ *       the r60 shape — the port keeps the atom/integer-power/
+ *       product/sum surface (the sum branch factors out the GCD of the
+ *       term contents) and returns its input in the deep case.
+ *   (c) %mr_numericFactor is NOT redefined here: the M1 definition
+ *       (this file's line 1547, Rubi :1100) already IS the .m's
+ *       NumericFactor, with the .m's leafCount<50 ContentFactor-
+ *       round-trip kludge replaced by the direct GCD-of-term-factors
+ *       sum branch. The kludge cannot work in Maxima: MEASURED
+ *       2026-08-28 (5.50.0/SBCL) 2*((4+6*x)/2) -> 6*x+4 — the factored
+ *       sum does not survive the quotient round-trip, so the kludge
+ *       would always return 1 for a sum, contradicting this cluster's
+ *       own test %mr_numericFactor(4 + 6*X) = 2. M1's version
+ *       additionally carries the sqrt-node and unary-minus branches
+ *       Maxima's storage needs; redefining it would shadow the M1
+ *       consumers (%mr_nonnumericFactors, the sumSimplerQ family).
+ * SignOfFactor's ProductQ branch: the .m's Map[SignOfFactor, u] over a
+ * product yields a product of {n, v} pairs whose Part extraction
+ * (NormalizeLeadTermSigns takes lst[[1]]/lst[[2]]) only composes when
+ * the pairs are multiplied out; the port returns the COMPOSED pair
+ * [n_total, v_total], which satisfies the usage contract ("n*v equals
+ * u") and matches the .m on every r60-reachable shape (all factors
+ * {1, f}).
+ * Storage adaptations, MEASURED 2026-08-28 (5.50.0/SBCL 2.6.7):
+ *   * a power's op is the STRING "^" — every power head test goes
+ *     through %mr_powerQ (Task 4, this file's line 4548);
+ *   * list iteration is `for t in args(u)` — `for t : args(u)` parses
+ *     as `for t from args(u)` and iterates the whole list as ONE
+ *     element (the Task-4 everyQ note, this file's line 4594);
+ *   * return() inside a for-loop does not escape the block (probe:
+ *     block([r], r:0, for i thru 3 while r=0 do if i=2 then return(99),
+ *     r) -> 0, not 99) — monomialExponent's first-match scan is a
+ *     for-thru guarded by is(r = 0);
+ *   * while is(m - k >= 0) ERRORS ("Unable to evaluate predicate m - k
+ *     >= 0") on symbolic exponents, but if is(m - k >= 0) stays a no-op
+ *     NOUN — minimumMonomialExponent's scan is therefore a for-thru
+ *     with an `if is(n - e > 0) then n : e` guard (the .m's PosQ is
+ *     strict and false on undecidable; the zero-difference case is a
+ *     no-op update either way, so the strict and >= readings agree on
+ *     every decidable input);
+ *   * Maxima has no Prepend — cons(x, lst) puts x FIRST (measured:
+ *     cons(9,[1,2]) = [9,1,2]); prepend is a NOUN in this build;
+ *   * 2*((6*X+4)/2) -> 6*X+4 at evaluation — contentFactor's sum
+ *     branch c*(u/c) evaluates back to the input sum, the identity
+ *     there being the decline-safe behavior;
+ *   * 2*(-a-b*X) STAYS a 2-factor product at evaluation (op "*",
+ *     args [2, -a-b*X]) — absorbMinusSign's 2-factor structural
+ *     branch is reachable (and -u distributes anyway, so the arms
+ *     agree in value);
+ *   * A+B*X is a binomial (binomialMatchQ TRUE at n = 1), while
+ *     A+B*X+C*X^2 is NOT a trinomial — the .m's QuadraticQ is true on
+ *     symbolic coefficients (Coefficient[u,x,0]===0 is FALSE for a
+ *     symbol), so the .m's own TrinomialQ is false — and the
+ *     quadratic base reaches the PolynomialQ/degree<=4 ->
+ *     ExpandToSum branch, exactly as in the .m's FactorBase;
+ *   * M1 %mr_monomialQ(4, X) is false (a constant is not a monomial —
+ *     M1 test "monomialQ 5"), unlike the .m's MonomialQ (a_ = 4,
+ *     n_ defaulting to 0); in the normalizeIntegrandFactor monomial-
+ *     sum branches the difference is a no-op: a constant term makes
+ *     the minimum exponent 0, where x^min*(t/x^min) is the identity;
+ *   * the .m's active SimplifyTerm returns w in BOTH branches (the
+ *     LeafCount choice is commented out upstream at :2160-:2167);
+ *     ported as written, with %mr_simp (the value-preserving
+ *     zero-chain, this file's line 498) standing in for Simplify.
+ */
+
+/* Rubi :198  IntegerPowerQ — Head === Power && IntegerQ[exponent].
+   Maxima: a kept power node (%mr_powerQ — the op is the string "^")
+   with an explicit integer exponent; Maxima strips exponent-1 powers
+   and stores exponent-1/2 as a sqrt node (the Task-4 notes), neither
+   of which is an IntegerPower in the .m either. */
+%mr_integerPowerQ(u) := block([],
+  if atom(u) then false
+  else if %mr_powerQ(u) and integerp(part(u, 2)) then true
+  else false)$
+
+/* Rubi :2995  ContentFactorAux (ContentFactor :2992 minus its
+   TimeConstrained wrapper — the identity on timeout is decline-safe
+   and Maxima has no time-constrained evaluator). Deviation (b): the
+   product branch drops the .m's negative-sum-factor sign extraction
+   (num=-num; ContentFactorAux[-#]) and the UnifyNegativeBaseFactors
+   deep branch (:3016) — both unreachable on the r60 shape; the
+   identity there is decline-safe. The sum branch factors out the GCD
+   of the terms' numeric factors directly (the .m's sum branch goes
+   through CommonFactors; the GCD reading is the numeric-content
+   subset the r60 shapes need — and the numericFactor call is on each
+   TERM, so it cannot cycle). The c*(u/c) result: MEASURED 2026-08-28
+   (5.50.0/SBCL) 2*((6*X+4)/2) -> 6*X+4 — Maxima auto-expands the
+   factored sum over the quotient round-trip, so the branch returns
+   the input sum (the identity, decline-safe). */
+%mr_contentFactor(u) := block([c, t],
+  if atom(u) then u
+  else if %mr_integerPowerQ(u) then
+    if %mr_sumQ(part(u, 1)) and is(%mr_numericFactor(part(part(u, 1), 1)) < 0)
+    then (-1)^part(u, 2)*%mr_contentFactor(-part(u, 1))^part(u, 2)
+    else %mr_contentFactor(part(u, 1))^part(u, 2)
+  else if not atom(u) and is(op(u) = "*") then
+    apply("*", map(lambda([f], %mr_contentFactor(f)), args(u)))
+  else if %mr_sumQ(u) then (
+    c : 0,
+    for t in args(u) do c : gcd(c, %mr_numericFactor(t)),
+    if is(c # 1) and is(c # 0) then c*(u/c) else u
+  )
+  else u)$
+
+/* Rubi :2093  SignOfFactor — the pair [n, v] with n*v = u and
+   n^2 = 1. Storage adaptation, MEASURED 2026-08-28 (5.50.0/SBCL):
+   the ProductQ branch returns the COMPOSED pair (the .m's
+   Map[SignOfFactor, u] leaves a product of pairs — see the cluster
+   header). Maxima sum term order is x-terms first (args(-4-6*X) =
+   [-6*X, -4]), so "first term" is Maxima's stored first part; for
+   the r60 shapes the lead-term sign is undecidable anyway (symbolic
+   coefficients, numericFactor of a symbolic monomial is 1). */
+%mr_signOfFactor(u) := block([],
+  if (if %mr_rationalQ(u) then is(u < 0) else false)
+     or (if %mr_sumQ(u) then is(%mr_numericFactor(part(u, 1)) < 0) else false)
+  then [-1, -u]
+  else if %mr_integerPowerQ(u) and %mr_sumQ(part(u, 1))
+        and is(%mr_numericFactor(part(part(u, 1), 1)) < 0)
+  then [(-1)^part(u, 2), (-part(u, 1))^part(u, 2)]
+  else if not atom(u) and is(op(u) = "*") then
+    block([ns, vs, p, f],
+      ns : 1, vs : 1,
+      for f in args(u) do (
+        p : %mr_signOfFactor(f),
+        ns : ns*part(p, 1),
+        vs : vs*part(p, 2)),
+      [ns, vs])
+  else if not atom(u) and is(op(u) = "-") then
+    /* a unary minus wraps the product: the .m reads -u as a product
+       with a -1 factor (SignOfFactor[-1] = {-1, 1}); the minus-wrap
+       is Maxima's storage of that — MEASURED 2026-08-28 (5.50.0/SBCL):
+       op(-3*X) = "-", args(-3*X) = [3 X] (likewise -2*(a+b*X) — the
+       bare sum case auto-distributes to a sum node and is caught by
+       the first condition above). M1 precedent: the numericFactor
+       "-" branch, this file's line 1573. */
+    block([p],
+      p : %mr_signOfFactor(part(u, 1)),
+      [-part(p, 1), part(p, 2)])
+  else [1, u])$
+
+/* Rubi :2068-:2075  AbsorbMinusSign — an expression equal to -u with
+   the minus pushed into a sum factor where possible. The .m's
+   odd-power branch (u_*v_Plus^m /; OddQ[m]) is dropped: for the r60
+   shapes the value -u is the normalized form. The 2-factor
+   structural branch IS reachable — MEASURED 2026-08-28
+   (5.50.0/SBCL): 2*(-a-b*X) stays a 2-factor product at evaluation
+   (op "*", args [2, -a-b*X]); -u distributes anyway, so the arms
+   agree in value. */
+%mr_absorbMinusSign(u) := block([f1, f2],
+  if not atom(u) and is(op(u) = "*") and is(length(args(u)) = 2) then (
+    f1 : part(args(u), 1), f2 : part(args(u), 2),
+    if %mr_sumQ(f1) then -f1*f2
+    else if %mr_sumQ(f2) then -f2*f1
+    else -u
+  )
+  else -u)$
+
+/* Rubi :2060  NormalizeLeadTermSigns — the .m's
+   With[{lst=If[ProductQ[u], Map[SignOfFactor,u], SignOfFactor[u]]},
+   If[lst[[1]]==1, lst[[2]], AbsorbMinusSign[lst[[2]]]]]: in the port
+   %mr_signOfFactor already returns the COMPOSED pair for products
+   (the .m's Map leaves a product of pairs — see the cluster header),
+   so the single signOfFactor call is the faithful structure for both
+   .m branches. */
+%mr_normalizeLeadTermSigns(u) := block([lst],
+  lst : %mr_signOfFactor(u),
+  if is(part(lst, 1) = 1) then part(lst, 2)
+  else %mr_absorbMinusSign(part(lst, 2)))$
+
+/* Rubi :1406-:1410  MonomialExponent — the exponent of x in the
+   monomial u (the first x-power factor in the product scan).
+   MEASURED 2026-08-28 (5.50.0/SBCL): return() inside a for-loop does
+   not escape the block (probe: block([r], r:0, for i thru 3 while
+   r=0 do if i=2 then return(99), r) -> 0, not 99), so the first-
+   match scan is a for-thru guarded by is(r = 0) — the guard also
+   stays a no-op NOUN if a symbolic exponent was captured (the .m's
+   n_ may be x-free symbolic). */
+%mr_monomialExponent(u, x) := block([f, r, i, n],
+  if freeof(x, u) then 0
+  else if not atom(u) and is(op(u) = "*") then (
+    r : 0,
+    n : length(args(u)),
+    for i : 1 thru n do (
+      f : part(args(u), i),
+      if is(r = 0) then (
+        if %mr_powerQ(f) and is(part(f, 1) = x) and freeof(x, part(f, 2))
+        then r : part(f, 2))),
+    r
+  )
+  else if %mr_powerQ(u) and is(part(u, 1) = x) and freeof(x, part(u, 2))
+  then part(u, 2)
+  else 0)$
+
+/* Rubi :1399  MinimumMonomialExponent — u is a sum whose terms are
+   monomials; the smallest x-exponent. The .m's Scan/PosQ update
+   (PosQ strict, false on undecidable) is a for-thru with an if-
+   guard: MEASURED 2026-08-28 (5.50.0/SBCL) while is(m - k >= 0)
+   ERRORS ("Unable to evaluate predicate m - k >= 0") on symbolic
+   exponents, but if is(m - k >= 0) stays a no-op NOUN — the guard
+   form is safe in both cases and implements the strict reading (the
+   zero-difference case is a no-op update either way, so the .m's
+   PosQ and a >= 0 reading agree on every decidable input). */
+%mr_minimumMonomialExponent(u, x) := block([n, t, e],
+  n : %mr_monomialExponent(part(u, 1), x),
+  for t in args(u) do (
+    e : %mr_monomialExponent(t, x),
+    if is(n - e > 0) then n : e),
+  n)$
+
+/* Rubi :2111-:2133  MergeMonomials. Rules 1-2 (the proportional-
+   linear-power merge, :2111; the (c*(a+b x)^n)^p merge, :2120) are
+   unreachable on the r60 shape (the factors are %e, %e^(linear),
+   %e^(quadratic) — no linear powers); deferred with the identity
+   (decline-safe). Rule 3 (a_*u_^m_ -> a*u^Simplify[m], :2129) is a
+   Maxima no-op: a*u^m is already the simplified form for x-free m.
+   Rule 4 (linear -> Cancel, :2133) is ported. */
+%mr_mergeMonomials(u, x) := block([],
+  if atom(u) then u
+  else if %mr_linearQ(u, x) then %mr_cancel(u)
+  else u)$
+
+/* Rubi :2178  TogetherSimplify — the .m's
+   TimeConstrained[With[{v=Together[Simplify[Together[u]]]},
+   TimeConstrained[FixSimplify[v],$TimeLimit/3,v]],$TimeLimit,u]:
+   deviation (a) — Maxima has no time-constrained evaluator and
+   FixSimplify's GCD power combining is subsumed by Maxima's own
+   power combining on re-simplification; the ratsimp/together chain
+   is the measured Maxima equivalent (value-preserving). */
+%mr_togetherSimplify(u) := ratsimp(%mr_together(ratsimp(%mr_together(u))))$
+
+/* The .m's MatchQ[v, x^m_.*w_ /; FreeQ[m, x] && SumQ[w]] (the
+   :2046 FactorBase sum-branch condition) — a 2-factor product with
+   one x-power factor (exponent x-free) and one sum factor, either
+   order. In the .m pattern the w_ slot absorbs the remaining
+   product, so extra factors make w a product, not a sum — the
+   2-factor test is the faithful reading. */
+%mr_xpwsumP(v, x) := block([f1, f2],
+  if atom(v) or not is(op(v) = "*") or is(length(args(v)) # 2) then false
+  else (
+    f1 : part(args(v), 1), f2 : part(args(v), 2),
+    if %mr_powerQ(f1) and is(part(f1, 1) = x) and freeof(x, part(f1, 2))
+       and %mr_sumQ(f2) then true
+    else if %mr_powerQ(f2) and is(part(f2, 1) = x) and freeof(x, part(f2, 2))
+         and %mr_sumQ(f1) then true
+    else false))$
+
+/* Rubi :4009  UnifyTerm — the .m's Prepend[lst, x] puts x FIRST;
+   Maxima has no Prepend (it is a NOUN in this build) — MEASURED
+   2026-08-28 (5.50.0/SBCL): cons(x, lst) is the equivalent
+   (cons(9,[1,2]) = [9,1,2]). */
+%mr_unifyTerm(term, lst, x) := block([tmp],
+  if length(lst) = 0 then [term]
+  else (
+    tmp : %mr_simp(part(lst, 1)/term, [x]),
+    if freeof(x, tmp) then cons((1 + tmp)*term, rest(lst))
+    else cons(part(lst, 1), %mr_unifyTerm(term, rest(lst), x))))$
+
+/* Rubi :4003  UnifyTerms */
+%mr_unifyTerms(lst, x) := block([],
+  if length(lst) = 0 then lst
+  else %mr_unifyTerm(part(lst, 1), %mr_unifyTerms(rest(lst), x), x))$
+
+/* Rubi :3996  UnifySum */
+%mr_unifySum(u, x) := block([],
+  if %mr_sumQ(u) then apply("+", %mr_unifyTerms(args(u), x))
+  else %mr_simplifyTerm(u, x))$
+
+/* Rubi :2168  SimplifyTerm — the .m's ACTIVE definition returns w in
+   BOTH branches (the LeafCount[v]<LeafCount[w] choice is commented
+   out upstream at :2160-:2167); ported as written. Maxima has no
+   Simplify — %mr_simp (the value-preserving zero-chain, this file's
+   line 498) stands in. */
+%mr_simplifyTerm(u, x) := block([v, w],
+  v : %mr_simp(u, [x]),
+  w : %mr_together(v),
+  %mr_normalizeIntegrand(w, x))$
+
+/* Rubi :2030  NormalizeIntegrandFactorBase (the :2025 x^m_*u_
+   pre-distribution rule is unreachable on the r60 shape — deferred
+   with the fall-through, decline-safe). Branch order is the .m's:
+   binomial, trinomial, product, polynomial of degree <= 4, sum,
+   (last) Map over parts. MEASURED 2026-08-28 (5.50.0/SBCL): A+B*X
+   is a binomial (binomialMatchQ TRUE at n = 1) so the linear base
+   returns as-is; A+B*X+C*X^2 is NOT a trinomial (the .m's
+   QuadraticQ is true on symbolic coefficients — Coefficient[u,x,0]
+   === 0 is FALSE for a symbol — so the .m's own TrinomialQ is
+   false), and the quadratic base reaches the polynomial/degree<=4 ->
+   ExpandToSum branch, exactly as in the .m. The last branch reads
+   the .m's Map-over-parts as apply("+") over the terms: faithful for
+   the sum-shaped leftovers (degree>4 polynomials) — Maxima stores
+   quotients as products of an inverse-power factor, which the
+   product branch above already handles. */
+%mr_normalizeIntegrandFactorBase(u, x) := block([v],
+  if atom(u) then u
+  else if %mr_binomialQ(u, x) then
+    if %mr_binomialMatchQ(u, x) then u else %mr_expandToSum(u, x)
+  else if %mr_trinomialQ(u, x) then
+    if %mr_trinomialMatchQ(u, x) then u else %mr_expandToSum(u, x)
+  else if not atom(u) and is(op(u) = "*") then
+    apply("*", map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u)))
+  else if %mr_polynomialQ(u, x) and is(%mr_degree(u, x) <= 4) then
+    %mr_expandToSum(u, x)
+  else if %mr_sumQ(u) then (
+    v : %mr_togetherSimplify(u),
+    if %mr_sumQ(v) or %mr_xpwsumP(v, x)
+       or is(%mr_leafCount(v) > %mr_leafCount(u) + 2)
+    then %mr_unifySum(u, x)
+    else %mr_normalizeIntegrandFactorBase(v, x)
+  )
+  else apply("+", map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u))))$
+
+/* Rubi :2007  NormalizeIntegrandFactor. The .m's last branch maps
+   #/x^min without Simplify while the integer-power branch maps
+   Simplify[#/x^min] — the port uses %mr_simp in both (value-
+   preserving zero-chain; the non-power case differs only by the
+   simplification). The monomial-sum gate uses M1 %mr_monomialQ,
+   false on constant terms (M1 test "monomialQ 5"), unlike the .m's
+   MonomialQ (a_ = constant, n_ defaulting to 0); the skip is a
+   no-op — a constant term makes the minimum exponent 0, where
+   x^min*(t/x^min) is the identity. */
+%mr_normalizeIntegrandFactor(u, x) := block([bas, deg, min],
+  if atom(u) then u
+  else if %mr_powerQ(u) and freeof(x, part(u, 2)) then (
+    bas : %mr_normalizeIntegrandFactorBase(part(u, 1), x),
+    deg : part(u, 2),
+    if integerp(deg) and %mr_sumQ(bas)
+       and %mr_everyQ(lambda([t], %mr_monomialQ(t, x)), args(bas))
+    then (
+      min : %mr_minimumMonomialExponent(bas, x),
+      x^(min*deg)*apply("+",
+        map(lambda([t], %mr_simp(t/x^min, [x])), args(bas)))^deg
+    )
+    else bas^deg
+  )
+  else if %mr_powerQ(u) and freeof(x, part(u, 1)) then
+    part(u, 1)^%mr_normalizeIntegrandFactorBase(part(u, 2), x)
+  else (
+    bas : %mr_normalizeIntegrandFactorBase(u, x),
+    if %mr_sumQ(bas)
+       and %mr_everyQ(lambda([t], %mr_monomialQ(t, x)), args(bas))
+    then (
+      min : %mr_minimumMonomialExponent(bas, x),
+      x^min*apply("+", map(lambda([t], %mr_simp(t/x^min, [x])), args(bas)))
+    )
+    else bas))$
+
+/* Rubi :1999  NormalizeIntegrandAux */
+%mr_normalizeIntegrandAux(u, x) := block([mm],
+  if %mr_sumQ(u) then
+    apply("+", map(lambda([t], %mr_normalizeIntegrandAux(t, x)), args(u)))
+  else (
+    mm : %mr_mergeMonomials(u, x),
+    if not atom(mm) and is(op(mm) = "*") then
+      apply("*", map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(mm)))
+    else %mr_normalizeIntegrandFactor(mm, x)))$
+
+/* Rubi :1988  NormalizeIntegrand. The .m's v===NormalizeLeadTermSigns[u]
+   test is syntactic identity; Maxima's structural = is the available
+   (weaker) comparison — the chain is value-preserving on the r60
+   shapes, so the weaker comparison only risks returning v instead of
+   u on an equal-but-different rewrite, which a next call
+   re-normalizes to the same form. */
+%mr_normalizeIntegrand(u, x) := block([v],
+  v : %mr_normalizeLeadTermSigns(%mr_normalizeIntegrandAux(u, x)),
+  if is(v = %mr_normalizeLeadTermSigns(u)) then u else v)$
+
 mr_witness_utils() := true$
