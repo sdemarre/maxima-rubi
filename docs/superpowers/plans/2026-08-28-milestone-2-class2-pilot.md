@@ -1584,6 +1584,16 @@ gitignore (measured 2026-08-28).
   `test/merge_class_shards.py`, `test/test_head_rewrites.py`
 - Modify: `test/corpus_class1_driver.py`, `test/launch_class1_shards.py`,
   `test/merge_class1_shards.py` (→ shims), `test/wait_and_merge.sh`
+- MEASURED follow-ons (not in the original list): the driver shim must
+  re-export EVERY attribute the six in-process consumers touch
+  (file_list, extract_entries, split_elements, maxima_run, build_text,
+  KNOWN_CLASSES, PASS_CLASSES — the brief named only the first two;
+  consumers: canary.py, test_driver_parens.py, test_mr_sum_concrete.py,
+  the two shard scripts, launch_timeout_rerun.py) + a PEP 562
+  `__getattr__` fallback that fails loudly on genuine typos; and
+  `test/test_merge_classes.py` (AST guard) must be re-pointed at
+  `corpus_driver.py`/`merge_class_shards.py` (the shims no longer
+  carry the set literals).
 
 **Interfaces:**
 - Produces: `test/corpus_driver.py` — the class-1 driver's interface
@@ -1647,11 +1657,22 @@ becomes:
             e_text2 = normalize_heads(els[4]) if len(els) == 5 else None
 ```
 
-Delta 3 — the record header gains the rewrite stats (after the
-`out_lines.append(f"filter: …")` line):
+Delta 3 — the record gains the rewrite stats. MEASURED (2026-08-28,
+review of the first implementation a3ee89c): the line MUST be
+appended AFTER the entry loop — in the header block the f-string is
+evaluated before any `normalize_heads()` ran, so the line reads `{}`
+in every record even when rewrites fire (the brief's original
+placement, "after the filter line", was a design flaw faithfully
+executed; fixed c00b5d9). Placement: the final summary block, where
+the merger's skip logic tolerates it:
 ```python
+    # (after the entry loop, in the summary block)
     out_lines.append(f"head rewrites: {REWRITE_STATS or '{}'}")
 ```
+Both polarities are proven in task-8-report.md: class-1 slice ->
+`head rewrites: {}`; class-2 slice -> `{'gamma_incomplete(': 1}`
+(the rewritten entry classified `expected` — the two-sided
+normalization closing its zero chain live).
 
 Delta 4 — `_core_fingerprint()` already gained the class-2 glob in
 Task 7 Step 4; move that logic HERE verbatim (the class-1 file becomes

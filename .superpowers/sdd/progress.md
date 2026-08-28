@@ -2506,3 +2506,47 @@ semantically intact)
     style note).
   - Re-entrance note (no action): mr_load_all twice re-runs all 76
     loads — same posture as M1's mr_load_class1_all (package-accepted).
+
+Task 8: complete (commits 222ebc6..c00b5d9; reviewer NEEDS-FIXES ->
+fix round c00b5d9 verified; controller-verified independently: 9
+files, no trailers, unit 7/0, launcher dry-run through the shim,
+Layer A 581/0 (a3ee89c), test_merge_classes 2/0 after re-point)
+  - corpus_driver.py = class-1 copy + 4 deltas (import re +
+    HEAD_REWRITES/normalize_heads; normalization at integrand +
+    primary + secondary expected texts — els[2] steps excluded,
+    display-only, never reaches Maxima; head-rewrites summary line;
+    fingerprint already class1+class2 from Task 7).
+  - Shims: driver shim re-exports 7 attrs (brief named 2 — audit A
+    found 3 more consumers: canary.py, test_driver_parens.py,
+    test_mr_sum_concrete.py) + PEP 562 __getattr__ that fails loudly
+    on typos (reviewer live-verified: identity re-exports, clean
+    AttributeError); launcher/merger shims argv-forward with class-1
+    defaults; wait_and_merge.sh parameterized (POSIX, AGENTS.md
+    no-arg invocation byte-identical).
+  - launch/merge_class_shards.py: parameterized SECTION/MERGED/DRIVER
+    (+SHARD_GLOB for the merger), SLUG = "class" + section.split()[0],
+    cost model / completeness / verdict logic line-identical
+    (reviewer-verified — no class-1 drift possible).
+  - Evidence: head-rewrites unit 7/0; 50/50 (file,entry)->class
+    identical to test/corpus_class1.out (dict diff; the brief's
+    Step-7 commands omitted stop-index — re-run with 1/2/3 for the
+    intended 17+17+16=50); launcher dry run 40 files/25697 entries.
+  - Audit B (implementer, controller-confirmed in review): the
+    merger's skip tuple did NOT skip the new header line (3/3
+    records would have been INCOMPLETE) — prefix added, re-measured.
+  - Fix round (c00b5d9, reviewer's single Important): the
+    `head rewrites:` line was frozen at {} (f-string evaluated in the
+    header block, before the loop mutated REWRITE_STATS — a
+    BRIEF-DESIGN flaw in Delta 3) -> moved to the post-loop summary
+    block; both polarities proven: class-1 slice -> {}, class-2
+    slice -> {'gamma_incomplete(': 1} (the entry classified
+    `expected` — two-sided normalization closing its zero chain
+    live). Plan Delta 3 corrected.
+  - Controller fix (7afde83, flagged by implementer as out-of-scope):
+    test_merge_classes.py AST guard re-pointed to the generalized
+    driver/merger (the shims lost the set literals).
+  - Minor recorded: run-header style drift `class-1` -> `class1`
+    (brief-specified); build_rules_core.sh:15,19,33,45 comments still
+    name corpus_class1_driver.py (comment-only, out of scope);
+    merge_class1_shards.py --help now dies at the no-shards assert
+    (safer than the old full-merge-on-help; brief's || fallback).
