@@ -88,6 +88,7 @@ run_all_tests() := block([],
   test_class2_cluster_a(),
   test_class2_cluster_b(),
   test_class2_cluster_c(),
+  test_class2_census(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -1516,6 +1517,21 @@ test_class2_cluster_c() := block([],
     is(ratsimp(denom(%mr_fullSimplify(G1*H1*log(G2)/(D1*E1*log(F1))))
                - D1*E1*log(F1)) = 0)),
   true
+)$
+
+/* Class-2 census cross-check (loadable subset; the full 3,180 table
+   lives in the rules core / the TLS-flagged probe — the plain-process
+   defmatch budget holds a handful of rules, the load-wall note in
+   maxima_rubi.mac). */
+test_class2_census() := block([saved_table],
+   print("--- class-2 census cross-check (loadable subset) ---"),
+   saved_table : mr_rule_table,
+   %mr_load_sibling("rules/class2/2_2.mac", 'mr_witness_2_2),
+   check("2.2 count = 4 (T1 inventory)", mr_rules_count_2_2, 4),
+   check_bool("2.2 witness survived", is(mr_witness_2_2() = true)),
+   check("core 1.1.1.1 count still 5", mr_rules_count_1_1_1_1, 5),
+   mr_rule_table : saved_table,
+   true
 )$
 
 /* $ not ; — the function's value (tests_failed = 0) would otherwise
