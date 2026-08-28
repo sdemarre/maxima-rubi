@@ -540,6 +540,9 @@ git commit -m "feat: generalized rule generator (--class) + Part handler; class-
 
 **Files:**
 - Modify: `generator/translation_table.py`
+- Modify: `generator/generate_rules.py` (marker-as-head emission, the r96 gap)
+- Modify: `maxima_rubi_utils.mac` (the MatchQ matcher's marker-head case)
+- Modify: `test_maxima_rubi.mac` (Layer A tests for the marker-head case)
 - Create: `rules/class2/2_1.mac`, `rules/class2/2_2.mac`, `rules/class2/2_3.mac` (generated)
 
 **Interfaces:**
@@ -605,7 +608,128 @@ git status --porcelain rules/   # expected: EMPTY
 rule file uses the new tokens — the class-1 census proves it; a diff
 means a token collided and the entry must be scoped per-class.)
 
-- [ ] **Step 3: Generate class 2**
+- [ ] **Step 3: Generate class 2 (expect the r96 blocker)**
+
+```
+python3 generator/generate_rules.py --class 2
+```
+Expected: `2_1` (14) and `2_2` (4) emit, then generation stops with
+`GenError ... 2_3 r96: unlisted head 'F'` — the marker-as-head gap
+(`F_[v_]` in r96's second MatchQ; the `F` closure adjudication above).
+Record the error line. Any OTHER token failing means the census (Task 1)
+missed it — add the table entry (same discipline: native for natives,
+`%mr_` port for utilities, provenance comment citing the Rubi definition
+line), re-run, and re-run Step 2.
+
+- [ ] **Step 4: The marker-as-head fix (generator + matcher + tests)**
+
+Basis (measured 2026-08-28, 5.50.0/SBCL): `F` in r96 is the second
+MatchQ's own pattern variable — a function-valued head: the pattern
+`E^(c(a+bx))*F_[v_]` tests "u carries a factor F[v] with F an inverse
+function", and the cond applies the binding: `InverseFunctionQ[F[x]]`.
+r96 is the first ported rule with a marker in HEAD position. This
+build's defmatch REJECTS pattern variables in head position
+(`defmatch: some pattern variables are not atoms` — the predicate is
+never even defined), so the custom `%mr_matchQ` matcher (already the
+runtime for all 16 class-1 MatchQ rules) gains one new pattern form
+instead of Maxima's matcher.
+
+(a) Generator — `generator/generate_rules.py`, two emission sites,
+both emitting a Maxima application whose op is the RAW marker name:
+- The `translate_atom` marker branch (~line 890, `name in
+  ctx["markers"]`): when the marker is consumed with a PLAIN `_` (not
+  `_.`) and is followed, modulo blanks, by `[`, consume the balanced
+  bracket group (the same depth scan as the nested-head branch at
+  ~line 921), split the inner text on top-level commas, translate each
+  piece in the current (marker) scope, and emit
+  `f"{ctx['markers'][name]}({', '.join(...)})"`, advancing past `]`.
+  (Pattern side: `F_[v_]` → `_mF(_mV)`.)
+- The `translate_atom` nested-head branch (~line 919): before the
+  `translate(name + "[" + argtxt + "]")` recursion, if
+  `ctx["markers"]` is active and `name` is in `ctx["markers"]`, emit
+  the same `f"{ctx['markers'][name]}({inner})"` form (args translated
+  and comma-joined). (Cond side: `F[x]` → `_mF(x)`, which the existing
+  `\b...\b` post-pass in `_emit_matchq` rewrites to
+  `%mr_mk(_mF, %mr_mqb)(x)` — the `(` is a word boundary, so the
+  rewrite is safe; longest-name-first is irrelevant because the `\b`
+  guard already kills prefix collisions.)
+- Why raw-marker emission on both sides: the pattern (no post-pass)
+  keeps the marker atom literal — exactly the shape the matcher's new
+  case consumes; the cond gets the named lookup for free.
+- Runtime semantics verified (probes 2026-08-28): a bound value is an
+  atom (the op of a stored call), and `<atom>(<arg>)` evaluates to the
+  intended application for both known-function and unknown-function
+  ops (`f:'asin$ f(x)` → asin(x); `g:'foo$ g(x)` → foo(x) noun);
+  `op`/`length` of stored calls are atomic/integer as the matcher
+  expects.
+
+(b) Matcher — `maxima_rubi_utils.mac`: ONE new dispatch case in BOTH
+`%mr_mq_match` (insert after the `"^"` branch, before the final
+`else false`, ~line 972) and `%mr_mq_search` (same position,
+~line 1077) — the op of a non-atomic pattern is a registered marker:
+```
+  elseif %mr_isMQMarker(op(P)) then (
+    if atom(E) or not atom(op(E)) then false
+    else if not is(length(P) = length(E)) then false
+    else block([b],
+      b : %mr_mq_bind(B, op(P), op(E)),
+      if atom(b) then false
+      else %mr_mq_seqargs(P, E, 1, b)))
+```
+with two small helpers placed next to `%mr_mq_seq` (~line 796):
+```
+/* ordered argument-list match — function-call arguments are ordered,
+ * no permutation (unlike the commutative "*" / "+" flat match) */
+%mr_mq_seqargs(P, E, i, B) := block([b],
+  if i > length(P) then B
+  else (
+    b : %mr_mq_match(part(P, i), part(E, i), B),
+    if atom(b) then false
+    else %mr_mq_seqargs(P, E, i + 1, b)))$
+
+/* the cond-threading variant: chain the existing "match" goal type —
+ * no %mr_mq_apply_goal change */
+%mr_mq_seqargs_search(P, E, i, B, G) := block([],
+  if i > length(P) then %mr_mq_apply_goal(G, B)
+  else %mr_mq_search(part(P, i), part(E, i), B,
+    ["match", part(P, i + 1), part(E, i + 1), G]))$
+```
+and the search branch's last call is `%mr_mq_seqargs_search(P, E, 1, b, G)`.
+- Semantics (the .m reading): a marker head binds ANY head of a
+  non-atomic E, strict arity (`length(P) = length(E)`), the op must be
+  an atom (stored Maxima calls have atomic ops), arguments ordered.
+  Binding `+`/`*`/`^` as a head is the .m-faithful reading for
+  multi-slot patterns and is allowed. Documented deviation (measured):
+  Maxima stores unary minus as a 1-arg `"-"` node where the .m has
+  `Times[-1, u]`, so a MULTI-slot marker-head pattern cannot match
+  `-u`; no pilot rule needs it — r96's 1-slot `F_[v_]` on a
+  unary-minus factor binds F := `"-"`, and the
+  `InverseFunctionQ` cond fails closed: the same `Not[false]`
+  outcome as the .m non-match.
+- No new marker registration: the r96 markers already flow through
+  `ctx["decls"]` (_emit_matchq) into the file's trailing
+  `%mr_register_markers` line.
+
+(c) Layer A tests — `test_maxima_rubi.mac`: a new section
+`test_class2_marker_head` (registered synthetic markers — the existing
+unit-marker registration precedent; the membership test is registry-
+based, so unregistered names fail closed):
+1. Head bind + cond: `%mr_matchQ(asin(x), _mF(_mV), lambda([%mr_mqb],
+   %mr_inverseFunctionQ(%mr_mk(_mF, %mr_mqb)(%mr_mk(_mV, %mr_mqb)))))`
+   → true.
+2. Non-inverse fails closed: same shape, target `sin(x)` → false.
+3. Arity/shape: target `x + 1` (2-arg `+`) → false; target `x` (atom)
+   → false.
+4. Consistent re-binding: pattern `_mF(_mV)*_mF(_mW)` on
+   `asin(x)*sin(x)` → false (one F cannot be two heads).
+5. Full r96 shape (run after Step 5, once `2_3.mac` exists): load
+   utils + `rules/class2/2_3.mac` in a plain process (107 rules fit
+   the plain-process TLS budget) and evaluate the emitted r96 MatchQ
+   (extract the `%mr_matchQ(...)` call from the file) against
+   `%e^(c*(a+b*x))*asin(x)` → true and against
+   `%e^(c*(a+b*x))*sin(x)` → false (free-symbol a, b, c).
+
+- [ ] **Step 5: Regenerate class 2**
 
 ```
 python3 generator/generate_rules.py --class 2
@@ -622,26 +746,38 @@ TOTAL: 125 rules — OK (== 125)
 %mr_load_sibling("rules/class2/2_3.mac", 'mr_witness_2_3)$
 mr_rule_table : flatten([mr_rules_2_1, mr_rules_2_2, mr_rules_2_3])$
 ```
-A `GenError` here means the census (Task 1) missed a token — add the
-table entry (same discipline: native for natives, `%mr_` port for
-utilities, provenance comment citing the Rubi definition line),
-re-run, and re-run Step 2.
 
-- [ ] **Step 4: Static sanity of the generated files**
+- [ ] **Step 6: Static sanity of the generated files**
 
 ```
 grep -c "^_mr_rule_" rules/class2/2_1.mac rules/class2/2_2.mac rules/class2/2_3.mac   # 14 / 4 / 107
 grep -n "part(" rules/class2/2_1.mac | head    # the Part sites emitted as part(uu, 1)/part(uu, 2)
 grep -n "mr_use_gamma_flag" rules/class2/*.mac | wc -l   # 9 (the TrueQ sites)
-grep -n '\$' rules/class2/*.mac                # EMPTY — no raw $ leaked
+grep -n '\$[A-Za-z]' rules/class2/*.mac         # EMPTY — no raw Rubi $-global leaked
+                                                 # (the literal '\$' form is impossible:
+                                                 # Maxima's statement terminator is $)
 grep -n "gamma_incomplete\|expintegral_ei" rules/class2/*.mac | wc -l   # 8 (5 Gamma + 3 Ei)
 ```
+Plus the r96 spot-check: the emitted 2_3 r96 carries
+`%mr_matchQ(` whose pattern contains the F-marker applied to its
+argument (grep the marker name with a following `(`), and its cond
+contains `%mr_mk(<F-marker>, %mr_mqb)(x)`.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Layer A**
+
+Run: `maxima --very-quiet -b test_maxima_rubi.mac`
+Expected: all `test_class2_marker_head` checks PASS and
+`Results: <511 + the new section's count> passed, 0 failed`. The
+matcher change is runtime code the accepted class-1 record depends on
+(16 class-1 MatchQ rules run through `%mr_mq_search`) — the full suite
+is the regression gate.
+
+- [ ] **Step 8: Commit**
 
 ```
-git add generator/translation_table.py rules/class2/
-git commit -m "feat: class-2 translation table closure + generated class-2 rules (125 rules, 3 files)"
+git add generator/translation_table.py generator/generate_rules.py \
+        maxima_rubi_utils.mac test_maxima_rubi.mac rules/class2/
+git commit -m "feat: class-2 table closure + MatchQ marker-head case + generated class-2 rules (125 rules, 3 files)"
 ```
 
 ---
@@ -793,7 +929,7 @@ mr_use_gamma_flag : false$
 
 Run: `maxima --very-quiet -b test_maxima_rubi.mac`
 Expected: every `test_class2_cluster_a` check `PASS`; Results line
-`<511+19> passed, 0 failed`.
+`<511 + Task-3's marker-head delta + 19> passed, 0 failed`.
 
 - [ ] **Step 5: Commit**
 
