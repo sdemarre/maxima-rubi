@@ -2312,3 +2312,37 @@ Task 2: complete (commits bd0fa70..ae20582, review clean — spec ✅, quality A
     empty rules/classN/ dir (benign, git ignores it). Reviewer Minor 3
     (unused import sys in shim) is a FALSE POSITIVE — sys.path.insert at
     line 8 uses it.
+Task 3: complete (commits 2ad70cc..70e6f58, review clean after controller
+adjudication — spec ✅, quality Approved)
+  - r96 BLOCKER adjudication (2026-08-28): defmatch in 5.50.0 REJECTS
+    pattern variables in head position ("defmatch: some pattern variables
+    are not atoms" — predicate never defined) -> the fix is a new pattern
+    form in the CUSTOM %mr_matchQ matcher (runtime of all 16 class-1
+    MatchQ rules), not Maxima's matcher. Plan amended f8178f0 (Task 3
+    gains Step 4: generator emission + matcher case + Layer A tests).
+  - Marker-head semantics: op(P) a registered marker -> E non-atomic,
+    op(E) atomic, strict arity, ordered args (no permutation). Documented
+    deviation: Maxima unary-minus storage ("-" 1-arg node vs .m
+    Times[-1,u]) — a multi-slot marker head cannot match -u; no pilot
+    rule needs it (r96's 1-slot case fails closed to the same Not[false]).
+  - Reviewer-endorsed deviations: (1) the cond-side marker guard landed
+    in emit_head (both cond routes converge there; the brief's nested-
+    head branch site is subsumed); (2) the brief's verbatim
+    %mr_mq_seqargs_search hard-errors at i = length(P) — part() off the
+    end ERRORS in this build ("part: fell off the end.") — implemented
+    with a seqargs_tail helper (one "match" goal per remaining arg; no
+    %mr_mq_apply_goal change).
+  - Class-2 generated: 14/4/107 = 125; Step-6 statics all match (9
+    mr_use_gamma_flag, 8 gamma_incomplete|expintegral_ei, part() sites,
+    no \$[A-Za-z]). Controller-verified independently: class-1 gate
+    clean (generate --class 1, empty git status), Layer A 519/0 (511+8
+    new marker-head checks).
+  - Minor (carried to final review): (1) utils:810-817 "load-bearing"
+    comment miscounts the trigger (the off-end part() needs a 0-arg
+    call; the real latent hazard is silent trailing-arg drop) — comment
+    accuracy only, implementation correct at all arities; (2) Layer A
+    test 5 re-types the r96 pattern instead of extracting it from
+    2_3.mac (character-identical today; future-emission drift risk);
+    (3) whitespace churn on unrelated test lines; (4) the match-variant
+    case comment omits the unary-minus deviation note (search variant
+    has it).
