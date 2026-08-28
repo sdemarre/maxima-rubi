@@ -2271,3 +2271,46 @@ acceptance docs and git history). Layer A re-run after the rebuild:
 511/0.
 
 MILESTONE 1 CLOSED.
+
+## Plan: 2026-08-28 milestone-2 class-2 pilot (11 tasks; branch base b78d5aa)
+# NOTE: the "Task N: complete" lines above this header belong to an EARLIER
+# plan (milestone-1 era) — do not confuse them with this plan's tasks.
+
+Task 1: complete (commits b78d5aa..bd0fa70, review clean after 1 fix round — spec ✅, quality Approved)
+  - Fix round 1 addressed: census .run/.out reproducibility + date stamps,
+    true uses= occurrence counts (re-captured class-1 + class-2 records),
+    deterministic tie order, answer-heads guards (atom-charset lookbehind,
+    hard-fail on empty section, section-total native lines).
+  - Class-1 record change anatomy verified: stamp + 62 uses= increases +
+    tie reorders only; headline 67/2710/2709 and AUTO 2032/MANUAL 678 unchanged.
+  - Controller adjudications (recorded in plan): Task-1 Step-2 byte gate
+    structurally unattainable -> standing gate = same-day .run re-capture
+    byte-identical + headline/token-set unchanged; census closure: Expand =
+    builtin passthrough (no table entry), F = extractor artifact (pattern
+    var in InverseFunctionQ[F[x]]) -> class-2 token set CLOSED.
+  - Minor (carried to final review): task-1-report.md:173 per-table split
+    "Erf cond 1 / repl 2" is wrong (record: cond 0 / repl 3; total 3 correct);
+    answer-heads self-stamp is minute-precision (brief-mandated, accepted —
+    re-run stable except the stamp's minute field).
+  - Pre-existing census script "uses" column bug (milestone-1 d8abbb4) fixed
+    in this task as part of the fix round; docs/rule-translation.md citations
+    (rule counts) unaffected.
+Task 2: implemented (commit ae20582)
+  - generate_rules.py = copy of generate_class1.py + configure(class_num)
+    (CLASS/CLASS_PREFIX/OUT/EXPECTED_TOTAL), load_class_files (class-prefix
+    selector; gated flag not a filter — verified no-op for class 1: gated
+    block holds 0 "1 " files), main(class_num=None) with --class,
+    EXTRA_CLASS1 loop class-1-gated, Part [[n]] handler in translate().
+  - Brief step-5 header conflict resolved: the brief's verbatim header
+    (generate_rules.py --class N) would have broken the class-1 byte gate
+    (all 72 committed generated files carry the old Regenerate line); the
+    Regenerate line is class-gated — class 1 keeps the committed
+    generate_class1.py command byte-identical, other classes document the
+    --class form.
+  - Gate green: generate_rules.py --class 1 -> TOTAL 3026 OK,
+    git status --porcelain rules/ EMPTY, no rule-file diff; same via the
+    generate_class1.py shim (no-arg and --only; old argv handling = --only
+    only, preserved).
+  - Step-9 class-2 smoke (expected failure, table boundary):
+    GenError "2_1 r1: unlisted head 'TrueQ'" — failing token TrueQ, a
+    Task-3 table token. Empty rules/class2/ dir from the failed run removed.
