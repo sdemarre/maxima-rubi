@@ -2346,3 +2346,44 @@ adjudication — spec ✅, quality Approved)
     (3) whitespace churn on unrelated test lines; (4) the match-variant
     case comment omits the unary-minus deviation note (search variant
     has it).
+
+Task 4: complete (commits 77da405..4cc259e, TDD red-green; review pending
+at ledger-write time — see review dispatch; spec deltas below are
+controller-verified against the .m call sites)
+  - RED: 519 passed / 20 failed (all 20 = new checks) -> GREEN:
+    539 passed / 0 failed.
+  - Brief defects found by measurement (each probed before fixing,
+    documented in-code with date/build): (1) lambda colon form is not
+    Maxima syntax ("lambda: no body present" — comma form); (2)
+    `for e : lst` parses as `for e from lst` (whole list as one
+    element) -> `for e in lst`; (3) a power's op is the STRING "^"
+    (is(op(x^2) = power) false; house idiom op(u) = "^"); (4) a noun's
+    op is an internal symbol NOT the function symbol (member over
+    function symbols never matches; string() of the op is the head
+    name — calculusQ tests string(op(u)) over a string list; the diff
+    noun DISPLAYS as `derivative` but string()s to "diff"); (5)
+    powerOfLinearQ's x-freeness check is freeof(x, part(u, 2)) — the
+    base is linear-in-x by construction, the brief's part(u,1) form was
+    dead (always false).
+  - Design corrections (controller-verified against the .m): (6)
+    PowerOfLinearMatchQ is the STRICT stored-power test, NOT an alias
+    of PowerOfLinearQ — the alias makes 2.3 r38's (.m:38) condition
+    `PowerOfLinearQ[v,x] && Not[PowerOfLinearMatchQ[v,x]]`
+    unsatisfiable (dead rule); the strict reading fires exactly for
+    implicit-exponent v (bare linear / sqrt-linear) and matches the
+    class-1 LinearQ/LinearMatchQ duality (2.1 r17/r18 exclusion).
+    (7) sqrt-of-linear branch: (linear)^(1/2) stores as a 'sqrt node
+    (house precedent %mr_mq_power_exp); unreachable from current
+    patterns — contract faithfulness, flagged for final-review triage.
+  - Plan corrected to the committed code (plan commit after 4cc259e) so
+    Tasks 5-7 don't re-derive the defects.
+  - Controller-verified: is() trichotomy (is(true)/is(false)/is(noun)
+    = true/false/unknown), member(op(noun), [symbols]) false +
+    string(op) route, integrate(f,x) EVALUATES to f*x (true nouns need
+    x-dependent summand), op storage shapes (integrate noun = integrate,
+    diff noun string = "diff", sqrt node = "sqrt").
+  - Minor (carried to final review): the sqrt branch is currently
+    unreachable from committed patterns (contract faithfulness, not
+    behavior — remove if judged speculative at final review); r35/r38
+    self-refire cost for implicit-exponent v is bounded by the runner
+    depth cap (watch for timeout mass in the class-2 run).
