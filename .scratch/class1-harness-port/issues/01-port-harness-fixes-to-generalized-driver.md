@@ -1,6 +1,12 @@
 # Port the harness-radcan-fallback fixes into the generalized driver; re-measure class-1 and class-2
 
-Status: ready-for-agent
+Status: resolved
+Resolved: 2026-08-28 — port `5035d4e`; merges `2f6ca1e` (harness-port) /
+`60c6f94` (harness-radcan-fallback, the `corpus_class1_driver.py`
+conflict resolved to the shim); re-measurement records `f8d2fde`
+(class-1 20,069 / class-2 594 + both 300 s re-checks); docs `f146b35`
+(uplift §8, TODO, handoff). Final gates green (Layer A 581/0, driver
+guard 4/4).
 Filed: 2026-08-28 (milestone-2 merge, commit 6bd782d; sequencing decision: pilot landed as measured, harness next)
 Evidence: branch `harness-radcan-fallback` (5 commits on 55724a6, not yet merged);
 `docs/ratsimp-zero-divisor-bug.md`, `docs/corpus-radcan-fallback-attribution.md`
