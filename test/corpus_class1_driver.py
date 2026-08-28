@@ -371,17 +371,33 @@ def zero_chain(d_expr, var):
     # ratsimp/factor stage on some zero-diffs while radcan(rat())
     # closes the same diff: measured 2026-08-28, 1.1.3.8 e541/e543/
     # e544 and 1.2.1.4 e764 (`unverified` in the 2026-08-27 record)
-    # close under the fallback. Gated on a no-elliptic diff: measured
-    # 2026-08-28 — radcan(rat()) crashes with `PTPTQUOTIENT:
-    # Polynomial quotient is not exact' after burning 30-100 s on
-    # elliptic-family zero-diffs (1.2.1.3 e455-e484 family), and
-    # rat() can never close an elliptic-carrying diff anyway (the
-    # numeric stage owns those). The other crash classes measured on
-    # `unverified`-entry zero-diffs are immediate and errcatched:
+    # close under the fallback. Gated on a no-elliptic diff:
+    # measured 2026-08-28 — radcan(rat()) crashes with
+    # `PTPTQUOTIENT: Polynomial quotient is not exact' after
+    # burning 30-100 s on elliptic-family zero-diffs (1.2.1.3
+    # e455-e484 family). Trade measured by probe v2 (docs/corpus-
+    # radcan-fallback-attribution.md): the gate also blocks 35 A/B
+    # gains whose elliptic-carrying diffs radcan(rat()) DOES close
+    # in 1-2 s (22 crash entries of 1.1.3.x/1.2.2.x/1.3.2 plus 13
+    # chain-FINISHED entries) — a static elliptic gate cannot
+    # separate the fast-closers from the 30-100 s burners. The
+    # other crash classes measured on `unverified`-entry zero-diffs
+    # are immediate and errcatched:
     # `expt: undefined: 0 to a negative exponent' (1.3.1 e147) and
     # the zero-divisor bug via the fallback itself (1.1.1.2 e1501).
-    fallback = ("if freeof([elliptic_f, elliptic_e, elliptic_pi, "
-                "elliptic_ec, elliptic_eu, elliptic_kc], MR_de) = true "
+    # The gate is apply(freeof, [syms..., MR_de]) — the documented
+    # variadic form `freeof(x1, ..., xn, expr)` == `freeof(x1, expr)
+    # and ... and freeof(xn, expr)` (freeof manual entry, 5.50.0),
+    # spliced over the symbol list. The earlier list-first-arg form
+    # freeof([syms], expr) is NOT a documented freeof call: it is read
+    # as "does the LIST occur in expr" and returned true on
+    # elliptic-carrying diffs (measured 2026-08-28: freeof(
+    # [elliptic_f], elliptic_f(x, -4)) = true) — a silently no-op
+    # gate that let radcan(rat()) run on elliptic-diffs, burning the
+    # 30 s cap on 28 entries (18 of them 1.2.1.3 e440-e484
+    # unverified->timeout) in the 2026-08-28 A/B.
+    fallback = ("if apply(freeof, [elliptic_f, elliptic_e, elliptic_pi, "
+                "elliptic_ec, elliptic_eu, elliptic_kc, MR_de]) = true "
                 "then block([MR_fb], "
                 "MR_fb : errcatch(radcan(rat(MR_de))), "
                 "if MR_fb = [] then 0 "
