@@ -64,6 +64,36 @@ RENAME = {
     "FractionalPart": "%mr_fracPart",   # Mathematica builtin = FracPart
     "IntegerPart": "%mr_intPart",       # Mathematica builtin = IntPart
     "SimplifyFlag": "mr_simplify_flag", # ShowStepRoutines.m :3 global (utils)
+    # class 2 (exponentials) — answer-side natives (the naming trap: the
+    # public names carry underscores; describe(name, exact) is the
+    # arbiter — probed 2026-08-28 on 5.50.0, the identities close:
+    # diff(gamma_incomplete(a,z),z) = -z^(a-1) %e^-z [UPPER, the corpus
+    # GAMMA(a,z) convention], diff(expintegral_ei(z),z) = %e^z/z,
+    # erf/erfi native):
+    "Exp": "exp", "Erf": "erf", "Erfi": "erfi",
+    "ExpIntegralEi": "expintegral_ei",
+    "Gamma": "gamma_incomplete",   # 2-arg UPPER only (class 2: 5/5 2-arg)
+    # class-2 utility ports (Tasks 4-6):
+    "TrueQ": "%mr_trueQ", "PowerQ": "%mr_powerQ",
+    "Exponent": "%mr_degree",      # M1 port — general polynomial degree
+    "FullSimplify": "ratsimp",     # measured approximation: on the
+                                   # class-2 sites (symbolic quotients of
+                                   # free constants) ratsimp preserves the
+                                   # quotient so num/denom read the
+                                   # formal Numerator/Denominator (the
+                                   # unit test pins denom() on r61's shape)
+    "PowerOfLinearQ": "%mr_powerOfLinearQ",
+    "PowerOfLinearMatchQ": "%mr_powerOfLinearMatchQ",
+    "NormalizePowerOfLinear": "%mr_normalizePowerOfLinear",
+    "FunctionExpand": "%mr_functionExpand",
+    "FunctionOfExponentialQ": "%mr_functionOfExponentialQ",
+    "FunctionOfExponential": "%mr_functionOfExponential",
+    "FunctionOfExponentialFunction": "%mr_functionOfExponentialFunction",
+    "NormalizeIntegrand": "%mr_normalizeIntegrand",
+    # Rubi's undocumented $UseGamma control global (absent from Rubi.m;
+    # the class-2 corpus headers assume it false) — a VARIABLE, not a
+    # function (the SimplifyFlag precedent):
+    "$UseGamma": "mr_use_gamma_flag",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.

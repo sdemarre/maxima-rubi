@@ -864,6 +864,22 @@ def translate(s, ctx):
             # markers (a_ is no capture of the rule). Pass the RAW args.
             parts = split_top(args, ",") if args.strip() else []
             return _emit_matchq(parts, ctx)
+        if ctx["markers"] is not None and head in ctx["markers"]:
+            # Marker-as-head, cond side (the r96 F[x]): the whole
+            # sub-expression is a bare MatchQ pattern variable applied
+            # to args — a head-position marker reference inside the
+            # condition. Emit the raw-marker application (args
+            # translated in the marker scope); _emit_matchq's existing
+            # \b...\b post-pass rewrites the name to %mr_mk(<marker>,
+            # %mr_mqb) — the ( is a word boundary, so the rewrite is
+            # safe. (The pattern text takes no post-pass and keeps the
+            # marker literal — the shape the %mr_matchQ marker-head
+            # case consumes. This build's defmatch rejects pattern
+            # variables in head position, measured 2026-08-28.)
+            arglist = ([translate(a, ctx)
+                        for a in split_top(args, ",")]
+                       if args.strip() else [])
+            return f"{ctx['markers'][head]}({', '.join(arglist)})"
         arglist = [translate(a, ctx)
                    for a in split_top(args, ",")] if args.strip() else []
         return emit_head(head, arglist, ctx)
@@ -888,6 +904,41 @@ def translate_atom(s, ctx):
                 # rename — fail loudly, never emit a bare underscore that
                 # Maxima would read as a fresh pattern variable.
                 if ctx["markers"] and name in ctx["markers"]:
+                    if s[j:j+2] != "_.":
+                        # Marker-as-head, pattern side (the r96 gap,
+                        # milestone-2 Task 3 Step 4): F_[v_] — a
+                        # function-valued pattern variable applied to
+                        # its argument(s). This build's defmatch
+                        # REJECTS pattern variables in head position
+                        # (measured 2026-08-28, 5.50.0/SBCL: "defmatch:
+                        # some pattern variables are not atoms" — the
+                        # predicate is never even defined), so emit a
+                        # Maxima application whose op is the RAW marker
+                        # name — the %mr_matchQ marker-head case
+                        # (maxima_rubi_utils.mac) consumes exactly that
+                        # shape; the pattern text takes no post-pass,
+                        # so the marker atom stays literal here.
+                        k2 = j + 1
+                        while k2 < L and s[k2] in " \t":
+                            k2 += 1
+                        if k2 < L and s[k2] == "[":
+                            depth, t2 = 0, k2
+                            while t2 < L:
+                                if s[t2] == "[":
+                                    depth += 1
+                                elif s[t2] == "]":
+                                    depth -= 1
+                                    if depth == 0:
+                                        break
+                                t2 += 1
+                            inner = s[k2+1:t2]
+                            args = ([translate(p, ctx)
+                                     for p in split_top(inner, ",")]
+                                    if inner.strip() else [])
+                            out.append(ctx["markers"][name]
+                                       + "(" + ", ".join(args) + ")")
+                            i = t2 + 1
+                            continue
                     end = j + 2 if s[j:j+2] == "_." else j + 1
                     out.append(ctx["markers"][name])
                     i = end
@@ -928,6 +979,21 @@ def translate_atom(s, ctx):
                             break
                     t += 1
                 argtxt = s[k+1:t]
+                if ctx["markers"] and name in ctx["markers"]:
+                    # Marker-as-head, cond side (the r96 F[x]): a MatchQ
+                    # pattern variable referenced bare in the condition —
+                    # emit the same raw-marker application (args
+                    # translated in the marker scope). _emit_matchq's
+                    # existing \b...\b post-pass then rewrites the name
+                    # to %mr_mk(<marker>, %mr_mqb) — the ( is a word
+                    # boundary, so the rewrite is safe (the pattern text
+                    # takes no post-pass and keeps the marker literal).
+                    args = ([translate(p, ctx)
+                             for p in split_top(argtxt, ",")]
+                            if argtxt.strip() else [])
+                    out.append(ctx["markers"][name]
+                               + "(" + ", ".join(args) + ")")
+                    i = t + 1; continue
                 out.append(translate(name + "[" + argtxt + "]", ctx))
                 i = t + 1; continue
             out.append(translate_token(name, ctx)); i = j; continue
@@ -964,6 +1030,25 @@ def translate_atom(s, ctx):
                     out.append("*"); i = t2 + 1; continue
                 out.append(s[i:t2+1]); i = t2 + 1; continue
             out.append(ch); i += 1; continue
+        # Rubi control globals ($UseGamma): `$` is not in the atom
+        # alphabet above, so the name regex never sees the full token
+        # and the RENAME lookup in translate_token cannot fire for it
+        # (the key is "$UseGamma", the walker yields "UseGamma").
+        # Rename the whole $-word here through the same table — the
+        # SimplifyFlag precedent, whose bare-symbol case works via
+        # translate_token. Any other $-word is an unlisted token:
+        # fail loudly, never pass through (a raw $ in the output is
+        # either a Maxima parse error or a silent global reference).
+        if ch == "$":
+            m2 = re.match(r"\$[A-Za-z][A-Za-z0-9]*", s[i:])
+            if m2 is not None and m2.group(0) in RENAME:
+                out.append(RENAME[m2.group(0)])
+                i += m2.end()
+                continue
+            tok = m2.group(0) if m2 is not None else s[i:i+12]
+            raise GenError(f"{ctx['key']} r{ctx['n']}: unlisted $-token "
+                           f"{tok!r} — extend the translation table "
+                           f"(T4 §2) before generating")
         out.append(ch); i += 1
     return _expand_chains(_join_tokens(out))
 

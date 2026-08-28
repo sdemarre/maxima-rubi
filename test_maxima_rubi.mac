@@ -72,8 +72,9 @@ run_all_tests() := block([],
   test_pred_cluster1(),
   test_numeric_predicates(),
   test_structural_predicates(),
-  test_matchQ_predicates(),
-  test_int_family_predicates(),
+   test_matchQ_predicates(),
+   test_class2_marker_head(),
+   test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -419,13 +420,62 @@ test_structural_predicates() := block([],
    /* power base binds a whole sub-expression */
    check_bool("matchQ (a+b x)^2 = v^2",
               %mr_matchQ((a + b*x)^2, _mr_9_r12mq1_v^2, true)),
-    check_not("matchQ 3+5x^2 = (f+g x^2)^2 (literal exponent 2)",
-              %mr_matchQ(3 + 5*x^2,
-                         (_mr_9_r13mq1_f + _mr_9_r13mq1_g*x^2)^2, true)),
+     check_not("matchQ 3+5x^2 = (f+g x^2)^2 (literal exponent 2)",
+               %mr_matchQ(3 + 5*x^2,
+                          (_mr_9_r13mq1_f + _mr_9_r13mq1_g*x^2)^2, true)),
+     true
+    )$
+
+  /* Milestone-2 Task 3 — %mr_matchQ's marker-as-head case (r96: the
+     first ported rule whose MatchQ pattern carries a marker in HEAD
+     position — F_[v_], the function-valued pattern variable). This
+     build's defmatch REJECTS pattern variables in head position
+     (measured 2026-08-28, 5.50.0/SBCL: "defmatch: some pattern
+     variables are not atoms"), so the case lives in the custom
+     matcher (maxima_rubi_utils.mac), not Maxima's. Semantics: a
+     marker head binds ANY head of a non-atomic E, the stored op must
+     be atomic, strict arity, arguments ORDERED (no permutation —
+     function-call arguments are ordered, unlike the "*" / "+" flat
+     match). The bound value is the op atom; a cond re-applies it as
+     <atom>(<arg>) — probed 2026-08-28 for known (asin) and unknown
+     (noun) function ops. Checks 1-4 use synthetic registered markers
+     (the membership test is registry-based — unregistered names fail
+     closed); the final checks load the generated 2.3 file (its
+     trailing %mr_register_markers line registers the r96 markers)
+     and evaluate the EMITTED second MatchQ of r96 verbatim. */
+  test_class2_marker_head() := block([],
+    print("--- matchQ marker-as-head (class 2 r96) ---"),
+    %mr_register_markers([ _mF, _mV, _mW ]),
+    check_bool("marker head binds the inverse (asin)",
+               %mr_matchQ(asin(x), _mF(_mV),
+                          lambda([%mr_mqb],
+                                 %mr_inverseFunctionQ(%mr_mk(_mF, %mr_mqb)
+                                    (%mr_mk(_mV, %mr_mqb)))))),
+    check_not("marker head: non-inverse fails closed (sin)",
+              %mr_matchQ(sin(x), _mF(_mV),
+                         lambda([%mr_mqb],
+                                %mr_inverseFunctionQ(%mr_mk(_mF, %mr_mqb)
+                                   (%mr_mk(_mV, %mr_mqb)))))),
+    check_not("marker head: 2-arg + target (strict arity)",
+              %mr_matchQ(x + 1, _mF(_mV), true)),
+    check_not("marker head: atom target",
+              %mr_matchQ(x, _mF(_mV), true)),
+    check_not("marker head: consistent re-binding (asin*sin)",
+              %mr_matchQ(asin(x)*sin(x), _mF(_mV)*_mF(_mW), true)),
+    %mr_load_sibling("rules/class2/2_3.mac", 'mr_witness_2_3),
+    check_bool("2.3 witness survived", is(mr_witness_2_3() = true)),
+    check_bool("r96 emitted MatchQ: asin head matches",
+               %mr_matchQ(%e^(c*(a+b*x))*asin(x),
+                          %e^(_mr_2_3_r96mq2_c*(_mr_2_3_r96mq2_a + _mr_2_3_r96mq2_b*x))*_mr_2_3_r96mq2_F(_mr_2_3_r96mq2_v),
+                          lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
+    check_not("r96 emitted MatchQ: sin head fails closed",
+              %mr_matchQ(%e^(c*(a+b*x))*sin(x),
+                         %e^(_mr_2_3_r96mq2_c*(_mr_2_3_r96mq2_a + _mr_2_3_r96mq2_b*x))*_mr_2_3_r96mq2_F(_mr_2_3_r96mq2_v),
+                         lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
     true
    )$
 
- /* Task 7a cluster B — the int-family + binomial predicates. The
+  /* Task 7a cluster B — the int-family + binomial predicates. The
     binomialQ / intBinomialQ probes go through the LISP dispatchers
     (maxima_rubi_dispatch.lisp) — a dispatcher miss leaves the calls
     as nouns and these checks fail loudly. Expected values are

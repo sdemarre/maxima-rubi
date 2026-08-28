@@ -795,6 +795,37 @@ rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
   if atom(b) then false
   else %mr_mq_match(P2, E2, b))$
 
+/* ordered argument-list match — function-call arguments are ordered,
+ * no permutation (unlike the commutative "*" / "+" flat match). The
+ * caller has already bound the head (a marker op) and checked the
+ * arity; this matches the args pairwise against the stored call. */
+%mr_mq_seqargs(P, E, i, B) := block([b],
+  if i > length(P) then B
+  else (
+    b : %mr_mq_match(part(P, i), part(E, i), B),
+    if atom(b) then false
+    else %mr_mq_seqargs(P, E, i + 1, b)))$
+
+/* the cond-threading variant: chain the existing "match" goal type —
+ * no %mr_mq_apply_goal change. One "match" goal per remaining
+ * argument, the MatchQ goal G at the end: a "match" goal applies its
+ * pair, then its continuation, so the tail is built by nesting. The
+ * nesting is LOAD-BEARING — a single-level ["match", part(P, i+1), ...]
+ * at i = length(P) runs part() off the end, which ERRORS in this build
+ * (measured 2026-08-28, 5.50.0/SBCL: "part: fell off the end."; r96's
+ * 1-arg shape is exactly that position), and would silently drop
+ * trailing arguments for 3+ args. */
+%mr_mq_seqargs_search(P, E, i, B, G) := block([g],
+  if i > length(P) then %mr_mq_apply_goal(G, B)
+  else (
+    g : %mr_mq_seqargs_tail(P, E, i + 1, G),
+    %mr_mq_search(part(P, i), part(E, i), B, g)))$
+
+%mr_mq_seqargs_tail(P, E, i, G) := block([],
+  if i > length(P) then G
+  else ["match", part(P, i), part(E, i),
+        %mr_mq_seqargs_tail(P, E, i + 1, G)])$
+
 /* match pattern factor P against an ABSENT group — the empty
  * partition group, the Optional u_. reading: the factor is simply not
  * there. NOT the powerless rule in %mr_mq_match (a real E with no
@@ -969,6 +1000,22 @@ rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
       else false
     )
   )
+  elseif %mr_isMQMarker(op(P)) then
+    /* marker-as-head (r96, the first ported rule with a marker in HEAD
+       position — this build's defmatch rejects pattern variables in
+       head position, so the case lives here, not in Maxima's matcher):
+       the op of a non-atomic P is a registered marker. Bind it to the
+       op of a non-atomic E with STRICT arity; the stored call's op
+       must be atomic (Maxima stored calls have atomic ops — probed
+       2026-08-28); the arguments are ordered (seqargs). Binding a
+       commutative or power op as a head is the .m-faithful reading
+       and is allowed. */
+    if atom(E) or not atom(op(E)) then false
+    else if not is(length(P) = length(E)) then false
+    else block([b],
+      b : %mr_mq_bind(B, op(P), op(E)),
+      if atom(b) then false
+      else %mr_mq_seqargs(P, E, 1, b))
   else false)$
 
 /* lookup a marker's bound value in the binding list
@@ -1074,6 +1121,17 @@ rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
       else false
     )
   )
+  elseif %mr_isMQMarker(op(P)) then
+    /* marker-as-head, the cond-threading twin of the case above in
+       %mr_mq_match (r96 has a cond, so THIS is the load-bearing path):
+       same binding/arity semantics, the search variant continues
+       through the existing "match" goal type. */
+    if atom(E) or not atom(op(E)) then false
+    else if not is(length(P) = length(E)) then false
+    else block([b],
+      b : %mr_mq_bind(B, op(P), op(E)),
+       if atom(b) then false
+       else %mr_mq_seqargs_search(P, E, 1, b, G))
   else false)$
 
 %mr_mq_flat_search(P, E, B, opname, G) := block([ef, i, pf, perm, r],
