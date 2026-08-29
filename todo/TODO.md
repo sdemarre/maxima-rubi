@@ -80,7 +80,6 @@ slightly conservative for the package, plan Task-10 margin note).
 
  Open follow-ups (tickets against the runbook):
 
-- Class 3 (logarithms, 3,085 entries) — open
 - Class 8 (special functions, 1,949 entries — shares class 2's head
   table) — open
 - Class 5 (inverse trig, 4,585 entries) — open
@@ -105,6 +104,24 @@ slightly conservative for the package, plan Task-10 margin note).
   commented-out rules in Rubi's `2.3 Miscellaneous exponentials.m` —
   incl. the two recursive quotient-of-exponentials reductions — as a
   candidate coverage source; needs-triage)
+- Branch `maxima-zero-divisor-rootcause` (unmerged; ratsimp
+  zero-divisor root-cause probe work, tip `e185953`) — a separate
+  thread, not part of the class-3 path; `master` is the working
+  branch
+
+## Milestone 3 — class 3 (logarithms), not started
+
+The next port: section "3 Logarithms" (3,085 entries), first of the
+runbook queue. A new session starts here: runbook
+`docs/class-porting.md` Step 1 (census); its standing constraints bind
+(byte-identity gate for accepted classes 1–2, 30 s per-entry cap, 100 s
+timeout re-check, A/B vs the `integrate` baseline, an acceptance record
+per the class-2 template `docs/corpus-class2-baseline-uplift.md`). The
+only mechanical harness change: the core-fingerprint file lists gain
+`rules/class3/*.mac` on both sides (`test/build_rules_core.sh`,
+`test/corpus_driver.py` `_core_fingerprint`); the driver rebuilds the
+core itself when the fingerprint goes stale. Queue after class 3:
+8 → 5 → 6 → 7 → 4 (class 4 last, deliberately).
 
 ## Pinned reference clones
 
