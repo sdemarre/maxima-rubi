@@ -6010,14 +6010,16 @@ mr_use_gamma_flag : false$
  *    inside a log sum, and the end-to-end pin uses that shape (the
  *    plan's bare log((x+1)^(2/3)) example does not survive Maxima
  *    simplification — recorded);
- *  - 1 + 2*(-1/2 + x^3/2) does NOT auto-distribute (stays
- *    2*(x^3/2 - 1/2) + 1) — the %mr_simp stage (expand) is what
- *    normalizes the substituted integrand; and factor() does NOT
- *    re-extract a common power from a sum carrying a log term
- *    (factor(a*x^5 + b*x^5*log(x^2+1)) stays a sum — measured), so the
- *    4-list v slot carries the expanded sum, algebraically equal to the
- *    .m's factored form (the call site integrates v, so the form is
- *    inert for the answer);
+  *  - 1 + 2*(-1/2 + x^3/2) does NOT auto-distribute (stays
+  *    2*(x^3/2 - 1/2) + 1) — the %mr_simp stage (expand) is what
+  *    normalizes the substituted integrand;
+  *  - factor() RE-extracts a common power from a sum carrying a log
+  *    term in BOTH plain and rat mode (factor(a*x^5 + b*x^5*log(x^2+1))
+  *    -> x^5*(b*log(x^2+1)+a) — measured); the plain-vs-rat difference
+  *    is decided by the ratsimp stages of %mr_simp (the same-statement
+  *    rat() quirk, the :6268 note), so the 4-list v slot carries the
+  *    FACTORED form x^5*(b*log(x^2+1)+a) in every call context (the
+  *    call site integrates v, so the form is inert for the answer);
  *  - length() is a HARD ERROR on atoms ("length: argument cannot be a
  *    symbol") — every length() read is atom-gated;
  *  - is([1,1] = [1,1]) = true / is([3, x+1] = [3, x+1]) = true — list
