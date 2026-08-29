@@ -266,8 +266,17 @@ closure); gates green; class-1/2 regeneration byte-identical.
 ## Task 3: Generate + the head-position pattern variable (runbook Step 3)
 
 **What.** `python3 generator/generate_rules.py --class 3` completes with
-zero unlisted tokens; the two 3.1.5 `F_[…]` rules emit through a new
-structural pattern form.
+zero unlisted tokens; the four head-position `F_[…]` rules emit through
+a new structural pattern form. RECON CORRECTION (2026-08-29, Task 3
+review): the census "C-tier token examples" section lists the first
+rule(s) per token, which showed only 3.1.5 — the `.m` sources actually
+carry four head-position capture rules: 3.1.5 L62–63 (lin arg;
+free-m / bare), 3.3 L62 (lin arg, bare, lpow log arg, all-eight
+allow-list), 3.4 L41 (monomial arg, free-m, bpow log arg, no Px
+slot). The detection is generic (capture followed by `[` in the lhs
+head position), so all four are emitted by the same mechanism; an
+optional-form capture (`F_.[`) is a loud GenError (class 3 uses only
+the required form — grep-verified zero `_.[` in the eleven .m files).
 
 - [ ] Pre-check: run the generator; every failure is a
       `GenError`-naming the file/rule/token (loud-failure gate) — fix
@@ -275,17 +284,21 @@ structural pattern form.
 - [ ] **Head-position capture form.** `defmatch` rejects
       head-position pattern variables (class-2 r96, 5.50.0). The
       generator detects a capture immediately followed by `[` in the
-      lhs (the 3.1.5 L62-63 shape) and emits a structural rule: a
+       lhs (the 3.1.5 / 3.3 / 3.4 shape) and emits a structural rule: a
       generated `%mr_`-prefixed matcher call (new helper in
       `maxima_rubi_utils.mac`, e.g. `%mr_headvar_match(f, x,
       [slot-specs], allowed-heads)`) decomposes the integrand's
       product factors, binds the pattern slots (Px / the `F[d(e+fx)]^m`
       factor / the `(a+b log(c x^n))` factor), tries each allowed head
-      from the rule's `MemberQ[{...}, F]` list (translated through the
-      RENAME table: ArcSin→asin, ArcCos→acos, ArcSinh→%mr_asinh,
-      ArcCosh→%mr_acosh / ArcTan→atan, ArcCot→arccot, ArcTanh→
-      %mr_atanh, ArcCoth→arcoth — probe which are bound natives vs
-      nouns in the current build and record), and binds `F` to the
+       from the rule's `MemberQ[{...}, F]` list (ADJUDICATED 2026-08-29:
+       the pattern-side allow-lists use the NATIVE bound spellings for
+       all eight — asin/acos/atan/asinh/acosh/atanh/acot/acoth are bound
+       natives with closed diffs, arccot/arcoth are unbound nouns —
+       probed; the pattern side is spelling-agnostic but the answer side
+       carries the bound symbol, so a noun head could never close the
+       zero chain; the RENAME table's %mr_ hyperbolic shims stay for
+       class 1–2 answer-side byte-identity, and the new table rows are
+       ArcCot→acot, ArcCoth→acoth), and binds `F` to the
       matched head symbol. The repl builds the `F[…]`/`F[…]^m` call
       from the bound symbol (`apply(F, [arg])` idiom — probe). A
       head-position capture WITHOUT a `MemberQ` allow-list in cond is a
@@ -302,17 +315,18 @@ structural pattern form.
 - [ ] Generation completes: 11 files / 333 rules (per-file counts per
       the Task-1 census). The generated-header Regenerate line carries
       the `--class 3` form (the M2 class-gate).
-- [ ] Static spot checks on the two 3.1.5 files: the structural
-      emission is present (2 rules), the `MemberQ` allow-lists are the
-      translated head lists, no raw `$[A-Za-z]`, no `_mr` name
-      corruption (the M1 drop_optionals bug class).
+- [ ] Static spot checks on the 3.1.5 / 3.3 / 3.4 files: the structural
+      emission is present (4 rules: 3.1.5 r58+r59, 3.3 r58, 3.4 r37),
+      the `MemberQ` allow-lists are the translated native head lists,
+      no raw `$[A-Za-z]`, no `_mr` name corruption (the M1
+      drop_optionals bug class).
 - [ ] **Byte-identity gate** (generator changed): classes 1 and 2
       regenerate EMPTY porcelain.
 - [ ] Commit: `generator: class-3 generation + head-position capture
       (F_[...] structural form)`.
 
 **Acceptance.** Zero unlisted tokens; 333/333 emitted; Layer A green
-(new checks included); gates green; the two 3.1.5 rules visibly
+(new checks included); gates green; the four `F_[…]` rules visibly
 structural.
 
 ## Task 4: Utils ports — cluster A, small predicates (runbook Step 4)
