@@ -80,12 +80,19 @@ HEAD_REWRITES = [
     # :111-150): d/dx expintegral_shi(x) = sinh(x)/x, d/dx
     # expintegral_chi(x) = cosh(x)/x, d/dx expintegral_si(x) = sin(x)/x,
     # d/dx expintegral_ci(x) = cos(x)/x, d/dx expintegral_li(x) =
-    # 1/log(x) — every residue 0; all five bound and float-evaluable,
-    # the short names shi/chi/si/ci/li unbound nouns (naming trap).
+    # 1/log(x) — every residue 0; all five bound and float-evaluable.
+    # The short names shi/chi/si/ci are unbound nouns (naming trap);
+    # lowercase li is the BOUND native polylogarithm — describe(li,
+    # exact): "Function: li [<s>] (<z>) ... the polylogarithm
+    # function"; ev(li[2](0.5)) = 0.5822405264650125 (measured
+    # 2026-08-29 on this build) — but a distinct token (lowercase,
+    # subscript-arg form li[s](z)), so the uppercase Li( row cannot
+    # collide with it.
     # No polylog( row: the package emits the native polylog( spelling
     # and the ACTIVE corpus expected texts are already natively
-    # spelled — the PolyLog[ bracket lines in 3.5 are commented-out
-    # entries the driver never reads.
+    # spelled — the ten commented-out PolyLog[ suite entries span the
+    # four class-3 files 3.1.5/3.3/3.4/3.5 (3/3/3/1 lines); each is a
+    # /* ... */-commented entry extract_entries never reads.
     (re.compile(r"(?<![A-Za-z0-9_])Chi\("), "expintegral_chi("),
     (re.compile(r"(?<![A-Za-z0-9_])Shi\("), "expintegral_shi("),
     (re.compile(r"(?<![A-Za-z0-9_])Si\("), "expintegral_si("),
