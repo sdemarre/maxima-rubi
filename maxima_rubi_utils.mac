@@ -5768,4 +5768,195 @@ mr_use_gamma_flag : false$
   if pxcap # false then B : append(B, [pxcap = pxv]),
   B)$
 
+/* ---- class-3 cluster A: the small cond-side predicates (Task 4) --- */
+
+/* MemberQ (Mathematica builtin) — MemberQ[list, elem]. The built-in is
+   ORDER-REVERSED and boolean-valued: describe("member", exact) reads
+   "Returns 'true' if is(expr_1 = a) for some element a in
+   args(expr_2), otherwise 'false'". MEASURED 2026-08-29 on
+   branch_5_50_base_84_g4204fb669 / SBCL 2.6.7: member(b, [a, b, c])
+   = true, member(4, [1, 2, 3]) = false, the result IS the boolean
+   (is(member(b, [a, b, c]) = true) = true — the line-758 note), and
+   member does not inspect parts of elements (member(x, [x + 1]) =
+   false). The = test is the MA MatchQ reading for atom elements
+   (member('asin, ['asin, 'acos]) = true). */
+%mr_memberQ(l, e) := block([], is(member(e, l) = true))$
+
+/* FalseQ (Mathematica builtin) — true iff the value is the boolean
+   false (the declined-predicate return at the 3.5 r1/r2/r13 call
+   sites, where the value is a direct function return, not a
+   part()-reified factor). MEASURED 2026-08-29 (branch_5_50_base_84_g4204fb669
+   / SBCL 2.6.7): false is the boolean ATOM (atom(false) = true;
+   booleanp(false) stays an unevaluated noun — do not use it),
+   is(false = false) = true, is(0 = false) = false, and
+   is('false = false) = true — the QUOTED SYMBOL compares =-equal to
+   the boolean in this build, a corner the .m's IdentityQ reading
+   could not express (harmless: no rule capture produces a quoted
+   'false as a value). */
+%mr_falseQ(u) := block([], is(u = false))$
+
+/* Rubi :170-172  ProductQ — ProductQ[_Times] = True; ProductQ[_] =
+   False. MEASURED 2026-08-29 (branch_5_50_base_84_g4204fb669 /
+   SBCL 2.6.7): a times node's op is the string "*" (is(op(a*b) =
+   "*") = true), an unparenthesized TWO-factor product IS a times
+   node (op(a*b) = "*", length(a*b) = 2), a monomial is a "^" node,
+   a quotient is a "/" node, a sum is a "+" node. STORAGE DIVERGENCE
+   (recorded, task-4 report): the product sign lifts to a top-level
+   unary "-" node (op(-a*b) = "-", args(-a*b) = [a*b]) where MA sees
+   the Times head of Times[-1, a, b] — the port declines the lift
+   (decline direction, the Task-3 matcher strictness precedent); the
+   class-3 call sites (3.5 r32/r38, the log argument) lose only the
+   negative-product corner. */
+%mr_productQ(u) := block([],
+  if atom(u) then false
+  else is(op(u) = "*"))$
+
+/* Rubi :351-353  IntegralFreeQ — FreeQ over the four heads Int /
+   Integral / Unintegrable / CannotIntegrate. The package
+   noun-surface mapping (recorded, task-4 report):
+   * Int / IntHide -> the mr_int dispatcher name: freeof('mr_int, u)
+     flags an unevaluated mr_int[...] node;
+   * Unintegrable AND CannotIntegrate -> the SAME package noun: the
+     emitter maps both to the mr_unintegrable(f, x) call
+     (generator/generate_rules.py:1393-1394) whose value is the
+     'unintegrable[f, x] node (this file's line 27); one
+     freeof('unintegrable, u) covers both;
+   * Integral -> NO package surface: the MA typeset integral form has
+     no table row and no emitted noun (grep of the table: absent) —
+     omitted;
+   * plus the native integrate fall-through noun: mr_int's 0-firing
+     residue (mr_top with fb = true returns the bare integrate(f, x)
+     noun, this file's line 323) — the evaluated image of an .m Int
+     call that did not fire; the brief's surface lists it first, and
+     without it the 3.3 r60 cond would accept an unresolved
+     sub-integral and let the Subst rule fire on a residue.
+   MEASURED 2026-08-29 (branch_5_50_base_84_g4204fb669 / SBCL 2.6.7):
+   a NOUN's op is an internal symbol whose string() is the head name
+   (the %mr_calculusQ note, this file's line 4560) and freeof of the
+   function symbol flags every one of the head positions —
+   freeof('integrate, integrate(tan(x^2), x)) = false on the REAL
+   fall-through noun, freeof('unintegrable, 'unintegrable[f(x), x])
+   = false, freeof('mr_int, 'mr_int[f(x), x]) = false — and freeof
+   recurses through nested calls (freeof('sin, f(sin(x))) = false),
+   so one freeof per symbol is the whole walk. */
+%mr_integralFreeQ(u) := block([],
+  is(freeof('mr_int, u) and freeof('integrate, u)
+     and freeof('unintegrable, u)))$
+
+/* Rubi :316-322  InverseFunctionFreeQ — the recursion: atom ->
+   true (the .m's AtomQ arm, TRUE even for the variable itself);
+   a head in InverseFunctionQ / CalculusQ / Hypergeometric2F1 /
+   AppellF1 -> FreeQ[u, x]; else every part free (the .m's
+   Catch[Scan[...]] over the parts). The two special-function head
+   tests are string(op) checks on the GENERATED head spellings
+   (Hypergeometric2F1 emits the hypergeometric list-form call,
+   AppellF1 emits the AppellF1 noun — the table rows); one
+   string(op) test covers operator heads too (string of a string is
+   the identity, the %mr_calculusQ note). MEASURED 2026-08-29 on
+   branch_5_50_base_84_g4204fb669 / SBCL 2.6.7:
+   string(op(hypergeometric([1, 2], [3], x))) = "hypergeometric"
+   (the call stays a noun), string(op(AppellF1(1, 2, 3, 4, x))) =
+   "AppellF1". The FreeQ[u, x] arm is freeof(x, u), measured to see
+   through every noun form the call sites produce (the integrate
+   fall-through noun, the diff noun, 'unintegrable[.] bracket nodes,
+   nested calls). MEASURED DIVERGENCE (recorded, task-4 report): the
+   finite PRODUCT noun is a special internal object freeof() cannot
+   see through — freeof(x, product(f(x), x, 1, n)) = true, and the
+   same opacity holds for a QUOTED bracket list on a bound head
+   (freeof(x, 'product[f(x), x, 1, n]) = true) — so such a node
+   reports x-free where MA's FreeQ would not; no call site can
+   produce either shape (the rules emit no product heads; an mr_int
+   result carries a closed form or the integrate noun). */
+%mr_inverseFunctionFreeQ(u, x) := block([i, ok],
+  if atom(u) then true
+  else if %mr_inverseFunctionQ(u) or %mr_calculusQ(u)
+       or is(string(op(u)) = "hypergeometric")
+       or is(string(op(u)) = "AppellF1")
+  then freeof(x, u)
+  else (
+    ok : true,
+    for i : 1 thru length(u) do
+      if %mr_inverseFunctionFreeQ(part(u, i), x) = false
+      then ok : false,
+    ok))$
+
+/* Rest[u] for the RFE product branch — the product of parts 2..n
+   (MA's Rest reconstructs the flat Times head; a times node has
+   >= 2 parts, so part(u, 2) always exists). The SUM branch uses the
+   existing %mr_rest_sum (the head-preserving Plus reconstruction)
+   instead. */
+%mr_rfe_rest(u) := block([i, r],
+  r : part(u, 2),
+  for i : 3 thru length(u) do r : r * part(u, i),
+  r)$
+
+ /* Rubi :1618-1636  RationalFunctionExponents — the branch ladder,
+   line-ported. The .m's five arms:
+     PolynomialQ[u,x]        -> {Exponent[u,x], 0}
+     IntegerPowerQ[u]        -> u[[2]] > 0 ? u[[2]]*RFE[u[[1]]]
+                                : (-u[[2]])*Reverse[RFE[u[[1]]]]
+     ProductQ[u]             -> RFE[First[u]] + RFE[Rest[u]]
+     SumQ[u]                 -> v = Together[u]; SumQ[v]
+                                ? {Max[lst1.1+lst2.2, lst2.1+lst1.2],
+                                   lst1.2+lst2.2}   (lst1 = RFE[First[u]],
+                                   lst2 = RFE[Rest[u]])
+                                : RFE[v]
+     else                    -> {0, 0}
+   Storage adaptations, MEASURED 2026-08-29 on
+   branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 (two arms the .m
+   never writes, both storage-only):
+   * the MINUS arm: the product sign lifts to a top-level unary "-"
+     node (op(-x) = "-"); the .m reads -u as the product with a -1
+     factor whose own exponents are {0, 0}, so the arm is the
+     identity on the wrapped value (house precedent: the
+     SignOfFactor minus-wrap note);
+   * the QUOTIENT arm: this build stores EVERY quotient and every
+     negative integer power as a "/" node — op(x^(-2)) = "/" with
+     args(x^(-2)) = [1, x^2], op((x+1)^(-1)) = "/", op(a*(b/c)) =
+     "/" with args [a*b, c], (a/b)^2 stores as a^2/b^2 — so the .m's
+     u[[2]] < 0 arm of the IntegerPowerQ branch is unreachable
+     through a "^" node and the quotient arm carries it: num/den is
+     num * den^(-1), the numerator list plus the denominator list
+     SWAPPED. An x-free denominator makes the node a polynomial and
+     is caught by arm 1 first (x/2 -> [1, 0]).
+   The .m's Together is rat here (together is a NOUN in this build
+   without preload — M1 ledger): a rat() result is a PLAIN node tree
+   (op(rat(x + 1/x)) = "/" with args [x^2+1, x]; op(rat(sin(x) + x))
+   = "+"), so the SumQ[v] gate and the v-recursion read it directly;
+   part() access on the combined quotient is plain too — the gcrat
+   objects of the M1 denom(rat(…)) trap appear only behind num() /
+   denom(), which this port never calls. List arithmetic is native
+   in this build: k * [a, b] = [a*k, b*k], [a, b] + [c, d] =
+   [c+a, d+b], reverse([a, b]) = [b, a] (symbolic k included), and
+   max of undecided symbolic args stays the max(…) noun — the MA
+   Max reading. Termination mirrors the .m: every arm recurses on
+   proper subparts (the product Rest and the sum Rest shrink the
+   factor/term count, the quotient arm splits num/den, the rat arm
+   either takes the closed lst form or recurses on the strictly
+   smaller combined parts). */
+%mr_rationalFunctionExponents(u, x) := block([k, v, lst1, lst2, n1, dn],
+  if %mr_polynomialQ(u, x) then [%mr_degree(u, x), 0]
+  else if %mr_integerPowerQ(u) then (
+    k : part(u, 2),
+    if is(k > 0) then k * %mr_rationalFunctionExponents(part(u, 1), x)
+    else (-k) * reverse(%mr_rationalFunctionExponents(part(u, 1), x)))
+  else if %mr_productQ(u) then
+    %mr_rationalFunctionExponents(part(u, 1), x)
+      + %mr_rationalFunctionExponents(%mr_rfe_rest(u), x)
+  else if not atom(u) and is(op(u) = "-") then
+    %mr_rationalFunctionExponents(part(u, 1), x)
+  else if not atom(u) and is(op(u) = "/") then (
+    n1 : %mr_rationalFunctionExponents(part(u, 1), x),
+    dn : %mr_rationalFunctionExponents(part(u, 2), x),
+    [part(n1, 1) + part(dn, 2), part(n1, 2) + part(dn, 1)])
+  else if %mr_sumQ(u) then (
+    v : rat(u),
+    if %mr_sumQ(v) then (
+      lst1 : %mr_rationalFunctionExponents(part(u, 1), x),
+      lst2 : %mr_rationalFunctionExponents(%mr_rest_sum(u), x),
+      [max(part(lst1, 1) + part(lst2, 2), part(lst2, 1) + part(lst1, 2)),
+       part(lst1, 2) + part(lst2, 2)])
+    else %mr_rationalFunctionExponents(v, x))
+  else [0, 0])$
+
 mr_witness_utils() := true$
