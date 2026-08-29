@@ -154,7 +154,7 @@ class-N mechanics are runbooked in `docs/class-porting.md`
 
 **Timeout re-check** — the standing answer to "is 30 s at the limit?"
 for any merged record: re-run exactly the record's `timeout` class at
-a larger cap (300 s standing value) and read the transitions:
+a larger cap (100 s standing value) and read the transitions:
 
 ```sh
 python3 test/launch_timeout_rerun.py [record] [cap] [run-dir] --launch

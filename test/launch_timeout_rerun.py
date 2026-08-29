@@ -13,7 +13,7 @@ accepted run, 300 s cap) is recorded in test/corpus_class1.timeout5m.out
 Usage:
   launch_timeout_rerun.py [source-record] [cap-s] [run-dir] [section]
                           [--launch]
-Defaults: test/corpus_class1.out (the accepted record), 300 s cap,
+Defaults: test/corpus_class1.out (the accepted record), 100 s cap,
 run-dir /tmp/opencode/timeout_recheck-<utc-stamp>, section "1 Algebraic
 functions". Without --launch this is a dry run (prints the plan only).
 Env: MR_N_PROCS process count (default os.cpu_count()).
@@ -52,7 +52,7 @@ LAUNCH = "--launch" in sys.argv
 pos = [a for a in sys.argv[1:] if a != "--launch"]
 SRC = os.path.abspath(pos[0] if len(pos) > 0 else
                       os.path.join(ROOT, "test", "corpus_class1.out"))
-CAP = int(pos[1]) if len(pos) > 1 else 300
+CAP = int(pos[1]) if len(pos) > 1 else 100
 SECTION = pos[3] if len(pos) > 3 else "1 Algebraic functions"
 STAMP = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 RUN_DIR = (pos[2] if len(pos) > 2

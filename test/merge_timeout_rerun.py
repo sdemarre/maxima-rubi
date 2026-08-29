@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Merge the 300 s per-entry timeout re-check shards into
-test/corpus_class1.timeout5m.out and report the transitions.
+"""Merge the timeout re-check shards (standing cap 100 s; the cap is
+read from the shard headers) into test/corpus_class1.timeout100s.out
+and report the transitions.
 
 The re-check re-runs EXACTLY the entries the accepted run
 (test/corpus_class1.out, commit 45fc9b8) classified `timeout`, at a
@@ -23,7 +24,7 @@ test/timeout_rerun_merge.out):
 Usage:
   merge_timeout_rerun.py [shard-glob] [out-file] [source-record]
 Defaults: /tmp/opencode/timeout_recheck/shard*.out,
-test/corpus_class1.timeout5m.out, test/corpus_class1.out (the accepted
+test/corpus_class1.timeout100s.out, test/corpus_class1.out (the accepted
 record — the completeness set is its `timeout` class).
 """
 
@@ -43,7 +44,7 @@ PASS_CLASSES = {"expected", "verified", "no-answer"}
 SHARD_GLOB = (sys.argv[1] if len(sys.argv) > 1
               else "/tmp/opencode/timeout_recheck/shard*.out")
 OUT = (sys.argv[2] if len(sys.argv) > 2
-       else os.path.join(ROOT, "test", "corpus_class1.timeout5m.out"))
+       else os.path.join(ROOT, "test", "corpus_class1.timeout100s.out"))
 ACCEPTED = (sys.argv[3] if len(sys.argv) > 3
             else os.path.join(ROOT, "test", "corpus_class1.out"))
 # Section slug for the record header, from the source-record basename
@@ -173,7 +174,7 @@ regressed = [k for k in expected
              and cls_of[k] not in PASS_CLASSES]
 still = [k for k in regressed if cls_of[k] == "timeout"]
 print(f"  run-5 PASS still failing now: {len(regressed)} "
-      f"({len(still)} of them still timeout at 300 s)")
+      f"({len(still)} of them still timeout at {cap} s)")
 for k in sorted(still):
     print(f"    {family(k[0])} e{k[1]}: run-5 "
           f"{run5[k].group(1)} t={run5[k].group(2)}s -> timeout "
@@ -181,12 +182,12 @@ for k in sorted(still):
 print()
 st_timeout = [k for k in expected if cls_of[k] == "timeout"]
 by_family = Counter(family(k[0]) for k in st_timeout)
-print(f"=== still timeout at 300 s: {len(st_timeout)} entries, "
+print(f"=== still timeout at {cap} s: {len(st_timeout)} entries, "
       "by family ===")
 for fam, n in by_family.most_common():
     print(f"  {n:5d}  {fam}")
 unv = [k for k in expected if cls_of[k] == "unverified"]
 by_family = Counter(family(k[0]) for k in unv)
-print(f"=== unverified at 300 s: {len(unv)} entries, by family ===")
+print(f"=== unverified at {cap} s: {len(unv)} entries, by family ===")
 for fam, n in by_family.most_common(12):
     print(f"  {n:5d}  {fam}")

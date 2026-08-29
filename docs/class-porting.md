@@ -28,7 +28,7 @@ Spec: `docs/superpowers/specs/2026-08-28-milestone-2-class2-pilot-design.md`
    2026-08-27). The route for slow-correct entries is matcher speed,
    not budget. The standing answer to "is 30 s at the limit?" for any
    merged record is the **timeout re-check**: re-run exactly the
-   record's `timeout` class at a 300 s cap and read the transitions
+    record's `timeout` class at a 100 s cap and read the transitions
    (now-PASS = slow-correct; still-timeout = genuine
    non-terminators; unverified = the chain, not the budget; error =
    subprocess-death census).
@@ -288,7 +288,7 @@ method as executed in the pilot (ledger Task-10; the uplift doc's
 records, not a committed script (the plan's Task-10 Step-3 python
 does the per-class tallies only); every PASS→FAIL remainder triaged
 into genuine declines vs yardstick reclassification — the milestone-1
-discipline), then the **300 s timeout re-check** (read the
+discipline), then the **100 s timeout re-check** (read the
 transitions; now-PASS 0 = the cap is not the limit; `error` = the
 death census — a reproducible build bug is its own ticket).
 
@@ -297,7 +297,7 @@ death census — a reproducible build bug is its own ticket).
 python3 test/launch_class_shards.py "2 Exponentials" test/corpus_class2.out test/corpus_driver.py --launch
 setsid sh test/wait_and_merge.sh test/corpus_class2.shard-pids test/merge_class_shards.py test/class2_merge.out "2 Exponentials" test/corpus_class2.out test/corpus_driver.py "corpus_class2.shard*.out" &
 # ...A/B (per-class: the plan's Task-10 Step-3 python; entry-level: the (rel,entry) join, method per the paragraph above)...
-python3 test/launch_timeout_rerun.py test/corpus_class2.out 300 test/corpus_class2.timeout-rerun "2 Exponentials" --launch
+python3 test/launch_timeout_rerun.py test/corpus_class2.out 100 test/corpus_class2.timeout-rerun "2 Exponentials" --launch
 setsid sh test/wait_timeout_rerun.sh test/corpus_class2.timeout-rerun >> test/corpus_class2.timeout-rerun/wait.log 2>&1 &
 ```
 
