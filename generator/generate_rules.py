@@ -847,14 +847,50 @@ def translate(s, ctx):
     optionals.
     """
     s = s.strip()
-    m = re.match(r"^([A-Za-z][A-Za-z0-9]*)\[\[([0-9]+)\]\]$", s)
+    m = re.search(r"\[\[([0-9]+)\]\]$", s)
     if m:
-        # Mathematica Part, single integer index (class 2: uu[[1]] /
-        # uu[[2]] in the Module locals of 2.1 r18 / 2.3 r10). Nested
-        # indices (u[[1, 2]]) are not used in class 2; the [0-9]+ guard
-        # makes any such use fail loudly at the parse instead of
-        # mis-emitting.
-        return f"part({translate(m.group(1), ctx)}, {m.group(2)})"
+        # Mathematica Part, single integer index, at bracket depth 0 of
+        # the WHOLE expression: expr[[i]] -> part(expr, i). The prefix
+        # must be non-empty and end at depth 0 (counting [({ up / ])})
+        # down) so that an INNER index (f[g[[1]]] — ends in a plain ])
+        # is left to the recursive arg translation (g[[1]] reaches
+        # translate as a whole expression) and a bare list literal
+        # ([[2]] — empty prefix) is not mistaken for a Part.
+        #
+        # The bare-name sites are class 2's uu[[1]] / uu[[2]] (the
+        # Module locals of 2.1 r18 / 2.3 r10) and class 3's lst[[1..4]]
+        # (3.5 r13's With local) — byte-identical under the
+        # generalization. The depth-0 prefix is what admits the
+        # CALL-then-Part shape 3.4 r1's RationalFunctionExponents[u,
+        # x][[2]] (3.4 .m :4), which the old bare-name-only regex passed
+        # through as literal [[2]] — a Maxima list subscript that
+        # hard-errors ("subscript must be an integer; found: [2]",
+        # measured 2026-08-29 on branch_5_50_base_84_g4204fb669 built
+        # 2026-08-29 17:58:20 / SBCL 2.6.7), errcaught by the dispatcher
+        # (utils %mr_dispatch) into a safe decline: the rule was DEAD
+        # (recorded by the Task-4 review; fixed here).
+        #
+        # Safety (2026-08-29 grep of the pinned clone's class 1-3 rule
+        # sources, comment-stripped): the only LIVE call-then-Part is
+        # 3.4 r1 itself; the 1.1.3.2 .m :34 BinomialParts[u, x][[1..3]]
+        # hit sits inside a (* ... *) comment the parser strips; classes
+        # 1/2 use only the bare-name form — so the generalization is
+        # ADDITIVE and the class-1/2 byte-identity gate must stay EMPTY.
+        #
+        # The [0-9]+ guard keeps nested/comma indices (u[[1, 2]]) from
+        # matching: they fall through to head_args, where the trailing
+        # part mis-parses the arg list and emit_head raises "unlisted
+        # head" — loud, not a mis-emit.
+        p = m.start()
+        if s[:p].strip():
+            depth = 0
+            for ch in s[:p]:
+                if ch in "[({":
+                    depth += 1
+                elif ch in "])}":
+                    depth -= 1
+            if depth == 0:
+                return f"part({translate(s[:p].strip(), ctx)}, {m.group(1)})"
     head, args = head_args(s)
     if head is not None:
         if head == "MatchQ":
