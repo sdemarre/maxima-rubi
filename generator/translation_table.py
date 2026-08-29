@@ -8,6 +8,12 @@ RENAME = {
     "IntegerQ": "integerp", "OddQ": "oddp", "Not": "not",
     "Sqrt": "sqrt", "Log": "log", "D": "diff",
     "ArcTan": "atan", "ArcSin": "asin", "ArcCos": "acos",
+    # class 3 (2026-08-29, branch_5_50_base_84_g4204fb669 / SBCL 2.6.7):
+    # acot/acoth are bound natives with ratsimp-closing diffs
+    # (diff(acot(x),x) = -1/(x^2+1), diff(acoth(x),x) = -1/(x^2-1));
+    # the "rc" spellings arccot/arcoth are unbound nouns — the corpus
+    # integrands and answers use the native spellings.
+    "ArcCot": "acot", "ArcCoth": "acoth",
     "Denominator": "denom", "Numerator": "num", "Denom": "denom", "Numer": "num",
     "GCD": "gcd", "Mod": "mod", "Floor": "floor", "Factor": "factor",
     "Binomial": "binomial", "Cos": "cos", "Sin": "sin", "Expand": "expand",

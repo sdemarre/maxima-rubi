@@ -5408,4 +5408,357 @@ mr_use_gamma_flag : false$
   )
   else u)$
 
+/* ---- class-3 head-position capture matcher (Task 3) ------------------
+ * Rubi's head-position pattern variable F_[...] (class 3: 3.1.5 r62-63,
+ * 3.3 r62, 3.4 r41) cannot be emitted as a defmatch pattern: this build
+ * rejects pattern variables in head position (measured 2026-08-28,
+ * class-2 r96: "defmatch: some pattern variables are not atoms").
+ * %mr_headvar_match(f, x, slots, heads) decomposes the integrand
+ * (a top-level product; the sign of a product lifts to a top-level
+ * unary "-" node in this build, measured 2026-08-29) into the slot
+ * factors:
+ *   - the F factor: a call (or, for the ["free", capM] exponent spec, a
+ *     power of a call) whose head is one of the allowed head symbols,
+ *     with the argument in the slot's shape (["lin", ...] d*(e+f*x) or
+ *     ["mon", ...] f*x);
+  *   - the log factor: a two-term sum a + b*log(arg), the standalone
+  *     b*log(arg) (a := 0), or the bare log(arg) (a := 0, b := 1),
+  *     arg in the slot's shape;
+ *   - the px factor (optional): the product of all remaining factors
+ *     (Mathematica's single Blank over an Orderless+Flat head binds the
+ *     leftover product; the rule's PolynomialQ cond verifies it).
+ * The first shape-valid (F factor, log factor) pair is returned — any
+ * other pairing leaves a head-call or log factor in the px product,
+ * which the rule's PolynomialQ cond rejects, so no cond-threaded
+ * backtracking is needed. The value is the [cap = value, ...] matchlist
+ * or false.
+ *
+ * Measured 2026-08-29 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7:
+ * - op of a function call is the head symbol (op(asin(x)) -> asin), of
+ *   times/plus/power/quotient/minus the string "*" / "+" / "^" / "/"
+ *   / "-";
+  * - args is uniform: power -> [base, exp], call -> the arguments,
+  *   times -> the factors, plus -> the terms; lists are indexed with
+  *   [i] in this code (part(e, i) on an atom FATALs, "argument must
+  *   be a non-atomic expression", uncatchable, measured 2026-08-29,
+  *   and part indexing past the end is not safe in this build);
+ * - the product sign lifts to a top-level "-" node (args(-2*(3+4*x))
+ *   -> [2*(4*x+3)]); odd heads auto-simplify (asin(-u) -> -asin(u),
+ *   the sign lifting to the product), acosh(-u) keeps the "-" node
+ *   inside its argument, acos(-u) -> %pi - acos(u) (the factor becomes
+ *   a sum — declined, a documented divergence);
+ * - (d+e*x)^(1/2) stores as the sqrt call (op sqrt), not a power — a
+ *   1/2 exponent in a log argument declines;
+ * - apply(<head symbol>, [arg]) rebuilds the call (the repl idiom;
+ *   works for natives and %mr_ function symbols alike).
+ *
+ * Slot spec (data, emitted by generator/generate_rules.py):
+ *   ["px", 'cap]
+ *   ["f", 'capF, argspec, expspec]
+ *     argspec = ["lin", 'capD, 'capE, 'capF2]  /* d*(e+f*x) */
+ *             | ["mon", 'capF2]                /* f*x        */
+ *     expspec = ["free", 'capM]                /* a ^m node  */
+ *             | ["bare"]                       /* no power   */
+ *   ["log", 'capA, 'capB, logspec]
+ *     logspec = ["px",   'capC, 'capN]                 /* c*x^n           */
+ *             | ["lpow", 'capC, 'capD, 'capE, 'capN]   /* c*(d+e*x)^n     */
+ *             | ["bpow", 'capC, 'capD, 'capE, 'capN,
+ *                       'capP]                        /* c*(d+e*x^n)^p   */
+ * heads = a list of quoted head symbols (['asin, 'acos, ...]).
+ */
+
+/* t = c*x (exactly a two-factor times, the other factor x-free) -> c,
+   else false. The x power is exactly 1: x^1 stores as the atom x, x^k
+   (k # 1) as a power. */
+%mr_hv_xcoef(t, x) := block([f],
+  if atom(t) or op(t) # "*" then return(false),
+  f : args(t),
+  if length(f) # 2 then return(false),
+  if is(f[2] = x) and freeof(x, f[1]) then return(f[1]),
+  if is(f[1] = x) and freeof(x, f[2]) then return(f[2]),
+  false)$
+
+/* t = x or x^n (n any stored exponent) -> n, else false. The x^(1/2)
+   corner stores as the sqrt call (op sqrt), not a power, so it
+   declines here (documented 2026-08-29). */
+%mr_hv_xpow(t, x) := block([],
+  if is(t = x) then return(1),
+  if atom(t) or op(t) # "^" then return(false),
+  if is(args(t)[1] = x) then return(args(t)[2]),
+  false)$
+
+/* t = c*x^k (exactly a two-factor times, the other factor x or x^k)
+   -> [c, k], else false. */
+%mr_hv_xpowcoef(t, x) := block([f, k],
+  if atom(t) or op(t) # "*" then return(false),
+  f : args(t),
+  if length(f) # 2 then return(false),
+  k : %mr_hv_xpow(f[1], x),
+  if k # false and freeof(x, f[2]) then return([f[2], k]),
+  k : %mr_hv_xpow(f[2], x),
+  if k # false and freeof(x, f[1]) then return([f[1], k]),
+  false)$
+
+/* s = a two-term linear sum {const, c*x} (either order) ->
+   [const, c], else false. */
+%mr_hv_lin2(s, x) := block([f, c],
+  if atom(s) or op(s) # "+" then return(false),
+  f : args(s),
+  if length(f) # 2 then return(false),
+  c : %mr_hv_xcoef(f[1], x),
+  if c # false and freeof(x, f[2]) then return([f[2], c]),
+  c : %mr_hv_xcoef(f[2], x),
+  if c # false and freeof(x, f[1]) then return([f[1], c]),
+  false)$
+
+/* s = a two-term sum {const, c*x^k} (either order) ->
+   [const, c, k], else false (the bpow log-arg base d + e*x^n). */
+%mr_hv_blin2(s, x) := block([f, r],
+  if atom(s) or op(s) # "+" then return(false),
+  f : args(s),
+  if length(f) # 2 then return(false),
+  r : %mr_hv_xpowcoef(f[1], x),
+  if r # false and freeof(x, f[2]) then return([f[2], r[1], r[2]]),
+  r : %mr_hv_xpowcoef(f[2], x),
+  if r # false and freeof(x, f[1]) then return([f[1], r[1], r[2]]),
+  false)$
+
+/* b = (d+e*x) or (d+e*x)^n -> [d, e, n], else false (the lpow
+   log-arg base); the n = 1 corner stores as the bare sum. */
+%mr_hv_lpowbase(b, x) := block([r],
+  if not atom(b) and op(b) = "^" then (
+    r : %mr_hv_lin2(args(b)[1], x),
+    if r # false then return([r[1], r[2], args(b)[2]]),
+    return(false)),
+  if not atom(b) and op(b) = "+" then (
+    r : %mr_hv_lin2(b, x),
+    if r # false then return([r[1], r[2], 1]),
+    return(false)),
+  false)$
+
+/* b = (d+e*x^n) or (d+e*x^n)^p -> [d, e, n, p], else false (the bpow
+   log-arg base); the p = 1 corner stores as the bare sum. */
+%mr_hv_bpowbase(b, x) := block([r],
+  if not atom(b) and op(b) = "^" then (
+    r : %mr_hv_blin2(args(b)[1], x),
+    if r # false then return([r[1], r[2], r[3], args(b)[2]]),
+    return(false)),
+  if not atom(b) and op(b) = "+" then (
+    r : %mr_hv_blin2(b, x),
+    if r # false then return([r[1], r[2], r[3], 1]),
+    return(false)),
+  false)$
+
+/* p = log(arg) (a one-arg call with head log) -> arg, else false.
+   The rebuild-and-compare check (the apply idiom) is robust to
+   however op reports the head. */
+%mr_hv_log1(p) := block([],
+  if atom(p) then return(false),
+  if length(args(p)) # 1 then return(false),
+  if is(apply('log, [args(p)[1]]) = p) then return(args(p)[1]),
+  false)$
+
+/* t = b*log(arg) -> [b, arg], else false. A negative b stores the
+   term as the "-" node wrapping b*log(arg) (measured 2026-08-29), so
+   the sign is unfolded here. */
+%mr_hv_logterm(t, x) := block([s, f, c],
+  s : 1,
+  if not atom(t) and op(t) = "-" then (s : -1, t : args(t)[1]),
+  if atom(t) or op(t) # "*" then return(false),
+  f : args(t),
+  if length(f) # 2 then return(false),
+  c : %mr_hv_log1(f[1]),
+  if c # false then return([s*f[2], c]),
+  c : %mr_hv_log1(f[2]),
+  if c # false then return([s*f[1], c]),
+  false)$
+
+/* The log argument of arg against logspec -> the cap values, else
+   false:
+     px   c*x^n       -> [c, n]        (n = 1 when stored as c*x)
+     lpow c*(d+e*x)^n -> [c, d, e, n]  (n = 1 when the base is bare)
+     bpow c*(d+e*x^n)^p -> [c, d, e, n, p]
+   A lifted sign in the argument folds into c (measured 2026-08-29:
+   log(-3*x^2) stores its argument as the "-" node 3*x^2). */
+%mr_hv_logarg(arg, logspec, x) := block([s, f, r, k],
+  s : 1,
+  if not atom(arg) and op(arg) = "-" then (s : -1, arg : args(arg)[1]),
+  if atom(arg) or op(arg) # "*" then return(false),
+  f : args(arg),
+  if length(f) # 2 then return(false),
+  if logspec[1] = "px" then (
+    k : %mr_hv_xpow(f[1], x),
+    if k # false and freeof(x, f[2]) then return([s*f[2], k]),
+    k : %mr_hv_xpow(f[2], x),
+    if k # false and freeof(x, f[1]) then return([s*f[1], k]),
+    return(false)),
+  if logspec[1] = "lpow" then (
+    r : %mr_hv_lpowbase(f[1], x),
+    if r # false and freeof(x, f[2]) then return(append([s*f[2]], r)),
+    r : %mr_hv_lpowbase(f[2], x),
+    if r # false and freeof(x, f[1]) then return(append([s*f[1]], r)),
+    return(false)),
+  if logspec[1] = "bpow" then (
+    r : %mr_hv_bpowbase(f[1], x),
+    if r # false and freeof(x, f[2]) then return(append([s*f[2]], r)),
+    r : %mr_hv_bpowbase(f[2], x),
+    if r # false and freeof(x, f[1]) then return(append([s*f[1]], r)),
+    return(false)),
+  false)$
+
+/* t = the slot's log factor -> [a, b, <log-arg cap values>], else
+   false. Three stored forms: the two-term sum a + b*log(arg) (either
+   order; the log term may carry a "-" node for negative b), the
+   standalone b*log(arg) (a := 0), and the bare log(arg) (a := 0,
+   b := 1 — the MA reading: the Plus pattern factor a_. + b_.Log[...]
+   reaches a non-Plus target via Plus OneIdentity, the absent a_ term
+   defaulting to 0 and the absent b_ to 1). A flattened constant
+   coefficient rides in the px product, not in b: times is Flat, so
+   x*f*(6*log(g)) stores the 6 as its own factor (measured
+   2026-08-29). */
+%mr_hv_logfactor(t, logspec, x) := block([f, bt, lb],
+  if atom(t) then return(false),
+  if op(t) = "+" then (
+    f : args(t),
+    if length(f) # 2 then return(false),
+    bt : %mr_hv_logterm(f[1], x),
+    if bt # false and freeof(x, f[2]) then
+      return(%mr_hv_logbind(f[2], bt, logspec, x)),
+    bt : %mr_hv_logterm(f[2], x),
+    if bt # false and freeof(x, f[1]) then
+      return(%mr_hv_logbind(f[1], bt, logspec, x)),
+    return(false)),
+  lb : %mr_hv_log1(t),
+  if lb # false then return(%mr_hv_logbind(0, [1, lb], logspec, x)),
+  bt : %mr_hv_logterm(t, x),
+  if is(bt = false) then return(false),
+  %mr_hv_logbind(0, bt, logspec, x))$
+
+%mr_hv_logbind(a, bt, logspec, x) := block([r],
+  r : %mr_hv_logarg(bt[2], logspec, x),
+  if r = false then return(false),
+  append([a, bt[1]], r))$
+
+/* t = the slot's F factor -> [head, arg, mval], else false.
+   expspec ["free", capM]: the factor is a power of a one-arg call
+   (mval = the stored exponent) or the bare one-arg call itself
+   (mval := 1 — the MA reading: the Power pattern F_[...]^m_ reaches
+   a non-power target via Power OneIdentity, the exponent defaulting
+   to 1; the ^1 corner stores bare, measured 2026-08-29).
+   expspec ["bare"]: the factor must be the one-arg call itself (a
+   stored power declines). The head is validated by rebuilding the
+   call with apply over the allowed-head list (no op-name string
+   matching). */
+%mr_hv_fbase(t, expspec, heads) := block([base, arg, h, r],
+  if atom(t) then return(false),
+  base : t,
+  if op(t) = "^" then (
+    if expspec[1] # "free" then return(false),
+    base : args(t)[1],
+    if atom(base) then return(false)),
+  if atom(base) then return(false),
+  if length(args(base)) # 1 then return(false),
+  arg : args(base)[1],
+  r : false,
+  for h in heads do
+    if is(r = false) and is(apply(h, [arg]) = base) then r : h,
+  if r = false then return(false),
+  [r, arg, if op(t) = "^" then args(t)[2] else 1])$
+
+/* The F argument of arg against argspec -> the cap values, else
+   false: lin -> [d, e, fcoef] (d*(e+f*x)), mon -> [fcoef] (f*x). A
+   lifted sign in the argument folds into the leading constant
+   (measured 2026-08-29: asin(-5*x) auto-simplifies to -asin(5*x) —
+   the sign lifts to the product — while acosh(-5*x) keeps the "-"
+   node inside its argument). */
+%mr_hv_farg(arg, argspec, x) := block([s, f, r],
+  s : 1,
+  if not atom(arg) and op(arg) = "-" then (s : -1, arg : args(arg)[1]),
+  if argspec[1] = "lin" then (
+    if atom(arg) or op(arg) # "*" then return(false),
+    f : args(arg),
+    if length(f) # 2 then return(false),
+    r : %mr_hv_lin2(f[1], x),
+    if r # false and freeof(x, f[2]) then return([s*f[2], r[1], r[2]]),
+    r : %mr_hv_lin2(f[2], x),
+    if r # false and freeof(x, f[1]) then return([s*f[1], r[1], r[2]]),
+    return(false)),
+  if argspec[1] = "mon" then (
+    r : %mr_hv_xcoef(arg, x),
+    if r # false then return([s*r]),
+    return(false)),
+  false)$
+
+/* The top-level matcher (the slot spec and semantics are in the block
+   comment above). Returns the matchlist or false. */
+%mr_headvar_match(f, x, slots, heads) := block(
+  [sgn, g, fa, i, fslot, lslot, pxcap, fcand, lcand, F, L, rest,
+   pxv, B, sp],
+  if atom(f) then return(false),
+  sgn : 1,
+  g : f,
+  if op(g) = "-" then (sgn : -1, g : args(g)[1]),
+  if atom(g) or op(g) # "*" then return(false),
+  fa : args(g),
+  fslot : false,
+  lslot : false,
+  pxcap : false,
+  for i : 1 thru length(slots) do
+    block([],
+      sp : slots[i],
+      if sp[1] = "f" then fslot : sp,
+      if sp[1] = "log" then lslot : sp,
+      if sp[1] = "px" then pxcap : sp[2]),
+  if fslot = false or lslot = false then return(false),
+  fcand : [],
+  for i : 1 thru length(fa) do
+    block([t, fb, fr],
+      t : fa[i],
+      fb : %mr_hv_fbase(t, fslot[4], heads),
+      if fb # false then (
+        fr : %mr_hv_farg(fb[2], fslot[3], x),
+        if fr # false then
+          fcand : append(fcand, [[i, fb[1], fb[3], fr]]))),
+  lcand : [],
+  for i : 1 thru length(fa) do
+    block([t, li],
+      t : fa[i],
+      li : %mr_hv_logfactor(t, lslot[4], x),
+      if li # false then lcand : append(lcand, [[i, li]])),
+  if length(fcand) < 1 or length(lcand) < 1 then return(false),
+  /* the first shape-valid pair: any other pairing leaves a head-call
+     or log factor in the px product, which the rule's PolynomialQ
+     cond rejects */
+  F : fcand[1],
+  L : lcand[1],
+  rest : [],
+  for i : 1 thru length(fa) do
+    if is(i = F[1]) = false and is(i = L[1]) = false
+    then rest : append(rest, [fa[i]]),
+  /* without a px slot there is no home for a leftover factor or a
+     lifted sign (the MA-consistent decline of a 3-factor target) */
+  if pxcap = false then (
+    if length(rest) # 0 then return(false),
+    if sgn # 1 then return(false)),
+  if pxcap # false and length(rest) < 1 then return(false),
+  pxv : 1,
+  for i : 1 thru length(rest) do pxv : pxv * rest[i],
+  pxv : sgn * pxv,
+  B : [],
+  /* the F slot: head symbol, the arg cap values, and the exponent cap
+     (free spec only — the bare spec's m = 1 is not a capture) */
+  B : append(B, [fslot[2] = F[2]]),
+  for i : 2 thru length(fslot[3]) do
+    B : append(B, [fslot[3][i] = F[4][i - 1]]),
+  if fslot[4][1] = "free" then
+    B : append(B, [fslot[4][2] = F[3]]),
+  /* the log slot: a, b, then the log-arg cap values (L[2] is the
+     flat value list [a, b, <log-arg caps>], cf. %mr_hv_logbind) */
+  B : append(B, [lslot[2] = L[2][1]]),
+  B : append(B, [lslot[3] = L[2][2]]),
+  for i : 2 thru length(lslot[4]) do
+    B : append(B, [lslot[4][i] = L[2][i + 1]]),
+  if pxcap # false then B : append(B, [pxcap = pxv]),
+  B)$
+
 mr_witness_utils() := true$
