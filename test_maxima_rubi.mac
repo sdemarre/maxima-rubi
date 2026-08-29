@@ -91,6 +91,7 @@ run_all_tests() := block([],
   test_class2_cluster_c(),
   test_class2_census(),
   test_class3_cluster_a(),
+  test_class3_cluster_b(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -1861,6 +1862,213 @@ test_class3_cluster_a() := block([],
   check("rfe sin(x)", %mr_rationalFunctionExponents(sin(x), x), [0, 0]),
   check("rfe symbolic power", %mr_rationalFunctionExponents(x^a, x), [0, 0]),
   check("rfe sqrt", %mr_rationalFunctionExponents(sqrt(x), x), [0, 0]),
+  true
+)$
+
+/* Class-3 cluster B — the five fractional-power Subst/derivative ports
+   (milestone-3 plan Task 5; the .m refs are against the pinned Rubi
+   clone's IntegrationUtilityFunctions.m — the block note in
+   maxima_rubi_utils.mac carries the full measured session, 2026-08-29
+   on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7). Storage facts the
+   pinned shapes rely on: log of a PURE power auto-expands
+   (log((x+1)^(2/3)) -> (2 log(x+1))/3, log(sqrt(x+1)) -> log(x+1)/2)
+   while log of a SUM keeps its argument (log(1 + (x+1)^(2/3)) stays)
+    — the 3.5 r16 call site therefore only ever sees the fractional
+    linear power inside a log sum, and the end-to-end pin uses that
+    shape (the plan's bare log((x+1)^(2/3)) example does not survive
+    Maxima simplification — recorded); negative fractional powers store
+    as "/" nodes (declined by %mr_fractionalPowerQ — recorded); the
+    %mr_simp stage normalizes the substituted integrand, and the
+    4-list v slot carries the FACTORED form — the function's own
+    rat() call (line 1: %mr_fractionalPowerOfLinear -> %mr_linearQ ->
+    %mr_together -> rat) flips the simplifier into rat mode for the
+    rest of the enclosing statement, and the in-scope %mr_simp keeps
+    x^5*(b*log(x^2+1)+a) factored (measured 2026-08-29, note at the
+    sfpol pin below). */
+test_class3_cluster_b() := block([lst, lst2, sl],
+  /* slot accessor, RED-safe: while the port is absent `lst` is a
+     2-arg noun and part(lst, k > 2) hard-errors (measured 2026-08-29
+     — the first RED run died at the base-slot pin); errcatch returns
+     [value] on success and [] on error (the line-150 note), so the
+     [] sentinel stays a clean FAIL, and the [value] unwrap pins the
+     slot in the GREEN phase. */
+  sl : lambda([l, k], block([p],
+    p : errcatch(part(l, k)),
+    if is(p = []) then p else part(p, 1))),
+  print("--- class-3 cluster B: fractional-power Subst family ---"),
+  /* %mr_easyDQ — the .m :7466-7495 ladder. */
+  /* rule-1 strip (u_*x_^m_. with FreeQ[m,x]): the distinguishing
+     shape — x^2*log(x+1) declines through every later arm (product:
+     both factors x-dependent; not a linear-power product; not a
+     [1,1] rational) yet is easy once the x^2 is stripped to
+     log(x+1) -> x+1 (binomial): */
+  check_bool("easyDQ strip arm distinguishes",
+             is(%mr_easyDQ(x^2*log(x+1), x) = true)),
+  check_bool("easyDQ strip const*x^2",
+             is(%mr_easyDQ(a*x^2, x) = true)),
+   /* the hard-core counterpin: log(x^x) auto-expands to x*log(x)
+      (measured) and THAT product is easy (the strip lands on log
+      ground), so the pin uses sqrt(x^x), which keeps its storage form
+      (measured 2026-08-29): */
+   check_not("easyDQ strip then hard core (sqrt(x^x))",
+             %mr_easyDQ(x^2*sqrt(x^x), x)),
+  /* the AtomQ || FreeQ || Length==0 True arm (Length==0 is
+     unreachable — atoms are gated first, the utils note): */
+  check_bool("easyDQ atom true", is(%mr_easyDQ(5, x) = true)),
+  check_bool("easyDQ x-free true", is(%mr_easyDQ(a + b, x) = true)),
+  /* the CalculusQ False arm: */
+  check_not("easyDQ calculus noun false",
+            %mr_easyDQ(integrate(f(x), x), x)),
+   /* the Length==1 arm (parts of a 1-arg call; the hard counterpin is
+      sqrt(x^x) — log(x^x) auto-expands to the x*log(x) product before
+      the ladder sees it, measured): */
+   check_bool("easyDQ length-1 log(x+1)",
+              is(%mr_easyDQ(log(x+1), x) = true)),
+   check_not("easyDQ length-1 sqrt(x^x)",
+             %mr_easyDQ(sqrt(x^x), x)),
+  /* the BinomialQ True arm: */
+  check_bool("easyDQ binomial x+1", is(%mr_easyDQ(x + 1, x) = true)),
+  /* the ProductOfLinearPowersQ True arm (not a binomial — 4 terms
+     expanded; not [1,1] rational; both product factors x-dependent): */
+  check_bool("easyDQ linear-power product",
+             is(%mr_easyDQ((x+1)^2*(x+2), x) = true)),
+  /* the RFE == {1,1} True arm and its [1,2] neighbor: */
+  check_bool("easyDQ rational [1,1]",
+             is(%mr_easyDQ((x+1)/(x+2), x) = true)),
+  check_not("easyDQ rational [1,2] decline",
+            %mr_easyDQ((x+1)/(x+2)^2, x)),
+  /* the ProductQ arm (one x-free factor -> recurse on the other —
+     a*log(x+1) is not a binomial, so the product arm is the true
+     path; both x-dependent -> false; the recursion can land on the
+     CalculusQ arm): */
+  check_bool("easyDQ product one free factor",
+             is(%mr_easyDQ(a*log(x+1), x) = true)),
+  check_not("easyDQ product both x-factors",
+            %mr_easyDQ((x+1)*(x+2)^x, x)),
+  check_not("easyDQ product recurse to calculus",
+            %mr_easyDQ(a*integrate(f(x), x), x)),
+  /* the SumQ arm: */
+  check_bool("easyDQ sum both easy",
+             is(%mr_easyDQ(x + sin(x), x) = true)),
+  check_not("easyDQ sum hard term",
+            %mr_easyDQ(x^x + x, x)),
+  /* the Length==2 arm (integer_log(x, 10) is the real 2-arg noun
+     shape — log() takes 1 arg in this build, measured): */
+  check_bool("easyDQ length-2 func free second arg",
+             is(%mr_easyDQ(integer_log(x, 10), x) = true)),
+  check_not("easyDQ length-2 power x^x",
+            %mr_easyDQ(x^x, x)),
+  /* the final else (a 3-arg call past every arm): */
+  check_not("easyDQ fall-through 3-arg func",
+            %mr_easyDQ(hypergeometric([1, 2], [3], x), x)),
+  /* %mr_derivativeDivides — the .m :7450-7462 contract. */
+  check_not("dd a*x decline", %mr_derivativeDivides(2*x, 5, x)),
+  check_not("dd a*b*x decline", %mr_derivativeDivides(a*b*x, 5, x)),
+  /* the v = 0 arm is unreachable (the utils note): the constant-y
+     decline lands through the Exponent degree test instead: */
+  check_not("dd constant y decline", %mr_derivativeDivides(5, 5, x)),
+  /* the quotient-return shape (the PolynomialQ degree-test path and
+     the EasyDQ path): */
+  check("dd quotient over d/dx x^2",
+        %mr_derivativeDivides(x^2, a*x, x), a/2),
+  check("dd quotient over d/dx log(x+1)",
+        %mr_derivativeDivides(log(x+1), 1/(x+1), x), 1),
+  /* declines: degree mismatch / the quotient not x-free / an unknown
+     function's derivative noun (the freeof walk sees the x in the
+     'diff(f(x), x, 1) args): */
+  check_not("dd degree mismatch decline",
+            %mr_derivativeDivides(x^2, x^2, x)),
+  check_not("dd quotient not x-free decline",
+            %mr_derivativeDivides(x^2, a*x + b, x)),
+  check_not("dd unknown function y decline",
+            %mr_derivativeDivides(f(x), 5, x)),
+  /* %mr_fractionalPowerOfLinear — the .m :6067-6076 contract in the
+     (u, 1, false, x) call shape. */
+  check("fpl (x+1)^(2/3)",
+        %mr_fractionalPowerOfLinear((x+1)^(2/3), 1, false, x), [3, x+1]),
+  check("fpl sqrt storage form",
+        %mr_fractionalPowerOfLinear(sqrt(x+1), 1, false, x), [2, x+1]),
+  /* the LCM accumulation over the SAME base (the sqrt survives only
+     inside a log sum — log(sqrt(x+1)) auto-expands, measured): */
+  check("fpl lcm accumulate same base",
+        %mr_fractionalPowerOfLinear(a*(x+1)^(2/3)*log(1 + sqrt(x+1)), 1, false, x),
+        [6, x+1]),
+  /* the v-equality guard: a different linear base does not accumulate: */
+  check("fpl different base ignored",
+        %mr_fractionalPowerOfLinear((x+1)^(2/3)*(x+2)^(1/2), 1, false, x),
+        [3, x+1]),
+  /* the n > 1 guard: an integer exponent is not a fractional power
+     (the {n, v} identity returns): */
+  check("fpl integer exponent no match",
+        %mr_fractionalPowerOfLinear((x+1)^2, 1, false, x), [1, false]),
+  /* the LinearQ guard: a quadratic base declines: */
+  check("fpl quadratic base no match",
+        %mr_fractionalPowerOfLinear(sqrt(x^2 + 1), 1, false, x), [1, false]),
+  /* the atom identity and the CalculusQ throw: */
+  check("fpl atom identity",
+        %mr_fractionalPowerOfLinear(a, 1, false, x), [1, false]),
+  check("fpl calculus decline",
+        %mr_fractionalPowerOfLinear(integrate(f(x), x)*(x+1)^(1/3), 1, false, x),
+        false),
+  /* %mr_substForFractionalPower — the .m :1873-1881 walk. */
+  check("sfp atom x -> w",
+        %mr_substForFractionalPower(x, x+1, 3, w, x), w),
+  check("sfp atom non-x unchanged",
+        %mr_substForFractionalPower(a, x+1, 3, w, x), a),
+  check("sfp power of v -> x^m",
+        %mr_substForFractionalPower((x+1)^(2/3), x+1, 3, w, x), x^2),
+  check("sfp sqrt of v -> x",
+        %mr_substForFractionalPower(sqrt(x+1), x+1, 2, w, x), x),
+   /* a non-matching base maps over the parts (x -> w, 2 -> 2 — the
+      sum re-canonicalizes to 2 + w, NOT 1 + w: the base's constant is
+      part of the base, so it stays): */
+   check("sfp wrong base walks",
+         %mr_substForFractionalPower((x+2)^(2/3), x+1, 3, w, x),
+         (2 + w)^(2/3)),
+  /* the nested shape the call site actually sees (a log of a SUM
+     keeps the fractional power — log of a pure power auto-expands): */
+  check("sfp nested log sum",
+        %mr_substForFractionalPower(log(1 + (x+1)^(2/3)), x+1, 3, w, x),
+        log(x^2 + 1)),
+   /* %mr_substForFractionalPowerOfLinear — the .m :6056-6063 4-list
+      contract. The 3.5 r16 call-site shape end to end: the integrand
+      (x+1)*(a + b*log(1 + (x+1)^(2/3))) — v is the integrand with
+      (x+1)^(2/3) -> x^2, x -> x^3 - 1, times x^(3-1), %mr_simp'd.
+      MEASURED 2026-08-29 (branch_5_50_base_84_g4204fb669/SBCL 2.6.7):
+      the v slot is the FACTORED form, not the expanded sum — line 1's
+      %mr_fractionalPowerOfLinear runs %mr_together (rat), and rat()
+      flips the simplifier into rat mode for the REST of the enclosing
+      statement: a rat-mode ratsimp keeps x^5*(b*log(x^2+1)+a)
+      factored, while the same ratsimp without a rat call in the
+      statement expands it (pure Maxima quirk, no project code in the
+      loop — block([], rat(x+1), ratsimp(x^5*(b*log(x^2+1)+a))) is
+      factored, the rat-free line expands; the mode does not leak into
+      the next statement; bisect session probes v2-v24 +
+      probe-rat-mode.mac T0-T6, 2026-08-29). Every real call carries
+      the rat -> %mr_simp pair inside one statement, so the factored
+      form is the stable contract and the pin uses it — is(factored =
+      expanded) is FALSE in this build (measured), so the expanded
+      spelling would fail despite algebraic equality. */
+   lst : %mr_substForFractionalPowerOfLinear((x+1)*(a + b*log(1 + (x+1)^(2/3))), x),
+   check("sfpol e2e v slot", sl(lst, 1),
+         x^5*(b*log(x^2 + 1) + a)),
+  check("sfpol e2e n slot", sl(lst, 2), 3),
+  check("sfpol e2e base slot", sl(lst, 3), x + 1),
+  check("sfpol e2e ff/b slot", sl(lst, 4), 1),
+   /* the b != 1 slope pins the 1/b slot (w = -a/b + x^n/b =
+      -1/2 + x^3/2); the v slot is factored per the rat-mode note
+      above: */
+   lst2 : %mr_substForFractionalPowerOfLinear((2*x+1)*(c + d*log(1 + (2*x+1)^(2/3))), x),
+   check("sfpol slope-2 v slot", sl(lst2, 1),
+         x^5*(d*log(x^2 + 1) + c)),
+  check("sfpol slope-2 n slot", sl(lst2, 2), 3),
+  check("sfpol slope-2 base slot", sl(lst2, 3), 2*x + 1),
+  check("sfpol slope-2 ff/b slot", sl(lst2, 4), 1/2),
+  /* the False decline: no fractional linear power anywhere: */
+  check_bool("sfpol no fractional power decline",
+             is(%mr_substForFractionalPowerOfLinear(x^2 + x + 1, x) = false)),
+  check_bool("sfpol non-linear base decline",
+             is(%mr_substForFractionalPowerOfLinear((a + b*log(x^2 + 1))*sqrt(x^2 + 1), x) = false)),
   true
 )$
 
