@@ -1235,6 +1235,25 @@ def _emit_polyq(arglist, key, n):
         return f"%mr_polyPowerQ({u}, {base}, {v})"
     return f"%mr_polyDegPowerQ({u}, {base}, {v}, {deg})"
 
+def _emit_gamma(arglist, key, n):
+    """Gamma arity dispatch (milestone-3 Task 2): 1-arg Gamma[v] ->
+    gamma (the complete gamma function — class 3's 3.5 pattern
+    Log[Gamma[v_]] and repl Log[Gamma[v]]), 2-arg Gamma[a, z] ->
+    gamma_incomplete (the class-2 behavior, byte-unchanged: all 5/5
+    class-2 uses are 2-arg UPPER). Any other arity is a GenError — the
+    PolyQ dispatch's failure mode (file/rule/token named), never a
+    silent pass-through (a wrong-arity Maxima call would be a noun).
+    Probed 2026-08-29 on branch_5_50_base_84_g4204fb669: gamma bound
+    (ev(gamma(0.5)) = 1.772453850905516), diff(log(gamma(x)),x) =
+    psi[0](x) closing under ratsimp; gamma_incomplete(a,z) 2-arg UPPER
+    with diff = -z^(a-1) %e^-z closing."""
+    if len(arglist) == 1:
+        return f"gamma({arglist[0].strip()})"
+    if len(arglist) == 2:
+        return (f"gamma_incomplete({arglist[0].strip()}, "
+                f"{arglist[1].strip()})")
+    raise GenError(f"{key} r{n}: Gamma arity {len(arglist)}")
+
 def _emit_expon(arglist, key, n):
     """Expon (Rubi :1239/:1242 — Exponent[Together[expr], form[, h]]):
     (u, x) -> %mr_expon · (u, x^v) -> %mr_expon(u, x, v) (power-form:
@@ -1452,6 +1471,8 @@ def emit_head(head, arglist, ctx):
         return body
     if head == "PolyQ":
         return _emit_polyq(arglist, key, n)
+    if head == "Gamma":
+        return _emit_gamma(arglist, key, n)
     if head == "Expon":
         return _emit_expon(arglist, key, n)
     if head in ("Coeff", "Coefficient"):
@@ -1509,6 +1530,16 @@ def emit_head(head, arglist, ctx):
         fn = {"EllipticF": "elliptic_f", "EllipticE": "elliptic_e",
               "EllipticPi": "elliptic_pi"}[head]
         return f"{fn}({', '.join(arglist)})"
+    if head == "LogGamma":
+        # Structural rewrite (RESTRUCTURE handler "loggamma"), not a
+        # rename: LogGamma[v] -> log(gamma(v)). loggamma itself is an
+        # UNBOUND noun whose diff stays undifferentiated (a noun), while
+        # diff(log(gamma(x)),x) = psi[0](x) closes under ratsimp (both
+        # measured 2026-08-29 on branch_5_50_base_84_g4204fb669) — the
+        # closed form is what lets the zero chain verify the answer.
+        if len(arglist) != 1:
+            raise GenError(f"{key} r{n}: LogGamma arity {len(arglist)}")
+        return f"log(gamma({arglist[0].strip()}))"
     # A head absent from the table is a census miss: fail LOUDLY, never emit
     # a bare Maxima noun FooQ(...) — that makes is(ok) = true perpetually
     # false (a silently dead rule) or a silently noun-laden wrong answer.
