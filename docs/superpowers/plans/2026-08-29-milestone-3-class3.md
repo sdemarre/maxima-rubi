@@ -421,11 +421,25 @@ the committed files.
 - [ ] The parse sweep (the M1 parse-sweep probe form over
       `rules/class3/*.mac`) is clean — every file parses in a fresh
       Maxima (with the TLS flag).
+- [ ] **Fix the 3.4 r1 Part-subscript defect (recorded by the Task-4
+      review, MUST land before the Task-7 core rebuild):** the
+      generator's Part handler (`generate_rules.py:850`) only
+      rewrites bare-name `name[[i]]`; the `f(…)[[i]]` shape in the 3.4
+      r1 cond passed through as `[[2]]`, which Maxima reads as a list
+      subscript and hard-errors (`subscript must be an integer;
+      found: [2]`) — the dispatcher's errcatch (utils L152) declines
+      it safely, so the rule is DEAD. Extend the Part detection to
+      `expr[[i]] -> part(expr, i)` (additive: no class 1/2 rule uses
+      the `f(…)[[i]]` form — only bare `uu[[1]]`/`uu[[2]]` in 2.1 r18
+      / 2.3 r10), regenerate, re-run the class-1/2 byte-identity
+      gate (must stay EMPTY), and confirm 3.4 r1 FIRES on a witness
+      (the Task-4 smoke shape `x^2*log(x/(x+1))` must now pass the
+      cond, not decline).
 - [ ] Commit (if regeneration changed bytes): `rules: class-3
       regenerated (statics)`.
 
 **Acceptance.** Counts = census exactly; 0 raw-`$` hits; parse sweep
-11/11 clean.
+11/11 clean; 3.4 r1 live (witness fires).
 
 ## Task 7: Loader + rules core (runbook Step 6)
 
