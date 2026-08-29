@@ -2820,3 +2820,64 @@ reviewer Approved after 1 fix round — spec ✅, quality Approved)
     functionp are ALL unbound nouns in this build (the witness-
     function idiom is the fbound probe — why the loader design uses
     it).
+
+Task 4: complete (commit 8783c0b)
+  - Six cond-side predicates line-ported from the pinned clone's
+    IntegrationUtilityFunctions.m (utils L5771-5960, each with a
+    .m-cited block comment + measured-quirk stamps): %mr_memberQ
+    (built-in member, ARGUMENT-ORDER-REVERSED + boolean result — no
+    runtime call sites, translation-table closure only), %mr_falseQ
+    (is(u = false); false is the boolean atom, booleanp is an
+    unevaluated noun, quoted 'false =-equals the boolean),
+    %mr_productQ (op "*" test; the minus-lift storage op(-a*b) =
+    "-" is DECLINED — decline direction, only 3.5 r32/r38 could
+    notice), %mr_integralFreeQ (1-arg per .m :351-353 over the
+    package noun surface: 'mr_int / 'integrate / 'unintegrable —
+    the emitter maps Unintegrable AND CannotIntegrate to the same
+    mr_unintegrable noun (generator:1393-1394); MA's Integral has
+    no package surface, omitted; the native integrate fall-through
+    noun is included — without it 3.3 r60's cond would accept an
+    unresolved sub-integral), %mr_inverseFunctionFreeQ (the .m
+    :316-322 recursion; special-function heads as string(op) checks
+    on the generated spellings "hypergeometric" / "AppellF1"),
+    %mr_rationalFunctionExponents (the .m :1618-1636 ladder + two
+    storage-only arms: the unary "-" minus-lift (identity on the
+    wrapped value) and the "/" quotient (carries the .m's
+    unreachable negative-exponent arm — every quotient and negative
+    integer power stores as a "/" node in this build); Together ->
+    rat (together is a noun); the sum's lst2 uses the existing
+    %mr_rest_sum).
+  - TDD: RED `Results: 620 passed, 71 failed` (71 new checks,
+    test_class3_cluster_a: memberQ 9 / falseQ 7 / productQ 9 /
+    integralFreeQ 7 / iffQ 14 / rfe 25) -> first GREEN 690/1 (the
+    iffQ product-noun check hit the measured freeof opacity of the
+    finite PRODUCT noun — flipped to the transparent diff-noun
+    shape, quirk documented) -> GREEN `Results: 691 passed, 0
+    failed`, re-verified after the sole post-run edit (a .m
+    line-citation fix in a comment).
+  - RFE sum-branch adjudication: the .m's lst2 = RFE[Rest[u], x]
+    passes MA's bare part-list, whose head matches none of RFE's Q
+    predicates — a literal fall-through would degenerate the .m's
+    own Max[.,.] construction to lst1; the head-preserving
+    reconstruction reading (what the port does) is the only
+    non-degenerate one. Unreachable at the sole shipped call site
+    (3.4 r1 gates u with %mr_rationalFunctionQ first, so rat(u) is
+    a single quotient and the Max branch is never reached);
+    decline-direction vs any literal reading on the unreachable
+    mixed-sum inputs.
+  - Latent generator defect RECORDED (out of scope, no generator
+    change this task): 3_4 r1's cond carries a pass-through MA Part
+    subscript [[2]] (the Part handler's regex, generate_rules.py:850,
+    only matches bare name[[i], not f(...)[[i]]); the cond
+    hard-errors on the list result ("subscript must be an integer;
+    found: [2]"), errcatch -> [] -> the rule safely declines, no
+    process death (smoke-verified). Follow-up: Task 6 or later.
+  - Measured on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 (all
+    stamps in the block comments): member order-reversal + boolean
+    result + no element part-inspection; op() on an atom FATALs
+    (atom gate); a noun's op is an internal symbol whose string()
+    is the head name; freeof recurses through head positions and
+    nested calls but NOT through the finite product noun or a
+    quoted bracket list on a bound head; rat() results are plain
+    node trees (gcrat only behind num()/denom(), never called);
+    list arithmetic native; max of undecided args stays a noun.
