@@ -3010,3 +3010,44 @@ spec ✅, quality Approved; reviewer re-ran all seven gates live)
     caught (recursive arg translation); empty prefix [[2]] not a
     Part; comma index u[[1, 2]] loud GenError (unlisted head), not
     a mis-emit.
+
+Task 7: complete (commit 848b80a..9c58ae0, review clean — spec ✅,
+quality Approved; reviewer re-ran all seven gates live)
+  - Loader: the class-3 block is purely additive in mr_load_all, in
+    the pinned Rubi.m:211-221 LoadRules order (3.1.1→3.1.2→3.1.3→
+    3.1.4→3.1.5→3.3→3.4→3.2.1→3.2.2→3.2.3→3.5 — 3.3/3.4 BEFORE the
+    3.2.x, NOT numeric); witness symbols match all 11 generated
+    files; class-1/class-2 blocks + rule files byte-untouched
+    (git diff stat on rules/class1 rules/class2 = empty).
+  - Fingerprint mirror (the runbook's only mechanical harness
+    change): test/build_rules_core.sh FP list AND
+    test/corpus_driver.py _core_fingerprint() both gain
+    rules/class3/*.mac, same 4 top files, same C-locale sort.
+    Recomputed driver fp == stamp fp (00e05dca117aefd8df3d266652b11e93),
+    rules_core_state() = 'on' (the driver's stale-refusal gate
+    accepts the core). 91 fingerprinted files (4 top + 73 class1 +
+    3 class2 + 11 class3).
+  - Core: test/mr_rules.core + .stamp (gitignored working-tree
+    deliverables, M2 precedent) — stamp rules = 3513 (= 3,180 class
+    1+2 + 333 class 3; the 333 = the eleven census counts
+    6+12+21+29+59+61+39+24+19+20+43). TABLE_AT_BUILD 3513.
+  - TLS probe: probes/load_wall/probe-class3-load.{mac,run,out}
+    (copy of the class-2 probe, section-agnostic full load) —
+    committed .out (5313 lines, the expected verbose defmatch load
+    log, class-2 precedent 4247) ends TABLE_AT_LOAD 3513, 0
+    error/exhausted/Thread-local lines.
+  - Census spot checks (reviewer re-ran, fired-rule identity via a
+    verbatim %mr_dispatch pass-1 mirror): 1/x -> log(x) via
+    _mr_rule_1_1_1_1_r1 (idx 1, class-1 undisturbed); log(x) ->
+    x*log(x)-x via _mr_rule_3_1_1_r1 (idx 3181 = 3,180+1, the FIRST
+    class-3 slot — corroborates composition AND order);
+    log(x/(x+1))/(x+1) -> polylog(2,1-x/(x+1)) via _mr_rule_3_4_r1
+    (idx 3369 = 3,180+188+1, where the 188 preceding class-3 rules
+    are exactly 3.1.1-3.1.5 + 3.3 — 3.3/3.4 before 3.2.x; under
+    numeric order it would be 3,432).
+  - Layer A 743/0.
+  - Minor carried (pre-existing, outside this task): test/mr_preload
+    .mac (the MR_RULES_CORE=0 fallback) is still class-1-only — if a
+    run ever falls back off the core path the fallback table lacks
+    classes 2-3 (M1 state, untouched through M2/M3); a stale
+    Option-D comment block in corpus_driver.py (~L92-100).
