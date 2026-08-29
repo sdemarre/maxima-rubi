@@ -2690,3 +2690,14 @@ against the records before closing)
     read the 2.3 record (the heap-exhaustion e56/e57 share their
     entry numbers with 2.2's e56/e57) — the docs and the fix round
     were correct; the bullet's entry numbers are 2.2's.
+
+## Plan: 2026-08-29 milestone-3 class-3 port (11 tasks; branch base b9fecd0)
+
+Branch: milestone-3. Plan: docs/superpowers/plans/2026-08-29-milestone-3-class3.md
+(the runbook docs/class-porting.md instantiated for class 3). NOTE: the
+installed Maxima was REBUILT 2026-08-29 17:58 (same source rev
+branch_5_50_base_84_g4204fb669, same SBCL 2.6.7; build date field
+2026-08-29 17:58:20 supersedes the AGENTS.md 2026-08-20 stamp — Layer A
+re-verified 581/0 on the new core, 2.1 s). All class-3 measurements
+stamp the current build; the class-3 A/B yardstick is the Task-9
+baseline measured on this build.
