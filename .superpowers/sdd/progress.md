@@ -2907,3 +2907,70 @@ quality Approved; reviewer re-ran all eight gates live)
     Minor carried: the report's errcatch misattribution (fixed in
     this entry), the trailing-whitespace quote variance, the
     plan-Task-6 omission (fixed 8aed663).
+
+Task 5: complete (commits 4c870de..56417c6, review clean — spec ✅,
+quality Approved; reviewer re-ran all nine gates live, Layer A twice)
+  - Five cluster-B ports + supporting helpers (utils L5962-6299,
+    +547 additive): %mr_easyDQ (+_strip), %mr_derivativeDivides
+    (+_xmonomialMatch, +_sincReplace), %mr_fractionalPowerOfLinear,
+    %mr_substForFractionalPower, %mr_substForFractionalPowerOfLinear
+    (+ %mr_fractionalPowerQ/_fractionalPowerExpon/_productOfLinearPowersQ).
+  - SPEC-PROCESS NOTE: the on-disk task-5-brief.md was STALE (an
+    M1 fetch-feature file, mtime 2026-08-20) — the controller did not
+    regenerate the brief before dispatch (a task-brief run for Task 5
+    never happened); the implementer flagged it (judgment call 0) and
+    worked from the plan + dispatch prompt, which is the operative
+    spec; the brief was regenerated post-hoc. Lesson: run task-brief
+    before every dispatch.
+  - TDD: RED `Results: 691 passed, 52 failed` (52 new checks,
+    test_class3_cluster_b; the first RED attempt died mid-run on
+    part() of a 2-arg noun — fixed by the RED-safe `sl` errcatch
+    accessor, recorded) -> first GREEN 738/5 (five EXPECTED-value
+    pin errors, all adjudicated legitimate by the reviewer, none
+    masking an implementation bug) -> GREEN `Results: 743 passed,
+    0 failed`, run twice.
+  - RAT-MODE QUIRK (measured 2026-08-29, reviewer reproduced): a
+    rat() call earlier in the SAME top-level statement makes a later
+    ratsimp keep products FACTORED (plain statement: expanded); no
+    leak to the next statement; ratsimp itself does not trigger it;
+    spans nesting. Structurally deterministic for
+    %mr_substForFractionalPowerOfLinear (line 1 rat via
+    %mr_together<-%mr_polyQ<-%mr_linearQ, line 4 %mr_simp ratsimp
+    first): the v slot is the factored form x^5*(b*log(x^2+1)+a) in
+    EVERY call context, first call of a fresh process included.
+    Downstream correctness: NO RISK — the 3.5 r13 repl is
+    n*(ff/b)*Subst[Int[v,x], x, base^(1/n)] and the ported
+    free/nonfree split maintains tmp = ff*nonfree in every arm, so
+    the result is algebraically form-invariant (reviewer
+    adjudication i); only mr_int rule-coverage of the factored form
+    is form-sensitive, and that is pinned.
+  - Sqrt-head decision (reviewer upheld): op(sqrt(x+1)) is the
+    SYMBOL 'sqrt (the controller pre-probe's string reading was
+    wrong; the house note at utils:1244-1247 is right);
+    (x+1)^(1/2) stores as the sqrt node, (x+1)^(2/3) as a "^" node,
+    every negative power as a "/" node. %mr_fractionalPowerQ carries
+    the sqrt arm (exponent 1/2 — cannot false-positive: a 'sqrt head
+    is by construction a 1/2 power); negative fractional powers
+    decline ("/" storage, the Task-4 minus-lift precedent; the .m's
+    Power-head test is unreachable for them in this build).
+  - 4-list contract pinned element-wise and hand-verified by the
+    reviewer: e2e (x+1)*(a+b*log(1 + (x+1)^(2/3))) ->
+    [x^5*(b*log(x^2+1)+a), 3, x+1, 1]; slope-2 (2*x+1)*(c+d*log(1 +
+    (2*x+1)^(2/3))) -> [x^5*(d*log(x^2+1)+c), 3, 2*x+1, 1/2];
+    declines: x^2+x+1, quadratic base. NOTE the e2e pin uses the
+    log-SUM shape: log of a PURE power auto-expands
+    (log((x+1)^(2/3)) -> (2*log(x+1))/3, measured), so the plan's
+    bare-log example does not survive Maxima simplification — the
+    log-sum shape is what the 3.5 r16 call site actually sees.
+  - .m citations byte-exact (reviewer), again extending the plan's
+    truncated ranges: EasyDQ's true end is :7495 (plan/brief said
+    :7466-7480 — mid-ladder); DerivativeDivides :7450-7462 (plan
+    :7450 — fine); sfpol :6056-6063 / fpl :6066-6076 (plan
+    :6067/:6067 region). Divides NOT ported (no class-3 call site —
+    grep-verified; port-on-demand later).
+  - Review fix (controller): a3bd850 — the block-header bullet
+    claiming "factor() does NOT re-extract … v slot carries the
+    expanded sum" was stale/wrong on both clauses (factor()
+    re-extracts in BOTH modes — reviewer measured; the v slot is the
+    FACTORED form per the :6268 note); bullet reworded to the
+    measured facts, Layer A re-verified 743/0.
