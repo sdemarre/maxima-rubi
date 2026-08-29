@@ -5451,6 +5451,13 @@ mr_use_gamma_flag : false$
  *   1/2 exponent in a log argument declines;
  * - apply(<head symbol>, [arg]) rebuilds the call (the repl idiom;
  *   works for natives and %mr_ function symbols alike).
+ * Strictness (task-3 review): on the identity-default corners the
+ * matcher is STRICTER than the MA OneIdentity/BlankOptional reading —
+ * it declines where MA would fill d := 1 (bare-sum lin F-argument),
+ * e := 0 (monomial F-argument), c := 1 (bare x^n log argument), or
+ * Px := 1 (no leftover factor). The direction is safe (decline,
+ * never false positive); a later tightening/loosening is a
+ * deliberate spec change, not a bug fix.
  *
  * Slot spec (data, emitted by generator/generate_rules.py):
  *   ["px", 'cap]

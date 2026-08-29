@@ -1749,7 +1749,16 @@ def headvar_spec(body, key, n, rule_vars, cond):
     in the whitespace-free integrand body -> the parsed slot spec; None
     if there is none; a loud GenError on one outside the closed shape
     set (including a capture without a MemberQ[{...}, F] allow-list in
-    the cond — no silent pass-through)."""
+    the cond — no silent pass-through). An optional-form head capture
+    (a rule var's optional marker immediately before the bracket,
+    'F_.[') is a loud GenError — class 3's .m sources use only the
+    required 'F_[' form (grep-verified 2026-08-29, zero '_.[' in the
+    eleven class-3 .m files) and the default defmatch path would emit
+    a symbol x list-literal product the generator would not name."""
+    opt = re.findall(r"([A-Za-z][A-Za-z0-9]*)_\.\[", body)
+    if opt:
+        raise GenError(f"{key} r{n}: optional-form head capture "
+                       f"({opt[0]}_.[...]) is not supported")
     hits = re.findall(r"([A-Za-z][A-Za-z0-9]*)_\[", body)
     if not hits:
         return None
