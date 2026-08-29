@@ -1,0 +1,10 @@
+#!/bin/sh
+# probes/translation/04-class3-syntax-census.run — class-3 census driver.
+#
+#   sh probes/translation/04-class3-syntax-census.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# class-3 rule syntax census, $(date -u +%F)"
+  python3 probes/translation/01-class1-syntax-census.py reference/rubi "3 "
+} > probes/translation/04-class3-syntax-census.out
+echo "wrote probes/translation/04-class3-syntax-census.out"
