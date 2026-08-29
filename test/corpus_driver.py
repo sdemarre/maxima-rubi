@@ -72,6 +72,25 @@ HEAD_REWRITES = [
     # (e.g. a free function named "XEi") intact.
     (re.compile(r"(?<![A-Za-z0-9_])GAMMA\("), "gamma_incomplete("),
     (re.compile(r"(?<![A-Za-z0-9_])Ei\("), "expintegral_ei("),
+    # Class-3 rows (2026-08-29): the "3 Logarithms" expected answers
+    # carry the Rubi heads Chi( Shi( Si( Ci( Li(. Measured 2026-08-29 on
+    # 5.50.0 (build 2026-08-29 17:58:20; plan
+    # docs/superpowers/plans/2026-08-29-milestone-3-class3.md §Task-2
+    # "Native conventions probed", .superpowers/sdd/task-2-report.md
+    # :111-150): d/dx expintegral_shi(x) = sinh(x)/x, d/dx
+    # expintegral_chi(x) = cosh(x)/x, d/dx expintegral_si(x) = sin(x)/x,
+    # d/dx expintegral_ci(x) = cos(x)/x, d/dx expintegral_li(x) =
+    # 1/log(x) — every residue 0; all five bound and float-evaluable,
+    # the short names shi/chi/si/ci/li unbound nouns (naming trap).
+    # No polylog( row: the package emits the native polylog( spelling
+    # and the ACTIVE corpus expected texts are already natively
+    # spelled — the PolyLog[ bracket lines in 3.5 are commented-out
+    # entries the driver never reads.
+    (re.compile(r"(?<![A-Za-z0-9_])Chi\("), "expintegral_chi("),
+    (re.compile(r"(?<![A-Za-z0-9_])Shi\("), "expintegral_shi("),
+    (re.compile(r"(?<![A-Za-z0-9_])Si\("), "expintegral_si("),
+    (re.compile(r"(?<![A-Za-z0-9_])Ci\("), "expintegral_ci("),
+    (re.compile(r"(?<![A-Za-z0-9_])Li\("), "expintegral_li("),
 ]
 REWRITE_STATS = {}
 

@@ -33,5 +33,24 @@ check("native already-native untouched",
       n("gamma_incomplete(2, z)"), "gamma_incomplete(2, z)")
 check("both in one line", n("GAMMA(a, z)*Ei(w)"),
       "gamma_incomplete(a, z)*expintegral_ei(w)")
+check("Chi positive", n("Chi(x)"), "expintegral_chi(x)")
+check("Shi positive", n("Shi(x)"), "expintegral_shi(x)")
+check("Si positive", n("Si(2*b*x)/b"), "expintegral_si(2*b*x)/b")
+check("Ci positive", n("Ci(b*x)*cos(a)/b"), "expintegral_ci(b*x)*cos(a)/b")
+check("Li positive", n("Li(d*x)/d"), "expintegral_li(d*x)/d")
+check("all five in one line",
+      n("Chi(a)+Shi(b)+Si(c)+Ci(d)+Li(e)"),
+      "expintegral_chi(a)+expintegral_shi(b)+expintegral_si(c)"
+      "+expintegral_ci(d)+expintegral_li(e)")
+check("expintegral_li native untouched",
+      n("expintegral_li(x)"), "expintegral_li(x)")
+check("expintegral_si native untouched",
+      n("expintegral_si(x)"), "expintegral_si(x)")
+check("Si inside longer name intact", n("MySi(x)"), "MySi(x)")
+check("Chi inside longer name intact", n("XChi(2)"), "XChi(2)")
+check("Li inside longer name intact", n("Li2(x)"), "Li2(x)")
+check("Sin untouched (Si row guard)", n("Sin(x)"), "Sin(x)")
+check("LogGamma untouched (GAMMA row guard)",
+      n("LogGamma(x)"), "LogGamma(x)")
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)
