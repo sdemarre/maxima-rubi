@@ -2821,7 +2821,8 @@ reviewer Approved after 1 fix round — spec ✅, quality Approved)
     function idiom is the fbound probe — why the loader design uses
     it).
 
-Task 4: complete (commit 8783c0b)
+Task 4: complete (commits 9fdd335..8783c0b, review clean — spec ✅,
+quality Approved; reviewer re-ran all eight gates live)
   - Six cond-side predicates line-ported from the pinned clone's
     IntegrationUtilityFunctions.m (utils L5771-5960, each with a
     .m-cited block comment + measured-quirk stamps): %mr_memberQ
@@ -2870,8 +2871,13 @@ Task 4: complete (commit 8783c0b)
     subscript [[2]] (the Part handler's regex, generate_rules.py:850,
     only matches bare name[[i], not f(...)[[i]]); the cond
     hard-errors on the list result ("subscript must be an integer;
-    found: [2]"), errcatch -> [] -> the rule safely declines, no
-    process death (smoke-verified). Follow-up: Task 6 or later.
+    found: [2]"), the DISPATCHER's errcatch (utils L152, not the rule
+    wrapper — a direct _mr_rule_ call dies) -> [] -> the rule safely
+    declines, no process death (smoke-verified; reviewer reproduced).
+    SCHEDULED in Task 6 (plan 8aed663): extend the Part handler to
+    expr[[i]] -> part(expr, i), regenerate, re-run the class-1/2
+    byte-identity gate, confirm 3.4 r1 FIRES on a witness — must
+    land before the Task-7 core rebuild.
   - Measured on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 (all
     stamps in the block comments): member order-reversal + boolean
     result + no element part-inspection; op() on an atom FATALs
@@ -2881,3 +2887,23 @@ Task 4: complete (commit 8783c0b)
     quoted bracket list on a bound head; rat() results are plain
     node trees (gcrat only behind num()/denom(), never called);
     list arithmetic native; max of undecided args stays a noun.
+  - Review (controller line): reviewer APPROVED all eight gates
+    live — Layer A 691/0 at HEAD; the four .m citations byte-exact
+    (one line's trailing whitespace normalized in the quote; the
+    report correctly extends the plan's truncated :1618-1633 to the
+    true :1618-1636); house style + reuse confirmed; all 71 checks
+    pin concrete returns. Adjudications upheld: (i) the RFE
+    sum-branch head-preserving reconstruction — the Max branch is
+    unreachable at the sole shipped call site (3.4 r1, rational gate
+    first) and the port agrees with the .m on every reachable input,
+    the two storage-only arms reproducing the .m's quotient
+    decomposition (reviewer noted the report's "MA Rest on a
+    non-list" intermediate phrasing is imprecise — the degeneracy
+    conclusion holds under either MA reading); (ii) the [[2]]
+    defect deferral is safe (Task 9 is the native-integrate yardstick
+    — no package rules; Task 6 precedes the Task-10 A/B) PROVIDED
+    the fix lands by Task-6 end, now scheduled in the plan (8aed663).
+    Fix-round commits: a8ec99f (RFE comment column-0 cosmetic).
+    Minor carried: the report's errcatch misattribution (fixed in
+    this entry), the trailing-whitespace quote variance, the
+    plan-Task-6 omission (fixed 8aed663).
