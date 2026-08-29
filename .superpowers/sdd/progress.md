@@ -2701,3 +2701,30 @@ branch_5_50_base_84_g4204fb669, same SBCL 2.6.7; build date field
 re-verified 581/0 on the new core, 2.1 s). All class-3 measurements
 stamp the current build; the class-3 A/B yardstick is the Task-9
 baseline measured on this build.
+
+Task 1: complete (commit 8e92841..5f93a97, review clean — spec ✅,
+quality Approved; reviewer independently re-ran both probes: census
+byte-identical, answer-heads count-identical)
+  - CONTROLLER RECON ERROR found by the implementer (NEEDS_CONTEXT):
+    the plan's "PolyLog 10" grep counted COMMENTED-OUT bracket-notation
+    lines (PolyLog[2,z]) the driver never reads. Plan corrected in
+    place (8e92841). Measured truth: the active class-3 expected texts
+    carry the NATIVE polylog( spelling — 1,195 of 3,085 entries (38.7
+    %), 2,793 occurrences (orders 2: 2081, 3: 518, 4: 138, 5: 21, 6:
+    1, 1: 1, symbolic k/n offsets: 33), per-file 0/187/179/91/106/65/
+    243/237/87. Adjudication (binding): PolyLog -> 1:1 RENAME polylog
+    (build's diff(polylog(.,.)) AND polylog(.,numeric) are nouns —
+    probed; identical-form differences cancel before the diff —
+    probed — so polylog entries close only via the two-sided expected
+    chain on form-identical answers; self-diff/numeric stages cannot).
+    The 1,195-entry mass is the Task-11 ceiling-decision input.
+  - Committed: probes/translation/04-class3-syntax-census.{run,out}
+    (11/333/332, AUTO 241/MANUAL 92, 13/13 U tokens), probes/corpus/
+    03-class3-answer-heads.{py,run,out} (entries 3085; GAMMA {2:304},
+    Ei {1:220}, Chi/Shi/Si/Ci {1:8}, Li {1:22}; NATS polylog( 2793,
+    erf( 14, erfi( 137, %e^ 790; PolyLog in HEADS at 0 documenting the
+    Rubi-paren absence).
+  - Minor (carried): the "1 rules" histogram grammar is inherited from
+    the shared 01-class1-syntax-census.py formatter (class-1/2 records
+    have it too); answer-heads minute-precision stamp on re-run is by
+    design (brief-mandated, M2 precedent).
