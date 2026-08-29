@@ -11,7 +11,7 @@ matchdeclare(_mr_3_4_r1_u, true)$
 defmatch(_mr_pat_3_4_r1, _mr_3_4_r1_Pq^_mr_3_4_r1_m*log(_mr_3_4_r1_u), x)$
 _mr_cond_3_4_r1(mm, x) := block([_mr_3_4_r1_Pq, _mr_3_4_r1_m, _mr_3_4_r1_u],
   _mr_3_4_r1_Pq : geteqR(mm, '_mr_3_4_r1_Pq), _mr_3_4_r1_m : geteqR(mm, '_mr_3_4_r1_m), _mr_3_4_r1_u : geteqR(mm, '_mr_3_4_r1_u),
-  integerp(_mr_3_4_r1_m)  and  %mr_polyQ(_mr_3_4_r1_Pq, x)  and  %mr_rationalFunctionQ(_mr_3_4_r1_u, x)  and  is(%mr_rationalFunctionExponents(_mr_3_4_r1_u, x)[[2]] <= %mr_expon(_mr_3_4_r1_Pq, x)))$
+  integerp(_mr_3_4_r1_m)  and  %mr_polyQ(_mr_3_4_r1_Pq, x)  and  %mr_rationalFunctionQ(_mr_3_4_r1_u, x)  and  is(part(%mr_rationalFunctionExponents(_mr_3_4_r1_u, x), 2) <= %mr_expon(_mr_3_4_r1_Pq, x)))$
 _mr_repl_3_4_r1(mm, x) := block([_mr_3_4_r1_Pq__s, _mr_3_4_r1_m__s, _mr_3_4_r1_u__s],
   _mr_3_4_r1_Pq__s : geteqR(mm, '_mr_3_4_r1_Pq), _mr_3_4_r1_m__s : geteqR(mm, '_mr_3_4_r1_m), _mr_3_4_r1_u__s : geteqR(mm, '_mr_3_4_r1_u),
   block([C], C : ratsimp(_mr_3_4_r1_Pq__s^_mr_3_4_r1_m__s*(1 - _mr_3_4_r1_u__s)/diff(_mr_3_4_r1_u__s, x)), (if is(freeof(x, C)) = true then C*polylog(2, 1 - _mr_3_4_r1_u__s) else false)))$
