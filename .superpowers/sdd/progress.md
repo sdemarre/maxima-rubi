@@ -2762,3 +2762,61 @@ rules/` EMPTY after each, whole tree clean)
     ("gamma_incomplete") is now reached only by the bare-atom path —
     the accepted PolyQ precedent, documented in the row comment
     (reviewer finding 2).
+
+Task 3: complete (commits 31ed030..e54988d + review fix 28c665f,
+reviewer Approved after 1 fix round — spec ✅, quality Approved)
+  - RECON BLIND SPOT (plan corrected in place, 40c6efe): the census
+    "C-tier token examples" section lists the first rule(s) per token
+    and showed only 3.1.5 — the .m sources carry FOUR head-position
+    capture rules: 3.1.5 L62-63 (lin arg, free-m / bare), 3.3 L62
+    (lin arg bare, lpow log arg, all-eight allow-list), 3.4 L41
+    (monomial arg free-m, bpow log arg, NO Px slot). The generic
+    detection (capture followed by [ in the lhs head position)
+    emitted all four through the same mechanism; an optional-form
+    capture (F_.[) is a loud GenError (grep-verified zero '_.[' in
+    the eleven class-3 .m files).
+  - Adjudication (reviewer upheld, re-probed all ten spellings): the
+    pattern-side allow-lists use the NATIVE bound spellings for all
+    eight — asin/acos/atan/asinh/acosh/atanh/acot/acoth bound with
+    closed diffs (diff(acot(x),x) = -1/(x^2+1), diff(acoth(x),x) =
+    -1/(x^2-1), …), arccot/arcoth unbound nouns with D-noun diffs.
+    The answer side carries the bound symbol, so a noun head could
+    never close the zero chain. New table rows ArcCot→acot,
+    ArcCoth→acoth (the plan's arccot/arcoth guess was noun-probed);
+    the %mr_ hyperbolic shims stay for class 1–2 answer-side
+    byte-identity.
+  - Shipped: generator +265 (detection, HEADVAR_HEADS, closed-set
+    regexes, headvar_spec, _emit_headvar_manual, emit_head
+    apply(F,[arg]) intercept 1-arg-only-loud, EXPECTED_TOTAL 3:333);
+    utils +353 (%mr_headvar_match + 12 %mr_hv_* sub-helpers,
+    MA-consistent-semantics block comment); test_maxima_rubi.mac
+    +183 (test_class3_headvar, 39 checks); rules/class3/ NEW (11
+    files / 333 rules; per-file 6/12/21/29/59/61/39/24/19/20/43 =
+    census; md5-deterministic).
+  - TDD: RED `Results: 581 passed, 37 failed` (two MA-semantics
+    checks flipped to final form after the recorded RED run —
+    annotated in the report) → GREEN `Results: 620 passed, 0 failed`,
+    re-verified at HEAD by reviewer.
+  - Gates re-measured by the reviewer at HEAD: Layer A 620/0;
+    --class 3 → 333 OK, re-run byte-identical; byte-identity gate
+    3026/125 with EMPTY porcelain; loud-failure path RUN through the
+    real pipeline on synthetic rules (missing MemberQ / out-of-closed-
+    set F-arg / wrong-variable MemberQ → exit 1 naming file/rule).
+  - Fix round (reviewer finding 1 — MINOR but invariant-bearing):
+    the detection regex missed the OPTIONAL form F_.[ — a measured
+    SILENT generation-time pass-through emitting a broken defmatch
+    (symbol × list-literal product); now a loud GenError before the
+    required-form detection. Finding 2: block-comment strictness note
+    (the matcher is STRICTER than MA on the identity-default corners
+    d:=1 / e:=0 / c:=1 / Px:=1 — safe direction, decline never false
+    positive; a later loosening is a spec change). Finding 3: RED-
+    record annotation. Fix commit 28c665f re-verified by the reviewer
+    (all four synthetic cases, md5-identity of the 333 rules, both
+    gates, Layer A).
+  - Carried: the four F_ rules have ZERO corpus exposure (0 of 3,085,
+    Python scan of the class-3 corpus) — the 39 synthetic Layer A
+    checks are their only gate; loader wiring + the 3,513 core
+    rebuild are Task 7; measured quirk: fboundp/info_sym/boundp/
+    functionp are ALL unbound nouns in this build (the witness-
+    function idiom is the fbound probe — why the loader design uses
+    it).
