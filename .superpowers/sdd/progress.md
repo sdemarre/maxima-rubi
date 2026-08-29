@@ -2728,3 +2728,37 @@ byte-identical, answer-heads count-identical)
     the shared 01-class1-syntax-census.py formatter (class-1/2 records
     have it too); answer-heads minute-precision stamp on re-run is by
     design (brief-mandated, M2 precedent).
+
+Task 2: complete (commit daf3d79..0f92fd7, review clean — spec ✅,
+quality Approved; reviewer re-ran the byte-identity gate fresh at HEAD:
+`--class 1` and `--class 2` regeneration left `git status --porcelain
+rules/` EMPTY after each, whole tree clean)
+  - Generator changes: translation_table.py +56/-1 (14 RENAME rows:
+    Chi/Shi/Si/Ci/LogIntegral -> expintegral_* answer natives, PolyLog
+    -> polylog 1:1, eight %mr_ port names per the brief's list),
+    RESTRUCTURE row LogGamma -> "loggamma" handler; generate_rules.py
+    +31 (LogGamma emitter case emitting log(gamma(v)); Gamma arity
+    dispatch mirroring the PolyQ emitter pattern: 1-arg -> gamma,
+    2-arg -> gamma_incomplete, other arity -> GenError).
+  - Loud failures reproduced by the reviewer (14/14): Gamma[] -> "Gamma
+    arity 0", Gamma[a,b,c] -> "Gamma arity 3", LogGamma[a,b] ->
+    "LogGamma arity 2"; GenError subclasses SystemExit(1) with the
+    file/rule/token named on stderr.
+  - Class-2 surface verified: class 1 has ZERO Gamma occurrences; class
+    2 has 5/5 two-arg Gamma (2.1 x2, 2.3 x3) taking the 2-arg branch —
+    committed class-2 output holds exactly 5 gamma_incomplete( and no
+    bare gamma(. LogGamma appears only in class 3 (3.5).
+  - 3026 vs 3,055 RECONCILED (not an error): 3,026 is the generator's
+    --class 1 TOTAL (72 emitted files, self-checked by
+    EXPECTED_TOTAL, generate_rules.py:2126); the accepted class-1
+    table is 3,055 = 3,026 + the 29-rule hand-ported
+    rules/class1/9_1.mac (by design not generator-regenerable); core
+    3,180 = 3,055 + 125 — the Task-7 fingerprint target stays
+    3,180 + 333 = 3,513.
+  - Minor (carried for Task 7): task-2-report.md quotes the generator's
+    "TOTAL: 3026 rules" line unannotated; a Task-7 reader reconciling
+    against the 3,055 record needs the 3,026 + 29 + 125 = 3,180
+    arithmetic (reviewer finding 1). The Gamma RENAME table value
+    ("gamma_incomplete") is now reached only by the bare-atom path —
+    the accepted PolyQ precedent, documented in the row comment
+    (reviewer finding 2).
