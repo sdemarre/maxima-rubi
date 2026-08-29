@@ -25,10 +25,17 @@ occurrences) that map to the bound, diff-known natives
 `gamma`, 2-arg → `gamma_incomplete` — the class-2 row stays);
 (b) `LogGamma` as a structural rewrite to `log(gamma(v))` (the
 build's `loggamma` is an undifferentiable noun — probed);
-(c) `PolyLog` as an **identical-noun** emission (the build's
-`diff(polylog(·,·),·)` is a noun — probed; the AppellF1 precedent, the
-class-2-deferred ceiling decision lands in Task 11 with class-3
-numbers); (d) **a head-position pattern variable** (`F_[…]` in the two
+(c) `PolyLog` as a **1:1 rename to the native `polylog` spelling** —
+the active corpus expected texts already carry native `polylog(`
+(**1,195 of 3,085 entries, 2,793 occurrences** — the section's dominant
+answer surface; the 10 `PolyLog[` lines a first grep found are
+commented-out entries in bracket notation the driver never reads).
+The build's `diff(polylog(·,·),·)` AND `polylog(·,numeric)` are nouns
+(probed 2026-08-29), so a polylog entry's zero chain can close only
+via the two-sided expected chain on a FORM-IDENTICAL answer (the
+difference cancels to 0 before the diff — measured
+`diff(polylog(2,-x)-polylog(2,-x),x) = 0`); the class-2-deferred
+ceiling decision lands in Task 11 with this measured mass; (d) **a head-position pattern variable** (`F_[…]` in the two
 3.1.5 rules) — a new generator pattern form emitting a structural
 matcher rule with a `MemberQ` allow-list binding; (e) ~10 new `%mr_`
 utility ports in two TDD clusters.
@@ -108,15 +115,22 @@ Static census (the two committed records land in Task 1):
   pattern capture, not a function), `MemberQ` (4/4, cond), `FalseQ`
   (3/3, cond), `DerivativeDivides` (2/2, cond), `ProductQ` (2/2,
   cond), `Gamma` (1/1 repl + 1 pattern head, 3.5), `IntegralFreeQ`
-  (1/1, cond), `LogGamma` (1/1, repl), `LogIntegral` (1/1, repl),
-  `RationalFunctionExponents` (1/1, cond),
-  `SubstForFractionalPowerOfLinear` (1/1, repl).
+  (1/1, cond), `LogGamma` (1/1 rule, 2 rhs uses, repl),
+  `LogIntegral` (1/1, repl), `RationalFunctionExponents` (1/1,
+  cond), `SubstForFractionalPowerOfLinear` (1/1, repl).
 - **Answer heads in corpus expected texts:** `GAMMA(` 304 (all 2-arg),
   `Ei(` 220 (all 1-arg) — both already in the class-2
   HEAD_REWRITES; new: `Chi(` 8, `Shi(` 8, `Si(` 8, `Ci(` 8 (all
-  1-arg), `Li(` 22 (1-arg); `PolyLog` 10 (3.1.5: 3, 3.3: 3, 3.4: 3,
-  3.5: 1); native `erf(` 14 / `erfi(` 137 / `%e^` 790; **no**
-  `LogGamma`/`LogIntegral`/`ProductLog` in any expected text.
+  1-arg), `Li(` 22 (1-arg); **the active expected texts carry the
+  native `polylog(` spelling — 1,195 of 3,085 entries / 2,793
+  occurrences** (per file: 3.1.2: 0, 3.1.4: 187, 3.1.5: 179, 3.2.1:
+  91, 3.2.2: 106, 3.2.3: 65, 3.3: 243, 3.4: 237, 3.5: 87; orders
+  2/3/4/5/6 + symbolic `k`/`n`/`1±k`), while Rubi-notation `PolyLog(`
+  paren occurrences in active entries = 0 (the 10 `PolyLog[` lines a
+  first grep found are COMMENTED-OUT entries in bracket notation —
+  the driver reads only `[`-leading active lines); native `erf(` 14 /
+  `erfi(` 137 / `%e^` 790; **no** `LogGamma`/`LogIntegral`/
+  `ProductLog` in any expected text.
 - **Native conventions probed on the current build (2026-08-29):**
   `diff(expintegral_shi(x),x)=sinh(x)/x`,
   `diff(expintegral_chi(x),x)=cosh(x)/x`,
@@ -126,10 +140,14 @@ Static census (the two committed records land in Task 1):
   names `shi/chi/si/ci` are UNBOUND nouns** (the naming trap — use the
   `expintegral_*` long forms); `gamma` bound,
   `diff(log(gamma(x)),x)=psi[0](x)` (known); `loggamma` unbound noun
-  with undifferentiated diff; **`diff(polylog(2,x),x)` and
-  `diff(polylog(s,x),x)` stay nouns and `polylog(1,0.5)` does not
-  eval** — the identical-noun path is the only diff-closing option for
-  PolyLog; `psi(x,0)` is bound (2-arg) but its own diff is a noun.
+   with undifferentiated diff; **`diff(polylog(2,x),x)`,
+   `diff(polylog(s,x),x)`, `polylog(2,0.5)` and `polylog(3,0.5)` all
+   stay nouns** (no symbolic derivative, no numeric eval), while
+   `diff(polylog(2,-x) - polylog(2,-x), x) = 0` — the difference of
+   form-identical polylog terms cancels before the diff, so the
+   two-sided expected chain closes on a form-identical answer and the
+   self-diff chain never closes on a polylog answer; `psi(x,0)` is
+   bound (2-arg) but its own diff is a noun.
 - **Existing ports reused:** `%mr_inverseFunctionQ` (utils :3091),
   `%mr_calculusQ` (utils :4575), `%mr_freeFactors`/`%mr_nonfreeFactors`
   (utils :2754/:2771), `%mr_substFor`/`%mr_substPower` (M1),
@@ -162,17 +180,25 @@ the token closure table. No Maxima.
       `probes/translation/04-class3-syntax-census.out`.
 - [ ] Write `probes/corpus/03-class3-answer-heads.py` (copy of the
       02-class2 probe, default section `"3 Logarithms"`, **HEADS list
-      extended with `"PolyLog"`** so the committed .out carries the
-      polylog count), `.run` driver, and run it →
+      extended with `"PolyLog"`** (documents the Rubi-paren-notation
+      count in active entries — measured 0) and **NATS list extended
+      with `"polylog("** (the active native spelling — 2,793
+      occurrences)), `.run` driver, and run it →
       `probes/corpus/03-class3-answer-heads.out`.
 - [ ] Verify the records against the recon values above (11 files /
       333 rules / AUTO 241 / MANUAL 92; answer heads GAMMA 304 {2:304},
-      Ei 220 {1:220}, Chi/Shi/Si/Ci 8 each, Li 22, PolyLog 10,
-      entries 3085). Any mismatch is a probe/parse defect — fix and
-      re-run (the recon values came from the same scripts).
+      Ei 220 {1:220}, Chi/Shi/Si/Ci 8 each, Li 22, `PolyLog(` 0 /
+      `polylog(` 2793 over 1,195 of 3,085 entries, entries 3085). Any
+      mismatch is a probe/parse defect — fix and re-run (the recon
+      values came from the same scripts).
 - [ ] **Token closure** — every UNLISTIED token adjudicated (this plan's
       recon section is the adjudication; record it in the report):
-      `PolyLog` → identical noun (RESTRUCTURE, AppellF1 precedent);
+      `PolyLog` → 1:1 RENAME `polylog` (the active corpus expected
+      texts are natively spelled — 1,195 entries / 2,793 occurrences;
+      the build's polylog diff and numeric eval are nouns, so the
+      entries close only via the two-sided expected chain on
+      form-identical answers — the Task-11 ceiling decision carries
+      this mass);
       `LogGamma` → structural `log(gamma(v))`; `LogIntegral` →
       `expintegral_li`; `Gamma` → arity-dispatched (1-arg `gamma` /
       2-arg `gamma_incomplete`); `Chi/Shi/Si/Ci` → the
@@ -211,8 +237,11 @@ comment, the house "naming trap" rule).
       `"ProductQ": "%mr_productQ"`, `"IntegralFreeQ":
       "%mr_integralFreeQ"`, `"RationalFunctionExponents":
       "%mr_rationalFunctionExponents"`, `"DerivativeDivides":
-      "%mr_derivativeDivides"`, `"SubstForFractionalPowerOfLinear":
-      "%mr_substForFractionalPowerOfLinear"`.
+       "%mr_derivativeDivides"`, `"SubstForFractionalPowerOfLinear":
+       "%mr_substForFractionalPowerOfLinear"`, `"PolyLog": "polylog"`
+       (1:1 — the active corpus expected texts are natively spelled,
+       2,793 occurrences; the build's `diff(polylog(·,·),·)` is a noun,
+       so no spurious self-diff closure; the comment cites the probe).
 - [ ] `Gamma` arity dispatch: the emitter dispatches `Gamma` by
       argument count — 1-arg → `gamma`, 2-arg → `gamma_incomplete`
       (the existing row's behavior for class 2 is unchanged; implement
@@ -221,17 +250,15 @@ comment, the house "naming trap" rule).
 - [ ] RESTRUCTURE rows: `"LogGamma": "loggamma"` — the handler emits
       `log(gamma(<arg>))` (probe: `diff(log(gamma(x)),x) = psi[0](x)`
       closes; `loggamma` is an undifferentiable noun — both probed
-      2026-08-29); `"PolyLog": "PolyLog"` — identical-noun emission
-      (the AppellF1 precedent, with the measured `diff(polylog)`-is-a-
-      noun justification in the comment).
+       2026-08-29).
 - [ ] **Byte-identity gate:** `python3 generator/generate_rules.py
       --class 1` and `--class 2`, `git status --porcelain rules/` EMPTY
       for both. (The new rows are class-3-only tokens; the arity
       dispatch must leave every class-1/2 emission byte-identical —
       class 2's 5 `Gamma` uses are all 2-arg.)
 - [ ] Commit: `generator: class-3 translation rows (expintegral_*
-      answer natives, Gamma arity dispatch, LogGamma/PolyLog
-      restructure, %mr_ port names)`.
+      answer natives, Gamma arity dispatch, LogGamma restructure,
+      PolyLog rename, %mr_ port names)`.
 
 **Acceptance.** Table closed for every class-3 token (the Task-1
 closure); gates green; class-1/2 regeneration byte-identical.
@@ -373,7 +400,8 @@ the committed files.
       class token is a guaranteed parse failure).
 - [ ] Rename spot counts: `expintegral_li` present (the 3.1.1
       LogIntegral rule), `log(gamma(` present (the 3.5 LogGamma
-      rule's repl), `PolyLog(` emitted verbatim (17-rule surface),
+      rule's repl), `polylog(` emitted (the 17-rule / 37-use PolyLog
+      surface), no `PolyLog(` Rubi-notation anywhere,
       `expintegral_{shi,chi,si,ci}` occurrences = 0 (no rule emits
       them — the HEAD_REWRITES are the corpus-side).
 - [ ] The parse sweep (the M1 parse-sweep probe form over
@@ -422,8 +450,11 @@ rows; unit tests; no-op proof for the accepted classes.
 - [ ] New rows (native, differentiable targets only — each probed in
       Task 2): `Chi(` → `expintegral_chi(`, `Shi(` →
       `expintegral_shi(`, `Si(` → `expintegral_si(`, `Ci(` →
-      `expintegral_ci(`, `Li(` → `expintegral_li(`. **No `PolyLog`
-      row** (identical-noun convention — both sides carry `PolyLog`).
+       `expintegral_ci(`, `Li(` → `expintegral_li(`. **No polylog row**
+       (the package emits the native `polylog(` spelling and the
+       active corpus expected texts are already natively spelled; the
+       commented-out `PolyLog[` bracket lines are never read by the
+       driver).
       Lookbehind guards per the existing rows (the atom-charset
       lookbehind keeps longer names intact — add negative unit cases:
       `expintegral_li(` itself, `expintegral_si(` vs a `Si(` inside
@@ -526,13 +557,22 @@ entry, the final gates.
       bugs — "likely" where a guess); the residue → expected-head
       census.
 - [ ] **The polylog/AppellF1 structural-ceiling decision, now with
-      class-3 numbers** (the M2-deferred decision): the 10
-      polylog-carrying expected texts (3.1.5: 3, 3.3: 3, 3.4: 3, 3.5:
-      1) and the 17 PolyLog-emitting rules — if polylog-carrying
-      entries form a material unverified/deferred block, a
-      `polylog(2,·)` derivative shim (its derivative `-log(1-u)/u` is
-      elementary) is a follow-up ticket with that number as its go;
-      otherwise the ceiling stands (record the decision + number).
+      class-3 numbers** (the M2-deferred decision): the polylog mass is
+      **1,195 of 3,085 entries (38.7 %) / 2,793 occurrences** (per
+      file: 3.1.4: 187, 3.1.5: 179, 3.2.1: 91, 3.2.2: 106, 3.2.3: 65,
+      3.3: 243, 3.4: 237, 3.5: 87; 3.1.2: 0) against the 17
+      PolyLog-emitting rules. Measured mechanism (2026-08-29 build):
+      `diff(polylog(·,·),·)` and `polylog(·,numeric)` are nouns, so a
+      polylog entry can PASS only through the two-sided expected chain
+      on a form-identical answer (identical polylog terms cancel before
+      the diff) — the self-diff/numeric stages cannot close. Read the
+      measured PASS/unverified/deferred split of the 1,195 from the
+      Task-10 records: if the unverified+deferred polylog mass is
+      material, a `polylog(2,·)` derivative shim (its derivative
+      `-log(1-u)/u` is elementary; the higher-order recursion
+      `d/dz polylog(s,z) = polylog(s-1,z)/z`) becomes a follow-up
+      ticket with that number as its go; otherwise the ceiling stands
+      (record the decision + numbers).
 - [ ] `todo/TODO.md` milestone-3 entry (one short entry per follow-up:
       status + link; the queue after class 3 is 8 → 5 → 6 → 7 → 4).
 - [ ] **Final gates**, run and recorded:
