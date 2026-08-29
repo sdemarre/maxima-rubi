@@ -3051,3 +3051,49 @@ quality Approved; reviewer re-ran all seven gates live)
     run ever falls back off the core path the fallback table lacks
     classes 2-3 (M1 state, untouched through M2/M3); a stale
     Option-D comment block in corpus_driver.py (~L92-100).
+
+Task 8: complete (commits 89955bb..b916f69 + fix 4753bb7, review clean —
+spec ✅, quality Approved; reviewer re-ran both no-op slices live)
+  - Driver: five class-3 rows appended to HEAD_REWRITES in
+    test/corpus_driver.py (Chi(/Shi(/Si(/Ci(/Li( ->
+    expintegral_chi/shi/si/ci/li(), same (?<![A-Za-z0-9_]) atom-charset
+    lookbehind as the GAMMA(/Ei( rows). No polylog( row: the package
+    emits the native polylog( spelling and the active corpus expected
+    texts are already natively spelled; the 10 commented-out PolyLog[
+    suite entries span 3.1.5/3.3/3.4/3.5 (3/3/3/1) and extract_entries
+    never reads them (comment cites the distribution).
+  - Unit: test/test_head_rewrites.py 13 new checks (per-row positive +
+    multi-row + negatives: already-native expintegral_li(/expintegral_si(
+    untouched, MySi(/XChi(/Li2( longer names intact, Sin( guards the Si(
+    row, LogGamma( guards the GAMMA( row) — Results: 20 passed, 0 failed.
+  - No-op proof (constraint-1 basis: records measured on the
+    2026-08-20 build; re-measured on 2026-08-29
+    branch_5_50_base_84_g4204fb669 17:58:20 / the 3,513-rule core,
+    rules_core_state() 'on' — reviewer verified fp 00e05dca… == stamp):
+    class-1 slice 51 entries (17+17+17 over files of 1,917/3,189/159 —
+    the plan's "17+17+16 = 50" expectation undercounted the third file,
+    measured) -> head rewrites: {}; 51/51 (rel, entry) -> verdict
+    identical to test/corpus_class1.out (its 3 timeouts are the record's
+    standing timeouts). Class-2 slice 51 (17+17+17 over 98/93/774) ->
+    head rewrites: {'gamma_incomplete(': 1, 'expintegral_ei(': 8} (only
+    the two pre-existing rows; NO expintegral_{shi,chi,si,ci,li} key);
+    51/51 identical to test/corpus_class2.out. Zero diffs both classes —
+    no drift triage needed; corroborated at text level by a pre-scan:
+    zero lookbehind-guarded occurrences of the five new heads in all 40
+    class-1 + 3 class-2 suite files.
+  - Review findings (all documentation-accuracy, zero functional; fixed
+    in 4753bb7, comment-only, table byte-unchanged, unit re-verified
+    20/0 + py_compile): F1 should-fix — the comment's "short names
+    shi/chi/si/ci/li unbound nouns" was wrong for li: li IS the bound,
+    documented native polylogarithm li[s](z) (describe(li, exact);
+    ev(li[2](0.5)) = 0.5822405264650125 measured) — a distinct token
+    (lowercase, subscript-arg form) from the uppercase Li( row; F2 minor
+    — PolyLog[ span pinned to 3.5 only, corrected to the four files
+    (3/3/3/1); F3 minor — the report's "only in 3.5" active-head claim
+    corrected to the measured distribution (Li( x22: 6/6/6/4 across
+    3.1.2/3.3/3.4/3.5; Chi(/Shi(/Si(/Ci( x8 each, all in 3.5 —
+    reconciles with the plan census 8/8/8/8/22).
+  - House rules held: only test/corpus_driver.py +
+    test/test_head_rewrites.py committed across both commits; accepted
+    records, generator/, rules/, docs/, probes/ untouched; ledger was
+    controller-written (implementer report untracked).
