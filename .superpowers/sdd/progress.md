@@ -3097,3 +3097,47 @@ spec ✅, quality Approved; reviewer re-ran both no-op slices live)
     test/test_head_rewrites.py committed across both commits; accepted
     records, generator/, rules/, docs/, probes/ untouched; ledger was
     controller-written (implementer report untracked).
+
+Task 9: complete (commit 36f539b, review clean — record APPROVED;
+reviewer independently re-derived integrity and re-ran all 30 error
+entries in isolation)
+  - Deliverable: test/corpus_class3.baseline.out — the native-
+    integrate T3 baseline over "3 Logarithms" (9 files, 3,085
+    entries, 30 s cap, 3 shards (0,3)/(3,6)/(6,9) merged with
+    test/merge_class_shards.py). Completeness OK 3,085/3,085 (no
+    dupes/missing/extra); build stamps 2026-08-29
+    branch_5_50_base_84_g4204fb669 17:58:20 / SBCL 2.6.7 in the
+    header (the Task-10 A/B yardstick, constraint 1).
+  - Tally (3,085): unverified 1288 (41.8%), verified 979 (31.7%),
+    no-answer 397 (12.9%), unexpected 177 (5.7%), timeout 149 (4.8%),
+    expected 65 (2.1%), error 30 (1.0%), deferred 0, contains-noun 0.
+    Results: 1441 passed, 1644 failed (PASS = {expected, verified,
+    no-answer} = 65+979+397).
+  - Error class (30) fully triaged by the reviewer (all 30 re-fatal in
+    isolation, zero escapes): 18 fatal in the integrate() call, 12 in
+    the probe's UNGUARDED e-side zero chain (ze); five distinct
+    fatals — expt: undefined: 0 to a negative exponent. x16
+    (6/10), PQUOTIENT: Quotient by a polynomial of higher degree
+    (case 2a) x7 (5/2), PTPTQUOTIENT: Polynomial quotient is not
+    exact x4 (integrate), Heap exhausted during GC x3 (integrate,
+    uncatchable process death). Entry-specific hard-log integrands +
+    polylog/Unintegrable expectations, NOT one systemic defect; the
+    polylog-in-expected correlation (27/30) is a red herring for the
+    17 that die in integrate() (expected text never evaluated there).
+  - A/B asymmetry (binding readout note for Task 10, measured): the
+    12 ze-chain fatals will classify error -> unverified in the
+    package run (driver zero_chain is errcatch-guarded,
+    test/corpus_driver.py:301); the 18 integrate-stage fatals
+    error -> error (driver rubi_fallback head equally unguarded; the
+    3 OOMs uncatchable). Bucket the 30 explicitly in the A/B —
+    FAIL->FAIL transitions, not regressions.
+  - Yardstick fitness: profile shift vs class-2 (unverified 41.8 vs
+    37.0, unexpected 5.7 vs 1.5, timeout 4.8 vs 0.1) is the expected
+    direction for logarithmic integrands; no anomaly warranting
+    re-measurement.
+  - Execution note: first launch killed by a running-shell 120 s
+    command timeout; re-launched all three with setsid (clean "w"-open
+    restart, ~2 min partial data overwritten); shard walls
+    1223.7/310.4/3559.6 s concurrent, total ~60.6 min. Only the merged
+    record committed (shard .out intermediates uncommitted, M2
+    precedent); no tooling modified (probe/merger/driver unmodified).
