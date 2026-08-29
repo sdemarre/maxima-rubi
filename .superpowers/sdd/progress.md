@@ -2974,3 +2974,39 @@ quality Approved; reviewer re-ran all nine gates live, Layer A twice)
     re-extracts in BOTH modes — reviewer measured; the v slot is the
     FACTORED form per the :6268 note); bullet reworded to the
     measured facts, Layer A re-verified 743/0.
+
+Task 6: complete (commits 033afd9..fd9d261 + 5fe2e7b, review clean —
+spec ✅, quality Approved; reviewer re-ran all seven gates live)
+  - 3.4 r1 Part-subscript defect FIXED (scheduled by the Task-4
+    review, plan 8aed663): the generator's Part handler
+    (generate_rules.py, translate) now matches a trailing
+    [[<int>]] at bracket-depth-0 on the whole expression with a
+    non-empty-prefix guard -> part(<translated prefix>, <int>),
+    subsuming the bare-name sites byte-identically (class-2
+    uu[[1]]/uu[[2]], class-3 lst[[1..4]]). The only LIVE
+    call-then-Part in any class was 3.4 r1 (the 1.1.3.2
+    BinomialParts hit is a (* ... *) comment the parser strips) —
+    the generalization is additive.
+  - Regeneration changed exactly ONE line: rules/class3/3_4.mac:14
+    the r1 cond is now is(part(%mr_rationalFunctionExponents(…, x),
+    2) <= %mr_expon(…, x)); the rule is LIVE — witness
+    log(x/(x+1))/(x+1) (Pq = x+1, m = -1, u = x/(x+1)) fires
+    end-to-end to polylog(2, 1 - x/(x+1)) (C = 1 x-free, measured);
+    negative control log(x/(x^2+1))/(x+1) cond false (cond live,
+    not vacuous); the Task-4 smoke shape x^2*log(x/(x+1)) now
+    EVALUATES the cond (true) though its repl declines at the .m's
+    own FreeQ[C,x] answer-guard (C = x^3+x^2 — the rule's
+    semantics, not a defect).
+  - Gates (reviewer re-measured): byte-identity 3026/125 EMPTY
+    porcelain both classes; class 3 333 OK; statics — 0 raw
+    $[A-Za-z], expintegral_li 1 (3_1_1), log(gamma( 2 (3_5),
+    polylog( 45 occurrences = 45 live source PolyLog[ (1:1; the
+    report's per-file 25 is line-count, reviewer-noted presentation
+    only), PolyLog( 0, expintegral_{shi,chi,si,ci} 0; parse sweep
+    11/11 clean (M1 probe form, fresh TLS process per file); Layer A
+    743/0.
+  - Part-fix misfire guards reviewer-verified against the real
+    translate: bare-name byte-identical; inner index f[g[[1]]] NOT
+    caught (recursive arg translation); empty prefix [[2]] not a
+    Part; comma index u[[1, 2]] loud GenError (unlisted head), not
+    a mis-emit.
