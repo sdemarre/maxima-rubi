@@ -3141,3 +3141,82 @@ entries in isolation)
     1223.7/310.4/3559.6 s concurrent, total ~60.6 min. Only the merged
     record committed (shard .out intermediates uncommitted, M2
     precedent); no tooling modified (probe/merger/driver unmodified).
+
+Task 10: complete (commit 23d5bd9..f40d56b + gitignore follow-up
+d86a099, review clean — APPROVED with zero arithmetic mismatches;
+reviewer independently recomputed the whole A/B)
+  - Package run: 3,085/3,085 (29 shards — count-balancing first run,
+    heavy files split into 128-entry chunks; 24 procs; wall 28 min
+    04 s; pre-launch rules_core_state() = on, fp
+    00e05dca… matches stamp). Results: 1736 passed, 1349 failed —
+    verified 1367, expected 66, no-answer 303 | deferred 1033,
+    unverified 158, timeout 117, unexpected 22, contains-noun 13,
+    error 6.
+  - A/B vs the Task-9 baseline (1441/1644): net +295 PASS / +9.6 pt
+    (46.7% -> 56.3%) — the FIRST class where the package PASS total
+    beats the baseline (M2's was below it). Per-file deltas
+    +74/-24/+46/+33/-16/+3/+64/+76/+39 (gains in 7 of 9 files;
+    3.1.4 and 3.2.2 the two log-ratio-heavy declines). PASS->FAIL
+    525 = 343 genuine + 182 yardstick: genuine = 329 deferred (the
+    M2 top-level-noun pattern; per file 3.1.4 128, 3.2.2 66, 3.4 39,
+    3.5 36, 3.2.1 34, 3.3 18, 3.2.3 8) + 9 verified->unverified
+    (zero-chain verification gaps, listed) + 3 verified->timeout
+    (3.1.4 e133/e140/e147 — confirmed non-terminators at 100 s) +
+    2 verified->contains-noun (unintegrable residue, listed).
+    Yardstick = no-answer->deferred 150, ->unverified 20,
+    ->unexpected 8, ->timeout 4. FAIL->PASS 820 (unverified->verified
+    580, unexpected->no-answer 163, unverified->expected 33,
+    timeout->verified 31, error->verified 11, timeout->no-answer 2).
+    The 30 baseline-error entries: 19->deferred + 11->verified,
+    0->error, 0->unverified (the package's rules path avoids the
+    native-integrate fatalities entirely; the 11 verified form
+    clusters). Nothing unexplained remains; the M2 yardstick
+    mechanics note is quoted in the readout.
+  - 100 s re-check (the record's 117 timeout entries, 24 shards, wall
+    ~10 min 05 s; same core — fp launcher-confirmed): now-PASS 1
+    (3.2.3 e60 -> no-answer, t=33.5 s — ZERO slow-correct answers);
+    still-timeout 96 (genuine non-terminators; by family 3.3 44,
+    3.1.5 22, 3.1.4 12, 3.4 5, 3.2.1 5, 3.5 5, 3.2.3 3 — includes all
+    three genuine-decline timeouts); unverified 9; error 9;
+    contains-noun 1; deferred 1.
+  - Death census (15 = 6 run + 9 re-check; reviewer-corrected):
+    13 heap-exhausted OOMs + 2 control-stack-exhausted. The OOMs
+    blow up in the driver's zero-chain VERIFICATION stage (rubi()
+    alone answers e233/e74/e30; the 8-stage chain dies at the 1 GiB
+    cap, bytes_allocated 99.8 % — reviewer re-runs) — matcher-speed
+    work must not be misdirected at matching. 3.2.3 e79 = matching
+    stack overflow. 3.3 e492 = the one reproducible non-resource
+    package bug (below).
+  - FINDING (ticketed, ready-for-agent): 3.3 e492 is NOT a Maxima
+    builtin bug (the initial report's attribution, refuted in
+    review) — it is a rule-generation arity bug in exactly THREE
+    generated rules: 3_1_5.mac:679 (r30), 3_3.mac:732 (r32),
+    3_3.mac:1422 (r61) call the 2-arg %mr_algebraicFunctionQ
+    (maxima_rubi_utils.mac:3109) with a trailing `true` — the
+    1:1 rename (translation_table.py:66) carried Rubi's flag arg from
+    AlgebraicFunctionQ[AFx, x, True] (3.1.5 .m:34, 3.3 .m:35/:65;
+    the flag = "nonnumeric x-free exponents count"). 3_3 r61 fired
+    on e492 (AFx = 1/(h x+g)^(3/2)); r32/r30 not yet exercised by
+    the corpus. Ticket:
+    .scratch/class3-algebraicfunctionq-arity/issues/01 (fix =
+    flag-aware 3-arg utility + generator special-case; class-1
+    2-arg output frozen by the byte-identity gate; post-fix scope
+    incl. core rebuild + full class-3 re-run, in the ticket).
+  - Polylog-mass side measurement (feeds the Task-11 ceiling
+    decision; 1,195 entries grep-verified per file): PASS 440
+    (36.8 % — verified 379, expected 59, no-answer 2) vs deferred
+    532 (44.5 %), unverified 106, timeout 103, contains-noun 8,
+    error 6; record-wide PASS is 56.3 %. All 6 package-run errors
+    and 8 of the 9 re-check OOMs sit in the polylog mass.
+  - Head rewrites (first run the five new rows fire; aggregated over
+    the 29 shard .out files — the merger drops per-shard lines, M2
+    precedent): gamma_incomplete( 304, expintegral_ei( 220,
+    expintegral_li( 22, si/ci/chi/shi( 8 each = 578 firings.
+  - Reviewer minor findings, all handled: .gitignore re-inclusion
+    gap for non-5m re-check record names (the 100 s record needed
+    git add -f) + the untracked class3_merge.log — fixed in
+    d86a099 (negation corpus_class*.timeout*.out, verified precise
+    against the run-dir shardNN.out names; class*_merge.*); the
+    report's e534 mischaracterization + death census (13 OOM + 2
+    control-stack = 15) and the e492 attribution — corrected in
+    task-10-report.md (§6/§7/§10/§12).
