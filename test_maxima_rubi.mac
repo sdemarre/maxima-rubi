@@ -72,9 +72,10 @@ run_all_tests() := block([],
   test_pred_cluster1(),
   test_numeric_predicates(),
   test_structural_predicates(),
-   test_matchQ_predicates(),
-   test_class2_marker_head(),
-   test_int_family_predicates(),
+    test_matchQ_predicates(),
+    test_class2_marker_head(),
+    test_class3_headvar(),
+    test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -89,6 +90,8 @@ run_all_tests() := block([],
   test_class2_cluster_b(),
   test_class2_cluster_c(),
   test_class2_census(),
+  test_class3_cluster_a(),
+  test_class3_cluster_b(),
   test_rules_1_1_1_1_behavior(),
   test_census(),
   print(""),
@@ -475,9 +478,187 @@ test_structural_predicates() := block([],
     check_not("r96 emitted MatchQ: sin head fails closed",
               %mr_matchQ(%e^(c*(a+b*x))*sin(x),
                          %e^(_mr_2_3_r96mq2_c*(_mr_2_3_r96mq2_a + _mr_2_3_r96mq2_b*x))*_mr_2_3_r96mq2_F(_mr_2_3_r96mq2_v),
-                         lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
+                          lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
+     true
+    )$
+
+  /* Task 3 — the head-position capture matcher %mr_headvar_match
+     (class 3: 3.1.5 r62-63, 3.3 r62, 3.4 r41). The .m pattern
+     F_[d_*(e_+f_*x_)] cannot go through defmatch in this build
+     (head-position pattern variables are rejected — the class-2 r96
+     finding), so the generator emits a structural rule that calls
+      %mr_headvar_match with a slot spec. The class-3 corpus carries
+      twelve linear-argument inverse-function integrands (3.1.5
+      e186-e197, the (d+e x^2) F(a x)^m log(c x^n) shape —
+      probes/corpus/05-class3-inverse-function-exposure, 2026-08-30),
+      but every one sits at the e:=0 identity-default corner the
+      headvar matcher declines by recorded design (finding 2; the
+      uplift record §1), so the package answers the m=1 rows via the
+      3.5 catch-all, never via these rules — the matcher semantics
+      are pinned here on synthetic integrands. The listp-guarded
+      positive checks keep a
+     RED run (helper not yet defined — the call stays a noun) from
+     dying inside geteqR. */
+  test_class3_headvar() := block([mm],
+    print("--- head-position capture matcher (class 3 F_[...] rules) ---"),
+    /* 3.1.5 r62 shape: px slot, lin F-arg, free m > 1, px log-arg,
+       the {ArcSin,ArcCos,ArcSinh,ArcCosh} list */
+    mm : %mr_headvar_match(x^2*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
+          [["px", 'hvpx1],
+           ["f", 'hvF1, ["lin", 'hvd1, 'hve1, 'hvfx1], ["free", 'hvm1]],
+           ["log", 'hva1, 'hvb1, ["px", 'hvc1, 'hvn1]]],
+          ['asin, 'acos, 'asinh, 'acosh]),
+    check_bool("hv r62-shape matches (m = 3)", listp(mm) and length(mm) > 0),
+    check_bool("hv r62 binds the head symbol",
+               listp(mm) and is(geteqR(mm, 'hvF1) = 'asin)),
+    check_bool("hv r62 binds d", listp(mm) and is(geteqR(mm, 'hvd1) = 2)),
+    check_bool("hv r62 binds e", listp(mm) and is(geteqR(mm, 'hve1) = 3)),
+    check_bool("hv r62 binds the x-coef", listp(mm) and is(geteqR(mm, 'hvfx1) = 4)),
+    check_bool("hv r62 binds m", listp(mm) and is(geteqR(mm, 'hvm1) = 3)),
+    check_bool("hv r62 binds px (the leftover product)",
+               listp(mm) and is(geteqR(mm, 'hvpx1) = x^2)),
+    check_bool("hv r62 binds a", listp(mm) and is(geteqR(mm, 'hva1) = 5)),
+    check_bool("hv r62 binds b", listp(mm) and is(geteqR(mm, 'hvb1) = 6)),
+    check_bool("hv r62 binds c", listp(mm) and is(geteqR(mm, 'hvc1) = 7)),
+    check_bool("hv r62 binds n", listp(mm) and is(geteqR(mm, 'hvn1) = 2)),
+    /* 3.1.5 r63 shape: bare F factor (m = 1), the
+       {ArcTan,ArcCot,ArcTanh,ArcCoth} list */
+    mm : %mr_headvar_match(x*acot(2*(3+4*x))*(5+6*log(7*x^2)), x,
+          [["px", 'hvpx2],
+           ["f", 'hvF2, ["lin", 'hvd2, 'hve2, 'hvfx2], ["bare"]],
+           ["log", 'hva2, 'hvb2, ["px", 'hvc2, 'hvn2]]],
+          ['atan, 'acot, 'atanh, 'acoth]),
+    check_bool("hv r63-shape matches (bare factor, m = 1)",
+               listp(mm) and length(mm) > 0),
+    check_bool("hv r63 binds the head", listp(mm) and is(geteqR(mm, 'hvF2) = 'acot)),
+    /* 3.3 shape: lpow log-arg c*(d+e*x)^n, the eight-head list */
+    mm : %mr_headvar_match(x^2*atan(2*(3+4*x))*(5+6*log(7*(8+9*x)^3)), x,
+          [["px", 'hvpx3],
+           ["f", 'hvF3, ["lin", 'hvd3, 'hve3, 'hvfx3], ["bare"]],
+           ["log", 'hva3, 'hvb3, ["lpow", 'hvc3, 'hvd3b, 'hve3b, 'hvn3]]],
+          ['asin, 'acos, 'atan, 'acot, 'asinh, 'acosh, 'atanh, 'acoth]),
+    check_bool("hv 3.3-shape matches", listp(mm) and length(mm) > 0),
+    check_bool("hv 3.3 binds the head", listp(mm) and is(geteqR(mm, 'hvF3) = 'atan)),
+    check_bool("hv 3.3 binds the log-arg d",
+               listp(mm) and is(geteqR(mm, 'hvd3b) = 8)),
+    check_bool("hv 3.3 binds the log-arg e",
+               listp(mm) and is(geteqR(mm, 'hve3b) = 9)),
+    check_bool("hv 3.3 binds the log-arg n",
+               listp(mm) and is(geteqR(mm, 'hvn3) = 3)),
+    /* 3.4 shape: mon F-arg f*x, free m, bpow log-arg c*(d+e*x^n)^p,
+       NO px slot */
+    mm : %mr_headvar_match(asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
+          [["f", 'hvF4, ["mon", 'hvfx4], ["free", 'hvm4]],
+           ["log", 'hva4, 'hvb4, ["bpow", 'hvc4, 'hvd4, 'hve4, 'hvn4, 'hvp4]]],
+          ['asin, 'acos, 'asinh, 'acosh]),
+    check_bool("hv 3.4-shape matches", listp(mm) and length(mm) > 0),
+    check_bool("hv 3.4 binds the mon coef", listp(mm) and is(geteqR(mm, 'hvfx4) = 5)),
+    check_bool("hv 3.4 binds m", listp(mm) and is(geteqR(mm, 'hvm4) = 2)),
+    check_bool("hv 3.4 binds the bpow n", listp(mm) and is(geteqR(mm, 'hvn4) = 3)),
+    check_bool("hv 3.4 binds the bpow p", listp(mm) and is(geteqR(mm, 'hvp4) = 4)),
+    /* the lifted-sign fold: the leading minus is a top-level "-" node
+       in this build (measured 2026-08-29) and lands in px */
+    mm : %mr_headvar_match(-x*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
+          [["px", 'hvpx5],
+           ["f", 'hvF5, ["lin", 'hvd5, 'hve5, 'hvfx5], ["free", 'hvm5]],
+           ["log", 'hva5, 'hvb5, ["px", 'hvc5, 'hvn5]]],
+          ['asin, 'acos, 'asinh, 'acosh]),
+    check_bool("hv binds px with the folded sign",
+               listp(mm) and is(geteqR(mm, 'hvpx5) = -x)),
+    /* the bare log factor with a written constant: times is Flat, so
+       x*f*(6*log(g)) stores the 6 as its own factor (measured
+       2026-08-29) — the MA binding is a = 0, b = 1 and the constant
+       rides in px */
+    mm : %mr_headvar_match(x*asin(2*(3+4*x))^3*(6*log(7*x^2)), x,
+          [["px", 'hvpx6],
+           ["f", 'hvF6, ["lin", 'hvd6, 'hve6, 'hvfx6], ["free", 'hvm6]],
+           ["log", 'hva6, 'hvb6, ["px", 'hvc6, 'hvn6]]],
+          ['asin, 'acos, 'asinh, 'acosh]),
+    check_bool("hv bare log factor binds a = 0",
+               listp(mm) and is(geteqR(mm, 'hva6) = 0)),
+    check_bool("hv bare log factor binds b = 1 (the MA default)",
+               listp(mm) and is(geteqR(mm, 'hvb6) = 1)),
+    check_bool("hv bare log factor: the constant rides in px",
+               listp(mm) and is(geteqR(mm, 'hvpx6) = 6*x)),
+    /* negatives: each declines, none may misbind */
+    check_not("hv head outside the list (asin vs the r63 list)",
+              %mr_headvar_match(x^2*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
+                    [["px", 'hvpx7],
+                     ["f", 'hvF7, ["lin", 'hvd7, 'hve7, 'hvfx7], ["free", 'hvm7]],
+                     ["log", 'hva7, 'hvb7, ["px", 'hvc7, 'hvn7]]],
+                    ['atan, 'acot, 'atanh, 'acoth])),
+    check_not("hv non-linear F-arg vs the lin spec (x^2)",
+              %mr_headvar_match(x*asin(2*x^2)*(5+6*log(7*x^2)), x,
+                    [["px", 'hvpx8],
+                     ["f", 'hvF8, ["lin", 'hvd8, 'hve8, 'hvfx8], ["bare"]],
+                     ["log", 'hva8, 'hvb8, ["px", 'hvc8, 'hvn8]]],
+                    ['asin, 'acos, 'asinh, 'acosh])),
+    check_not("hv linear F-arg vs the mon spec",
+              %mr_headvar_match(x*asin(2*(3+4*x))*(5+6*log(7*x^2)), x,
+                    [["px", 'hvpx9],
+                     ["f", 'hvF9, ["mon", 'hvfx9], ["bare"]],
+                     ["log", 'hva9, 'hvb9, ["px", 'hvc9, 'hvn9]]],
+                    ['asin, 'acos, 'asinh, 'acosh])),
+    check_not("hv extra factor with no px slot (3.4 shape)",
+              %mr_headvar_match(x*asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
+                    [["f", 'hvFa, ["mon", 'hvfxa], ["free", 'hvma]],
+                     ["log", 'hvaa, 'hvba, ["bpow", 'hvca, 'hvda, 'hvea, 'hvna, 'hvpa]]],
+                    ['asin, 'acos, 'asinh, 'acosh])),
+    check_not("hv no leftover factor for the px slot",
+              %mr_headvar_match(asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
+                    [["px", 'hvpxb],
+                     ["f", 'hvFb, ["lin", 'hvdb, 'hveb, 'hvfxb], ["free", 'hvmb]],
+                     ["log", 'hvab, 'hvbb, ["px", 'hvcB, 'hvnb]]],
+                    ['asin, 'acos, 'asinh, 'acosh])),
+    check_not("hv powered factor vs the bare spec",
+              %mr_headvar_match(x*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
+                    [["px", 'hvpxc],
+                     ["f", 'hvFc, ["lin", 'hvdc, 'hvec, 'hvfxc], ["bare"]],
+                     ["log", 'hvac, 'hvbc, ["px", 'hvcC, 'hvnc]]],
+                    ['asin, 'acos, 'asinh, 'acosh])),
+    /* the bare F factor vs the free-m spec: the Power pattern
+       F_[...]^m_ reaches a non-power target via Power OneIdentity,
+       m := 1 (MA-consistent) */
+    mm : %mr_headvar_match(x*asin(2*(3+4*x))*(5+6*log(7*x^2)), x,
+          [["px", 'hvpxd],
+           ["f", 'hvFd, ["lin", 'hvdd, 'hved, 'hvfxd], ["free", 'hvmd]],
+           ["log", 'hvad, 'hvbd, ["px", 'hvcD, 'hvnd]]],
+          ['asin, 'acos, 'asinh, 'acosh]),
+    check_bool("hv bare factor vs the free-m spec matches (m = 1)",
+               listp(mm) and is(geteqR(mm, 'hvmd) = 1)),
+    check_not("hv sum integrand (not a product)",
+              %mr_headvar_match(asin(2*(3+4*x))^3 + 5 + 6*log(7*x^2), x,
+                    [["px", 'hvpxe],
+                     ["f", 'hvFe, ["lin", 'hvde, 'hvee, 'hvfxe], ["free", 'hvme]],
+                     ["log", 'hvae, 'hvee2, ["px", 'hvcE, 'hvne]]],
+                    ['asin, 'acos, 'asinh, 'acosh])),
+    check_not("hv lpow log-arg vs the px logspec",
+              %mr_headvar_match(x*asin(2*(3+4*x))^3*(5+6*log(7*(8+9*x)^3)), x,
+                    [["px", 'hvpxf],
+                     ["f", 'hvFf, ["lin", 'hvdf, 'hvfe, 'hvfxe2], ["free", 'hvme2]],
+                     ["log", 'hvaf, 'hvbf, ["px", 'hvcF, 'hvne2]]],
+                    ['asin, 'acos, 'asinh, 'acosh])),
+    /* the bare log factor (no written b at all): a = 0, b = 1, the
+       MA Plus-OneIdentity/BlankOptional-default reading */
+    mm : %mr_headvar_match(x*asin(2*(3+4*x))^3*log(7*x^2), x,
+          [["px", 'hvpxg],
+           ["f", 'hvFg, ["lin", 'hvdg, 'hvfg, 'hvfxg], ["free", 'hvmg]],
+           ["log", 'hvag, 'hvbg, ["px", 'hvcG, 'hvng]]],
+          ['asin, 'acos, 'asinh, 'acosh]),
+    check_bool("hv bare log factor matches (a = 0, b = 1)",
+               listp(mm) and is(geteqR(mm, 'hvag) = 0)
+               and is(geteqR(mm, 'hvbg) = 1)),
+    check_bool("hv bare log factor binds c, n, px",
+               listp(mm) and is(geteqR(mm, 'hvcG) = 7)
+               and is(geteqR(mm, 'hvng) = 2)
+               and is(geteqR(mm, 'hvpxg) = x)),
+    check_not("hv leading minus with no px slot (the sign cannot bind)",
+              %mr_headvar_match(-asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
+                    [["f", 'hvFh, ["mon", 'hvfxh], ["free", 'hvmh]],
+                     ["log", 'hvah, 'hvbh, ["bpow", 'hvcH, 'hvdh, 'hveh, 'hvnh, 'hvh2]]],
+                    ['asin, 'acos, 'asinh, 'acosh])),
     true
-   )$
+  )$
 
   /* Task 7a cluster B — the int-family + binomial predicates. The
     binomialQ / intBinomialQ probes go through the LISP dispatchers
@@ -1532,6 +1713,369 @@ test_class2_census() := block([saved_table],
    check("core 1.1.1.1 count still 5", mr_rules_count_1_1_1_1, 5),
    mr_rule_table : saved_table,
    true
+)$
+
+/* Class-3 cluster A — the six cond-side predicate ports (milestone-3
+   plan Task 4; the .m line refs are against the pinned Rubi clone's
+   IntegrationUtilityFunctions.m). Storage facts pinned below were
+   measured 2026-08-29 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7:
+   * member(elem, list) is ORDER-REVERSED vs MemberQ[list, elem] and
+     returns the boolean true/false (describe("member", exact));
+   * false is the boolean atom (atom(false) = true) and
+     is('false = false) = true (the quoted symbol compares =-equal);
+   * a product's op is the string "*"; the product SIGN lifts to a
+     top-level unary "-" node (op(-a*b) = "-"), where MA sees a
+     Times head — %mr_productQ declines the lift (recorded);
+   * ALL negative integer powers store as QUOTIENT nodes
+     (op(x^(-2)) = "/", args [1, x^2]; op((x+1)^(-1)) = "/";
+     (a/b)^2 stores as a^2/b^2), so the .m's negative-exponent
+     IntegerPowerQ case reaches the port through the "/" branch;
+   * a NOUN's op string()s to the head name (string(op) of the
+     integrate fall-through noun is "integrate"; of 'unintegrable[.]
+     "unintegrable"; of 'mr_int[.] "mr_int") and freeof(<symbol>, .)
+     flags each of those head positions;
+   * rat() is the Together stand-in (together is a noun in this
+     build, M1 ledger); a rat() result is a plain node tree (op "/"
+     for a single fraction, part() access is plain — the gcrat
+     objects the M1 trap describes appear only behind num()/denom(),
+     which the port never calls). */
+test_class3_cluster_a() := block([],
+  print("--- class-3 cluster A: small predicates ---"),
+  /* %mr_memberQ — MemberQ[list, elem] over the order-reversed
+     built-in member(elem, list). */
+  check_bool("memberQ hit", is(%mr_memberQ([a, b, c], b) = true)),
+  check_bool("memberQ first", is(%mr_memberQ([a, b, c], a) = true)),
+  check_bool("memberQ last", is(%mr_memberQ([a, b, c], c) = true)),
+  check_bool("memberQ miss", is(%mr_memberQ([a, b, c], d) = false)),
+  check_bool("memberQ number hit", is(%mr_memberQ([1, 2], 2) = true)),
+  check_bool("memberQ number miss", is(%mr_memberQ([1, 2], 3) = false)),
+  check_bool("memberQ no part-inspection",
+             is(%mr_memberQ([x + 1], x) = false)),
+  check_bool("memberQ head-symbol list",
+             is(%mr_memberQ(['asin, 'acos], 'asin) = true)),
+  check_bool("memberQ head-symbol miss",
+             is(%mr_memberQ(['asin, 'acos], 'atan) = false)),
+  /* %mr_falseQ — true iff the value is the boolean false (the
+     declined-predicate return at the 3.5 r1/r2/r13 call sites). */
+  check_bool("falseQ false", is(%mr_falseQ(false) = true)),
+  check_bool("falseQ declined result", is(%mr_falseQ(block([], false)) = true)),
+  check_bool("falseQ true", is(%mr_falseQ(true) = false)),
+  check_bool("falseQ zero", is(%mr_falseQ(0) = false)),
+  check_bool("falseQ atom", is(%mr_falseQ(x) = false)),
+  check_bool("falseQ noun", is(%mr_falseQ('f(x)) = false)),
+  check_bool("falseQ list", is(%mr_falseQ([1, 2]) = false)),
+  /* %mr_productQ — the op "*" test (ProductQ[_Times]). */
+  check_bool("productQ two-factor", is(%mr_productQ(a*b) = true)),
+  check_bool("productQ three-factor", is(%mr_productQ(a*b*c) = true)),
+  check_bool("productQ calls", is(%mr_productQ(log(x)*sin(x)) = true)),
+  check_bool("productQ atom", is(%mr_productQ(a) = false)),
+  check_bool("productQ number", is(%mr_productQ(3) = false)),
+  check_bool("productQ sum", is(%mr_productQ(a + b*x) = false)),
+  check_bool("productQ monomial", is(%mr_productQ(x^2) = false)),
+  check_bool("productQ quotient", is(%mr_productQ(x/(x + 1)) = false)),
+  /* the minus-lift storage: op(-a*b) = "-" (measured 2026-08-29) —
+     the port declines where MA's Times head would accept */
+  check_bool("productQ minus lift declined",
+             is(%mr_productQ(-a*b) = false)),
+  /* %mr_integralFreeQ — the four .m heads over the package noun
+     surface (mr_int / integrate / the mr_unintegrable noun). */
+  check_bool("integralFreeQ closed form",
+             is(%mr_integralFreeQ(x^2/2 + log(x)) = true)),
+  check_bool("integralFreeQ integrate noun",
+             is(%mr_integralFreeQ(integrate(tan(x^2), x)) = false)),
+  check_bool("integralFreeQ integrate noun nested",
+             is(%mr_integralFreeQ(x + integrate(f(x), x)) = false)),
+  check_bool("integralFreeQ quoted mr_int",
+             is(%mr_integralFreeQ('mr_int[f(x), x]) = false)),
+  check_bool("integralFreeQ unintegrable noun",
+             is(%mr_integralFreeQ('unintegrable[f(x), x]) = false)),
+  check_bool("integralFreeQ mr_unintegrable value",
+             is(%mr_integralFreeQ(mr_unintegrable(f(x), x)) = false)),
+  check_bool("integralFreeQ answer natives free",
+             is(%mr_integralFreeQ(expintegral_ei(x) + polylog(2, x)) = true)),
+  /* %mr_inverseFunctionFreeQ — the .m :316-322 recursion over
+     InverseFunctionQ / CalculusQ / Hypergeometric2F1 / AppellF1. */
+  check_bool("iffQ atom", is(%mr_inverseFunctionFreeQ(5, x) = true)),
+  check_bool("iffQ top log of x", is(%mr_inverseFunctionFreeQ(log(x), x) = false)),
+  check_bool("iffQ top log x-free", is(%mr_inverseFunctionFreeQ(log(a), x) = true)),
+  check_bool("iffQ nested inverse", is(%mr_inverseFunctionFreeQ(x + asin(x), x) = false)),
+  check_bool("iffQ nested inverse x-free",
+             is(%mr_inverseFunctionFreeQ(x^2 + asin(a), x) = true)),
+  check_bool("iffQ power of log", is(%mr_inverseFunctionFreeQ(log(x^2), x) = false)),
+  check_bool("iffQ trig arg recursion", is(%mr_inverseFunctionFreeQ(sin(x), x) = true)),
+  check_bool("iffQ integrate noun",
+             is(%mr_inverseFunctionFreeQ(integrate(f(x), x), x) = false)),
+  /* the diff noun is the transparent calculus-head shape: the finite
+     PRODUCT noun is a special internal object freeof() cannot see
+     through (measured 2026-08-29 on branch_5_50_base_84_g4204fb669:
+     freeof(x, product(f(x), x, 1, n)) = true while freeof(x,
+     integrate(f(x), x)) = false) — a documented divergence on an
+     input no call site produces (the rules emit no product heads,
+     mr_int results carry closed forms or the integrate noun). */
+  check_bool("iffQ diff noun",
+             is(%mr_inverseFunctionFreeQ(diff(f(x), x), x) = false)),
+  check_bool("iffQ evaluated const integral",
+             is(%mr_inverseFunctionFreeQ(integrate(f(a), x), x) = true)),
+  check_bool("iffQ hypergeometric",
+             is(%mr_inverseFunctionFreeQ(hypergeometric([1, 2], [3], x), x) = false)),
+  check_bool("iffQ hypergeometric x-free",
+             is(%mr_inverseFunctionFreeQ(hypergeometric([1, 2], [3], a), x) = true)),
+  check_bool("iffQ AppellF1",
+             is(%mr_inverseFunctionFreeQ(AppellF1(1, 2, 3, 4, x), x) = false)),
+  check_bool("iffQ AppellF1 x-free",
+             is(%mr_inverseFunctionFreeQ(AppellF1(1, 2, 3, 4, a), x) = true)),
+  /* %mr_rationalFunctionExponents — the .m :1618-1633 branch ladder.
+     Branch 1 (polynomial -> {deg, 0}): */
+  check("rfe x^2", %mr_rationalFunctionExponents(x^2, x), [2, 0]),
+  check("rfe constant", %mr_rationalFunctionExponents(1, x), [0, 0]),
+  check("rfe linear", %mr_rationalFunctionExponents(a*x + b, x), [1, 0]),
+  check("rfe rational-coef polynomial", %mr_rationalFunctionExponents(x/2, x), [1, 0]),
+  /* Branch 2 (integer power -> scaled recursion): */
+  check("rfe (x+1)^3", %mr_rationalFunctionExponents((x + 1)^3, x), [3, 0]),
+  check("rfe x^4", %mr_rationalFunctionExponents(x^4, x), [4, 0]),
+  /* the .m's negative-exponent arm (u[[2]] < 0) — stored as a "/"
+     node in this build, so it arrives through the quotient branch: */
+  check("rfe 1/x", %mr_rationalFunctionExponents(1/x, x), [0, 1]),
+  check("rfe x^(-2)", %mr_rationalFunctionExponents(x^(-2), x), [0, 2]),
+  check("rfe (x+1)^(-1)", %mr_rationalFunctionExponents((x + 1)^(-1), x), [0, 1]),
+  /* Branch 3 (product -> list sum): */
+  check("rfe x*(x+1)", %mr_rationalFunctionExponents(x*(x + 1), x), [2, 0]),
+  check("rfe x^2*(x+1)^3",
+        %mr_rationalFunctionExponents(x^2*(x + 1)^3, x), [5, 0]),
+  /* the minus-lift storage arm (the .m reads -u as a -1 product): */
+  check("rfe -x", %mr_rationalFunctionExponents(-x, x), [1, 0]),
+  check("rfe -(x+1)", %mr_rationalFunctionExponents(-(x + 1), x), [1, 0]),
+  /* the "/" branch (Maxima storage of the .m's negative-power
+     product): */
+  check("rfe (x+1)/(x+2)", %mr_rationalFunctionExponents((x + 1)/(x + 2), x), [1, 1]),
+  check("rfe x/(x+1)", %mr_rationalFunctionExponents(x/(x + 1), x), [1, 1]),
+  check("rfe (x+1)/(x+2)^2",
+        %mr_rationalFunctionExponents((x + 1)/(x + 2)^2, x), [1, 2]),
+  check("rfe (x/(x+1))^2",
+        %mr_rationalFunctionExponents((x/(x + 1))^2, x), [2, 2]),
+  /* Branch 4 (sum -> rat-then-recursion; the Max[.,.] lst form when
+     rat leaves a sum): */
+  check("rfe x + 1/x", %mr_rationalFunctionExponents(x + 1/x, x), [2, 1]),
+  check("rfe x + 1/x + 1/(x+1)",
+        %mr_rationalFunctionExponents(x + 1/x + 1/(x + 1), x), [3, 2]),
+  check("rfe rat corner (x^2+1)/x",
+        %mr_rationalFunctionExponents(rat(x + 1/x), x), [2, 1]),
+  check("rfe sum lst form x + sin(x)",
+        %mr_rationalFunctionExponents(x + sin(x), x), [1, 0]),
+  check("rfe sum lst form sin + cos",
+        %mr_rationalFunctionExponents(sin(x) + cos(x), x), [0, 0]),
+  /* Branch 5 (else {0, 0}): */
+  check("rfe sin(x)", %mr_rationalFunctionExponents(sin(x), x), [0, 0]),
+  check("rfe symbolic power", %mr_rationalFunctionExponents(x^a, x), [0, 0]),
+  check("rfe sqrt", %mr_rationalFunctionExponents(sqrt(x), x), [0, 0]),
+  true
+)$
+
+/* Class-3 cluster B — the five fractional-power Subst/derivative ports
+   (milestone-3 plan Task 5; the .m refs are against the pinned Rubi
+   clone's IntegrationUtilityFunctions.m — the block note in
+   maxima_rubi_utils.mac carries the full measured session, 2026-08-29
+   on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7). Storage facts the
+   pinned shapes rely on: log of a PURE power auto-expands
+   (log((x+1)^(2/3)) -> (2 log(x+1))/3, log(sqrt(x+1)) -> log(x+1)/2)
+   while log of a SUM keeps its argument (log(1 + (x+1)^(2/3)) stays)
+    — the 3.5 r16 call site therefore only ever sees the fractional
+    linear power inside a log sum, and the end-to-end pin uses that
+    shape (the plan's bare log((x+1)^(2/3)) example does not survive
+    Maxima simplification — recorded); negative fractional powers store
+    as "/" nodes (declined by %mr_fractionalPowerQ — recorded); the
+    %mr_simp stage normalizes the substituted integrand, and the
+    4-list v slot carries the FACTORED form — the function's own
+    rat() call (line 1: %mr_fractionalPowerOfLinear -> %mr_linearQ ->
+    %mr_together -> rat) flips the simplifier into rat mode for the
+    rest of the enclosing statement, and the in-scope %mr_simp keeps
+    x^5*(b*log(x^2+1)+a) factored (measured 2026-08-29, note at the
+    sfpol pin below). */
+test_class3_cluster_b() := block([lst, lst2, sl],
+  /* slot accessor, RED-safe: while the port is absent `lst` is a
+     2-arg noun and part(lst, k > 2) hard-errors (measured 2026-08-29
+     — the first RED run died at the base-slot pin); errcatch returns
+     [value] on success and [] on error (the line-150 note), so the
+     [] sentinel stays a clean FAIL, and the [value] unwrap pins the
+     slot in the GREEN phase. */
+  sl : lambda([l, k], block([p],
+    p : errcatch(part(l, k)),
+    if is(p = []) then p else part(p, 1))),
+  print("--- class-3 cluster B: fractional-power Subst family ---"),
+  /* %mr_easyDQ — the .m :7466-7495 ladder. */
+  /* rule-1 strip (u_*x_^m_. with FreeQ[m,x]): the distinguishing
+     shape — x^2*log(x+1) declines through every later arm (product:
+     both factors x-dependent; not a linear-power product; not a
+     [1,1] rational) yet is easy once the x^2 is stripped to
+     log(x+1) -> x+1 (binomial): */
+  check_bool("easyDQ strip arm distinguishes",
+             is(%mr_easyDQ(x^2*log(x+1), x) = true)),
+  check_bool("easyDQ strip const*x^2",
+             is(%mr_easyDQ(a*x^2, x) = true)),
+   /* the hard-core counterpin: log(x^x) auto-expands to x*log(x)
+      (measured) and THAT product is easy (the strip lands on log
+      ground), so the pin uses sqrt(x^x), which keeps its storage form
+      (measured 2026-08-29): */
+   check_not("easyDQ strip then hard core (sqrt(x^x))",
+             %mr_easyDQ(x^2*sqrt(x^x), x)),
+  /* the AtomQ || FreeQ || Length==0 True arm (Length==0 is
+     unreachable — atoms are gated first, the utils note): */
+  check_bool("easyDQ atom true", is(%mr_easyDQ(5, x) = true)),
+  check_bool("easyDQ x-free true", is(%mr_easyDQ(a + b, x) = true)),
+  /* the CalculusQ False arm: */
+  check_not("easyDQ calculus noun false",
+            %mr_easyDQ(integrate(f(x), x), x)),
+   /* the Length==1 arm (parts of a 1-arg call; the hard counterpin is
+      sqrt(x^x) — log(x^x) auto-expands to the x*log(x) product before
+      the ladder sees it, measured): */
+   check_bool("easyDQ length-1 log(x+1)",
+              is(%mr_easyDQ(log(x+1), x) = true)),
+   check_not("easyDQ length-1 sqrt(x^x)",
+             %mr_easyDQ(sqrt(x^x), x)),
+  /* the BinomialQ True arm: */
+  check_bool("easyDQ binomial x+1", is(%mr_easyDQ(x + 1, x) = true)),
+  /* the ProductOfLinearPowersQ True arm (not a binomial — 4 terms
+     expanded; not [1,1] rational; both product factors x-dependent): */
+  check_bool("easyDQ linear-power product",
+             is(%mr_easyDQ((x+1)^2*(x+2), x) = true)),
+  /* the RFE == {1,1} True arm and its [1,2] neighbor: */
+  check_bool("easyDQ rational [1,1]",
+             is(%mr_easyDQ((x+1)/(x+2), x) = true)),
+  check_not("easyDQ rational [1,2] decline",
+            %mr_easyDQ((x+1)/(x+2)^2, x)),
+  /* the ProductQ arm (one x-free factor -> recurse on the other —
+     a*log(x+1) is not a binomial, so the product arm is the true
+     path; both x-dependent -> false; the recursion can land on the
+     CalculusQ arm): */
+  check_bool("easyDQ product one free factor",
+             is(%mr_easyDQ(a*log(x+1), x) = true)),
+  check_not("easyDQ product both x-factors",
+            %mr_easyDQ((x+1)*(x+2)^x, x)),
+  check_not("easyDQ product recurse to calculus",
+            %mr_easyDQ(a*integrate(f(x), x), x)),
+  /* the SumQ arm: */
+  check_bool("easyDQ sum both easy",
+             is(%mr_easyDQ(x + sin(x), x) = true)),
+  check_not("easyDQ sum hard term",
+            %mr_easyDQ(x^x + x, x)),
+  /* the Length==2 arm (integer_log(x, 10) is the real 2-arg noun
+     shape — log() takes 1 arg in this build, measured): */
+  check_bool("easyDQ length-2 func free second arg",
+             is(%mr_easyDQ(integer_log(x, 10), x) = true)),
+  check_not("easyDQ length-2 power x^x",
+            %mr_easyDQ(x^x, x)),
+  /* the final else (a 3-arg call past every arm): */
+  check_not("easyDQ fall-through 3-arg func",
+            %mr_easyDQ(hypergeometric([1, 2], [3], x), x)),
+  /* %mr_derivativeDivides — the .m :7450-7462 contract. */
+  check_not("dd a*x decline", %mr_derivativeDivides(2*x, 5, x)),
+  check_not("dd a*b*x decline", %mr_derivativeDivides(a*b*x, 5, x)),
+  /* the v = 0 arm is unreachable (the utils note): the constant-y
+     decline lands through the Exponent degree test instead: */
+  check_not("dd constant y decline", %mr_derivativeDivides(5, 5, x)),
+  /* the quotient-return shape (the PolynomialQ degree-test path and
+     the EasyDQ path): */
+  check("dd quotient over d/dx x^2",
+        %mr_derivativeDivides(x^2, a*x, x), a/2),
+  check("dd quotient over d/dx log(x+1)",
+        %mr_derivativeDivides(log(x+1), 1/(x+1), x), 1),
+  /* declines: degree mismatch / the quotient not x-free / an unknown
+     function's derivative noun (the freeof walk sees the x in the
+     'diff(f(x), x, 1) args): */
+  check_not("dd degree mismatch decline",
+            %mr_derivativeDivides(x^2, x^2, x)),
+  check_not("dd quotient not x-free decline",
+            %mr_derivativeDivides(x^2, a*x + b, x)),
+  check_not("dd unknown function y decline",
+            %mr_derivativeDivides(f(x), 5, x)),
+  /* %mr_fractionalPowerOfLinear — the .m :6067-6076 contract in the
+     (u, 1, false, x) call shape. */
+  check("fpl (x+1)^(2/3)",
+        %mr_fractionalPowerOfLinear((x+1)^(2/3), 1, false, x), [3, x+1]),
+  check("fpl sqrt storage form",
+        %mr_fractionalPowerOfLinear(sqrt(x+1), 1, false, x), [2, x+1]),
+  /* the LCM accumulation over the SAME base (the sqrt survives only
+     inside a log sum — log(sqrt(x+1)) auto-expands, measured): */
+  check("fpl lcm accumulate same base",
+        %mr_fractionalPowerOfLinear(a*(x+1)^(2/3)*log(1 + sqrt(x+1)), 1, false, x),
+        [6, x+1]),
+  /* the v-equality guard: a different linear base does not accumulate: */
+  check("fpl different base ignored",
+        %mr_fractionalPowerOfLinear((x+1)^(2/3)*(x+2)^(1/2), 1, false, x),
+        [3, x+1]),
+  /* the n > 1 guard: an integer exponent is not a fractional power
+     (the {n, v} identity returns): */
+  check("fpl integer exponent no match",
+        %mr_fractionalPowerOfLinear((x+1)^2, 1, false, x), [1, false]),
+  /* the LinearQ guard: a quadratic base declines: */
+  check("fpl quadratic base no match",
+        %mr_fractionalPowerOfLinear(sqrt(x^2 + 1), 1, false, x), [1, false]),
+  /* the atom identity and the CalculusQ throw: */
+  check("fpl atom identity",
+        %mr_fractionalPowerOfLinear(a, 1, false, x), [1, false]),
+  check("fpl calculus decline",
+        %mr_fractionalPowerOfLinear(integrate(f(x), x)*(x+1)^(1/3), 1, false, x),
+        false),
+  /* %mr_substForFractionalPower — the .m :1873-1881 walk. */
+  check("sfp atom x -> w",
+        %mr_substForFractionalPower(x, x+1, 3, w, x), w),
+  check("sfp atom non-x unchanged",
+        %mr_substForFractionalPower(a, x+1, 3, w, x), a),
+  check("sfp power of v -> x^m",
+        %mr_substForFractionalPower((x+1)^(2/3), x+1, 3, w, x), x^2),
+  check("sfp sqrt of v -> x",
+        %mr_substForFractionalPower(sqrt(x+1), x+1, 2, w, x), x),
+   /* a non-matching base maps over the parts (x -> w, 2 -> 2 — the
+      sum re-canonicalizes to 2 + w, NOT 1 + w: the base's constant is
+      part of the base, so it stays): */
+   check("sfp wrong base walks",
+         %mr_substForFractionalPower((x+2)^(2/3), x+1, 3, w, x),
+         (2 + w)^(2/3)),
+  /* the nested shape the call site actually sees (a log of a SUM
+     keeps the fractional power — log of a pure power auto-expands): */
+  check("sfp nested log sum",
+        %mr_substForFractionalPower(log(1 + (x+1)^(2/3)), x+1, 3, w, x),
+        log(x^2 + 1)),
+   /* %mr_substForFractionalPowerOfLinear — the .m :6056-6063 4-list
+      contract. The 3.5 r16 call-site shape end to end: the integrand
+      (x+1)*(a + b*log(1 + (x+1)^(2/3))) — v is the integrand with
+      (x+1)^(2/3) -> x^2, x -> x^3 - 1, times x^(3-1), %mr_simp'd.
+      MEASURED 2026-08-29 (branch_5_50_base_84_g4204fb669/SBCL 2.6.7):
+      the v slot is the FACTORED form, not the expanded sum — line 1's
+      %mr_fractionalPowerOfLinear runs %mr_together (rat), and rat()
+      flips the simplifier into rat mode for the REST of the enclosing
+      statement: a rat-mode ratsimp keeps x^5*(b*log(x^2+1)+a)
+      factored, while the same ratsimp without a rat call in the
+      statement expands it (pure Maxima quirk, no project code in the
+      loop — block([], rat(x+1), ratsimp(x^5*(b*log(x^2+1)+a))) is
+      factored, the rat-free line expands; the mode does not leak into
+      the next statement; bisect session probes v2-v24 +
+      probe-rat-mode.mac T0-T6, 2026-08-29). Every real call carries
+      the rat -> %mr_simp pair inside one statement, so the factored
+      form is the stable contract and the pin uses it — is(factored =
+      expanded) is FALSE in this build (measured), so the expanded
+      spelling would fail despite algebraic equality. */
+   lst : %mr_substForFractionalPowerOfLinear((x+1)*(a + b*log(1 + (x+1)^(2/3))), x),
+   check("sfpol e2e v slot", sl(lst, 1),
+         x^5*(b*log(x^2 + 1) + a)),
+  check("sfpol e2e n slot", sl(lst, 2), 3),
+  check("sfpol e2e base slot", sl(lst, 3), x + 1),
+  check("sfpol e2e ff/b slot", sl(lst, 4), 1),
+   /* the b != 1 slope pins the 1/b slot (w = -a/b + x^n/b =
+      -1/2 + x^3/2); the v slot is factored per the rat-mode note
+      above: */
+   lst2 : %mr_substForFractionalPowerOfLinear((2*x+1)*(c + d*log(1 + (2*x+1)^(2/3))), x),
+   check("sfpol slope-2 v slot", sl(lst2, 1),
+         x^5*(d*log(x^2 + 1) + c)),
+  check("sfpol slope-2 n slot", sl(lst2, 2), 3),
+  check("sfpol slope-2 base slot", sl(lst2, 3), 2*x + 1),
+  check("sfpol slope-2 ff/b slot", sl(lst2, 4), 1/2),
+  /* the False decline: no fractional linear power anywhere: */
+  check_bool("sfpol no fractional power decline",
+             is(%mr_substForFractionalPowerOfLinear(x^2 + x + 1, x) = false)),
+  check_bool("sfpol non-linear base decline",
+             is(%mr_substForFractionalPowerOfLinear((a + b*log(x^2 + 1))*sqrt(x^2 + 1), x) = false)),
+  true
 )$
 
 /* $ not ; — the function's value (tests_failed = 0) would otherwise

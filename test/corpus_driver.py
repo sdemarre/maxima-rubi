@@ -72,6 +72,33 @@ HEAD_REWRITES = [
     # (e.g. a free function named "XEi") intact.
     (re.compile(r"(?<![A-Za-z0-9_])GAMMA\("), "gamma_incomplete("),
     (re.compile(r"(?<![A-Za-z0-9_])Ei\("), "expintegral_ei("),
+    # Class-3 rows (2026-08-29): the "3 Logarithms" expected answers
+    # carry the Rubi heads Chi( Shi( Si( Ci( Li(. Measured on 5.50.0 —
+    # the committed re-runnable form:
+    # probes/answer-side/02-class3-answer-side-identities (build
+    # 2026-08-29 17:58:20; plan
+    # docs/superpowers/plans/2026-08-29-milestone-3-class3.md §Task-2
+    # "Native conventions probed"): d/dx expintegral_shi(x) = sinh(x)/x, d/dx
+    # expintegral_chi(x) = cosh(x)/x, d/dx expintegral_si(x) = sin(x)/x,
+    # d/dx expintegral_ci(x) = cos(x)/x, d/dx expintegral_li(x) =
+    # 1/log(x) — every residue 0; all five bound and float-evaluable.
+    # The short names shi/chi/si/ci are unbound nouns (naming trap);
+    # lowercase li is the BOUND native polylogarithm — describe(li,
+    # exact): "Function: li [<s>] (<z>) ... the polylogarithm
+    # function"; ev(li[2](0.5)) = 0.5822405264650125 (measured
+    # 2026-08-29 on this build) — but a distinct token (lowercase,
+    # subscript-arg form li[s](z)), so the uppercase Li( row cannot
+    # collide with it.
+    # No polylog( row: the package emits the native polylog( spelling
+    # and the ACTIVE corpus expected texts are already natively
+    # spelled — the ten commented-out PolyLog[ suite entries span the
+    # four class-3 files 3.1.5/3.3/3.4/3.5 (3/3/3/1 lines); each is a
+    # /* ... */-commented entry extract_entries never reads.
+    (re.compile(r"(?<![A-Za-z0-9_])Chi\("), "expintegral_chi("),
+    (re.compile(r"(?<![A-Za-z0-9_])Shi\("), "expintegral_shi("),
+    (re.compile(r"(?<![A-Za-z0-9_])Si\("), "expintegral_si("),
+    (re.compile(r"(?<![A-Za-z0-9_])Ci\("), "expintegral_ci("),
+    (re.compile(r"(?<![A-Za-z0-9_])Li\("), "expintegral_li("),
 ]
 REWRITE_STATS = {}
 
@@ -125,7 +152,7 @@ PASS_CLASSES = {"expected", "verified", "no-answer"}
 def _core_fingerprint():
     """md5 over exactly the files test/build_rules_core.sh bakes into the
     image (loader + utils + dispatch lisp + implicit-1 lisp + every
-    class-1 AND class-2 rule file)."""
+    class-1, class-2 AND class-3 rule file)."""
     import glob
     import hashlib
     # Canonical order: sorted RELATIVE paths (must match
@@ -137,7 +164,9 @@ def _core_fingerprint():
                   [os.path.relpath(p, ROOT) for p in
                    glob.glob(os.path.join(ROOT, "rules", "class1", "*.mac"))] +
                   [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class2", "*.mac"))])
+                   glob.glob(os.path.join(ROOT, "rules", "class2", "*.mac"))] +
+                  [os.path.relpath(p, ROOT) for p in
+                   glob.glob(os.path.join(ROOT, "rules", "class3", "*.mac"))])
     h = hashlib.md5()
     for rel in rels:
         with open(os.path.join(ROOT, rel), "rb") as fh:

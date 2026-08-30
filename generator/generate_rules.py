@@ -847,14 +847,50 @@ def translate(s, ctx):
     optionals.
     """
     s = s.strip()
-    m = re.match(r"^([A-Za-z][A-Za-z0-9]*)\[\[([0-9]+)\]\]$", s)
+    m = re.search(r"\[\[([0-9]+)\]\]$", s)
     if m:
-        # Mathematica Part, single integer index (class 2: uu[[1]] /
-        # uu[[2]] in the Module locals of 2.1 r18 / 2.3 r10). Nested
-        # indices (u[[1, 2]]) are not used in class 2; the [0-9]+ guard
-        # makes any such use fail loudly at the parse instead of
-        # mis-emitting.
-        return f"part({translate(m.group(1), ctx)}, {m.group(2)})"
+        # Mathematica Part, single integer index, at bracket depth 0 of
+        # the WHOLE expression: expr[[i]] -> part(expr, i). The prefix
+        # must be non-empty and end at depth 0 (counting [({ up / ])})
+        # down) so that an INNER index (f[g[[1]]] — ends in a plain ])
+        # is left to the recursive arg translation (g[[1]] reaches
+        # translate as a whole expression) and a bare list literal
+        # ([[2]] — empty prefix) is not mistaken for a Part.
+        #
+        # The bare-name sites are class 2's uu[[1]] / uu[[2]] (the
+        # Module locals of 2.1 r18 / 2.3 r10) and class 3's lst[[1..4]]
+        # (3.5 r13's With local) — byte-identical under the
+        # generalization. The depth-0 prefix is what admits the
+        # CALL-then-Part shape 3.4 r1's RationalFunctionExponents[u,
+        # x][[2]] (3.4 .m :4), which the old bare-name-only regex passed
+        # through as literal [[2]] — a Maxima list subscript that
+        # hard-errors ("subscript must be an integer; found: [2]",
+        # measured 2026-08-29 on branch_5_50_base_84_g4204fb669 built
+        # 2026-08-29 17:58:20 / SBCL 2.6.7), errcaught by the dispatcher
+        # (utils %mr_dispatch) into a safe decline: the rule was DEAD
+        # (recorded by the Task-4 review; fixed here).
+        #
+        # Safety (2026-08-29 grep of the pinned clone's class 1-3 rule
+        # sources, comment-stripped): the only LIVE call-then-Part is
+        # 3.4 r1 itself; the 1.1.3.2 .m :34 BinomialParts[u, x][[1..3]]
+        # hit sits inside a (* ... *) comment the parser strips; classes
+        # 1/2 use only the bare-name form — so the generalization is
+        # ADDITIVE and the class-1/2 byte-identity gate must stay EMPTY.
+        #
+        # The [0-9]+ guard keeps nested/comma indices (u[[1, 2]]) from
+        # matching: they fall through to head_args, where the trailing
+        # part mis-parses the arg list and emit_head raises "unlisted
+        # head" — loud, not a mis-emit.
+        p = m.start()
+        if s[:p].strip():
+            depth = 0
+            for ch in s[:p]:
+                if ch in "[({":
+                    depth += 1
+                elif ch in "])}":
+                    depth -= 1
+            if depth == 0:
+                return f"part({translate(s[:p].strip(), ctx)}, {m.group(1)})"
     head, args = head_args(s)
     if head is not None:
         if head == "MatchQ":
@@ -1235,6 +1271,25 @@ def _emit_polyq(arglist, key, n):
         return f"%mr_polyPowerQ({u}, {base}, {v})"
     return f"%mr_polyDegPowerQ({u}, {base}, {v}, {deg})"
 
+def _emit_gamma(arglist, key, n):
+    """Gamma arity dispatch (milestone-3 Task 2): 1-arg Gamma[v] ->
+    gamma (the complete gamma function — class 3's 3.5 pattern
+    Log[Gamma[v_]] and repl Log[Gamma[v]]), 2-arg Gamma[a, z] ->
+    gamma_incomplete (the class-2 behavior, byte-unchanged: all 5/5
+    class-2 uses are 2-arg UPPER). Any other arity is a GenError — the
+    PolyQ dispatch's failure mode (file/rule/token named), never a
+    silent pass-through (a wrong-arity Maxima call would be a noun).
+    Probed 2026-08-29 on branch_5_50_base_84_g4204fb669: gamma bound
+    (ev(gamma(0.5)) = 1.772453850905516), diff(log(gamma(x)),x) =
+    psi[0](x) closing under ratsimp; gamma_incomplete(a,z) 2-arg UPPER
+    with diff = -z^(a-1) %e^-z closing."""
+    if len(arglist) == 1:
+        return f"gamma({arglist[0].strip()})"
+    if len(arglist) == 2:
+        return (f"gamma_incomplete({arglist[0].strip()}, "
+                f"{arglist[1].strip()})")
+    raise GenError(f"{key} r{n}: Gamma arity {len(arglist)}")
+
 def _emit_expon(arglist, key, n):
     """Expon (Rubi :1239/:1242 — Exponent[Together[expr], form[, h]]):
     (u, x) -> %mr_expon · (u, x^v) -> %mr_expon(u, x, v) (power-form:
@@ -1340,6 +1395,17 @@ def _emit_matchq(arglist, ctx):
 def emit_head(head, arglist, ctx):
     """Special forms first, then a plain renamed head(arglist)."""
     key, n = ctx["key"], ctx["n"]
+    if head == ctx.get("headvar"):
+        # The head-position capture applied in the repl (F[d*(e+f*x)]):
+        # rebuild the call from the head symbol %mr_headvar_match bound
+        # to F — apply(<F capture>, [arg]) (the idiom probed
+        # 2026-08-29: apply works for a symbol holding a native, a
+        # %mr_ port, or a noun function).
+        if len(arglist) != 1:
+            raise GenError(f"{key} r{n}: headvar capture {head!r} "
+                           f"applied to {len(arglist)} args (only the "
+                           f"single-arg call is supported)")
+        return f"apply({cap_name(key, n, head)}, [{arglist[0]}])"
     if head == "FreeQ":
         # FreeQ[e, x] -> freeof(x, e); FreeQ[{a,b}, x] -> and of freeof.
         # (FIX F7) the arg list may arrive as [a, b] (braces already
@@ -1452,6 +1518,8 @@ def emit_head(head, arglist, ctx):
         return body
     if head == "PolyQ":
         return _emit_polyq(arglist, key, n)
+    if head == "Gamma":
+        return _emit_gamma(arglist, key, n)
     if head == "Expon":
         return _emit_expon(arglist, key, n)
     if head in ("Coeff", "Coefficient"):
@@ -1509,6 +1577,16 @@ def emit_head(head, arglist, ctx):
         fn = {"EllipticF": "elliptic_f", "EllipticE": "elliptic_e",
               "EllipticPi": "elliptic_pi"}[head]
         return f"{fn}({', '.join(arglist)})"
+    if head == "LogGamma":
+        # Structural rewrite (RESTRUCTURE handler "loggamma"), not a
+        # rename: LogGamma[v] -> log(gamma(v)). loggamma itself is an
+        # UNBOUND noun whose diff stays undifferentiated (a noun), while
+        # diff(log(gamma(x)),x) = psi[0](x) closes under ratsimp (both
+        # measured 2026-08-29 on branch_5_50_base_84_g4204fb669) — the
+        # closed form is what lets the zero chain verify the answer.
+        if len(arglist) != 1:
+            raise GenError(f"{key} r{n}: LogGamma arity {len(arglist)}")
+        return f"log(gamma({arglist[0].strip()}))"
     # A head absent from the table is a census miss: fail LOUDLY, never emit
     # a bare Maxima noun FooQ(...) — that makes is(ok) = true perpetually
     # false (a silently dead rule) or a silently noun-laden wrong answer.
@@ -1639,6 +1717,251 @@ def _emit_binpow_manual(spec, key, n, rule_vars, cond, rhs, ctx):
 # be a genuine binding (an integrand factor is never a boolean), so
 # every rule body rejects matchlists containing a boolean.
 _MM_BOOL_GUARD = "  if %mr_containsBoolean(mm) then return(false),"
+
+# --- Head-position capture F_[...] (class 3: 3.1.5 r58-59, 3.3 r58,
+# 3.4 r37). defmatch in this build rejects pattern variables in head
+# position (measured 2026-08-28, class 2 r96: "defmatch: some pattern
+# variables are not atoms"), so the generator emits a STRUCTURAL rule:
+# the body calls %mr_headvar_match (maxima_rubi_utils.mac) with a slot
+# spec and the allow-list of head symbols the rule's
+# MemberQ[{...}, F] clause names, and binds F to the matched head
+# symbol (the repl rebuilds the call apply(F, [arg]) — the idiom
+# probed 2026-08-29). The allow-list uses the NATIVE spellings: the
+# corpus integrands carry them, and probed 2026-08-29 on
+# branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 asin/acos/atan/acot/
+# asinh/acosh/atanh/acoth are all bound natives with closing diffs
+# (arccot/arcoth are unbound nouns) — NOT the RENAME table's %mr_
+# shims, which no integrand carries.
+HEADVAR_HEADS = {
+    "ArcSin": "asin", "ArcCos": "acos", "ArcTan": "atan",
+    "ArcCot": "acot", "ArcSinh": "asinh", "ArcCosh": "acosh",
+    "ArcTanh": "atanh", "ArcCoth": "acoth",
+}
+
+# The closed lhs shape set (whitespace-free text): one F_[...] factor,
+# one (a_+b_.*Log[...]) factor, at most one bare-capture Px factor.
+# Anything else with a head-position capture is a loud GenError — the
+# defmatch path cannot take it, so a silent pass-through would emit a
+# pattern this build's defmatch rejects at load.
+_HV_CAP = r"([A-Za-z][A-Za-z0-9]*)_[.]?"
+_HV_F_ARG_LIN = re.compile(
+    r"^" + _HV_CAP + r"\.\*\(" + _HV_CAP + r"\+" + _HV_CAP
+    + r"\.\*x_\)$")                      # d_.*(e_+f_.*x_)
+_HV_F_ARG_MON = re.compile(
+    r"^" + _HV_CAP + r"\.\*x_$")         # f_.*x_
+_HV_LOG_FACTOR = re.compile(
+    r"^\(" + _HV_CAP + r"\+" + _HV_CAP + r"\.\*Log\[(.+)\]\)$")
+_HV_LOG_ARG_PX = re.compile(
+    r"^" + _HV_CAP + r"\.\*x_\^" + _HV_CAP + r"$")         # c_.*x_^n_.
+_HV_LOG_ARG_LP = re.compile(
+    r"^" + _HV_CAP + r"\.\*\(" + _HV_CAP + r"\+" + _HV_CAP
+    + r"\.\*x_\)\^" + _HV_CAP + r"$")       # c_.*(d_+e_.*x_)^n_.
+_HV_LOG_ARG_BP = re.compile(
+    r"^" + _HV_CAP + r"\.\*\(" + _HV_CAP + r"\+" + _HV_CAP
+    + r"\.\*x_\^" + _HV_CAP + r"\)\^" + _HV_CAP + r"$")
+                                       # c_.*(d_+e_.*x_^n_)^p_.
+_HV_BARE_CAP = re.compile(r"^" + _HV_CAP + r"$")
+
+
+def _split_and(s):
+    """Top-level clauses of an && chain (split_top is single-char)."""
+    out, depth, cur, i = [], 0, [], 0
+    while i < len(s):
+        ch = s[i]
+        if ch in "[({":
+            depth += 1
+        elif ch in "])}":
+            depth -= 1
+        if depth == 0 and ch == "&" and s[i+1:i+2] == "&":
+            out.append("".join(cur)); cur = []; i += 2
+            continue
+        cur.append(ch); i += 1
+    out.append("".join(cur))
+    return [c.strip() for c in out]
+
+
+def headvar_spec(body, key, n, rule_vars, cond):
+    """A head-position capture (a rule var immediately followed by '[')
+    in the whitespace-free integrand body -> the parsed slot spec; None
+    if there is none; a loud GenError on one outside the closed shape
+    set (including a capture without a MemberQ[{...}, F] allow-list in
+    the cond — no silent pass-through). An optional-form head capture
+    (a rule var's optional marker immediately before the bracket,
+    'F_.[') is a loud GenError — class 3's .m sources use only the
+    required 'F_[' form (grep-verified 2026-08-29, zero '_.[' in the
+    eleven class-3 .m files) and the default defmatch path would emit
+    a symbol x list-literal product the generator would not name."""
+    opt = re.findall(r"([A-Za-z][A-Za-z0-9]*)_\.\[", body)
+    if opt:
+        raise GenError(f"{key} r{n}: optional-form head capture "
+                       f"({opt[0]}_.[...]) is not supported")
+    hits = re.findall(r"([A-Za-z][A-Za-z0-9]*)_\[", body)
+    if not hits:
+        return None
+    if len(hits) != 1 or hits[0] not in rule_vars:
+        raise GenError(f"{key} r{n}: head-position capture(s) {hits!r} "
+                       f"outside the supported class-3 shape (one "
+                       f"capture, a rule var)")
+    F = hits[0]
+    factors = split_top(body, "*")
+    fF = [t for t in factors if t.startswith(F + "_[")]
+    fL = [t for t in factors if t.startswith("(")]
+    fR = [t for t in factors
+          if not t.startswith(F + "_[") and not t.startswith("(")]
+    if len(fF) != 1 or len(fL) != 1 or len(fR) > 1:
+        raise GenError(f"{key} r{n}: head-position rule factor split "
+                       f"(F/log/other) = ({len(fF)}, {len(fL)}, "
+                       f"{len(fR)}) != (1, 1, <=1): {factors!r}")
+    base, exp = split_top_power(fF[0])
+    if base is None:
+        base, exp = fF[0], None
+    # base is F_[...]: the capture underscore is not in head_args's head
+    # regex — rewrite it with the bare head for the parse.
+    head, arg = head_args(F + base[len(F)+1:])
+    if head != F or not base.startswith(F + "_["):
+        raise GenError(f"{key} r{n}: F factor base is not {F}_[...]: "
+                       f"{base!r}")
+    if exp is None:
+        expspec = ("bare",)
+    else:
+        me = _HV_BARE_CAP.match(exp)
+        if not me:
+            raise GenError(f"{key} r{n}: F factor exponent {exp!r} is "
+                           f"not a single capture (the closed set has "
+                           f"^m_ or no power)")
+        expspec = ("free", me.group(1))
+    ml = _HV_F_ARG_LIN.match(arg)
+    if ml:
+        argspec = ("lin", ml.group(1), ml.group(2), ml.group(3))
+    else:
+        mm = _HV_F_ARG_MON.match(arg)
+        if not mm:
+            raise GenError(f"{key} r{n}: F argument {arg!r} outside the "
+                           f"closed set (d_.*(e_+f_.*x_) / f_.*x_)")
+        argspec = ("mon", mm.group(1))
+    mg = _HV_LOG_FACTOR.match(fL[0])
+    if not mg:
+        raise GenError(f"{key} r{n}: log factor {fL[0]!r} outside the "
+                       f"closed set ((a_+b_.*Log[...]))")
+    a, b, larg = mg.group(1), mg.group(2), mg.group(3)
+    logspec = None
+    for rx, tag in ((_HV_LOG_ARG_PX, "px"), (_HV_LOG_ARG_LP, "lpow"),
+                    (_HV_LOG_ARG_BP, "bpow")):
+        mlg = rx.match(larg)
+        if mlg:
+            logspec = (tag,) + mlg.groups()
+            break
+    if logspec is None:
+        raise GenError(f"{key} r{n}: log argument {larg!r} outside the "
+                       f"closed set (c_.*x_^n_ / c_.*(d_+e_.*x_)^n_ / "
+                       f"c_.*(d_+e_.*x_^n_)^p_)")
+    px = None
+    if fR:
+        mp = _HV_BARE_CAP.match(fR[0])
+        if not mp:
+            raise GenError(f"{key} r{n}: leftover factor {fR[0]!r} is "
+                           f"not a single capture (the Px slot)")
+        px = mp.group(1)
+    clauses = _split_and(cond or "")
+    member = [c for c in clauses if c.startswith("MemberQ[")]
+    if len(member) != 1:
+        raise GenError(f"{key} r{n}: head-position capture requires "
+                       f"exactly one MemberQ[...,{F}] allow-list clause "
+                       f"(found {len(member)})")
+    mmem = re.fullmatch(r"MemberQ\[\{([^}]*)\},\s*" + F + r"\]",
+                        member[0])
+    if not mmem:
+        raise GenError(f"{key} r{n}: the MemberQ clause is not "
+                       f"MemberQ[{{...}},{F}]: {member[0]!r}")
+    head_names = [h.strip() for h in mmem.group(1).split(",")]
+    for h in head_names:
+        if h not in HEADVAR_HEADS:
+            raise GenError(f"{key} r{n}: unlisted headvar head {h!r} — "
+                           f"probe the build and extend HEADVAR_HEADS")
+    cond_rest = " && ".join(c for c in clauses if c != member[0])
+    used = {F, a, b} | set(logspec[1:])
+    if argspec[0] == "lin":
+        used |= {argspec[1], argspec[2], argspec[3]}
+    else:
+        used.add(argspec[1])
+    if expspec[0] == "free":
+        used.add(expspec[1])
+    if px is not None:
+        used.add(px)
+    if used != set(rule_vars):
+        raise GenError(f"{key} r{n}: headvar spec names {sorted(used)} "
+                       f"!= rule vars {sorted(rule_vars)}")
+    return {"F": F, "argspec": argspec, "expspec": expspec,
+            "log": (a, b, logspec), "px": px, "heads": head_names,
+            "cond_rest": cond_rest}
+
+
+def _emit_headvar_manual(spec, key, n, rule_vars, cond, rhs, ctx):
+    """The structural emission for the head-position capture (no
+    matchdeclare/defmatch — see the HEADVAR_HEADS block comment); the
+    cond/repl are the usual generated functions (geteqR reads, the
+    snapshot rewrite — the _emit_binpow_manual emission mirrored)."""
+    F = spec["F"]
+    a, b, logspec = spec["log"]
+    if ctx["decls"]:
+        raise GenError(f"{key} r{n}: headvar rule produced MatchQ "
+                       f"markers (unsupported)")
+    cs = lambda v: f"'{cap_name(key, n, v)}"
+    argspec, expspec = spec["argspec"], spec["expspec"]
+    if argspec[0] == "lin":
+        aspec = f'["lin",{cs(argspec[1])},{cs(argspec[2])},{cs(argspec[3])}]'
+    else:
+        aspec = f'["mon",{cs(argspec[1])}]'
+    espec = (f'["free",{cs(expspec[1])}]' if expspec[0] == "free"
+             else '["bare"]')
+    if logspec[0] == "px":
+        lspec = f'["px",{cs(logspec[1])},{cs(logspec[2])}]'
+    elif logspec[0] == "lpow":
+        lspec = (f'["lpow",{cs(logspec[1])},{cs(logspec[2])},'
+                 f'{cs(logspec[3])},{cs(logspec[4])}]')
+    else:
+        lspec = (f'["bpow",{cs(logspec[1])},{cs(logspec[2])},'
+                 f'{cs(logspec[3])},{cs(logspec[4])},{cs(logspec[5])}]')
+    parts = []
+    if spec["px"] is not None:
+        parts.append(f'["px",{cs(spec["px"])}]')
+    parts.append(f'["f",{cs(F)},{aspec},{espec}]')
+    parts.append(f'["log",{cs(a)},{cs(b)},{lspec}]')
+    slots = "[" + ", ".join(parts) + "]"
+    heads = ("[" + ",".join("'" + HEADVAR_HEADS[h]
+                            for h in spec["heads"]) + "]")
+    base_cond = (translate(drop_optionals(spec["cond_rest"], rule_vars),
+                           ctx) if spec["cond_rest"] else "true")
+    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
+    caps = sorted(cap_name(key, n, v) for v in rule_vars)
+    snaps = {c: c + "__s" for c in caps}
+    if set(snaps.values()) & set(caps):
+        raise GenError(f"{key} r{n}: a snapshot name collides with a "
+                       f"capture name (a Rubi variable named __s?)")
+    for c in caps:
+        repl_txt = re.sub(
+            r"(?<![0-9A-Za-z_])" + re.escape(c) + r"(?![0-9A-Za-z_])",
+            snaps[c], repl_txt)
+    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps) or "true"
+    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
+                           for c in caps) or "true"
+    locals_txt = ", ".join(caps)
+    snap_locals = ", ".join(snaps[c] for c in caps)
+    lines = []
+    lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
+    lines.append(f"  mm : %mr_headvar_match(f, x, {slots}, {heads}),")
+    lines.append("  if mm = false then return(false),")
+    lines.append(_MM_BOOL_GUARD)
+    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
+    lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) "
+                 f"else false)$")
+    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
+    lines.append(f"  {binds},")
+    lines.append(f"  {base_cond})$")
+    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
+    lines.append(f"  {snap_binds},")
+    lines.append(f"  {repl_txt})$")
+    return "\n".join(lines), []
 
 
 def _slot_backtrack_lines(slots, key, n, rule_vars):
@@ -1824,7 +2147,19 @@ def emit_rule(run, key, n, rule_vars):
     # of 1.2.4.1/1.2.4.2 dead, 138 rules across 17 files. translate()
     # already consumes every v_ / v_. marker (and raises on a stray one),
     # so the pattern needs no optional-dropping at all.
-    spec = binpow_manual_match(re.sub(r"\s+", "", m.group(1)))
+    body = re.sub(r"\s+", "", m.group(1))
+    # Head-position capture (class 3 F_[...] family) FIRST: defmatch
+    # cannot take a head-position pattern variable in this build, and
+    # the default translate pass would emit the raw bracket form
+    # (a Maxima load error) or raise on F as an unlisted head in the
+    # repl. headvar_spec is loud on any head-position capture outside
+    # the closed shape set (no silent pass-through).
+    hv = headvar_spec(body, key, n, rule_vars, cond)
+    if hv is not None:
+        ctx["headvar"] = hv["F"]
+        return _emit_headvar_manual(hv, key, n, rule_vars, cond, rhs,
+                                    ctx)
+    spec = binpow_manual_match(body)
     if spec is not None:
         return _emit_binpow_manual(spec, key, n, rule_vars, cond, rhs,
                                    ctx)
@@ -2087,12 +2422,12 @@ EXTRA_CLASS1 = [
 EXTRA_TOTAL = 316  # 82 + 122 + 31 + 48 + 33 (measured 2026-08-25)
 
 def configure(class_num):
-    """Point the generator at class <class_num> (1 or 2 in the pilot)."""
+    """Point the generator at class <class_num> (1, 2 or 3)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
     OUT = ROOT / "rules" / f"class{CLASS}"
-    EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL, 2: 125}[class_num]
+    EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL, 2: 125, 3: 333}[class_num]
 
 
 def main(class_num=None):

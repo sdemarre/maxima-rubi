@@ -2690,3 +2690,720 @@ against the records before closing)
     read the 2.3 record (the heap-exhaustion e56/e57 share their
     entry numbers with 2.2's e56/e57) — the docs and the fix round
     were correct; the bullet's entry numbers are 2.2's.
+
+## Plan: 2026-08-29 milestone-3 class-3 port (11 tasks; branch base b9fecd0)
+
+Branch: milestone-3. Plan: docs/superpowers/plans/2026-08-29-milestone-3-class3.md
+(the runbook docs/class-porting.md instantiated for class 3). NOTE: the
+installed Maxima was REBUILT 2026-08-29 17:58 (same source rev
+branch_5_50_base_84_g4204fb669, same SBCL 2.6.7; build date field
+2026-08-29 17:58:20 supersedes the AGENTS.md 2026-08-20 stamp — Layer A
+re-verified 581/0 on the new core, 2.1 s). All class-3 measurements
+stamp the current build; the class-3 A/B yardstick is the Task-9
+baseline measured on this build.
+
+Task 1: complete (commit 8e92841..5f93a97, review clean — spec ✅,
+quality Approved; reviewer independently re-ran both probes: census
+byte-identical, answer-heads count-identical)
+  - CONTROLLER RECON ERROR found by the implementer (NEEDS_CONTEXT):
+    the plan's "PolyLog 10" grep counted COMMENTED-OUT bracket-notation
+    lines (PolyLog[2,z]) the driver never reads. Plan corrected in
+    place (8e92841). Measured truth: the active class-3 expected texts
+    carry the NATIVE polylog( spelling — 1,195 of 3,085 entries (38.7
+    %), 2,793 occurrences (orders 2: 2081, 3: 518, 4: 138, 5: 21, 6:
+    1, 1: 1, symbolic k/n offsets: 33), per-file 0/187/179/91/106/65/
+    243/237/87. Adjudication (binding): PolyLog -> 1:1 RENAME polylog
+    (build's diff(polylog(.,.)) AND polylog(.,numeric) are nouns —
+    probed; identical-form differences cancel before the diff —
+    probed — so polylog entries close only via the two-sided expected
+    chain on form-identical answers; self-diff/numeric stages cannot).
+    The 1,195-entry mass is the Task-11 ceiling-decision input.
+  - Committed: probes/translation/04-class3-syntax-census.{run,out}
+    (11/333/332, AUTO 241/MANUAL 92, 13/13 U tokens), probes/corpus/
+    03-class3-answer-heads.{py,run,out} (entries 3085; GAMMA {2:304},
+    Ei {1:220}, Chi/Shi/Si/Ci {1:8}, Li {1:22}; NATS polylog( 2793,
+    erf( 14, erfi( 137, %e^ 790; PolyLog in HEADS at 0 documenting the
+    Rubi-paren absence).
+  - Minor (carried): the "1 rules" histogram grammar is inherited from
+    the shared 01-class1-syntax-census.py formatter (class-1/2 records
+    have it too); answer-heads minute-precision stamp on re-run is by
+    design (brief-mandated, M2 precedent).
+
+Task 2: complete (commit daf3d79..0f92fd7, review clean — spec ✅,
+quality Approved; reviewer re-ran the byte-identity gate fresh at HEAD:
+`--class 1` and `--class 2` regeneration left `git status --porcelain
+rules/` EMPTY after each, whole tree clean)
+  - Generator changes: translation_table.py +56/-1 (14 RENAME rows:
+    Chi/Shi/Si/Ci/LogIntegral -> expintegral_* answer natives, PolyLog
+    -> polylog 1:1, eight %mr_ port names per the brief's list),
+    RESTRUCTURE row LogGamma -> "loggamma" handler; generate_rules.py
+    +31 (LogGamma emitter case emitting log(gamma(v)); Gamma arity
+    dispatch mirroring the PolyQ emitter pattern: 1-arg -> gamma,
+    2-arg -> gamma_incomplete, other arity -> GenError).
+  - Loud failures reproduced by the reviewer (14/14): Gamma[] -> "Gamma
+    arity 0", Gamma[a,b,c] -> "Gamma arity 3", LogGamma[a,b] ->
+    "LogGamma arity 2"; GenError subclasses SystemExit(1) with the
+    file/rule/token named on stderr.
+  - Class-2 surface verified: class 1 has ZERO Gamma occurrences; class
+    2 has 5/5 two-arg Gamma (2.1 x2, 2.3 x3) taking the 2-arg branch —
+    committed class-2 output holds exactly 5 gamma_incomplete( and no
+    bare gamma(. LogGamma appears only in class 3 (3.5).
+  - 3026 vs 3,055 RECONCILED (not an error): 3,026 is the generator's
+    --class 1 TOTAL (72 emitted files, self-checked by
+    EXPECTED_TOTAL, generate_rules.py:2126); the accepted class-1
+    table is 3,055 = 3,026 + the 29-rule hand-ported
+    rules/class1/9_1.mac (by design not generator-regenerable); core
+    3,180 = 3,055 + 125 — the Task-7 fingerprint target stays
+    3,180 + 333 = 3,513.
+  - Minor (carried for Task 7): task-2-report.md quotes the generator's
+    "TOTAL: 3026 rules" line unannotated; a Task-7 reader reconciling
+    against the 3,055 record needs the 3,026 + 29 + 125 = 3,180
+    arithmetic (reviewer finding 1). The Gamma RENAME table value
+    ("gamma_incomplete") is now reached only by the bare-atom path —
+    the accepted PolyQ precedent, documented in the row comment
+    (reviewer finding 2).
+
+Task 3: complete (commits 31ed030..e54988d + review fix 28c665f,
+reviewer Approved after 1 fix round — spec ✅, quality Approved)
+  - RECON BLIND SPOT (plan corrected in place, 40c6efe): the census
+    "C-tier token examples" section lists the first rule(s) per token
+    and showed only 3.1.5 — the .m sources carry FOUR head-position
+    capture rules: 3.1.5 L62-63 (lin arg, free-m / bare), 3.3 L62
+    (lin arg bare, lpow log arg, all-eight allow-list), 3.4 L41
+    (monomial arg free-m, bpow log arg, NO Px slot). The generic
+    detection (capture followed by [ in the lhs head position)
+    emitted all four through the same mechanism; an optional-form
+    capture (F_.[) is a loud GenError (grep-verified zero '_.[' in
+    the eleven class-3 .m files).
+  - Adjudication (reviewer upheld, re-probed all ten spellings): the
+    pattern-side allow-lists use the NATIVE bound spellings for all
+    eight — asin/acos/atan/asinh/acosh/atanh/acot/acoth bound with
+    closed diffs (diff(acot(x),x) = -1/(x^2+1), diff(acoth(x),x) =
+    -1/(x^2-1), …), arccot/arcoth unbound nouns with D-noun diffs.
+    The answer side carries the bound symbol, so a noun head could
+    never close the zero chain. New table rows ArcCot→acot,
+    ArcCoth→acoth (the plan's arccot/arcoth guess was noun-probed);
+    the %mr_ hyperbolic shims stay for class 1–2 answer-side
+    byte-identity.
+  - Shipped: generator +265 (detection, HEADVAR_HEADS, closed-set
+    regexes, headvar_spec, _emit_headvar_manual, emit_head
+    apply(F,[arg]) intercept 1-arg-only-loud, EXPECTED_TOTAL 3:333);
+    utils +353 (%mr_headvar_match + 12 %mr_hv_* sub-helpers,
+    MA-consistent-semantics block comment); test_maxima_rubi.mac
+    +183 (test_class3_headvar, 39 checks); rules/class3/ NEW (11
+    files / 333 rules; per-file 6/12/21/29/59/61/39/24/19/20/43 =
+    census; md5-deterministic).
+  - TDD: RED `Results: 581 passed, 37 failed` (two MA-semantics
+    checks flipped to final form after the recorded RED run —
+    annotated in the report) → GREEN `Results: 620 passed, 0 failed`,
+    re-verified at HEAD by reviewer.
+  - Gates re-measured by the reviewer at HEAD: Layer A 620/0;
+    --class 3 → 333 OK, re-run byte-identical; byte-identity gate
+    3026/125 with EMPTY porcelain; loud-failure path RUN through the
+    real pipeline on synthetic rules (missing MemberQ / out-of-closed-
+    set F-arg / wrong-variable MemberQ → exit 1 naming file/rule).
+  - Fix round (reviewer finding 1 — MINOR but invariant-bearing):
+    the detection regex missed the OPTIONAL form F_.[ — a measured
+    SILENT generation-time pass-through emitting a broken defmatch
+    (symbol × list-literal product); now a loud GenError before the
+    required-form detection. Finding 2: block-comment strictness note
+    (the matcher is STRICTER than MA on the identity-default corners
+    d:=1 / e:=0 / c:=1 / Px:=1 — safe direction, decline never false
+    positive; a later loosening is a spec change). Finding 3: RED-
+    record annotation. Fix commit 28c665f re-verified by the reviewer
+    (all four synthetic cases, md5-identity of the 333 rules, both
+    gates, Layer A).
+  - Carried: the four F_ rules have ZERO corpus exposure (0 of 3,085,
+    Python scan of the class-3 corpus) — the 39 synthetic Layer A
+    checks are their only gate; loader wiring + the 3,513 core
+    rebuild are Task 7; measured quirk: fboundp/info_sym/boundp/
+    functionp are ALL unbound nouns in this build (the witness-
+    function idiom is the fbound probe — why the loader design uses
+    it).
+
+Task 4: complete (commits 9fdd335..8783c0b, review clean — spec ✅,
+quality Approved; reviewer re-ran all eight gates live)
+  - Six cond-side predicates line-ported from the pinned clone's
+    IntegrationUtilityFunctions.m (utils L5771-5960, each with a
+    .m-cited block comment + measured-quirk stamps): %mr_memberQ
+    (built-in member, ARGUMENT-ORDER-REVERSED + boolean result — no
+    runtime call sites, translation-table closure only), %mr_falseQ
+    (is(u = false); false is the boolean atom, booleanp is an
+    unevaluated noun, quoted 'false =-equals the boolean),
+    %mr_productQ (op "*" test; the minus-lift storage op(-a*b) =
+    "-" is DECLINED — decline direction, only 3.5 r32/r38 could
+    notice), %mr_integralFreeQ (1-arg per .m :351-353 over the
+    package noun surface: 'mr_int / 'integrate / 'unintegrable —
+    the emitter maps Unintegrable AND CannotIntegrate to the same
+    mr_unintegrable noun (generator:1393-1394); MA's Integral has
+    no package surface, omitted; the native integrate fall-through
+    noun is included — without it 3.3 r60's cond would accept an
+    unresolved sub-integral), %mr_inverseFunctionFreeQ (the .m
+    :316-322 recursion; special-function heads as string(op) checks
+    on the generated spellings "hypergeometric" / "AppellF1"),
+    %mr_rationalFunctionExponents (the .m :1618-1636 ladder + two
+    storage-only arms: the unary "-" minus-lift (identity on the
+    wrapped value) and the "/" quotient (carries the .m's
+    unreachable negative-exponent arm — every quotient and negative
+    integer power stores as a "/" node in this build); Together ->
+    rat (together is a noun); the sum's lst2 uses the existing
+    %mr_rest_sum).
+  - TDD: RED `Results: 620 passed, 71 failed` (71 new checks,
+    test_class3_cluster_a: memberQ 9 / falseQ 7 / productQ 9 /
+    integralFreeQ 7 / iffQ 14 / rfe 25) -> first GREEN 690/1 (the
+    iffQ product-noun check hit the measured freeof opacity of the
+    finite PRODUCT noun — flipped to the transparent diff-noun
+    shape, quirk documented) -> GREEN `Results: 691 passed, 0
+    failed`, re-verified after the sole post-run edit (a .m
+    line-citation fix in a comment).
+  - RFE sum-branch adjudication: the .m's lst2 = RFE[Rest[u], x]
+    passes MA's bare part-list, whose head matches none of RFE's Q
+    predicates — a literal fall-through would degenerate the .m's
+    own Max[.,.] construction to lst1; the head-preserving
+    reconstruction reading (what the port does) is the only
+    non-degenerate one. Unreachable at the sole shipped call site
+    (3.4 r1 gates u with %mr_rationalFunctionQ first, so rat(u) is
+    a single quotient and the Max branch is never reached);
+    decline-direction vs any literal reading on the unreachable
+    mixed-sum inputs.
+  - Latent generator defect RECORDED (out of scope, no generator
+    change this task): 3_4 r1's cond carries a pass-through MA Part
+    subscript [[2]] (the Part handler's regex, generate_rules.py:850,
+    only matches bare name[[i], not f(...)[[i]]); the cond
+    hard-errors on the list result ("subscript must be an integer;
+    found: [2]"), the DISPATCHER's errcatch (utils L152, not the rule
+    wrapper — a direct _mr_rule_ call dies) -> [] -> the rule safely
+    declines, no process death (smoke-verified; reviewer reproduced).
+    SCHEDULED in Task 6 (plan 8aed663): extend the Part handler to
+    expr[[i]] -> part(expr, i), regenerate, re-run the class-1/2
+    byte-identity gate, confirm 3.4 r1 FIRES on a witness — must
+    land before the Task-7 core rebuild.
+  - Measured on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 (all
+    stamps in the block comments): member order-reversal + boolean
+    result + no element part-inspection; op() on an atom FATALs
+    (atom gate); a noun's op is an internal symbol whose string()
+    is the head name; freeof recurses through head positions and
+    nested calls but NOT through the finite product noun or a
+    quoted bracket list on a bound head; rat() results are plain
+    node trees (gcrat only behind num()/denom(), never called);
+    list arithmetic native; max of undecided args stays a noun.
+  - Review (controller line): reviewer APPROVED all eight gates
+    live — Layer A 691/0 at HEAD; the four .m citations byte-exact
+    (one line's trailing whitespace normalized in the quote; the
+    report correctly extends the plan's truncated :1618-1633 to the
+    true :1618-1636); house style + reuse confirmed; all 71 checks
+    pin concrete returns. Adjudications upheld: (i) the RFE
+    sum-branch head-preserving reconstruction — the Max branch is
+    unreachable at the sole shipped call site (3.4 r1, rational gate
+    first) and the port agrees with the .m on every reachable input,
+    the two storage-only arms reproducing the .m's quotient
+    decomposition (reviewer noted the report's "MA Rest on a
+    non-list" intermediate phrasing is imprecise — the degeneracy
+    conclusion holds under either MA reading); (ii) the [[2]]
+    defect deferral is safe (Task 9 is the native-integrate yardstick
+    — no package rules; Task 6 precedes the Task-10 A/B) PROVIDED
+    the fix lands by Task-6 end, now scheduled in the plan (8aed663).
+    Fix-round commits: a8ec99f (RFE comment column-0 cosmetic).
+    Minor carried: the report's errcatch misattribution (fixed in
+    this entry), the trailing-whitespace quote variance, the
+    plan-Task-6 omission (fixed 8aed663).
+
+Task 5: complete (commits 4c870de..56417c6, review clean — spec ✅,
+quality Approved; reviewer re-ran all nine gates live, Layer A twice)
+  - Five cluster-B ports + supporting helpers (utils L5962-6299,
+    +547 additive): %mr_easyDQ (+_strip), %mr_derivativeDivides
+    (+_xmonomialMatch, +_sincReplace), %mr_fractionalPowerOfLinear,
+    %mr_substForFractionalPower, %mr_substForFractionalPowerOfLinear
+    (+ %mr_fractionalPowerQ/_fractionalPowerExpon/_productOfLinearPowersQ).
+  - SPEC-PROCESS NOTE: the on-disk task-5-brief.md was STALE (an
+    M1 fetch-feature file, mtime 2026-08-20) — the controller did not
+    regenerate the brief before dispatch (a task-brief run for Task 5
+    never happened); the implementer flagged it (judgment call 0) and
+    worked from the plan + dispatch prompt, which is the operative
+    spec; the brief was regenerated post-hoc. Lesson: run task-brief
+    before every dispatch.
+  - TDD: RED `Results: 691 passed, 52 failed` (52 new checks,
+    test_class3_cluster_b; the first RED attempt died mid-run on
+    part() of a 2-arg noun — fixed by the RED-safe `sl` errcatch
+    accessor, recorded) -> first GREEN 738/5 (five EXPECTED-value
+    pin errors, all adjudicated legitimate by the reviewer, none
+    masking an implementation bug) -> GREEN `Results: 743 passed,
+    0 failed`, run twice.
+  - RAT-MODE QUIRK (measured 2026-08-29, reviewer reproduced): a
+    rat() call earlier in the SAME top-level statement makes a later
+    ratsimp keep products FACTORED (plain statement: expanded); no
+    leak to the next statement; ratsimp itself does not trigger it;
+    spans nesting. Structurally deterministic for
+    %mr_substForFractionalPowerOfLinear (line 1 rat via
+    %mr_together<-%mr_polyQ<-%mr_linearQ, line 4 %mr_simp ratsimp
+    first): the v slot is the factored form x^5*(b*log(x^2+1)+a) in
+    EVERY call context, first call of a fresh process included.
+    Downstream correctness: NO RISK — the 3.5 r13 repl is
+    n*(ff/b)*Subst[Int[v,x], x, base^(1/n)] and the ported
+    free/nonfree split maintains tmp = ff*nonfree in every arm, so
+    the result is algebraically form-invariant (reviewer
+    adjudication i); only mr_int rule-coverage of the factored form
+    is form-sensitive, and that is pinned.
+  - Sqrt-head decision (reviewer upheld): op(sqrt(x+1)) is the
+    SYMBOL 'sqrt (the controller pre-probe's string reading was
+    wrong; the house note at utils:1244-1247 is right);
+    (x+1)^(1/2) stores as the sqrt node, (x+1)^(2/3) as a "^" node,
+    every negative power as a "/" node. %mr_fractionalPowerQ carries
+    the sqrt arm (exponent 1/2 — cannot false-positive: a 'sqrt head
+    is by construction a 1/2 power); negative fractional powers
+    decline ("/" storage, the Task-4 minus-lift precedent; the .m's
+    Power-head test is unreachable for them in this build).
+  - 4-list contract pinned element-wise and hand-verified by the
+    reviewer: e2e (x+1)*(a+b*log(1 + (x+1)^(2/3))) ->
+    [x^5*(b*log(x^2+1)+a), 3, x+1, 1]; slope-2 (2*x+1)*(c+d*log(1 +
+    (2*x+1)^(2/3))) -> [x^5*(d*log(x^2+1)+c), 3, 2*x+1, 1/2];
+    declines: x^2+x+1, quadratic base. NOTE the e2e pin uses the
+    log-SUM shape: log of a PURE power auto-expands
+    (log((x+1)^(2/3)) -> (2*log(x+1))/3, measured), so the plan's
+    bare-log example does not survive Maxima simplification — the
+    log-sum shape is what the 3.5 r16 call site actually sees.
+  - .m citations byte-exact (reviewer), again extending the plan's
+    truncated ranges: EasyDQ's true end is :7495 (plan/brief said
+    :7466-7480 — mid-ladder); DerivativeDivides :7450-7462 (plan
+    :7450 — fine); sfpol :6056-6063 / fpl :6066-6076 (plan
+    :6067/:6067 region). Divides NOT ported (no class-3 call site —
+    grep-verified; port-on-demand later).
+  - Review fix (controller): a3bd850 — the block-header bullet
+    claiming "factor() does NOT re-extract … v slot carries the
+    expanded sum" was stale/wrong on both clauses (factor()
+    re-extracts in BOTH modes — reviewer measured; the v slot is the
+    FACTORED form per the :6268 note); bullet reworded to the
+    measured facts, Layer A re-verified 743/0.
+
+Task 6: complete (commits 033afd9..fd9d261 + 5fe2e7b, review clean —
+spec ✅, quality Approved; reviewer re-ran all seven gates live)
+  - 3.4 r1 Part-subscript defect FIXED (scheduled by the Task-4
+    review, plan 8aed663): the generator's Part handler
+    (generate_rules.py, translate) now matches a trailing
+    [[<int>]] at bracket-depth-0 on the whole expression with a
+    non-empty-prefix guard -> part(<translated prefix>, <int>),
+    subsuming the bare-name sites byte-identically (class-2
+    uu[[1]]/uu[[2]], class-3 lst[[1..4]]). The only LIVE
+    call-then-Part in any class was 3.4 r1 (the 1.1.3.2
+    BinomialParts hit is a (* ... *) comment the parser strips) —
+    the generalization is additive.
+  - Regeneration changed exactly ONE line: rules/class3/3_4.mac:14
+    the r1 cond is now is(part(%mr_rationalFunctionExponents(…, x),
+    2) <= %mr_expon(…, x)); the rule is LIVE — witness
+    log(x/(x+1))/(x+1) (Pq = x+1, m = -1, u = x/(x+1)) fires
+    end-to-end to polylog(2, 1 - x/(x+1)) (C = 1 x-free, measured);
+    negative control log(x/(x^2+1))/(x+1) cond false (cond live,
+    not vacuous); the Task-4 smoke shape x^2*log(x/(x+1)) now
+    EVALUATES the cond (true) though its repl declines at the .m's
+    own FreeQ[C,x] answer-guard (C = x^3+x^2 — the rule's
+    semantics, not a defect).
+  - Gates (reviewer re-measured): byte-identity 3026/125 EMPTY
+    porcelain both classes; class 3 333 OK; statics — 0 raw
+    $[A-Za-z], expintegral_li 1 (3_1_1), log(gamma( 2 (3_5),
+    polylog( 45 occurrences = 45 live source PolyLog[ (1:1; the
+    report's per-file 25 is line-count, reviewer-noted presentation
+    only), PolyLog( 0, expintegral_{shi,chi,si,ci} 0; parse sweep
+    11/11 clean (M1 probe form, fresh TLS process per file); Layer A
+    743/0.
+  - Part-fix misfire guards reviewer-verified against the real
+    translate: bare-name byte-identical; inner index f[g[[1]]] NOT
+    caught (recursive arg translation); empty prefix [[2]] not a
+    Part; comma index u[[1, 2]] loud GenError (unlisted head), not
+    a mis-emit.
+
+Task 7: complete (commit 848b80a..9c58ae0, review clean — spec ✅,
+quality Approved; reviewer re-ran all seven gates live)
+  - Loader: the class-3 block is purely additive in mr_load_all, in
+    the pinned Rubi.m:211-221 LoadRules order (3.1.1→3.1.2→3.1.3→
+    3.1.4→3.1.5→3.3→3.4→3.2.1→3.2.2→3.2.3→3.5 — 3.3/3.4 BEFORE the
+    3.2.x, NOT numeric); witness symbols match all 11 generated
+    files; class-1/class-2 blocks + rule files byte-untouched
+    (git diff stat on rules/class1 rules/class2 = empty).
+  - Fingerprint mirror (the runbook's only mechanical harness
+    change): test/build_rules_core.sh FP list AND
+    test/corpus_driver.py _core_fingerprint() both gain
+    rules/class3/*.mac, same 4 top files, same C-locale sort.
+    Recomputed driver fp == stamp fp (00e05dca117aefd8df3d266652b11e93),
+    rules_core_state() = 'on' (the driver's stale-refusal gate
+    accepts the core). 91 fingerprinted files (4 top + 73 class1 +
+    3 class2 + 11 class3).
+  - Core: test/mr_rules.core + .stamp (gitignored working-tree
+    deliverables, M2 precedent) — stamp rules = 3513 (= 3,180 class
+    1+2 + 333 class 3; the 333 = the eleven census counts
+    6+12+21+29+59+61+39+24+19+20+43). TABLE_AT_BUILD 3513.
+  - TLS probe: probes/load_wall/probe-class3-load.{mac,run,out}
+    (copy of the class-2 probe, section-agnostic full load) —
+    committed .out (5313 lines, the expected verbose defmatch load
+    log, class-2 precedent 4247) ends TABLE_AT_LOAD 3513, 0
+    error/exhausted/Thread-local lines.
+  - Census spot checks (reviewer re-ran, fired-rule identity via a
+    verbatim %mr_dispatch pass-1 mirror): 1/x -> log(x) via
+    _mr_rule_1_1_1_1_r1 (idx 1, class-1 undisturbed); log(x) ->
+    x*log(x)-x via _mr_rule_3_1_1_r1 (idx 3181 = 3,180+1, the FIRST
+    class-3 slot — corroborates composition AND order);
+    log(x/(x+1))/(x+1) -> polylog(2,1-x/(x+1)) via _mr_rule_3_4_r1
+    (idx 3369 = 3,180+188+1, where the 188 preceding class-3 rules
+    are exactly 3.1.1-3.1.5 + 3.3 — 3.3/3.4 before 3.2.x; under
+    numeric order it would be 3,432).
+  - Layer A 743/0.
+  - Minor carried (pre-existing, outside this task): test/mr_preload
+    .mac (the MR_RULES_CORE=0 fallback) is still class-1-only — if a
+    run ever falls back off the core path the fallback table lacks
+    classes 2-3 (M1 state, untouched through M2/M3); a stale
+    Option-D comment block in corpus_driver.py (~L92-100).
+
+Task 8: complete (commits 89955bb..b916f69 + fix 4753bb7, review clean —
+spec ✅, quality Approved; reviewer re-ran both no-op slices live)
+  - Driver: five class-3 rows appended to HEAD_REWRITES in
+    test/corpus_driver.py (Chi(/Shi(/Si(/Ci(/Li( ->
+    expintegral_chi/shi/si/ci/li(), same (?<![A-Za-z0-9_]) atom-charset
+    lookbehind as the GAMMA(/Ei( rows). No polylog( row: the package
+    emits the native polylog( spelling and the active corpus expected
+    texts are already natively spelled; the 10 commented-out PolyLog[
+    suite entries span 3.1.5/3.3/3.4/3.5 (3/3/3/1) and extract_entries
+    never reads them (comment cites the distribution).
+  - Unit: test/test_head_rewrites.py 13 new checks (per-row positive +
+    multi-row + negatives: already-native expintegral_li(/expintegral_si(
+    untouched, MySi(/XChi(/Li2( longer names intact, Sin( guards the Si(
+    row, LogGamma( guards the GAMMA( row) — Results: 20 passed, 0 failed.
+  - No-op proof (constraint-1 basis: records measured on the
+    2026-08-20 build; re-measured on 2026-08-29
+    branch_5_50_base_84_g4204fb669 17:58:20 / the 3,513-rule core,
+    rules_core_state() 'on' — reviewer verified fp 00e05dca… == stamp):
+    class-1 slice 51 entries (17+17+17 over files of 1,917/3,189/159 —
+    the plan's "17+17+16 = 50" expectation undercounted the third file,
+    measured) -> head rewrites: {}; 51/51 (rel, entry) -> verdict
+    identical to test/corpus_class1.out (its 3 timeouts are the record's
+    standing timeouts). Class-2 slice 51 (17+17+17 over 98/93/774) ->
+    head rewrites: {'gamma_incomplete(': 1, 'expintegral_ei(': 8} (only
+    the two pre-existing rows; NO expintegral_{shi,chi,si,ci,li} key);
+    51/51 identical to test/corpus_class2.out. Zero diffs both classes —
+    no drift triage needed; corroborated at text level by a pre-scan:
+    zero lookbehind-guarded occurrences of the five new heads in all 40
+    class-1 + 3 class-2 suite files.
+  - Review findings (all documentation-accuracy, zero functional; fixed
+    in 4753bb7, comment-only, table byte-unchanged, unit re-verified
+    20/0 + py_compile): F1 should-fix — the comment's "short names
+    shi/chi/si/ci/li unbound nouns" was wrong for li: li IS the bound,
+    documented native polylogarithm li[s](z) (describe(li, exact);
+    ev(li[2](0.5)) = 0.5822405264650125 measured) — a distinct token
+    (lowercase, subscript-arg form) from the uppercase Li( row; F2 minor
+    — PolyLog[ span pinned to 3.5 only, corrected to the four files
+    (3/3/3/1); F3 minor — the report's "only in 3.5" active-head claim
+    corrected to the measured distribution (Li( x22: 6/6/6/4 across
+    3.1.2/3.3/3.4/3.5; Chi(/Shi(/Si(/Ci( x8 each, all in 3.5 —
+    reconciles with the plan census 8/8/8/8/22).
+  - House rules held: only test/corpus_driver.py +
+    test/test_head_rewrites.py committed across both commits; accepted
+    records, generator/, rules/, docs/, probes/ untouched; ledger was
+    controller-written (implementer report untracked).
+
+Task 9: complete (commit 36f539b, review clean — record APPROVED;
+reviewer independently re-derived integrity and re-ran all 30 error
+entries in isolation)
+  - Deliverable: test/corpus_class3.baseline.out — the native-
+    integrate T3 baseline over "3 Logarithms" (9 files, 3,085
+    entries, 30 s cap, 3 shards (0,3)/(3,6)/(6,9) merged with
+    test/merge_class_shards.py). Completeness OK 3,085/3,085 (no
+    dupes/missing/extra); build stamps 2026-08-29
+    branch_5_50_base_84_g4204fb669 17:58:20 / SBCL 2.6.7 in the
+    header (the Task-10 A/B yardstick, constraint 1).
+  - Tally (3,085): unverified 1288 (41.8%), verified 979 (31.7%),
+    no-answer 397 (12.9%), unexpected 177 (5.7%), timeout 149 (4.8%),
+    expected 65 (2.1%), error 30 (1.0%), deferred 0, contains-noun 0.
+    Results: 1441 passed, 1644 failed (PASS = {expected, verified,
+    no-answer} = 65+979+397).
+  - Error class (30) fully triaged by the reviewer (all 30 re-fatal in
+    isolation, zero escapes): 18 fatal in the integrate() call, 12 in
+    the probe's UNGUARDED e-side zero chain (ze); five distinct
+    fatals — expt: undefined: 0 to a negative exponent. x16
+    (6/10), PQUOTIENT: Quotient by a polynomial of higher degree
+    (case 2a) x7 (5/2), PTPTQUOTIENT: Polynomial quotient is not
+    exact x4 (integrate), Heap exhausted during GC x3 (integrate,
+    uncatchable process death). Entry-specific hard-log integrands +
+    polylog/Unintegrable expectations, NOT one systemic defect; the
+    polylog-in-expected correlation (27/30) is a red herring for the
+    17 that die in integrate() (expected text never evaluated there).
+  - A/B asymmetry (binding readout note for Task 10, measured): the
+    12 ze-chain fatals will classify error -> unverified in the
+    package run (driver zero_chain is errcatch-guarded,
+    test/corpus_driver.py:301); the 18 integrate-stage fatals
+    error -> error (driver rubi_fallback head equally unguarded; the
+    3 OOMs uncatchable). Bucket the 30 explicitly in the A/B —
+    FAIL->FAIL transitions, not regressions.
+  - Yardstick fitness: profile shift vs class-2 (unverified 41.8 vs
+    37.0, unexpected 5.7 vs 1.5, timeout 4.8 vs 0.1) is the expected
+    direction for logarithmic integrands; no anomaly warranting
+    re-measurement.
+  - Execution note: first launch killed by a running-shell 120 s
+    command timeout; re-launched all three with setsid (clean "w"-open
+    restart, ~2 min partial data overwritten); shard walls
+    1223.7/310.4/3559.6 s concurrent, total ~60.6 min. Only the merged
+    record committed (shard .out intermediates uncommitted, M2
+    precedent); no tooling modified (probe/merger/driver unmodified).
+
+Task 10: complete (commit 23d5bd9..f40d56b + gitignore follow-up
+d86a099, review clean — APPROVED with zero arithmetic mismatches;
+reviewer independently recomputed the whole A/B)
+  - Package run: 3,085/3,085 (29 shards — count-balancing first run,
+    heavy files split into 128-entry chunks; 24 procs; wall 28 min
+    04 s; pre-launch rules_core_state() = on, fp
+    00e05dca… matches stamp). Results: 1736 passed, 1349 failed —
+    verified 1367, expected 66, no-answer 303 | deferred 1033,
+    unverified 158, timeout 117, unexpected 22, contains-noun 13,
+    error 6.
+  - A/B vs the Task-9 baseline (1441/1644): net +295 PASS / +9.6 pt
+    (46.7% -> 56.3%) — the FIRST class where the package PASS total
+    beats the baseline (M2's was below it). Per-file deltas
+    +74/-24/+46/+33/-16/+3/+64/+76/+39 (gains in 7 of 9 files;
+    3.1.4 and 3.2.2 the two log-ratio-heavy declines). PASS->FAIL
+    525 = 343 genuine + 182 yardstick: genuine = 329 deferred (the
+    M2 top-level-noun pattern; per file 3.1.4 128, 3.2.2 66, 3.4 39,
+    3.5 36, 3.2.1 34, 3.3 18, 3.2.3 8) + 9 verified->unverified
+    (zero-chain verification gaps, listed) + 3 verified->timeout
+    (3.1.4 e133/e140/e147 — confirmed non-terminators at 100 s) +
+    2 verified->contains-noun (unintegrable residue, listed).
+    Yardstick = no-answer->deferred 150, ->unverified 20,
+    ->unexpected 8, ->timeout 4. FAIL->PASS 820 (unverified->verified
+    580, unexpected->no-answer 163, unverified->expected 33,
+    timeout->verified 31, error->verified 11, timeout->no-answer 2).
+    The 30 baseline-error entries: 19->deferred + 11->verified,
+    0->error, 0->unverified (the package's rules path avoids the
+    native-integrate fatalities entirely; the 11 verified form
+    clusters). Nothing unexplained remains; the M2 yardstick
+    mechanics note is quoted in the readout.
+  - 100 s re-check (the record's 117 timeout entries, 24 shards, wall
+    ~10 min 05 s; same core — fp launcher-confirmed): now-PASS 1
+    (3.2.3 e60 -> no-answer, t=33.5 s — ZERO slow-correct answers);
+    still-timeout 96 (genuine non-terminators; by family 3.3 44,
+    3.1.5 22, 3.1.4 12, 3.4 5, 3.2.1 5, 3.5 5, 3.2.3 3 — includes all
+    three genuine-decline timeouts); unverified 9; error 9;
+    contains-noun 1; deferred 1.
+  - Death census (15 = 6 run + 9 re-check; reviewer-corrected):
+    13 heap-exhausted OOMs + 2 control-stack-exhausted. The OOMs
+    blow up in the driver's zero-chain VERIFICATION stage (rubi()
+    alone answers e233/e74/e30; the 8-stage chain dies at the 1 GiB
+    cap, bytes_allocated 99.8 % — reviewer re-runs) — matcher-speed
+    work must not be misdirected at matching. 3.2.3 e79 = matching
+    stack overflow. 3.3 e492 = the one reproducible non-resource
+    package bug (below).
+  - FINDING (ticketed, ready-for-agent): 3.3 e492 is NOT a Maxima
+    builtin bug (the initial report's attribution, refuted in
+    review) — it is a rule-generation arity bug in exactly THREE
+    generated rules: 3_1_5.mac:679 (r30), 3_3.mac:732 (r32),
+    3_3.mac:1422 (r61) call the 2-arg %mr_algebraicFunctionQ
+    (maxima_rubi_utils.mac:3109) with a trailing `true` — the
+    1:1 rename (translation_table.py:66) carried Rubi's flag arg from
+    AlgebraicFunctionQ[AFx, x, True] (3.1.5 .m:34, 3.3 .m:35/:65;
+    the flag = "nonnumeric x-free exponents count"). 3_3 r61 fired
+    on e492 (AFx = 1/(h x+g)^(3/2)); r32/r30 not yet exercised by
+    the corpus. Ticket:
+    .scratch/class3-algebraicfunctionq-arity/issues/01 (fix =
+    flag-aware 3-arg utility + generator special-case; class-1
+    2-arg output frozen by the byte-identity gate; post-fix scope
+    incl. core rebuild + full class-3 re-run, in the ticket).
+  - Polylog-mass side measurement (feeds the Task-11 ceiling
+    decision; 1,195 entries grep-verified per file): PASS 440
+    (36.8 % — verified 379, expected 59, no-answer 2) vs deferred
+    532 (44.5 %), unverified 106, timeout 103, contains-noun 8,
+    error 6; record-wide PASS is 56.3 %. All 6 package-run errors
+    and 8 of the 9 re-check OOMs sit in the polylog mass.
+  - Head rewrites (first run the five new rows fire; aggregated over
+    the 29 shard .out files — the merger drops per-shard lines, M2
+    precedent): gamma_incomplete( 304, expintegral_ei( 220,
+    expintegral_li( 22, si/ci/chi/shi( 8 each = 578 firings.
+  - Reviewer minor findings, all handled: .gitignore re-inclusion
+    gap for non-5m re-check record names (the 100 s record needed
+    git add -f) + the untracked class3_merge.log — fixed in
+    d86a099 (negation corpus_class*.timeout*.out, verified precise
+    against the run-dir shardNN.out names; class*_merge.*); the
+    report's e534 mischaracterization + death census (13 OOM + 2
+    control-stack = 15) and the e492 attribution — corrected in
+    task-10-report.md (§6/§7/§10/§12).
+
+Task 11: complete (commit e6c4a4d + fix d92a1b0 + housekeeping
+803f13b, review clean — APPROVED, every doc number recomputed exact,
+all three final gates re-run green)
+  - Acceptance record: docs/corpus-class3-baseline-uplift.md (772
+    lines, the class-2 shape): header/inputs/build+fp block; S1 rule
+    set (11/333/332, 241/92, per-file counts in LoadRules order, the
+    4 F_ head-position rules + allow-lists, the 13-token resolution
+    table); S2 normalization (7 HEAD_REWRITES rows, the li-is-bound
+    note, the polylog rename + noun properties, the 51/51x2 no-op
+    proof); S3 baseline (1,441/3,085 + 30-error triage); S4 package
+    run + A/B (1,736/3,085, per-file table, 525 = 343 + 182 / 820
+    transitions, the 30-error bucket, the 100 s re-check 1/96/9/9/1/1,
+    the 15-death census, the yardstick note); S5 residues (per-file
+    FAIL-mass table, 31 sample entries with t, likely-cause
+    classification, the residue-head census); S6 earlier classes
+    stand (empty git log over rules/class1+2, the rebuild no-op
+    proof); S7 ledger flags (8 shared-code changes + evidence); S8
+    final gates.
+  - Residue analysis: 1,349 FAILs (deferred 1,033, unverified 158,
+    timeout 117, unexpected 22, contains-noun 13, error 6) — per-file
+    masses + samples reviewer-verified 31/31 against the record;
+    committed re-runnable census probe
+    probes/corpus/04-class3-residue-answer-heads.{py,run,out} (FAIL
+    set 1,349; output byte-identical on re-run): polylog( 1,782,
+    %e^ 468, GAMMA( 245, Ei( 77, erfi( 57, Chi/Shi/Si/Ci( 8 each,
+    Li( 6, hypergeometric( 4 (NATS extension, 4 real entries) —
+    polylog-dominated.
+  - THE POLYLOG DECISION (the M2-deferred one, now with numbers):
+    the ceiling does NOT stand. Of the 1,195-entry mass (38.7 % of
+    the class; 2,793 occurrences): PASS 440 (36.8 %) | deferred 532
+    + unverified 106 = 638 (53.4 % of the mass, 47.3 % of the FAIL
+    mass) | timeout 103 | contains-noun 8 | error 6. 638 is
+    material (it exceeds every other FAIL sub-mass and sits exactly
+    where the M2 deferral predicted) -> the polylog-derivative-shim
+    follow-up ticket carries 638 as its go number (candidates
+    d/dz polylog(2,z) = -log(1-z)/z and the recursion
+    d/dz polylog(s,z) = polylog(s-1,z)/z; the where-does-it-live
+    question — driver zero-chain vs Maxima-level diff
+    simplification — is for triage; OOM/time interaction recorded:
+    8 of 9 re-check OOMs + all 6 run errors sit in the polylog
+    families). The AppellF1 half stays deferred (0 occurrences in
+    class 3, active or rule-side).
+  - Follow-up tickets (7 new, all needs-triage except noted):
+    .scratch/class-ports/issues/01-05 (the queue 8 -> 5 -> 6 -> 7 ->
+    4, class 4 last deliberately; entry counts verified against the
+    suite 1,949/4,585/5,080/6,552/22,472; recon rule counts
+    310/665/390/1,075/2,095 labeled pre-census);
+    .scratch/class3-polylog-ceiling/issues/01 (the 638 go number);
+    .scratch/class3-verification-stage-oops/issues/01 (the 13
+    zero-chain-VERIFICATION-stage OOMs + the e79 matching
+    control-stack death; e492 explicitly deferred to the existing
+    ready-for-agent arity ticket).
+  - Final gates (reviewer re-ran): Layer A Results: 743 passed,
+    0 failed; byte-identity --class 1 TOTAL 3026 OK / --class 2
+    TOTAL 125 OK + git status --porcelain rules/ EMPTY; head-rewrite
+    unit 20/0.
+  - todo/TODO.md: the M3 section closed (acceptance line, record
+    pointers, the rebuild note, 13 follow-up entries — the 5 class
+    tickets, the shim 638, the OOM ticket, the arity
+    ready-for-agent, the still-open M2 carries; nothing resolved
+    carried, nothing open dropped; queue 8 -> 5 -> 6 -> 7 -> 4).
+  - Review findings, all handled: the doc's "1,195 native-spelled in
+    the ACTIVE expected texts" was off by one (3.1.5 e220's polylog
+    is integrand-only, Unintegrable-expected — 1,194 expected-text
+    entries; the 1,195 is the whole-line grep) — wording fixed in
+    d92a1b0; the report's "8 new ticket files" typo (7) fixed in the
+    report; the AGENTS.md installed-build stamp (2026-08-20 ->
+    2026-08-29 17:58:20, the milestone-3 rebuild) updated in
+    803f13b (controller housekeeping, the implementer's flagged
+    deviation).
+
+MILESTONE 3 CLOSED — all 11 tasks complete (branch milestone-3,
+base b9fecd0). Final measured state: 3,513-rule core (fingerprint
+00e05dca117aefd8df3d266652b11e93, TLS probe TABLE_AT_LOAD 3513);
+Layer A 743/0; class-3 acceptance 1,736/3,085 (56.3 %) vs the
+integrate baseline 1,441/3,085 (46.7 %) — the first class where the
+package beats its baseline (+295 / +9.6 pt; FAIL->PASS 820 vs
+PASS->FAIL 525 = 343 genuine + 182 yardstick); 96 confirmed
+non-terminators at 100 s; the class-1 (20,069/25,697) and class-2
+(594/965) accepted records stand under the 2026-08-29 build (no-op
+slices 51/51 x 2).
+
+## Whole-branch review + close-out fixes — milestone-3 (2026-08-30)
+
+Whole-branch review (both axes: standards + spec) of b9fecd0..885ad37
+completed. Disposition: fix commits 0f120fc (probes), e9309bb (F_
+correction in the acceptance record + suite comment), 952c659
+(citation re-points / counts / plan wording).
+
+**Finding (both axes) — the F_ "zero corpus exposure" claim is FALSE.**
+The Task-3 smoke's "0 of 3,085 entries" under-reported: probe 05
+(probes/corpus/05-class3-inverse-function-exposure, green, pins
+EXPECTED_TOTAL 3085 + the exact hit set) measures **12** — 3.1.5
+e186-e197, all the (d+e x^2) F(a x)^m log(c x^n) shape. The
+throwaway smoke scan is gone (failure mode not pinned); probe 05 is
+the authoritative scan. Measured mechanism (2026-08-30, milestone-3
+core, rubi_verbose + direct %mr_headvar_match calls):
+- The ported F_ rules (3_1_5 r58/r59) fire on **NONE** of the twelve:
+  the headvar matcher declines the e:=0 identity-default corner of
+  the linear F-argument a*x (direct: the r58/r59 specs bind the
+  non-zero-e control 2*(3+4*x) and decline a*x) — the recorded
+  finding-2 strictness (STRICTER than MA, a decline, never a false
+  positive).
+- All eight m=1 rows: pass 1 0-fires; the 3.5 catch-all
+  _mr_rule_3_5_r43 fires on pass 3 (measured on all eight). r43's
+  repl re-dispatches the factored form; the F-only sub-integral
+  (no log factor) 0-fires in every family -> the native-integrate
+  fall-through answers it (the measured answers carry the native
+  atan2(.,.)/li(.) forms).
+- All four m=2 rows: 0-fire in all three passes -> top-level
+  unintegrable -> deferred.
+- Committed-record outcomes: verified 4 (e188/e189/e192/e193 —
+  zero chain closes the log(1+a^2 x^2)/polylog(2,-a^2 x^2) residue),
+  unverified 4 (e186/e187/e190/e191 — the expected texts'
+  atanh(sqrt(1+-a^2 x^2))/(1+-a^2 x^2)^(3/2) terms do not close
+  against the native atan2/sqrt forms), deferred 4 (e194-e197);
+  baseline unverified 9 + timeout 3 (e191/e196/e197) -> the twelve
+  add +4 PASS, all via r43, none via r58/r59. The pre-correction
+  "r59 verified 4/4" attribution was wrong — r59 never fires on the
+  corpus. The 39 synthetic Layer A checks remain the only committed
+  gate on r58/r59 (none of the twelve binds d:=1 / c:=1 / Px:=1 /
+  non-zero-e).
+- This ledger's close-block line "the first class where the package
+  beats its baseline" and line 2816's "0 of 3,085" stand as
+  contemporaneous record; this entry + e9309bb correct them. The
+  "first class" wording: class 1 (bespoke port) beat its baseline by
+  +27.0 pt; the defensible claim is "first RUNBOOK-PORTED class"
+  (class 2, first runbook port, was -9.6 pt at the pilot).
+
+**Other review findings, disposed:**
+- Dangling transient citations: .superpowers/sdd/task-2-report.md in
+  the driver HEAD_REWRITES comment + uplift doc §2 -> re-pointed to
+  probes/answer-side/02 (0f120fc commits the probe: the five
+  expintegral_* derivative identities, the short-name noun trap, the
+  li boundness — the committed re-runnable form of the Task-2
+  measurements); task-10-report.md in the two class3 follow-up
+  tickets -> re-pointed to the committed acceptance record §4/§5
+  (the same numbers, committed home).
+- AGENTS.md Layer A count stale (581) -> 743 (growth 511 -> 581 ->
+  620 headvar -> 691 cluster A -> 743 cluster B).
+- Plan in-place: the accepted class-1 19,731 annotated with its
+  20,069 post-radcan supersession (class2 uplift §8.2); the
+  1,195/1,194 whole-line/expected-text polylog distinction at the
+  three count sites (3.1.5 e220 integrand-only,
+  Unintegrable-expected).
+- **Judgement call (recorded, not refactored):** generate_rules.py
+  carries two near-parallel rule-emission paths (the AUTO/MANUAL
+  defmatch path, the headvar structural path) with no shared helper
+  for the matchlist-assignment prelude. Both paths are frozen by the
+  byte-identity gate; a refactor risks byte-drift across 3,513
+  rules for a zero-behavior change; the headvar path is 2 sites.
+  Revisit if a third structural matcher form is added.
+
+**Build-quirk measurements (2026-08-30; plain maxima AND the rules
+core — build-level, branch_5_50_base_84_g4204fb669):**
+- Relational ops do NOT auto-evaluate at top level: disp(0 = 0)
+  prints the noun `0 = 0`; disp(1 < 2) prints `1 < 2`; the
+  `#`-operator likewise (a2 # false stays a noun). The `if` test
+  position and and/or force evaluation: is(0 = 0) -> true,
+  2 > 1 and 3 > 2 -> true, if (0 = 0) then ... takes the true
+  branch. All production code already avoids bare relations
+  (driver is()-wraps; generated conds use is(...); %mr_dispatch's
+  `res # false` / `res = []` idiom is is()-safe via the if test
+  position) — no behavior impact, but Maxima written for the
+  driver/core keeps the is() discipline (campaign probe authors:
+  note).
+- The iterator form `for (x : list) do` errors ("assignment: cannot
+  assign to (x : list)"); the thru form `for x : 1 thru n do` works
+  (%mr_dispatch uses it). No production path uses the iterator form
+  (Layer A suite: 0 occurrences; driver mac template: 0).
+- `#=` and `<>` are parse errors in this build ("= is not a prefix
+  operator" / "> is not a prefix operator"); use `#` (is()-guarded)
+  or `=`.
+- `element(list, i)` returns unevaluated (a noun) at the Maxima
+  level; first/rest/part are the working accessors. (Related
+  pre-existing: part(-(1/2), 2) errors — utils :127-130 comment.)
+
+**Layer A re-verification after the fixes (2026-08-30):** Results:
+743 passed, 0 failed (covers the edited test_maxima_rubi.mac).
+
+**Open (not part of the review):** the deferred campaign — spec at
+docs/superpowers/specs/2026-08-30-class3-deferred-campaign-design.md
+(committed 471bf67, user-approved design 2026-08-30; scope: the 788
+target mass, triage-decides strategy). Awaiting the user's spec
+review -> writing-plans -> SDD on a branch cut from master after
+this close lands.

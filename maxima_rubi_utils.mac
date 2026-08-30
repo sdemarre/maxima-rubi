@@ -5408,4 +5408,896 @@ mr_use_gamma_flag : false$
   )
   else u)$
 
+/* ---- class-3 head-position capture matcher (Task 3) ------------------
+ * Rubi's head-position pattern variable F_[...] (class 3: 3.1.5 r62-63,
+ * 3.3 r62, 3.4 r41) cannot be emitted as a defmatch pattern: this build
+ * rejects pattern variables in head position (measured 2026-08-28,
+ * class-2 r96: "defmatch: some pattern variables are not atoms").
+ * %mr_headvar_match(f, x, slots, heads) decomposes the integrand
+ * (a top-level product; the sign of a product lifts to a top-level
+ * unary "-" node in this build, measured 2026-08-29) into the slot
+ * factors:
+ *   - the F factor: a call (or, for the ["free", capM] exponent spec, a
+ *     power of a call) whose head is one of the allowed head symbols,
+ *     with the argument in the slot's shape (["lin", ...] d*(e+f*x) or
+ *     ["mon", ...] f*x);
+  *   - the log factor: a two-term sum a + b*log(arg), the standalone
+  *     b*log(arg) (a := 0), or the bare log(arg) (a := 0, b := 1),
+  *     arg in the slot's shape;
+ *   - the px factor (optional): the product of all remaining factors
+ *     (Mathematica's single Blank over an Orderless+Flat head binds the
+ *     leftover product; the rule's PolynomialQ cond verifies it).
+ * The first shape-valid (F factor, log factor) pair is returned — any
+ * other pairing leaves a head-call or log factor in the px product,
+ * which the rule's PolynomialQ cond rejects, so no cond-threaded
+ * backtracking is needed. The value is the [cap = value, ...] matchlist
+ * or false.
+ *
+ * Measured 2026-08-29 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7:
+ * - op of a function call is the head symbol (op(asin(x)) -> asin), of
+ *   times/plus/power/quotient/minus the string "*" / "+" / "^" / "/"
+ *   / "-";
+  * - args is uniform: power -> [base, exp], call -> the arguments,
+  *   times -> the factors, plus -> the terms; lists are indexed with
+  *   [i] in this code (part(e, i) on an atom FATALs, "argument must
+  *   be a non-atomic expression", uncatchable, measured 2026-08-29,
+  *   and part indexing past the end is not safe in this build);
+ * - the product sign lifts to a top-level "-" node (args(-2*(3+4*x))
+ *   -> [2*(4*x+3)]); odd heads auto-simplify (asin(-u) -> -asin(u),
+ *   the sign lifting to the product), acosh(-u) keeps the "-" node
+ *   inside its argument, acos(-u) -> %pi - acos(u) (the factor becomes
+ *   a sum — declined, a documented divergence);
+ * - (d+e*x)^(1/2) stores as the sqrt call (op sqrt), not a power — a
+ *   1/2 exponent in a log argument declines;
+ * - apply(<head symbol>, [arg]) rebuilds the call (the repl idiom;
+ *   works for natives and %mr_ function symbols alike).
+ * Strictness (task-3 review): on the identity-default corners the
+ * matcher is STRICTER than the MA OneIdentity/BlankOptional reading —
+ * it declines where MA would fill d := 1 (bare-sum lin F-argument),
+ * e := 0 (monomial F-argument), c := 1 (bare x^n log argument), or
+ * Px := 1 (no leftover factor). The direction is safe (decline,
+ * never false positive); a later tightening/loosening is a
+ * deliberate spec change, not a bug fix.
+ *
+ * Slot spec (data, emitted by generator/generate_rules.py):
+ *   ["px", 'cap]
+ *   ["f", 'capF, argspec, expspec]
+ *     argspec = ["lin", 'capD, 'capE, 'capF2]  /* d*(e+f*x) */
+ *             | ["mon", 'capF2]                /* f*x        */
+ *     expspec = ["free", 'capM]                /* a ^m node  */
+ *             | ["bare"]                       /* no power   */
+ *   ["log", 'capA, 'capB, logspec]
+ *     logspec = ["px",   'capC, 'capN]                 /* c*x^n           */
+ *             | ["lpow", 'capC, 'capD, 'capE, 'capN]   /* c*(d+e*x)^n     */
+ *             | ["bpow", 'capC, 'capD, 'capE, 'capN,
+ *                       'capP]                        /* c*(d+e*x^n)^p   */
+ * heads = a list of quoted head symbols (['asin, 'acos, ...]).
+ */
+
+/* t = c*x (exactly a two-factor times, the other factor x-free) -> c,
+   else false. The x power is exactly 1: x^1 stores as the atom x, x^k
+   (k # 1) as a power. */
+%mr_hv_xcoef(t, x) := block([f],
+  if atom(t) or op(t) # "*" then return(false),
+  f : args(t),
+  if length(f) # 2 then return(false),
+  if is(f[2] = x) and freeof(x, f[1]) then return(f[1]),
+  if is(f[1] = x) and freeof(x, f[2]) then return(f[2]),
+  false)$
+
+/* t = x or x^n (n any stored exponent) -> n, else false. The x^(1/2)
+   corner stores as the sqrt call (op sqrt), not a power, so it
+   declines here (documented 2026-08-29). */
+%mr_hv_xpow(t, x) := block([],
+  if is(t = x) then return(1),
+  if atom(t) or op(t) # "^" then return(false),
+  if is(args(t)[1] = x) then return(args(t)[2]),
+  false)$
+
+/* t = c*x^k (exactly a two-factor times, the other factor x or x^k)
+   -> [c, k], else false. */
+%mr_hv_xpowcoef(t, x) := block([f, k],
+  if atom(t) or op(t) # "*" then return(false),
+  f : args(t),
+  if length(f) # 2 then return(false),
+  k : %mr_hv_xpow(f[1], x),
+  if k # false and freeof(x, f[2]) then return([f[2], k]),
+  k : %mr_hv_xpow(f[2], x),
+  if k # false and freeof(x, f[1]) then return([f[1], k]),
+  false)$
+
+/* s = a two-term linear sum {const, c*x} (either order) ->
+   [const, c], else false. */
+%mr_hv_lin2(s, x) := block([f, c],
+  if atom(s) or op(s) # "+" then return(false),
+  f : args(s),
+  if length(f) # 2 then return(false),
+  c : %mr_hv_xcoef(f[1], x),
+  if c # false and freeof(x, f[2]) then return([f[2], c]),
+  c : %mr_hv_xcoef(f[2], x),
+  if c # false and freeof(x, f[1]) then return([f[1], c]),
+  false)$
+
+/* s = a two-term sum {const, c*x^k} (either order) ->
+   [const, c, k], else false (the bpow log-arg base d + e*x^n). */
+%mr_hv_blin2(s, x) := block([f, r],
+  if atom(s) or op(s) # "+" then return(false),
+  f : args(s),
+  if length(f) # 2 then return(false),
+  r : %mr_hv_xpowcoef(f[1], x),
+  if r # false and freeof(x, f[2]) then return([f[2], r[1], r[2]]),
+  r : %mr_hv_xpowcoef(f[2], x),
+  if r # false and freeof(x, f[1]) then return([f[1], r[1], r[2]]),
+  false)$
+
+/* b = (d+e*x) or (d+e*x)^n -> [d, e, n], else false (the lpow
+   log-arg base); the n = 1 corner stores as the bare sum. */
+%mr_hv_lpowbase(b, x) := block([r],
+  if not atom(b) and op(b) = "^" then (
+    r : %mr_hv_lin2(args(b)[1], x),
+    if r # false then return([r[1], r[2], args(b)[2]]),
+    return(false)),
+  if not atom(b) and op(b) = "+" then (
+    r : %mr_hv_lin2(b, x),
+    if r # false then return([r[1], r[2], 1]),
+    return(false)),
+  false)$
+
+/* b = (d+e*x^n) or (d+e*x^n)^p -> [d, e, n, p], else false (the bpow
+   log-arg base); the p = 1 corner stores as the bare sum. */
+%mr_hv_bpowbase(b, x) := block([r],
+  if not atom(b) and op(b) = "^" then (
+    r : %mr_hv_blin2(args(b)[1], x),
+    if r # false then return([r[1], r[2], r[3], args(b)[2]]),
+    return(false)),
+  if not atom(b) and op(b) = "+" then (
+    r : %mr_hv_blin2(b, x),
+    if r # false then return([r[1], r[2], r[3], 1]),
+    return(false)),
+  false)$
+
+/* p = log(arg) (a one-arg call with head log) -> arg, else false.
+   The rebuild-and-compare check (the apply idiom) is robust to
+   however op reports the head. */
+%mr_hv_log1(p) := block([],
+  if atom(p) then return(false),
+  if length(args(p)) # 1 then return(false),
+  if is(apply('log, [args(p)[1]]) = p) then return(args(p)[1]),
+  false)$
+
+/* t = b*log(arg) -> [b, arg], else false. A negative b stores the
+   term as the "-" node wrapping b*log(arg) (measured 2026-08-29), so
+   the sign is unfolded here. */
+%mr_hv_logterm(t, x) := block([s, f, c],
+  s : 1,
+  if not atom(t) and op(t) = "-" then (s : -1, t : args(t)[1]),
+  if atom(t) or op(t) # "*" then return(false),
+  f : args(t),
+  if length(f) # 2 then return(false),
+  c : %mr_hv_log1(f[1]),
+  if c # false then return([s*f[2], c]),
+  c : %mr_hv_log1(f[2]),
+  if c # false then return([s*f[1], c]),
+  false)$
+
+/* The log argument of arg against logspec -> the cap values, else
+   false:
+     px   c*x^n       -> [c, n]        (n = 1 when stored as c*x)
+     lpow c*(d+e*x)^n -> [c, d, e, n]  (n = 1 when the base is bare)
+     bpow c*(d+e*x^n)^p -> [c, d, e, n, p]
+   A lifted sign in the argument folds into c (measured 2026-08-29:
+   log(-3*x^2) stores its argument as the "-" node 3*x^2). */
+%mr_hv_logarg(arg, logspec, x) := block([s, f, r, k],
+  s : 1,
+  if not atom(arg) and op(arg) = "-" then (s : -1, arg : args(arg)[1]),
+  if atom(arg) or op(arg) # "*" then return(false),
+  f : args(arg),
+  if length(f) # 2 then return(false),
+  if logspec[1] = "px" then (
+    k : %mr_hv_xpow(f[1], x),
+    if k # false and freeof(x, f[2]) then return([s*f[2], k]),
+    k : %mr_hv_xpow(f[2], x),
+    if k # false and freeof(x, f[1]) then return([s*f[1], k]),
+    return(false)),
+  if logspec[1] = "lpow" then (
+    r : %mr_hv_lpowbase(f[1], x),
+    if r # false and freeof(x, f[2]) then return(append([s*f[2]], r)),
+    r : %mr_hv_lpowbase(f[2], x),
+    if r # false and freeof(x, f[1]) then return(append([s*f[1]], r)),
+    return(false)),
+  if logspec[1] = "bpow" then (
+    r : %mr_hv_bpowbase(f[1], x),
+    if r # false and freeof(x, f[2]) then return(append([s*f[2]], r)),
+    r : %mr_hv_bpowbase(f[2], x),
+    if r # false and freeof(x, f[1]) then return(append([s*f[1]], r)),
+    return(false)),
+  false)$
+
+/* t = the slot's log factor -> [a, b, <log-arg cap values>], else
+   false. Three stored forms: the two-term sum a + b*log(arg) (either
+   order; the log term may carry a "-" node for negative b), the
+   standalone b*log(arg) (a := 0), and the bare log(arg) (a := 0,
+   b := 1 — the MA reading: the Plus pattern factor a_. + b_.Log[...]
+   reaches a non-Plus target via Plus OneIdentity, the absent a_ term
+   defaulting to 0 and the absent b_ to 1). A flattened constant
+   coefficient rides in the px product, not in b: times is Flat, so
+   x*f*(6*log(g)) stores the 6 as its own factor (measured
+   2026-08-29). */
+%mr_hv_logfactor(t, logspec, x) := block([f, bt, lb],
+  if atom(t) then return(false),
+  if op(t) = "+" then (
+    f : args(t),
+    if length(f) # 2 then return(false),
+    bt : %mr_hv_logterm(f[1], x),
+    if bt # false and freeof(x, f[2]) then
+      return(%mr_hv_logbind(f[2], bt, logspec, x)),
+    bt : %mr_hv_logterm(f[2], x),
+    if bt # false and freeof(x, f[1]) then
+      return(%mr_hv_logbind(f[1], bt, logspec, x)),
+    return(false)),
+  lb : %mr_hv_log1(t),
+  if lb # false then return(%mr_hv_logbind(0, [1, lb], logspec, x)),
+  bt : %mr_hv_logterm(t, x),
+  if is(bt = false) then return(false),
+  %mr_hv_logbind(0, bt, logspec, x))$
+
+%mr_hv_logbind(a, bt, logspec, x) := block([r],
+  r : %mr_hv_logarg(bt[2], logspec, x),
+  if r = false then return(false),
+  append([a, bt[1]], r))$
+
+/* t = the slot's F factor -> [head, arg, mval], else false.
+   expspec ["free", capM]: the factor is a power of a one-arg call
+   (mval = the stored exponent) or the bare one-arg call itself
+   (mval := 1 — the MA reading: the Power pattern F_[...]^m_ reaches
+   a non-power target via Power OneIdentity, the exponent defaulting
+   to 1; the ^1 corner stores bare, measured 2026-08-29).
+   expspec ["bare"]: the factor must be the one-arg call itself (a
+   stored power declines). The head is validated by rebuilding the
+   call with apply over the allowed-head list (no op-name string
+   matching). */
+%mr_hv_fbase(t, expspec, heads) := block([base, arg, h, r],
+  if atom(t) then return(false),
+  base : t,
+  if op(t) = "^" then (
+    if expspec[1] # "free" then return(false),
+    base : args(t)[1],
+    if atom(base) then return(false)),
+  if atom(base) then return(false),
+  if length(args(base)) # 1 then return(false),
+  arg : args(base)[1],
+  r : false,
+  for h in heads do
+    if is(r = false) and is(apply(h, [arg]) = base) then r : h,
+  if r = false then return(false),
+  [r, arg, if op(t) = "^" then args(t)[2] else 1])$
+
+/* The F argument of arg against argspec -> the cap values, else
+   false: lin -> [d, e, fcoef] (d*(e+f*x)), mon -> [fcoef] (f*x). A
+   lifted sign in the argument folds into the leading constant
+   (measured 2026-08-29: asin(-5*x) auto-simplifies to -asin(5*x) —
+   the sign lifts to the product — while acosh(-5*x) keeps the "-"
+   node inside its argument). */
+%mr_hv_farg(arg, argspec, x) := block([s, f, r],
+  s : 1,
+  if not atom(arg) and op(arg) = "-" then (s : -1, arg : args(arg)[1]),
+  if argspec[1] = "lin" then (
+    if atom(arg) or op(arg) # "*" then return(false),
+    f : args(arg),
+    if length(f) # 2 then return(false),
+    r : %mr_hv_lin2(f[1], x),
+    if r # false and freeof(x, f[2]) then return([s*f[2], r[1], r[2]]),
+    r : %mr_hv_lin2(f[2], x),
+    if r # false and freeof(x, f[1]) then return([s*f[1], r[1], r[2]]),
+    return(false)),
+  if argspec[1] = "mon" then (
+    r : %mr_hv_xcoef(arg, x),
+    if r # false then return([s*r]),
+    return(false)),
+  false)$
+
+/* The top-level matcher (the slot spec and semantics are in the block
+   comment above). Returns the matchlist or false. */
+%mr_headvar_match(f, x, slots, heads) := block(
+  [sgn, g, fa, i, fslot, lslot, pxcap, fcand, lcand, F, L, rest,
+   pxv, B, sp],
+  if atom(f) then return(false),
+  sgn : 1,
+  g : f,
+  if op(g) = "-" then (sgn : -1, g : args(g)[1]),
+  if atom(g) or op(g) # "*" then return(false),
+  fa : args(g),
+  fslot : false,
+  lslot : false,
+  pxcap : false,
+  for i : 1 thru length(slots) do
+    block([],
+      sp : slots[i],
+      if sp[1] = "f" then fslot : sp,
+      if sp[1] = "log" then lslot : sp,
+      if sp[1] = "px" then pxcap : sp[2]),
+  if fslot = false or lslot = false then return(false),
+  fcand : [],
+  for i : 1 thru length(fa) do
+    block([t, fb, fr],
+      t : fa[i],
+      fb : %mr_hv_fbase(t, fslot[4], heads),
+      if fb # false then (
+        fr : %mr_hv_farg(fb[2], fslot[3], x),
+        if fr # false then
+          fcand : append(fcand, [[i, fb[1], fb[3], fr]]))),
+  lcand : [],
+  for i : 1 thru length(fa) do
+    block([t, li],
+      t : fa[i],
+      li : %mr_hv_logfactor(t, lslot[4], x),
+      if li # false then lcand : append(lcand, [[i, li]])),
+  if length(fcand) < 1 or length(lcand) < 1 then return(false),
+  /* the first shape-valid pair: any other pairing leaves a head-call
+     or log factor in the px product, which the rule's PolynomialQ
+     cond rejects */
+  F : fcand[1],
+  L : lcand[1],
+  rest : [],
+  for i : 1 thru length(fa) do
+    if is(i = F[1]) = false and is(i = L[1]) = false
+    then rest : append(rest, [fa[i]]),
+  /* without a px slot there is no home for a leftover factor or a
+     lifted sign (the MA-consistent decline of a 3-factor target) */
+  if pxcap = false then (
+    if length(rest) # 0 then return(false),
+    if sgn # 1 then return(false)),
+  if pxcap # false and length(rest) < 1 then return(false),
+  pxv : 1,
+  for i : 1 thru length(rest) do pxv : pxv * rest[i],
+  pxv : sgn * pxv,
+  B : [],
+  /* the F slot: head symbol, the arg cap values, and the exponent cap
+     (free spec only — the bare spec's m = 1 is not a capture) */
+  B : append(B, [fslot[2] = F[2]]),
+  for i : 2 thru length(fslot[3]) do
+    B : append(B, [fslot[3][i] = F[4][i - 1]]),
+  if fslot[4][1] = "free" then
+    B : append(B, [fslot[4][2] = F[3]]),
+  /* the log slot: a, b, then the log-arg cap values (L[2] is the
+     flat value list [a, b, <log-arg caps>], cf. %mr_hv_logbind) */
+  B : append(B, [lslot[2] = L[2][1]]),
+  B : append(B, [lslot[3] = L[2][2]]),
+  for i : 2 thru length(lslot[4]) do
+    B : append(B, [lslot[4][i] = L[2][i + 1]]),
+  if pxcap # false then B : append(B, [pxcap = pxv]),
+  B)$
+
+/* ---- class-3 cluster A: the small cond-side predicates (Task 4) --- */
+
+/* MemberQ (Mathematica builtin) — MemberQ[list, elem]. The built-in is
+   ORDER-REVERSED and boolean-valued: describe("member", exact) reads
+   "Returns 'true' if is(expr_1 = a) for some element a in
+   args(expr_2), otherwise 'false'". MEASURED 2026-08-29 on
+   branch_5_50_base_84_g4204fb669 / SBCL 2.6.7: member(b, [a, b, c])
+   = true, member(4, [1, 2, 3]) = false, the result IS the boolean
+   (is(member(b, [a, b, c]) = true) = true — the line-758 note), and
+   member does not inspect parts of elements (member(x, [x + 1]) =
+   false). The = test is the MA MatchQ reading for atom elements
+   (member('asin, ['asin, 'acos]) = true). */
+%mr_memberQ(l, e) := block([], is(member(e, l) = true))$
+
+/* FalseQ (Mathematica builtin) — true iff the value is the boolean
+   false (the declined-predicate return at the 3.5 r1/r2/r13 call
+   sites, where the value is a direct function return, not a
+   part()-reified factor). MEASURED 2026-08-29 (branch_5_50_base_84_g4204fb669
+   / SBCL 2.6.7): false is the boolean ATOM (atom(false) = true;
+   booleanp(false) stays an unevaluated noun — do not use it),
+   is(false = false) = true, is(0 = false) = false, and
+   is('false = false) = true — the QUOTED SYMBOL compares =-equal to
+   the boolean in this build, a corner the .m's IdentityQ reading
+   could not express (harmless: no rule capture produces a quoted
+   'false as a value). */
+%mr_falseQ(u) := block([], is(u = false))$
+
+/* Rubi :170-172  ProductQ — ProductQ[_Times] = True; ProductQ[_] =
+   False. MEASURED 2026-08-29 (branch_5_50_base_84_g4204fb669 /
+   SBCL 2.6.7): a times node's op is the string "*" (is(op(a*b) =
+   "*") = true), an unparenthesized TWO-factor product IS a times
+   node (op(a*b) = "*", length(a*b) = 2), a monomial is a "^" node,
+   a quotient is a "/" node, a sum is a "+" node. STORAGE DIVERGENCE
+   (recorded, task-4 report): the product sign lifts to a top-level
+   unary "-" node (op(-a*b) = "-", args(-a*b) = [a*b]) where MA sees
+   the Times head of Times[-1, a, b] — the port declines the lift
+   (decline direction, the Task-3 matcher strictness precedent); the
+   class-3 call sites (3.5 r32/r38, the log argument) lose only the
+   negative-product corner. */
+%mr_productQ(u) := block([],
+  if atom(u) then false
+  else is(op(u) = "*"))$
+
+/* Rubi :351-353  IntegralFreeQ — FreeQ over the four heads Int /
+   Integral / Unintegrable / CannotIntegrate. The package
+   noun-surface mapping (recorded, task-4 report):
+   * Int / IntHide -> the mr_int dispatcher name: freeof('mr_int, u)
+     flags an unevaluated mr_int[...] node;
+   * Unintegrable AND CannotIntegrate -> the SAME package noun: the
+     emitter maps both to the mr_unintegrable(f, x) call
+     (generator/generate_rules.py:1393-1394) whose value is the
+     'unintegrable[f, x] node (this file's line 27); one
+     freeof('unintegrable, u) covers both;
+   * Integral -> NO package surface: the MA typeset integral form has
+     no table row and no emitted noun (grep of the table: absent) —
+     omitted;
+   * plus the native integrate fall-through noun: mr_int's 0-firing
+     residue (mr_top with fb = true returns the bare integrate(f, x)
+     noun, this file's line 323) — the evaluated image of an .m Int
+     call that did not fire; the brief's surface lists it first, and
+     without it the 3.3 r60 cond would accept an unresolved
+     sub-integral and let the Subst rule fire on a residue.
+   MEASURED 2026-08-29 (branch_5_50_base_84_g4204fb669 / SBCL 2.6.7):
+   a NOUN's op is an internal symbol whose string() is the head name
+   (the %mr_calculusQ note, this file's line 4560) and freeof of the
+   function symbol flags every one of the head positions —
+   freeof('integrate, integrate(tan(x^2), x)) = false on the REAL
+   fall-through noun, freeof('unintegrable, 'unintegrable[f(x), x])
+   = false, freeof('mr_int, 'mr_int[f(x), x]) = false — and freeof
+   recurses through nested calls (freeof('sin, f(sin(x))) = false),
+   so one freeof per symbol is the whole walk. */
+%mr_integralFreeQ(u) := block([],
+  is(freeof('mr_int, u) and freeof('integrate, u)
+     and freeof('unintegrable, u)))$
+
+/* Rubi :316-322  InverseFunctionFreeQ — the recursion: atom ->
+   true (the .m's AtomQ arm, TRUE even for the variable itself);
+   a head in InverseFunctionQ / CalculusQ / Hypergeometric2F1 /
+   AppellF1 -> FreeQ[u, x]; else every part free (the .m's
+   Catch[Scan[...]] over the parts). The two special-function head
+   tests are string(op) checks on the GENERATED head spellings
+   (Hypergeometric2F1 emits the hypergeometric list-form call,
+   AppellF1 emits the AppellF1 noun — the table rows); one
+   string(op) test covers operator heads too (string of a string is
+   the identity, the %mr_calculusQ note). MEASURED 2026-08-29 on
+   branch_5_50_base_84_g4204fb669 / SBCL 2.6.7:
+   string(op(hypergeometric([1, 2], [3], x))) = "hypergeometric"
+   (the call stays a noun), string(op(AppellF1(1, 2, 3, 4, x))) =
+   "AppellF1". The FreeQ[u, x] arm is freeof(x, u), measured to see
+   through every noun form the call sites produce (the integrate
+   fall-through noun, the diff noun, 'unintegrable[.] bracket nodes,
+   nested calls). MEASURED DIVERGENCE (recorded, task-4 report): the
+   finite PRODUCT noun is a special internal object freeof() cannot
+   see through — freeof(x, product(f(x), x, 1, n)) = true, and the
+   same opacity holds for a QUOTED bracket list on a bound head
+   (freeof(x, 'product[f(x), x, 1, n]) = true) — so such a node
+   reports x-free where MA's FreeQ would not; no call site can
+   produce either shape (the rules emit no product heads; an mr_int
+   result carries a closed form or the integrate noun). */
+%mr_inverseFunctionFreeQ(u, x) := block([i, ok],
+  if atom(u) then true
+  else if %mr_inverseFunctionQ(u) or %mr_calculusQ(u)
+       or is(string(op(u)) = "hypergeometric")
+       or is(string(op(u)) = "AppellF1")
+  then freeof(x, u)
+  else (
+    ok : true,
+    for i : 1 thru length(u) do
+      if %mr_inverseFunctionFreeQ(part(u, i), x) = false
+      then ok : false,
+    ok))$
+
+/* Rest[u] for the RFE product branch — the product of parts 2..n
+   (MA's Rest reconstructs the flat Times head; a times node has
+   >= 2 parts, so part(u, 2) always exists). The SUM branch uses the
+   existing %mr_rest_sum (the head-preserving Plus reconstruction)
+   instead. */
+%mr_rfe_rest(u) := block([i, r],
+  r : part(u, 2),
+  for i : 3 thru length(u) do r : r * part(u, i),
+  r)$
+
+/* Rubi :1618-1636  RationalFunctionExponents — the branch ladder,
+   line-ported. The .m's five arms:
+     PolynomialQ[u,x]        -> {Exponent[u,x], 0}
+     IntegerPowerQ[u]        -> u[[2]] > 0 ? u[[2]]*RFE[u[[1]]]
+                                : (-u[[2]])*Reverse[RFE[u[[1]]]]
+     ProductQ[u]             -> RFE[First[u]] + RFE[Rest[u]]
+     SumQ[u]                 -> v = Together[u]; SumQ[v]
+                                ? {Max[lst1.1+lst2.2, lst2.1+lst1.2],
+                                   lst1.2+lst2.2}   (lst1 = RFE[First[u]],
+                                   lst2 = RFE[Rest[u]])
+                                : RFE[v]
+     else                    -> {0, 0}
+   Storage adaptations, MEASURED 2026-08-29 on
+   branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 (two arms the .m
+   never writes, both storage-only):
+   * the MINUS arm: the product sign lifts to a top-level unary "-"
+     node (op(-x) = "-"); the .m reads -u as the product with a -1
+     factor whose own exponents are {0, 0}, so the arm is the
+     identity on the wrapped value (house precedent: the
+     SignOfFactor minus-wrap note);
+   * the QUOTIENT arm: this build stores EVERY quotient and every
+     negative integer power as a "/" node — op(x^(-2)) = "/" with
+     args(x^(-2)) = [1, x^2], op((x+1)^(-1)) = "/", op(a*(b/c)) =
+     "/" with args [a*b, c], (a/b)^2 stores as a^2/b^2 — so the .m's
+     u[[2]] < 0 arm of the IntegerPowerQ branch is unreachable
+     through a "^" node and the quotient arm carries it: num/den is
+     num * den^(-1), the numerator list plus the denominator list
+     SWAPPED. An x-free denominator makes the node a polynomial and
+     is caught by arm 1 first (x/2 -> [1, 0]).
+   The .m's Together is rat here (together is a NOUN in this build
+   without preload — M1 ledger): a rat() result is a PLAIN node tree
+   (op(rat(x + 1/x)) = "/" with args [x^2+1, x]; op(rat(sin(x) + x))
+   = "+"), so the SumQ[v] gate and the v-recursion read it directly;
+   part() access on the combined quotient is plain too — the gcrat
+   objects of the M1 denom(rat(…)) trap appear only behind num() /
+   denom(), which this port never calls. List arithmetic is native
+   in this build: k * [a, b] = [a*k, b*k], [a, b] + [c, d] =
+   [c+a, d+b], reverse([a, b]) = [b, a] (symbolic k included), and
+   max of undecided symbolic args stays the max(…) noun — the MA
+   Max reading. Termination mirrors the .m: every arm recurses on
+   proper subparts (the product Rest and the sum Rest shrink the
+   factor/term count, the quotient arm splits num/den, the rat arm
+   either takes the closed lst form or recurses on the strictly
+   smaller combined parts). */
+%mr_rationalFunctionExponents(u, x) := block([k, v, lst1, lst2, n1, dn],
+  if %mr_polynomialQ(u, x) then [%mr_degree(u, x), 0]
+  else if %mr_integerPowerQ(u) then (
+    k : part(u, 2),
+    if is(k > 0) then k * %mr_rationalFunctionExponents(part(u, 1), x)
+    else (-k) * reverse(%mr_rationalFunctionExponents(part(u, 1), x)))
+  else if %mr_productQ(u) then
+    %mr_rationalFunctionExponents(part(u, 1), x)
+      + %mr_rationalFunctionExponents(%mr_rfe_rest(u), x)
+  else if not atom(u) and is(op(u) = "-") then
+    %mr_rationalFunctionExponents(part(u, 1), x)
+  else if not atom(u) and is(op(u) = "/") then (
+    n1 : %mr_rationalFunctionExponents(part(u, 1), x),
+    dn : %mr_rationalFunctionExponents(part(u, 2), x),
+    [part(n1, 1) + part(dn, 2), part(n1, 2) + part(dn, 1)])
+  else if %mr_sumQ(u) then (
+    v : rat(u),
+    if %mr_sumQ(v) then (
+      lst1 : %mr_rationalFunctionExponents(part(u, 1), x),
+      lst2 : %mr_rationalFunctionExponents(%mr_rest_sum(u), x),
+      [max(part(lst1, 1) + part(lst2, 2), part(lst2, 1) + part(lst1, 2)),
+       part(lst1, 2) + part(lst2, 2)])
+    else %mr_rationalFunctionExponents(v, x))
+  else [0, 0])$
+
+/* ================= class-3 cluster B: fractional-power Subst family ====
+ * Milestone-3 plan Task 5 — the heavy substitution/derivative utilities
+ * (Rubi IntegrationUtilityFunctions.m, pinned clone):
+ *   EasyDQ :7466-7495 (rule-1 strip :7466-7468)
+ *   DerivativeDivides :7450-7462
+ *   SubstForFractionalPower :1873-1881
+ *   SubstForFractionalPowerOfLinear :6056-6063 (the 4-list contract)
+ *   FractionalPowerOfLinear :6067-6076
+ * plus the small predicate ports they call:
+ *   FractionalPowerQ :206 (with this build's sqrt-head storage arm)
+ *   ProductOfLinearPowersQ :7498-7502.
+ * Reused, not duplicated: %mr_simp (the Simplify reading), %mr_polynomialQ,
+ * %mr_degree (the Exponent reading), %mr_linearQ, %mr_binomialQ2 (the
+ * BinomialQ[u,x] reading), %mr_rationalFunctionQ,
+ * %mr_rationalFunctionExponents, %mr_productQ, %mr_sumQ, %mr_rest_sum,
+ * %mr_rfe_rest (the product Rest), %mr_calculusQ, %mr_eqQ, %mr_falseQ,
+ * %mr_fractionQ, %mr_nonfreeFactors, %mr_freeFactors.
+ *
+ * MEASURED 2026-08-29 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7
+ * (fresh TLS-flagged process; the full session is in the task-5 report):
+ *  - lcm(2,3) STAYS A NOUN; the working LCM id is abs(d*n)/gcd(d, n)
+ *    (gcd(4,6) = 2 evaluates, abs(2*3)/gcd(2,3) = 6);
+ *  - denominator(3/2) STAYS A NOUN while denom(3/2) = 2 / denom(2/3) = 3
+ *    / denom(1/2) = 2 / denom(-2/3) = 3 evaluate — denom is the
+ *    Denominator reading (the negative-rational "-" wrapper included);
+ *  - degree(x^2, x) STAYS A NOUN — %mr_degree is the Exponent reading;
+ *  - coeff(a+b*x, x, 0) = a / coeff(a+b*x, x, 1) = b evaluate — native
+ *    coeff is the Coefficient reading for the linear-base slots;
+ *  - op() returns the SYMBOL 'sqrt for the sqrt head (is(op(sqrt(x)) =
+ *    'sqrt) true; the string "sqrt" never matches — the %mr_binomial_parts
+ *    note at this file's line 1244 re-confirmed on the 2026-08-29 build)
+ *    while operator heads (^, +, *, /, -, [) stay strings; sinc is its
+ *    own head too (op(sinc(x)) = 'sinc);
+ *  - (x+1)^(1/2) stores as the sqrt node (args [x+1]); (x+1)^(2/3) and
+ *    x^(2/3) store as "^" nodes whose rational exponent is a non-atom
+ *    "/" node (args [x+1, 2/3]; op(2/3) = "/", atom(2/3) = false);
+ *  - EVERY negative power stores as a "/" node: op((x+1)^(-2/3)) = "/"
+ *    args [1, (x+1)^(2/3)], op((x+1)^(-1/2)) = "/" args [1, sqrt(x+1)]
+ *    — the .m's Power-head FractionalPowerQ is unreachable for them and
+ *    the ports decline that corner (the %mr_productQ minus-lift
+ *    precedent); the 3.5 r16 call site (the only consumer) guards
+ *    RationalFunctionQ on the RFx slot, so a negative fractional power
+ *    can only reach the scan inside u, where the .m would find it —
+ *    recorded divergence, decline direction;
+ *  - log of a PURE power AUTO-EXPANDS: log((x+1)^(2/3)) ->
+ *    (2 log(x+1))/3, log(sqrt(x+1)) -> log(x+1)/2, while log of a SUM
+ *    keeps its argument (log(1 + (x+1)^(2/3)) stays, measured) — the 3.5
+ *    r16 call site therefore only ever sees the fractional linear power
+ *    inside a log sum, and the end-to-end pin uses that shape (the
+ *    plan's bare log((x+1)^(2/3)) example does not survive Maxima
+ *    simplification — recorded);
+  *  - 1 + 2*(-1/2 + x^3/2) does NOT auto-distribute (stays
+  *    2*(x^3/2 - 1/2) + 1) — the %mr_simp stage (expand) is what
+  *    normalizes the substituted integrand;
+  *  - factor() RE-extracts a common power from a sum carrying a log
+  *    term in BOTH plain and rat mode (factor(a*x^5 + b*x^5*log(x^2+1))
+  *    -> x^5*(b*log(x^2+1)+a) — measured); the plain-vs-rat difference
+  *    is decided by the ratsimp stages of %mr_simp (the same-statement
+  *    rat() quirk, the :6268 note), so the 4-list v slot carries the
+  *    FACTORED form x^5*(b*log(x^2+1)+a) in every call context (the
+  *    call site integrates v, so the form is inert for the answer);
+ *  - length() is a HARD ERROR on atoms ("length: argument cannot be a
+ *    symbol") — every length() read is atom-gated;
+ *  - is([1,1] = [1,1]) = true / is([3, x+1] = [3, x+1]) = true — list
+ *    equality through is() is the RFE == {1,1} reading;
+ *  - diff never emits the sinc head for the pinned test shapes:
+ *    diff(sin(x)/x, x) = cos(x)/x - sin(x)/x^2, diff(sin(2*x), x) =
+ *    2*cos(2*x), diff(log(x+1), x) = 1/(x+1), diff(sqrt(x+1), x) =
+ *    1/(2 sqrt(x+1)) — the .m's ReplaceAll[Sinc[z_], Sin[z]/z] is a
+ *    no-op on every reachable D[y, x] in this build; the replacement is
+ *    ported as the faithful walk anyway (dead arm, recorded);
+ *  - diff(f(x), x) on an unknown function stays the noun
+ *    'diff(f(x), x, 1), and %mr_simp (ratsimp/expand/factor) passes it
+ *    through untouched (measured), so the DerivativeDivides decline on
+ *    unknown-function y lands through the freeof() walk seeing the x in
+ *    the noun's args — the .m's f'[x] reading;
+ *  - x^(3*(2/3)) -> x^2 (the n*exponent collapse evaluates);
+ *  - part() on a QUOTED noun call is structural (part('g(a,b), 1) = a)
+ *    — the Layer A RED-phase pins are death-safe through it.
+ */
+
+/* Rubi :206  FractionalPowerQ = Function[Head[#]===Power &&
+   Head[#[[2]]]===Rational]. The proper-fraction test is %mr_fractionQ
+   (this file's line 582): a reduced rational in this build is a "/" or
+   "-" node with integer num/denom, and integerp is the Integer-head
+   stand-in, so %mr_fractionQ(part(u,2)) is exactly
+   Head[#[[2]]]===Rational. The SQUARED-HEAD arm is the sqrt storage:
+   (x+1)^(1/2) stores as its own head (measured 2026-08-29, note above)
+   and the .m's Power-only test would MISS the n = 2 case the
+   SubstForFractionalPowerOfLinear contract exists for — the sqrt reading
+   takes the exponent as 1/2. */
+%mr_fractionalPowerQ(u) := block([],
+  if atom(u) then false
+  else if is(op(u) = 'sqrt) then true
+  else if is(op(u) = "^") then %mr_fractionQ(part(u, 2))
+  else false)$
+
+/* the exponent of a fractional power — 1/2 for the sqrt head (the
+   1-part sqrt node has no part(u, 2): part(sqrt(x+1), 2) hard-errors
+   "part: fell off the end" — measured 2026-08-29). */
+%mr_fractionalPowerExpon(u) := block([],
+  if is(op(u) = 'sqrt) then 1/2 else part(u, 2))$
+
+/* Rubi :7498-7502  ProductOfLinearPowersQ — FreeQ[u,x] ||
+   MatchQ[u, v_^n_. /; LinearQ[v,x] && FreeQ[n,x]] ||
+   ProductQ[u] && ProductOfLinearPowersQ[First[u],x] &&
+   ProductOfLinearPowersQ[Rest[u],x]. The .m's OPTIONAL exponent (n_.)
+   reads a BARE linear factor as n = 1 — the final %mr_linearQ arm; a
+   power factor matches v_^n_. through the "^"/sqrt arm with the
+   FreeQ[n,x] guard. The Maxima-flat product loop replaces the .m's
+   First/Rest recursion (a times node's factors are flat — measured).
+   The minus-lift corner (-a*b stores as a "-" node in this build —
+   measured) declines, as in %mr_productQ. */
+%mr_productOfLinearPowersQ(u, x) := block([i, ok, e],
+  if freeof(x, u) then true
+  else if atom(u) then %mr_linearQ(u, x)
+  else if is(op(u) = "*") then (
+    ok : true,
+    for i : 1 thru length(u) do
+      if %mr_productOfLinearPowersQ(part(u, i), x) = false
+      then (ok : false, return()),
+    ok
+  )
+  else if is(op(u) = "^") or is(op(u) = 'sqrt) then (
+    e : %mr_fractionalPowerExpon(u),
+    %mr_linearQ(part(u, 1), x) and freeof(x, e)
+  )
+  else %mr_linearQ(u, x))$
+
+/* the .m rule-1 strip: EasyDQ[u_.*x_^m_., x] := EasyDQ[u, x] /;
+   FreeQ[m, x] — the product's x-power factor (a bare x reads m = 1)
+   removed, the product of the remaining factors returned; false if no
+   such factor. A Maxima product carries at most one x-power factor
+   (like powers auto-combine — x^2*x^(1/3) stores as x^(7/3)), so the
+   first hit is the .m's unique binding. return(value) is loop-level in
+   this build (the %mr_dispatch note, this file's line 81), so the bare
+   return() break + flag idiom. */
+%mr_easyDQ_strip(u, x) := block([i, m, f, r, found],
+  found : false,
+  for i : 1 thru length(u) do (
+    f : part(u, i),
+    if (atom(f) and is(f = x))
+      or (not atom(f) and is(op(f) = "^")
+          and is(part(f, 1) = x) and freeof(x, part(f, 2))) then (
+      r : 1,
+      for m : 1 thru length(u) do
+        if m # i then r : r * part(u, m),
+      found : true,
+      return()
+    )
+  ),
+  if found then r else false)$
+
+/* Rubi :7466-7495  EasyDQ — the ladder, line-ported:
+   rule-1 strip / AtomQ-||-FreeQ-||-Length==0 True / CalculusQ False /
+   Length==1 recurse / BinomialQ||ProductOfLinearPowersQ True /
+   RationalFunctionQ&&RFE=={1,1} True / ProductQ one-x-factor recurse /
+   SumQ both recurse / Length==2 one-free recurse / else False.
+   The Length==0 arm is unreachable in this build (atoms are gated
+   first — no call site produces an empty expression) and is folded
+   into the atom arm. Storage: a function call's parts() are its
+   ARGUMENTS (part(log(x+1), 1) = x+1, length 1 — measured), a power's
+   parts are base/exponent (length 2), a quotient's parts are num/den,
+   so the .m's Length/[[1]]/First/Rest read as length()/part()/
+   part(u,1)/%mr_rest_sum/%mr_rfe_rest. */
+%mr_easyDQ(u, x) := block([r],
+  if not atom(u) and is(op(u) = "*") then (
+    r : %mr_easyDQ_strip(u, x),
+    if not %mr_falseQ(r) then return(%mr_easyDQ(r, x))
+  ),
+  if atom(u) or freeof(x, u) then true
+  else if %mr_calculusQ(u) then false
+  else if is(length(u) = 1) then %mr_easyDQ(part(u, 1), x)
+  else if %mr_binomialQ2(u, x) or %mr_productOfLinearPowersQ(u, x) then true
+  else if %mr_rationalFunctionQ(u, x)
+        and is(%mr_rationalFunctionExponents(u, x) = [1, 1]) then true
+  else if %mr_productQ(u) then (
+    if freeof(x, part(u, 1)) then %mr_easyDQ(%mr_rfe_rest(u), x)
+    else if freeof(x, %mr_rfe_rest(u)) then %mr_easyDQ(part(u, 1), x)
+    else false
+  )
+  else if %mr_sumQ(u) then
+    %mr_easyDQ(part(u, 1), x) and %mr_easyDQ(%mr_rest_sum(u), x)
+  else if is(length(u) = 2) then (
+    if freeof(x, part(u, 1)) then %mr_easyDQ(part(u, 2), x)
+    else if freeof(x, part(u, 2)) then %mr_easyDQ(part(u, 1), x)
+    else false
+  )
+  else false)$
+
+/* MatchQ[y, a_.*x /; FreeQ[a, x]] — y a times node with one x factor
+   and every other factor x-free (a bare x does NOT match: the .m's
+   a_.*x requires >= 2 factors). The minus-lift corner (-a*x stores as
+   a "-" node in this build — measured) misses the match where MA's
+   Times head would take it; the decline still lands through the
+   FreeQ[v, x] arm (same false, different path — recorded). */
+%mr_xmonomialMatch(y, x) := block([i, j, ok, found],
+  found : false,
+  if not atom(y) and is(op(y) = "*") then (
+    for i : 1 thru length(y) do (
+      if is(part(y, i) = x) then (
+        ok : true,
+        for j : 1 thru length(y) do
+          if j # i and not freeof(x, part(y, j)) then ok : false,
+        if ok then (found : true, return())
+      )
+    )
+  ),
+  found)$
+
+/* the .m's ReplaceAll[D[y,x], Sinc[z_]->Sin[z]/z] — the faithful walk
+   (sinc is its own head in this build — measured 2026-08-29). DEAD ARM
+   on every reachable diff result in this build (diff never emits the
+   sinc head for the pinned shapes — note above); ported for line
+   fidelity. */
+%mr_sincReplace(v) := block([],
+  if atom(v) then v
+  else if is(op(v) = 'sinc) then sin(part(v, 1))/part(v, 1)
+  else if is(op(v) = "[") then
+    map(lambda([z], %mr_sincReplace(z)), %mr_parts_list(v))
+  else apply(op(v), map(lambda([z], %mr_sincReplace(z)), args(v))))$
+
+/* Rubi :7450-7462  DerivativeDivides[y, u, x] — if y is not a*x (a
+   x-free), y is easy to differentiate (PolynomialQ[y,x] ? the
+   PolynomialQ[u,x] && Exponent[u,x]==Exponent[y,x]-1 degree test :
+   EasyDQ[y,x]), and u divided by D[y,x] is x-free, the quotient
+   Simplify[u/v]; else False. Storage: Exponent = %mr_degree (degree
+   is a noun — measured); Simplify = %mr_simp. The v = 0 arm is
+   UNREACHABLE: a polynomial y passing the degree test has degree >= 1
+   (D[y,x] # 0), and a non-polynomial EasyDQ y (log-like) has a
+   nonzero derivative — the constant-y decline lands through the
+   degree test instead (recorded). */
+%mr_derivativeDivides(y, u, x) := block([v, cond],
+  if %mr_xmonomialMatch(y, x) then false
+  else (
+    cond : if %mr_polynomialQ(y, x)
+      then %mr_polynomialQ(u, x)
+           and is(%mr_degree(u, x) = %mr_degree(y, x) - 1)
+      else %mr_easyDQ(y, x),
+    if is(cond) = true then (
+      v : %mr_sincReplace(diff(y, x)),
+      if is(v = 0) then false
+      else (
+        v : %mr_simp(u/v),
+        if freeof(x, v) then v else false
+      )
+    )
+    else false))$
+
+/* Rubi :6067-6076  FractionalPowerOfLinear[u, n, v, x] — the first
+   (depth-first, parts order) fractional power of a LINEAR base found
+   in u: {LCM[Denominator[exponent], n], base}; the {n, v} identity on
+   atom/x-free; the v-equality guard (the LCM accumulates only for the
+   SAME base); the CalculusQ decline; else the parts scan. The scan's
+   Throw[False] is the flag + bare return() idiom (return(value) is
+   loop-level — the line-81 note). LCM = abs(d*n)/gcd(d, n) (lcm is a
+   noun — measured); Denominator = denom (denominator is a noun —
+   measured). */
+%mr_fractionalPowerOfLinear(u, n, v, x) := block([i, e, d, lst],
+  if atom(u) or freeof(x, u) then [n, v]
+  else if %mr_calculusQ(u) then false
+  else if %mr_fractionalPowerQ(u) then (
+    e : %mr_fractionalPowerExpon(u),
+    if %mr_linearQ(part(u, 1), x)
+       and (%mr_falseQ(v) or %mr_eqQ(part(u, 1), v)) then (
+      d : denom(e),
+      [abs(d*n)/gcd(d, n), part(u, 1)]
+    )
+    else (
+      lst : [n, v],
+      for i : 1 thru length(u) do (
+        lst : %mr_fractionalPowerOfLinear(part(u, i), part(lst, 1), part(lst, 2), x),
+        if atom(lst) then return()
+      ),
+      if atom(lst) then false else lst
+    )
+  )
+  else (
+    lst : [n, v],
+    for i : 1 thru length(u) do (
+      lst : %mr_fractionalPowerOfLinear(part(u, i), part(lst, 1), part(lst, 2), x),
+      if atom(lst) then return()
+    ),
+    if atom(lst) then false else lst))$
+
+/* Rubi :1873-1881  SubstForFractionalPower[u, v, n, w, x] — u with the
+   subexpressions v^(m/n) (and the sqrt(v) storage form) replaced by
+   x^(n*(m/n)) and the variable x replaced by w; everything else maps
+   over the parts with the head rebuilt (the .m's Map[Function[...], u]
+   — the house generic-head idiom, the %mr_substPower line 3811). The
+   5th argument is the ORIGINAL variable, which is also the new
+   variable's symbol — the .m's substitution convention reuses the
+   integration variable's name for the substituted-in variable (the
+   caller builds w = -a/b + x^n/b over that same symbol). */
+%mr_substForFractionalPower(u, v, n, w, x) := block([e],
+  if atom(u) then (
+    if is(u = x) then w else u
+  )
+  else if %mr_fractionalPowerQ(u) and %mr_eqQ(part(u, 1), v) then (
+    e : %mr_fractionalPowerExpon(u),
+    x^(n*e)
+  )
+  else if is(op(u) = "[") then
+    map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
+      %mr_parts_list(u))
+  else apply(op(u), map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
+    args(u))))$
+
+/* Rubi :6056-6063  SubstForFractionalPowerOfLinear[u, x] — the 4-list
+   contract: {v, n, a+b*x, 1/b} where v is u with every (a+b*x)^(m/n)
+   replaced by x^m and x by -a/b + x^n/b, times x^(n-1), all
+   Simplify'd (= %mr_simp); NonfreeFactors/FreeFactors split v.
+   Coefficient = native coeff (coeff(a+b*x, x, 0/1) evaluate —
+   measured). False decline when FractionalPowerOfLinear finds no
+   fractional linear power (the {n, False} identity or a thrown
+   False).
+
+   MEASURED 2026-08-29 (branch_5_50_base_84_g4204fb669/SBCL 2.6.7):
+   the v slot comes back FACTORED (x^5*(b*log(x^2+1)+a) on the 3.5 r16
+   shape), not the expanded sum the .m's Simplify would print — line 1
+   (%mr_fractionalPowerOfLinear -> %mr_linearQ -> %mr_together) runs
+   rat(), and rat() flips the simplifier into rat mode for the REST of
+   the enclosing statement: a rat-mode ratsimp no longer expands a
+   product over a sum factor (plain-statement ratsimp does; the quirk
+   is pure Maxima — block([], rat(x+1), ratsimp(x^5*(b*log(x^2+1)+a)))
+   stays factored, the rat-free twin expands, and the mode does not
+   leak into the next statement; bisect session probes v2-v24 +
+   probe-rat-mode.mac T0-T6). Every real call of this function carries
+   the rat -> %mr_simp pair inside one statement, so the factored form
+   is the stable output contract; the unit pin uses it (is(factored =
+   expanded) is false in this build — measured). */
+%mr_substForFractionalPowerOfLinear(u, x) := block([lst, n, a, b, tmp],
+  lst : %mr_fractionalPowerOfLinear(u, 1, false, x),
+  if atom(lst) or %mr_falseQ(part(lst, 2)) then false
+  else (
+    n : part(lst, 1),
+    a : coeff(part(lst, 2), x, 0),
+    b : coeff(part(lst, 2), x, 1),
+    tmp : %mr_simp(x^(n-1)*%mr_substForFractionalPower(u, part(lst, 2), n, -a/b + x^n/b, x)),
+    [%mr_nonfreeFactors(tmp, x), n, part(lst, 2), %mr_freeFactors(tmp, x)/b]))$
+
 mr_witness_utils() := true$

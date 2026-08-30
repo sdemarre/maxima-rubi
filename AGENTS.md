@@ -29,13 +29,19 @@ The pinned commit (full 40-digit hash) of each is recorded in
 
 ## Maxima version
 
-The installed build is **Maxima 5.50.0** (build date 2026-08-20
-21:36:22) on SBCL 2.6.7 — every milestone-1 measurement is taken on
-it (stamped in the committed records' headers). The research docs'
-5.49-series expectation is superseded. The project does **not** pin
-to any build: every measurement is stamped with the build it was
-taken on, and baselines are re-measured on upgrade rather than
-carried over.
+The installed build is **Maxima
+`branch_5_50_base_84_g4204fb669`** (5.50-series, build date
+2026-08-29 17:58:20) on SBCL 2.6.7. It replaced the 2026-08-20
+21:36:22 build (milestones 1–2's measurement build) during
+milestone 3, 2026-08-29. The research docs' 5.49-series expectation
+is superseded. The project does **not** pin to any build: every
+measurement is stamped with the build it was taken on (the class-1/
+class-2 accepted records carry the 2026-08-20 stamp; class-3
+records carry the 2026-08-29 stamp), and baselines are re-measured
+on upgrade rather than carried over — the milestone-3 close
+re-validated the class-1/class-2 accepted classifications under the
+new build via the Task-8 no-op slices (51/51 × 2, zero diffs;
+`docs/corpus-class3-baseline-uplift.md` §6).
 
 ## Loading rule files: the TLS limit
 
@@ -116,8 +122,9 @@ printed at all, which is itself a failure.
 maxima --very-quiet -b test_maxima_rubi.mac
 ```
 
-581 targets (green at milestone-2 close: `Results: 581 passed,
-0 failed`; the count grew 511 → 581 across the pilot's clusters).
+743 targets (green at milestone-3 close: `Results: 743 passed,
+0 failed`; growth 511 → 581 across the pilot's clusters, 581 → 620
+headvar checks, → 691 cluster A, → 743 cluster B).
 
 **Layer B — full class-1 corpus** (25,697 entries, 30 s per-entry cap,
 one fresh maxima subprocess per integral, verification by

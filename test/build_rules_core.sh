@@ -2,7 +2,7 @@
 # test/build_rules_core.sh — build the option-D rules core.
 #
 # The rules core (test/mr_rules.core) is a saved Maxima image carrying the
-# full loaded rule table (class 1 + class 2, 3180 rules) +
+# full loaded rule table (class 1 + class 2 + class 3, 3513 rules) +
 # batch_answers_from_file, so the driver's per-integral subprocess starts
 # from the image instead of re-running load("maxima_rubi.mac") +
 # mr_load_all() (class-1 load alone: ~6.2 s warm / ~9.4 s cold, measured
@@ -11,8 +11,8 @@
 # src/maxima-build.lisp:24).
 #
 # NOTE: the file list below (loader + utils + dispatch lisp + implicit-1
-# lisp + every class-1 AND class-2 rule file) must stay in sync with the
-# driver's _core_fingerprint() (test/corpus_class1_driver.py).
+# lisp + every class-1, class-2 AND class-3 rule file) must stay in sync
+# with the driver's _core_fingerprint() (test/corpus_class1_driver.py).
 # The fingerprint sidecar (test/mr_rules.core.stamp) is an md5 over the rule
 # files that define the image. The core BAKES the rules in: after editing a
 # rule .mac, the old core still "works" but silently runs the pre-edit rules.
@@ -28,13 +28,14 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
 # Fingerprint over exactly the files the image is built from: the loader,
-# the utils, the dispatch lisp, and every generated class-1 AND class-2
-# rule file. The file list is sorted (C locale) so the byte order matches
-# the driver's _core_fingerprint() (test/corpus_class1_driver.py) exactly
-# — a different order would make every freshly built core look stale.
+# the utils, the dispatch lisp, and every generated class-1, class-2 AND
+# class-3 rule file. The file list is sorted (C locale) so the byte order
+# matches the driver's _core_fingerprint() (test/corpus_class1_driver.py)
+# exactly — a different order would make every freshly built core look
+# stale.
 FP=$( { printf '%s\n' maxima_rubi.mac maxima_rubi_utils.mac maxima_rubi_dispatch.lisp \
         maxima_rubi_implicit1.lisp
-        ls rules/class1/*.mac rules/class2/*.mac
+        ls rules/class1/*.mac rules/class2/*.mac rules/class3/*.mac
       } | LC_ALL=C sort | xargs -d '\n' cat | md5sum | cut -d' ' -f1 )
 
 # The image is saved from a session that has ALREADY run a top-level, so

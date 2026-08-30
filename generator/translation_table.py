@@ -8,6 +8,12 @@ RENAME = {
     "IntegerQ": "integerp", "OddQ": "oddp", "Not": "not",
     "Sqrt": "sqrt", "Log": "log", "D": "diff",
     "ArcTan": "atan", "ArcSin": "asin", "ArcCos": "acos",
+    # class 3 (2026-08-29, branch_5_50_base_84_g4204fb669 / SBCL 2.6.7):
+    # acot/acoth are bound natives with ratsimp-closing diffs
+    # (diff(acot(x),x) = -1/(x^2+1), diff(acoth(x),x) = -1/(x^2-1));
+    # the "rc" spellings arccot/arcoth are unbound nouns — the corpus
+    # integrands and answers use the native spellings.
+    "ArcCot": "acot", "ArcCoth": "acoth",
     "Denominator": "denom", "Numerator": "num", "Denom": "denom", "Numer": "num",
     "GCD": "gcd", "Mod": "mod", "Floor": "floor", "Factor": "factor",
     "Binomial": "binomial", "Cos": "cos", "Sin": "sin", "Expand": "expand",
@@ -72,7 +78,14 @@ RENAME = {
     # erf/erfi native):
     "Exp": "exp", "Erf": "erf", "Erfi": "erfi",
     "ExpIntegralEi": "expintegral_ei",
-    "Gamma": "gamma_incomplete",   # 2-arg UPPER only (class 2: 5/5 2-arg)
+    "Gamma": "gamma_incomplete",   # arity-dispatched in the emitter (Task 2,
+                                   # class 3): 1-arg -> gamma (3.5's
+                                   # Log[Gamma[v_]]), 2-arg ->
+                                   # gamma_incomplete (class 2: 5/5 2-arg
+                                   # UPPER — unchanged), any other arity is
+                                   # a loud GenError (the PolyQ dispatch
+                                   # pattern; the RENAME value is the 2-arg
+                                   # behavior and documents it)
     # class-2 utility ports (Tasks 4-6):
     "TrueQ": "%mr_trueQ", "PowerQ": "%mr_powerQ",
     "Exponent": "%mr_degree",      # M1 port — general polynomial degree
@@ -90,6 +103,47 @@ RENAME = {
     "FunctionOfExponential": "%mr_functionOfExponential",
     "FunctionOfExponentialFunction": "%mr_functionOfExponentialFunction",
     "NormalizeIntegrand": "%mr_normalizeIntegrand",
+    # class 3 (logarithms) — answer-side natives (the naming trap: the
+    # public names carry underscores; describe(name, exact) is the
+    # arbiter). Probed 2026-08-29 on branch_5_50_base_84_g4204fb669 /
+    # SBCL 2.6.7 (the 2026-08-29 rebuild): all five are bound and
+    # float-evaluable, and each diff closes to 0 under ratsimp:
+    #   d/dx expintegral_shi(x) = sinh(x)/x
+    #   d/dx expintegral_chi(x) = cosh(x)/x
+    #   d/dx expintegral_si(x)   = sin(x)/x
+    #   d/dx expintegral_ci(x)   = cos(x)/x
+    #   d/dx expintegral_li(x)   = 1/log(x)
+    # while the SHORT names shi/chi/si/ci are UNBOUND nouns (ev(shi(0.5))
+    # stays `shi(0.5)` — emitting a short name would make the answer a
+    # noun). Chi/Shi/Si/Ci are answer-side ONLY: the class-3 census
+    # (probes/translation/04-class3-syntax-census.out) shows no class-3
+    # rule emits them — they occur only in the corpus expected texts the
+    # Task-8 driver normalizes — so the four rows are inert for class 3
+    # and exist to keep the closed table complete.
+    "Chi": "expintegral_chi",
+    "Shi": "expintegral_shi",
+    "Si": "expintegral_si",
+    "Ci": "expintegral_ci",
+    "LogIntegral": "expintegral_li",
+    # 1:1 rename to the native spelling: the active class-3 corpus
+    # expected texts are natively spelled (2,793 polylog( occurrences —
+    # probes/corpus/03-class3-answer-heads.out). The build's
+    # diff(polylog(2,x),x) and ev(polylog(2,0.5)) both stay nouns
+    # (measured 2026-08-29 on branch_5_50_base_84_g4204fb669), so there
+    # is no spurious self-diff closure; a form-identical expected answer
+    # still closes because identical terms cancel before the diff.
+    "PolyLog": "polylog",
+    # class-3 utility ports (Tasks 4-5): the %mr_ names do not exist
+    # yet — the table is static closure, the ports land in Tasks 4-5
+    # (the class-2 port rows above are the precedent for this state).
+    "InverseFunctionFreeQ": "%mr_inverseFunctionFreeQ",
+    "MemberQ": "%mr_memberQ",
+    "FalseQ": "%mr_falseQ",
+    "ProductQ": "%mr_productQ",
+    "IntegralFreeQ": "%mr_integralFreeQ",
+    "RationalFunctionExponents": "%mr_rationalFunctionExponents",
+    "DerivativeDivides": "%mr_derivativeDivides",
+    "SubstForFractionalPowerOfLinear": "%mr_substForFractionalPowerOfLinear",
     # Rubi's undocumented $UseGamma control global (absent from Rubi.m;
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):
@@ -127,6 +181,13 @@ RESTRUCTURE = {
     # false). The earlier mr_appellf1 alias mismatched the corpus head
     # and made every AppellF1 entry unverified/deferred.
     "AppellF1": "AppellF1",
+    # LogGamma: structural rewrite, not a rename — the emitter case
+    # emits log(gamma(arg)). loggamma itself is an UNBOUND noun whose
+    # diff stays undifferentiated (diff(loggamma(x),x) a noun), while
+    # diff(log(gamma(x)),x) = psi[0](x) closes (both measured 2026-08-29
+    # on branch_5_50_base_84_g4204fb669); the value "loggamma" is the
+    # handler name only, never emitted.
+    "LogGamma": "loggamma",
     "Root": "%mr_root", "Hold": "%mr_hold", "Boole": "if",
     # ShowStep is emitter-dispatched (Task 6 E4): it values to its 4th arg
     # (ReleaseHold[rhs]), which the handler emits — a "drop" would leave
