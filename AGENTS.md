@@ -122,8 +122,9 @@ printed at all, which is itself a failure.
 maxima --very-quiet -b test_maxima_rubi.mac
 ```
 
-581 targets (green at milestone-2 close: `Results: 581 passed,
-0 failed`; the count grew 511 → 581 across the pilot's clusters).
+743 targets (green at milestone-3 close: `Results: 743 passed,
+0 failed`; growth 511 → 581 across the pilot's clusters, 581 → 620
+headvar checks, → 691 cluster A, → 743 cluster B).
 
 **Layer B — full class-1 corpus** (25,697 entries, 30 s per-entry cap,
 one fresh maxima subprocess per integral, verification by

@@ -73,11 +73,12 @@ HEAD_REWRITES = [
     (re.compile(r"(?<![A-Za-z0-9_])GAMMA\("), "gamma_incomplete("),
     (re.compile(r"(?<![A-Za-z0-9_])Ei\("), "expintegral_ei("),
     # Class-3 rows (2026-08-29): the "3 Logarithms" expected answers
-    # carry the Rubi heads Chi( Shi( Si( Ci( Li(. Measured 2026-08-29 on
-    # 5.50.0 (build 2026-08-29 17:58:20; plan
+    # carry the Rubi heads Chi( Shi( Si( Ci( Li(. Measured on 5.50.0 —
+    # the committed re-runnable form:
+    # probes/answer-side/02-class3-answer-side-identities (build
+    # 2026-08-29 17:58:20; plan
     # docs/superpowers/plans/2026-08-29-milestone-3-class3.md §Task-2
-    # "Native conventions probed", .superpowers/sdd/task-2-report.md
-    # :111-150): d/dx expintegral_shi(x) = sinh(x)/x, d/dx
+    # "Native conventions probed"): d/dx expintegral_shi(x) = sinh(x)/x, d/dx
     # expintegral_chi(x) = cosh(x)/x, d/dx expintegral_si(x) = sin(x)/x,
     # d/dx expintegral_ci(x) = cos(x)/x, d/dx expintegral_li(x) =
     # 1/log(x) — every residue 0; all five bound and float-evaluable.

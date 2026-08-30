@@ -27,9 +27,11 @@ occurrences) that map to the bound, diff-known natives
 build's `loggamma` is an undifferentiable noun — probed);
 (c) `PolyLog` as a **1:1 rename to the native `polylog` spelling** —
 the active corpus expected texts already carry native `polylog(`
-(**1,195 of 3,085 entries, 2,793 occurrences** — the section's dominant
-answer surface; the 10 `PolyLog[` lines a first grep found are
-commented-out entries in bracket notation the driver never reads).
+(**1,195 of 3,085 entries whole-line / 1,194 in the expected text**
+— 3.1.5 e220's is integrand-only, `Unintegrable`-expected; 2,793
+occurrences — the section's dominant answer surface; the 10
+`PolyLog[` lines a first grep found are commented-out entries in
+bracket notation the driver never reads).
 The build's `diff(polylog(·,·),·)` AND `polylog(·,numeric)` are nouns
 (probed 2026-08-29), so a polylog entry's zero chain can close only
 via the two-sided expected chain on a FORM-IDENTICAL answer (the
@@ -54,11 +56,13 @@ These apply to every task.
 1. **Build stamp.** All measurements run on the installed build
    (stamp via `build_info()`: version `branch_5_50_base_84_g4204fb669`,
    build date `2026-08-29 17:58:20`, SBCL 2.6.7). Do not pin; on
-   upgrade, re-measure. The accepted class-1 (19,731/25,697) and
-   class-2 (594/965 post-harness-port) records were measured on the
-   2026-08-20 build and stand as stamped history; the class-3 A/B
-   yardstick is the class-3 baseline measured in Task 9 on the current
-   build (apples-to-apples by construction).
+   upgrade, re-measure. The accepted class-1 (19,731/25,697, later
+   superseded by the post-radcan re-measurement 20,069/25,697
+   standing at close — `docs/corpus-class2-baseline-uplift.md` §8.2)
+   and class-2 (594/965 post-harness-port) records were measured on
+   the 2026-08-20 build and stand as stamped history; the class-3
+   A/B yardstick is the class-3 baseline measured in Task 9 on the
+   current build (apples-to-apples by construction).
 2. **TLS flag.** Any maxima process that loads rule files runs with
    `-X "--tls-limit 100000"` (two argv tokens).
 3. **House rules** (milestone-1 plan, carried over): booleans through
@@ -187,15 +191,17 @@ the token closure table. No Maxima.
       `probes/corpus/03-class3-answer-heads.out`.
 - [ ] Verify the records against the recon values above (11 files /
       333 rules / AUTO 241 / MANUAL 92; answer heads GAMMA 304 {2:304},
-      Ei 220 {1:220}, Chi/Shi/Si/Ci 8 each, Li 22, `PolyLog(` 0 /
-      `polylog(` 2793 over 1,195 of 3,085 entries, entries 3085). Any
+       Ei 220 {1:220}, Chi/Shi/Si/Ci 8 each, Li 22, `PolyLog(` 0 /
+       `polylog(` 2793 over the 1,195 whole-line entries (1,194
+       expected-text), entries 3085). Any
       mismatch is a probe/parse defect — fix and re-run (the recon
       values came from the same scripts).
 - [ ] **Token closure** — every UNLISTIED token adjudicated (this plan's
       recon section is the adjudication; record it in the report):
       `PolyLog` → 1:1 RENAME `polylog` (the active corpus expected
-      texts are natively spelled — 1,195 entries / 2,793 occurrences;
-      the build's polylog diff and numeric eval are nouns, so the
+      texts are natively spelled — 1,195 whole-line / 1,194
+      expected-text entries / 2,793 occurrences; the build's polylog
+      diff and numeric eval are nouns, so the
       entries close only via the two-sided expected chain on
       form-identical answers — the Task-11 ceiling decision carries
       this mass);

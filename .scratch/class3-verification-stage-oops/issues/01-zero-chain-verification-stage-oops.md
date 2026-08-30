@@ -7,8 +7,8 @@ reviewer-corrected: 15 deaths = 13 heap-exhausted OOMs + 2
 control-stack-exhausted)
 
 ## The measured basis (build 2026-08-29 17:58:20 / SBCL 2.6.7;
-sources: `docs/corpus-class3-baseline-uplift.md` §4/§5,
-`.superpowers/sdd/task-10-report.md` §6/§7/§12)
+sources: `docs/corpus-class3-baseline-uplift.md` §4 — the death
+census carries the Task-10 §6/§7/§12 reviewer re-runs — and §5)
 
 **13 heap-exhausted OOMs, all in the driver's zero-chain
 VERIFICATION stage:**
@@ -36,8 +36,9 @@ scope here except as the census context.
 
 **Polylog-family concentration:** all 6 package-run `error`s and 8
 of the 9 re-check OOMs sit in the polylog families
-(`.superpowers/sdd/task-10-report.md` §8) — the verification-stage
-blowup is worst where polylog verification is attempted (the
+(`docs/corpus-class3-baseline-uplift.md` §5 — the polylog
+subsection) — the verification-stage blowup is worst where polylog
+verification is attempted (the
 `diff(polylog(·,·),·)`-noun mass, see the sibling ticket
 `.scratch/class3-polylog-ceiling/issues/01`).
 

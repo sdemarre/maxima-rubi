@@ -7,8 +7,8 @@ polylog/AppellF1 structural-ceiling decision, decided with the
 class-3 numbers: the ceiling does NOT stand as-is)
 
 ## The measured basis (all class-3, build 2026-08-29 17:58:20 / SBCL
-2.6.7; sources: `docs/corpus-class3-baseline-uplift.md` §2/§5,
-`.superpowers/sdd/task-10-report.md` §8,
+2.6.7; sources: `docs/corpus-class3-baseline-uplift.md` §2/§5 — the
+§5 polylog subsection carries the Task-10 §8 split — and
 `probes/corpus/03-class3-answer-heads.out`)
 
 - The class-3 polylog mass: **1,195 of 3,085 entries (38.7 %) /
@@ -23,7 +23,8 @@ class-3 numbers: the ceiling does NOT stand as-is)
   a form-identical answer** (identical polylog terms cancel before
   the diff — `diff(polylog(2,-x) - polylog(2,-x), x) = 0`
   measured); the self-diff and numeric stages cannot close.
-- The measured split of the 1,195 (Task-10 report §8): **PASS 440
+- The measured split of the 1,195
+  (`docs/corpus-class3-baseline-uplift.md` §5): **PASS 440
   (36.8 %: verified 379, expected 59, no-answer 2) | deferred 532,
   unverified 106, timeout 103, contains-noun 8, error 6** vs the
   record-wide PASS 56.3 %.
@@ -84,8 +85,9 @@ blast radius):
 ## Interactions (measured, must be in the triage)
 
 - **OOM mass:** all 6 package-run `error`s and 8 of the 9 re-check
-  OOMs sit in the polylog families (Task-10 §8; the 13 OOMs blow up
-  in the driver's zero-chain VERIFICATION stage — see
+  OOMs sit in the polylog families
+  (`docs/corpus-class3-baseline-uplift.md` §4/§5; the 13 OOMs blow
+  up in the driver's zero-chain VERIFICATION stage — see
   `.scratch/class3-verification-stage-oops/issues/01`). A shim that
   makes polylog diffs close EARLIER in the chain may shrink the
   blowup (the diff never reaches the heavy stages); one that adds a
