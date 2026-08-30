@@ -176,8 +176,10 @@ made the generation loud-failure-free):
     uppercase `Li(` row, so no collision; the committed comment says
     exactly this.
   - **No `polylog(` row** — the polylog rename decision (Task 1,
-    option D): the 1,195-entry polylog mass is native-spelled in the
-    ACTIVE expected texts (2,793 `polylog(` occurrences = whole-file
+    option D): the 1,195-entry polylog mass (whole-line grep; 1,194
+    of them carry `polylog(` in the expected text — 3.1.5 e220's is
+    integrand-only, `Unintegrable`-expected) is native-spelled in
+    the ACTIVE entries (2,793 `polylog(` occurrences = whole-file
     count — none outside active entries), the package emits native
     `polylog(`, and the only Rubi-spelled `PolyLog` surface is the 10
     commented-out bracket-notation lines (75 occurrences, all 2-arg;
