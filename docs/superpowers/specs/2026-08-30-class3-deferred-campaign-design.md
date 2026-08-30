@@ -230,12 +230,17 @@ New committed probe `probes/corpus/06-class3-deferred-mechanisms.
   / **B-faithful** (the ported cond matches the `.m` and declines)
   / **C-in-Rubi** (a pinned-`.m` rule covers the shape; not ported
   or not firing) / **C-absent** (no pinned-`.m` rule — upstream
-  gap) / **D** (catch-all fired — a faithful Rubi decline).
+  gap) / **D** (a documented faithful decline — a catch-all fired,
+  or a recorded mechanism strictness such as the F_ e:=0 corner).
 - **Calibration**: the prototype is calibrated on the measured
   f1/f2/f5 cases (section 2.2) and the 12 F_-domain entries (3.1.5
-  e186–e197 — the known-firing set, 4 of which the package
-  verified). A harness that misclassifies any calibration case does
-  not ship.
+  e186–e197 — measured 2026-08-30 in the milestone-3 close-out:
+  the eight m=1 rows are answered on pass 3 by the 3.5 catch-all
+  3_5_r43 (4 of them verified), the four m=2 rows 0-fire in all
+  three passes (deferred); the ported F_ headvar rules fire on
+  none of the twelve — the e:=0 identity-default corner, recorded
+  strictness). A harness that misclassifies any calibration case
+  does not ship.
 - **Output**: the committed `.out` = the distribution
   (mechanism × file × target-flag) + the per-entry table + the
   measured pass-4-prototype per-entry cost. **This table is the
