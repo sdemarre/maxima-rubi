@@ -3220,3 +3220,85 @@ reviewer independently recomputed the whole A/B)
     report's e534 mischaracterization + death census (13 OOM + 2
     control-stack = 15) and the e492 attribution — corrected in
     task-10-report.md (§6/§7/§10/§12).
+
+Task 11: complete (commit e6c4a4d + fix d92a1b0 + housekeeping
+803f13b, review clean — APPROVED, every doc number recomputed exact,
+all three final gates re-run green)
+  - Acceptance record: docs/corpus-class3-baseline-uplift.md (772
+    lines, the class-2 shape): header/inputs/build+fp block; S1 rule
+    set (11/333/332, 241/92, per-file counts in LoadRules order, the
+    4 F_ head-position rules + allow-lists, the 13-token resolution
+    table); S2 normalization (7 HEAD_REWRITES rows, the li-is-bound
+    note, the polylog rename + noun properties, the 51/51x2 no-op
+    proof); S3 baseline (1,441/3,085 + 30-error triage); S4 package
+    run + A/B (1,736/3,085, per-file table, 525 = 343 + 182 / 820
+    transitions, the 30-error bucket, the 100 s re-check 1/96/9/9/1/1,
+    the 15-death census, the yardstick note); S5 residues (per-file
+    FAIL-mass table, 31 sample entries with t, likely-cause
+    classification, the residue-head census); S6 earlier classes
+    stand (empty git log over rules/class1+2, the rebuild no-op
+    proof); S7 ledger flags (8 shared-code changes + evidence); S8
+    final gates.
+  - Residue analysis: 1,349 FAILs (deferred 1,033, unverified 158,
+    timeout 117, unexpected 22, contains-noun 13, error 6) — per-file
+    masses + samples reviewer-verified 31/31 against the record;
+    committed re-runnable census probe
+    probes/corpus/04-class3-residue-answer-heads.{py,run,out} (FAIL
+    set 1,349; output byte-identical on re-run): polylog( 1,782,
+    %e^ 468, GAMMA( 245, Ei( 77, erfi( 57, Chi/Shi/Si/Ci( 8 each,
+    Li( 6, hypergeometric( 4 (NATS extension, 4 real entries) —
+    polylog-dominated.
+  - THE POLYLOG DECISION (the M2-deferred one, now with numbers):
+    the ceiling does NOT stand. Of the 1,195-entry mass (38.7 % of
+    the class; 2,793 occurrences): PASS 440 (36.8 %) | deferred 532
+    + unverified 106 = 638 (53.4 % of the mass, 47.3 % of the FAIL
+    mass) | timeout 103 | contains-noun 8 | error 6. 638 is
+    material (it exceeds every other FAIL sub-mass and sits exactly
+    where the M2 deferral predicted) -> the polylog-derivative-shim
+    follow-up ticket carries 638 as its go number (candidates
+    d/dz polylog(2,z) = -log(1-z)/z and the recursion
+    d/dz polylog(s,z) = polylog(s-1,z)/z; the where-does-it-live
+    question — driver zero-chain vs Maxima-level diff
+    simplification — is for triage; OOM/time interaction recorded:
+    8 of 9 re-check OOMs + all 6 run errors sit in the polylog
+    families). The AppellF1 half stays deferred (0 occurrences in
+    class 3, active or rule-side).
+  - Follow-up tickets (7 new, all needs-triage except noted):
+    .scratch/class-ports/issues/01-05 (the queue 8 -> 5 -> 6 -> 7 ->
+    4, class 4 last deliberately; entry counts verified against the
+    suite 1,949/4,585/5,080/6,552/22,472; recon rule counts
+    310/665/390/1,075/2,095 labeled pre-census);
+    .scratch/class3-polylog-ceiling/issues/01 (the 638 go number);
+    .scratch/class3-verification-stage-oops/issues/01 (the 13
+    zero-chain-VERIFICATION-stage OOMs + the e79 matching
+    control-stack death; e492 explicitly deferred to the existing
+    ready-for-agent arity ticket).
+  - Final gates (reviewer re-ran): Layer A Results: 743 passed,
+    0 failed; byte-identity --class 1 TOTAL 3026 OK / --class 2
+    TOTAL 125 OK + git status --porcelain rules/ EMPTY; head-rewrite
+    unit 20/0.
+  - todo/TODO.md: the M3 section closed (acceptance line, record
+    pointers, the rebuild note, 13 follow-up entries — the 5 class
+    tickets, the shim 638, the OOM ticket, the arity
+    ready-for-agent, the still-open M2 carries; nothing resolved
+    carried, nothing open dropped; queue 8 -> 5 -> 6 -> 7 -> 4).
+  - Review findings, all handled: the doc's "1,195 native-spelled in
+    the ACTIVE expected texts" was off by one (3.1.5 e220's polylog
+    is integrand-only, Unintegrable-expected — 1,194 expected-text
+    entries; the 1,195 is the whole-line grep) — wording fixed in
+    d92a1b0; the report's "8 new ticket files" typo (7) fixed in the
+    report; the AGENTS.md installed-build stamp (2026-08-20 ->
+    2026-08-29 17:58:20, the milestone-3 rebuild) updated in
+    803f13b (controller housekeeping, the implementer's flagged
+    deviation).
+
+MILESTONE 3 CLOSED — all 11 tasks complete (branch milestone-3,
+base b9fecd0). Final measured state: 3,513-rule core (fingerprint
+00e05dca117aefd8df3d266652b11e93, TLS probe TABLE_AT_LOAD 3513);
+Layer A 743/0; class-3 acceptance 1,736/3,085 (56.3 %) vs the
+integrate baseline 1,441/3,085 (46.7 %) — the first class where the
+package beats its baseline (+295 / +9.6 pt; FAIL->PASS 820 vs
+PASS->FAIL 525 = 343 genuine + 182 yardstick); 96 confirmed
+non-terminators at 100 s; the class-1 (20,069/25,697) and class-2
+(594/965) accepted records stand under the 2026-08-29 build (no-op
+slices 51/51 x 2).
