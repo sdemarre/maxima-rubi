@@ -151,8 +151,8 @@ PASS_CLASSES = {"expected", "verified", "no-answer"}
 
 def _core_fingerprint():
     """md5 over exactly the files test/build_rules_core.sh bakes into the
-    image (loader + utils + dispatch lisp + implicit-1 lisp + every
-    class-1, class-2 AND class-3 rule file)."""
+    image (loader + utils + dispatch lisp + implicit-1 lisp + pass-4
+    lisp + every class-1, class-2 AND class-3 rule file)."""
     import glob
     import hashlib
     # Canonical order: sorted RELATIVE paths (must match
@@ -160,7 +160,8 @@ def _core_fingerprint():
     # freshly built core look stale, measured 2026-08-26).
     rels = sorted(["maxima_rubi.mac", "maxima_rubi_utils.mac",
                    "maxima_rubi_dispatch.lisp",
-                   "maxima_rubi_implicit1.lisp"] +
+                   "maxima_rubi_implicit1.lisp",
+                   "maxima_rubi_pass4.lisp"] +
                   [os.path.relpath(p, ROOT) for p in
                    glob.glob(os.path.join(ROOT, "rules", "class1", "*.mac"))] +
                   [os.path.relpath(p, ROOT) for p in

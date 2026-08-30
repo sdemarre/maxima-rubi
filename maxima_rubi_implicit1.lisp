@@ -30,6 +30,31 @@
 ;; 1-2 0-firing) — nested mr_int dispatches run with the gate off and
 ;; see the verbatim original control flow, so nothing currently
 ;; passing can change.
+;; Pass-4 candidate index (2026-08-30, class-3 deferred campaign,
+;; docs/superpowers/specs/2026-08-30-class3-deferred-campaign-design.md,
+;; plan docs/superpowers/plans/2026-08-30-class3-deferred-campaign.md):
+;; pass 3 offers exactly ONE wrapped candidate (the first eligible
+;; non-mexpt factor in scan order); a multi-bare-factor integrand
+;; 0-fires whenever that one candidate is the wrong slot (measured
+;; f1/f2/f5, spec section 2.2). *mr-implicit1-which* (nil = pass-3
+;; behavior, byte-identical; positive integer = 1-based index) makes
+;; the shadow offer the k-th eligible factor INSTEAD. The index is
+;; evaluated against the factor list CURRENT at each findfun call, so
+;; a multi-slot rule's later slots see the remaining factors
+;; re-indexed (a slot can bind a bare leftover factor that a one-shot
+;; raw-(mexpt f 1) product materialization could not offer — strictly
+;; more binding power, same single-candidate-per-slot semantics, no
+;; backtracking added or removed). The e-itself branch (leftover
+;; single factor) wraps for ANY which, not just nil: the which index
+;; only re-orders the factor branch, and the inner matches need the
+;; single-factor wrap too (the original which-nil-only guard 0-fired
+;; the which=i sweep — measured 2026-08-30, 3.1.5 e186); pass 3
+;; (which = nil) is byte-identical, it wrapped before too. A product
+;; containing an explicit mexpt factor is outside the shadow's
+;; activation entirely (the original findfun returns the explicit
+;; factor before the shadow runs — why f1 0-fires pass 3); the
+;; pass-4 sweep skips those (the %mr_barefactors census) and the
+;; %mr_p4_diag diagnostic reports the original pick instead.
 ;;
 ;; Two dev-build quirks measured while prototyping (both fatal to the
 ;; naive implementation):
@@ -49,6 +74,7 @@
 ;; the product factor by factor.
 
 (defvar *mr-implicit1-active* nil)
+(defvar *mr-implicit1-which* nil)
 
 ;; The original findfun (matrun.lisp) rewritten value-returning:
 ;; (values factor found-p) instead of throw matcherr.
@@ -67,19 +93,47 @@
 (defun mr-implicit1-w (f)
   (list (list 'MEXPT 'SIMP) f 1))
 
+;; k-th (1-based *mr-implicit1-which*) eligible non-mexpt factor of the
+;; factor list, or nil when the index is out of range. Split out of
+;; findfun (not inlined) because this build's compiler fatals on the
+;; inlined shape: a cond arm holding three nested lets whose innermost
+;; references a middle-let binding (measured 2026-08-30, the
+;; minifunB/g3/h1-h4 c2-c3/g-g3/n3a-n3b bisect set); the extracted
+;; two-let helper (outer binding referenced from the inner) compiles
+;; clean in the same build.
+(defun mr-implicit1-which-factor (factors)
+  (let ((eligible (remove-if
+		   #'(lambda (g) (and (consp g)
+				      (eq (caar g) 'mexpt)))
+		   factors)))
+    (let ((k (1- *mr-implicit1-which*)))
+      (if (and (integerp k) (>= k 0)
+	       (< k (length eligible)))
+	  (mr-implicit1-w (nth k eligible))
+	  nil))))
+
 (defun mr-implicit1-findfun (e p c)
   (cond ((not (eq p 'mexpt)) nil)
 	((or (atom e) (not (eq (caar e) c)))
-	 ;; e itself is the leftover single factor (or an atom)
-	 (cond ((or (eq c 'mtimes) (eq c 'mplus)) (mr-implicit1-w e))
+	 ;; e itself is the leftover single factor (or an atom): wrap it
+	 ;; for ANY which, not just nil — the which index only re-orders
+	 ;; the factor branch below; the inner matches need the
+	 ;; single-factor wrap too. Measured 2026-08-30: the old
+	 ;; which-nil-only guard 0-fired the which=i sweep (3_5_r43 on
+	 ;; 3.1.5 e186), because an inner-match single-factor findfun
+	 ;; call bailed; pass 3 (which=nil) is byte-identical — it
+	 ;; wrapped before too.
+	 (cond ((or (eq c 'mtimes) (eq c 'mplus))
+	       (mr-implicit1-w e))
 	       (t nil)))
 	(t (let ((factors (if (null matchreverse)
 			      (reverse (cdr e))
 			      (cdr e))))
-	     (dolist (f factors)
-	       (unless (and (consp f) (eq (caar f) 'mexpt))
-		 (return-from mr-implicit1-findfun (mr-implicit1-w f))))
-	     nil))))
+	     (if (null *mr-implicit1-which*)
+		 (dolist (f factors)
+		   (unless (and (consp f) (eq (caar f) 'mexpt))
+		     (return-from mr-implicit1-findfun (mr-implicit1-w f))))
+		 (mr-implicit1-which-factor factors))))))
 
 (defun findfun (e p c)
   (multiple-value-bind (f ok) (mr-orig-findfun-v e p c)

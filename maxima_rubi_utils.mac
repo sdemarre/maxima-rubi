@@ -249,6 +249,65 @@ depth_level : 0$
     ),
   looped)$
 
+/* Pass-4 top-level factor census (class-3 deferred campaign, Task 1).
+   f is a SIMPLIFIED integrand (a real Maxima expression). A factor is
+   bare (implicit-1-eligible) iff it is not an explicit power. A mquot
+   top (A/x storage — all negative powers are stored as / nodes in this
+   build) has no mtimes factor list at the top level: the census reports
+   [0, false] and the sweep is a no-op on it (the shadow never
+   activates on a mquot top: findfun is called with c = 'mquot, outside
+   the {mtimes, mplus} wrap condition — measured consequence: f5
+   0-fires pass 3, spec section 2.2). An ATOMIC factor is bare: op() is
+   a hard error on atoms in this build (measured 2026-08-30), and an
+   atom can never be an explicit power. */
+%mr_barefactors(f) := block([n, i, bare, haspow],
+  if is(op(f) = "*") then (
+    n : length(f), bare : 0, haspow : false,
+    for i : 1 thru n do (
+      if atom(part(f, i)) then bare : bare + 1
+      else if is(op(part(f, i)) = "^") then haspow : true
+      else bare : bare + 1
+    ),
+    [bare, haspow]
+  ) else [0, false])$
+
+/* One pass-4 scan (the probe's P4SCAN unit AND the production sweep's
+   unit — the shared primitive, spec section 5.2). d in {0,1} selects
+   the scan direction; i is the 1-based bare-factor index the shadow
+   offers. Resets BOTH matcher-state globals after the scan, so a call
+   is side-effect-free wrt pass 1/2/3 semantics. */
+%mr_p4_once(f, x, rl, depth, d, i) := block([ans],
+  %mr_p4_setrev(d),
+  %mr_p4_setwhich(i),
+  ans : %mr_dispatch_p4(f, x, rl, depth),
+  %mr_p4_setrev(0),
+  %mr_p4_setwhich(false),
+  ans)$
+
+/* The pass-4 sweep. Skips (returns false, zero scans) when the
+   integrand has an explicit-power top-level factor (the shadow-dead
+   case — the caller runs %mr_p4_diag instead) or fewer than 2 bare
+   factors (nothing to re-order). return() inside a for is loop-level
+   in this build (the %mr_dispatch note above): the ans/bare-return
+   idiom, checked at BOTH loop levels. */
+%mr_pass4_scan(f, x, rl, depth) := block([census, k, hp, d, i, ans],
+  census : %mr_barefactors(f),
+  k : part(census, 1),
+  hp : part(census, 2),
+  if hp then return(false),
+  if is(k < 2) then return(false),
+  ans : false,
+  for d : 0 thru 1 do (
+    for i : 1 thru k do (
+      if is(ans = false) then (
+        ans : %mr_p4_once(f, x, rl, depth, d, i),
+        if is(ans # false) then return()
+      )
+    ),
+    if is(ans # false) then return()
+  ),
+  ans)$
+
 mr_top(f, x, fb) := block([ans],
   depth_level : depth_level + 1,
   if depth_level > %mr_max_depth then (

@@ -89,6 +89,24 @@ mr_witness_implicit1() :=
 
 %mr_load_sibling("maxima_rubi_implicit1.lisp", 'mr_witness_implicit1)$
 
+/* The pass-4 per-candidate implicit-1 seam (maxima_rubi_pass4.lisp):
+ * %mr_p4_setrev / %mr_p4_setwhich / %mr_dispatch_p4 / %mr_p4_diag for
+ * the class-3 deferred campaign (plan
+ * docs/superpowers/plans/2026-08-30-class3-deferred-campaign.md).
+ * Loads after the implicit-1 file (it consumes *mr-implicit1-which*). */
+mr_witness_pass4() := block([r],
+  /* %mr_dispatch_p4 on an EMPTY table 0-fires: a missed load leaves it
+   * a noun and this fails loudly. The setter round-trip catches a
+   * noun setter (string of a noun call would throw in is()). */
+  r : %mr_dispatch_p4(1, x, [], 1),
+  %mr_p4_setwhich(1),
+  %mr_p4_setwhich(false),
+  %mr_p4_setrev(1),
+  %mr_p4_setrev(0),
+  is(r = false))$
+
+%mr_load_sibling("maxima_rubi_pass4.lisp", 'mr_witness_pass4)$
+
 /* Milestone-1 core (eager): the 1.1.1.1 rule file — what the Layer A
  * suite verifies behaviorally; 5 rules, safe on any build. */
 %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1)$
