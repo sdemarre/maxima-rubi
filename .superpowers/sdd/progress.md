@@ -3302,3 +3302,108 @@ PASS->FAIL 525 = 343 genuine + 182 yardstick); 96 confirmed
 non-terminators at 100 s; the class-1 (20,069/25,697) and class-2
 (594/965) accepted records stand under the 2026-08-29 build (no-op
 slices 51/51 x 2).
+
+## Whole-branch review + close-out fixes — milestone-3 (2026-08-30)
+
+Whole-branch review (both axes: standards + spec) of b9fecd0..885ad37
+completed. Disposition: fix commits 0f120fc (probes), e9309bb (F_
+correction in the acceptance record + suite comment), 952c659
+(citation re-points / counts / plan wording).
+
+**Finding (both axes) — the F_ "zero corpus exposure" claim is FALSE.**
+The Task-3 smoke's "0 of 3,085 entries" under-reported: probe 05
+(probes/corpus/05-class3-inverse-function-exposure, green, pins
+EXPECTED_TOTAL 3085 + the exact hit set) measures **12** — 3.1.5
+e186-e197, all the (d+e x^2) F(a x)^m log(c x^n) shape. The
+throwaway smoke scan is gone (failure mode not pinned); probe 05 is
+the authoritative scan. Measured mechanism (2026-08-30, milestone-3
+core, rubi_verbose + direct %mr_headvar_match calls):
+- The ported F_ rules (3_1_5 r58/r59) fire on **NONE** of the twelve:
+  the headvar matcher declines the e:=0 identity-default corner of
+  the linear F-argument a*x (direct: the r58/r59 specs bind the
+  non-zero-e control 2*(3+4*x) and decline a*x) — the recorded
+  finding-2 strictness (STRICTER than MA, a decline, never a false
+  positive).
+- All eight m=1 rows: pass 1 0-fires; the 3.5 catch-all
+  _mr_rule_3_5_r43 fires on pass 3 (measured on all eight). r43's
+  repl re-dispatches the factored form; the F-only sub-integral
+  (no log factor) 0-fires in every family -> the native-integrate
+  fall-through answers it (the measured answers carry the native
+  atan2(.,.)/li(.) forms).
+- All four m=2 rows: 0-fire in all three passes -> top-level
+  unintegrable -> deferred.
+- Committed-record outcomes: verified 4 (e188/e189/e192/e193 —
+  zero chain closes the log(1+a^2 x^2)/polylog(2,-a^2 x^2) residue),
+  unverified 4 (e186/e187/e190/e191 — the expected texts'
+  atanh(sqrt(1+-a^2 x^2))/(1+-a^2 x^2)^(3/2) terms do not close
+  against the native atan2/sqrt forms), deferred 4 (e194-e197);
+  baseline unverified 9 + timeout 3 (e191/e196/e197) -> the twelve
+  add +4 PASS, all via r43, none via r58/r59. The pre-correction
+  "r59 verified 4/4" attribution was wrong — r59 never fires on the
+  corpus. The 39 synthetic Layer A checks remain the only committed
+  gate on r58/r59 (none of the twelve binds d:=1 / c:=1 / Px:=1 /
+  non-zero-e).
+- This ledger's close-block line "the first class where the package
+  beats its baseline" and line 2816's "0 of 3,085" stand as
+  contemporaneous record; this entry + e9309bb correct them. The
+  "first class" wording: class 1 (bespoke port) beat its baseline by
+  +27.0 pt; the defensible claim is "first RUNBOOK-PORTED class"
+  (class 2, first runbook port, was -9.6 pt at the pilot).
+
+**Other review findings, disposed:**
+- Dangling transient citations: .superpowers/sdd/task-2-report.md in
+  the driver HEAD_REWRITES comment + uplift doc §2 -> re-pointed to
+  probes/answer-side/02 (0f120fc commits the probe: the five
+  expintegral_* derivative identities, the short-name noun trap, the
+  li boundness — the committed re-runnable form of the Task-2
+  measurements); task-10-report.md in the two class3 follow-up
+  tickets -> re-pointed to the committed acceptance record §4/§5
+  (the same numbers, committed home).
+- AGENTS.md Layer A count stale (581) -> 743 (growth 511 -> 581 ->
+  620 headvar -> 691 cluster A -> 743 cluster B).
+- Plan in-place: the accepted class-1 19,731 annotated with its
+  20,069 post-radcan supersession (class2 uplift §8.2); the
+  1,195/1,194 whole-line/expected-text polylog distinction at the
+  three count sites (3.1.5 e220 integrand-only,
+  Unintegrable-expected).
+- **Judgement call (recorded, not refactored):** generate_rules.py
+  carries two near-parallel rule-emission paths (the AUTO/MANUAL
+  defmatch path, the headvar structural path) with no shared helper
+  for the matchlist-assignment prelude. Both paths are frozen by the
+  byte-identity gate; a refactor risks byte-drift across 3,513
+  rules for a zero-behavior change; the headvar path is 2 sites.
+  Revisit if a third structural matcher form is added.
+
+**Build-quirk measurements (2026-08-30; plain maxima AND the rules
+core — build-level, branch_5_50_base_84_g4204fb669):**
+- Relational ops do NOT auto-evaluate at top level: disp(0 = 0)
+  prints the noun `0 = 0`; disp(1 < 2) prints `1 < 2`; the
+  `#`-operator likewise (a2 # false stays a noun). The `if` test
+  position and and/or force evaluation: is(0 = 0) -> true,
+  2 > 1 and 3 > 2 -> true, if (0 = 0) then ... takes the true
+  branch. All production code already avoids bare relations
+  (driver is()-wraps; generated conds use is(...); %mr_dispatch's
+  `res # false` / `res = []` idiom is is()-safe via the if test
+  position) — no behavior impact, but Maxima written for the
+  driver/core keeps the is() discipline (campaign probe authors:
+  note).
+- The iterator form `for (x : list) do` errors ("assignment: cannot
+  assign to (x : list)"); the thru form `for x : 1 thru n do` works
+  (%mr_dispatch uses it). No production path uses the iterator form
+  (Layer A suite: 0 occurrences; driver mac template: 0).
+- `#=` and `<>` are parse errors in this build ("= is not a prefix
+  operator" / "> is not a prefix operator"); use `#` (is()-guarded)
+  or `=`.
+- `element(list, i)` returns unevaluated (a noun) at the Maxima
+  level; first/rest/part are the working accessors. (Related
+  pre-existing: part(-(1/2), 2) errors — utils :127-130 comment.)
+
+**Layer A re-verification after the fixes (2026-08-30):** Results:
+743 passed, 0 failed (covers the edited test_maxima_rubi.mac).
+
+**Open (not part of the review):** the deferred campaign — spec at
+docs/superpowers/specs/2026-08-30-class3-deferred-campaign-design.md
+(committed 471bf67, user-approved design 2026-08-30; scope: the 788
+target mass, triage-decides strategy). Awaiting the user's spec
+review -> writing-plans -> SDD on a branch cut from master after
+this close lands.
