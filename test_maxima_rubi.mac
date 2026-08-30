@@ -487,10 +487,16 @@ test_structural_predicates() := block([],
      F_[d_*(e_+f_*x_)] cannot go through defmatch in this build
      (head-position pattern variables are rejected — the class-2 r96
      finding), so the generator emits a structural rule that calls
-     %mr_headvar_match with a slot spec. The class-3 corpus carries no
-     linear-argument inverse-function integrand (0 of 3,085 entries,
-     measured 2026-08-29), so the matcher semantics are pinned here on
-     synthetic integrands. The listp-guarded positive checks keep a
+      %mr_headvar_match with a slot spec. The class-3 corpus carries
+      twelve linear-argument inverse-function integrands (3.1.5
+      e186-e197, the (d+e x^2) F(a x)^m log(c x^n) shape —
+      probes/corpus/05-class3-inverse-function-exposure, 2026-08-30),
+      but every one sits at the e:=0 identity-default corner the
+      headvar matcher declines by recorded design (finding 2; the
+      uplift record §1), so the package answers the m=1 rows via the
+      3.5 catch-all, never via these rules — the matcher semantics
+      are pinned here on synthetic integrands. The listp-guarded
+      positive checks keep a
      RED run (helper not yet defined — the call stays a noun) from
      dying inside geteqR. */
   test_class3_headvar() := block([mm],

@@ -108,16 +108,46 @@ the 2026-08-29 build): `arccot`/`arcoth` are unbound nouns with
 D-noun diffs, so a noun head could never close the zero chain; new
 table rows `ArcCot`→`acot`, `ArcCoth`→`acoth` (the
 `%mr_` hyperbolic shims stay for class 1–2 answer-side byte-identity).
-**Zero corpus exposure: 0 of 3,085 entries** (Python scan of the
-class-3 corpus, Task 3) — the 39 synthetic Layer A checks
-(`test_class3_headvar`) are their only gate. Recorded safe-direction
-divergence (Task-3 fix round, finding 2): the matcher is STRICTER
-than MA on the identity-default corners (d:=1 / e:=0 / c:=1 / Px:=1)
-— a decline, never a false positive; with the zero exposure above it
-contributes nothing measurable to the §5 residue. An optional-form
-capture (`F_.[`) is a loud GenError at generation time (grep-verified
-zero `_.[` in the eleven .m files; the fix-round caught a SILENT
-pass-through before it could ship).
+**Corpus exposure: 12 of 3,085 entries** — 3.1.5 e186-e197, all the
+`(d+e x^2) F(a x)^m log(c x^n)` shape (m = 1: e186 asin, e187 acos,
+e188 atan, e189 acot, e190 asinh, e191 acosh, e192 atanh, e193
+acoth; m = 2: e194 asin^2, e195 acos^2, e196 asinh^2, e197
+acosh^2) — `probes/corpus/05-class3-inverse-function-exposure`
+(2026-08-30; the Task-3 smoke's "0 of 3,085" under-reported and is
+superseded — the throwaway scan is gone, so its failure mode is not
+pinned; probe 05 is the authoritative scan). Measured mechanism
+(2026-08-30, milestone-3 core, `rubi_verbose` + direct
+`%mr_headvar_match` calls; the entry set is probe 05's): **the
+ported F_ rules (r58/r59) fire on NONE of the twelve** — the headvar
+matcher declines the identity-default corner e:=0 of the linear
+F-argument `a*x` (direct: the r58/r59 specs bind the non-zero-e
+control `2*(3+4*x)` and decline `a*x`), the recorded safe-direction
+divergence (Task-3 finding 2: the matcher is STRICTER than MA on the
+d:=1 / e:=0 / c:=1 / Px:=1 corners — a decline, never a false
+positive). The m=1 rows are answered anyway, by the 3.5 catch-all
+**`3_5_r43` on pass 3** (`rubi: rule _mr_rule_3_5_r43 fired`,
+measured on all eight m=1 rows): its repl re-dispatches the factored
+form, the F-only sub-integral (no log factor) 0-fires in every
+family and falls to the native-integrate fall-through (the measured
+answers carry the native `atan2(·,·)` / `li(·)` forms). Committed-
+record outcomes: **verified 4** (e188/e189/e192/e193 — the
+{atan,acot,atanh,acoth} rows: the zero chain closes the
+log(1+a^2 x^2) / polylog(2,-a^2 x^2) residue) | **unverified 4**
+(e186/e187/e190/e191 — the {asin,acos,asinh,acosh} rows: the
+expected texts' atanh(sqrt(1+-a^2 x^2)) / (1+-a^2 x^2)^(3/2) terms
+do not close against the native atan2/sqrt forms) | **deferred 4**
+(e194-e197 — the m=2 rows 0-fire in all three passes: r58's free-m
+slot is the F^2 home but the same e:=0 corner declines it, and r43's
+pattern does not cover the F^2 shape). Baseline comparison:
+unverified 9 + timeout 3 (e191/e196/e197) — the twelve add **+4
+PASS**, all via r43, none via r58/r59. The 39 synthetic Layer A
+checks (`test_class3_headvar`) remain the only committed gate on
+r58/r59: none of the twelve hits binds d:=1, c:=1, Px:=1, or a
+non-zero-e argument, so the finding-2 corner strictness is still
+synthetic-gated. An optional-form capture (`F_.[`) is a loud
+GenError at generation time (grep-verified zero `_.[` in the
+eleven .m files; the fix-round caught a SILENT pass-through before
+it could ship).
 
 Unlisted-token resolution (the census's UNLISTIED list — 13/13 U
 tokens, no others exist; adjudicated in Tasks 1–6, this table is what
@@ -125,7 +155,7 @@ made the generation loud-failure-free):
 
 | token (rules/uses, side) | resolution |
 |---|---|
-| `PolyLog` (17/37, repl) | **1:1 RENAME** to native `polylog(` — the active corpus expected texts are natively spelled (1,195 entries / 2,793 occurrences, `probes/corpus/03-class3-answer-heads.out`); the build's `diff(polylog(·,·),·)` AND `polylog(·,numeric)` are nouns (probed 2026-08-29) → no spurious self-diff closure. The 1,195-entry mass is the §5 polylog-ceiling input |
+| `PolyLog` (17/37, repl) | **1:1 RENAME** to native `polylog(` — the active corpus expected texts are natively spelled (2,793 occurrences over the 1,194 entries whose expected text carries `polylog(` — the whole-line grep is 1,195, the 1,195th, 3.1.5 e220, being integrand-only, `Unintegrable`-expected; `probes/corpus/03-class3-answer-heads.out`); the build's `diff(polylog(·,·),·)` AND `polylog(·,numeric)` are nouns (probed 2026-08-29) → no spurious self-diff closure. The 1,195-entry mass is the §5 polylog-ceiling input |
 | `LogGamma` (1/2, repl) | **RESTRUCTURE** → `log(gamma(v))` — `loggamma` is an undifferentiable noun (`diff` stays `'diff(loggamma(x),x,1)`), while `diff(log(gamma(x)),x) = psi[0](x)` closes (probed) |
 | `LogIntegral` (1/1, repl) | RENAME → `expintegral_li` (`diff` = `1/log(x)`, bound) |
 | `Gamma` (1/1 repl + 1 pattern head) | **arity dispatch** in the generator — 1-arg → native `gamma`, 2-arg → `gamma_incomplete` (the existing class-2 row), other arity → loud GenError (the PolyQ precedent) |
@@ -160,8 +190,9 @@ made the generation loud-failure-free):
     `expintegral_li(` (census {1: 22} — 3.1.2 6, 3.3 6, 3.4 6, 3.5 4).
     Same `(?<![A-Za-z0-9_])` atom-charset lookbehind; idempotent
     (native forms untouched). The measured identities the rows are
-    justified by (`.superpowers/sdd/task-2-report.md` lines 111–150,
-    plan §Task-2 "Native conventions probed", build-stamped 2026-08-29):
+    justified by (`probes/answer-side/02-class3-answer-side-identities`
+    — the committed re-runnable form, build-stamped 2026-08-30; plan
+    §Task-2 "Native conventions probed"):
     d/dx `expintegral_shi(x)` = sinh(x)/x, d/dx
     `expintegral_chi(x)` = cosh(x)/x, d/dx `expintegral_si(x)` =
     sin(x)/x, d/dx `expintegral_ci(x)` = cos(x)/x, d/dx
@@ -320,11 +351,15 @@ reviewer-recomputed with zero mismatches):
 | **TOTAL** | **3085** | **1441/3085 (46.7 %)** | **1736/3085 (56.3 %)** | **+295 (+9.6 pt)** |
 
 Unlike M2 (where the package PASS total came out BELOW the baseline,
-−9.6 pt), class 3 is net **positive: +295 entries / +9.6 points —
-the FIRST class where the package PASS total beats the
-`integrate` baseline**, with gains in 7 of 9 files; the two declines
-(3.1.4 −24, 3.2.2 −16) are the log-ratio-heavy files, matching the
-genuine-decline distribution below.
+−9.6 pt at the pilot), class 3 is net **positive: +295 entries /
++9.6 points — the first RUNBOOK-PORTED class to beat the baseline**
+(class 1, ported bespoke before the runbook existed, beat it by
++27.0 pt from its accepted record; class 2, the first runbook port,
+came out −9.6 pt at the pilot and reached parity-and-a-fraction
+only after the radcan-fallback harness fix), with gains in 7 of 9
+files; the two declines (3.1.4 −24, 3.2.2 −16) are the
+log-ratio-heavy files, matching the genuine-decline distribution
+below.
 
 **Entry-level transitions** (Task-10 report §5.3; both records carry
 exactly the same 3,085 keys, 0 missing either way): **PASS→FAIL 525
@@ -523,7 +558,11 @@ performed for any of these families, the M2 precedent):
     contributor to 3.5); `%mr_productQ` declining minus-lifted
     storage (the Task-4 decision; only 3.5 r32/r38 could notice).
     The **`F_` strictness corners** (Task-3 finding 2) contribute
-    nothing measurable: zero corpus exposure (0 of 3,085).
+    only the four m=2 deferred entries (e194-e197, §1): the
+    corpus's twelve in-domain hits all sit at the e:=0 corner —
+    answered by the 3.5 catch-all r43 on the m=1 rows, 0-firing on
+    the m=2 rows — so no entry is lost to any corner OTHER than
+    e:=0, and the e:=0 decline IS the recorded strictness.
   - The 3 `AlgebraicFunctionQ`-flag rules (3_1_5 r30, 3_3 r32/r61)
     FATAL rather than decline (3.3 e492 — the §4 death census);
     post-fix they are `Unintegrable`-answering fallbacks, so the fix
