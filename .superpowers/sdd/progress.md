@@ -3510,6 +3510,50 @@ Task 2: complete (commit ec3e7c9)
     - the MECH line carries an additive swept=<n> field (P4SCAN
       count — the sweep-cost metric key) beyond the plan's format.
   - .gitignore: the probe workdir entry.
+  - Controller note: the implementer session ran Task 1 AND Task 2
+    in one dispatch (the plan was in its context); the per-task
+    review gates were run separately afterwards and are the record.
+
+Controller: review rounds (2026-08-30)
+  - Task 1 (30815e1): review round 1 = Needs fixes — 1 Important
+    (%mr_barefactors hard-error on atomic tops, op() on an atom dies
+    in this build, latent production crash for Task 4) + 3 Minors
+    (%mr_p4_diag matchreverse clobber; the 4,495-line expt:0^negative
+    noise unattributed; the P4*->label mapping unrecorded). Fix
+    ab7ad93 (atom-top guard in all three op() sites, save/restore,
+    the noise attributed to pass-3's lifted rescan with the rule set
+    1_1_2_1_r33, 1_1_3_1_r66-r70, 1_1_3_4_r80-r81, 2_3_r62,
+    2_3_r97-r98, 3_4_r38-r39 — LATENT RULE FOLLOW-UP, no rule
+    changed; the atom calibration row 16 as regression test; 16/16
+    recalibration). Re-review = Approved.
+  - Task 2 (ec3e7c9): review round 1 = Needs fixes — 2 Important
+    (fire attribution silently lost for integrands >~79 columns —
+    the wrapped continuation has no backslash, ~350-460 of 1,033
+    entries affected, would have turned FIRE4 rescues into
+    D-NEST/0FIRE-*; the label x file x target-flag 3-way cross-tab
+    missing) + 4 Minors (PROD quote-guard, P4FIRE atom/bool
+    conflation, docstring gaps + 15-char label, greedy merge rel
+    capture). Fix 254b2db (single-site continuation fold covering
+    both windows, in-gate synthetic + 5-entry real long-integrand
+    proofs — e47 end-to-end FIRE4 fire=0,2,_mr_rule_3_1_5_r48, the
+    pre-fix lost attribution; the per-file-per-flag cross-tab; the
+    bool marker; the anchored merge regex). Re-review = Approved.
+  - Open Minors for the final whole-branch review to triage:
+    (a) the .out-header mapping paragraph omits the D-NEST-over-
+    0FIRE-EXPL precedence and the (k=1,false) census fallthrough;
+    (b) the calibrate helper real_fires splits on NUONOUN while
+    label_entry splits on NONRESCUE (test-helper only); (c) the
+    synthetic P4FIRE op is unquoted vs the real quoted shape
+    (cosmetic); (d) the fold's anchor guard is a theoretical
+    false-positive on an anchor-initial integrand (unreachable in
+    this suite); (e) docstring bullet-indent slip (cosmetic);
+    (f) the 0^negative expt warnings = latent rule bug (the rule
+    set above; same category as the ticketed 3-arg
+    %mr_algebraicFunctionQ on 3_1_5_r30/3_3_r32/3_3_r61) — a
+    follow-up rule fix is OUT of this campaign's scope unless the
+    adjudication says otherwise; record it in the campaign record.
+  - Task 1: complete (commits 30815e1, ab7ad93; reviews clean).
+  - Task 2: complete (commits ec3e7c9, 254b2db; reviews clean).
 
 Task 3 (next): the full run via
 probes/corpus/06-class3-deferred-mechanisms.run (calibrate -> gen
