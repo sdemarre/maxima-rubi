@@ -27,7 +27,8 @@ expected: deferred package times are 0.7-27.6 s), 24 LPT shards
 packed on the record's t= (the plan's step 4).
 
 Per-entry result (one MECH line in the merged .out):
-  MECH <label:14s> t=<dt:6.1f>s <rel> e<n> L<ln> npat=<j> swept=<s> <detail>
+  MECH <label:16s> t=<dt:6.1f>s <rel> e<n> L<ln> npat=<j> swept=<s> <detail>
+  (the label field is 16s: RECORD-MISMATCH is 15 chars — review round 2)
   label in {FIRE4, D-NEST, 0FIRE-EXPL, 0FIRE-POOL, RECORD-MISMATCH}:
   The plan's step-5 label logic counts ANY P4FIRE as FIRE4. This
   probe refines it (measured 2026-08-30 against the committed
@@ -81,9 +82,12 @@ the Task-1 table (f2 FIRE4 first-fire 3_1_5 / f1 0FIRE-EXPL pick
 x^3 / f5 0FIRE-POOL nonproduct / e186-e193 FIRE4 prod 3_5 /
 e194-e197 0FIRE-EXPL pick F(a*x)^2 / atom: no crash, census
 0,false, P4SKIP, no P4DIAG — the %mr_barefactors atom-top guard
-regression) — "a harness that misclassifies a calibration case
-does not ship". --merge embeds the calibration section and fails
-on any row mismatch.
+regression), then the fire-attribution proofs (a synthetic wrapped
+fired-on block + five real >38-char deferred entries: every fired
+event non-empty, full-integrand fires attributed — the review-
+round-2 continuation-fold regression) — "a harness that
+misclassifies a calibration case does not ship". --merge embeds
+the calibration section and fails on any row mismatch.
 
 Run (see 06-class3-deferred-mechanisms.run):
   sh probes/corpus/06-class3-deferred-mechanisms.run
@@ -127,13 +131,41 @@ calibration header is the committed record):
   plan template's `mr_f :=` forms are `mr_f:` here;
  - relational ops stay nouns at top level; every boolean position in
    the template is an is() or an if-test (the codebase idiom);
- - op() on an atomic expression is a HARD ERROR in this build
-   (`part: argument must be a non-atomic expression`) — the P4DIAG
-   guard is `if (not atom(mr_f)) and is(op(mr_f) = "*")`: the atom
-   arm short-circuits before op() is reached (measured 2026-08-30,
-   review round 1 — the atom calibration row dies on the unguarded
-   form; %mr_barefactors carries the same guard for f itself).
- """
+  - op() on an atomic expression is a HARD ERROR in this build
+    (`part: argument must be a non-atomic expression`) — the P4DIAG
+    guard is `if (not atom(mr_f)) and is(op(mr_f) = "*")`: the atom
+    arm short-circuits before op() is reached (measured 2026-08-30,
+    review round 1 — the atom calibration row dies on the unguarded
+    form; %mr_barefactors carries the same guard for f itself).
+
+Template deviations from the plan's step-2 template (review round 2):
+- rubi_verbose stays on THROUGH the sweep (the plan turns it off
+  before the sweep) — the sweep's "fired on" rule names are what the
+  triage records (documented in the Task-1 .mac header; carried here
+  for self-containment);
+- the template emits an ADDITIVE `disp(concat("MRFSTR ",
+  string(mr_f)))` line (not in the plan): the full-integrand identity
+  for fire attribution — a nested sub-integral fire carries a
+  DIFFERENT integrand string, and the full-integrand match selects the
+  top-level fire of each call (parse_output's attribution);
+- the verbose fired-on print is a 4-arg print and WRAPS AT THE
+  ARGUMENT BOUNDARY when the integrand exceeds ~37 chars: the fired-on
+  line then carries no integrand and no trailing backslash, and the
+  integrand lands on the next physical line, indented, backslash-free
+  (measured 2026-08-30, review round 2). parse_output FOLDS that
+  continuation into the fired event (an empty-capture fired-on line
+  absorbs the following non-anchor line); integrands >70 chars wrap in
+  the backslash-terminated mode the backslash join catches. The
+  --calibrate gate re-runs both a synthetic wrapped block and five
+  real >38-char deferred entries as the re-runnable proof;
+- a boolean sweep/production answer prints the `bool` marker (the
+  template checks %mr_containsBoolean BEFORE atom — booleanp does not
+  exist in this build, measured) so a boolean leak is not conflated
+  with a constant answer; a bool fire is a non-rescue fact
+  (sweep-noun=), exactly like a noun fire (label_entry's NONRESCUE).
+  The Task-1 calibration .mac (a separate committed artifact) still
+  prints the unmarked atom form — no empirical occurrence is known.
+  """
 
 import argparse
 import glob
@@ -178,6 +210,11 @@ ENTRY_RE = re.compile(
     r"(?P<rel>\S.*?) e(?P<n>\d+) L(?P<ln>\d+)\s*$")
 
 NUONOUN = {"integrate", "unintegrable"}   # the driver's top-level noun ops
+# A boolean answer prints the "bool" marker (the template checks
+# %mr_containsBoolean before atom — booleanp does not exist in this
+# build, measured review round 2) and is a non-rescue exactly like a
+# noun answer: it cannot move the entry in the A/B re-measurement.
+NONRESCUE = NUONOUN | {"bool"}
 FLAG_CLASSES = ("verified", "expected", "unverified")
 
 # The driver is the single source of truth for the core path (SBCL
@@ -480,7 +517,8 @@ def entry_mac(f_text, var_text, funcs, stmts):
         "rubi_verbose : true$",
         "mr_ans : rubi(mr_f, x)$",
         "disp(concat(\"MRFSTR \", string(mr_f)))$",
-        "disp(concat(\"PROD \", if atom(mr_ans) then \"atom\" "
+        "disp(concat(\"PROD \", if %mr_containsBoolean(mr_ans) then \"bool\" "
+        "else if atom(mr_ans) then \"atom\" "
         "else string(op(mr_ans))))$",
         "mr_census : %mr_barefactors(mr_f)$",
         "disp(concat(\"P4CENSUS \", string(part(mr_census, 1)), \" \", "
@@ -496,7 +534,8 @@ def entry_mac(f_text, var_text, funcs, stmts):
         "      mr_ans4 : %mr_p4_once(mr_f, x, mr_rule_table, 1, d, i),\n"
         "      if is(mr_ans4 # false) then (\n"
         "        disp(concat(\"P4FIRE \", string(d), \" \", string(i), \" \",\n"
-        "                    if atom(mr_ans4) then \"atom\" "
+        "                    if %mr_containsBoolean(mr_ans4) then \"bool\" "
+        "else if atom(mr_ans4) then \"atom\" "
         "else string(op(mr_ans4)))),\n"
         "        swept : 1\n"
         "      )\n"
@@ -543,11 +582,49 @@ def parse_output(text):
             raws[-1] = raws[-1].rstrip()[:-1] + raw
         else:
             raws.append(raw)
+    # The verbose fired-on print is a 4-ARG print ("rubi: rule ", r,
+    # " fired on ", f). When the integrand exceeds ~37 chars it wraps
+    # at the ARGUMENT boundary: the fired-on line then carries NO
+    # integrand and NO trailing backslash, and the integrand lands on
+    # the next physical line, indented, backslash-free (measured
+    # 2026-08-30, review round 2 — the backslash join above cannot see
+    # it, and the fired event would capture an empty integrand, losing
+    # the attribution). Integrand >70 chars instead wraps in the
+    # backslash mode the join above catches. Fold the boundary mode:
+    # an empty-capture fired-on line absorbs the immediately-following
+    # non-anchor physical line (an integrand string cannot start with
+    # an anchor prefix; a wrapped integrand is already one raws entry).
+    _ANCHOR = ("PROD ", "P4CENSUS ", "P4DIAG ", "P4SKIP", "P4SCAN ",
+               "P4FIRE ", "DR ", "MRFSTR ", "rubi: rule", "DONE")
+
+    def _anchor(l):
+        return l.strip().startswith(_ANCHOR)
+    i, raws2 = 0, []
+    while i < len(raws):
+        raw = raws[i]
+        s = raw.strip()
+        if (s.startswith("rubi: rule") and "fired on" in s
+                and i + 1 < len(raws) and not _anchor(raws[i + 1])):
+            m2 = re.match(r"^rubi: rule\s+(\S+)\s+fired on\s*(.*)$", s)
+            if m2 and not m2.group(2).strip():
+                raw = raw.rstrip() + " " + raws[i + 1].strip()
+                i += 1
+        raws2.append(raw)
+        i += 1
+    raws = raws2
     ev = []   # (kind, payload) in output order
     for raw in raws:
         line = raw.strip()
-        if line.startswith("PROD ") and '"' not in line[:12]:
-            ev.append(("prod", line[5:].strip()))
+        if line.startswith("PROD "):
+            # string(op) prints +, -, /, * QUOTED in this build (Task-1
+            # calibration); strip the one quote layer so the op compares
+            # with the unquoted noun ops. The old '"'-in-line[:12] guard
+            # that rejected these lines is wrong — no echo line can start
+            # with bare "PROD " (the echo re-displays the disp(...) call).
+            op = line[5:].strip()
+            if len(op) >= 2 and op[0] == '"' and op[-1] == '"':
+                op = op[1:-1]
+            ev.append(("prod", op))
         elif line.startswith("P4CENSUS "):
             p = line[9:].split()
             if len(p) == 2 and p[0].isdigit():
@@ -637,18 +714,18 @@ def label_entry(info, require_noun):
     docstring). Returns (label, detail-string)."""
     prod = info["prod"]
     k, hp = (info["census"] or (0, False))
-    # Sweep fires split on the ANSWER OP: a non-noun answer is the
-    # rescue; a noun answer is a fact (sweep-noun=), never a label.
-    # The fire's rule comes from the scan attribution keyed by
-    # (d, i) — a zip over the two lists would mis-pair whenever an
-    # earlier scan did not fire.
+    # Sweep fires split on the ANSWER OP: a non-noun, non-boolean
+    # answer is the rescue; a noun or bool answer is a fact
+    # (sweep-noun=), never a label. The fire's rule comes from the
+    # scan attribution keyed by (d, i) — a zip over the two lists
+    # would mis-pair whenever an earlier scan did not fire.
     scanrule = {di: r for di, r in info["scan_fires"]}
     real, noun_fires = [], []
     for (d, i, op) in info["fires"]:
         r = scanrule.get((d, i))
         if not r:
             continue
-        (real if op not in NUONOUN else noun_fires).append((d, i, r))
+        (real if op not in NONRESCUE else noun_fires).append((d, i, r))
     dr_lines = info["dr"]
     vecs = [d for d in dr_lines
             if not d.endswith(("CRASH", "BOOL", "CONDE"))]
@@ -690,7 +767,7 @@ def mech_line(info, dt, rel, n, ln, require_noun, timed_out=False):
     vecs = [d for d in info["dr"]
             if not d.endswith(("CRASH", "BOOL", "CONDE"))]
     npat = len(vecs)
-    return (f"MECH {label:14s} t={dt:6.1f}s {rel} e{n} L{ln} "
+    return (f"MECH {label:16s} t={dt:6.1f}s {rel} e{n} L{ln} "
             f"npat={npat} swept={info['nscan']} {detail}").rstrip()
 
 
@@ -800,7 +877,7 @@ def calibrate(workdir, verbose=True):
                "dt": dt, "info": info, "timed_out": timed_out}
         rows.append(row)
         if verbose:
-            print(f"  {name:5s} {label:14s} t={dt:6.1f}s  {detail}")
+            print(f"  {name:5s} {label:16s} t={dt:6.1f}s  {detail}")
     # The Task-1 expected table (the calibration .out header is the
     # committed record; a row miss is a harness failure).
     by_name = {r["name"]: r for r in rows}
@@ -846,23 +923,92 @@ def calibrate(workdir, verbose=True):
         and r["info"]["skip"]
         and r["info"]["diag"] is None,
         "atom-top guard: no crash, census 0,false, P4SKIP, no P4DIAG")
+    # Fire-attribution proofs (review round 2): the 4-arg verbose print
+    # wraps at the ARGUMENT boundary for a >37-char integrand — the
+    # fired-on line carries no integrand and no backslash; the
+    # integrand is the next physical line, indented, backslash-free.
+    # (a) SYNTHETIC parse test: fabricate the wrapped block in both
+    # windows and assert the fold attributes rule + integrand identity.
+    achecks = []
+    longf = "x*(a+b*log(c*x^n))*log(d*(e+f*x^2)^m)*log(g*(h+i*x)^k)"
+    synth = "\n".join([
+        "rubi: rule  _mr_rule_3_1_5_r27  fired on  ",
+        "         " + longf,
+        "MRFSTR " + longf,
+        "PROD unintegrable",
+        "P4CENSUS 2 true",
+        "P4SCAN 0 1",
+        "rubi: rule  _mr_rule_3_5_r43  fired on  ",
+        "         " + longf,
+        "P4FIRE 0 1 /",
+        "P4SCAN 0 2",
+        "P4SKIP",
+        "DONE",
+    ]) + "\n"
+    si = parse_output(synth)
+    achecks.append(("synth-wrap",
+                    "fold attributes prod_fire + scan_fires from the "
+                    "wrapped fired-on (folded integrand == MRFSTR)",
+                    si["mrfs"] == longf
+                    and si["prod_fire"] == "_mr_rule_3_1_5_r27"
+                    and si["scan_fires"]
+                    == [(("0", "1"), "_mr_rule_3_5_r43"),
+                        (("0", "2"), None)]))
+    # (b) real long-integrand smoke: the first five deferred entries
+    # (record order) whose parsed integrand text exceeds 38 chars —
+    # every fired event must carry a NON-EMPTY integrand, and a
+    # full-integrand fire (integrand == MRFSTR) must be attributed.
+    deferred, _fl = deferred_set()
+    longsmoke = []
+    for (rel, n) in [k for k, _t in deferred]:
+        els = split_elements(suite[rel][0][n - 1][1:-1])
+        if len(els[0]) > 38:
+            longsmoke.append((rel, n, els[0]))
+        if len(longsmoke) >= 5:
+            break
+    for (rel, n, f) in longsmoke:
+        base = os.path.basename(rel)
+        p = os.path.join(workdir, "cali", f"long-{base[:10]}-{n}.mac")
+        with open(p, "w", encoding="utf-8") as fh:
+            fh.write(entry_mac(f, "x", funcs, stmts))
+        out, _to, dt = run_mac(p, ENTRY_CAP)
+        li = parse_output(out)
+        fired = [pl for (k2, pl) in li["ev"] if k2 == "fired"]
+        nfull = sum(1 for pl in fired if pl[1] == li["mrfs"])
+        achecks.append((f"long-{base[:10]}-{n}",
+                        f"long-integrand smoke (len={len(f)}): "
+                        "every fired event non-empty integrand; "
+                        "full-integrand fire attributed",
+                        li["done"]
+                        and all(pl[1] for pl in fired)
+                        and (nfull == 0
+                             or li["prod_fire"] is not None
+                             or any(r for (_di, r) in li["scan_fires"]))))
+        if verbose:
+            print(f"  long-{base[:10]}-{n} fired={len(fired)} "
+                  f"full={nfull} t={dt:6.1f}s")
     bad = [(n, w) for n, w, ok in checks if not ok]
+    bad += [(n, w) for n, w, ok in achecks if not ok]
     section = ["=== calibration re-run (the probe's own measurement of the "
                "Task-1 16-entry set) ==="]
     for r in rows:
-        section.append(f"{r['name']:5s} {r['label']:14s} t={r['dt']:6.1f}s  "
+        section.append(f"{r['name']:5s} {r['label']:16s} t={r['dt']:6.1f}s  "
                        f"{r['detail']}")
+    section.append("")
+    section.append("=== fire-attribution proofs (review round 2) ===")
+    for n, w, ok in achecks:
+        section.append(f"  {n:22s} {'OK' if ok else 'FAIL'} — {w}")
     if bad:
-        section.append(f"CALIBRATION FAIL: {len(bad)} row(s) off the "
-                       "Task-1 table:")
+        section.append(f"CALIBRATION FAIL: {len(bad)} row(s) off:")
         for n, w in bad:
             section.append(f"  {n}: expected {w}")
         section.append("The harness misclassifies a calibration case — "
                        "it does not ship (stop, investigate, fix).")
         print("\n".join(section))
         raise SystemExit(1)
-    section.append(f"CALIBRATION OK: {len(checks)}/{len(checks)} rows "
-                   "reproduce the Task-1 table")
+    section.append(f"CALIBRATION OK: {len(checks)}/{len(checks)} Task-1 "
+                   f"rows + {len(achecks)}/{len(achecks)} attribution "
+                   "proofs")
     if verbose:
         print("\n".join(section))
     return "\n".join(section)
@@ -948,12 +1094,20 @@ def do_merge(workdir):
     expected = {(rel, n) for (rel, n), _t in deferred}
     shard_files = sorted(glob.glob(os.path.join(workdir, "shard-*.out")))
     assert shard_files, f"no shard .out files under {workdir}"
+    # rel is ANCHORED against the known suite files (the plan's greedy
+    # (.*) rel capture would silently mis-key if a future detail token
+    # ever formed " e<d> L<d> npat=" — review round 2). Longest file
+    # names first so the alternation matches the full name.
+    files = sorted({k[0] for k in expected}, key=len, reverse=True)
+    mech_re = re.compile(
+        r"^MECH (\S+)\s+t=\s*([\d.]+)s\s+(" +
+        "|".join(re.escape(f) for f in files) +
+        r") e(\d+) L(\d+)\s+npat=(\d+) swept=(\d+)\s+(.*)$")
     seen, dupes = {}, 0
     for path in shard_files:
         for line in open(path, encoding="utf-8"):
             line = line.rstrip("\n")
-            m = re.match(r"^MECH (\S+)\s+t=\s*([\d.]+)s\s+(.*) e(\d+) "
-                         r"L(\d+)\s+npat=(\d+) swept=(\d+)\s+(.*)$", line)
+            m = mech_re.match(line)
             if not m:
                 continue
             key = (m.group(3), int(m.group(4)))
@@ -1023,16 +1177,27 @@ def do_merge(workdir):
     flag_tot = sum(cross.values(), Counter())
     lines.append(f"{'total':16s} {sum(flag_tot.values()):6d}  "
                  + "  ".join(f"{flag_tot.get(g, 0):9d}" for g in flag_groups))
-    lines += ["", "--- per file (label counts) ---"]
-    per_file = {}
-    for label, keys in by_label.items():
-        for rel, n in keys:
-            per_file.setdefault(rel, Counter())[label] += 1
-    labels_present = sorted(by_label)
-    for rel in sorted(per_file):
-        row = per_file[rel]
+    lines += ["", "--- label x file x target-flag "
+                 "(the 788/329 cross-tab; the Phase-2 prioritization "
+                 "input — not recoverable from the two 2-way "
+                 "projections above; review round 2) ---"]
+    # per file, per flag group: the label counts (the 3-way table).
+    file_flag_label = {}
+    for (rel, n), line in seen.items():
+        label = line.split()[1]
+        file_flag_label.setdefault(rel, {}) \
+            .setdefault(flags[(rel, n)], Counter())[label] += 1
+    for rel in sorted(file_flag_label):
+        ff = file_flag_label[rel]
         lines.append(f"{rel}  "
-                     + "  ".join(f"{l}={row.get(l, 0)}" for l in labels_present))
+                     f"({sum(sum(c.values()) for c in ff.values())} deferred)")
+        for g in flag_groups:
+            if g in ff:
+                row = ff[g]
+                cells = "  ".join(f"{l}={row[l]}"
+                                  for l in sorted(row,
+                                                  key=lambda l: (-row[l], l)))
+                lines.append(f"  {g:10s} ({sum(row.values()):3d}): {cells}")
     lines += [
         "",
         "--- sweep cost (swept entries: dt_total - record t=, s) ---",
