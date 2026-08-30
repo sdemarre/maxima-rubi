@@ -109,19 +109,71 @@ slightly conservative for the package, plan Task-10 margin note).
   thread, not part of the class-3 path; `master` is the working
   branch
 
-## Milestone 3 — class 3 (logarithms), not started
+## Milestone 3 — class 3 (logarithms) — closed 2026-08-30
 
-The next port: section "3 Logarithms" (3,085 entries), first of the
-runbook queue. A new session starts here: runbook
-`docs/class-porting.md` Step 1 (census); its standing constraints bind
-(byte-identity gate for accepted classes 1–2, 30 s per-entry cap, 100 s
-timeout re-check, A/B vs the `integrate` baseline, an acceptance record
-per the class-2 template `docs/corpus-class2-baseline-uplift.md`). The
-only mechanical harness change: the core-fingerprint file lists gain
-`rules/class3/*.mac` on both sides (`test/build_rules_core.sh`,
-`test/corpus_driver.py` `_core_fingerprint`); the driver rebuilds the
-core itself when the fingerprint goes stale. Queue after class 3:
-8 → 5 → 6 → 7 → 4 (class 4 last, deliberately).
+The first full runbook instantiation (`docs/class-porting.md`
+Steps 1–10 executed end-to-end; plan
+`docs/superpowers/plans/2026-08-29-milestone-3-class3.md`, Tasks 1–11
+done, branch `milestone-3`). Measured acceptance (3,085-entry
+class-3 corpus, 30 s cap): **`integrate` baseline 1,441/3,085
+(46.7 %) vs package 1,736/3,085 (56.3 %) — the first class where the
+package beats the baseline** (+295, +9.6 pt; of the 525 PASS→FAIL,
+343 genuine declines (329 `deferred`) + 182 yardstick
+reclassifications; FAIL→PASS 820; 96 confirmed non-terminators at
+the 100 s re-check, zero slow-correct answers). Record:
+`docs/corpus-class3-baseline-uplift.md` (run
+`test/corpus_class3.out`, baseline
+`test/corpus_class3.baseline.out`, 100 s re-check
+`test/corpus_class3.timeout-rerun/`). The 2026-08-29 rebuild
+(`branch_5_50_base_84_g4204fb669`, built 2026-08-29 17:58:20, SBCL
+2.6.7) is the measurement build for all class-3 numbers (record
+headers are the stamp; the AGENTS.md 2026-08-20 stamp is superseded
+for class 3); the class-1 (20,069/25,697) and class-2 (594/965)
+accepted records stand under it — no-op slices 51/51×2 on the new
+build + 3,513-rule core, zero diffs (record §6).
+
+Open follow-ups (tickets against the runbook):
+
+- Class 8 (special functions, 1,949 entries — shares class 2's head
+  table) — open, `.scratch/class-ports/issues/01-class8-special-functions.md`
+- Class 5 (inverse trig, 4,585 entries) — open,
+  `.scratch/class-ports/issues/02-class5-inverse-trig-functions.md`
+- Class 6 (hyperbolic, 5,080 entries) — open,
+  `.scratch/class-ports/issues/03-class6-hyperbolic-functions.md`
+- Class 7 (inverse hyperbolic, 6,552 entries) — open,
+  `.scratch/class-ports/issues/04-class7-inverse-hyperbolic-functions.md`
+- Class 4 (trig, 22,472 entries — largest, deliberately last) — open,
+  `.scratch/class-ports/issues/05-class4-trigonometric-functions.md`
+- polylog derivative shim (the class-3 ceiling decision: the ceiling
+  does NOT stand — 638 unverified+deferred polylog-expected entries,
+  53.4 % of the 1,195-entry mass) — open, research,
+  `.scratch/class3-polylog-ceiling/issues/01-polylog-derivative-shim.md`
+- Zero-chain verification-stage OOMs + matching control-stack
+  overflow (13 OOMs + 2 control-stack deaths across the class-3
+  run/re-check; `rubi()` alone answers the OOM entries — the blowup
+  is the 8-stage verification chain at the 1 GiB cap) — open,
+  research, `.scratch/class3-verification-stage-oops/issues/01-
+  zero-chain-verification-stage-oops.md`
+- `AlgebraicFunctionQ` 3-arg mis-arity (3 generated rules; 3.3 e492
+  `error` in the accepted record) — ready-for-agent,
+  `.scratch/class3-algebraicfunctionq-arity/issues/01` (blocks
+  nothing — the class-3 record stands with e492 as a known error)
+- PowerOfLinear semantics revisit — conditional (unchanged from M2):
+  the strict reading is decline-consistent with upstream; revisit
+  only if a follow-up class shows the shapes material
+- Class-2 deferred-residue ticket (the 2.3 commented-out rules as a
+  coverage source) — needs-triage,
+  `.scratch/class2-deferred-remainders/issues/01`
+- Class-1 A/B remainder tickets (5 open: 01/02/03/05 needs-triage,
+  04 ready-for-agent) — `.scratch/class1-ab-remainders/issues/`
+- SBCL heap exhaustion on quotients of exponentials (class-2 2.3
+  e56/e57 under the 300 s re-check, e68 in the run; reproducible) —
+  open; related but distinct from the class-3 verification-stage OOM
+  ticket above (M2's locus is matching, M3's measured locus is the
+  verification stage)
+- Branch `maxima-zero-divisor-rootcause` (unmerged; ratsimp
+  zero-divisor root-cause probe work) — a separate thread, not part
+  of the class-port queue
 
 ## Pinned reference clones
 

@@ -1,0 +1,9 @@
+#!/bin/sh
+# probes/corpus/04-class3-residue-answer-heads.run — class-3 residue
+# census driver (FAIL masses per file + expected-answer heads of the
+# residue, over a source record — default the accepted class-3 run).
+#
+#   sh probes/corpus/04-class3-residue-answer-heads.run [record]
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/corpus/04-class3-residue-answer-heads.py "${1:-test/corpus_class3.out}" > probes/corpus/04-class3-residue-answer-heads.out
+echo "wrote probes/corpus/04-class3-residue-answer-heads.out"
