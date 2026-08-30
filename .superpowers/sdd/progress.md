@@ -3407,3 +3407,112 @@ docs/superpowers/specs/2026-08-30-class3-deferred-campaign-design.md
 target mass, triage-decides strategy). Awaiting the user's spec
 review -> writing-plans -> SDD on a branch cut from master after
 this close lands.
+
+## Plan: 2026-08-30 class-3 deferred campaign (branch class3-deferred; plan 1d998cc)
+
+Branch: class3-deferred (cut from master). Plan:
+docs/superpowers/plans/2026-08-30-class3-deferred-campaign.md
+(1d998cc); spec:
+docs/superpowers/specs/2026-08-30-class3-deferred-campaign-design.md
+(471bf67, user-approved 2026-08-30). Scope: the 1,033 class-3
+`deferred` entries (test/corpus_class3.out) — 788 target mass
+(313 verified + 16 expected + 459 baseline-unverified per
+test/corpus_class3.baseline.out; remainder 150 no-answer / 76
+timeout / 19 error baseline class). Build: 2026-08-29 17:58:20
+(branch_5_50_base_84_g4204fb669 / SBCL 2.6.7), the class-3 port
+build; core rules=3513, fingerprint
+c3e8b86409eb03a631e0467da9f89816.
+
+Task 1: complete (commit 30815e1; report .superpowers/sdd/
+task-1-report.md — gitignored working doc)
+  - Pass-4 mechanism: the *mr-implicit1-which* shadow index
+    (maxima_rubi_implicit1.lisp: nil = pass-3 byte-identical,
+    i = the i-th eligible bare factor), maxima_rubi_pass4.lisp
+    (setters, the gated scan %mr_dispatch_p4, the %mr_p4_diag
+    explicit-power diagnostic), the utils drivers
+    %mr_barefactors / %mr_p4_once / %mr_pass4_scan, the core bake +
+    the mr_witness_pass4 witness.
+  - Two real bugs found in bring-up (the brief's Step-2 code would
+    not have shipped): (A) an SBCL compiler fatal on the brief's
+    inlined cond/three-let findfun shape — bisected minimal; the
+    k-th pick split out as mr-implicit1-which-factor; (B) the
+    brief's which=nil-only guard on the e-itself branch 0-fired the
+    which=i sweep (3_5_r43 on 3.1.5 e186) — guard dropped, the
+    pass-3 arm byte-identical. The calibration caught (B) — the
+    gate's job.
+  - Gates: Layer A 743/0; byte-identity rules/ after class
+    {1,2,3} regeneration; core rebuilt rules=3513; calibration
+    15/15 rows (probes/corpus/06-calibration.pass4.mac, committed
+    output 06-class3-deferred-mechanisms.calibrate.out): f2 FIRE4
+    first-fire 3_1_5_r27 (4 scan fires) / f1 0FIRE-EXPL
+    pick-fwd=pick-rev=x^3 / f5 0FIRE-POOL nonproduct (0,false) /
+    e186-e193 FIRE4 prod+sweep 3_5_r43 / e194-e197 0FIRE-EXPL
+    pick F(a*x)^2.
+
+Task 2: complete (commit ec3e7c9)
+  - probes/corpus/06-class3-deferred-mechanisms.{py,run}: the
+    per-entry triage (production fired-on trace + the full-map
+    pass-4 sweep over both scan directions + the 333-rule
+    clause-level drill), 24 LPT shards on the record t= (42-44
+    entries / ~330 s each), one fresh core subprocess per entry
+    (60 s cap, `cap` detail on exceed), the --merge calibration
+    gate. Dry validation per the plan's step 7: --gen asserts
+    1,033/788 (313/16/459) + emits entries/sidecars/shard plan;
+    --gen --smoke 10 (9 D-NEST + 1 0FIRE-EXPL, drill facts incl.
+    the two CONDEs = the known 3-arg %mr_algebraicFunctionQ
+    rules); --calibrate 15/15; do_shard dry-verified on a
+    synthetic one-entry workdir.
+  - Plan-template deviations, each measured and recorded in the
+    probe's module docstring:
+    - the record t= field is PADDED (t=%6.1fs) — the plan's regex
+      misses it; t=\s* everywhere;
+    - the drill's pattern call is parsed from the _mr_rule body's
+      mm line, NOT the defmatch line — the four headvar rules
+      (3_1_5 r58/r59, 3_3 r58, 3_4 r37) have no defmatch pattern;
+      the spliced call is rewritten (f, x) -> (mr_f, x) (the
+      corpus parameter set includes a bare f);
+    - the drill's cond call is errcatch'd (DR <tag> CONDE):
+      %mr_dispatch declines a crashing rule (per-rule errcatch),
+      and production evaluates conds only for rules before the
+      first fire while the drill evaluates every matched rule —
+      a crash is a decline-in-production fact, not a harness bug;
+    - fire attribution: the verbose print sits in %mr_dispatch
+      AFTER the rule body ran — the firing rule's nested
+      sub-integral fires print BEFORE its own "fired on" line
+      (committed calibration .out, f2 block). The top-level fire
+      of a call is the LAST "fired on <full integrand>" (the
+      MRFSTR identity — string() of the same object) in the
+      call's window; a scan's is additionally gated on its
+      P4FIRE. The calibration gate caught the first draft's
+      "first fired-on" attribution (it labeled f2's first sweep
+      fire 3_1_1_r1 — a nested fire — instead of 3_1_5_r27);
+      fixed, 15/15;
+    - noun refinement of the plan's step 5: a sweep fire whose
+      ANSWER is a top-level noun (integrate/unintegrable) does
+      not rescue — %mr_dispatch returns noun answers as
+      non-false res — recorded as a sweep-noun= fact, label
+      falls to D-NEST / 0FIRE-*;
+    - NEW build quirk (measured 2026-08-30, plain maxima AND the
+      core): the simple `:=` assignment is broken in every
+      non-interactive mode measured (-b file, -b stdin,
+      --batch-string, inside blocks): `foo := x` dies with
+      `define: argument cannot be an atom or a subscripted
+      memoizing function; found: foo`; function definitions
+      `f(a) := ...` are UNAFFECTED (the rule files are full of
+      them); the single-colon `:` (the codebase idiom — the
+      driver template, maxima_rubi_utils.mac) works in all of
+      them. The template's assigns are single-colon.
+    - string(op(...)) renders the + / * ops WITH literal quotes
+      ("+") but noun ops (integrate, unintegrable) unquoted —
+      noun detection keys on the unquoted forms;
+    - the plan's calibration "16 entries" is a typo: 15 (f1/f2/
+      f5 + e186-e197), noted since Task 1;
+    - the MECH line carries an additive swept=<n> field (P4SCAN
+      count — the sweep-cost metric key) beyond the plan's format.
+  - .gitignore: the probe workdir entry.
+
+Task 3 (next): the full run via
+probes/corpus/06-class3-deferred-mechanisms.run (calibrate -> gen
+-> launch; merge when the pid file is clean) -> the adjudication
+against the pinned .m sources -> the Phase-2 decision record in
+docs/corpus-class3-deferred-uplift.md.
