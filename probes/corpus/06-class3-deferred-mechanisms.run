@@ -1,0 +1,8 @@
+#!/bin/sh
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/corpus/06-class3-deferred-mechanisms.py --calibrate \
+  || exit 1
+python3 probes/corpus/06-class3-deferred-mechanisms.py --gen
+python3 probes/corpus/06-class3-deferred-mechanisms.py --launch
+echo "shards launched; merge when the pid file is clean:"
+echo "  python3 probes/corpus/06-class3-deferred-mechanisms.py --merge <workdir>"
