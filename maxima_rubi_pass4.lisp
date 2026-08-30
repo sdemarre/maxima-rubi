@@ -96,11 +96,14 @@
       (dolist (g (cdr f))
         (incf nf)
         (if (and (consp g) (eq (caar g) 'mexpt)) (incf np) (incf nb))))
+    ;; The rev pick flips matchreverse for its duration only: the prior
+    ;; value is SAVED and restored (a %mr_p4_setrev(1) caller would
+    ;; otherwise be clobbered to nil — review round 1).
     (let ((fwd (|$mr-p4-pick| f nil))
-          (rev (progn
+          (rev (let ((old matchreverse))
                  (setf matchreverse t)
                  (let ((r (|$mr-p4-pick| f t)))
-                   (setf matchreverse nil)
+                   (setf matchreverse old)
                    r))))
       (list (list 'mlist 'simp)
             (format nil "pick-fwd=~A" fwd)

@@ -73,14 +73,17 @@ test/corpus_class3.baseline.out: the baseline class of the same
 16 / 459); {no-answer, timeout, error} = the 150 / 76 / 19
 remainder.
 
-Calibration gate: --calibrate re-runs the Task-1 15-entry set (f1,
-f2, f5 + 3.1.5 e186-e197 verbatim — the plan's "16" is a typo,
-measured in Task 1) through this probe's OWN per-entry measurement
-and asserts the Task-1 table (f2 FIRE4 first-fire 3_1_5 / f1
-0FIRE-EXPL pick x^3 / f5 0FIRE-POOL nonproduct / e186-e193 FIRE4
-prod 3_5 / e194-e197 0FIRE-EXPL pick F(a*x)^2) — "a harness that
-misclassifies a calibration case does not ship". --merge embeds the
-calibration section and fails on any row mismatch.
+Calibration gate: --calibrate re-runs the Task-1 16-entry set (f1,
+f2, f5 + 3.1.5 e186-e197 verbatim + the atom-top row — the plan's
+"16" was a typo for 15; the atom row, review round 1, makes 16
+real) through this probe's OWN per-entry measurement and asserts
+the Task-1 table (f2 FIRE4 first-fire 3_1_5 / f1 0FIRE-EXPL pick
+x^3 / f5 0FIRE-POOL nonproduct / e186-e193 FIRE4 prod 3_5 /
+e194-e197 0FIRE-EXPL pick F(a*x)^2 / atom: no crash, census
+0,false, P4SKIP, no P4DIAG — the %mr_barefactors atom-top guard
+regression) — "a harness that misclassifies a calibration case
+does not ship". --merge embeds the calibration section and fails
+on any row mismatch.
 
 Run (see 06-class3-deferred-mechanisms.run):
   sh probes/corpus/06-class3-deferred-mechanisms.run
@@ -122,9 +125,15 @@ calibration header is the committed record):
   (the rule files are full of them). The codebase idiom is already
   single-colon (maxima_rubi_utils.mac, the driver template); the
   plan template's `mr_f :=` forms are `mr_f:` here;
-- relational ops stay nouns at top level; every boolean position in
-  the template is an is() or an if-test (the codebase idiom).
-"""
+ - relational ops stay nouns at top level; every boolean position in
+   the template is an is() or an if-test (the codebase idiom);
+ - op() on an atomic expression is a HARD ERROR in this build
+   (`part: argument must be a non-atomic expression`) — the P4DIAG
+   guard is `if (not atom(mr_f)) and is(op(mr_f) = "*")`: the atom
+   arm short-circuits before op() is reached (measured 2026-08-30,
+   review round 1 — the atom calibration row dies on the unguarded
+   form; %mr_barefactors carries the same guard for f itself).
+ """
 
 import argparse
 import glob
@@ -476,7 +485,7 @@ def entry_mac(f_text, var_text, funcs, stmts):
         "mr_census : %mr_barefactors(mr_f)$",
         "disp(concat(\"P4CENSUS \", string(part(mr_census, 1)), \" \", "
         "string(part(mr_census, 2))))$",
-        "if is(op(mr_f) = \"*\") then "
+        "if (not atom(mr_f)) and is(op(mr_f) = \"*\") then "
         "disp(concat(\"P4DIAG \", string(%mr_p4_diag(mr_f))))$",
         "swept : 0$",
         "if is(part(mr_census, 2) = false) and is(part(mr_census, 1) >= 2) "
@@ -752,6 +761,11 @@ CALI_F = {
     "f1": "x^3*(d+e*x)*(a+b*log(c*x^n))",
     "f2": "(d+e*x)*(a+b*log(c*x^n))",
     "f5": "(d+e*x)*(a+b*log(c*x^n))/x",
+    # atom-top row (review round 1): the %mr_barefactors atom-top guard
+    # regression — integrand x, atomic top. Measured: 1_1_1_1_r2 fires
+    # on the degenerate x^1 bind (PROD non-noun); the row's gate is the
+    # census line, not the PROD op.
+    "atom": "x",
 }
 # 3.1.5 e186-e197 (the 12 F_-domain corpus texts; the suite file is
 # the source — verbatim by construction).
@@ -760,7 +774,7 @@ CALI_E_RANGE = range(186, 198)
 
 
 def calibrate(workdir, verbose=True):
-    """Run the Task-1 15-entry set through this probe's own per-entry
+    """Run the Task-1 16-entry set through this probe's own per-entry
     measurement and assert the Task-1 table. Returns the section text
     (the merge embeds it); exits 1 on any row mismatch."""
     suite = suite_map()
@@ -773,7 +787,8 @@ def calibrate(workdir, verbose=True):
     for n in CALI_E_RANGE:
         els = split_elements(ents[n - 1][1:-1])
         CALI_F[f"e{n}"] = els[0]
-    for name in ["f2", "f1", "f5"] + [f"e{n}" for n in CALI_E_RANGE]:
+    for name in (["f2", "f1", "f5"] + [f"e{n}" for n in CALI_E_RANGE]
+                + ["atom"]):
         f_text = CALI_F[name]
         p = os.path.join(workdir, "cali", name + ".mac")
         with open(p, "w", encoding="utf-8") as fh:
@@ -826,9 +841,14 @@ def calibrate(workdir, verbose=True):
         chk(nm, lambda r: r["label"] == "0FIRE-EXPL"
             and "^2" in (r["info"]["diag"] or ""),
             "0FIRE-EXPL, P4DIAG pick = the F(a*x)^2 factor")
+    chk("atom", lambda r: r["info"]["done"]
+        and r["info"]["census"] == (0, False)
+        and r["info"]["skip"]
+        and r["info"]["diag"] is None,
+        "atom-top guard: no crash, census 0,false, P4SKIP, no P4DIAG")
     bad = [(n, w) for n, w, ok in checks if not ok]
     section = ["=== calibration re-run (the probe's own measurement of the "
-               "Task-1 15-entry set) ==="]
+               "Task-1 16-entry set) ==="]
     for r in rows:
         section.append(f"{r['name']:5s} {r['label']:14s} t={r['dt']:6.1f}s  "
                        f"{r['detail']}")
@@ -1050,7 +1070,7 @@ def main():
                    help="merge the shard .outs -> the committed .out "
                         "(runs the calibration gate)")
     g.add_argument("--calibrate", action="store_true",
-                   help="run the 15-entry Task-1 table through this "
+                   help="run the 16-entry Task-1 table through this "
                         "probe's own measurement and assert it")
     ap.add_argument("--smoke", type=int, metavar="N",
                     help="with --gen: run the first N deferred entries "

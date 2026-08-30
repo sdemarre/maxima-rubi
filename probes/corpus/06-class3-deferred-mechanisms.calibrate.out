@@ -1,37 +1,71 @@
-/* Pass-4 mechanism calibration output (class-3 deferred campaign, Task 1).
+/* Pass-4 mechanism calibration output (class-3 deferred campaign,
+   Task 1; review round 1 added the "atom" atom-top-guard regression
+   row and the noise/label notes below).
    Generated: sbcl --tls-limit 100000 --core test/mr_rules.core
      --noinform --very-quiet -b probes/corpus/06-calibration.pass4.mac
    Date: 2026-08-30 (UTC)  Build: Maxima branch_5_50_base_84_g4204fb669 / SBCL 2.6.7
-   Core fingerprint at run: c3e8b86409eb03a631e0467da9f89816  (rules 3513)
-   15 entries: f1, f2, f5 + 3.1.5 e186-e197 (3 f-forms + 12 F_-domain).
+   Core fingerprint at run: 36b8bae7dba3c6e4fde614b6df70caa4  (rules 3513)
+   16 entries: f1, f2, f5 + 3.1.5 e186-e197 (3 f-forms + 12 F_-domain)
+   + atom (integrand x, atomic top).
 
-   Per-entry sweep firings (dir d, bare-factor index i, top-level rule);
-   the "rubi: rule ... fired on <full integrand>" line after a P4SCAN is
-   that scan's top-level fire (nested sub-integral fires come later, in
-   the repl):
-     f2   : P4FIRE (0,1),(0,2),(1,1),(1,2); first fire 3_1_5_r27  (3_1_5)
-     e186 : P4FIRE (0,1),(1,3);  first fire 3_5_r43  (3_5)
-     e187 : P4FIRE (0,1),(1,3);  first fire 3_5_r43  (3_5)
-     e188 : P4FIRE (0,1),(1,3);  first fire 3_5_r43  (3_5)
-     e189 : P4FIRE (0,1),(1,3);  first fire 3_5_r43  (3_5)
-     e190 : P4FIRE (0,1),(1,3);  first fire 3_5_r43  (3_5)
-     e191 : P4FIRE (0,1),(1,3);  first fire 3_5_r43  (3_5)
-     e192 : P4FIRE (0,1),(1,3);  first fire 3_5_r43  (3_5)
-     e193 : P4FIRE (0,1),(1,3);  first fire 3_5_r43  (3_5)
-     f1, f5, e194-e197 : P4SKIP (no sweep fire)
+   Noise note: the 4,495 `expt: undefined: 0 to a negative exponent.`
+   lines (and the scattered `part: argument must be a non-atomic
+   expression` lines) are PRE-EXISTING latent-rule noise, not the
+   pass-4 mechanism — measured 2026-08-30: only pass 3's lifted
+   (mexpt f 1) rescan emits them (passes 1-2 and every direct rule
+   evaluation are clean); per-rule isolation on the lifted integrand
+   names 1_1_2_1_r33, 1_1_3_1_r66-r70, 1_1_3_4_r80-r81, 2_3_r62,
+   2_3_r97-r98, 3_4_r38-r39, the remainder full-table-scan
+   context-dependent; no rule was changed (follow-up record:
+   .superpowers/sdd/task-1-report.md, Fix report round 1).
 
-   Expected-table verification (all rows PASS; a miss would be a
-   mechanism failure):
-     f2   : PROD non-noun; census 2,false; sweep>=1 P4FIRE, 3_1_5 family;
-            production first 3_1_5 fire = 3_1_5_r27 (UNCHANGED by the
-            shadow edit — the nil arm is verbatim; global check: 743/0).
+   "fired on" attribution (measured in the Task-2 review): the verbose
+   print sits in %mr_dispatch AFTER the rule body ran, so a firing
+   rule's NESTED sub-integral fires print BEFORE the rule's own line.
+   A scan's top-level fire = the LAST "fired on <full integrand>" line
+   between its P4SCAN marker and the next; production's = the last
+   such line before the PROD line. (An earlier draft of this header
+   said "the first such line after the marker" - wrong: it named
+   nested fires.)
+
+   Per-entry sweep firings (dir d, bare-factor index i, top-level
+   rule; top-level fires identified per the attribution note):
+     f2   : P4FIRE (0,1),(0,2),(1,1),(1,2); (0,1)/(1,2) -> 3_1_5_r27
+            (3_1_5), (0,2)/(1,1) -> 3_1_3_r8 (3_1_3)
+     e186-e193 : P4FIRE (0,1),(1,3); both -> 3_5_r43  (3_5)
+     f1, f5, e194-e197, atom : P4SKIP (no sweep fire; atom: atomic
+            top, census [0,false] - the guard regression row)
+
+   Expected-table verification (all rows PASS under the 36b8bae7...
+   rebuild; a miss would be a mechanism failure):
+     f2   : PROD non-noun; census 2,false; sweep>=1 P4FIRE, 3_1_5
+            family; production first 3_1_5 fire = 3_1_5_r27 (UNCHANGED
+            by the shadow edit - the nil arm is verbatim; global check:
+            743/0).
      f1   : PROD noun; census 2,true; P4SKIP; P4DIAG pick-fwd=pick-rev=x^3.
      f5   : PROD noun; census 0,false (mquot top); P4SKIP; no P4DIAG.
      e186-e193 (m=1) : PROD non-noun; census 3,false; sweep>=1 P4FIRE,
             3_5 family; production first 3_5 fire = 3_5_r43.
      e194-e197 (m=2) : PROD noun; census 2,true; P4SKIP; P4DIAG
             pick-fwd=pick-rev=F(a*x)^2.
-*/
+     atom : NO CRASH (pre-guard: hard error `part: argument must be a
+            non-atomic expression` on op(x) - the fix-1 regression);
+            PROD non-noun (1_1_1_1_r2 fires on the degenerate x^1 bind
+            - the row's purpose is the census line, not the PROD op);
+            census 0,false; P4SKIP; no P4DIAG.
+
+   P4* -> label mapping (the Task-2 probe's label vocabulary,
+   06-class3-deferred-mechanisms.py label_entry(); recorded so the
+   adjudication does not guess it; the plan's PROD-OK is the probe's
+   RECORD-MISMATCH):
+     a non-noun P4FIRE present                          => FIRE4
+     P4SKIP + census (k, true)  (explicit power factor) => 0FIRE-EXPL
+     P4SKIP + census (0, false) (non-product top)       => 0FIRE-POOL (nonproduct)
+     P4SKIP + census (k>=2, false)                      => 0FIRE-POOL
+     production fired + noun PROD                       => D-NEST
+     production non-noun PROD (the record said deferred)=> RECORD-MISMATCH
+     no DONE line (subprocess died)                     => 0FIRE-POOL (subprocess-died)
+ */
 batch("probes/corpus/06-calibration.pass4.mac")
 cali_entry(name,f,x):=block([ans,census,k,hp,d,i,ans4],
            print(concat("CALI ",name)),rubi_verbose:true,ans:rubi(f,x),
@@ -39,7 +73,7 @@ cali_entry(name,f,x):=block([ans,census,k,hp,d,i,ans4],
                         if atom(ans) then "atom" else string(op(ans)))),
            census:%mr_barefactors(f),k:part(census,1),hp:part(census,2),
            print(concat("P4CENSUS ",string(k)," ",string(hp))),
-           if is(op(f) = "*")
+           if not atom(f) and is(op(f) = "*")
                then print(concat("P4DIAG ",string(%mr_p4_diag(f)))),
            if is(hp = false) and is(k >= 2)
                then (for d from 0 thru 1 do
@@ -5315,6 +5349,19 @@ P4DIAG ["pick-fwd=acosh(a*x)^2","pick-rev=acosh(a*x)^2","nfactors=3","nbare=2"\
 ,"npow=1"] 
 P4SKIP 
 CALIEND e197 
+cali_entry("atom",x,x)
+CALI atom 
+part: argument must be a non-atomic expression; found x
+part: argument must be a non-atomic expression; found x
+part: argument must be a non-atomic expression; found x
+part: argument must be a non-atomic expression; found x
+part: argument must be a non-atomic expression; found x
+part: argument must be a non-atomic expression; found x
+rubi: rule  _mr_rule_1_1_1_1_r2  fired on  x^1 
+PROD "/" 
+P4CENSUS 0 false 
+P4SKIP 
+CALIEND atom 
 print(concat("CALIDONE"))
 CALIDONE 
       /home/serge/src/maxima-rubi/probes/corpus/06-calibration.pass4.mac

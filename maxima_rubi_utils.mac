@@ -257,11 +257,17 @@ depth_level : 0$
    [0, false] and the sweep is a no-op on it (the shadow never
    activates on a mquot top: findfun is called with c = 'mquot, outside
    the {mtimes, mplus} wrap condition — measured consequence: f5
-   0-fires pass 3, spec section 2.2). An ATOMIC factor is bare: op() is
-   a hard error on atoms in this build (measured 2026-08-30), and an
-   atom can never be an explicit power. */
-%mr_barefactors(f) := block([n, i, bare, haspow],
-  if is(op(f) = "*") then (
+    0-fires pass 3, spec section 2.2). An ATOMIC factor is bare: op() is
+    a hard error on atoms in this build (measured 2026-08-30), and an
+    atom can never be an explicit power. The SAME hazard holds for f
+    ITSELF — op() on an atomic top dies with `part: argument must be a
+    non-atomic expression` (measured 2026-08-30, review round 1; the
+    atom arm below guards it: an atomic top has no factor list, [0,
+    false], sweep no-op — Task 4 calls the sweep on ANY top-level
+    integrand after passes 1-3 0-fire, e.g. rubi(x, x)). */
+ %mr_barefactors(f) := block([n, i, bare, haspow],
+   if atom(f) then [0, false]
+   else if is(op(f) = "*") then (
     n : length(f), bare : 0, haspow : false,
     for i : 1 thru n do (
       if atom(part(f, i)) then bare : bare + 1
