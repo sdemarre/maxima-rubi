@@ -22,9 +22,30 @@ which the dispatch 0-fires:
       evaluated clause by clause; the drill functions are generated
       from the committed rules/class3/*.mac source at --gen time.
 
-One fresh core subprocess per entry (60 s safety cap — none are
-expected: deferred package times are 0.7-27.6 s), 24 LPT shards
-packed on the record's t= (the plan's step 4).
+One fresh core subprocess per entry (120 s safety cap; two entries
+measured 60 s against the original 60 s cap, the rest 0.7-27.6 s),
+24 LPT shards packed on the record's t= (the plan's step 4).
+
+Reader-desync buffer (measured 2026-08-30, entries/0620 = 3.3 e287):
+rubi()'s rule scan can hit the build's `expt: undefined: 0 to a
+negative exponent.` error path mid-evaluation (the 0^negative
+emitter), and this build's error recovery then calls the READER on
+the input stream, consuming the following lines as a continuation
+and desyncing the rest of the batch (RETRIEVE: End of file
+encountered, rc=0, every marker after the witness lost — 27 of the
+29 first-run subprocess-died entries, all with t= 6-42 s; the
+remaining 2 were 60 s-cap timeouts, a separate cause). The corpus driver's
+build_text (test/corpus_driver.py) carries a 60-line pos/no filler
+buffer after the witness for exactly this reason; entry_mac now
+carries the same buffer after the witness. The sweep's
+per-candidate scans run the same rule machinery, but all 166 first-
+run sweep scans (37 entries x 4-6 candidates) completed clean
+without a buffer, so the template mirrors the driver's single
+buffer; a mid-sweep desync would surface as a subprocess-died label
+at merge and is the follow-up signal. With the buffer the 0620
+re-run completes clean (PROD integrate, P4CENSUS 0 false, all DR
+lines, DONE; the run consumed 2 filler lines and printed no
+RETRIEVE).
 
 Per-entry result (one MECH line in the merged .out):
   MECH <label:16s> t=<dt:6.1f>s <rel> e<n> L<ln> npat=<j> swept=<s> <detail>
@@ -63,9 +84,11 @@ Per-entry result (one MECH line in the merged .out):
            — the drill runs on 0-fire only)
    swept = the number of P4SCAN lines (0 = the sweep skipped; else
            2*k over the k bare factors) — the sweep-cost metric key
-   A cap-exceeded entry (the 60 s per-entry safety net) carries a
-   trailing `cap` in the detail for manual follow-up (none expected:
-   deferred package times are 0.7-27.6 s)
+    A cap-exceeded entry (the 120 s per-entry safety net) carries a
+    trailing `cap` in the detail for manual follow-up (none expected:
+    deferred package times are 0.7-27.6 s; two first-run entries hit
+    the original 60 s cap under the sweep + drill overhead, so the
+    cap was raised — the re-run confirms or refutes the need)
 
 Target mass (spec section 2.1: 788 = 329 certain + 459
 baseline-unverified) is carried per entry from
@@ -199,8 +222,10 @@ EXPECTED_BASE_REMAINDER = {"no-answer": 150, "timeout": 76, "error": 19}
 EXPECTED_RULES = 333
 
 N_SHARDS = 24
-ENTRY_CAP = 60          # per-entry safety cap (s); the 30 s corpus cap
+ENTRY_CAP = 120         # per-entry safety cap (s); the 30 s corpus cap
                         # is policy, this is the probe's safety net
+                        # (60 -> 120 measured 2026-08-30: two entries
+                        # hit the 60 s cap under sweep + drill)
 
 # Entry line: <class:14s> t=<dt:6.1f>s <rel> e<n> L<lineno>. The t=
 # field is PADDED (t=%6.1fs) — the plan's regex (t=<dt>\d+\.\d) misses
@@ -509,13 +534,19 @@ def drill_text(rules):
 
 def entry_mac(f_text, var_text, funcs, stmts):
     """One entry's batch file (the plan's step-2 template, with the
-    measured build-quirk fixes from the module docstring)."""
+    measured build-quirk fixes from the module docstring, including
+    the reader-desync filler buffers — see the module docstring)."""
+    # The driver's build_text filler (test/corpus_driver.py): throwaway
+    # lines a mid-evaluation reader call can consume as a bogus
+    # continuation without eating the real markers.
+    filler = ["pos$"] * 40 + ["no$"] * 20
     L = list(funcs)
     L += [
         f"mr_f: {f_text}$",
         f"x: {var_text}$",
         "rubi_verbose : true$",
         "mr_ans : rubi(mr_f, x)$",
+        *filler,
         "disp(concat(\"MRFSTR \", string(mr_f)))$",
         "disp(concat(\"PROD \", if %mr_containsBoolean(mr_ans) then \"bool\" "
         "else if atom(mr_ans) then \"atom\" "
