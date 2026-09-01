@@ -6268,10 +6268,30 @@ mr_use_gamma_flag : false$
    UNREACHABLE: a polynomial y passing the degree test has degree >= 1
    (D[y,x] # 0), and a non-polynomial EasyDQ y (log-like) has a
    nonzero derivative — the constant-y decline lands through the
-   degree test instead (recorded). */
+   degree test instead (recorded).
+   FIX B4 (2026-09-01, class-3 deferred campaign): y is expanded at
+   the binding, before the ladder (the .m's a_.*x guard runs on y as
+   bound, .m order). Maxima stores P/x^m as a "/" node where MA
+   stores the Times P*x^(-m) that the .m EasyDQ rule-1 strip
+   (EasyDQ[u_.*x_^m_., x] /; FreeQ[m, x]) matches; the line-ported
+   %mr_easyDQ declines the "/" shape (no strip arm, and the
+   RationalFunctionExponents=={1,1} arm reads [0,0] on a symbolic
+   m), so 3_5 r1/r2's e392 shape (3.4 file L509; v = (a+x^n)/x^n,
+   integrand log((a+x^n)/x^n)/x) 0-fired while the algebraic twin
+   log(1+a*x^-n)/x (Plus storage) fired. MEASURED 2026-09-01 (t4b4
+   probe 1, branch_5_50_base_84_g4204fb669): the decline is the
+   EasyDQ cond (easyDQ((a+x^n)/x^n, x) = false), NOT the u/v step
+   (%mr_simp(u/diff(y,x)) = 1/n pre-fix — the ratsimp stage alone
+   closes it); expand maps the stored quotient to the distributed
+   sum the ladder reads (expand((a+x^n)/x^n) = a*x^(-n) + 1) and is
+   the identity on every other form the ladder accepts (plus /
+   binomial / monomial / power / product-of-linears / log shapes
+   measured unchanged, t4b4 probe 2). The Simplify[u/v] line is
+   untouched. */
 %mr_derivativeDivides(y, u, x) := block([v, cond],
   if %mr_xmonomialMatch(y, x) then false
   else (
+    y : expand(y),
     cond : if %mr_polynomialQ(y, x)
       then %mr_polynomialQ(u, x)
            and is(%mr_degree(u, x) = %mr_degree(y, x) - 1)

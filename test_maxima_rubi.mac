@@ -77,6 +77,7 @@ run_all_tests() := block([],
      test_class3_headvar(),
      test_class3_b1_freeof(),
      test_class3_b2_linearQ(),
+     test_class3_b4_derDiv(),
      test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
@@ -798,6 +799,86 @@ test_structural_predicates() := block([],
     z : errcatch(ratsimp(diff(ans, x) - f)),
     check_bool("b2 e226 zero-chain",
                is(z # []) and is(part(z, 1) = 0)),
+    mr_rule_table : saved_table,
+    true
+  )$
+
+  /* Task 4B-B4 (class-3 deferred campaign, 2026-09-01) — the .m's
+     DerivativeDivides (IntegrationUtilityFunctions.m :7450-7462)
+     runs on MA's Times storage of P/x^m (its EasyDQ rule-1 strip,
+     EasyDQ[u_.*x_^m_., x] /; FreeQ[m, x], matches the factor
+     x^(-m)); Maxima stores the same expression as a "/" node, which
+     the line-ported %mr_easyDQ declines (no strip arm for "/", and
+     the RationalFunctionExponents=={1,1} arm reads [0,0] on a
+     symbolic m) — so 3_5 r1/r2's e392 shape (3.4 file L509, v =
+     (a+x^n)/x^n, integrand log((a+x^n)/x^n)/x) 0-fired while the
+     algebraic twin log(1+a*x^-n)/x (Plus storage) fired. The probe
+     (t4b4, 2026-09-01, branch_5_50_base_84_g4204fb669) measured the
+     decline at the EasyDQ cond, NOT the u/v step (%mr_simp(u/
+     diff(y,x)) = 1/n pre-fix — the ratsimp stage alone closes it),
+     and the fix expands y at the binding — the identity on every
+     other form the ladder accepts (plus / binomial / monomial /
+     power / product-of-linears / log shapes measured unchanged;
+     the .m's a_.*x guard runs on y as bound, .m order). Pinned
+     here: the e392 quotient shape returns the 1/n quotient (RED:
+     false — the pre-fix decline), the two corpus shapes that
+     currently fire 3_5 r1 keep their exact pre-fix values (the
+     Plus shape 1/n — the brief's Step-1 (ii) pin; e390 (a+x)/x,
+     3.4 file L507, w = 1), and the e392 answer on the minimal table
+     (default 1.1.1.1 + 3_5, production order class 1 before class
+     3; 3_5 reloaded here — the reload is TLS-idempotent, the
+     slot declaims are per-symbol) is the r1 repl form w*
+     polylog(2, 1-v) — the corpus expected polylog(2,-a/x^n)/n in
+     stored argument. The e392 answer's zero-chain CANNOT close in
+     this build (Maxima has no diff rule for polylog —
+     diff(polylog(2, x), x) is a noun, no manual entry — so the
+     self-diff and the expected-diff of the correct answer both
+     carry a diff noun; the driver's zero_chain, executed verbatim,
+     returned 0: the numeric stage crashed on the diff noun's
+     variable slot, all eight symbolic stages and the elliptic-gated
+     radcan(rat()) fallback keep the noun) — the pin is therefore
+     answer-form equality, not a zero-chain stage (flagged in
+     t4b4-report). */
+  test_class3_b4_derDiv() := block([ans, saved_table, f],
+    print("--- b4: %mr_derivativeDivides stored-quotient y storage (3_5 r1/r2; e392) ---"),
+    /* predicate level: the e392 quotient shape (RED: false — the
+       pre-fix EasyDQ cond decline; the brief's literal
+       check_bool(derDiv(...)) is unsatisfiable — the post-fix
+       value is the quotient 1/n, not true — so the intent is
+       pinned as equality with the quotient) */
+    check_bool("b4 derDiv e392 quotient shape",
+               is(%mr_derivativeDivides((a+x^n)/x^n,
+                  (1/x)*(1 - (a+x^n)/x^n), x) = 1/n)),
+    /* regression pins: the shapes that currently fire 3_5 r1 keep
+       their exact pre-fix values (the Plus shape — the brief's
+       Step-1 (ii) pin, measured 1/n; e390 (a+x)/x — 3.4 file L507,
+       measured 1; both GREEN in a RED run — regression pins, not
+       RED detectors) */
+    check("b4 derDiv Plus shape unchanged",
+          %mr_derivativeDivides(1 + a*x^-n,
+            (1/x)*(1 - (1 + a*x^-n)), x), 1/n),
+    check("b4 derDiv e390 shape unchanged",
+          %mr_derivativeDivides((a+x)/x,
+            (1/x)*(1 - (a+x)/x), x), 1),
+    /* answer level: the e392 integrand on the minimal table */
+    %mr_load_sibling("rules/class3/3_5.mac", 'mr_witness_3_5),
+    saved_table : mr_rule_table,
+    mr_rule_table : flatten([mr_rule_table, mr_rules_3_5]),
+    f : log((a+x^n)/x^n)/x,
+    ans : rubi(f, x),
+    /* the package no-answer noun is the listcons 'unintegrable[f, x]
+       (mr_unintegrable, utils :27): is(op(noun) = 'unintegrable) is
+       FALSE on it (measured 2026-09-01, b2 idiom) — the
+       discriminant is string(op) */
+    check_not("b4 e392 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    /* the r1 repl form w*polylog(2, 1-v) with w = 1/n, v the bound
+       quotient — the corpus expected polylog(2,-a/x^n)/n in stored
+       argument (1-(a+x^n)/x^n stores unsimplified, so the
+       is()-equality is against the stored form) */
+    check_bool("b4 e392 answer is the r1 repl form",
+               is(ans = (1/n)*polylog(2, 1 - (a+x^n)/x^n))),
     mr_rule_table : saved_table,
     true
   )$
