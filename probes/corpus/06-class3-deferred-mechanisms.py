@@ -532,15 +532,19 @@ def drill_text(rules):
     return funcs, stmts
 
 
-def entry_mac(f_text, var_text, funcs, stmts):
+def entry_mac(f_text, var_text, funcs, stmts, d_max=1, drill=True):
     """One entry's batch file (the plan's step-2 template, with the
     measured build-quirk fixes from the module docstring, including
-    the reader-desync filler buffers — see the module docstring)."""
+    the reader-desync filler buffers — see the module docstring).
+    d_max bounds the sweep's direction loop (`for d : 0 thru d_max`);
+    drill=False drops the triage drill (the 333 _drill functions +
+    statements) for production-semantics cost runs (07). The defaults
+    reproduce the committed 06 .mac files byte-for-byte."""
     # The driver's build_text filler (test/corpus_driver.py): throwaway
     # lines a mid-evaluation reader call can consume as a bogus
     # continuation without eating the real markers.
     filler = ["pos$"] * 40 + ["no$"] * 20
-    L = list(funcs)
+    L = list(funcs) if drill else []
     L += [
         f"mr_f: {f_text}$",
         f"x: {var_text}$",
@@ -559,7 +563,7 @@ def entry_mac(f_text, var_text, funcs, stmts):
         "swept : 0$",
         "if is(part(mr_census, 2) = false) and is(part(mr_census, 1) >= 2) "
         "then (\n"
-        "  for d : 0 thru 1 do\n"
+        f"  for d : 0 thru {d_max} do\n"
         "    for i : 1 thru part(mr_census, 1) do (\n"
         "      disp(concat(\"P4SCAN \", string(d), \" \", string(i))),\n"
         "      mr_ans4 : %mr_p4_once(mr_f, x, mr_rule_table, 1, d, i),\n"
@@ -573,7 +577,8 @@ def entry_mac(f_text, var_text, funcs, stmts):
         "    )\n"
         ") else disp(concat(\"P4SKIP\"))$",
     ]
-    L += stmts
+    if drill:
+        L += stmts
     L.append("disp(concat(\"DONE\"))$")
     return "\n".join(L) + "\n"
 

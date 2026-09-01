@@ -1,0 +1,114 @@
+=== class-3 deferred sweep-cost fallbacks (07-class3-deferred-sweep-cost-fallbacks) ===
+run date: 2026-09-01 11:01 UTC
+maxima: Maxima-version: "branch_5_50_base_84_g4204fb669"
+maxima: Maxima build date: "2026-08-31 13:27:47"
+maxima: Host type: "x86_64-pc-linux-gnu"
+maxima: Lisp implementation type: "SBCL"
+maxima: Lisp implementation version: "2.6.7"
+core fingerprint: 36b8bae7dba3c6e4fde614b6df70caa4 (rules core, test/mr_rules.core)
+source: probes/corpus/06-class3-deferred-mechanisms.out (the 37 swept entries)
+semantics: production pass-4 shape (sweep only, no triage drill, all scans, no early stop — a strict upper bound on the production cost)
+added = dt_total - record t= (test/corpus_class3.out), the same definition as the 06 sweep-cost line
+build note: this run is on the 2026-08-31 13:27:47 maxima binary (same branch hash, same SBCL, core fingerprint unchanged); the 06 committed line above is on the 2026-08-29 17:58:20 binary — the two lines are quoted under their own stamps
+
+--- 06 committed sweep-cost line (drill-inclusive; the original gate input) ---
+n=37  mean= 13.06  p50=  8.90  p95= 46.50  max= 58.60
+
+--- k=3 factor bound (fallback a) ---
+06 swept field: n=37, distribution swept=4: 28 swept=6: 9
+max swept = 6 = 2 directions x 3 bare factors -> nbare <= 3 on every swept entry
+k=3 (the first 3 factors in stored order, both directions) drops NO scan on this population
+-> the k=3 scan set is identical to the full-sweep scan set; its cost is the measured full-sweep cost (derived, not a new measurement)
+
+--- full sweep, both directions (production semantics, no drill) ---
+n=37  mean=  8.78  p50=  5.41  p95= 34.69  max= 37.34   gate: FAIL
+entry                                                        06           swept  rescue     fires (d,i,op)                      dt   t_rec   added
+3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e132 0FIRE-POOL       6  -          -                                 15.9     8.9     7.0
+3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e253 0FIRE-POOL       6  -          -                                 13.3     4.8     8.5
+3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e275 0FIRE-POOL       6  -          -                                 12.0     7.5     4.5
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e5               FIRE4            4  Y "+"      0,1,unintegrable; 0,2,"+"; 1,1,"+"; 1,2,unintegrable    12.2     4.2     8.0
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e47              FIRE4            6  Y "+"      0,1,integrate; 0,2,"+"; 1,2,"+"    45.6     8.3    37.3
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e91              FIRE4            6  Y "+"      1,2,"+"                           30.8     4.5    26.3
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e96              0FIRE-POOL       4  -          -                                 12.9     3.7     9.2
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e209             FIRE4            6  Y "+"      0,1,integrate; 0,2,"+"; 1,1,"+"    21.4     2.3    19.1
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e215             FIRE4            6  Y "+"      0,1,integrate; 0,2,"+"; 1,1,"+"    26.3     2.3    24.0
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e91 0FIRE-POOL       4  -          -                                  9.3     3.8     5.5
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e122 FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                   9.5     3.7     5.8
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e150 FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                   9.2     6.3     2.9
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e176 0FIRE-POOL       4  -          -                                  9.3     4.4     4.9
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e204 FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                   9.4     4.0     5.4
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e233 0FIRE-POOL       4  -          -                                  9.2     3.8     5.4
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e265 FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                   9.4     4.1     5.3
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e296 FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                   9.2     4.2     5.0
+3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e3 0FIRE-POOL       6  -          -                                 14.9     5.3     9.6
+3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e4 0FIRE-POOL       4  -          -                                  9.4     4.6     4.8
+3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e156         D-NEST           4  -          1,1,integrate; 1,2,integrate      11.6     4.6     7.0
+3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e360         FIRE4            6  Y "+"      0,3,unintegrable; 1,1,"+"; 1,2,"+"    38.6     3.9    34.7
+3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e461         0FIRE-POOL       4  -          -                                 17.0     7.2     9.8
+3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e483         0FIRE-POOL       4  -          -                                 12.4     5.3     7.1
+3 Logarithms/3.5 Logarithm functions.mac e49                 FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                  11.9     4.1     7.8
+3 Logarithms/3.5 Logarithm functions.mac e103                FIRE4            4  Y "+"      0,1,integrate; 0,2,"+"; 1,1,"+"; 1,2,integrate    14.2     0.7    13.5
+3 Logarithms/3.5 Logarithm functions.mac e115                0FIRE-POOL       4  -          -                                 10.2     4.5     5.7
+3 Logarithms/3.5 Logarithm functions.mac e154                FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                   8.5     3.2     5.3
+3 Logarithms/3.5 Logarithm functions.mac e157                FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                   8.4     3.4     5.0
+3 Logarithms/3.5 Logarithm functions.mac e179                0FIRE-POOL       4  -          -                                  6.2     3.3     2.9
+3 Logarithms/3.5 Logarithm functions.mac e183                0FIRE-POOL       4  -          -                                  6.3     3.8     2.5
+3 Logarithms/3.5 Logarithm functions.mac e187                0FIRE-POOL       4  -          -                                  6.3     3.3     3.0
+3 Logarithms/3.5 Logarithm functions.mac e188                0FIRE-POOL       4  -          -                                  6.1     4.3     1.8
+3 Logarithms/3.5 Logarithm functions.mac e189                0FIRE-POOL       4  -          -                                  6.1     3.5     2.6
+3 Logarithms/3.5 Logarithm functions.mac e190                0FIRE-POOL       4  -          -                                  6.2     3.5     2.7
+3 Logarithms/3.5 Logarithm functions.mac e195                FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                   8.3     3.6     4.7
+3 Logarithms/3.5 Logarithm functions.mac e198                FIRE4            4  Y "+"      0,2,"+"; 1,1,"+"                   8.5     3.3     5.2
+3 Logarithms/3.5 Logarithm functions.mac e243                0FIRE-POOL       4  -          -                                  8.2     3.2     5.0
+
+--- forward-only d=0 + k=3 (fallback b; k=3 drops nothing here, so b == forward-only) ---
+n=37  mean=  3.51  p50=  1.97  p95= 15.25  max= 20.01   gate: FAIL
+entry                                                        06           swept  rescue     fires (d,i,op)                      dt   t_rec   added
+3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e132 0FIRE-POOL       6  -          -                                 10.6     8.9     1.7
+3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e253 0FIRE-POOL       6  -          -                                  9.2     4.8     4.4
+3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e275 0FIRE-POOL       6  -          -                                  8.3     7.5     0.8
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e5               FIRE4            4  Y "+"      0,1,unintegrable; 0,2,"+"          6.4     4.2     2.2
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e47              FIRE4            6  Y "+"      0,1,integrate; 0,2,"+"            23.5     8.3    15.2
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e91              FIRE4            6  -          -                                 14.2     4.5     9.7
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e96              0FIRE-POOL       4  -          -                                  8.4     3.7     4.7
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e209             FIRE4            6  Y "+"      0,1,integrate; 0,2,"+"            12.2     2.3     9.9
+3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e215             FIRE4            6  Y "+"      0,1,integrate; 0,2,"+"            14.1     2.3    11.8
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e91 0FIRE-POOL       4  -          -                                  5.9     3.8     2.1
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e122 FIRE4            4  Y "+"      0,2,"+"                            5.9     3.7     2.2
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e150 FIRE4            4  Y "+"      0,2,"+"                            5.8     6.3    -0.5
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e176 0FIRE-POOL       4  -          -                                  5.7     4.4     1.3
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e204 FIRE4            4  Y "+"      0,2,"+"                            5.8     4.0     1.8
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e233 0FIRE-POOL       4  -          -                                  5.8     3.8     2.0
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e265 FIRE4            4  Y "+"      0,2,"+"                            5.8     4.1     1.7
+3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e296 FIRE4            4  Y "+"      0,2,"+"                            5.6     4.2     1.4
+3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e3 0FIRE-POOL       6  -          -                                  8.4     5.3     3.1
+3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e4 0FIRE-POOL       4  -          -                                  5.8     4.6     1.2
+3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e156         D-NEST           4  -          -                                  6.0     4.6     1.4
+3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e360         FIRE4            6  -          0,3,unintegrable                  23.9     3.9    20.0
+3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e461         0FIRE-POOL       4  -          -                                 12.0     7.2     4.8
+3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e483         0FIRE-POOL       4  -          -                                  9.1     5.3     3.8
+3 Logarithms/3.5 Logarithm functions.mac e49                 FIRE4            4  Y "+"      0,2,"+"                            6.9     4.1     2.8
+3 Logarithms/3.5 Logarithm functions.mac e103                FIRE4            4  Y "+"      0,1,integrate; 0,2,"+"             6.3     0.7     5.6
+3 Logarithms/3.5 Logarithm functions.mac e115                0FIRE-POOL       4  -          -                                  6.8     4.5     2.3
+3 Logarithms/3.5 Logarithm functions.mac e154                FIRE4            4  Y "+"      0,2,"+"                            5.3     3.2     2.1
+3 Logarithms/3.5 Logarithm functions.mac e157                FIRE4            4  Y "+"      0,2,"+"                            5.4     3.4     2.0
+3 Logarithms/3.5 Logarithm functions.mac e179                0FIRE-POOL       4  -          -                                  4.1     3.3     0.8
+3 Logarithms/3.5 Logarithm functions.mac e183                0FIRE-POOL       4  -          -                                  4.2     3.8     0.4
+3 Logarithms/3.5 Logarithm functions.mac e187                0FIRE-POOL       4  -          -                                  4.2     3.3     0.9
+3 Logarithms/3.5 Logarithm functions.mac e188                0FIRE-POOL       4  -          -                                  4.2     4.3    -0.1
+3 Logarithms/3.5 Logarithm functions.mac e189                0FIRE-POOL       4  -          -                                  4.1     3.5     0.6
+3 Logarithms/3.5 Logarithm functions.mac e190                0FIRE-POOL       4  -          -                                  4.1     3.5     0.6
+3 Logarithms/3.5 Logarithm functions.mac e195                FIRE4            4  Y "+"      0,2,"+"                            5.2     3.6     1.6
+3 Logarithms/3.5 Logarithm functions.mac e198                FIRE4            4  Y "+"      0,2,"+"                            5.3     3.3     2.0
+3 Logarithms/3.5 Logarithm functions.mac e243                0FIRE-POOL       4  -          -                                  4.6     3.2     1.4
+
+--- gate (plan Task 3 Step 3: p95 added <= 3 s AND mean added <= 1 s) ---
+06 line  n=37 mean= 13.06  p95= 46.50  -> fails the gate (drill-inclusive, 2026-08-29 binary)
+full     mean=  8.78  p95= 34.69  -> fails the gate
+fwd-k3   mean=  3.51  p95= 15.25  -> fails the gate
+
+--- rescue delta over the 17 first-run FIRE4 entries ---
+full sweep rescues 17 of 17 (first-run cross-check: 17 expected)
+forward-only rescues 15 of 17
+sacrificed by forward-only (a non-noun sweep fire exists only in the reverse direction): 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e91, 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e360
+

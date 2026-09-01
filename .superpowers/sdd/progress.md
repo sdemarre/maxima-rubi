@@ -3555,8 +3555,87 @@ Controller: review rounds (2026-08-30)
   - Task 1: complete (commits 30815e1, ab7ad93; reviews clean).
   - Task 2: complete (commits ec3e7c9, 254b2db; reviews clean).
 
-Task 3 (next): the full run via
-probes/corpus/06-class3-deferred-mechanisms.run (calibrate -> gen
--> launch; merge when the pid file is clean) -> the adjudication
-against the pinned .m sources -> the Phase-2 decision record in
-docs/corpus-class3-deferred-uplift.md.
+Task 3: complete (runs 2ef83f7 -> 9e61da0 -> 56102b9 + the
+decision-record commit that lands this entry; decision record
+docs/corpus-class3-deferred-uplift.md)
+  - Full run: first run 2ef83f7 (60 s cap) — 1,033/1,033, 24
+    shards, calibration 16/16 + 6/6 attribution proofs, but 29
+    subprocess deaths (reader desync — the measured cause).
+    Desync-buffered template + 120 s cap (9e61da0); the re-measured
+    distribution is the committed record (56102b9; build 2026-08-29
+    17:58:20): 0 deaths, 0FIRE-POOL 691 / 0FIRE-EXPL 181 / D-NEST
+    144 / FIRE4 17, the label x file x target-flag cross-tab, the
+    sweep-cost line n=37 mean=13.06 p50=8.90 p95=46.50 max=58.60
+    (drill-inclusive). The 2ef83f7 deaths are the adjudication's
+    PENDING-REMEASURE source (23 g3 + 4 g2 + g1 e47; the 29th,
+    3.5 e11, was adjudicated by g4 from its trustworthy re-measured
+    label).
+  - Adjudication (four waves against the pinned .m sources; the
+    wave files are gitignored working docs, the record's section 2
+    is self-contained): the 2026-08-31 boundary policy
+    reclassification (B-port = the port deviates from the .m;
+    C-in-Rubi = the .m covers, the ported rule exists but 0-binds;
+    B-faithful folds into D) split the draft's D/B-port buckets.
+    Grand totals, machine-checked across the wave files:
+    A=10 / B-port=297 / C-in-Rubi=483 / C-absent=41 / D=174 /
+    PENDING=28 = 1,033. The 17th-FIRE4-line question resolved:
+    g1 e47 (first record: subprocess death at the 60 s cap; HEAD
+    record: FIRE4 fire=0,2,_mr_rule_3_1_5_r48, A-shaped, baseline
+    flag no-answer) -> PENDING-REMEASURE (verdict owed; the 100 s
+    re-check gates A 10 vs 11); the earlier g2 3_2_3-death guess
+    was wrong (none of those is FIRE4-labelled).
+  - Phase-2 decisions (the record's section 3):
+    - A = NO-GO (measured). The mass clause PASSES (13 of the 17
+      FIRE4 entries are target mass) but the cost clause FAILS on
+      every measured variant (gate: p95 added <= 3 s AND mean
+      added <= 1 s): the 06 line (13.06 / 46.50, drill-inclusive,
+      2026-08-29 binary), the 07 full-sweep production-semantics
+      line (8.78 / 34.69), the 07 forward-only d=0 + k=3 line
+      (3.51 / 15.25). Fallback (a) k=3 is a DERIVED no-op on this
+      population (max swept = 6 -> nbare <= 3 on every swept
+      entry -> k=3 drops no scan -> its cost is the measured
+      full-sweep cost). Rescue delta over the 17 FIRE4: full
+      17/17 (cross-check), forward-only 15/17 (sacrificed e91,
+      e360 — reverse-direction-only fires). Pass 4 is NOT wired;
+      the A entries are prototype-only rescues. e47's 100 s
+      re-measure (Task 5) gates the final A count 10 vs 11.
+    - B list (297) = the 7 spurious-freeof sites in 3_5.mac
+      (124 entries: g1 2 + g3 81 + g4 41) + the %mr_linearQ list
+      arm (47) + the 3_3 port/matcher/storage misses (125) + the
+      e392 storage normalisation (1).
+    - C-in-Rubi list (483) = g1 M1 209 + M6 3 + g2 D2 99 +
+      D3/D4 13 + g3 3_4 matcher-gap 128 + g4 31 (nine mechanism
+      keys; the L46 FunctionOfLog catch-all is unported and
+      carries 12; 5 rows are blocked on class 4).
+    - C-absent 41 (record only) / D 174 (documentation set) /
+      PENDING 28 (g1 e47 + g2 4 + g3 23).
+    - Verdict x target-flag split (probe 08): the enumerated 579
+      entries carry target 462 / certain 228; C-in-Rubi holds the
+      heaviest certain share (153/228 enumerated).
+  - New probes (both committed with the record): 07 (sweep-cost
+    fallbacks; 06's entry_mac gained d_max/drill params — the
+    defaults reproduce the committed 06 .mac files byte-for-byte)
+    and 08 (verdict x target-flag split; asserts the claim
+    totals, the enumerated-set disjointness, and the 06 total
+    row). Both ran on the 2026-08-31 13:27:47 binary (same
+    branch hash / SBCL; the rules core was NOT rebuilt,
+    fingerprint 36b8bae7dba3c6e4fde614b6df70caa4 unchanged) —
+    the record quotes each measurement under its own stamp.
+  - Open-minor triage (item (f)): the 0^negative expt-warning
+    rule set (1_1_2_1_r33, 1_1_3_1_r66-r70, 1_1_3_4_r80-r81,
+    2_3_r62, 2_3_r97-r98, 3_4_r38-r39) is DECIDED OUT of this
+    campaign's scope — the adjudication found no deferred entry
+    whose verdict depends on the set (it appears in no B-port /
+    C-in-Rubi / C-absent list), so the item's "unless the
+    adjudication says otherwise" condition is not met; a
+    follow-up rule fix belongs to a class-1/2 campaign with its
+    own A/B against the class-1/class-2 records. Recorded in the
+    campaign record's section 3.2 follow-up paragraph. Items
+    (a)-(e) remain open for the final whole-branch review (Task
+    6).
+
+Task 4 (next): the Phase-2 fixes — 4A: record the pass-4 NO-GO
+(the wiring is skipped; the A entries stand as prototype-only),
+4B: the B list of the record's section 3.2, 4C: the C-in-Rubi
+list of the record's section 3.3 — one SDD brief per family, the
+decision record's items are the inputs.

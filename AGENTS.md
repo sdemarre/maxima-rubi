@@ -40,17 +40,22 @@ The pinned commit (full 40-digit hash) of each is recorded in
 
 The installed build is **Maxima
 `branch_5_50_base_84_g4204fb669`** (5.50-series, build date
-2026-08-29 17:58:20) on SBCL 2.6.7. It replaced the 2026-08-20
-21:36:22 build (milestones 1–2's measurement build) during
-milestone 3, 2026-08-29. The research docs' 5.49-series expectation
-is superseded. The project does **not** pin to any build: every
-measurement is stamped with the build it was taken on (the class-1/
-class-2 accepted records carry the 2026-08-20 stamp; class-3
-records carry the 2026-08-29 stamp), and baselines are re-measured
-on upgrade rather than carried over — the milestone-3 close
-re-validated the class-1/class-2 accepted classifications under the
-new build via the Task-8 no-op slices (51/51 × 2, zero diffs;
-`docs/corpus-class3-baseline-uplift.md` §6).
+2026-08-31 13:27:47) on SBCL 2.6.7. It replaced the 2026-08-29
+17:58:20 build (the class-3 port build), which had in turn replaced
+the 2026-08-20 21:36:22 build (milestones 1–2's measurement build)
+during milestone 3, 2026-08-29. The research docs' 5.49-series
+expectation is superseded. The project does **not** pin to any
+build: every measurement is stamped with the build it was taken on
+(the class-1/class-2 accepted records carry the 2026-08-20 stamp;
+the class-3 triage record (probe 06) carries the 2026-08-29 stamp;
+the class-3 sweep-cost fallback and verdict-split probes (07/08)
+carry the 2026-08-31 stamp — the 2026-08-31 rebuild is the same
+branch hash / SBCL with the rules core NOT rebuilt, fingerprint
+`36b8bae7dba3c6e4fde614b6df70caa4` unchanged), and baselines are
+re-measured on upgrade rather than carried over — the milestone-3
+close re-validated the class-1/class-2 accepted classifications
+under the new build via the Task-8 no-op slices (51/51 × 2, zero
+diffs; `docs/corpus-class3-baseline-uplift.md` §6).
 
 ## Loading rule files: the TLS limit
 
