@@ -702,13 +702,23 @@ test_structural_predicates() := block([],
     saved_table : mr_rule_table,
     mr_rule_table : flatten([mr_rule_table, mr_rules_3_5]),
     ans : rubi(x*log(x)*sqrt(4 + x^2), x),
+    /* the package no-answer noun is the listcons 'unintegrable[f, x]
+       (mr_unintegrable, utils :27): measured 2026-09-01,
+       is(op(noun) = 'unintegrable) is FALSE on it (op() on the
+       listcons is not the bare symbol under is()), so the
+       discriminant is string(op) — this disjunct was added by the
+       B1 follow-up after the b2 cycle measured the gap */
     check_not("b1 e275 not a noun",
-              is(atom(ans)) or is(op(ans) = 'integrate) or is(op(ans) = 'unintegrable)),
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(op(ans) = 'unintegrable)
+              or is(string(op(ans)) = "unintegrable")),
     check_bool("b1 e275 zero-chain",
                is(ratsimp(diff(ans, x) - x*log(x)*sqrt(4 + x^2)) = 0)),
     ans : rubi(log(a + %e^x*b), x),
     check_not("b1 e116 not a noun",
-              is(atom(ans)) or is(op(ans) = 'integrate) or is(op(ans) = 'unintegrable)),
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(op(ans) = 'unintegrable)
+              or is(string(op(ans)) = "unintegrable")),
     check_bool("b1 e116 zero-chain",
                is(ratsimp(diff(ans, x) - log(a + %e^x*b)) = 0)),
     mr_rule_table : saved_table,
@@ -760,9 +770,11 @@ test_structural_predicates() := block([],
     mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_2]),
     /* the package no-answer noun is the listcons 'unintegrable[f, x]
        (mr_unintegrable, utils :27): measured 2026-09-01, is(op(noun) =
-       'unintegrable) is FALSE on it (the listcons head is not the
-       bare symbol under is(), and diff of the noun hard-errors) —
-       the B1 discriminant idiom does not see it; string(op) does. */
+       'unintegrable) is FALSE on it (op() on a listcons is not the
+       bare symbol under is()), so the discriminant is string(op);
+       the b1 non-noun checks gained the same disjunct in the B1
+       follow-up. diff of the noun evaluates to 0 (measured on all
+       four reps' shapes — no crash). */
     f : (a+b*x)^3*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^2,
     ans : rubi(f, x),
     check_not("b2 e156 not a noun",
@@ -779,8 +791,10 @@ test_structural_predicates() := block([],
     check_not("b2 e226 not a noun",
               is(atom(ans)) or is(op(ans) = 'integrate)
               or is(string(op(ans)) = "unintegrable")),
-    /* errcatched per the driver's crash semantics (a diff crash on
-       the RED-run listcons noun is a failure, not a death) */
+    /* errcatched per the driver's semantics (this build's errcatch:
+       [value] on success / [] on error; diff of the RED-run listcons
+       noun evaluates to 0 — measured — so RED fails clean on
+       ratsimp(0 - f) # 0) */
     z : errcatch(ratsimp(diff(ans, x) - f)),
     check_bool("b2 e226 zero-chain",
                is(z # []) and is(part(z, 1) = 0)),
