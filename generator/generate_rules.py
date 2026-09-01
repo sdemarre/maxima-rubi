@@ -2406,8 +2406,110 @@ def _emit_m1_manual(spec, key, n, rule_vars, cond, rhs, ctx):
     lines.append(f"  mm : append(mm0, [{du_eqs}]),")
     lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
     lines.append("  if is(ok) = true then _mr_repl_"
-                 f"{key}_r{n}(mm, x) else false)$")
+                  f"{key}_r{n}(mm, x) else false)$")
     return "\n".join(lines), sorted(ctx["decls"])
+
+
+# ============================================================================
+# B33 3_3 cover re-transcription (class-3 deferred campaign B3, Task 4B-B3).
+#
+# Defect (measured 2026-09-01, branch_5_50_base_84_g4204fb669, probes
+# /tmp/opencode/t4b3_pB_storage.mac / t4b3_pC_slotted.mac): the 3_3
+# binomial-power covers -- a (f+g x^r)^q factor times or over an
+# (a+b log[c (d+e x)^n])^p factor -- 0-bind every stored corpus form: a
+# defmatch LHS with TWO structured sub-patterns (the binpow factor and the
+# log factor, each carrying its own captures) no-binds even though each
+# sub-pattern binds alone (the same two-structured-sides limitation as M1).
+# The stored forms vary the outer exponents freely -- the e156 family is
+# stored as sqrt(f+g*x)*sqrt(a+b log[...]) (BOTH factors sqrt-canonicalized),
+# e88/e89/e90 as the Quotient (f+g*x)^q/(a+b log[...]) with e90's numerator a
+# BARE (f+g*x) -- and a single structured binpow factor cannot match across
+# those forms.
+#
+# Fix: the M1 idiom (see m1_spec / _emit_m1_manual) -- slot the
+# binomial-POWER factor as the single isfac slot, keep the log factor
+# structured, and recover the base's (f, g, [r]) captures plus the outer q in
+# the rule body via %mr_mbp_unwrap + %mr_mbp_base. The ^p log-power pattern
+# binds a stored sqrt(...) with p=1/2 (measured: p_p(e156) binds _p=1/2) and
+# a bare logplus binds only the bare form -- the same split the .m cond/repl
+# already exploit. Reuses _emit_m1_manual verbatim; the b33 shapes differ only
+# in the log-arg (c (d+e x)^n) and the decomp ([f, g] linear / [f, g, r]
+# slotted). The .m cond/repl regenerate byte-identical.
+#
+# Closed shape set (whitespace-free marker text). A matching capture set that
+# is not the lhs captures is a loud GenError; anything outside the set returns
+# None (the rule keeps its current emission).
+#   Q    (f+g x)^q / (a+b log[c (d+e x)^n])          3_3 r11
+#   P    (f+g x)^q (a+b log[c (d+e x)^n])^p          3_3 r2/r10/r12/r13
+#   PS   (f+g x^r)^q (a+b log[c (d+e x)^n])^p        3_3 r20/r21
+#   HXP  x^m (f+g x^r)^q (a+b log[c (d+e x)^n])^p    3_3 r25/r27
+#   HXPL x^m (f+g x^r)^q (a+b log[c (d+e x)^n])      3_3 r26
+#
+# NOT taken (reported, stay deferred): r24 ((f+g/x)^q -- the base is rejected
+# by %mr_mbp_isfac, would need a shared-helper extension), r28 ((h x)^m head
+# -- the re-transcribed head mis-binds _h:=((h x)^m), _m:=0), r46 (two log
+# factors + a bare-log factor). The slot name is the M1 slot (_M1_SLOT,
+# "m1b"): _emit_m1_manual adds _M1_SLOT (not this local) to the capture set
+# when it translates the re-transcribed body, so the two must agree.
+_B33_SLOT = _M1_SLOT
+
+
+def _b33_cap(v):
+    # a Rubi capture marker in whitespace-free text: v_ or v_.
+    return re.escape(v) + r"_{1}\.?"
+
+
+_B33_LOGARG = (r"Log\[" + _b33_cap("c") + r"\*\(" + _b33_cap("d") + r"\+"
+               + _b33_cap("e") + r"\*x_\)\^" + _b33_cap("n") + r"\]")
+_B33_LOGPLUS = r"\(" + _b33_cap("a") + r"\+" + _b33_cap("b") + r"\*" \
+    + _B33_LOGARG + r"\)"
+_B33_LOGPOW = _B33_LOGPLUS + r"\^" + _b33_cap("p")
+# the binomial base's g-term may be implicit-multiply (g_.x_, 3_3 r2) or
+# explicit (g_.*x_, the other rows) -- the `*` is optional.
+_B33_BPOW_LIN = (r"\(" + _b33_cap("f") + r"\+" + _b33_cap("g") + r"\*?x_\)\^"
+                 + _b33_cap("q"))
+_B33_BPOW_SLOT = (r"\(" + _b33_cap("f") + r"\+" + _b33_cap("g") + r"\*?x_\^"
+                  + _b33_cap("r") + r"\)\^" + _b33_cap("q"))
+_B33_HEAD_XMON = r"x_{1}\^" + _b33_cap("m") + r"\*"
+_B33_SHAPES = (
+    ("Q", re.compile(r"(?P<bw>" + _B33_BPOW_LIN + r")"
+                     + r"\/" + _B33_LOGPLUS), ("f", "g"), "q"),
+    ("P", re.compile(r"(?P<bw>" + _B33_BPOW_LIN + r")"
+                     + r"\*" + _B33_LOGPOW), ("f", "g"), "q"),
+    ("PS", re.compile(r"(?P<bw>" + _B33_BPOW_SLOT + r")"
+                      + r"\*" + _B33_LOGPOW), ("f", "g", "r"), "q"),
+    ("HXP", re.compile(_B33_HEAD_XMON + r"(?P<bw>" + _B33_BPOW_SLOT + r")"
+                       + r"\*" + _B33_LOGPOW), ("f", "g", "r"), "q"),
+    ("HXPL", re.compile(_B33_HEAD_XMON + r"(?P<bw>" + _B33_BPOW_SLOT + r")"
+                        + r"\*" + _B33_LOGPLUS), ("f", "g", "r"), "q"),
+)
+
+
+def b33_spec(body, key, n, rule_vars):
+    """3_3 binpow cover shape -> {"shape", "rewritten", "decomp", "outer"}
+    (consumed by _emit_m1_manual), else None. The single isfac slot replaces
+    the whole binomial-power factor; decomp is the base's (f, g[, r]) captures
+    recovered in %mr_mbp_base order (the linear base's inner exponent is the
+    non-captured 1); outer is the q exponent."""
+    for shape, rx, decomp, outer in _B33_SHAPES:
+        m = rx.fullmatch(body)
+        if m is None:
+            continue
+        if set(decomp) - set(rule_vars) or outer not in rule_vars:
+            raise GenError(f"{key} r{n}: B33 {shape} base/outer captures "
+                           f"{list(decomp)}+{outer!r} not all among lhs "
+                           f"captures {sorted(rule_vars)}")
+        if _B33_SLOT in rule_vars:
+            raise GenError(f"{key} r{n}: B33 slot {_B33_SLOT} collides "
+                           f"with an lhs capture")
+        bstart, bend = m.start("bw"), m.end("bw")
+        if body[bstart] != "(":
+            raise GenError(f"{key} r{n}: B33 {shape} binpow span "
+                           f"{body[bstart:bend]!r} is not a paren group")
+        rewritten = body[:bstart] + _B33_SLOT + "_" + body[bend:]
+        return {"shape": shape, "rewritten": rewritten,
+                "decomp": list(decomp), "outer": outer}
+    return None
 
 
 # ============================================================================
@@ -2824,6 +2926,14 @@ def emit_rule(run, key, n, rule_vars):
     m1 = m1_spec(body, key, n, rule_vars)
     if m1 is not None:
         return _emit_m1_manual(m1, key, n, rule_vars, cond, rhs, ctx)
+    # B33 3_3 binpow-cover re-transcription (class-3 deferred campaign B3,
+    # Task 4B-B3): the same M1 idiom on the 3.3 shapes (a (f+g x^r)^q factor
+    # times or over an (a+b log[c (d+e x)^n])^p factor) -- the two-structured-
+    # sides 0-bind (see b33_spec). Reuses _emit_m1_manual; the .m cond/repl
+    # regenerate byte-identical.
+    b33 = b33_spec(body, key, n, rule_vars)
+    if b33 is not None:
+        return _emit_m1_manual(b33, key, n, rule_vars, cond, rhs, ctx)
     # (f_.+g_.*x_)^m_.*(A_.+B_.*Log[...])^p_. log-power structural
     # re-transcription (3.2.1 r16/r18/r20, class-3 deferred campaign
     # C4): the faithful defmatch LHS 0-binds the stored forms (a

@@ -82,6 +82,7 @@ run_all_tests() := block([],
         test_class3_c1_slotted(),
          test_class3_c4_321(),
          test_class3_c3_ratio(),
+         test_class3_b3_33(),
          test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
@@ -1333,7 +1334,103 @@ test_structural_predicates() := block([],
                 is(atom(ans)) or is(op(ans) = 'integrate)
                 or is(string(op(ans)) = "unintegrable")),
       z : errcatch(factor(diff(ans, x) - f)),
-      check_bool("c3 e10 self-diff (factor, the driver's first symbolic stage)",
+       check_bool("c3 e10 self-diff (factor, the driver's first symbolic stage)",
+                  is(z # []) and is(part(z, 1) = 0)),
+       mr_rule_table : saved_table,
+       true
+     )$
+
+    /* Task 4B-B3 — the 3_3 cover binding (M1 idiom slotting, class-3
+    deferred campaign B3). The 3_3 binpow covers (a (f+g x^r)^q factor
+    times/over an (a+b log[c (d+e x)^n])^p factor) 0-bound every stored
+    form: a defmatch LHS with TWO structured sub-patterns no-binds though
+    each binds alone. The re-emission slots the binpow factor (isfac),
+    keeps the log factor structured, and recovers the base (f, g[, r]) +
+    outer q in the rule body via %mr_mbp_unwrap + %mr_mbp_base. Pattern-
+    level binding + base recovery on the reps; GREEN pins 0-bind the
+    non-target forms; the answer-level zero-chain runs on an integer-
+    power product rep that closes (the e88/e156 reps reduce to
+    sub-integrals / a remainder that stay out of scope for the binding
+    fix). */
+    test_class3_b3_33() := block([saved_table, mm, w, du, f, ans, z],
+      print("--- b3: 3_3 cover binding (M1 idiom slotting) ---"),
+      %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+      %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
+      %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
+      %mr_load_sibling("rules/class3/3_2_3.mac", 'mr_witness_3_2_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_3, mr_rules_3_2_1,
+                               mr_rules_3_2_2, mr_rules_3_2_3]),
+      /* M1 quotient (r11, L14): e88/e90 reps. slot = (f+g*x)^q, base
+         recovers (f, g), outer q; the log denominator stays structured. */
+      mm : _mr_pat_3_3_r11((f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r11 binds e88 (quotient, q=3)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r11_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r11 recovers base (f, g) outer q=3",
+                 is(du # false) and is(part(w, 2) = 3)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)),
+      mm : _mr_pat_3_3_r11((f+g*x)/(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r11 binds e90 (bare numerator, q=1)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r11_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r11 bare-numerator outer q=1 base (f, g)",
+                 is(du # false) and is(part(w, 2) = 1)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)),
+      /* M2 product (r10, L13): e156 (both factors sqrt-canonicalized) +
+         the integer-power rep. slot = sqrt(f+g*x) (isfac), base (f, g),
+         outer q=1/2; the ^p log-power binds the sqrt log with p=1/2. */
+      mm : _mr_pat_3_3_r10(sqrt(f+g*x)*sqrt(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r10 binds e156 (both-sqrt product)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r10_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r10 recovers base (f, g) outer q=1/2",
+                 is(du # false) and is(part(w, 2) = 1/2)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)),
+      /* M4 slotted base (r20, L23): (f+g*x^r)^q factor, base recovers
+         (f, g, r), outer q. */
+      mm : _mr_pat_3_3_r20((f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
+      check_bool("b3 r20 binds slotted-base rep (r=1/2, q=2)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r20_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r20 recovers base (f, g, r=1/2) outer q=2",
+                 is(du # false) and is(part(w, 2) = 2)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)
+                 and is(part(du, 3) = 1/2)),
+      /* M4 x^m head (r25, L28): head kept, slot = (f+g*x^r)^q. */
+      mm : _mr_pat_3_3_r25(x*(f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
+      check_bool("b3 r25 binds x^m-head rep (m=1, r=1/2, q=2)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r25_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r25 recovers base (f, g, r=1/2) outer q=2",
+                 is(du # false) and is(part(w, 2) = 2)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)
+                 and is(part(du, 3) = 1/2)),
+      /* GREEN pins: the non-target forms 0-bind. r11 is a quotient, so a
+         product 0-binds; r10's slot rejects the (f+g/x) fractional-linear
+         base (%mr_mbp_isfac false). */
+      check_not("b3 r11 0-binds a product (not a quotient)",
+                _mr_pat_3_3_r11((f+g*x)^3*(a+b*log(c*(d+e*x)^n)), x)),
+      check_not("b3 r10 0-binds the (f+g/x) base (isfac reject)",
+                _mr_pat_3_3_r10(x^2*(f+g/x)^2*(a+b*log(c*(d+e*x)^n))^2, x)),
+      check_not("b3 r10 0-binds the r46 two-log-factor shape",
+                _mr_pat_3_3_r10((k+l*x)^r*(a+b*log(c*(d+e*x)^n))
+                                *(f+g*log(h*(i+j*x)^m)), x)),
+      /* reduction fires: r11's true cover now fires on e88 (was skipped,
+         r29 fired before the fix). */
+      check_bool("b3 r11 reduction fires on e88",
+                 is(_mr_rule_3_3_r11((f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x)
+                    # false)),
+      /* answer-level zero-chain: the integer-power product rep (r10,
+         q=2 p=2) closes; factor(diff - f) = 0 (the driver's symbolic
+         stage). */
+      f : (f+g*x)^2*(a+b*log(c*(d+e*x)^n))^2,
+      ans : rubi(f, x),
+      check_not("b3 e-r10-int not a top noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+      check_bool("b3 e-r10-int self-diff zero (factor)",
                  is(z # []) and is(part(z, 1) = 0)),
       mr_rule_table : saved_table,
       true
