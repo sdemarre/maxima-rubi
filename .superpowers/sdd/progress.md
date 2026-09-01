@@ -3639,3 +3639,277 @@ Task 4 (next): the Phase-2 fixes — 4A: record the pass-4 NO-GO
 4B: the B list of the record's section 3.2, 4C: the C-in-Rubi
 list of the record's section 3.3 — one SDD brief per family, the
 decision record's items are the inputs.
+
+Task 4A: SKIPPED — pass-4 NO-GO (recorded; no wiring, no commit)
+  - Plan Task 4: "if a family's list is empty, the family is skipped
+    and the skip is noted in the ledger." The A decision is NO-GO
+    (record section 3.1: mass clause PASSES — 13 of the 17 FIRE4
+    entries are target mass — but the cost clause FAILS on every
+    measured variant: the 06 line 13.06/46.50 (drill-inclusive,
+    2026-08-29 binary), the 07 full line 8.78/34.69 and the 07
+    fwd-k3 line 3.51/15.25 (2026-08-31 binary) vs the gate
+    p95 added <= 3 s AND mean added <= 1 s; the k=3 fallback is a
+    derived no-op on this population). So Task 4A (the production
+    mr_top wiring + test_pass4) is skipped: no wiring commit, the
+    %mr_p4_once seam stays unbaked; the A entries (10 confirmed +
+    e47 PENDING) stand as prototype-only rescues. e47's 100 s
+    re-measure stays a Task 5 item (it gates the final A count,
+    10 vs 11).
+
+Task 4: in progress — 11 sub-briefs written (t4b1..t4b4, t4c1..t4c6,
+t4c6b under .superpowers/sdd/); dispatch order B1 -> B2 -> B4 -> C2
+-> C1 -> C4 -> C3 -> B3 -> C5 -> C6 -> C6b (C1 first defines the
+slotted-inner-exponent re-transcription idiom that B3-mech-4/C5
+reuse; the quick wins B1/B2/B4 land first; every cycle shares the
+test file + core + git index, so the dispatches are sequential).
+  - B1 scope discovery (measured 2026-09-01, dry run of the fixed
+    regex over --class 1/2/3): the root cause is wider than the
+    record's 7-site 3_5 list. The freeq_guarded regex
+    (generate_rules.py:2183-2186) has TWO faces: (1) no word
+    boundary — the `FreeQ[u, x]` substring inside
+    `InverseFunctionFreeQ[u, x]` matches (the 7 3_5 sites); (2) the
+    greedy `[^}]*` overruns the FreeQ argument into later clauses
+    (e.g. `FreeQ[q, x] && ... PolyQ[Qx, x] ...` captures Qx from the
+    PolyQ clause) — 2 more class-1 sites (1_1_1_7 r5 Qx :92 vs .m
+    1.1.1.7 L8; 1_4_1 r18 Qx :345 vs .m 1.4.1 L174), same defect
+    class, no campaign entries riding on them. The fixed regex
+    (negative lookbehind + `[^\]}]` argument class) yields a
+    regeneration diff of EXACTLY 9 lines (3_5 7 + 1_1_1_7 1 +
+    1_4_1 1), class-2 unchanged, all decl-only
+    (freeof(x) -> true), conds already carry the faithful checks.
+    B1 commits all 9 (one root cause; keeps the rule-files =
+    generator-output invariant intact so the Task-6 byte-identity
+    gate starts clean); any class-1/2 behavior delta is measured by
+    the Task-5 A/B gate. The earlier "2 spurious in 9_1.mac" flag
+    was a false positive of the first checker pass (cond parse miss
+    on underscore names) — 9_1 regeneration is byte-identical.
+  - B1: DONE (2026-09-01, commit 464d29f) — the freeq_guarded
+    regex fixed in place (negative lookbehind + `[^\]}]` argument
+    class; cited 8-line FIX B1 comment block, the file's idiom);
+    regeneration diff = the brief's 9 lines exactly (3_5 7 +
+    1_1_1_7 1 + 1_4_1 1, decl-only freeof(x) -> true, conds
+    untouched; class-2 + 9_1 byte-identical). Layer A 743 -> 750
+    (+7: 2 pattern-level x-dependent-u binding pins, 2 answer-level
+    g1 reps e275/e116 non-noun + zero-chain, 1 negative cond-gate
+    pin), 0 failed on the documented no-flag gate (main session
+    re-verified the Results line). Core rebuilt pre-commit,
+    fingerprint 3fb9ba0597f00497d59ad4007fb9ce51 (the driver
+    re-derives the fingerprint from the rule files, so the core is
+    valid for the committed tree); committed-tree byte-identity
+    re-verified. Review adjudication: (1) the brief's negative pin
+    was inverted as written — check_not passes only on false, and
+    the faithful predicate IS false for atan(x) (%mr_inverseFunctionFreeQ
+    utils:5935 is the line-port of .m InverseFunctionFreeQ,
+    IntegrationUtilityFunctions.m:316-322); the subagent's
+    intent-preserving check_bool form accepted; (2) the answer-level
+    reps run on the minimal table (1.1.1.1 + 3.5) because a
+    full-table load FATALs TLS in the flagless suite process
+    (3,513 rules vs the ~4098 special-var cap, AGENTS.md); the
+    pinned properties (non-noun, zero-chain) are table-robust —
+    production routing of the IBP residuals is Task-5 A/B
+    territory.
+  - B2: DONE (2026-09-01, commit d6cee4e + B1 follow-up 2838c3a) —
+    the %mr_linearQ list arm restored verbatim from the brief (the
+    .m ListQ arm, IntegrationUtilityFunctions.m:1373-1376, in the
+    %mr_quadraticQ house idiom; utils is baked in, so the core
+    fingerprint moved 3fb9ba05 -> f486a7c1169e9a5aa40d2f259d0b1cf4);
+    no rule/generator change (git status rules/ empty). Layer A
+    750 -> 758 (+8: 4 predicate pins, the standing scalar pins green,
+    2 answer-level g2 reps e156/e226 non-noun + zero-chain), 0
+    failed (main session re-verified the Results line); RED
+    measured 753/5, exactly the five B2 checks, run completes.
+    Review adjudication: (1) e156's zero-chain closes ONLY at the
+    driver's elliptic-gated radcan(rat()) fallback stage (the brief's
+    ratsimp literal is unsatisfiable — log-identity residual; the
+    numeric stage declines on free n; all eight symbolic stages
+    fail) — pinned that stage per the brief's own
+    driver-verification clause; e226 closes under plain ratsimp;
+    (2) the no-answer noun is the listcons 'unintegrable[f, x]
+    (mr_unintegrable, utils :27): main-session probes measured
+    is(op(noun) = 'unintegrable) = FALSE on it (op() on a listcons
+    is not the bare symbol under is()) — the B1 non-noun checks'
+    disjunction was blind to the package's own noun, and B1's
+    report §4 RED-mechanism claims ("checks 3/5 fail clean", "diff
+    of the noun stays a diff noun") are both wrong (errata appended
+    to t4b1-report.md §6; diff of the noun evaluates to the scalar
+    0, no crash, all four shapes; the B1 test's RED detection rode
+    on checks 1/2/4/6). B1's two non-noun checks patched with the
+    string(op) disjunct (2838c3a; suite 758/0 after). The b2
+    errcatch idiom matches this build's errcatch semantics
+    (manual-verified: [value] on success / [] on error). (3) e226's
+    post-rewrite nested integrand: the .m's 3.2.2 L8
+    (EqQ[m+q+2,0], holds identically under the natural binding)
+    covers it in .m but the ported r5/r6 0-bind at pattern level on
+    the matcher's data-dependent factor order — NEW C-in-Rubi
+    finding (the nested integrand is not itself a corpus entry);
+    recorded for the Task-6 whole-branch review.
+  - B4: DONE (2026-09-01, commit 3c04b2e) — the
+    %mr_derivativeDivides storage gap (e392, the lone B4 entry).
+    Probe-first caught the brief's wrong mechanism claim: the
+    decline is NOT %mr_simp(u/v) (measured 1/n pre-fix — ratsimp
+    alone closes it) but the EasyDQ cond on Maxima's stored "/"
+    node (MA stores P/x^m as the Times P*x^(-m) that the .m EasyDQ
+    rule-1 strip matches) — the fix landed at the y binding per the
+    brief's own conditional: one line `y : expand(y),` (utils
+    :6291), .m structure otherwise untouched; the 11-shape battery
+    measured every value invariant except the e391 flip false ->
+    1/2 (the n=2 case of the same storage gap — .m-faithful
+    convergence; e391 is verified via another route in production,
+    any route change is Task-5 A/B territory). Layer A 758 -> 763
+    (+5: 2 RED detectors, 2 regression pins (Plus/e390), 1
+    not-a-noun), 0 failed (main session re-verified); RED measured
+    760/3 (exactly the 3 detectors), run completes. Core
+    fingerprint moved f486a7c1 -> 7bce44cb011d4c47ee7fad714be44ef2
+    (utils baked in). The subagent amended its first commit
+    (99d9744 -> 3c04b2e) to drop Edit-tool whitespace churn
+    (unpushed, own session; final diff verified minimal: comment +
+    1 line in utils, pure-insertion test block). Review
+    adjudication: (1) the report's post-fix corpus verdict
+    prediction ("unverified — no Maxima diff rule for polylog") is
+    WRONG for the driver's expected-diff chain: main-session
+    verbatim stage-chain run (the driver's exact 8-stage list,
+    d_expr = diff(mr_r - (polylog(2,-a/x^n)/n), x) — the corpus
+    e392 expected text, verified at the suite file L509) closes at
+    STAGE 1: factor(diff) = 0 (factor simplifies the diff-noun
+    arguments 1-(a+x^n)/x^n -> -a/x^n and collects the identical
+    polylog-diff terms); the self-diff chain stays 0 (no polylog
+    diff rule — documented in the translation table since
+    2026-08-29). Measured post-fix e392 verdict is therefore
+    `expected` (PASS class): deferred -> expected — the B4 entry
+    IS rescued at Task-5 A/B (errata appended to t4b4-report.md
+    §9). (2) Deviation 7 ("pre-existing literal $ at test line
+    804") was a misread of the cat -A newline indicator; line 804
+    is a normal )$ — no fix needed.
+  - C2: DONE (2026-09-01, commit 52ffb6f) — the 3.1.2 m10
+    (d*x)^m head 0-bind (M6; e65/e66/e67, the 3 C2 entries). The
+    probe localized the mechanism: the (d*x)^m power has a
+    NON-ATOMIC head — findfun's first-match-wins scan hands it the
+    log-power tail factor (Power[Plus, p-slot]) with no backtracking,
+    so the full pattern 0-binds every stored unit-monomial-head form.
+    The fix re-transcribes the head to d*x^m (atomic-base power) and
+    matchdeclare's d with lambda([u], is(u = 1)) — the one match-time
+    lambda in the class-3 table (one-symbol test, not the
+    whole-factor %mr_neQ the e8 timing rejected): .m parity, not
+    .m excess (the repl is not (d,m)-invariant; 8*x^3 and the
+    free-d/(2*x)^k3 rows 0-bind in .m too). Implemented as the
+    generator's dhead10_spec hook (exact-shape fullmatch, loud
+    GenError on capture-set mismatch, FreeQ-only-cond gate; raw-text
+    rewrite preserving source spacing); rules diff = exactly 2 lines
+    in 3_1_2.mac (r10's decl + pattern), conds/repls untouched; full
+    --class 3 regen byte-identical elsewhere (main session
+    re-verified the suite: 780/0). Layer A 763 -> 780 (+17: 4
+    pattern-bind RED detectors + 4 rejection parity pins + 9
+    answer-level on the minimal table default + 2_1 + 3_1_2); RED
+    measured 773/7 (exactly the 7 true detectors — the 6 e65/e66
+    answer checks are GREEN in RED because the pass-2 rev rescan
+    rescues them pre-fix; e67 (bare x) is the true answer-level RED
+    row; run completes). Main-session spot-probe independently
+    confirmed: e65 binds d=1/m=3/p=-1, 8*x^3 and (2*x)^k3 reject,
+    positive-p control binds; the three corpus expected texts (3.1.2
+    file L82-84) match the test pins under the driver's
+    Ei -> expintegral_ei rewrite. Core fingerprint moved
+    7bce44cb -> 1ffbdc1058770d6183bfab65ff287f8d. Review
+    adjudication: (1) the brief's two-step premise is half-true —
+    the ported 2_1 r3 (2.1.m L7 Ei rule) 0-binds the Subst
+    re-dispatch integrand (a "/"-stored quotient — the same
+    storage-gap family; NEW finding, candidate future brief, out of
+    scope), but the STOP condition (nested mr_int noun) is NOT
+    triggered: the fb=true native integrate fallback answers the
+    inner integral in the expintegral_e(1, .) form, and the final
+    answer is EXACTLY the corpus expected form (expintegral_e(1,-z)
+    = -Ei(z)); the entries ARE rescued; (2) the brief's r6 framing
+    was wrong — r6 (L9) carries the IDENTICAL lhs as r10 (L13),
+    distinguished by cond only (NeQ[m,-1] && LtQ[p,-1]); the
+    FreeQ-only-cond gate keeps r6 on the current emission (its L90/
+    L91 rows are verified in production via other routes — no corpus
+    row depends on r6's 0-bind); consequence: on p<0 rows the port
+    now fires r10 where .m fires m9 first — both are valid
+    antiderivatives (m10's cond is FreeQ-only), a route change
+    measured by the Task-5 A/B; (3) full-table probe (tls flag per
+    AGENTS.md): post-fix pass-1 firing, all three answers non-noun,
+    self-diff closes at radcan(rat()) — the three deferred rows are
+    predicted to flip to verified/expected at Task 5 (not measured
+    here). Subagent amended the first commit for the exact brief
+    subject (t4b4 precedent).
+  - C1: DONE (2026-09-01, commit 2fd677a) — the M1
+    slotted-inner-exponent 0-bind (209 entries, the largest C cluster):
+    14 rules re-transcribed across 3_1_3 (r1/r2/r3/r18, A2 no-head),
+    3_1_4 (r2/r3 A1 x^m-head, r4/r23/r24 B (f*x)^m-head -> f*x^m
+    C2/M6 idiom), 3_1_5 (r5/r21/r22 B, r46 C log-arg /x, r47 D log-arg
+    (g*x)^q-head). Mechanism: the whole binomial-POWER factor (base +
+    outer exponent) re-emitted as ONE slot m1b (matchdeclare
+    %mr_mbp_isfac — a binomial or a single power of one, NEVER a
+    product), recovered once in the rule body via %mr_mbp_unwrap (the
+    `^` AND the sqrt-canonicalized `^(1/2)` — C1c completion folded in:
+    Maxima stores u^(1/2) as the `sqrt` node, op = SYMBOL sqrt) +
+    fail-closed %mr_mbp_base, appended to the matchlist so the UNCHANGED
+    .m cond/repl read d/e/r/outer via geteqR identically. Generator
+    hook m1_spec/_emit_m1_manual (exact-shape fullmatch, loud GenError
+    on capture-set/span/token/MatchQ/slot-collision violations);
+    runtime helpers %mr_mbp_term/%mr_mbp_unwrap/%mr_mbp_isfac (utils
+    ~:4172-4330). Review-verified (main session, line-by-line): the
+    .m cond/repl of all 14 rules are BYTE-IDENTICAL; the only cond
+    change is the house %mr_neQ(r,0) inner-exponent guard dropped from
+    12 rules (r46/r47 had none — Log-arg factor not scanned) —
+    subsumed by the fail-closed decomposition (the both-const r=0
+    rejection is measured in the report §4 battery, 7/7); repls
+    unchanged; zero non-structural rule-file changes. Regeneration
+    byte-identity RE-VERIFIED by the main session across ALL classes
+    (full generate_rules.py run; git status rules/ clean — stronger
+    than the brief's class-3-only check). Layer A 780 -> 798 (+18 =
+    test_class3_c1_slotted: 11 pattern/recovery RED detectors + 5
+    fail-closed isfac GREEN pins + 2 answer-level on the q=1
+    bare-binomial rep (1+x^2)*(1+log(x)), non-noun + ratsimp
+    zero-chain; the four-disjunct non-noun discriminant incl.
+    string(op) = "unintegrable" per the B1 follow-up). RED-verified
+    per report (11 detectors RED on rule-file revert, isfac + answer
+    pins hold). Results: 798 passed, 0 failed — MAIN-SESSION RE-RUN
+    (flagged command, exit 0). Core fingerprint moved
+    1ffbdc10 -> 6d86a287616b3a75b7d0974731400884 (state "on" vs the
+    committed tree; the stamp's git_rev 52ffb6f is the pre-commit
+    build, normal — the driver re-derives the fingerprint from the
+    rule files). 3.1.5 residual partition (measured, 15 M1 rows):
+    11 FIRE (r47; incl. 4 C1c sqrt rows e115/e119/e120/e121) + 4 C1a
+    (e92/e118/e141/e147 — all q=−1: r47's faithful NeQ[q,−1] cond
+    rejects, the intended C-shape cover r46 0-binds the BARE log
+    factor — the slotted-optional-power class; e118 is C1c-fixed on
+    the sqrt log-arg yet still C1a-gated, correcting the pre-C1c
+    expectation) + 0 C1b (the (g*x)^q numeric-head M6 defect never
+    fires in 3.1.5 — every M1 head is a unit head). REVIEW
+    ADJUDICATIONS: (1) the brief/record cover list's "3.1.4.m
+    r19/L25" is a MIS-CITE — .m L25 (r19) is (d+e*x)^q*(a+b log)^p/x
+    with a LITERAL-x binomial (no slotted inner exponent — no M1
+    defect possible) and is the M2 bare-binomial cover (28 entries,
+    verdict D, faithful 0-bind in both systems — the record's own
+    section 3.7 D-row cites it as such; g1's per-entry attribution
+    assigns no M1 row to it); the implementation is correct NOT to
+    touch r19 — the record section 3.3 line C1 needs the citation
+    corrected at Task 5 (true M1 covers: 3.1.4 r2/L5, r3/L6, r23/L29,
+    r24/L30; 3.1.3 r3/L6; 3.1.5 L50/L51). (2) the re-transcription is
+    a SUPERSET of the nominal covers: 9 sibling rules (3_1_4 r4;
+    3_1_3 r1/r2/r18; 3_1_5 r5/r21/r22) carry the identical M1 defect
+    (verified against the .m: slotted inner exponent + closed shape,
+    no campaign entry riding on any of them) — accepted under the
+    hook's fullmatch scope authority (adjudicated round 1). (3) NEW
+    RESIDUAL (review finding, no in-cycle fix): 3_1_5 r4 (3.1.5.m
+    L7) is the A1 shape with the `a_` (no optional dot) log-factor
+    variant — the hook's shape regex requires `a_.`, so it keeps its
+    1:1 slotted LHS (same 0-bind class, shape-identical to the
+    measured M1 defect); it is fully SHADOWED: its .m cond and
+    pattern are identical to 3.1.4.m L6 (r3), which WAS
+    re-transcribed and precedes 3_1_5 in the table, and the 1:1
+    pattern 0-binds every A1 stored form, so r4 can never be
+    decisive; no corpus entry rides on it — recorded for a future
+    brief (or C5) if the `a_` variant appears elsewhere.
+  - GATE CHANGE (C1, main session): the Layer A suite gate is now
+    FLAG-MANDATORY — `maxima --very-quiet -X "--tls-limit 100000" -b
+    test_maxima_rubi.mac`. The C1 tests load 3_1_3/3_1_4/3_1_5 via
+    %mr_load_sibling (2733 matchdeclare slots across the 10 suite
+    files; 3_1_4=258, 3_1_5=506 the biggest), pushing the cumulative
+    slot cost over the installed core's ~4098 special-var cap: the
+    flagless run now dies with the uncatchable TLS HALT while loading
+    3_1_5 (main session measured BOTH directions: flagless -> HALT,
+    flagged -> 798/0). Per the AGENTS.md TLS section (user decision
+    2026-08-22) the flag is the rule-consistent fix; AGENTS.md's
+    Layer A line updated (separate docs commit) and every future
+    brief's gate command carries the flag.
