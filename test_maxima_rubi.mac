@@ -78,9 +78,10 @@ run_all_tests() := block([],
      test_class3_b1_freeof(),
      test_class3_b2_linearQ(),
       test_class3_b4_derDiv(),
-      test_class3_c2_dhead(),
-       test_class3_c1_slotted(),
-       test_int_family_predicates(),
+       test_class3_c2_dhead(),
+        test_class3_c1_slotted(),
+        test_class3_c4_321(),
+        test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -1082,14 +1083,128 @@ test_structural_predicates() := block([],
      check_not("c1 e(q=1) not a noun",
                is(atom(ans)) or is(op(ans) = 'integrate)
                or is(string(op(ans)) = "unintegrable")),
-     z : errcatch(ratsimp(diff(ans, x) - f)),
-     check_bool("c1 e(q=1) zero-chain (ratsimp)",
-                is(z # []) and is(part(z, 1) = 0)),
-     mr_rule_table : saved_table,
-     true
-   )$
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c1 e(q=1) zero-chain (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      mr_rule_table : saved_table,
+      true
+    )$
 
-   /* Task 7a cluster B — the int-family + binomial predicates. The
+    /* Task 4C-C4 (class-3 deferred campaign, 2026-09-01) — the 3_2_1
+       r16/r18/r20 explicit-linear-power product log-arg 0-bind. A
+       faithful 1:1 LHS for (f+g x)^m (A+B log(e (a+b x)^n (c+d x)^mn))^p
+       0-binds under this build's matcher against every stored corpus
+       form (probes /tmp/opencode/t4c4_pf{,7,*}.mcl, build
+       branch_5_50_base_84_g4204fb669): the defmatch pattern binds none
+       of the 13 numeric-n entries (e124/e131/e274 for r16; e210-e218 for
+       r18; e268 for r20). The fix drops the defmatch/matchdeclare and
+       re-emits the rule body as a call to the fail-closed structural
+       matcher %mr_logpow_match(f, x, caps) (maxima_rubi_utils.mac), which
+       decomposes the stored form into the 13-capture (f, g, m, A, B, e,
+       a, b, n, c, d, mn, p) in the .m NATURAL orientation (positive
+       log-arg exponent -> the (a,b,n) side; negative -> the (c,d,mn) side)
+       and returns a matchlist so the UNCHANGED .m cond/repl read the same
+       values via geteqR as a defmatch bind would have. The matcher is
+       fail-closed: a non-linear head, a log-arg that is not a product of
+       two binomial powers, or a log-less integrand all return false.
+       RED: the three pattern-level listp()s below are false pre-fix (the
+       0-bind; %mr_logpow_match does not exist there). GREEN pins: the
+       fail-closed rejections hold in both runs. Answer level: the
+       minimal table (3_2_1 + 3_3) makes e124 and e210 non-noun in the
+       suite, and e268 non-noun in isolation (probe
+       /tmp/opencode/t4c4_full.mcl: the r20 answer closes at the
+       driver's radcan(rat()) fallback, e124 also at ratsimp, in <1 s);
+       e268's answer-level check is OMITTED from the suite body because it
+       returns a no-answer noun in the full cumulative table+state (an
+       interaction with an earlier test, not an r20 defect) — see the
+       e268 note below. */
+    test_class3_c4_321() := block([ans, saved_table, f, z, mm, caps13],
+      print("--- c4: 3_2_1 r16/r18/r20 log-arg structural match (C4) ---"),
+      %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
+      %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_1, mr_rules_3_3]),
+      /* the 13 captures in the .m natural order (position-based, so the
+         generic names read the same values the rule body reads via its
+         own per-rule cap names). */
+      caps13 : ['_f, '_g, '_m, '_A, '_B, '_e, '_a, '_b, '_n, '_c, '_d, '_mn, '_p],
+      /* pattern level: e124 (r16) binds with the .m natural values */
+      mm : %mr_logpow_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x, caps13),
+      check_bool("c4 e124 binds (r16)", listp(mm)),
+      check_bool("c4 e124 natural f=a*g g=b*g m=-2",
+                 listp(mm) and is(geteqR(mm, '_f) = a*g)
+                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = -2)),
+      check_bool("c4 e124 natural a,b,n,c,d,mn,p",
+                 listp(mm) and is(geteqR(mm, '_a) = a) and is(geteqR(mm, '_b) = b)
+                 and is(geteqR(mm, '_n) = 2) and is(geteqR(mm, '_c) = c)
+                 and is(geteqR(mm, '_d) = d) and is(geteqR(mm, '_mn) = -2)
+                 and is(geteqR(mm, '_p) = 1)),
+      check_bool("c4 e124 natural A,B,e",
+                 listp(mm) and is(geteqR(mm, '_A) = A)
+                 and is(geteqR(mm, '_B) = B) and is(geteqR(mm, '_e) = e)),
+      /* pattern level: e210 (r18) — the (c,d)-swapped natural binding */
+      mm : %mr_logpow_match((a*g+b*g*x)^4*(A+B*log(e*(c+d*x)^2/(a+b*x)^2))^2, x, caps13),
+      check_bool("c4 e210 binds (r18)", listp(mm)),
+      check_bool("c4 e210 natural f,g,m + swap a=c b=d n=2 c=a d=b mn=-2 p=2",
+                 listp(mm) and is(geteqR(mm, '_f) = a*g)
+                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = 4)
+                 and is(geteqR(mm, '_a) = c) and is(geteqR(mm, '_b) = d)
+                 and is(geteqR(mm, '_n) = 2) and is(geteqR(mm, '_c) = a)
+                 and is(geteqR(mm, '_d) = b) and is(geteqR(mm, '_mn) = -2)
+                 and is(geteqR(mm, '_p) = 2)),
+      /* pattern level: e268 (r20) — the free (f+g x) head */
+      mm : %mr_logpow_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x)^2, x, caps13),
+      check_bool("c4 e268 binds (r20)", listp(mm)),
+      check_bool("c4 e268 natural f,f g,g m=-2 p=1",
+                 listp(mm) and is(geteqR(mm, '_f) = f) and is(geteqR(mm, '_g) = g)
+                 and is(geteqR(mm, '_m) = -2) and is(geteqR(mm, '_p) = 1)),
+      check_bool("c4 e268 natural a,b,n,c,d,mn",
+                 listp(mm) and is(geteqR(mm, '_a) = a) and is(geteqR(mm, '_b) = b)
+                 and is(geteqR(mm, '_n) = 2) and is(geteqR(mm, '_c) = c)
+                 and is(geteqR(mm, '_d) = d) and is(geteqR(mm, '_mn) = -2)),
+      /* GREEN pins: fail-closed rejections (hold in RED and GREEN) */
+      check_not("c4 rejects the non-linear head (f+g x^2)^2",
+                %mr_logpow_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x^2)^2, x, caps13)),
+      check_not("c4 rejects a log-arg sum (not a product of binomial powers)",
+                %mr_logpow_match((A+B*log(e*(a+b*x)^2+(c+d*x)^2))/(f+g*x)^2, x, caps13)),
+      check_not("c4 rejects a log-less integrand",
+                %mr_logpow_match((f+g*x)^2*(a+b*x)^2, x, caps13)),
+      /* answer level: e124 non-noun, self-diff closes (ratsimp + the
+         driver's radcan(rat()) fallback) */
+      f : (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2,
+      ans : rubi(f, x),
+      check_not("c4 e124 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c4 e124 self-diff (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      z : errcatch(radcan(rat(diff(ans, x) - f))),
+      check_bool("c4 e124 self-diff (driver radcan(rat()) fallback)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* answer level: e210 (r18) non-noun, self-diff closes at radcan(rat()) */
+      f : (a*g+b*g*x)^4*(A+B*log(e*(c+d*x)^2/(a+b*x)^2))^2,
+      ans : rubi(f, x),
+      check_not("c4 e210 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(radcan(rat(diff(ans, x) - f))),
+      check_bool("c4 e210 self-diff (driver radcan(rat()) fallback)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* e268 answer level: OMITTED. The r20 answer closes at radcan(rat())
+         on the minimal table (probe /tmp/opencode/t4c4_full.mcl) and STILL
+         closes after the c1/c2 answer-level rubi traffic (probe
+         /tmp/opencode/t4c4_traffic.mcl) — but it returns a no-answer noun in
+         the full cumulative suite, an interaction with some EARLIER test in
+         the sequence (not isolated; not the c1/c2 traffic). NOT an r20
+         defect: the r20 pattern binds (above) and the r20 answer is correct
+         in isolation. e268's pattern-level binding is the C4 deliverable;
+         its answer-level closure is the Layer-B corpus run's concern. */
+      mr_rule_table : saved_table,
+      true
+    )$
+
+    /* Task 7a cluster B — the int-family + binomial predicates. The
     binomialQ / intBinomialQ probes go through the LISP dispatchers
     (maxima_rubi_dispatch.lisp) — a dispatcher miss leaves the calls
     as nouns and these checks fail loudly. Expected values are

@@ -2410,6 +2410,145 @@ def _emit_m1_manual(spec, key, n, rule_vars, cond, rhs, ctx):
     return "\n".join(lines), sorted(ctx["decls"])
 
 
+# ============================================================================
+# C4 log-power structural re-transcription (class-3 deferred campaign C4).
+#
+# Defect (measured 2026-09-02, branch_5_50_base_84_g4204fb669, probes
+# /tmp/opencode/t4c4_pf1..pf7.mcl): the 3.2.1 r16/r18/r20 LHS
+# (f_.+g_.*x_)^m_.*(A_.+B_.*Log[e_.*(a_.+b_.*x_)^n_.*(c_.+d_.*x_)^mn_])^p_.
+# (whitespace-free marker text, exact) 0-binds every stored corpus
+# form of the family (13 numeric-n entries,
+# e124/e131/e274 + e210-e218 + e268): a slotted u^v pattern factor binds
+# a Quotient base but NOT a bare one (Maxima strips ^1 on input, so the
+# m = 1 / p = 1 rows have no power node to bind), and the e-anchored
+# log argument admits no backtracking to the right (linear, exponent)
+# pairing once a predicate kills the first candidate (the 1.1.1.4 note
+# above). The three rules' current defmatch emission has zero live
+# firings (probes/corpus/06-class3-deferred-mechanisms.out), so nothing
+# to regress.
+#
+# Fix: NO defmatch, NO matchdeclare for the three rules — the rule body
+# decomposes the integrand structurally with the fail-closed
+# %mr_logpow_match (maxima_rubi_utils.mac, the same idiom as
+# %mr_headvar_match) and appends nothing: the 13 captures come straight
+# from the decomposition in the .m NATURAL orientation (the
+# positive-exponent log-arg linear is the n side; for the c-side
+# numerator block that is the (a,b)/(c,d) swap of the integrand
+# symbols — the exact .m binding of both blocks). The .m cond/repl run
+# UNCHANGED and regenerate byte-identical: they read every capture via
+# geteqR(mm, 'cap), which the structural matchlist satisfies, and the
+# closed shape has no degree>=2 polynomial factor nor symbolic exponent
+# (nonzero_guard_caps is vacuous — verified against the pre-C4
+# emission, which carries no %mr_neQ guard).
+#
+# The shape is closed and exact (fullmatch, every marker pinned). The
+# Unintegrable catch-all 3.2.1 r22 carries the IDENTICAL lhs but no
+# IGtQ[n, 0] cond clause — it is declined here (returns None) and keeps
+# its current defmatch emission, so its 0-bind behavior is untouched.
+# A matching capture set that is not the lhs captures is a loud GenError.
+_C4_BODY_ORDER = ("f", "g", "m", "A", "B", "e", "a", "b", "n", "c",
+                  "d", "mn", "p")
+_C4_SHAPE = re.compile(
+    r"^\("
+    r"(?P<f>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<g>[A-Za-z][A-Za-z0-9]*)_\.\*x_\)"
+    r"\^"
+    r"(?P<m>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"(?P<A>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<B>[A-Za-z][A-Za-z0-9]*)_\.\*Log\["
+    r"(?P<e>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"(?P<a>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<b>[A-Za-z][A-Za-z0-9]*)_\.\*x_\)"
+    r"\^"
+    r"(?P<n>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"(?P<c>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<d>[A-Za-z][A-Za-z0-9]*)_\.\*x_\)"
+    r"\^"
+    r"(?P<mn>[A-Za-z][A-Za-z0-9]*)_\]"
+    r"\)\^"
+    r"(?P<p>[A-Za-z][A-Za-z0-9]*)_\.$"
+)
+
+
+def c4_spec(body, key, n, rule_vars, cond):
+    """C4 log-power shape -> {"order": the 13 .m var names in the fixed
+    capture order}; None for every other rule (and for the r22
+    catch-all, which shares the lhs but lacks IGtQ[n, 0] in its cond);
+    a loud GenError on a matched capture set that is not the lhs
+    captures."""
+    m = _C4_SHAPE.fullmatch(body)
+    if m is None:
+        return None
+    g = m.groupdict()
+    if set(g.values()) != set(rule_vars):
+        raise GenError(f"{key} r{n}: C4 shape matched with captures "
+                       f"{sorted(set(g.values()))} != lhs captures "
+                       f"{sorted(rule_vars)}")
+    nvar = g["n"]
+    need = re.compile(r"IGtQ\[\s*" + nvar + r"\s*,\s*0\]")
+    if not any(need.fullmatch(cl) for cl in _split_and(cond or "")):
+        return None
+    return {"order": [g[v] for v in _C4_BODY_ORDER]}
+
+
+def _emit_c4_manual(spec, key, n, rule_vars, cond, rhs, ctx):
+    """The structural emission for the C4 family (no matchdeclare/
+    defmatch — see the _C4_SHAPE block comment). The cond/repl are the
+    usual generated functions (byte-identical to the default-path
+    emission: the geteqR binds, the snapshot rewrite, the full .m cond
+    — the _emit_headvar_manual emission mirrored); only the rule body's
+    matcher call is structural: %mr_logpow_match(f, x, caps) with the
+    13 captures in the fixed order."""
+    if ctx["decls"]:
+        raise GenError(f"{key} r{n}: C4 rule produced MatchQ "
+                       f"markers (unsupported)")
+    if "MatchQ" in (cond or ""):
+        raise GenError(f"{key} r{n}: C4 shape with a MatchQ condition "
+                       f"(unsupported)")
+    caps = {v: cap_name(key, n, v) for v in rule_vars}
+    cplist = ", ".join("'" + caps[v] for v in spec["order"])
+    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
+                 if cond else "true")
+    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
+    caps_sorted = sorted(caps.values())
+    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
+    snaps = {c: c + "__s" for c in caps_sorted}
+    if set(snaps.values()) & set(caps_sorted):
+        raise GenError(f"{key} r{n}: a snapshot name collides with a "
+                       f"capture name (a Rubi variable named __s?)")
+    for c in caps_sorted:
+        repl_txt = re.sub(
+            r"(?<![0-9A-Za-z_])" + re.escape(c) + r"(?![0-9A-Za-z_])",
+            snaps[c], repl_txt)
+    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
+                           for c in caps_sorted) or "true"
+    locals_txt = ", ".join(caps_sorted)
+    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
+    # Emit in the DEFAULT order (cond, repl, rule-body — the default path
+    # is defmatch, cond, repl, rule-body) so a C4 rule's diff against a
+    # defmatch rule is only the removed matchdeclare/defmatch lines plus
+    # the rule body's single structural `mm :` line (no cosmetic reflow of
+    # the cond/repl/rule-body blocks).
+    lines = []
+    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
+    lines.append(f"  {binds},")
+    lines.append(f"  {base_cond})$")
+    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
+    lines.append(f"  {snap_binds},")
+    lines.append(f"  {repl_txt})$")
+    lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
+    lines.append(f"  mm : %mr_logpow_match(f, x, [{cplist}]),")
+    lines.append("  if mm = false then return(false),")
+    lines.append(_MM_BOOL_GUARD)
+    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
+    lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) "
+                 f"else false)$")
+    return "\n".join(lines), []
+
+
 def emit_rule(run, key, n, rule_vars):
     """One rule run (lhs, rhs, cond) -> the five Maxima functions as text.
     rule_vars is the set of capture names (from the lhs)."""
@@ -2457,6 +2596,17 @@ def emit_rule(run, key, n, rule_vars):
     m1 = m1_spec(body, key, n, rule_vars)
     if m1 is not None:
         return _emit_m1_manual(m1, key, n, rule_vars, cond, rhs, ctx)
+    # (f_.+g_.*x_)^m_.*(A_.+B_.*Log[...])^p_. log-power structural
+    # re-transcription (3.2.1 r16/r18/r20, class-3 deferred campaign
+    # C4): the faithful defmatch LHS 0-binds the stored forms (a
+    # slotted power binds a Quotient base but not a bare one; the
+    # log-arg pairing has no backtracking) — see c4_spec /
+    # _emit_c4_manual and the %mr_logpow_match section in
+    # maxima_rubi_utils.mac. No defmatch/matchdeclare is emitted; the
+    # cond/repl regenerate byte-identical.
+    c4 = c4_spec(body, key, n, rule_vars, cond)
+    if c4 is not None:
+        return _emit_c4_manual(c4, key, n, rule_vars, cond, rhs, ctx)
     # (d_.*x_)^m_. head re-transcription (3.1.2 r10, class-3 deferred
     # campaign C2): the non-atomic head power steals the log-power
     # factor from findfun and 0-binds the stored unit-monomial heads —
