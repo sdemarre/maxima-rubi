@@ -3913,3 +3913,82 @@ test file + core + git index, so the dispatches are sequential).
     2026-08-22) the flag is the rule-consistent fix; AGENTS.md's
     Layer A line updated (separate docs commit) and every future
     brief's gate command carries the flag.
+  - C4: DONE (2026-09-01, commit d2ae62d) — the 3.2.1 r16/r18/r20
+    explicit-linear-power log-arg 0-bind. The faithful 1:1 defmatch
+    LHS (f_.+g_.*x_)^m_.*(A_.+B_.*Log[e_.*(a_.+b_.*x_)^n_.*
+    (c_.+d_.*x_)^mn_])^p_. 0-binds every stored corpus form of the
+    family (13 numeric-n entries: e124/e131/e274 r16, e210-e218 r18,
+    e268 r20): the slotted power factor binds a Quotient base but
+    not a bare one (Maxima strips ^1 on input — the m=1/p=1 rows
+    have no power node to bind) and the e-anchored log-arg pairing
+    has no backtracking (the 1.1.1.4 note). Fix: NO defmatch / NO
+    matchdeclare for the three rules — the rule body calls the new
+    fail-closed structural matcher %mr_logpow_match(f, x, caps)
+    (maxima_rubi_utils.mac, +273: collect / power / logterm / logsum
+    / merge / argw / lin / logarg / match / matchS) which
+    decomposes the stored form into the 13-capture (f, g, m, A, B,
+    e, a, b, n, c, d, mn, p) in the .m NATURAL orientation (positive
+    log-arg exponent -> the (a,b,n) side; negative -> the (c,d,mn)
+    side — for the c-side numerator block that is the (a,b)/(c,d)
+    swap, the exact .m binding of both blocks) and returns a
+    matchlist; the UNCHANGED .m cond/repl read the captures via
+    geteqR exactly as a defmatch bind would have. Generator hook
+    c4_spec / _emit_c4_manual (+150, wired after m1, before
+    dhead10): fullmatch regex with every marker pinned, loud
+    GenError on a matched capture set that is not the lhs captures,
+    r22 (the Unintegrable catch-all sharing the lhs but lacking
+    IGtQ[n, 0] in its cond) declined and keeps its defmatch
+    emission. The pre-C4 freeof(x) matchdeclare guards are
+    subsumed by the matcher's construction (linear readings, the
+    logterm/logsum freeof checks, the argw constant fold) and the
+    .m-derived FreeQ translations remain in the cond text anyway
+    (byte-identical, below); m/mn/p were `true`-guarded. Nonzero-
+    guard vacuity claim VERIFIED: the pre-C4 emission carried no
+    %mr_neQ guard on r16/r18/r20. MAIN-SESSION REVIEW (all
+    re-measured, not taken on report faith): (1) Layer A RE-RUN
+    815/0 (flagged command, exit 0; the suite grew 798 -> 815, +17
+    = test_class3_c4_321: 9 pattern-level natural-binding checks —
+    e124 x4 (f=a*g, g=b*g, m=-2; a,b,n=(a,b,2); c,d,mn=(c,d,-2);
+    p=1; A,B,e), e210 x2 (the (c,d)-swapped binding), e268 x3 (the
+    free (f+g x) head, m=-2, p=1) — + 3 fail-closed rejections
+    (non-linear head (f+g x^2)^2, a log-arg SUM, a log-less
+    integrand) + 5 answer-level (e124 non-noun + self-diff closing
+    at ratsimp AND radcan(rat()); e210 non-noun + self-diff
+    closing at radcan(rat()))). (2) the 25-entry probe matrix (13
+    natural bindings + 7 no-binds + 5 corner binds,
+    /tmp/opencode/t4c4_pf7.mcl) RE-RUN in a fresh process on the C4
+    core: 25 PASS / 0 FAIL, exit 0. (3) cond/repl BYTE-IDENTICAL:
+    all six _mr_cond / _mr_repl functions (r16/r18/r20) diffed
+    pre-C4 vs committed — 6/6 IDENTICAL. (4) the rule-file delta is
+    exactly the documented 45- / 3+: 13 matchdeclare + 1 defmatch
+    removed per rule, the rule body's single `mm : _mr_pat_...`
+    line replaced by `mm : %mr_logpow_match(f, x, [...])` with the
+    13 captures in the fixed order; r17 / r19 / r22 and the rule
+    table untouched. (5) REGENERATION byte-identity re-verified
+    across ALL classes (full generate_rules.py run; git status
+    clean). (6) the subagent's in-commit AGENTS.md edit (count line
+    798 -> 815 + growth history "-> 815 C4") confirmed accurate by
+    the (1) re-run; cosmetic-only re-indent of a few pre-existing
+    c1 test lines, the run_all_tests list and one comment noted —
+    no functional change. e268 DEVIATION ADJUDICATED (accepted):
+    the subagent omitted e268's answer-level SUITE check (it
+    returns a no-answer noun in the full cumulative suite
+    table+state; non-noun on the minimal table 1_1_1_1+3_2_1+3_3
+    and in isolation, closing at radcan(rat()); the interacting
+    earlier test was not isolated, measured not the c1/c2 traffic).
+    MAIN-SESSION PRODUCTION PROBE: a driver run of exactly e268
+    (shard spec "3 267 1", fresh subprocess, the full 3513-rule
+    core, production table order) returns VERIFIED (1.7 s) — the
+    suite noun is a suite-state artifact, not an r20 defect. The
+    C4 deliverable (the pattern-level binding) is suite-pinned and
+    the production closure is measured; the Task-5 corpus A/B
+    re-measures all 13 at scale. r22 NOTE: the Unintegrable
+    catch-all (identical lhs, no IGtQ[n, 0]) keeps its 0-binding
+    defmatch emission — a potential dead 0-binder after C4 (its .m
+    role is the explicit Unintegrable terminal of the 3.2.1
+    section; faithful-port policy), noted, out of scope. Core
+    fingerprint 6d86a287 -> 20e3be6f93b5a8b8488c6eb60384a0ba (3513
+    rules; stamp rev d2ae62d = the commit itself — the subagent
+    rebuilt post-commit, so the stamp reflects the committed tree,
+    dirty 0; the driver re-derives the fingerprint from the rule
+    files either way).
