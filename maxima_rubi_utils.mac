@@ -2154,9 +2154,22 @@ rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
      )
    ))$
 
-/* Rubi :1373  LinearQ[u,x] := PolyQ[u,x,1] (list form dropped — no
-   list-valued integrands in the emitted conds) */
-%mr_linearQ(u, x) := %mr_polyDegQ(u, x, 1)$
+/* Rubi :1373-1376  LinearQ[u,x] — the .m's ListQ arm restored
+   (FIX B2, 2026-09-01, class-3 deferred campaign): a list is linear
+   iff every member is (the .m Catch[Scan[...]] = all-or-none). The
+   old "list form dropped" claim held for class 1/2 only — the
+   class-3 emitted conds DO emit list calls (%mr_linearQ([u, v], x)
+   from .m LinearQ[{u, v}] — 3.2.1 r5/r6/r23/r24, 3.2.2 r13/r14/r15),
+   which the scalar-only port 0-guarded (the list reached
+   %mr_polyDegQ, which fails closed on a non-polynomial). */
+%mr_linearQ(u, x) := block([i, v],
+  if not atom(u) and is(op(u) = "[") then (
+    v : true,
+    for i : 1 thru length(u) do
+      if not %mr_linearQ(part(u, i), x) then v : false,
+    v
+  )
+  else %mr_polyDegQ(u, x, 1))$
 
 /* ---- trinomial/quadratic/binomial-degree predicates (Task 7a
  * cluster D) ----------------------------------------------------------

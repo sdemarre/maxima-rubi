@@ -76,6 +76,7 @@ run_all_tests() := block([],
     test_class2_marker_head(),
      test_class3_headvar(),
      test_class3_b1_freeof(),
+     test_class3_b2_linearQ(),
      test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
@@ -716,6 +717,74 @@ test_structural_predicates() := block([],
        test_class3_cluster_a pins) */
     check_bool("b1 r31 cond still gates inverse-function u",
                is(%mr_inverseFunctionFreeQ(atan(x), x) = false)),
+    true
+  )$
+
+  /* Task 4B-B2 (class-3 deferred campaign, 2026-09-01) — the ported
+     %mr_linearQ had dropped the .m LinearQ's ListQ arm (Rubi
+     IntegrationUtilityFunctions.m :1373-1376): a list argument fell
+     through to %mr_polyDegQ, which fails closed on a non-polynomial,
+     so every emitted list-form cond (%mr_linearQ([u, v], x), from
+     .m LinearQ[{u, v}] — 3_2_1 r5/r6/r23/r24, 3_2_2 r13/r14/r15)
+     0-guarded and the 47 g2 D1 entries deferred. Pinned here: the
+     list arm (all members linear -> true; one non-linear member ->
+     false; the standing scalar pins at lines 178-179/218-220 stay),
+     and the two g2 wave representatives (e156, 3.2.1 file L205;
+     e226, 3.2.2 file L271 — the cover for both sets is 3.2.2.m L19
+     r15) answer and close the zero-chain. The answer-level reps run
+     on the minimal table (default 1.1.1.1 + 3_2_2, production order
+     class 1 before class 3; 3_2_1 probed unnecessary — its rules
+     0-fire/reject on both routes, measured 2026-09-01); the nested
+     sub-integrals are answered by the mr_int fb=true native-
+     integrate fall-through. Measured 2026-09-01 on
+     branch_5_50_base_84_g4204fb669: e156's explicit (dilog-carrying)
+     answer closes the driver's zero-chain (corpus_driver.py
+     zero_chain, returns 1) ONLY under its elliptic-gated
+     radcan(rat()) fallback stage — the numeric stage declines (n
+     stays symbolic) and all eight symbolic stages fail; e226's
+     answer (the r15 Subst rewrite, leaving the native integrate
+     noun for the rewritten nested integrand — the .m's 3.2.2 L8
+     rule, EqQ[m+q+2,0], covers that nested integrand in .m but
+     0-binds here on the matcher's data-dependent factor order, the
+     C-in-Rubi class, out of B2 scope) closes under plain ratsimp. */
+  test_class3_b2_linearQ() := block([ans, z, saved_table, f],
+    print("--- b2: %mr_linearQ list arm restored (.m LinearQ ListQ; 3.2.2 r15 et al.) ---"),
+    check_bool("linearQ list", %mr_linearQ([a + b*x, c + d*x], x)),
+    check_not("linearQ list rejects quadratic member",
+              %mr_linearQ([a + b*x, c*x^2], x)),
+    check_bool("linearQ scalar", %mr_linearQ(a + b*x, x)),
+    check_not("linearQ scalar rejects quadratic",
+              %mr_linearQ(a + b*x^2, x)),
+    %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
+    saved_table : mr_rule_table,
+    mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_2]),
+    /* the package no-answer noun is the listcons 'unintegrable[f, x]
+       (mr_unintegrable, utils :27): measured 2026-09-01, is(op(noun) =
+       'unintegrable) is FALSE on it (the listcons head is not the
+       bare symbol under is(), and diff of the noun hard-errors) —
+       the B1 discriminant idiom does not see it; string(op) does. */
+    f : (a+b*x)^3*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^2,
+    ans : rubi(f, x),
+    check_not("b2 e156 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    /* the driver's full zero-chain returns 1; the closing stage
+       measured is the radcan(rat()) fallback (errcatched, per the
+       driver's semantics: [] on crash, [value] on success) */
+    z : errcatch(radcan(rat(diff(ans, x) - f))),
+    check_bool("b2 e156 zero-chain (driver radcan(rat()) fallback)",
+               is(z # []) and is(part(z, 1) = 0)),
+    f : (a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^p,
+    ans : rubi(f, x),
+    check_not("b2 e226 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    /* errcatched per the driver's crash semantics (a diff crash on
+       the RED-run listcons noun is a failure, not a death) */
+    z : errcatch(ratsimp(diff(ans, x) - f)),
+    check_bool("b2 e226 zero-chain",
+               is(z # []) and is(part(z, 1) = 0)),
+    mr_rule_table : saved_table,
     true
   )$
 
