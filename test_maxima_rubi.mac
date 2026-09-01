@@ -77,8 +77,9 @@ run_all_tests() := block([],
      test_class3_headvar(),
      test_class3_b1_freeof(),
      test_class3_b2_linearQ(),
-     test_class3_b4_derDiv(),
-     test_int_family_predicates(),
+      test_class3_b4_derDiv(),
+      test_class3_c2_dhead(),
+      test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -879,6 +880,116 @@ test_structural_predicates() := block([],
        is()-equality is against the stored form) */
     check_bool("b4 e392 answer is the r1 repl form",
                is(ans = (1/n)*polylog(2, 1 - (a+x^n)/x^n))),
+    mr_rule_table : saved_table,
+    true
+  )$
+
+  /* Task 4B-C2 (class-3 deferred campaign, 2026-09-01) — the 3.1.2
+     m10 (d*x)^m head 0-bind (M6). The (d*x)^m power has a NON-ATOMIC
+     head: in a Times integrand findfun's first-match-wins scan hands
+     it the (a+b log(c x^n))^p factor (Power[Plus, p]) and there is no
+     backtracking, so the old pattern 0-bound every stored corpus form
+     of a unit monomial head over the log power — e65/e66/e67 (x^3, x^2,
+     x over a+b log(c x^n); 3.1.2 suite L82-84) returned the no-answer
+     noun while the .m integrates all three. The fix re-transcribes the
+     head to d*x^m (atomic-base power) and matchdeclare's d with
+     is(u = 1) — .m parity, not .m excess: the repl is not (d,m)-
+     invariant (a d=8 bind would integrate the wrong integrand) and
+     the free-d / (2*x)^k3 rows 0-bind in production today anyway
+     (probed; parity pins below). Measured 2026-09-01 on
+     branch_5_50_base_84_g4204fb669 (probes /tmp/opencode/t4c2_*): the
+     stored forms bind d=1, m=3/2/1, p=-1; the minimal table
+     (default 1.1.1.1 + 2_1 + 3_1_2, production order class 1 before
+     class 2 before class 3) answers all three non-noun. The two-step
+     premise: the Subst re-dispatch's inner integral
+     E^((m+1)/n x)(a+b x)^p is closed by the native integrate
+     fallback (fb=true) in the E1/expintegral_e form — the ported
+     2_1 r3 (2.1.m L7 Ei rule) 0-binds the Subst integrand (zero
+     fire= lines in the class-2 production run), so the rescue is the
+     native fall-through, not the ported rule (flagged in
+     t4c2-report). Zero-chains (driver stage order, corpus_driver.py
+     zero_chain): the self-diff closes ONLY at the radcan(rat())
+     fallback (all eight ratsimp/factor stages fail) and the
+     expected-diff closes at the factor stage — the expected uses the
+     driver's HEAD_REWRITES form (corpus_driver.py:74: the suite's Ei
+     is an unbound noun in this build; expintegral_ei differentiates). */
+  test_class3_c2_dhead() := block([ans, saved_table, f, z, mm],
+    print("--- c2: 3_1_2 r10 (d*x)^m head re-transcription (e65/e66/e67) ---"),
+    %mr_load_sibling("rules/class2/2_1.mac", 'mr_witness_2_1),
+    %mr_load_sibling("rules/class3/3_1_2.mac", 'mr_witness_3_1_2),
+    saved_table : mr_rule_table,
+    mr_rule_table : flatten([mr_rule_table, mr_rules_2_1, mr_rules_3_1_2]),
+    /* pattern level: the stored corpus forms bind with exactly the .m
+       values (RED: every one of these listp()s is false pre-fix — the
+       M6 0-bind) */
+    mm : _mr_pat_3_1_2_r10(x^3/(a + b*log(c*x^n)), x),
+    check_bool("c2 r10 binds the e65 stored quotient", listp(mm)),
+    check_bool("c2 r10 e65 binds d=1, m=3, p=-1",
+               listp(mm) and is(geteqR(mm, '_mr_3_1_2_r10_d) = 1)
+               and is(geteqR(mm, '_mr_3_1_2_r10_m) = 3)
+               and is(geteqR(mm, '_mr_3_1_2_r10_p) = -1)),
+    mm : _mr_pat_3_1_2_r10(x^2/(a + b*log(c*x^n)), x),
+    check_bool("c2 r10 e66 binds d=1, m=2, p=-1",
+               listp(mm) and is(geteqR(mm, '_mr_3_1_2_r10_d) = 1)
+               and is(geteqR(mm, '_mr_3_1_2_r10_m) = 2)
+               and is(geteqR(mm, '_mr_3_1_2_r10_p) = -1)),
+    mm : _mr_pat_3_1_2_r10(x/(a + b*log(c*x^n)), x),
+    check_bool("c2 r10 e67 binds d=1, m=1, p=-1",
+               listp(mm) and is(geteqR(mm, '_mr_3_1_2_r10_d) = 1)
+               and is(geteqR(mm, '_mr_3_1_2_r10_m) = 1)
+               and is(geteqR(mm, '_mr_3_1_2_r10_p) = -1)),
+    /* .m-parity rejections (GREEN in a RED run — regression pins, not
+       RED detectors): the d-gate keeps the port from binding stored
+       numeric-coefficient monomials, and the power-head rows
+       (free-d / (2*x)^k3) 0-bind exactly as today's production does */
+    check_not("c2 r10 rejects the 8*x^3 stored quotient",
+              _mr_pat_3_1_2_r10(8*x^3/(a + b*log(c*x^n)), x)),
+    check_not("c2 r10 rejects the 8*x^3 Times form",
+              _mr_pat_3_1_2_r10(8*x^3*(a + b*log(c*x^n))^2, x)),
+    check_not("c2 r10 rejects the free-d head",
+              _mr_pat_3_1_2_r10((dd*x)^mm2*(a + b*log(c*x^n))^2, x)),
+    check_not("c2 r10 rejects the (2*x)^k3 head",
+              _mr_pat_3_1_2_r10((2*x)^k3*(a + b*log(c*x^n))^2, x)),
+    /* answer level: e65 (m=3) on the minimal table */
+    f : x^3/(a + b*log(c*x^n)),
+    ans : rubi(f, x),
+    check_not("c2 e65 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    /* the self-diff closes only at the driver's radcan(rat()) fallback
+       (all eight ratsimp/factor stages measured false) */
+    z : errcatch(radcan(rat(diff(ans, x) - f))),
+    check_bool("c2 e65 self-diff (driver radcan(rat()) fallback)",
+               is(z # []) and is(part(z, 1) = 0)),
+    /* the expected-diff closes at the factor stage (driver form:
+       expintegral_ei, not the suite's unbound Ei noun) */
+    z : errcatch(factor(diff(ans - x^4*expintegral_ei(4*(a+b*log(c*x^n))/(b*n))/(%e^(4*a/(b*n))*b*n*(c*x^n)^(4/n)), x))),
+    check_bool("c2 e65 expected-diff (factor)",
+               is(z # []) and is(part(z, 1) = 0)),
+    /* answer level: e66 (m=2) */
+    f : x^2/(a + b*log(c*x^n)),
+    ans : rubi(f, x),
+    check_not("c2 e66 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    z : errcatch(radcan(rat(diff(ans, x) - f))),
+    check_bool("c2 e66 self-diff (driver radcan(rat()) fallback)",
+               is(z # []) and is(part(z, 1) = 0)),
+    z : errcatch(factor(diff(ans - x^3*expintegral_ei(3*(a+b*log(c*x^n))/(b*n))/(%e^(3*a/(b*n))*b*n*(c*x^n)^(3/n)), x))),
+    check_bool("c2 e66 expected-diff (factor)",
+               is(z # []) and is(part(z, 1) = 0)),
+    /* answer level: e67 (m=1 — the bare x factor binds m=1) */
+    f : x/(a + b*log(c*x^n)),
+    ans : rubi(f, x),
+    check_not("c2 e67 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    z : errcatch(radcan(rat(diff(ans, x) - f))),
+    check_bool("c2 e67 self-diff (driver radcan(rat()) fallback)",
+               is(z # []) and is(part(z, 1) = 0)),
+    z : errcatch(factor(diff(ans - x^2*expintegral_ei(2*(a+b*log(c*x^n))/(b*n))/(%e^(2*a/(b*n))*b*n*(c*x^n)^(2/n)), x))),
+    check_bool("c2 e67 expected-diff (factor)",
+               is(z # []) and is(part(z, 1) = 0)),
     mr_rule_table : saved_table,
     true
   )$

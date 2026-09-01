@@ -181,11 +181,11 @@ _mr_rule_3_1_2_r9(f, x) := block([mm, ok],
 matchdeclare(_mr_3_1_2_r10_a, freeof(x))$
 matchdeclare(_mr_3_1_2_r10_b, freeof(x))$
 matchdeclare(_mr_3_1_2_r10_c, freeof(x))$
-matchdeclare(_mr_3_1_2_r10_d, freeof(x))$
+matchdeclare(_mr_3_1_2_r10_d, lambda([u], is(u = 1)))$
 matchdeclare(_mr_3_1_2_r10_m, freeof(x))$
 matchdeclare(_mr_3_1_2_r10_n, freeof(x))$
 matchdeclare(_mr_3_1_2_r10_p, freeof(x))$
-defmatch(_mr_pat_3_1_2_r10, (_mr_3_1_2_r10_d*x)^_mr_3_1_2_r10_m*(_mr_3_1_2_r10_a + _mr_3_1_2_r10_b*log(_mr_3_1_2_r10_c*x^_mr_3_1_2_r10_n))^_mr_3_1_2_r10_p, x)$
+defmatch(_mr_pat_3_1_2_r10, _mr_3_1_2_r10_d*x^_mr_3_1_2_r10_m*(_mr_3_1_2_r10_a + _mr_3_1_2_r10_b*log(_mr_3_1_2_r10_c*x^_mr_3_1_2_r10_n))^_mr_3_1_2_r10_p, x)$
 _mr_cond_3_1_2_r10(mm, x) := block([_mr_3_1_2_r10_a, _mr_3_1_2_r10_b, _mr_3_1_2_r10_c, _mr_3_1_2_r10_d, _mr_3_1_2_r10_m, _mr_3_1_2_r10_n, _mr_3_1_2_r10_p],
   _mr_3_1_2_r10_a : geteqR(mm, '_mr_3_1_2_r10_a), _mr_3_1_2_r10_b : geteqR(mm, '_mr_3_1_2_r10_b), _mr_3_1_2_r10_c : geteqR(mm, '_mr_3_1_2_r10_c), _mr_3_1_2_r10_d : geteqR(mm, '_mr_3_1_2_r10_d), _mr_3_1_2_r10_m : geteqR(mm, '_mr_3_1_2_r10_m), _mr_3_1_2_r10_n : geteqR(mm, '_mr_3_1_2_r10_n), _mr_3_1_2_r10_p : geteqR(mm, '_mr_3_1_2_r10_p),
   freeof(x, _mr_3_1_2_r10_a) and freeof(x, _mr_3_1_2_r10_b) and freeof(x, _mr_3_1_2_r10_c) and freeof(x, _mr_3_1_2_r10_d) and freeof(x, _mr_3_1_2_r10_m) and freeof(x, _mr_3_1_2_r10_n) and freeof(x, _mr_3_1_2_r10_p))$

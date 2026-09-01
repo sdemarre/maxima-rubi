@@ -2125,6 +2125,76 @@ def _slot_rule_lines(key, n, rule_vars):
         f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$",
     ]
 
+# The exact 3.1.2 r10 (m10) integrand shape: (d_.*x_)^m_.
+# (a_.+b_.*Log[c_.*x_^n_.])^p_ with every marker pinned (d/m/a/b/c/n
+# optional, x/p required).
+_DHEAD10_SHAPE = re.compile(
+    r"^\("
+    r"([A-Za-z][A-Za-z0-9]*)_\.\*x_\)"
+    r"\^([A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"([A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"([A-Za-z][A-Za-z0-9]*)_\.\*Log\["
+    r"([A-Za-z][A-Za-z0-9]*)_\.\*x_\^"
+    r"([A-Za-z][A-Za-z0-9]*)_\.\]"
+    r"\)\^"
+    r"([A-Za-z][A-Za-z0-9]*)_$")
+
+
+def dhead10_spec(body, key, n, rule_vars, cond):
+    """(d_.*x_)^m_.* head re-transcription (3.1.2 r10, class-3 deferred
+    campaign C2); None for every other rule.
+
+    The (d*x)^m power has a NON-ATOMIC head: in a Times integrand
+    findfun's first-match-wins scan hands it the (a+b log(c x^n))^p
+    factor (Power[Plus, p]) and there is no backtracking, so the full
+    pattern 0-binds every stored corpus form of a unit monomial head
+    over the log power (e65/e66/e67: x^3, x^2, x — the .m integrates
+    all three; measured 2026-09-01 on
+    branch_5_50_base_84_g4204fb669, probe
+    /tmp/opencode/t4c2_step1_boundary.mac). Re-transcribing the head to
+    d_.*x_^m_.* makes it an atomic-base power and the pattern binds the
+    stored forms with exactly the .m values (d=1, m=3/2/1, p=-1).
+
+    .m parity, not .m excess: the r10 repl is NOT (d,m)-invariant, so a
+    numeric-coefficient bind (8*x^3 -> d=8) would integrate the wrong
+    integrand, and free-d rows ((dd*x)^mm*(...)) 0-bind in production
+    today anyway (probed) — d is matchdeclare'd is(u = 1). That is the
+    only match-time lambda in the class-3 table, and it tests one
+    symbol of the head factor, not the whole-factor %mr_neQ the e8
+    timing (2026-08-24) rejected.
+
+    The shape is closed and exact: a fullmatch whose capture set is not
+    exactly this rule's lhs captures is a loud GenError. r6 (L9) shares
+    the IDENTICAL lhs with r10 (L13) — the pair is distinguished by the
+    cond (r6 carries NeQ[m, -1] && LtQ[p, -1]), so only the FreeQ-only
+    member is re-transcribed; any other clause keeps the rule on the
+    current emission. The remaining same-head variants (r3/r4 bare
+    log, r5 ^p_. optional-p, r8 /Log, r11 x_^q_ head, r12 double head)
+    fail the fullmatch and take the default path — today's behavior.
+    Returns {"old_head", "d"}: emit_rule performs the raw-text rewrite
+    (the head minus its two parens, whitespace-tolerant) so the
+    source's original spacing survives the translation."""
+    m = _DHEAD10_SHAPE.fullmatch(body)
+    if m is None:
+        return None
+    d, mvar, a, b, c, nvar, p = m.groups()
+    used = {d, mvar, a, b, c, nvar, p}
+    if used != set(rule_vars):
+        raise GenError(f"{key} r{n}: (d*x)^m head shape matched with "
+                       f"captures {sorted(used)} != lhs captures "
+                       f"{sorted(rule_vars)}")
+    fvars = set()
+    for clause in _split_and(cond or ""):
+        mfq = re.fullmatch(r"FreeQ\[\{([^}]*)\},\s*x\]", clause)
+        if mfq is None:
+            return None
+        fvars |= {t.strip() for t in mfq.group(1).split(",")}
+    if fvars != used:
+        return None
+    return {"old_head": f"({d}_.*x_)^{mvar}_.*", "d": d}
+
+
 def emit_rule(run, key, n, rule_vars):
     """One rule run (lhs, rhs, cond) -> the five Maxima functions as text.
     rule_vars is the set of capture names (from the lhs)."""
@@ -2163,7 +2233,26 @@ def emit_rule(run, key, n, rule_vars):
     if spec is not None:
         return _emit_binpow_manual(spec, key, n, rule_vars, cond, rhs,
                                    ctx)
-    pat_text = translate(m.group(1), ctx)
+    # (d_.*x_)^m_. head re-transcription (3.1.2 r10, class-3 deferred
+    # campaign C2): the non-atomic head power steals the log-power
+    # factor from findfun and 0-binds the stored unit-monomial heads —
+    # translate d_.*x_^m_.* instead and gate the d capture with
+    # is(u = 1) in its matchdeclare (see dhead10_spec). The raw rewrite
+    # is the head span minus its two parens; the loose match tolerates
+    # inter-token whitespace so the source spacing survives.
+    dh = dhead10_spec(body, key, n, rule_vars, cond)
+    if dh is not None:
+        loose = re.compile(r"\s*".join(re.escape(ch)
+                                       for ch in dh["old_head"]))
+        mh = loose.match(m.group(1))
+        if mh is None:
+            raise GenError(f"{key} r{n}: re-transcribed head "
+                           f"{dh['old_head']!r} not found in the raw "
+                           f"body (whitespace mismatch)")
+        new_head = mh.group(0).replace("(", "", 1).replace(")", "", 1)
+        pat_text = translate(new_head + m.group(1)[mh.end():], ctx)
+    else:
+        pat_text = translate(m.group(1), ctx)
     # Guard the class, not just this instance: every _mr* token in the
     # emitted pattern must be one of THIS rule's declared captures or
     # MatchQ markers — a corrupted/foreign name can never match.
@@ -2195,8 +2284,17 @@ def emit_rule(run, key, n, rule_vars):
                         for v in part.split(","))
     decls = []
     for v in sorted(rule_vars):
-        pred = "freeof(x)" if v in freeq_guarded else "true"
-        decls.append(f"matchdeclare({cap_name(key, n, v)}, {pred})$")
+        if dh is not None and v == dh["d"]:
+            # The re-transcribed head's d gate: a match-time lambda
+            # (probed working on this build) — the one match-time
+            # lambda in the class-3 table, and a one-symbol test, not
+            # the whole-factor %mr_neQ the e8 timing rejected.
+            decls.append(
+                f"matchdeclare({cap_name(key, n, v)}, "
+                f"lambda([u], is(u = 1)))$")
+        else:
+            pred = "freeof(x)" if v in freeq_guarded else "true"
+            decls.append(f"matchdeclare({cap_name(key, n, v)}, {pred})$")
     for d in sorted(ctx["decls"]):
         decls.append(f"matchdeclare({d}, true)$")
     # cond: translate; an empty cond -> true. A rule whose pattern can
