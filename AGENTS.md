@@ -133,12 +133,20 @@ printed at all, which is itself a failure.
 **Layer A — unit suite** (the per-change gate), one batch run:
 
 ```sh
-maxima --very-quiet -b test_maxima_rubi.mac
+maxima --very-quiet -X "--tls-limit 100000" -b test_maxima_rubi.mac
 ```
 
-743 targets (green at milestone-3 close: `Results: 743 passed,
-0 failed`; growth 511 → 581 across the pilot's clusters, 581 → 620
-headvar checks, → 691 cluster A, → 743 cluster B).
+The TLS flag is MANDATORY (measured 2026-09-01, class-3 deferred
+campaign C1): the test set loads rule siblings cumulatively per
+process, and the C1 tests (3_1_3/3_1_4/3_1_5) pushed the union over
+the ~4098 special-var cap — the flagless gate now dies with the
+uncatchable TLS HALT at 3_1_5 (slot cost is never freed; see the TLS
+section above). It was flagless only while the loaded subset fit.
+
+798 targets (green: `Results: 798 passed, 0 failed`; the
+milestone-3 close figure was 743 — growth 511 → 581 across the
+pilot's clusters, 581 → 620 headvar checks, → 691 cluster A, → 743
+cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1).
 
 **Layer B — full class-1 corpus** (25,697 entries, 30 s per-entry cap,
 one fresh maxima subprocess per integral, verification by
