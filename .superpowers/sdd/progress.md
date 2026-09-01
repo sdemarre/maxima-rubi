@@ -4079,3 +4079,82 @@ test file + core + git index, so the dispatches are sequential).
     redundant both-false guard line during the subagent's lazy-
     boolean investigation (disproven hypothesis; the line is a
     no-op, left for safety).
+  - B3: DONE (2026-09-01, commit 9533528) — the 3_3 cover misses
+    (125 entries: 108 0FIRE-POOL + 12 0FIRE-EXPL + 5 reclassified
+    D-NEST e88/e89/e90/e156/e402). Root cause re-confirmed: defmatch
+    0-binds a Quotient/Times of multiple structured sub-patterns
+    even though each sub-pattern binds alone. LANDED: 3 of the 4
+    mechanisms, 10 rules, via the C1 M1-idiom isfac-slotting — new
+    b33_spec (generator +112: five fullmatch shape templates Q
+    (BPOW_LIN/LOGPLUS), P (BPOW_LIN*LOGPOW), PS (BPOW_SLOT*LOGPOW),
+    HXP (XMON*BPOW_SLOT*LOGPOW), HXPL (XMON*BPOW_SLOT*LOGPLUS);
+    loud GenError on capture-set/slot-collision/paren-span; raw
+    span rewrite to the m1b slot) delegating to _emit_m1_manual
+    verbatim (no new emitter). M1 quotient: r11 (.m L14). M2
+    uncombined fractional-power products: r2 (L5), r10 (L13), r12
+    (L15), r13 (L16). M4 slotted inner exponents / fractional-linear
+    covers: r20 (L23), r21 (L24), r25 (L28), r26 (L29), r27 (L30) —
+    base factor (f+g x^r)^q slotted, (f,g[,r])+q recovered in the
+    rule body via %mr_mbp_unwrap/%mr_mbp_base. ONLY
+    rules/class3/3_3.mac changed (10 defmatch lines m1b-slotted +
+    10 isfac matchdeclares); every other rule file byte-identical.
+    CONDS: the 5 linear rules fully unchanged; the 5 slotted rules
+    dropped ONLY the trailing generator-added %mr_neQ(r, 0) (r moved
+    pattern -> slot, so nonzero_guard_caps no longer sees it) —
+    the .m cond clauses byte-identical; the drop is subsumed (a
+    degenerate r makes the base non-binomial: %mr_mbp_base fails
+    closed and the isfac predicate 0-binds) — C1 parity (the
+    accepted 2fd677a made the identical drop). MAIN-SESSION REVIEW
+    (all re-measured): (1) Layer A RE-RUN 851/0 (flagged, exit 0;
+    835 -> 851, +16 = test_class3_b3_33: 10 pattern-bind/base-
+    recovery checks (r11 e88 q=3 + e90 q=1, r10 e156 q=1/2, r20
+    r=1/2 q=2, r25 x^m-head m=1 r=1/2 q=2), 3 fail-closed pins
+    (r11 0-binds a product, r10 0-binds the (f+g/x) base, r10
+    0-binds the r46 two-log shape), 1 reduction-fires (r11 on e88 —
+    the true cover, previously skipped), 2 answer-level (the r10
+    integer-power rep (f+g x)^2*(a+b Log)^2: non-noun +
+    factor(diff) closes)). (2) rule diff exactly the 10 documented
+    rules; r24/r28/r46 untouched (verified 0 delta + their defmatch
+    lines intact). (3) REGENERATION byte-identity re-verified
+    across ALL classes. (4) AGENTS.md count line (835 -> 851,
+    "16 checks") confirmed accurate (16 checks counted in the
+    block). STOPPED (per the brief's guardrail, entries stay
+    deferred): M3 bare-log r46 (L50) — TWO independent structured
+    log factors + a power factor on one LHS; slotting one factor
+    does not resolve the others; a scoped single-slot re-emission
+    cannot bind it. r24 (L27) — reciprocal-linear base (f+g/x)
+    rejected by %mr_mbp_isfac/%mr_mbp_base (a shared-helper
+    extension, risky for C1 parity — flagged). r28 (L31) — the
+    (h x)^m head re-transcribes to the _h:=((h x)^m), _m:=0
+    mis-bind. PRODUCTION SPOT (main session, driver, fresh B3
+    core): e88/e90/e156 deferred (no regression — all were
+    deferred pre-B3), e402 VERIFIED (8.0 s). ADJUDICATION (report
+    inaccuracy, measured): the report claims "the five
+    representatives still resolve to deferred ... a persistent
+    0-bind for the bare-log rep (e402)" — WRONG. Main session
+    measured e402 = verified on the B3 core AND on the PRE-B3 core
+    (worktree at 1c8a306, core a02da1f0 = the C3 state — the
+    subagent's driver sanity run covered only e88/e156 and missed
+    e402/e89). e402's actual production cover is _mr_rule_3_1_5_r40
+    (fires top-level, substitution cascade closes via
+    _mr_rule_1_4_1_r18; log-rational answer, no Ei) — NOT 3.3 r46.
+    ATTRIBUTION: 3_1_5_r40's emission is byte-identical baseline
+    (829237d) -> pre-B3 (1c8a306) and its cond carries a
+    LIST-FORM %mr_linearQ([u, v], x) clause — e402's rescue is the
+    B2 %mr_linearQ list-arm fix (d6cee4e), predating B3; the g3
+    wave's "e402's production path falls to _mr_rule_3_3_r56" note
+    contradicts the current production measurement (g3 drill
+    table-slice artifact). M3's r46 STOP stands (r46's own
+    pattern-level 0-bind is real and measured); e402 simply does
+    not ride on it. The baseline->current e402 transition (deferred
+    -> verified) is recorded by the Task-5 corpus A/B. B3's own
+    reps' residual state (honest, downstream of the bind fix): e88/
+    e90 — r11 now fires (the true cover, was skipped) but the repl
+    leaves the int(x^k/(a+b Log)) leftover (a 3.2.x sub-integral
+    gap; Ei head-rewrites close part) -> still deferred; e156 —
+    r13 now binds + fires (r10/r12 conds decline q=p=1/2) but its
+    ExpandIntegrand no-ops the product of two fractional powers
+    (re-integrates the identical integrand, measured in isolation)
+    -> still deferred. Full mass split of the 125: Task-5 re-run.
+    Core fingerprint a02da1f0 -> 128c4bf8c151383e2db6f9ae79497c23
+    (3513 rules; stamp rev = the commit).
