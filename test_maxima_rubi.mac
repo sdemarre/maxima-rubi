@@ -74,8 +74,9 @@ run_all_tests() := block([],
   test_structural_predicates(),
     test_matchQ_predicates(),
     test_class2_marker_head(),
-    test_class3_headvar(),
-    test_int_family_predicates(),
+     test_class3_headvar(),
+     test_class3_b1_freeof(),
+     test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -653,10 +654,68 @@ test_structural_predicates() := block([],
                and is(geteqR(mm, 'hvng) = 2)
                and is(geteqR(mm, 'hvpxg) = x)),
     check_not("hv leading minus with no px slot (the sign cannot bind)",
-              %mr_headvar_match(-asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
-                    [["f", 'hvFh, ["mon", 'hvfxh], ["free", 'hvmh]],
-                     ["log", 'hvah, 'hvbh, ["bpow", 'hvcH, 'hvdh, 'hveh, 'hvnh, 'hvh2]]],
+               %mr_headvar_match(-asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
+                     [["f", 'hvFh, ["mon", 'hvfxh], ["free", 'hvmh]],
+                      ["log", 'hvah, 'hvbh, ["bpow", 'hvcH, 'hvdh, 'hveh, 'hvnh, 'hvh2]]],
                     ['asin, 'acos, 'asinh, 'acosh])),
+    true
+  )$
+
+  /* Task 4B-B1 (class-3 deferred campaign, 2026-09-01) — the
+     generator's freeq_guarded regex had two false-positive faces: no
+     word boundary (it matched the FreeQ substring inside
+     InverseFunctionFreeQ — 3.5.m L5/L34/L37/L38/L40/L42/L43 are
+     cond-only guards, no bare FreeQ[u|v, x]) and a greedy [^}]* that
+     overran the FreeQ argument into later clauses (1.1.1.7.m L8 and
+     1.4.1.m L174: FreeQ[q, x] && ... PolyQ[Qx, x] captured Qx). The
+     9 affected slots now declare true; the conds already carry the
+     faithful %mr_inverseFunctionFreeQ checks. Pinned here: the u/v
+     slots bind x-dependent u at pattern level (previously 0-bound by
+     the spurious freeof(x) declaration before the cond could run),
+     the two g1 wave representatives (e275 on r37_u, 3.1.4 L352;
+     e116 on r31_u, 3.5 L153) answer and close the zero-chain, and
+     the cond predicate still gates inverse-function u (the fix is
+     the declaration, not the cond). The answer-level reps run on
+     the default 1.1.1.1 table + 3.5 (production order: class 1
+     before class 3); their IBP residuals are answered by the
+     mr_int fb=true native-integrate fall-through — measured
+     2026-09-01 on branch_5_50_base_84_g4204fb669: both reps close
+     the ratsimp zero-chain in 0 s and issue no integrate prompt. */
+  test_class3_b1_freeof() := block([mm, ans, saved_table],
+    print("--- b1: spurious freeof(x) matchdeclare removed (3.5 r2_u/r31_u/r34_u/r35_u/r37_u/r39_v/r40_v, 1.1.1.7 r5_Qx, 1.4.1 r18_Qx) ---"),
+    %mr_load_sibling("rules/class3/3_5.mac", 'mr_witness_3_5),
+    /* pattern level: the u slot binds the x-dependent u (the .m
+       constrains it in the cond only); listp-guarded so a RED run
+       (declaration reverted -> mm = false, or helper not loaded ->
+       noun) fails the check without dying inside geteqR */
+    mm : _mr_pat_3_5_r31(log(a + %e^x*b), x),
+    check_bool("b1 r31 binds x-dependent u",
+               listp(mm) and length(mm) > 0
+               and is(freeof(x, geteqR(mm, '_mr_3_5_r31_u)) = false)),
+    mm : _mr_pat_3_5_r35(log(g*(a + b*x + c*x^2)^n)/(d + e*x^2), x),
+    check_bool("b1 r35 binds x-dependent u",
+               listp(mm) and length(mm) > 0
+               and is(freeof(x, geteqR(mm, '_mr_3_5_r35_u)) = false)),
+    /* answer level: the literal suite integrands (the g1 wave list's
+       fastest representatives) */
+    saved_table : mr_rule_table,
+    mr_rule_table : flatten([mr_rule_table, mr_rules_3_5]),
+    ans : rubi(x*log(x)*sqrt(4 + x^2), x),
+    check_not("b1 e275 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate) or is(op(ans) = 'unintegrable)),
+    check_bool("b1 e275 zero-chain",
+               is(ratsimp(diff(ans, x) - x*log(x)*sqrt(4 + x^2)) = 0)),
+    ans : rubi(log(a + %e^x*b), x),
+    check_not("b1 e116 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate) or is(op(ans) = 'unintegrable)),
+    check_bool("b1 e116 zero-chain",
+               is(ratsimp(diff(ans, x) - log(a + %e^x*b)) = 0)),
+    mr_rule_table : saved_table,
+    /* negative pin: the cond's faithful check still gates
+       inverse-function u (the ported iffQ, this file's
+       test_class3_cluster_a pins) */
+    check_bool("b1 r31 cond still gates inverse-function u",
+               is(%mr_inverseFunctionFreeQ(atan(x), x) = false)),
     true
   )$
 

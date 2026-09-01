@@ -2180,9 +2180,18 @@ def emit_rule(run, key, n, rule_vars):
     # declare each capture; freeof(x)-guarded if the cond has FreeQ[..., x].
     # FIX F4: the brief did set(re.findall(...)).split(",") — a set has no
     # split; split the group strings instead.
+    # FIX B1 (2026-09-01, class-3 deferred campaign): the old regex
+    # r"FreeQ\[\{?([^}]*)\}?,\s*x\]" had two false-positive faces — no word
+    # boundary (it matched the substring FreeQ inside InverseFunctionFreeQ,
+    # 3.5.m L5/L34/L37/L38/L40/L42/L43 cond-only guards -> 7 spurious sites
+    # in 3_5.mac) and a greedy [^}]* that overran the FreeQ argument into
+    # later clauses (1.1.1.7.m L8 / 1.4.1.m L174: FreeQ[q, x] ... PolyQ[Qx,
+    # x] captured Qx -> 2 spurious class-1 sites). The lookbehind excludes
+    # *FreeQ predicates; [^\]}] stops the argument class at the first ].
     freeq_guarded = set(v.strip()
-                        for part in re.findall(r"FreeQ\[\{?([^}]*)\}?,\s*x\]",
-                                               cond or "")
+                        for part in re.findall(
+                            r"(?<![A-Za-z0-9])FreeQ\[\{?([^\]}]*)\}?,\s*x\]",
+                            cond or "")
                         for v in part.split(","))
     decls = []
     for v in sorted(rule_vars):
