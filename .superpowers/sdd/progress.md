@@ -3992,3 +3992,90 @@ test file + core + git index, so the dispatches are sequential).
     rebuilt post-commit, so the stamp reflects the committed tree,
     dirty 0; the driver re-derives the fingerprint from the rule
     files either way).
+  - C3: DONE (2026-09-01, commit 1c8a306) — the ratio log-arg
+    stored-Quotient 0-bind (99 entries: 3_2_1 x18, 3_2_2 x79,
+    3_2_3 x2). The stored ratio log-arg log(e*(a+b x)/(c+d x)) is
+    held as Quotient[Times[e, Plus], Plus] (e inside the quotient
+    numerator) and 0-binds the ported Times[e, Power[Quotient, n]]
+    pattern (e outside); in MA there is no Quotient node (division =
+    negative power) so the .m rules bind there. Step-1 census
+    (99/99, probe c3-p10): exactly four stored shapes — S1 folded
+    Quotient[Times[e, L1], L2] (88), S2 inverted num/den (6), S3
+    symbolic-n Times[e, Power[Quotient[L1, L2], n]] (e214/e220),
+    S4 3.2.3 squared Log[Quotient[Times[C1, L1], Times[C2,
+    L2]]]^2 (e104/e107); no entry carries the product-of-powers
+    form, so the matcher's acceptance boundary follows the census.
+    Option (a) chosen (scoped generator re-emission): NO defmatch /
+    NO matchdeclare for the six converted rules (3.2.1 r15/r17/r19
+    12 caps, 3.2.2 r3/r5 15 caps, 3.2.3 r5/r6 11 caps) — the rule
+    body calls the new fail-closed structural matchers
+    %mr_logratio_match / %mr_logratio_sq_match (maxima_rubi_utils.
+    mac +425: logsum/side/quotp/argw/dr/sqside/sq_match; the log-
+    arg is read by ORIGIN — (a,b) = the NUMERATOR-side linear,
+    (c,d) the denominator-side one, n the numerator-side exponent —
+    the .m binding of both the folded and the inverted blocks).
+    Scoping: the matchers are invoked ONLY from the six converted
+    rule bodies (verified: full regeneration leaves every other
+    file byte-identical) — not a whole-table pre-pass. The 15-cap
+    head assignment is deterministic by parallelism ((f,g) to the
+    head parallel to (a,b), (h,i) to the one parallel to (c,d) —
+    the .m cond's EqQ pairing, no backtracking; a head parallel to
+    neither declines, cond-equivalent to the .m backtrack 0-bind).
+    The 3.2.3 binding e:=C1, f:=1/C2, (a,b):=denominator-side
+    linear, (c,d):=numerator-side, p:=-1, q:=1, r:=1 makes the
+    repl's log-arg re-expand EXACTLY to the stored argument (rat =
+    0, suite-asserted). Generator c3_spec/_emit_c3_manual (+240,
+    three fullmatch shape regexes, wired after c4); decline
+    clauses VERIFIED against the .m line-by-line: 3.2.1 requires
+    NeQ[b*c-a*d,0] (r21 Unintegrable, FreeQ-only cond, declines —
+    keeps defmatch); 3.2.2 requires BOTH EqQ[b*f-a*g,0] AND
+    EqQ[d*h-c*i,0] (r7 carries only the second; r9/r11 neither;
+    r1 lacks the q/p slots — all decline); 3.2.3 requires
+    NeQ[b*c-a*d,0] (r4/r7 shapes differ — decline). MAIN-SESSION
+    REVIEW (all re-measured): (1) Layer A RE-RUN 835/0 (flagged,
+    exit 0; 815 -> 835, +20 = test_class3_c3_ratio: pattern-level
+    e93 x2, e10 x2, e214 x2, e104 x2 + the e104 re-expansion
+    invariant, fail-closed pins (15-cap cross-fire on the 3.2.3 sq
+    integrand, 12-cap two-head count, sq cross on the 3.2.1 ratio
+    integrand, free-k decline), the numeric-k boundary, answer-
+    level e93 (numeric two-point) + e10 (factor)). (2) the 331-
+    check probe matrix (all 99 bind their cover with the .m-
+    natural captures incl. the S2 swap and the S3 pair; the fail-
+    closed battery; the e104 invariant) RE-RUN in a fresh process
+    on the C3 core: 331 passed, 0 failed. (3) cond/repl
+    BYTE-IDENTICAL: all 14 _mr_cond/_mr_repl functions (the six
+    rules x2) diffed pre-C3 vs committed — 7/7 IDENTICAL. (4)
+    rule-file delta exactly the documented pattern-line deletions
+    (matchdeclare+defmatch per rule) + the `mm :` replacements;
+    (5) REGENERATION byte-identity re-verified across ALL classes
+    (git status clean); (6) the subagent's AGENTS.md count-line
+    edit (815 -> 835 + growth history) confirmed accurate.
+    PRODUCTION SPOT (main session, driver shard spec, fresh
+    core): e93 verified 1.5s, e10 verified 2.2s, e104 verified
+    1.9s — 3/3. ADJUDICATION (free-k over-bind, found and fixed
+    in-cycle by the subagent, verified here): the first
+    implementation's Quotient arm admitted the distributed
+    Quotient[Times[e0, L1^k], L2^k] shape for a FREE k, which
+    over-bound 3.2.2 e226 (free-n log-arg e*(a+b x)^n/(c+d x)^n)
+    into r5 — regressing the b2 e226 suite check (its GAMMA-form
+    answer leaves the b2 zero-chain unclosed). In MA the .m L7
+    product pattern 0-binds that storage with a free exponent and
+    the twin declines on IGtQ[n, 0] — e226's cover remains the
+    .m-faithful 0-bind (supersedes the earlier "3.2.2 L8 cover"
+    note for this entry). Fix: numberp(n1) gate in the Quotient
+    arm (utils:6363); the numeric-k shape still binds (the .m L7
+    cover, suite-pinned), the free-k shape declines (suite GREEN
+    pin). Core fingerprint 20e3be6f ->
+    a02da1f07424f2c19df8272699895b79 (3513 rules; stamp rev 0f67fd0
+    = pre-commit HEAD, content-identical to the commit — the
+    driver re-derives the fingerprint from the rule files). NEW MEASURED BUILD QUIRKS
+    (recorded for future briefs): a return inside a for body
+    behaves as a valued break in compiled functions in this build
+    (the C3 driver loops therefore run to completion on a bad
+    flag — the C4 mid-loop-return corner is deliberately not
+    replicated); is(op(x) = 'sym) parses ONLY in multi-line form
+    (single-line: "' is not an infix operator"); get_run_time()
+    returns an empty list; the C4 %mr_logpow_logsum gained a
+    redundant both-false guard line during the subagent's lazy-
+    boolean investigation (disproven hypothesis; the line is a
+    no-op, left for safety).
