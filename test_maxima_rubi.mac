@@ -80,8 +80,9 @@ run_all_tests() := block([],
       test_class3_b4_derDiv(),
        test_class3_c2_dhead(),
         test_class3_c1_slotted(),
-        test_class3_c4_321(),
-        test_int_family_predicates(),
+         test_class3_c4_321(),
+         test_class3_c3_ratio(),
+         test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -1200,6 +1201,140 @@ test_structural_predicates() := block([],
          defect: the r20 pattern binds (above) and the r20 answer is correct
          in isolation. e268's pattern-level binding is the C4 deliverable;
          its answer-level closure is the Layer-B corpus run's concern. */
+       mr_rule_table : saved_table,
+       true
+     )$
+
+    /* Task 4C-C3 (class-3 deferred campaign, 2026-09-02) — the ratio
+    log-arg stored-Quotient 0-bind (99 entries): the stored suite ratio
+    log-arg log((e (a+b x))/(c+d x)) is held as Quotient[Times[e, Plus],
+    Plus] (e inside the quotient numerator) and 0-bound the ported
+    Times[e, Power[Quotient, n]] pattern (probe pA; adjudication-g2
+    D2). The fix is a scoped generator re-emission: the 3.2.1 r15/r17/
+    r19, 3.2.2 r3/r5, 3.2.3 r5/r6 matchers are the structural
+    %mr_logratio[_sq]_match matchers (maxima_rubi_utils.mac). The
+    answer-level reps run on the minimal table (default 1.1.1.1 + the
+    three 3.2.x families); the nested sub-integrals are answered by the
+    mr_int fb=true native fall-through (the b2 precedent). Measured
+    2026-09-02 on branch_5_50_base_84_g4204fb669: e93's answer verifies
+    at the driver's numeric stage (resid ~1e-15 both points) and e10's
+    closes at factor (the driver's first symbolic stage — its numeric
+    stage declines on the free i: the numeric-instance resid under
+    i=0.7 is 2.8e-10/1.03e-9, float cancellation in the expanded form,
+    the second point over the 1e-9 threshold). */
+    test_class3_c3_ratio() := block([ans, z, n1, n2, D, saved_table, f, mm, caps12, caps15, caps11],
+      print("--- c3: ratio log-arg stored-Quotient structural match (C3) ---"),
+      %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
+      %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
+      %mr_load_sibling("rules/class3/3_2_3.mac", 'mr_witness_3_2_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_1, mr_rules_3_2_2, mr_rules_3_2_3]),
+      caps12 : ['_f, '_g, '_m, '_A, '_B, '_e, '_a, '_b, '_n, '_c, '_d, '_p],
+      caps15 : ['_f, '_g, '_m, '_h, '_i, '_q, '_A, '_B, '_e, '_a, '_b, '_n, '_c, '_d, '_p],
+      caps11 : ['_a, '_b, '_c, '_d, '_e, '_f, '_g, '_h, '_p, '_q, '_r],
+      /* pattern level: e93 (3.2.1, the L19 r15 cover) — the folded
+         Quotient[Times[e, L1], L2] stored shape */
+      mm : %mr_logratio_match((A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x, caps12),
+      check_bool("c3 e93 binds (3.2.1 r15 cover)", listp(mm)),
+      check_bool("c3 e93 natural f=a*g g=b*g m=-2 n=1 p=1",
+                 listp(mm) and is(geteqR(mm, '_f) = a*g)
+                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = -2)
+                 and is(geteqR(mm, '_n) = 1) and is(geteqR(mm, '_p) = 1)),
+      check_bool("c3 e93 natural A,B,e + a,b,c,d",
+                 listp(mm) and is(geteqR(mm, '_A) = A) and is(geteqR(mm, '_B) = B)
+                 and is(geteqR(mm, '_e) = e) and is(geteqR(mm, '_a) = a)
+                 and is(geteqR(mm, '_b) = b) and is(geteqR(mm, '_c) = c)
+                 and is(geteqR(mm, '_d) = d)),
+      /* pattern level: e10 (3.2.2, the r3 cover) — the two-head
+         integrand, heads assigned by parallelism */
+      mm : %mr_logratio_match((a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x, caps15),
+      check_bool("c3 e10 binds (3.2.2 r3 cover)", listp(mm)),
+      check_bool("c3 e10 natural f=a*g g=b*g m=3 h=c*i i=d*i q=2",
+                 listp(mm) and is(geteqR(mm, '_f) = a*g)
+                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = 3)
+                 and is(geteqR(mm, '_h) = c*i) and is(geteqR(mm, '_i) = d*i)
+                 and is(geteqR(mm, '_q) = 2)),
+      check_bool("c3 e10 natural A,B,e,n=1,p=1 + a,b,c,d",
+                 listp(mm) and is(geteqR(mm, '_A) = A) and is(geteqR(mm, '_B) = B)
+                 and is(geteqR(mm, '_e) = e) and is(geteqR(mm, '_n) = 1)
+                 and is(geteqR(mm, '_p) = 1) and is(geteqR(mm, '_a) = a)
+                 and is(geteqR(mm, '_b) = b) and is(geteqR(mm, '_c) = c)
+                 and is(geteqR(mm, '_d) = d)),
+      /* pattern level: e214 (3.2.2, the r5 cover) — the symbolic-n
+         Times[e, Power[Quotient, n]] stored shape */
+      mm : %mr_logratio_match((a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*((a+b*x)/(c+d*x))^n)), x, caps15),
+      check_bool("c3 e214 binds (3.2.2 r5 cover, symbolic-n form)", listp(mm)),
+      check_bool("c3 e214 natural m free q=-2-m n free p=1",
+                 listp(mm) and is(geteqR(mm, '_m) = m)
+                 and is(geteqR(mm, '_q) = -2-m) and is(geteqR(mm, '_n) = n)
+                 and is(geteqR(mm, '_p) = 1)),
+      /* pattern level: e104 (3.2.3, the L8 r5 cover) — the squared-log
+         integrand; the binding e:=C1, f:=1/C2, (a,b):=the
+         DENOMINATOR-side linear, (c,d):=the numerator-side one,
+         p:=-1 q:=1 r:=1 makes the repl's log-arg re-expand EXACTLY
+         to the stored argument */
+      mm : %mr_logratio_sq_match(log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x, caps11),
+      check_bool("c3 e104 binds (3.2.3 r5 cover)", listp(mm)),
+      check_bool("c3 e104 natural a-d + e=C1 f=1/C2 g=a h=b p=-1 q=1 r=1",
+                 listp(mm) and is(geteqR(mm, '_a) = a) and is(geteqR(mm, '_b) = b)
+                 and is(geteqR(mm, '_c) = c) and is(geteqR(mm, '_d) = d)
+                 and is(geteqR(mm, '_e) = b*e-a*f)
+                 and is(geteqR(mm, '_f) = 1/(d*e-c*f))
+                 and is(geteqR(mm, '_g) = a) and is(geteqR(mm, '_h) = b)
+                 and is(geteqR(mm, '_p) = -1) and is(geteqR(mm, '_q) = 1)
+                 and is(geteqR(mm, '_r) = 1)),
+      z : if is(listp(mm)) then
+        errcatch(rat(geteqR(mm, '_e)*(geteqR(mm, '_f)*(geteqR(mm, '_a)+geteqR(mm, '_b)*x)^geteqR(mm, '_p)*(geteqR(mm, '_c)+geteqR(mm, '_d)*x)^geteqR(mm, '_q))^geteqR(mm, '_r)
+             - (b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x))))
+      else [],
+      check_bool("c3 e104 repl log-arg re-expands the stored arg",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* GREEN pins: fail-closed rejections */
+      check_not("c3 the 15-cap matcher 0-binds the 3.2.3 sq integrand (cross-fire)",
+                %mr_logratio_match(log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x, caps15)),
+      check_not("c3 the 12-cap matcher 0-binds the two-head integrand (head count)",
+                %mr_logratio_match((a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x, caps12)),
+      check_not("c3 the sq matcher 0-binds the 3.2.1 ratio integrand",
+                %mr_logratio_sq_match((A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x, caps11)),
+      /* the free-k distributed quotient (e226 shape) must decline: in
+         MA the .m L7 pattern 0-binds the Quotient-of-powers storage
+         with a free exponent and the L8 product twin declines on
+         IGtQ[n,0] — the over-bind regressed the b2 e226 cover to r5
+         (measured 2026-09-02, probe /tmp/opencode/mini69.mac) */
+      check_not("c3 declines the free-k distributed quotient (e226 shape)",
+                %mr_logratio_match((a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^p, x, caps15)),
+      /* the numeric-k distributed shape still binds (MA's matcher
+         normalises the Quotient-of-powers storage for a concrete
+         exponent — the .m L7 cover) */
+      mm : %mr_logratio_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x, caps12),
+      check_bool("c3 the numeric-k distributed quotient binds with n=2",
+                 listp(mm) and is(geteqR(mm, '_n) = 2)),
+      /* answer level: e93 — the driver's numeric stage (two points,
+         resid < 1e-9; measured ~1e-15 under the minimal table) */
+      f : (A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2,
+      ans : rubi(f, x),
+      check_not("c3 e93 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      /* materialize the diff BEFORE the ev (the driver's measured
+         quirk: ev over a still-unevaluated diff(mr_r, x) substitutes
+         x into the diff's variable argument and errors) */
+      D : diff(ans, x) - f,
+      n1 : errcatch(float(ev(D, [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, g=1.7, A=0.6, B=1.4, x=0.35]))),
+      n2 : errcatch(float(ev(D, [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, g=1.7, A=0.6, B=1.4, x=0.65]))),
+      check_bool("c3 e93 self-diff numeric two-point (driver stage)",
+                 is(n1 # []) and is(n2 # [])
+                 and is(abs(part(n1, 1)) < 1e-9) and is(abs(part(n2, 1)) < 1e-9)),
+      /* answer level: e10 — closes at factor (the driver's first
+         symbolic stage; its numeric stage declines on the free i) */
+      f : (a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))),
+      ans : rubi(f, x),
+      check_not("c3 e10 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+      check_bool("c3 e10 self-diff (factor, the driver's first symbolic stage)",
+                 is(z # []) and is(part(z, 1) = 0)),
       mr_rule_table : saved_table,
       true
     )$

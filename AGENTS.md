@@ -143,11 +143,12 @@ the ~4098 special-var cap — the flagless gate now dies with the
 uncatchable TLS HALT at 3_1_5 (slot cost is never freed; see the TLS
 section above). It was flagless only while the loaded subset fit.
 
-815 targets (green: `Results: 815 passed, 0 failed`; the
+835 targets (green: `Results: 835 passed, 0 failed`; the
 milestone-3 close figure was 743 — growth 511 → 581 across the
 pilot's clusters, 581 → 620 headvar checks, → 691 cluster A, → 743
 cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1,
-→ 815 C4 (3_2_1 r16/r18/r20 log-arg structural match, 17 checks)).
+→ 815 C4 (3_2_1 r16/r18/r20 log-arg structural match, 17 checks),
+→ 835 C3 (ratio log-arg stored-Quotient structural match, 20 checks)).
 
 **Layer B — full class-1 corpus** (25,697 entries, 30 s per-entry cap,
 one fresh maxima subprocess per integral, verification by

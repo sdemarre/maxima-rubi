@@ -6021,9 +6021,10 @@ mr_use_gamma_flag : false$
  %mr_logpow_logsum(base, x) := block([t1, t2, l1, l2, A, r],
    if not atom(base) and is(op(base) = "+") and is(length(base) = 2) then (
      t1 : part(base, 1), t2 : part(base, 2),
-     l1 : %mr_logpow_logterm(t1, x), l2 : %mr_logpow_logterm(t2, x),
-     if is(l1 # false) and is(l2 # false) then return(false),
-     if is(l1 # false) then (A : t2, r : l1) else (A : t1, r : l2),
+       l1 : %mr_logpow_logterm(t1, x), l2 : %mr_logpow_logterm(t2, x),
+       if is(l1 = false) and is(l2 = false) then return(false),
+       if is(l1 # false) and is(l2 # false) then return(false),
+       if is(l1 # false) then (A : t2, r : l1) else (A : t1, r : l2),
      if not freeof(x, A) then return(false),
      return([A, part(r, 1), part(r, 2)])
    ),
@@ -6169,10 +6170,422 @@ mr_use_gamma_flag : false$
     part(caps, 4) = la, part(caps, 5) = lb, part(caps, 6) = part(lg, 1),
     part(caps, 7) = part(lg, 2), part(caps, 8) = part(lg, 3),
     part(caps, 9) = part(lg, 4), part(caps, 10) = part(lg, 5),
-    part(caps, 11) = part(lg, 6), part(caps, 12) = part(lg, 7),
-    part(caps, 13) = p])$
+     part(caps, 11) = part(lg, 6), part(caps, 12) = part(lg, 7),
+     part(caps, 13) = p])$
 
- /* ---- class-3 cluster A: the small cond-side predicates (Task 4) --- */
+  /* ---- class-3 log-ratio structural matcher (class-3 deferred
+   * campaign C3) ---------------------------------------------------------
+   * The 3.2.1 r15/r17/r19, 3.2.2 r3/r5 and 3.2.3 r5/r6 families:
+   * (f+g x)^m [(h+i x)^q] (A+B log(e (lin/lin)^n))^p [/ (g+h x)] with
+   * a RATIO log argument. The faithful defmatch LHS 0-binds every
+   * stored corpus form: the slotted e_*Quotient^n binds neither the
+   * folded ratio (Maxima strips ^1 on input) nor the distributed
+   * Quotient[Times, Power]/Power storage of the numeric-n entries, and
+   * the 3.2.2 two-head product has no backtracking to the right
+   * (head, side) pairing (the 1.1.1.4 note). Storage census 99/99:
+   * /tmp/opencode/c3-p10-census.out, 2026-09-02,
+   * branch_5_50_base_84_g4204fb669 / SBCL 2.6.7. The rule bodies
+   * therefore decompose the integrand STRUCTURALLY — no defmatch, no
+   * matchdeclare — and run the UNCHANGED .m cond/repl on the
+   * resulting matchlist.
+   *
+   * %mr_logratio_match(f, x, caps) -> the [cap = value, ...] matchlist
+   * or false. caps length 12: the 3.2.1 order (f, g, m, A, B, e, a,
+   * b, n, c, d, p); length 15: the 3.2.2 order (f, g, m, h, i, q, A,
+   * B, e, a, b, n, c, d, p).
+   *
+   * The integrand is flattened factor-wise (%mr_logpow_collect, the
+   * C4 helper): exactly one (12 caps) or two (15 caps) factors must be
+   * powers of a linear/constant (the head(s) -> f, g [, h, i], the
+   * num/den sign carried in the exponent), and exactly one a power of
+   * a PLUS-FORM log-sum A+B log(arg) (-> A, B, p). The plus-only
+   * log-sum reader (%mr_logratio_logsum) declines the Times and
+   * bare-log bases the C4 reader admits: the 3.2.3 integrands' bare
+   * Log[...]^2 factor must 0-bind the 3.2.1/3.2.2 matchers, not match
+   * them with A := 0. The driver loop runs to completion on a bad
+   * flag — never a mid-loop return: in this build a return inside a
+   * for body is a valued BREAK (measured 2026-09-02, probes
+   * /tmp/opencode/c3-p15..c3-p22*.mac), and the C4 driver's
+   * mid-loop-return corner (a trailing non-head factor after all the
+   * required state is set slips past the post-loop check, probe
+   * /tmp/opencode/c3-p20-iso.mac) is not replicated.
+   *
+   * The log argument is read by ORIGIN, not by sign:
+   * %mr_logratio_argw -> [e, a, b, n, c, d] with (a, b) the
+   * NUMERATOR-side linear, (c, d) the DENOMINATOR-side one and n the
+   * numerator-side exponent — the .m binding of both the folded
+    * (e101-e105) and the inverted (e178, e186-e190) blocks. The three
+    * stored shapes (the folded Quotient[Times[e0, L1], L2]; the
+    * symbolic-n Times[e0, Power[Quotient[L1, L2], n]] of e214/e220;
+    * the NUMERIC-k distributed Quotient[Times[e0, Power[L1, k]],
+    * Power[L2, k]] of the numeric-n entries — a FREE-k distributed
+    * argument declines: it 0-binds the .m in MA, see the Quotient arm)
+    * all collapse to it; numerator and denominator exponents that do
+    * not provably cancel decline.
+   *
+   * 15 caps: the two heads are assigned DETERMINISTICALLY by
+   * parallelism — (f, g) to the head parallel to (a, b), (h, i) to
+   * the one parallel to (c, d) — the .m cond's EqQ[b f - a g, 0] /
+   * EqQ[d h - c i, 0] pairing with no backtracking. When the two
+   * sides are parallel (the .m's NeQ[b c - a d, 0] rejects after the
+   * bind) every head is parallel to both and the single deterministic
+   * assignment still runs the unchanged cond to the same 0-bind; a
+   * head parallel to neither side declines (the .m backtracks past
+   * it and 0-binds, cond-equivalent).
+   *
+   * %mr_logratio_sq_match(f, x, caps) -> the 3.2.3 r5/r6 matchlist
+   * (11 caps in the .m order a, b, c, d, e, f, g, h, p, q, r): the
+   * integrand is Log[Quotient[Times[C1, L1], Times[C2, L2]]]^2 over
+   * a linear head — numerator log power exactly 2 (provable, via
+   * %mr_eqQ: a symbolic power declines), head in the denominator to
+   * the first power, x-bearing (the .m's /(g_.+h_.*x_) with the 1/h
+   * repl terms). The binding e := C1, f := 1/C2, (a, b) := the
+   * DENOMINATOR-side linear, (c, d) := the numerator-side one,
+   * p := -1, q := 1, r := 1 makes the repl's
+   * log(e (f (a+b x)^p (c+d x)^q)^r) re-expand EXACTLY to the stored
+   * argument (verified 2026-09-02, probe /tmp/opencode/c3-p23-iso.mac).
+   *
+   * Fail-closed: any other shape declines. */
+
+  /* log-sum base -> [A, B, arg], else false: A + B log(arg) ONLY (the
+     two-term Plus, exactly one log term, A free of x; the log term's
+     reader is the C4 one). The Times and bare-log bases decline here
+     (see the section header). */
+  %mr_logratio_logsum(base, x) := block([t1, t2, l1, l2, A, r],
+    if not atom(base) and is(op(base) = "+") and is(length(base) = 2) then (
+      t1 : part(base, 1), t2 : part(base, 2),
+       l1 : %mr_logpow_logterm(t1, x), l2 : %mr_logpow_logterm(t2, x),
+       if is(l1 = false) and is(l2 = false) then return(false),
+       if is(l1 # false) and is(l2 # false) then return(false),
+      if is(l1 # false) then (A : t2, r : l1) else (A : t1, r : l2),
+      if not freeof(x, A) then return(false),
+      return([A, part(r, 1), part(r, 2)])
+    ),
+    return(false))$
+
+  /* one side of a family-1 log-argument Quotient -> [C, L, k]: the
+     x-free constant part C (default 1), the single x-bearing linear L
+     and its exponent k (the factor's own exponent times the caller's
+     sign sgn; a bare linear is k = sgn), else false. The x-bearing
+     factor is a bare linear or a power of one with the exponent free
+     of x (the distributed numeric-n shape) — the exponent is KEPT:
+     e*(a+b x)^2/(c+d x) must decline (2 # 1), not match with n := 1.
+     The loop runs to completion on a bad flag (no mid-loop return —
+     the section header). */
+  %mr_logratio_side(S, x, sgn) := block([i, t, b, K, C, L, bad],
+    if atom(S) then (
+      if is(S = x) then return([1, x, sgn]),
+      return(false)
+    ),
+    if is(freeof(x, S)) then return(false),
+    if is(op(S) = "^") and is(length(S) = 2) then (
+      b : part(S, 1), K : part(S, 2),
+      if not freeof(x, K) then return(false),
+      if not %mr_linearQ(b, x) then return(false),
+      return([1, b, sgn*K])
+    ),
+    /* the Times walk BEFORE any linearQ test on the whole side:
+       %mr_linearQ (a degree test, not a shape test) is true of
+       e*(b*x+a) — a constant times a linear — and must not short-
+       circuit the walk that folds e into C (measured 2026-09-02,
+       probe /tmp/opencode/c3-p26-dbg.mac). */
+    if is(op(S) = "*") then (
+      C : 1, L : false, K : 1, bad : false,
+      for i : 1 thru length(S) do (
+        t : part(S, i),
+        if is(bad = false) then (
+          if is(freeof(x, t)) then (
+            C : C*t
+          ) else if is(L = false) then (
+            if not atom(t) and is(op(t) = "^") and is(length(t) = 2) then (
+              if not freeof(x, part(t, 2)) then (bad : true)
+              else if not %mr_linearQ(part(t, 1), x) then (bad : true)
+              else (L : part(t, 1), K : part(t, 2))
+            ) else if not atom(t) and is(op(t) = "+") and is(length(t) = 2)
+                       and is(%mr_linearQ(t, x)) then (
+              L : t
+            ) else if is(t = x) then (
+              L : t
+            ) else (
+              bad : true
+            )
+          ) else (
+            bad : true
+          )
+        )
+      ),
+      if is(bad) or is(L = false) then return(false),
+      return([C, L, sgn*K])
+    ),
+    if is(op(S) = "+") and is(length(S) = 2) and is(%mr_linearQ(S, x)) then (
+      return([1, S, sgn])
+    ),
+    return(false))$
+
+  /* an x-bearing factor of a family-1 log argument -> the quotient
+     power [L1, L2, k] (a bare Quotient is k = 1; a power's base must
+     be the Quotient with both sides linear, the exponent free of x),
+     else false */
+  %mr_logratio_quotp(t, x) := block([b, k],
+    if not atom(t) and is(op(t) = "^") and is(length(t) = 2) then (
+      b : part(t, 1), k : part(t, 2),
+      if not freeof(x, k) then return(false),
+      if not atom(b) and is(op(b) = "/") and is(length(b) = 2)
+         and is(%mr_linearQ(part(b, 1), x))
+         and is(%mr_linearQ(part(b, 2), x)) then (
+        return([part(b, 1), part(b, 2), k])
+      ),
+      return(false)
+    ),
+    if not atom(t) and is(op(t) = "/") and is(length(t) = 2)
+       and is(%mr_linearQ(part(t, 1), x))
+       and is(%mr_linearQ(part(t, 2), x)) then (
+      return([part(t, 1), part(t, 2), 1])
+    ),
+    return(false))$
+
+  /* family-1 log argument -> [e, a, b, n, c, d] in the .m ORIGIN
+     binding ((a, b) = the numerator-side linear, (c, d) the
+     denominator-side one, n = the numerator-side exponent), else
+     false (see the section header for the three stored shapes) */
+  %mr_logratio_argw(arg, x) := block(
+     [N, D, r1, r2, e, L1, L2, n1, n2, la, lc, i, t, b, k, QF, u, bad],
+    if not atom(arg) and is(op(arg) = "/") and is(length(arg) = 2) then (
+      N : part(arg, 1), D : part(arg, 2),
+      r1 : %mr_logratio_side(N, x, 1),
+      if is(r1 = false) then return(false),
+      r2 : %mr_logratio_side(D, x, -1),
+      if is(r2 = false) then return(false),
+      e : part(r1, 1)*part(r2, 1),
+      L1 : part(r1, 2), n1 : part(r1, 3),
+      L2 : part(r2, 2), n2 : part(r2, 3),
+       if not %mr_eqQ(n1 + n2, 0) then return(false),
+       if is(n1 = 0) then return(false),
+       /* the distributed Quotient[Times[e0, Power[L1, k]], Power[L2, k]]
+          shape is admitted ONLY for a concrete (numeric) k: MA's matcher
+          normalises the Quotient-of-powers storage into the .m L7
+          Power[Quotient] pattern only for a concrete exponent — with a
+          FREE k the stored argument 0-binds the .m L7 pattern (different
+          storage) and the L8 product twin declines on IGtQ[n, 0]
+          (measured 2026-09-02: 3.2.2 e226, log-arg
+          e*(a+b x)^n/(c+d x)^n, probe /tmp/opencode/mini69.mac — the
+          over-bind regressed the b2 e226 cover to r5 and its GAMMA-form
+          answer left the b2 zero-chain unclosed). */
+       if not numberp(n1) then return(false),
+       if is(L1 = L2) then return(false),
+      la : %mr_logpow_lin(L1, x), lc : %mr_logpow_lin(L2, x),
+      if is(la = false) or is(lc = false) then return(false),
+      return([e, part(la, 1), part(la, 2), n1, part(lc, 1), part(lc, 2)])
+    ),
+    if not atom(arg) and is(op(arg) = "*") then (
+      /* Times[e0, Power[Quotient[L1, L2], n]] (or the bare-Quotient
+         k = 1 case): one x-bearing quotient power, the rest x-free */
+      e : 1, QF : false, bad : false,
+      for i : 1 thru length(arg) do (
+        t : part(arg, i),
+        if is(bad = false) then (
+          if is(freeof(x, t)) then (
+            e : e*t
+          ) else (
+            u : %mr_logratio_quotp(t, x),
+            if is(u = false) then (bad : true)
+            else if is(QF # false) then (bad : true)
+            else QF : u
+          )
+        )
+      ),
+      if is(bad) or is(QF = false) then return(false),
+      if is(part(QF, 3) = 0) then return(false),
+      la : %mr_logpow_lin(part(QF, 1), x), lc : %mr_logpow_lin(part(QF, 2), x),
+      if is(la = false) or is(lc = false) then return(false),
+      if is(part(QF, 1) = part(QF, 2)) then return(false),
+      return([e, part(la, 1), part(la, 2), part(QF, 3),
+              part(lc, 1), part(lc, 2)])
+    ),
+    if not atom(arg) and is(op(arg) = "^") and is(length(arg) = 2) then (
+      /* Quotient[L1, L2]^n with e = 1 (Maxima drops the Times[1, .]) */
+      b : part(arg, 1), k : part(arg, 2),
+      if not freeof(x, k) then return(false),
+      if is(k = 0) then return(false),
+      if not atom(b) and is(op(b) = "/") and is(length(b) = 2)
+         and is(%mr_linearQ(part(b, 1), x))
+         and is(%mr_linearQ(part(b, 2), x))
+         and not is(part(b, 1) = part(b, 2)) then (
+        la : %mr_logpow_lin(part(b, 1), x), lc : %mr_logpow_lin(part(b, 2), x),
+        if is(la = false) or is(lc = false) then return(false),
+        return([1, part(la, 1), part(la, 2), k, part(lc, 1), part(lc, 2)])
+      ),
+      return(false)
+    ),
+    return(false))$
+
+  /* the family-1 structural match: nh = 1 (3.2.1, 12 caps) or 2
+     (3.2.2, 15 caps) — see the section header */
+  %mr_logratio_dr(f, x, nh, caps) := block(
+    [fl, i, F, s, mp, base, k, ls, lin, bad, heads, l, lg, e, a, b, n, c, d,
+     A, B, p, H, m, H1, H2, f1, g1, f2, g2, hf, hg, hv, iv, q, t1a, t1c,
+     t2a, t2c],
+    fl : %mr_logpow_collect(f, 1, []),
+    heads : [], l : false, bad : false,
+    for i : 1 thru length(fl) do (
+      F : part(part(fl, i), 1), s : part(part(fl, i), 2),
+      mp : %mr_logpow_power(F, x),
+      if is(mp = false) then (
+        bad : true
+      ) else (
+        base : part(mp, 1), k : part(mp, 2),
+        ls : %mr_logratio_logsum(base, x),
+        if is(ls # false) then (
+          if is(l = false) then (l : [ls, k, s]) else (bad : true)
+        ) else (
+          lin : %mr_logpow_lin(base, x),
+          if is(lin = false) then (bad : true)
+          else if is(length(heads) >= nh) then (bad : true)
+          else heads : append(heads, [[lin, k, s]])
+        )
+      )
+    ),
+    if is(bad) then return(false),
+    if is(l = false) then return(false),
+    if is(length(heads) # nh) then return(false),
+    A : part(part(l, 1), 1), B : part(part(l, 1), 2),
+    p : part(l, 3)*part(l, 2),
+    lg : %mr_logratio_argw(part(part(l, 1), 3), x),
+    if is(lg = false) then return(false),
+    e : part(lg, 1), a : part(lg, 2), b : part(lg, 3), n : part(lg, 4),
+    c : part(lg, 5), d : part(lg, 6),
+    H : part(heads, 1),
+    hf : part(part(H, 1), 1), hg : part(part(H, 1), 2),
+    m : part(H, 3)*part(H, 2),
+    if is(nh = 1) then (
+      [part(caps, 1) = hf, part(caps, 2) = hg, part(caps, 3) = m,
+       part(caps, 4) = A, part(caps, 5) = B, part(caps, 6) = e,
+       part(caps, 7) = a, part(caps, 8) = b, part(caps, 9) = n,
+       part(caps, 10) = c, part(caps, 11) = d, part(caps, 12) = p]
+    ) else (
+      H1 : part(heads, 1), H2 : part(heads, 2),
+      f1 : part(part(H1, 1), 1), g1 : part(part(H1, 1), 2),
+      f2 : part(part(H2, 1), 1), g2 : part(part(H2, 1), 2),
+      t1a : %mr_eqQ(b*f1 - a*g1, 0), t1c : %mr_eqQ(d*f1 - c*g1, 0),
+      t2a : %mr_eqQ(b*f2 - a*g2, 0), t2c : %mr_eqQ(d*f2 - c*g2, 0),
+      if is(t1a) and is(t2c) then (
+        hf : f1, hg : g1, m : part(H1, 3)*part(H1, 2),
+        hv : f2, iv : g2, q : part(H2, 3)*part(H2, 2)
+      ) else if is(t2a) and is(t1c) then (
+        hf : f2, hg : g2, m : part(H2, 3)*part(H2, 2),
+        hv : f1, iv : g1, q : part(H1, 3)*part(H1, 2)
+      ) else return(false),
+      [part(caps, 1) = hf, part(caps, 2) = hg, part(caps, 3) = m,
+       part(caps, 4) = hv, part(caps, 5) = iv, part(caps, 6) = q,
+       part(caps, 7) = A, part(caps, 8) = B, part(caps, 9) = e,
+       part(caps, 10) = a, part(caps, 11) = b, part(caps, 12) = n,
+       part(caps, 13) = c, part(caps, 14) = d, part(caps, 15) = p]
+    ))$
+
+  %mr_logratio_match(f, x, caps) := block([],
+    if is(length(caps) = 12) then return(%mr_logratio_dr(f, x, 1, caps)),
+    if is(length(caps) = 15) then return(%mr_logratio_dr(f, x, 2, caps)),
+    return(false))$
+
+  /* one side of the 3.2.3 log argument -> [C, L]: the x-free constant
+     part C (default 1) and the single x-bearing linear L, else false
+     (the .m argument e (f (a+b x)^p (c+d x)^q)^r stores to constant
+     times linear per side — no power on a side) */
+  %mr_logratio_sqside(S, x) := block([i, t, C, L, bad],
+    if atom(S) then (
+      if is(S = x) then return([1, x]),
+      return(false)
+    ),
+    if is(freeof(x, S)) then return(false),
+    /* Times walk first: %mr_linearQ is a degree test, true of the
+       stored shape C1*L1 = (b*e-a*f)*(c+d*x) itself (see the family-1
+       side reader). */
+    if is(op(S) = "*") then (
+      C : 1, L : false, bad : false,
+      for i : 1 thru length(S) do (
+        t : part(S, i),
+        if is(bad = false) then (
+          if is(freeof(x, t)) then (
+            C : C*t
+          ) else if is(L = false) then (
+            if not atom(t) and is(op(t) = "+") and is(length(t) = 2)
+               and is(%mr_linearQ(t, x)) then (
+              L : t
+            ) else if is(t = x) then (
+              L : t
+            ) else (
+              bad : true
+            )
+          ) else (
+            bad : true
+          )
+        )
+      ),
+      if is(bad) or is(L = false) then return(false),
+      return([C, L])
+    ),
+    if is(op(S) = "+") and is(length(S) = 2) and is(%mr_linearQ(S, x)) then (
+      return([1, S])
+    ),
+    return(false))$
+
+  /* the 3.2.3 r5/r6 structural match (see the section header) */
+  %mr_logratio_sq_match(f, x, caps) := block(
+    [fl, i, F, s, mp, base, k, bad, LP, h, lin, N, D, r1, r2, C1, L1, C2,
+     L2, la, lc],
+    if is(length(caps) # 11) then return(false),
+    fl : %mr_logpow_collect(f, 1, []),
+    LP : false, h : false, bad : false,
+    for i : 1 thru length(fl) do (
+      F : part(part(fl, i), 1), s : part(part(fl, i), 2),
+      mp : %mr_logpow_power(F, x),
+      if is(mp = false) then (
+        bad : true
+      ) else (
+        base : part(mp, 1), k : part(mp, 2),
+        if not atom(base) and is(op(base) = 'log) then (
+          if not %mr_eqQ(s*k, 2) then (bad : true)
+          else if is(LP # false) then (bad : true)
+          else LP : part(base, 1)
+        ) else (
+          lin : %mr_logpow_lin(base, x),
+          if is(lin = false) then (bad : true)
+          else if is(h # false) then (bad : true)
+          else if is(freeof(x, base)) then (bad : true)
+          else if not %mr_eqQ(s*k, -1) then (bad : true)
+          else h : lin
+        )
+      )
+    ),
+    if is(bad) then return(false),
+    if is(LP = false) then return(false),
+    if is(h = false) then return(false),
+    if not atom(LP) and is(op(LP) = "/") and is(length(LP) = 2) then (
+      N : part(LP, 1), D : part(LP, 2),
+      r1 : %mr_logratio_sqside(N, x),
+      if is(r1 = false) then return(false),
+      r2 : %mr_logratio_sqside(D, x),
+      if is(r2 = false) then return(false),
+      C1 : part(r1, 1), L1 : part(r1, 2),
+      C2 : part(r2, 1), L2 : part(r2, 2),
+      la : %mr_logpow_lin(L1, x), lc : %mr_logpow_lin(L2, x),
+      if is(la = false) or is(lc = false) then return(false),
+      if is(L1 = L2) then return(false),
+      /* the binding (section header): (a, b) := the denominator side
+         L2, (c, d) := the numerator side L1, e := C1, f := 1/C2,
+         p := -1, q := 1, r := 1, (g, h) := the head. The return is
+         EXPLICIT: a bare if-then value is not the block's — the
+         sequence would fall through to the final return(false)
+         (measured 2026-09-02, probe /tmp/opencode/mini53.mac) */
+      return([part(caps, 1) = part(lc, 1), part(caps, 2) = part(lc, 2),
+       part(caps, 3) = part(la, 1), part(caps, 4) = part(la, 2),
+       part(caps, 5) = C1, part(caps, 6) = 1/C2,
+       part(caps, 7) = part(h, 1), part(caps, 8) = part(h, 2),
+       part(caps, 9) = -1, part(caps, 10) = 1, part(caps, 11) = 1])
+    ),
+    return(false))$
+
+  /* ---- class-3 cluster A: the small cond-side predicates (Task 4) --- */
 
 /* MemberQ (Mathematica builtin) — MemberQ[list, elem]. The built-in is
    ORDER-REVERSED and boolean-valued: describe("member", exact) reads

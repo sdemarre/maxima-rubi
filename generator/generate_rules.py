@@ -2549,6 +2549,234 @@ def _emit_c4_manual(spec, key, n, rule_vars, cond, rhs, ctx):
     return "\n".join(lines), []
 
 
+# ============================================================================
+# C3 ratio log-argument structural re-transcription (class-3 deferred
+# campaign C3).
+#
+# Defect (measured 2026-09-01..02, branch_5_50_base_84_g4204fb669, probes
+# /tmp/opencode/c3-p9..p23): the three quotient-log LHS families
+#   3.2.1 (f_.+g_.*x_)^m_.*(A_.+B_.*Log[e_.*((a_.+b_.*x_)/(c_.+d_.*x_))^n_.])^p_.
+#   3.2.2 (f_.+g_.*x_)^m_.*(h_.+i_.*x_)^q_.*(A_.+B_.*Log[e_.*((a_.+b_.*x_)/(c_.+d_.*x_))^n_.])^p_.
+#   3.2.3 Log[e_.*(f_.*(a_.+b_.*x_)^p_.*(c_.+d_.*x_)^q_.)^r_.]^2/(g_.+h_.*x_)
+# (whitespace-free marker text, exact) 0-bind the stored corpus forms of
+# the family (the same defect as C4 — a slotted power pattern factor
+# binds a Quotient base but not a bare one, and the e-anchored log
+# argument admits no backtracking; probes
+# /tmp/opencode/t4c4_pf1.mcl, /tmp/opencode/c3-p10-census.out). Target
+# rules: 3.2.1 r15/r17/r19 (12 captures), 3.2.2 r3/r5 (15 captures),
+# 3.2.3 r5/r6 (11 captures) — 99 corpus entries. The same-LHS siblings
+# (3.2.1 r21 Unintegrable; 3.2.2 r7/r9/r11; 3.2.2 r1 lacks the q/p
+# slots) are declined by the missing cond clause below (or by the
+# shape itself) and keep their current defmatch emission untouched.
+#
+# Fix: NO defmatch, NO matchdeclare for the target rules — the rule
+# body decomposes the integrand structurally with the fail-closed
+# %mr_logratio_match (the 12/15-capture shapes) or
+# %mr_logratio_sq_match (the 11-capture shape) (maxima_rubi_utils.mac,
+# the C3 section after the C4 section). The .m cond/repl run UNCHANGED
+# and regenerate byte-identical: they read every capture via
+# geteqR(mm, 'cap), which the structural matchlist satisfies, and the
+# snapshot rewrite is the default-path one.
+#
+# Each shape is closed and exact (fullmatch, every marker pinned; the
+# 3.2.1/3.2.2 shapes are mutually exclusive — the 3.2.2 second-head
+# slots force a *Log[ where the 3.2.1 tail demands one, and vice
+# versa — and neither matches the C4 product-log shape). The decline
+# signal per shape (a shape-matching rule whose cond lacks the clause
+# returns None and keeps its defmatch emission): 3.2.1 requires
+# NeQ[b*c - a*d, 0] (the Unintegrable r21 catch-all shares the lhs but
+# has no NeQ); 3.2.2 requires BOTH EqQ[b*f - a*g, 0] AND
+# EqQ[d*h - c*i, 0] (r7 carries only the second, r9 and r11 neither);
+# 3.2.3 requires NeQ[b*c - a*d, 0] (both r5 and r6 carry it — the
+# ^2-pinned shape is already closed, this is belt-and-braces).
+# A matching capture set that is not the lhs captures is a loud GenError.
+_C3_321_SHAPE = re.compile(
+    r"^\("
+    r"(?P<f>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<g>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)\^"
+    r"(?P<m>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"(?P<A>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<B>[A-Za-z][A-Za-z0-9]*)_\.\*Log\["
+    r"(?P<e>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\(\("
+    r"(?P<a>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<b>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)/\("
+    r"(?P<c>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<d>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)\)\^"
+    r"(?P<n>[A-Za-z][A-Za-z0-9]*)_\.\]"
+    r"\)\^"
+    r"(?P<p>[A-Za-z][A-Za-z0-9]*)_\.$"
+)
+_C3_321_BODY_ORDER = ("f", "g", "m", "A", "B", "e", "a", "b", "n",
+                      "c", "d", "p")
+_C3_322_SHAPE = re.compile(
+    r"^\("
+    r"(?P<f>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<g>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)\^"
+    r"(?P<m>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"(?P<h>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<i>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)\^"
+    r"(?P<q>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"(?P<A>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<B>[A-Za-z][A-Za-z0-9]*)_\.\*Log\["
+    r"(?P<e>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\(\("
+    r"(?P<a>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<b>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)/\("
+    r"(?P<c>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<d>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)\)\^"
+    r"(?P<n>[A-Za-z][A-Za-z0-9]*)_\.\]"
+    r"\)\^"
+    r"(?P<p>[A-Za-z][A-Za-z0-9]*)_\.$"
+)
+_C3_322_BODY_ORDER = ("f", "g", "m", "h", "i", "q", "A", "B", "e",
+                      "a", "b", "n", "c", "d", "p")
+_C3_323_SHAPE = re.compile(
+    r"^Log\["
+    r"(?P<e>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"(?P<f>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"(?P<a>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<b>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)\^"
+    r"(?P<p>[A-Za-z][A-Za-z0-9]*)_\.\*"
+    r"\("
+    r"(?P<c>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<d>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)\^"
+    r"(?P<q>[A-Za-z][A-Za-z0-9]*)_\.\)"
+    r"\^"
+    r"(?P<r>[A-Za-z][A-Za-z0-9]*)_\.\]"
+    r"\^2/"
+    r"\("
+    r"(?P<g>[A-Za-z][A-Za-z0-9]*)_\.\+"
+    r"(?P<h>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
+    r"\)$"
+)
+_C3_323_BODY_ORDER = ("a", "b", "c", "d", "e", "f", "g", "h", "p",
+                      "q", "r")
+
+
+def _c3_captures_ok(m, key, n, rule_vars):
+    g = m.groupdict()
+    if set(g.values()) != set(rule_vars):
+        raise GenError(f"{key} r{n}: C3 shape matched with captures "
+                       f"{sorted(set(g.values()))} != lhs captures "
+                       f"{sorted(rule_vars)}")
+    return g
+
+
+def _c3_has_clause(clauses, pattern):
+    return any(re.fullmatch(pattern, cl) for cl in clauses)
+
+
+def c3_spec(body, key, n, rule_vars, cond):
+    """C3 quotient-log shape -> {"matcher": the structural matcher
+    function, "order": the .m var names in the fixed capture order};
+    None for every other rule (and for a same-LHS sibling whose cond
+    lacks the shape's decline clause); a loud GenError on a matched
+    capture set that is not the lhs captures."""
+    clauses = _split_and(cond or "")
+    m = _C3_321_SHAPE.fullmatch(body)
+    if m is not None:
+        g = _c3_captures_ok(m, key, n, rule_vars)
+        need = (r"NeQ\[\s*" + g["b"] + r"\s*\*\s*" + g["c"]
+                + r"\s*-\s*" + g["a"] + r"\s*\*\s*" + g["d"]
+                + r"\s*,\s*0\]")
+        if not _c3_has_clause(clauses, need):
+            return None
+        return {"matcher": "%mr_logratio_match",
+                "order": [g[v] for v in _C3_321_BODY_ORDER]}
+    m = _C3_322_SHAPE.fullmatch(body)
+    if m is not None:
+        g = _c3_captures_ok(m, key, n, rule_vars)
+        need1 = (r"EqQ\[\s*" + g["b"] + r"\s*\*\s*" + g["f"]
+                 + r"\s*-\s*" + g["a"] + r"\s*\*\s*" + g["g"]
+                 + r"\s*,\s*0\]")
+        need2 = (r"EqQ\[\s*" + g["d"] + r"\s*\*\s*" + g["h"]
+                 + r"\s*-\s*" + g["c"] + r"\s*\*\s*" + g["i"]
+                 + r"\s*,\s*0\]")
+        if not _c3_has_clause(clauses, need1) \
+           or not _c3_has_clause(clauses, need2):
+            return None
+        return {"matcher": "%mr_logratio_match",
+                "order": [g[v] for v in _C3_322_BODY_ORDER]}
+    m = _C3_323_SHAPE.fullmatch(body)
+    if m is not None:
+        g = _c3_captures_ok(m, key, n, rule_vars)
+        need = (r"NeQ\[\s*" + g["b"] + r"\s*\*\s*" + g["c"]
+                + r"\s*-\s*" + g["a"] + r"\s*\*\s*" + g["d"]
+                + r"\s*,\s*0\]")
+        if not _c3_has_clause(clauses, need):
+            return None
+        return {"matcher": "%mr_logratio_sq_match",
+                "order": [g[v] for v in _C3_323_BODY_ORDER]}
+    return None
+
+
+def _emit_c3_manual(spec, key, n, rule_vars, cond, rhs, ctx):
+    """The structural emission for the C3 families (no matchdeclare/
+    defmatch — see the _C3_*_SHAPE block comment). Identical to
+    _emit_c4_manual except the rule body's structural matcher call:
+    spec["matcher"] with the captures in the spec's fixed order."""
+    if ctx["decls"]:
+        raise GenError(f"{key} r{n}: C3 rule produced MatchQ "
+                       f"markers (unsupported)")
+    if "MatchQ" in (cond or ""):
+        raise GenError(f"{key} r{n}: C3 shape with a MatchQ condition "
+                       f"(unsupported)")
+    caps = {v: cap_name(key, n, v) for v in rule_vars}
+    cplist = ", ".join("'" + caps[v] for v in spec["order"])
+    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
+                 if cond else "true")
+    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
+    caps_sorted = sorted(caps.values())
+    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
+    snaps = {c: c + "__s" for c in caps_sorted}
+    if set(snaps.values()) & set(caps_sorted):
+        raise GenError(f"{key} r{n}: a snapshot name collides with a "
+                       f"capture name (a Rubi variable named __s?)")
+    for c in caps_sorted:
+        repl_txt = re.sub(
+            r"(?<![0-9A-Za-z_])" + re.escape(c) + r"(?![0-9A-Za-z_])",
+            snaps[c], repl_txt)
+    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
+                           for c in caps_sorted) or "true"
+    locals_txt = ", ".join(caps_sorted)
+    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
+    # Emit in the DEFAULT order (cond, repl, rule-body — the default
+    # path is defmatch, cond, repl, rule-body) so a C3 rule's diff
+    # against a defmatch rule is only the removed matchdeclare/defmatch
+    # lines plus the rule body's single structural `mm :` line (no
+    # cosmetic reflow of the cond/repl/rule-body blocks).
+    lines = []
+    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
+    lines.append(f"  {binds},")
+    lines.append(f"  {base_cond})$")
+    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
+    lines.append(f"  {snap_binds},")
+    lines.append(f"  {repl_txt})$")
+    lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
+    lines.append(f"  mm : {spec['matcher']}(f, x, [{cplist}]),")
+    lines.append("  if mm = false then return(false),")
+    lines.append(_MM_BOOL_GUARD)
+    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
+    lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) "
+                 f"else false)$")
+    return "\n".join(lines), []
+
+
 def emit_rule(run, key, n, rule_vars):
     """One rule run (lhs, rhs, cond) -> the five Maxima functions as text.
     rule_vars is the set of capture names (from the lhs)."""
@@ -2607,6 +2835,18 @@ def emit_rule(run, key, n, rule_vars):
     c4 = c4_spec(body, key, n, rule_vars, cond)
     if c4 is not None:
         return _emit_c4_manual(c4, key, n, rule_vars, cond, rhs, ctx)
+    # (ratio log-argument structural re-transcription (3.2.1 r15/r17/
+    # r19, 3.2.2 r3/r5, 3.2.3 r5/r6, class-3 deferred campaign C3): the
+    # faithful defmatch LHS 0-binds the stored quotient-log forms (the
+    # slotted power binds a Quotient base but not a bare one; the
+    # log-arg pairing has no backtracking — the same defect as C4).
+    # See c3_spec / _emit_c3_manual and the %mr_logratio_match /
+    # %mr_logratio_sq_match sections in maxima_rubi_utils.mac. No
+    # defmatch/matchdeclare is emitted; the cond/repl regenerate
+    # byte-identical.
+    c3 = c3_spec(body, key, n, rule_vars, cond)
+    if c3 is not None:
+        return _emit_c3_manual(c3, key, n, rule_vars, cond, rhs, ctx)
     # (d_.*x_)^m_. head re-transcription (3.1.2 r10, class-3 deferred
     # campaign C2): the non-atomic head power steals the log-power
     # factor from findfun and 0-binds the stored unit-monomial heads —
