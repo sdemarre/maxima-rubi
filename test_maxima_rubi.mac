@@ -79,7 +79,8 @@ run_all_tests() := block([],
      test_class3_b2_linearQ(),
       test_class3_b4_derDiv(),
       test_class3_c2_dhead(),
-      test_int_family_predicates(),
+       test_class3_c1_slotted(),
+       test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -990,11 +991,105 @@ test_structural_predicates() := block([],
     z : errcatch(factor(diff(ans - x^2*expintegral_ei(2*(a+b*log(c*x^n))/(b*n))/(%e^(2*a/(b*n))*b*n*(c*x^n)^(2/n)), x))),
     check_bool("c2 e67 expected-diff (factor)",
                is(z # []) and is(part(z, 1) = 0)),
-    mr_rule_table : saved_table,
-    true
-  )$
+     mr_rule_table : saved_table,
+     true
+   )$
 
-  /* Task 7a cluster B — the int-family + binomial predicates. The
+   /* Task 4C-C1 (class-3 deferred campaign, 2026-09-01) — the M1
+      slotted-inner-exponent 0-bind and its C1c sqrt completion. A
+      faithful 1:1 LHS whose binomial-power factor (d+e x^r)^q carries a
+      SLOTTED inner exponent r (the .m idiom x_^r_.) 0-binds under this
+      build's matcher even against a LITERAL target exponent (probes
+      /tmp/opencode/t4c1_step1{,b,c}_*.mac, build
+      branch_5_50_base_84_g4204fb669); the control with a literal inner
+      exponent (3_1_4 r17, x^2) binds — the boundary is the slot. The fix
+      re-emits the whole binomial-POWER factor (base plus outer exponent)
+      as ONE slot (m1b), constrained by the fail-closed %mr_mbp_isfac
+      (a binomial A+B x^n or a single power of one, NEVER a product --
+      the product exclusion is what stops the slot absorbing an adjacent
+      head coefficient on the B shape or a log-arg constant on C/D), and
+      recovers (d, e, r) plus the outer q ONCE in the rule body via
+      %mr_mbp_unwrap + %mr_mbp_base, appending them to the matchlist so
+      the UNCHANGED .m cond/repl read them via geteqR identically. C1c
+      completion (measured 2026-09-01): Maxima stores u^(1/2) as the
+      `sqrt` node (op(x^(1/2)) is the SYMBOL sqrt, op(u^2) the string
+      "^"), so the decomposition must accept the sqrt-canonicalized forms
+      the MA matcher's x_^r_. binds -- %mr_mbp_unwrap unwraps FORM 2
+      sqrt(d+e x) -> (base d+e x, outer 1/2) and %mr_mbp_term reads a
+      sqrt(x) TERM as x^(1/2) for FORM 1 (e+f sqrt(x))^k -> inner 1/2;
+      both the slot predicate and the body recovery read the split from
+      the SAME %mr_mbp_unwrap, so cond and repl see identical values.
+      RED: every pattern-level listp() below is false pre-fix (the M1
+      0-bind, and for the sqrt rows the C1c 0-bind). GREEN pins: the
+      isfac rejections (fail-closed) hold in both runs. Answer level: the
+      q=1 bare-binomial row is non-noun and closes the zero-chain. */
+   test_class3_c1_slotted() := block([ans, saved_table, f, z, mm],
+     print("--- c1: M1 slotted-inner-exponent + C1c sqrt re-transcription (3_1_3/3_1_4/3_1_5) ---"),
+     %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
+     %mr_load_sibling("rules/class3/3_1_4.mac", 'mr_witness_3_1_4),
+     %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
+     saved_table : mr_rule_table,
+     mr_rule_table : flatten([mr_rule_table, mr_rules_3_1_3, mr_rules_3_1_4, mr_rules_3_1_5]),
+     /* 3_1_3 A2: the q=1 bare binomial binds and recovers [c1d,c1e,1], q=1 */
+     mm : _mr_pat_3_1_3_r1((c1d+c1e*x)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_3_r1 binds the q=1 bare binomial", listp(mm)),
+     check_bool("c1 3_1_3_r1 recovers [c1d,c1e,1] q=1",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 1) = c1d)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 2) = c1e)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 3) = 1)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 2) = 1)),
+     /* 3_1_3 A2: C1c FORM 2 sqrt(1+x^2) binds and recovers inner=2, q=1/2 */
+     mm : _mr_pat_3_1_3_r1(sqrt(1+x^2)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_3_r1 binds FORM2 sqrt(1+x^2) (C1c)", listp(mm)),
+     check_bool("c1 3_1_3_r1 FORM2 sqrt recovers inner=2 outer=1/2",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 3) = 2)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 2) = 1/2)),
+     /* 3_1_4 B: C1c FORM 2 sqrt under the f*x^m head; the slot is the
+        sqrt factor ONLY (the head must not absorb it) */
+     mm : _mr_pat_3_1_4_r23(5*x^2*sqrt(c1d+c1e*x)*(c1a+c1b*log(c1c*x^3)), x),
+     check_bool("c1 3_1_4_r23 binds FORM2 sqrt(c1d+c1e*x) under head (C1c)", listp(mm)),
+     check_bool("c1 3_1_4_r23 slot = sqrt(c1d+c1e*x) only (head not absorbed)",
+                listp(mm) and is(geteqR(mm, '_mr_3_1_4_r23_m1b) = sqrt(c1d+c1e*x))),
+     check_bool("c1 3_1_4_r23 recovers inner=1 outer=1/2",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_4_r23_m1b)), 1), x), 3) = 1)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_4_r23_m1b)), 2) = 1/2)),
+     /* 3_1_5 C (r46): C1c FORM 1 sqrt term in the log-arg binomial */
+     mm : _mr_pat_3_1_5_r46(log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x))^c1po/x, x),
+     check_bool("c1 3_1_5_r46 binds FORM1 (c1e+c1f*sqrt(x))^c1ro (C1c)", listp(mm)),
+     check_bool("c1 3_1_5_r46 recovers inner=1/2 outer=c1ro",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r46_m1b)), 1), x), 3) = 1/2)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r46_m1b)), 2) = c1ro)),
+     /* 3_1_5 D (r47): C1c FORM 1 under the (g*x)^h head (symbolic head) */
+     mm : _mr_pat_3_1_5_r47((c1g*x)^c1h*log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_5_r47 binds FORM1 (c1e+c1f*sqrt(x))^c1ro (C1c)", listp(mm)),
+     check_bool("c1 3_1_5_r47 recovers inner=1/2 outer=c1ro",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r47_m1b)), 1), x), 3) = 1/2)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r47_m1b)), 2) = c1ro)),
+     /* GREEN pins: %mr_mbp_isfac fail-closed (hold in RED and GREEN) */
+     check_not("c1 isfac rejects stray product 5*(c1d+c1e*x)", %mr_mbp_isfac(5*(c1d+c1e*x))),
+     check_not("c1 isfac rejects trinomial c1d+c1e*x+c1g*x^2", %mr_mbp_isfac(c1d+c1e*x+c1g*x^2)),
+     check_not("c1 isfac rejects bare sqrt(x) monomial", %mr_mbp_isfac(sqrt(x))),
+     check_not("c1 isfac rejects bare c1e*x^2 monomial", %mr_mbp_isfac(c1e*x^2)),
+     check_not("c1 isfac rejects x-bearing exponent c1d+c1e*x^(x+1)", %mr_mbp_isfac(c1d+c1e*x^(x+1))),
+     /* answer level: the q=1 bare-binomial row is non-noun, closes ratsimp */
+     f : (1+x^2)*(1+log(x)),
+     ans : rubi(f, x),
+     check_not("c1 e(q=1) not a noun",
+               is(atom(ans)) or is(op(ans) = 'integrate)
+               or is(string(op(ans)) = "unintegrable")),
+     z : errcatch(ratsimp(diff(ans, x) - f)),
+     check_bool("c1 e(q=1) zero-chain (ratsimp)",
+                is(z # []) and is(part(z, 1) = 0)),
+     mr_rule_table : saved_table,
+     true
+   )$
+
+   /* Task 7a cluster B — the int-family + binomial predicates. The
     binomialQ / intBinomialQ probes go through the LISP dispatchers
     (maxima_rubi_dispatch.lisp) — a dispatcher miss leaves the calls
     as nouns and these checks fail loudly. Expected values are

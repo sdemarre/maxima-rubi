@@ -4172,6 +4172,14 @@ rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
     if part(t,1) = x then return([1, part(t,2)])
     else return(false)
   ),
+  /* Maxima canonicalizes u^(1/2) to the `sqrt` node (op(x^(1/2)) is the
+     SYMBOL sqrt, not the string "sqrt"): treat a bare sqrt(x) term as the
+     monomial x^(1/2). Class-3 deferred campaign C1c (FORM 1: a sqrt term
+     inside the binomial base, (e + f*sqrt(x))^k). */
+  if op(t) = 'sqrt then (
+    if part(t,1) = x then return([1, 1/2])
+    else return(false)
+  ),
   if op(t) = "*" then (
     k : false, b : 1, ok : true,
     for i : 1 thru length(t) do (
@@ -4187,6 +4195,12 @@ rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
             if op(u) = "^" then (
               if part(u,1) = x then (
                 if k # false then ok : false else k : part(u,2)
+              )
+              else ok : false
+            ) else if op(u) = 'sqrt then (
+              /* C1c: a sqrt(x) factor in the monomial term = x^(1/2) */
+              if part(u,1) = x then (
+                if k # false then ok : false else k : 1/2
               )
               else ok : false
             ) else (
@@ -4267,6 +4281,47 @@ rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
           )
         )
       )
+    )
+  ),
+  res)$
+
+/* whole binomial-power factor -> [base, outer-exponent]. Unwraps a
+   trailing `^` (base = part1, q = part2) OR a sqrt-canonicalized `^(1/2)`:
+   Maxima stores `u^(1/2)` as the `sqrt` node, whose op is the SYMBOL sqrt
+   (measured 2026-09-01: op(x^(1/2)) = sqrt, a symbol, while op(u^2) = the
+   string "^"). A bare base (no trailing power) -> [whole, 1]. This is the
+   single place both the %mr_mbp_isfac predicate and the generated M1 rule
+   body read the base/outer split, so the cond and repl see the same values.
+   Class-3 deferred campaign C1c. */
+%mr_mbp_unwrap(whole) := block([b, q, res],
+  b : whole,
+  q : 1,
+  if op(whole) = "^" then (b : part(whole, 1), q : part(whole, 2)),
+  if op(whole) = 'sqrt then (b : part(whole, 1), q : 1/2),
+  res : [b, q],
+  res)$
+
+/* matchdeclare predicate for the single-slot M1 binomial-power factor
+   (class-3 deferred campaign C1): true iff e is a binomial (A + B*x^n)
+   or a single power of one (base a binomial) -- NEVER a product. The
+   product exclusion is what stops the slot from absorbing an adjacent
+   head coefficient (shape B) or log-arg constant (shapes C/D): an
+   unconstrained `true` slot grabs `5*(d+e x^r)^q` whole. The base is read
+   via %mr_mbp_unwrap (handles the `^` AND the sqrt-canonicalized `^(1/2)`
+   FORM 2: sqrt(d+e*x)). The atom guards are mandatory -- defmatch tries
+   every sub-factor as a candidate, including atoms, and op() on an atom
+   errors. References the package integration variable x (exactly like the
+   freeof(x) matchdeclare predicates). */
+%mr_mbp_isfac(e) := block([w, b, res],
+  if atom(e) then (
+    res : false
+  ) else (
+    w : %mr_mbp_unwrap(e),
+    b : part(w, 1),
+    if atom(b) then (
+      res : false
+    ) else (
+      res : is(%mr_mbp_base(b, x) # false)
     )
   ),
   res)$

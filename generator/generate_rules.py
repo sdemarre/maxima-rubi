@@ -2195,6 +2195,221 @@ def dhead10_spec(body, key, n, rule_vars, cond):
     return {"old_head": f"({d}_.*x_)^{mvar}_.*", "d": d}
 
 
+# ============================================================================
+# M1 slotted-inner-exponent re-transcription (class-3 deferred campaign C1).
+#
+# Defect (measured 2026-09-01, branch_5_50_base_84_g4204fb669, probes
+# /tmp/opencode/t4c1_step1{,b,c}_probe.mac): a faithful 1:1 LHS whose
+# binomial-power factor (A + B*x^I)^O carries a SLOTTED inner exponent I
+# (the .m idiom x_^I_.) 0-binds under this build's matcher even against a
+# LITERAL target exponent; the control with a literal inner exponent (3_1_4
+# r17, x^2) binds — the boundary is the slot. Re-emitting the factor's BASE
+# as one unconstrained slot (keeping the outer exponent O) binds every stored
+# form; the cond/repl recover (A, B, I) from the slot via the fail-closed
+# %mr_mbp_base decomposition (a non-binomial base, a non-monomial or
+# x-bearing term, or an x-bearing exponent declines the factor — the
+# over-bind rejection). The slot is defmatch'd and the rule body builds the
+# matchlist structurally (appending the recovered captures), so the .m
+# cond/repl run UNCHANGED: they read every capture via geteqR(mm, 'cap),
+# which works on any equation list (the %mr_mbp2 manual-matcher precedent).
+#
+# Closed shape set (whitespace-free marker text); a matching capture set that
+# is not the lhs captures is a loud GenError, and anything outside the set
+# returns None (the rule keeps its current emission).
+#   A1  x^m (d+e x^r)^q (a+b log)        3_1_4 r2/r3   (unit head kept)
+#   A2  (d+e x^r)^q (a+b log)            3_1_3 r3      (no head)
+#   B   (f x)^m (d+e x^r)^q (a+b log)    3_1_4 r23/r24 ((f x)^m head re-transcribed
+#                                                       to f x^m — the C2/M6 idiom;
+#                                                       REQUIRED: binomial-only 0-binds)
+#   C   log(d (e+f x^m)^r) (a+b log)^p / x   3_1_5 r46 (log-arg binomial, no head)
+#   D   (g x)^q log(d (e+f x^m)^r) (a+b log) 3_1_5 r47 (log-arg binomial, head kept
+#                                                       — the head re-transcription is
+#                                                       optional here and NOT taken)
+_M1_SLOT = "m1b"
+_M1_BASE = r"\((?P<A>\w+)_(?P<sign>[+\-])(?P<B>\w+)_\.\*x_\^(?P<I>\w+)_\.\)"
+_M1_OUT  = r"\^_?(?P<o>\w+)_\.?"
+_M1_OUTP = r"\^_?(?P<p>\w+)_\.?"
+_M1_LOGF = (r"\((?P<a>\w+)_\.\+(?P<b>\w+)_\.\*Log\["
+            r"(?P<c>\w+)_\.\*x_\^(?P<n>\w+)_\.\]\)")
+_M1_HEAD = r"\((?P<f>\w+)_\.\*x_\)\^_?(?P<hm>\w+)_\.?"
+_M1_UMON = r"x_\^_?(?P<hm>\w+)_\.?"
+_M1_LOGARG = r"Log\[(?P<d>\w+)_\.\*" + _M1_BASE + _M1_OUT + r"\]"
+_M1_T = r"\*"
+_M1_SHAPES = (
+    ("A1", re.compile(_M1_UMON + _M1_T + _M1_BASE + _M1_OUT + _M1_T + _M1_LOGF)),
+    ("A2", re.compile(_M1_BASE + _M1_OUT + _M1_T + _M1_LOGF)),
+    ("B",  re.compile(_M1_HEAD + _M1_T + _M1_BASE + _M1_OUT + _M1_T + _M1_LOGF)),
+    ("C",  re.compile(_M1_LOGARG + _M1_T + _M1_LOGF + _M1_OUTP + r"/x_")),
+    ("D",  re.compile(_M1_HEAD + _M1_T + _M1_LOGARG + _M1_T + _M1_LOGF)),
+)
+
+
+def m1_spec(body, key, n, rule_vars):
+    """M1 shape -> {"shape", "rewritten", "decomp", "outer"}; None otherwise.
+    `rewritten` is the re-transcribed whitespace-free marker body (the whole
+    binomial-POWER factor -- base plus its outer exponent -- replaced by the
+    single _M1_SLOT slot; for shape B the (f x)^m head re-transcribed to
+    f x^m as well). `decomp` = [A, B, I]: the base's constant / coefficient /
+    inner-exponent captures, recovered from the slot's base in that order (the
+    %mr_mbp_base result positions). `outer` = the outer-exponent capture, which
+    is NOT a pattern slot (the single slot covers base^o whole); it is
+    recovered once in the rule body (qv) and used identically by cond and
+    repl."""
+    for shape, rx in _M1_SHAPES:
+        m = rx.fullmatch(body)
+        if m is None:
+            continue
+        g = m.groupdict()
+        outer = g["o"]
+        decomp = [g["A"], g["B"], g["I"]]
+        if set(decomp) - set(rule_vars):
+            raise GenError(f"{key} r{n}: M1 {shape} base captures "
+                           f"{decomp} not all among lhs captures "
+                           f"{sorted(rule_vars)}")
+        if outer not in rule_vars:
+            raise GenError(f"{key} r{n}: M1 {shape} outer-exponent capture "
+                           f"{outer!r} not among lhs captures "
+                           f"{sorted(rule_vars)}")
+        if _M1_SLOT in rule_vars:
+            raise GenError(f"{key} r{n}: M1 slot {_M1_SLOT} collides "
+                           f"with an lhs capture")
+        bstart = m.start("A") - 1
+        bend = m.end("I") + 3
+        if body[bstart] != "(" or body[bend - 1] != ")":
+            raise GenError(f"{key} r{n}: M1 {shape} base span "
+                           f"{body[bstart:bend]!r} is not a paren group")
+        # the single slot covers the whole binomial-power factor: extend the
+        # base span past the outer-exponent marker so `m1b` matches base^o
+        # (and, for the bare-binomial q=1 rows, base alone with o implicit).
+        outm = re.match(_M1_OUT, body[bend:])
+        if outm is None:
+            raise GenError(f"{key} r{n}: M1 {shape} no outer-exponent marker "
+                           f"after base span {body[bstart:bend]!r}")
+        bend = bend + outm.end()
+        if shape == "B":
+            hstart = m.start("f") - 1
+            he = m.end("hm") + 1
+            if body[he:he + 1] == ".":
+                he += 1
+            if not (body[hstart] == "(" and hstart < he < bstart):
+                raise GenError(f"{key} r{n}: M1 B head span "
+                               f"{body[hstart:he]!r} malformed")
+            new_head = g["f"] + "_.*x_^" + g["hm"] + "_."
+            rewritten = (body[:hstart] + new_head + body[he:bstart]
+                         + _M1_SLOT + "_" + body[bend:])
+        else:
+            rewritten = body[:bstart] + _M1_SLOT + "_" + body[bend:]
+        return {"shape": shape, "rewritten": rewritten, "decomp": decomp,
+                "outer": outer}
+    return None
+
+
+def _emit_m1_manual(spec, key, n, rule_vars, cond, rhs, ctx):
+    """M1 rule: defmatch the re-transcribed pattern (the whole binomial-power
+    factor as the single _M1_SLOT slot), then in the rule body recover the
+    outer exponent ONCE (qv) and the base's (A, B, I) captures (the fail-closed
+    %mr_mbp_base decomposition), append them to the matchlist, and run the
+    UNCHANGED .m cond/repl on it (they read every capture via geteqR, so they
+    see the recovered values identically)."""
+    shape, rewritten, decomp, outer = (spec["shape"], spec["rewritten"],
+                                       spec["decomp"], spec["outer"])
+    slot = _M1_SLOT
+    u_cap = cap_name(key, n, slot)
+    if "MatchQ" in (cond or ""):
+        raise GenError(f"{key} r{n}: M1 shape with a MatchQ condition "
+                       f"(unsupported)")
+    caps = {v: cap_name(key, n, v) for v in rule_vars}
+    # the base decomposition AND the recovered outer exponent are NOT pattern
+    # slots: they are computed in the rule body (fail-closed) and appended to
+    # the matchlist, so the .m cond/repl read them via geteqR as if matched.
+    decomp_set = set(decomp) | {outer}
+    keep = [v for v in sorted(rule_vars) if v not in decomp_set]
+    # the pattern is translated with the slot added to the capture set (the
+    # slot is renamed to a _mr_... capture); the decomp captures are not in
+    # the rewritten body, so they simply do not appear in the pattern.
+    pctx = dict(ctx)
+    pctx["vars"] = set(rule_vars) | {slot}
+    pat_text = translate(rewritten, pctx)
+    # pattern-token guard: every _mr* token must be a keep capture or the slot.
+    expected = {caps[v] for v in keep} | {u_cap}
+    for tok in re.findall(r"_mr[0-9A-Za-z_]*", pat_text):
+        if tok not in expected:
+            raise GenError(f"{key} r{n}: M1 pattern token {tok!r} is not a "
+                           f"keep capture or the slot (name corruption)")
+    # matchdeclare: the keep captures (freeof(x)-guarded when the .m cond
+    # FreeQ-guards them) plus the slot (true — it is the x-bearing base).
+    freeq_guarded = set(v.strip()
+                        for part in re.findall(
+                            r"(?<![A-Za-z0-9])FreeQ\[\{?([^\]}]*)\}?,\s*x\]",
+                            cond or "")
+                        for v in part.split(","))
+    decls = [f"matchdeclare({caps[v]}, "
+             f"{'freeof(x)' if v in freeq_guarded else 'true'})$"
+             for v in keep]
+    # the slot is the binomial-POWER factor (base, or base^o): constrain it
+    # with %mr_mbp_isfac so defmatch cannot absorb an adjacent head
+    # coefficient (shape B) or log-arg constant (shapes C/D) -- an
+    # unconstrained `true` slot grabs `5*(d+e x^r)^q` whole and the
+    # fail-closed %mr_mbp_base then rejects the valid integrand.
+    decls.append(f"matchdeclare({u_cap}, %mr_mbp_isfac)$")
+    # cond/repl: the usual generated bodies (translated; every capture —
+    # including the decomposed ones — is bound via geteqR(mm, 'cap), which the
+    # structural matchlist satisfies).
+    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
+                 if cond else "true")
+    leadcaps = nonzero_guard_caps(pat_text)
+    if leadcaps:
+        base_cond = f"({base_cond})  and  " + "  and  ".join(
+            f"%mr_neQ({c}, 0)" for c in sorted(leadcaps))
+    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
+    caps_sorted = sorted(caps.values())
+    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
+    snaps = {c: c + "__s" for c in caps_sorted}
+    for c in caps_sorted:
+        repl_txt = re.sub(r"(?<![0-9A-Za-z_])" + re.escape(c) +
+                          r"(?![0-9A-Za-z_])", snaps[c], repl_txt)
+    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
+                           for c in caps_sorted) or "true"
+    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
+    locals_txt = ", ".join(caps_sorted)
+    pat_name = f"_mr_pat_{key}_r{n}"
+    lines = list(decls)
+    lines.append(f"defmatch({pat_name}, {pat_text}, x)$")
+    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
+    lines.append(f"  {binds},")
+    lines.append(f"  {base_cond})$")
+    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
+    lines.append(f"  {snap_binds},")
+    lines.append(f"  {repl_txt})$")
+    # the structural rule body: the single slot `m1b` covers base^o whole.
+    # Recover the outer exponent ONCE (qv), decompose the base (fail closed),
+    # append the recovered captures (d/e/r from the decomposition, outer from
+    # qv) so cond and repl read the SAME recovered values via geteqR.
+    du_eqs = (", ".join(f"{caps[d]} = part(du, {i + 1})"
+                        for i, d in enumerate(decomp))
+              + f", {caps[outer]} = qv")
+    lines.append(f"_mr_rule_{key}_r{n}(f, x) := "
+                 f"block([mm0, mm, du, ok, whole, base, qv, w],")
+    lines.append(f"  mm0 : {pat_name}(f, x),")
+    lines.append("  if mm0 = false then return(false),")
+    lines.append("  if %mr_containsBoolean(mm0) then return(false),")
+    lines.append(f"  whole : geteqR(mm0, '{u_cap}),")
+    # the base/outer split is read ONCE via %mr_mbp_unwrap: it unwraps a
+    # trailing `^` AND a sqrt-canonicalized `^(1/2)` (Maxima stores
+    # u^(1/2) as the `sqrt` node). cond and repl read the SAME recovered
+    # values (base -> the %mr_mbp_base decomposition; qv -> the outer).
+    lines.append('  w : %mr_mbp_unwrap(whole),')
+    lines.append('  base : part(w, 1),')
+    lines.append('  qv : part(w, 2),')
+    lines.append("  du : %mr_mbp_base(base, x),")
+    lines.append("  if is(du = false) then return(false),")
+    lines.append(f"  mm : append(mm0, [{du_eqs}]),")
+    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
+    lines.append("  if is(ok) = true then _mr_repl_"
+                 f"{key}_r{n}(mm, x) else false)$")
+    return "\n".join(lines), sorted(ctx["decls"])
+
+
 def emit_rule(run, key, n, rule_vars):
     """One rule run (lhs, rhs, cond) -> the five Maxima functions as text.
     rule_vars is the set of capture names (from the lhs)."""
@@ -2233,6 +2448,15 @@ def emit_rule(run, key, n, rule_vars):
     if spec is not None:
         return _emit_binpow_manual(spec, key, n, rule_vars, cond, rhs,
                                    ctx)
+    # M1 slotted-inner-exponent re-transcription (3.1.4/3.1.3/3.1.5, class-3
+    # deferred campaign C1): the binomial base is re-emitted as one slot and
+    # the rule body recovers its (A, B, I) captures by the fail-closed
+    # %mr_mbp_base decomposition (see m1_spec / _emit_m1_manual). Mutually
+    # exclusive with the binpow manual matcher above (those have two binpow
+    # factors; M1 has one plus a log/monomial factor).
+    m1 = m1_spec(body, key, n, rule_vars)
+    if m1 is not None:
+        return _emit_m1_manual(m1, key, n, rule_vars, cond, rhs, ctx)
     # (d_.*x_)^m_. head re-transcription (3.1.2 r10, class-3 deferred
     # campaign C2): the non-atomic head power steals the log-power
     # factor from findfun and 0-binds the stored unit-monomial heads —
