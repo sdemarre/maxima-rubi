@@ -16,6 +16,15 @@ Working state: `todo/TODO.md`.
   it is configured, commits target `master`.
 - Do not add `Co-Authored-By` trailers to commit messages.
 
+## Handoffs
+
+Cross-session handoff documents live in `handoffs/` (gitignored working
+docs), named `YYYY-MM-DD-<slug>.md`. When told to pick up "the latest
+handoff", read the most recent file there (ISO date in the filename) and
+work through its **Next moves** section; it references the authoritative
+artifacts (specs, plans, ledger, probe records) rather than duplicating
+them.
+
 ## Reference clones
 
 The research reads two reference repositories, cloned locally under
