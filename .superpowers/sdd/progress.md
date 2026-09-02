@@ -4158,3 +4158,99 @@ test file + core + git index, so the dispatches are sequential).
     -> still deferred. Full mass split of the 125: Task-5 re-run.
     Core fingerprint a02da1f0 -> 128c4bf8c151383e2db6f9ae79497c23
     (3513 rules; stamp rev = the commit).
+  - C5: DONE (2026-09-02, commit 4702d4d) — the 3_4 slotted-
+    inner-exponent 0-bind (the brief's 128: 0FIRE-EXPL 43 + D-NEST
+    14 + POOL-MG 72; the subagent's re-measured 3.4 0FIRE/D-NEST
+    dump is 148 rows = 43 EXPL + 91 POOL + 14 D-NEST, the POOL-MG
+    label a subset — delta noted, the Task-5 A/B re-counts the
+    mass). The .m covers (3.4.m L7/L9/L10/L12/L16) are present;
+    the ported patterns 0-bind the stored forms whose inner term
+    is a fractional or reciprocal power (sqrt, x^(1/3), x^(2/3),
+    the 1/... reciprocals, the /x^k denominator forms). ROOT
+    CAUSE (measured, the decisive finding): Maxima's matcher
+    0-binds a times pattern carrying TWO power-pattern factors
+    whenever the target contains a power of x (probe t4c5_p26:
+    _mA^_mQ*_mB^_mR binds a^2*b^2 / a^2*c^3 / a^2*y^2 but
+    0-binds a^2*x^2; stored-factor order and the defmatch main
+    variable are red herrings — the boundary is the two-power-
+    factor count), while a single whole-power slot x^_m*_mY
+    binds all 35 head x inner targets (quotient heads capture
+    m = -k; an adjacent 5* coefficient is absorbed into the slot
+    and must be rejected by the predicate). FIX: r8/r12 (head
+    x^m) slot the WHOLE outer log-power factor as _mly (new
+    %mr_lpfac predicate + the fail-closed %mr_lpfac_parse,
+    recovering the eight captures a,b,c,d,e,n,p,q in .m order);
+    r4/r5/r6 (bare) keep the C1 m1b idiom on the log-arg
+    binomial-power factor (decomp (d,e,n) via %mr_mbp_base +
+    outer p via %mr_mbp_unwrap); %mr_mbp_mono2 guard lifted
+    or -> and (exponent-0 side now a monomial with SIGNED
+    exponent: e/sqrt(x) -> [e, -1/2] — the reciprocal inner
+    forms; the both-constant case stays a fail-closed backstop,
+    %mr_mbp_term catches it earlier). Generator: c5_spec (R4/R8
+    whitespace-free fullmatch shapes, loud GenError on capture
+    corruption / slot collision / non-paren span) wired after
+    m1/b33, before c4; R4 reuses _emit_m1_manual, R8 the new
+    _emit_c5_r8 (pattern-token guard, keep-capture matchdeclare
+    set = {m} + the slot). The .m cond/repl regenerate
+    byte-identical (the rule body recovers the captures once,
+    fail-closed, and appends them, so the unchanged cond/repl
+    read them via geteqR identically). Layer A 851 -> 862
+    (+11 test_class3_c5_34: r8 sqrt-inner binding + m=2 + full
+    8-capture recovery, recip r=-1/2 recovery, r4 bare binding,
+    the fail-closed 5*coefficient pin (check_not), r8 fires on
+    the row-408 rep, two answer-level zero-chains row-408 sqrt
+    + row-450 cbrt: non-noun + factor(diff-f)=0). Core
+    fingerprint 128c4bf8 -> d2a9e03a963356e72463792182df0526
+    (3513 rules; stamp rev f59089b = the PARENT commit,
+    git_dirty 4 = exactly the C5 files — built from the
+    committed tree's contents pre-commit, the C4 stamp carried
+    the commit itself; the driver re-derives the fingerprint
+    from the rule files either way — verified: the production
+    spot below ran the driver WITHOUT a rebuild, i.e. the
+    fingerprint matched the clean committed tree).
+    MAIN-SESSION REVIEW (all re-measured): (1) Layer A RE-RUN
+    862/0 (flagged gate, Results line + clean quit). (2) 35/35
+    probe matrix re-run on the new core (t4c5_p41_verify: zero
+    PATTERN-MISS); the rule-firing probes (t4c5_p41b): r8
+    x^2*sqrt-inner FIRE, 5*coefficient NOFIRE (fail-closed),
+    /x quotient FIRE, r12 x*recip-inner FIRE, r8 x^2*1/3-inner
+    FIRE, r4 bare sqrt-inner NOFIRE (adjudicated below). (3)
+    cond/repl byte-identity: the C5 diff touches only the
+    matchdeclare/defmatch/rule-body lines of the five rules;
+    every _mr_cond_3_4_r{4,5,6,8,12} / _mr_repl_... line is
+    untouched (previously verified .m-faithful at port). (4)
+    the rule-file delta is exactly the 5 documented rules;
+    3_4.mac is the only rules/ file changed (4 files total:
+    generator +230, utils +189, 3_4.mac 112 changed, test +67).
+    (5) REGENERATION byte-identity re-verified across ALL
+    classes (full generate_rules.py; git status clean — this
+    also confirms the %mr_mbp_mono2 lift and the new c5 hook
+    re-emit no other rule differently). (6) PRODUCTION SPOT
+    (driver, the core, fresh subprocesses): e408 / e450 / e456
+    / e471 / e429 (recip) / e532 (p-power) ALL VERIFIED (~2.5 s
+    each; Results: 6 passed, 0 failed). BARE-FORM ROUTING
+    ADJUDICATION (main session, the p41b F6 NOFIRE): .m-
+    FAITHFUL, not a defect. r4 (3.4.m L7)'s cond is
+    q>0 && (EqQ[q,1] || IntegerQ[n]); on the bare sqrt form
+    n = the RECOVERED inner exponent = 1/2, so IntegerQ[1/2]
+    is false and r4 correctly declines. The fractional-inner
+    bare forms route to r5 (L9, cond FractionQ[n], no q
+    restriction) — main session measured r5 FIRE on the bare
+    sqrt / cbrt / recip reps; full rubi() zero-chains: bare
+    sqrt and bare cbrt close at factor(diff-f) = 0, the bare
+    recip needs a later stage (numerically exact: 9.1e-13 at
+    x = 0.7 on concrete parameters) — consistent with the
+    report's section-5 verification-stage note for the recip /
+    p-power head forms (e429 / e532 verified in production
+    above). The report claimed bare-form BINDING only (never
+    bare-form end-to-end firing) — accurate. %mr_mbp_mono2
+    PARITY NOTE: the or -> and lift widens %mr_mbp_isfac to
+    reciprocal-linear binomials (d + e/x) for EVERY existing
+    m1b rule (C1 3_1_x, B3 3_3, C5 3_4 bare) — a binding
+    superset gated by the unchanged .m conds; no test pin
+    broke (862/0 includes all C1/B3 checks); the mass impact
+    (new fires on reciprocal-linear bases) is measured by the
+    Task-5 corpus A/B. AGENTS.md: the subagent omitted the
+    count-line update (house-standard gap) — main session
+    fixed it in this ledger commit (851 -> 862 + the growth
+    line).
