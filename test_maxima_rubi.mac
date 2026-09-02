@@ -82,8 +82,9 @@ run_all_tests() := block([],
         test_class3_c1_slotted(),
          test_class3_c4_321(),
          test_class3_c3_ratio(),
-         test_class3_b3_33(),
-         test_int_family_predicates(),
+          test_class3_b3_33(),
+          test_class3_c5_34(),
+          test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -1431,6 +1432,68 @@ test_structural_predicates() := block([],
                 or is(string(op(ans)) = "unintegrable")),
       z : errcatch(factor(diff(ans, x) - f)),
       check_bool("b3 e-r10-int self-diff zero (factor)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      mr_rule_table : saved_table,
+      true
+    )$
+
+    /* Task 4C-C5 — the 3_4 slotted-inner-exponent gap (128 entries): the
+    mly whole-log-power slot (r8/r12, head x^m) and the m1b slot
+    (r4/r5/r6, bare form). sqrt / cbrt / reciprocal inner exponents now
+    bind on the stored forms; a coefficient absorbed into the slot fails
+    closed. 3_3 is loaded so the r8 reduction's eager sub-integral
+    (inner exponent 1) has its true cover. */
+    test_class3_c5_34() := block([saved_table, mm, dv, f, ans, z, mly, mnm],
+      print("--- c5: 3_4 slotted inner exponent (mly/m1b slotting) ---"),
+      mly : '_mr_3_4_r8_mly,
+      mnm : '_mr_3_4_r8_m,
+      %mr_load_sibling("rules/class3/3_4.mac", 'mr_witness_3_4),
+      %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_3, mr_rules_3_4]),
+      /* r8 (L12, head x^m): the whole log-power binds as _mly; the
+         fail-closed parse recovers the 8 inner captures. */
+      mm : _mr_pat_3_4_r8(x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x),
+      check_bool("c5 r8 binds sqrt-inner head x^2", listp(mm)),
+      check_bool("c5 r8 head exponent m=2", is(geteqR(mm, mnm) = 2)),
+      dv : %mr_lpfac_parse(geteqR(mm, mly), x),
+      check_bool("c5 r8 recovers (a,b,c,d,e, r=1/2, p=n, q=2)",
+                 is(dv # false) and is(part(dv, 1) = a) and is(part(dv, 2) = b)
+                 and is(part(dv, 3) = c) and is(part(dv, 4) = d)
+                 and is(part(dv, 5) = e) and is(part(dv, 6) = 1/2)
+                 and is(part(dv, 7) = n) and is(part(dv, 8) = 2)),
+      /* reciprocal inner (r12 path, L16): 1/sqrt(x) -> r = -1/2 */
+      mm : _mr_pat_3_4_r8(x*(a+b*log(c*(d+e*(1/sqrt(x)))^n))^2, x),
+      dv : if is(listp(mm)) then %mr_lpfac_parse(geteqR(mm, mly), x) else false,
+      check_bool("c5 r8 recip-inner recovers r=-1/2",
+                 is(dv # false) and is(part(dv, 6) = -1/2)),
+      /* r4 (L7, bare form, no head): the m1b slot binds the log-power. */
+      mm : _mr_pat_3_4_r4((a+b*log(c*(d+e*sqrt(x))^n))^2, x),
+      check_bool("c5 r4 binds bare sqrt-inner (q=2)", listp(mm)),
+      /* GREEN pin: a coefficient absorbed into the slot is rejected
+         (fail-closed) so r8 cannot fire with the coefficient dropped. */
+      check_not("c5 r8 0-binds the 5*coefficient-absorbed form",
+                _mr_pat_3_4_r8(5*x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x)),
+      /* the true cover now fires on the row-408 rep (was 0-binding). */
+      check_bool("c5 r8 reduction fires on row-408 rep",
+                 is(_mr_rule_3_4_r8(x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x) # false)),
+      /* answer-level zero-chain 1: row 408 (sqrt, head x^2, q=2). */
+      f : x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2,
+      ans : rubi(f, x),
+      check_not("c5 row-408 not a top noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+      check_bool("c5 row-408 self-diff zero (factor)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* answer-level zero-chain 2: row 450 (cbrt, head x, q=2). */
+      f : x*(a+b*log(c*(d+e*x^(1/3))^n))^2,
+      ans : rubi(f, x),
+      check_not("c5 row-450 not a top noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+      check_bool("c5 row-450 self-diff zero (factor)",
                  is(z # []) and is(part(z, 1) = 0)),
       mr_rule_table : saved_table,
       true

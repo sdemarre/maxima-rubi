@@ -4229,21 +4229,28 @@ rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
   ),
   res)$
 
-/* (c1*x^n1)/(c2*x^n2) style quotient monomial -> [c, n]. */
-%mr_mbp_mono2(t, x) := block([num, den, nr, dr, res],
-  num : part(t,1), den : part(t,2),
-  nr : %mr_mbp_term(num, x),
-  dr : %mr_mbp_term(den, x),
-  if is(nr = false) or is(dr = false) then (
-    res : false
-  ) else (
-    if is(part(nr,2) = 0) or is(part(dr,2) = 0) then (
-      res : false
-    ) else (
-      res : [part(nr,1)/part(dr,1), part(nr,2) - part(dr,2)]
-    )
-  ),
-  res)$
+ /* (c1*x^n1)/(c2*x^n2) style quotient monomial -> [c, n]. A side whose
+    exponent is 0 is a bare constant, so the quotient is a monomial with a
+    SIGNED exponent: e/sqrt(x) = e*x^(-1/2) -> [e, -1/2], e/x^(2/3) ->
+    [e, -2/3] (the class-3 deferred campaign C5 reciprocal inner forms,
+    2026-09-02). The original guard rejected any exponent-0 side; it is
+    lifted to the both-constant case only, which %mr_mbp_term already
+    catches earlier via freeof(x, t) -- so this both-0 arm is a fail-closed
+    backstop, not a live decline. */
+ %mr_mbp_mono2(t, x) := block([num, den, nr, dr, res],
+   num : part(t,1), den : part(t,2),
+   nr : %mr_mbp_term(num, x),
+   dr : %mr_mbp_term(den, x),
+   if is(nr = false) or is(dr = false) then (
+     res : false
+   ) else (
+     if is(part(nr,2) = 0) and is(part(dr,2) = 0) then (
+       res : false
+     ) else (
+       res : [part(nr,1)/part(dr,1), part(nr,2) - part(dr,2)]
+     )
+   ),
+   res)$
 
 /* base = A + B*x^n (exactly two terms: one constant, one nonzero
    power monomial) -> [A, B, n], else false. */
@@ -4325,6 +4332,158 @@ rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
     )
   ),
   res)$
+
+/* C5 R8 (class-3 deferred campaign C5, measured 2026-09-02, probes
+   /tmp/opencode/t4c5_p22-p29): the 3_4 r8/r12 covers x^m*(a+b*log[c*(d+e*x^n)^p])^q
+   must NOT be re-transcribed with the M1 two-power-factor pattern
+   x^_m*(_a+_b*log(_c*_m1b))^_q: Maxima's matcher 0-binds a times pattern
+   with TWO power-pattern factors whenever the target contains a power of
+   x (probe p26: _mA^_mQ*_mB^_mR binds a^2*b^2 / a^2*c^3 / a^2*y^2 but
+   0-binds a^2*x^2, independent of factor order and of the defmatch main
+   variable), while the single whole-power slot x^_m*_mY binds every
+   stored form -- head x, x^k, 1/x^k, all six fractional/reciprocal inner
+   forms (probe p28, 35/35; quotient heads capture _mR = -k, probe p29).
+   The slot predicate is %mr_lpfac; the rule body recovers the eight
+   inner captures with %mr_lpfac_parse (fail closed).
+
+   The two sum terms of the stored base b*log(c*(e*x^r+d)^p)+a in
+   canonical order (the x term comes first) -> [a, b, c, whole-binpom
+   factor] or false: exactly one term is x-free (a); the other is a
+   product of x-free constants (b, possibly absorbed to 1 and absent
+   from the stored form) times exactly one log(factor). The log
+   argument is a product of x-free constants (c, possibly 1) times
+   exactly one x-bearing factor (the binomial-power whole). */
+ %mr_lpfac_terms(t1, t2, x) := block([a, lt2, b, ln, la, i, f, c, wh, ok, res],
+   if is(freeof(x, t1)) and not is(freeof(x, t2)) then (
+     a : t1, lt2 : t2
+   ) else (
+     if is(freeof(x, t2)) and not is(freeof(x, t1)) then (
+       a : t2, lt2 : t1
+     ) else (
+       a : false
+     )
+   ),
+   if is(a = false) then (
+     res : false
+   ) else (
+    b : 1, ln : false, ok : true,
+    if atom(lt2) then (
+      ok : false
+    ) else (
+      if is(op(lt2) = 'log) then (
+        /* b = 1, absorbed by canonicalization */
+        ln : lt2
+      ) else (
+        if op(lt2) # "*" then (
+          ok : false
+        ) else (
+          for i : 1 thru length(lt2) do (
+            f : part(lt2, i),
+            if is(ok = true) then (
+              if is(freeof(x, f)) then (
+                b : b*f
+              ) else (
+                if is(atom(f)) then (
+                  ok : false
+                ) else (
+                  if is(op(f) = 'log) then (
+                    if is(ln = false) then (
+                      ln : f
+                    ) else (
+                      ok : false
+                    )
+                  ) else (
+                    ok : false
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    ),
+    if is(ok = false) or is(ln = false) then (
+       res : false
+     ) else (
+       la : part(ln, 1),
+       c : 1, wh : false, ok : true,
+       if atom(la) then (
+         ok : false
+       ) else (
+         if op(la) = "*" then (
+           for i : 1 thru length(la) do (
+             f : part(la, i),
+             if is(ok = true) then (
+               if is(freeof(x, f)) then (
+                 c : c*f
+               ) else (
+                 if is(wh = false) then (
+                   wh : f
+                 ) else (
+                   ok : false
+                 )
+               )
+             )
+           )
+         ) else (
+           if not is(freeof(x, la)) then (
+             wh : la
+           )
+         )
+       ),
+       if is(ok = false) or is(wh = false) then (
+         res : false
+       ) else (
+         res : [a, b, c, wh]
+       )
+     )
+   ),
+   res)$
+
+/* C5 R8: whole outer log-power factor -> [a, b, c, d, e, r, p, q]
+   (the 3.4.m r8/r12 captures, .m order: the constant term a, the log
+   coefficient b, the log-arg constant c, then the binomial base
+   (d + e*x^r)^p decomposition in %mr_mbp_base order, its outer p, and
+   the whole log-power's outer q), else false. The outer split is read
+   via %mr_mbp_unwrap (handles `^` AND the sqrt-canonicalized `^(1/2)`);
+   a bare base (no trailing power) reads q = 1. Fail closed on every
+   structural deviation: coefficient product, bare atom, non-log base
+   term, 3-term sum, non-binomial base. */
+ %mr_lpfac_parse(e, x) := block([w, b0, q, t1, t2, lt, wh, cwh, r, res],
+   if atom(e) then (
+     res : false
+   ) else (
+     w : %mr_mbp_unwrap(e),
+     b0 : part(w, 1),
+     q : part(w, 2),
+     if atom(b0) or op(b0) # "+" or length(b0) # 2 then (
+       res : false
+     ) else (
+       t1 : part(b0, 1), t2 : part(b0, 2),
+       lt : %mr_lpfac_terms(t1, t2, x),
+       if is(lt = false) then (
+         res : false
+       ) else (
+         wh : part(lt, 4),
+         cwh : %mr_mbp_unwrap(wh),
+         r : %mr_mbp_base(part(cwh, 1), x),
+         if is(r = false) then (
+           res : false
+         ) else (
+           res : [part(lt, 1), part(lt, 2), part(lt, 3), part(r, 1),
+                  part(r, 2), part(r, 3), part(cwh, 2), q]
+         )
+       )
+     )
+   ),
+   res)$
+
+/* matchdeclare predicate for the C5 R8 whole-log-power slot (see the
+   %mr_lpfac_terms note above): true iff %mr_lpfac_parse succeeds. The
+   product exclusion is what stops the slot from absorbing an adjacent
+   head coefficient (an unconstrained slot grabs `5*(...)^q` whole,
+   probe t4c5_p29). References the package integration variable x. */
+ %mr_lpfac(e) := is(%mr_lpfac_parse(e, x) # false)$
 
 /* one factor of a times node (or the whole of a non-times side).
    sgn = 1 (numerator) or -1 (denominator); t may be a binomial sum,

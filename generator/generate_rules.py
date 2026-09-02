@@ -2513,6 +2513,221 @@ def b33_spec(body, key, n, rule_vars):
 
 
 # ============================================================================
+# C5 3.4 log-arg slotted-inner-exponent re-transcription (class-3 deferred
+# campaign C5).
+#
+# Defect (measured 2026-09-02, branch_5_50_base_84_g4204fb669, probes
+# /tmp/opencode/t4c5_p3/p11-p13/p17/p21-p29): the 3.4 covers whose log
+# argument is a binomial-power (d_ + e_.*x_^n_)^p_. with a SLOTTED inner
+# exponent n 0-bind the stored Maxima forms whose inner term is a
+# fractional or reciprocal power -- sqrt(x), x^(1/3), x^(2/3), 1/sqrt(x),
+# 1/x^(1/3), 1/x^(2/3), and the /x^k denominator forms. The boundary is
+# the slot (the same matcher class as C1/M1). The .m covers are 3.4.m
+# L7/L9/L10 (r4/r5/r6, the bare log-power (a+b Log[c (d+e x^n)^p])^q) and
+# L12/L16 (r8/r12, the x^m-headed form x^m (a+b Log[c (d+e x^n)^p])^q).
+#
+# Fix, R4 (r4/r5/r6): the C1/M1 single-slot idiom applied to the LOG-ARG
+# binomial-power factor. The whole (d_ + e_.*x_^n_)^p_. factor becomes ONE
+# slot m1b (matchdeclare(<slot>, %mr_mbp_isfac)); the base's (d, e, n) and
+# the outer p are recovered once in the rule body (%mr_mbp_unwrap +
+# %mr_mbp_base) and appended to the matchlist, so the unchanged .m
+# cond/repl read them via geteqR identically. The reciprocal inner forms
+# additionally require the %mr_mbp_mono2 exponent-0 guard lift
+# (maxima_rubi_utils.mac, C5 note) so %mr_mbp_base decomposes
+# e/sqrt(x) -> [e, -1/2] (probe t4c5_p13). Measured green: the re-
+# transcribed r4 binds and recovers all six inner forms (probe t4c5_p14).
+#
+# Fix, R8 (r8/r12): the headed form must NOT take the M1 pattern -- a
+# times pattern with TWO power-pattern factors, x^_m*(...)^_q, 0-binds
+# every stored target that contains a power of x (probe t4c5_p26:
+# _mA^_mQ*_mB^_mR binds a^2*b^2 / a^2*c^3 / a^2*y^2 but 0-binds a^2*x^2,
+# independent of factor order and of the defmatch main variable; the full
+# 7-inner x 5-head matrix 0-binds every fractional/reciprocal inner at
+# heads x^2/x^3/1/x/1/x^2, probe t4c5_p17). Instead the WHOLE outer
+# log-power factor (a+b Log[c (d+e x^n)^p])^q becomes ONE slot mly
+# (matchdeclare(<slot>, %mr_lpfac)); the rule body recovers the eight
+# inner captures (a, b, c, d, e, n, p, q) with the fail-closed
+# %mr_lpfac_parse and appends them, so the unchanged .m cond/repl read
+# them via geteqR identically. Measured: the single whole-power slot
+# binds all 35 matrix targets, quotient heads capture m = -k (probes
+# t4c5_p28/p29); %mr_lpfac rejects a coefficient product 5*(...)^q so the
+# slot cannot absorb an adjacent head coefficient (t4c5_p30).
+#
+# Closed shape set (whitespace-free marker text; the inner-marker dots are
+# optional so the required/optional .m variants -- r4 q_ vs r8 q_. -- both
+# match). A matching capture set that is not the lhs captures is a loud
+# GenError; anything outside the set returns None (the rule keeps its
+# current emission).
+#   R4  (a_.+b_.*Log[c_.*(d_+e_.*x_^n_)^p_.])^q_.          3_4 r4/r5/r6
+#   R8  x_^m_.*(a_.+b_.*Log[c_.*(d_+e_.*x_^n_)^p_.])^q_.    3_4 r8/r12
+_C5_SLOT = _M1_SLOT  # "m1b" -- _emit_m1_manual adds this (not a local)
+_C5_R8_SLOT = "mly"  # whole log-power factor slot (R8, _emit_c5_r8)
+# the log-arg binomial-power factor (d_+e_.*x_^n_)^p_. as a named span
+_C5_BPOW = (r"(?P<bpow>\((?P<d>\w+)_\.?(?P<sign>[+\-])(?P<e>\w+)_\.?"
+            r"\*x_\^(?P<n>\w+)_\.?\)\^_?(?P<p>\w+)_\.?)")
+_C5_R4_BODY = (r"\((?P<a>\w+)_\.?\+(?P<b>\w+)_\.?\*Log\[(?P<c>\w+)_\.?\*"
+               + _C5_BPOW + r"\]\)\^_?(?P<q>\w+)_\.?")
+# R8: the head plus the WHOLE outer log-power factor as the lpow span
+_C5_R8_FULL = (r"x_\^_?(?P<m>\w+)_\.?\*"
+               + r"(?P<lpow>" + _C5_R4_BODY + r")")
+_C5_SHAPES = (
+    ("R4", re.compile(_C5_R4_BODY)),
+    ("R8", re.compile(_C5_R8_FULL)),
+)
+
+
+def c5_spec(body, key, n, rule_vars):
+    """3.4 log-arg slotted-inner-exponent shape -> the emission spec, else
+    None. R4: the M1 spec {"shape", "rewritten", "decomp", "outer"}
+    (consumed by _emit_m1_manual): the single isfac slot replaces the whole
+    log-arg binomial-power factor; decomp is the base's (d, e, n) captures
+    in %mr_mbp_base order; outer is the p exponent. R8: the spec
+    {"shape", "rewritten", "decomp"} (consumed by _emit_c5_r8): the single
+    lpfac slot replaces the whole outer log-power factor and decomp is the
+    eight captures in %mr_lpfac_parse order (a, b, c, d, e, n, p, q)."""
+    for shape, rx in _C5_SHAPES:
+        m = rx.fullmatch(body)
+        if m is None:
+            continue
+        g = m.groupdict()
+        if shape == "R8":
+            decomp = [g["a"], g["b"], g["c"], g["d"], g["e"],
+                      g["n"], g["p"], g["q"]]
+            if set(decomp) - set(rule_vars) or g["m"] not in rule_vars:
+                raise GenError(f"{key} r{n}: C5 R8 captures "
+                               f"{[g['m']] + decomp} not all among lhs "
+                               f"captures {sorted(rule_vars)}")
+            if _C5_R8_SLOT in rule_vars:
+                raise GenError(f"{key} r{n}: C5 R8 slot {_C5_R8_SLOT} "
+                               f"collides with an lhs capture")
+            if body[m.start("lpow")] != "(":
+                raise GenError(f"{key} r{n}: C5 R8 log-power span "
+                               f"{body[m.start('lpow'):m.end('lpow')]!r} "
+                               f"is not a paren group")
+            rewritten = (body[:m.start("lpow")] + _C5_R8_SLOT + "_"
+                         + body[m.end("lpow"):])
+            return {"shape": "R8", "rewritten": rewritten,
+                    "decomp": decomp}
+        decomp = [g["d"], g["e"], g["n"]]
+        outer = g["p"]
+        if set(decomp) - set(rule_vars):
+            raise GenError(f"{key} r{n}: C5 {shape} base captures "
+                           f"{decomp} not all among lhs captures "
+                           f"{sorted(rule_vars)}")
+        if outer not in rule_vars:
+            raise GenError(f"{key} r{n}: C5 outer-exponent capture "
+                           f"{outer!r} not among lhs captures "
+                           f"{sorted(rule_vars)}")
+        if _C5_SLOT in rule_vars:
+            raise GenError(f"{key} r{n}: C5 slot {_C5_SLOT} collides "
+                           f"with an lhs capture")
+        if body[m.start("bpow")] != "(":
+            raise GenError(f"{key} r{n}: C5 {shape} binpow span "
+                           f"{body[m.start('bpow'):m.end('bpow')]!r} is not "
+                           f"a paren group")
+        rewritten = (body[:m.start("bpow")] + _C5_SLOT + "_"
+                     + body[m.end("bpow"):])
+        return {"shape": shape, "rewritten": rewritten,
+                "decomp": decomp, "outer": outer}
+    return None
+
+
+def _emit_c5_r8(spec, key, n, rule_vars, cond, rhs, ctx):
+    """C5 R8 rule: defmatch the head x^_m plus the WHOLE outer log-power
+    factor as the single _C5_R8_SLOT slot (%mr_lpfac-guarded), then in
+    the rule body recover the eight inner captures with the fail-closed
+    %mr_lpfac_parse, append them to the matchlist, and run the UNCHANGED
+    .m cond/repl on it (they read every capture via geteqR, so they see
+    the recovered values identically)."""
+    rewritten, decomp = spec["rewritten"], spec["decomp"]
+    slot = _C5_R8_SLOT
+    u_cap = cap_name(key, n, slot)
+    if "MatchQ" in (cond or ""):
+        raise GenError(f"{key} r{n}: C5 R8 shape with a MatchQ condition "
+                       f"(unsupported)")
+    caps = {v: cap_name(key, n, v) for v in rule_vars}
+    # the eight inner captures are NOT pattern slots: they are computed in
+    # the rule body (fail-closed) and appended to the matchlist, so the
+    # .m cond/repl read them via geteqR as if matched.
+    keep = [v for v in sorted(rule_vars) if v not in set(decomp)]
+    # the pattern is translated with the slot added to the capture set (the
+    # slot is renamed to a _mr_... capture); the decomp captures do not
+    # appear in the pattern.
+    pctx = dict(ctx)
+    pctx["vars"] = set(rule_vars) | {slot}
+    pat_text = translate(rewritten, pctx)
+    # pattern-token guard: every _mr* token must be a keep capture or the
+    # slot.
+    expected = {caps[v] for v in keep} | {u_cap}
+    for tok in re.findall(r"_mr[0-9A-Za-z_]*", pat_text):
+        if tok not in expected:
+            raise GenError(f"{key} r{n}: C5 R8 pattern token {tok!r} is "
+                           f"not a keep capture or the slot (name "
+                           f"corruption)")
+    # matchdeclare: the keep captures (freeof(x)-guarded when the .m cond
+    # FreeQ-guards them) plus the slot (%mr_lpfac -- it is the whole
+    # x-bearing log-power factor; the product exclusion stops it from
+    # absorbing an adjacent head coefficient).
+    freeq_guarded = set(v.strip()
+                        for part in re.findall(
+                            r"(?<![A-Za-z0-9])FreeQ\[\{?([^\]}]*)\}?,\s*x\]",
+                            cond or "")
+                        for v in part.split(","))
+    decls = [f"matchdeclare({caps[v]}, "
+             f"{'freeof(x)' if v in freeq_guarded else 'true'})$"
+             for v in keep]
+    decls.append(f"matchdeclare({u_cap}, %mr_lpfac)$")
+    # cond/repl: the usual generated bodies (translated; every capture --
+    # including the recovered ones -- is bound via geteqR(mm, 'cap), which
+    # the augmented matchlist satisfies).
+    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
+                 if cond else "true")
+    leadcaps = nonzero_guard_caps(pat_text)
+    if leadcaps:
+        base_cond = f"({base_cond})  and  " + "  and  ".join(
+            f"%mr_neQ({c}, 0)" for c in sorted(leadcaps))
+    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
+    caps_sorted = sorted(caps.values())
+    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
+    snaps = {c: c + "__s" for c in caps_sorted}
+    for c in caps_sorted:
+        repl_txt = re.sub(r"(?<![0-9A-Za-z_])" + re.escape(c) +
+                          r"(?![0-9A-Za-z_])", snaps[c], repl_txt)
+    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
+                           for c in caps_sorted) or "true"
+    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
+    locals_txt = ", ".join(caps_sorted)
+    pat_name = f"_mr_pat_{key}_r{n}"
+    lines = list(decls)
+    lines.append(f"defmatch({pat_name}, {pat_text}, x)$")
+    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
+    lines.append(f"  {binds},")
+    lines.append(f"  {base_cond})$")
+    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
+    lines.append(f"  {snap_binds},")
+    lines.append(f"  {repl_txt})$")
+    # the structural rule body: the single slot `mly` covers the whole
+    # (a+b log(c (d+e x^n)^p))^q factor. Recover the eight captures ONCE
+    # (fail-closed %mr_lpfac_parse) and append them so cond and repl read
+    # the SAME recovered values via geteqR.
+    du_eqs = ", ".join(f"{caps[d]} = part(dv, {i + 1})"
+                       for i, d in enumerate(decomp))
+    lines.append(f"_mr_rule_{key}_r{n}(f, x) := "
+                 f"block([mm0, mm, dv, ok, ly],")
+    lines.append(f"  mm0 : {pat_name}(f, x),")
+    lines.append("  if mm0 = false then return(false),")
+    lines.append("  if %mr_containsBoolean(mm0) then return(false),")
+    lines.append(f"  ly : geteqR(mm0, '{u_cap}),")
+    lines.append("  dv : %mr_lpfac_parse(ly, x),")
+    lines.append("  if is(dv = false) then return(false),")
+    lines.append(f"  mm : append(mm0, [{du_eqs}]),")
+    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
+    lines.append("  if is(ok) = true then _mr_repl_"
+                 f"{key}_r{n}(mm, x) else false)$")
+    return "\n".join(lines), sorted(ctx["decls"])
+
+
+# ============================================================================
 # C4 log-power structural re-transcription (class-3 deferred campaign C4).
 #
 # Defect (measured 2026-09-02, branch_5_50_base_84_g4204fb669, probes
@@ -2934,6 +3149,21 @@ def emit_rule(run, key, n, rule_vars):
     b33 = b33_spec(body, key, n, rule_vars)
     if b33 is not None:
         return _emit_m1_manual(b33, key, n, rule_vars, cond, rhs, ctx)
+    # 3.4 log-arg slotted-inner-exponent re-transcription (class-3 deferred
+    # campaign C5): the (a+b Log[c (d+e x^n)^p])^q covers (3.4.m L7/L9/L10/
+    # L12/L16) 0-bind the stored forms whose inner term is a fractional or
+    # reciprocal power. R4 (r4/r5/r6) slots the log-arg binomial-power
+    # factor as the single m1b (_emit_m1_manual); R8 (r8/r12) slots the
+    # whole outer log-power factor as the single mly because a two-
+    # power-factor times pattern 0-binds every stored target containing a
+    # power of x (see c5_spec / _emit_c5_r8, the %mr_lpfac section and the
+    # %mr_mbp_mono2 C5 note in maxima_rubi_utils.mac). The .m cond/repl
+    # regenerate byte-identical.
+    c5 = c5_spec(body, key, n, rule_vars)
+    if c5 is not None:
+        if c5["shape"] == "R8":
+            return _emit_c5_r8(c5, key, n, rule_vars, cond, rhs, ctx)
+        return _emit_m1_manual(c5, key, n, rule_vars, cond, rhs, ctx)
     # (f_.+g_.*x_)^m_.*(A_.+B_.*Log[...])^p_. log-power structural
     # re-transcription (3.2.1 r16/r18/r20, class-3 deferred campaign
     # C4): the faithful defmatch LHS 0-binds the stored forms (a
