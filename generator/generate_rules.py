@@ -3265,6 +3265,25 @@ def emit_rule(run, key, n, rule_vars):
         cond_txt = f"({base_cond})  and  {guards}"
     else:
         cond_txt = base_cond
+    # M-cas-simp (3.5 r10, class-3 deferred campaign C6): the .m cond
+    # EqQ[D[Px/Qx, x], 0] tests that the ratio Px/Qx is a constant (its
+    # x-derivative is 0). Mathematica's D auto-simplifies the derivative of
+    # a constant ratio to 0; Maxima's diff does not — the e92 binding
+    # (Px = c*x^2+a over Qx = c*e*x^2+a*e) leaves a non-zero-looking
+    # rational. The faithful analogue is ratsimp on the derivative: for
+    # rational Px, Qx, ratsimp(diff(Px/Qx, x)) = 0 iff Px/Qx is constant.
+    # Measured 2026-09-02 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7
+    # (probes c6 D5/D7 positive; D12/D13 the negative shape a+c*x^2 over
+    # 2+3*x^2 stays non-zero, so the cond stays false). The ONE sanctioned
+    # cond change of this campaign; the defmatch/repl stay byte-identical.
+    if key == "3_5" and n == 10:
+        old = "diff(_mr_3_5_r10_Px/_mr_3_5_r10_Qx, x)"
+        new = "ratsimp(diff(_mr_3_5_r10_Px/_mr_3_5_r10_Qx, x))"
+        if cond_txt.count(old) != 1:
+            raise GenError("3_5 r10: expected exactly one "
+                           f"{old!r} in the translated cond, found "
+                           f"{cond_txt.count(old)} (M-cas-simp hook)")
+        cond_txt = cond_txt.replace(old, new)
     # FIX F12: the brief passed `varset` here — an undefined name in
     # emit_rule (the parameter is rule_vars); a NameError on every rule.
     repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)

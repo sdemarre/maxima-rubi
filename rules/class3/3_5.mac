@@ -191,7 +191,7 @@ matchdeclare(_mr_3_5_r10_n, freeof(x))$
 defmatch(_mr_pat_3_5_r10, log(_mr_3_5_r10_c*_mr_3_5_r10_Px^_mr_3_5_r10_n)/_mr_3_5_r10_Qx, x)$
 _mr_cond_3_5_r10(mm, x) := block([_mr_3_5_r10_Px, _mr_3_5_r10_Qx, _mr_3_5_r10_c, _mr_3_5_r10_n],
   _mr_3_5_r10_Px : geteqR(mm, '_mr_3_5_r10_Px), _mr_3_5_r10_Qx : geteqR(mm, '_mr_3_5_r10_Qx), _mr_3_5_r10_c : geteqR(mm, '_mr_3_5_r10_c), _mr_3_5_r10_n : geteqR(mm, '_mr_3_5_r10_n),
-  freeof(x, _mr_3_5_r10_c) and freeof(x, _mr_3_5_r10_n)  and  %mr_quadraticQ([_mr_3_5_r10_Qx, _mr_3_5_r10_Px], x)  and  %mr_eqQ(diff(_mr_3_5_r10_Px/_mr_3_5_r10_Qx, x), 0))$
+  freeof(x, _mr_3_5_r10_c) and freeof(x, _mr_3_5_r10_n)  and  %mr_quadraticQ([_mr_3_5_r10_Qx, _mr_3_5_r10_Px], x)  and  %mr_eqQ(ratsimp(diff(_mr_3_5_r10_Px/_mr_3_5_r10_Qx, x)), 0))$
 _mr_repl_3_5_r10(mm, x) := block([_mr_3_5_r10_Px__s, _mr_3_5_r10_Qx__s, _mr_3_5_r10_c__s, _mr_3_5_r10_n__s],
   _mr_3_5_r10_Px__s : geteqR(mm, '_mr_3_5_r10_Px), _mr_3_5_r10_Qx__s : geteqR(mm, '_mr_3_5_r10_Qx), _mr_3_5_r10_c__s : geteqR(mm, '_mr_3_5_r10_c), _mr_3_5_r10_n__s : geteqR(mm, '_mr_3_5_r10_n),
   block([u], u : mr_int(1/_mr_3_5_r10_Qx__s, x), u*log(_mr_3_5_r10_c__s*_mr_3_5_r10_Px__s^_mr_3_5_r10_n__s) - _mr_3_5_r10_n__s*mr_int(%mr_simp(u*diff(_mr_3_5_r10_Px__s, x)/_mr_3_5_r10_Px__s, x), x)))$

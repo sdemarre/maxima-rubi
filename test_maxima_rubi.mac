@@ -82,9 +82,10 @@ run_all_tests() := block([],
         test_class3_c1_slotted(),
          test_class3_c4_321(),
          test_class3_c3_ratio(),
-          test_class3_b3_33(),
-          test_class3_c5_34(),
-          test_int_family_predicates(),
+           test_class3_b3_33(),
+           test_class3_c5_34(),
+           test_class3_c6_cassimp(),
+           test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -1495,7 +1496,42 @@ test_structural_predicates() := block([],
       z : errcatch(factor(diff(ans, x) - f)),
       check_bool("c5 row-450 self-diff zero (factor)",
                  is(z # []) and is(part(z, 1) = 0)),
-      mr_rule_table : saved_table,
+       mr_rule_table : saved_table,
+       true
+     )$
+
+    /* Task 4C-C6 M-cas-simp (3.5 r10): the .m cond EqQ[D[Px/Qx, x], 0]
+       tests that the ratio Px/Qx is a constant. Maxima's diff does not
+       auto-simplify the derivative of a constant ratio to 0 (the e92
+       binding c*x^2+a over c*e*x^2+a*e leaves a non-zero rational), so
+       the faithful port is ratsimp on the derivative. The GREEN pin is a
+       NON-constant ratio that must stay rejected. */
+    test_class3_c6_cassimp() := block([mm, fc],
+      print("--- c6: M-cas-simp 3.5 r10 cond ratsimp (e92/e93) ---"),
+      %mr_load_sibling("rules/class3/3_5.mac", 'mr_witness_3_5),
+      /* e92: Px = c*x^2+a, Qx = c*e*x^2+a*e -> ratio 1/e (constant,
+         non-trivial); diff(Px/Qx) is a non-zero rational, ratsimp -> 0. */
+      mm : _mr_pat_3_5_r10(log(d*(a+c*x^2)^n)/(a*e+c*e*x^2), x),
+      check_bool("c6 r10 e92 binds", listp(mm)),
+      check_bool("c6 r10 e92 cond true (ratsimp fix)",
+                 is(listp(mm)) and _mr_cond_3_5_r10(mm, x)),
+      /* e93: linear+quadratic (the b*x term). */
+      mm : _mr_pat_3_5_r10(log(d*(a+b*x+c*x^2)^n)/(a*e+b*e*x+c*e*x^2), x),
+      check_bool("c6 r10 e93 binds", listp(mm)),
+      check_bool("c6 r10 e93 cond true (ratsimp fix)",
+                 is(listp(mm)) and _mr_cond_3_5_r10(mm, x)),
+      /* GREEN pin: Qx = 2+3*x^2 vs Px = a+c*x^2 is a NON-constant ratio;
+         the ratsimp must not over-fire (measured probes c6 D12/D13). */
+      mm : _mr_pat_3_5_r10(log(d*(a+c*x^2)^n)/(2+3*x^2), x),
+      check_bool("c6 r10 neg ratio binds", listp(mm)),
+      check_not("c6 r10 neg ratio cond stays false",
+                is(listp(mm)) and _mr_cond_3_5_r10(mm, x)),
+      /* answer-level engagement: a concrete positive instance (no sign
+         query) now FIRES the rule (previously the false cond declined
+         every e92-shape binding). */
+      fc : log(3*(1+x^2)^2)/(2+2*x^2),
+      check_bool("c6 r10 concrete e92 fires",
+                 is(_mr_rule_3_5_r10(fc, x) # false)),
       true
     )$
 
