@@ -84,8 +84,9 @@ run_all_tests() := block([],
          test_class3_c3_ratio(),
            test_class3_b3_33(),
            test_class3_c5_34(),
-           test_class3_c6_cassimp(),
-           test_int_family_predicates(),
+            test_class3_c6_cassimp(),
+            test_class3_c6b_functionoflog(),
+            test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -1532,6 +1533,104 @@ test_structural_predicates() := block([],
       fc : log(3*(1+x^2)^2)/(2+2*x^2),
       check_bool("c6 r10 concrete e92 fires",
                  is(_mr_rule_3_5_r10(fc, x) # false)),
+      true
+    )$
+
+    /* Task 4C-C6b (3.5 r42, the .m 3.5.m L46 FunctionOfLog catch-all,
+       class-3 deferred campaign C6b): the new-rule port of the
+       M-functionoflog wave group (13 entries). The rule is the
+       non-ShowSteps branch of the .m's
+       If[TrueQ[$LoadShowSteps], …] wrapper (the branch-selection
+       decision: in the port the two branches are semantically
+       identical — the ShowStep handler values ShowStep to its held
+       4th arg = the plain branch's body, and the ShowStep branch's
+       extra SimplifyFlag gate is mr_simplify_flag, constant true —
+       see the report and the generator's unwrap_showsteps_line).
+       The decomposition contract: FunctionOfLog[u, x] = [f, a*x^n,
+       n] iff u is a function of log(a*x^n) with the log argument
+       replaced by x in f; the repl is 1/n * Subst[Int[f, x], x,
+       log(a*x^n)]. The three answer-level reps span the wave table's
+       shapes (e134 the sqrt-rational f, e139 the pure-Subst f, e258
+       the polynomial-in-t f); measured 2026-09-04 on
+       branch_5_50_base_84_g4204fb669 / SBCL 2.6.7: on this minimal
+       table the nested mr_int 0-fires and takes the native
+       integrate fall-through (the same antiderivative family the
+       .m rule would produce; e139/e258 land on the suite's expected
+       answer form exactly, e134 lands on a log form that
+       ratsimp-closes against the suite's atanh form). */
+    test_class3_c6b_functionoflog() := block([mm, f, ans, z, saved_table],
+      print("--- c6b: 3.5 r42 FunctionOfLog catch-all (e134/e139/e258) ---"),
+      %mr_load_sibling("rules/class3/3_5.mac", 'mr_witness_3_5),
+      /* predicate level: the three wave-shape decompositions
+         (t = log(a*x^n); the log argument is replaced by x in f). */
+      check("c6b fOL e134 shape (f = 1/sqrt(t^2-3), a = 1, n = 1)",
+            %mr_functionOfLog(%mr_cancel(x*(1/(x*sqrt(-3+log(x)^2)))), x),
+            [1/sqrt(x^2-3), x, 1]),
+      check("c6b fOL e139 shape (f = 2^t)",
+            %mr_functionOfLog(2^log(x), x), [2^x, x, 1]),
+      check("c6b fOL e258 shape (f = 1/(1+t+t^2), a = 7, n = 1)",
+            %mr_functionOfLog(%mr_cancel(x*(1/(x+x*log(7*x)+x*log(7*x)^2))), x),
+            [1/(x^2+x+1), 7*x, 1]),
+      /* the .m's decline clauses: the bare variable is not a log
+         function; no log at all; two DIFFERENT log arguments. */
+      check_not("c6b fOL bare x declines", %mr_functionOfLog(x, x)),
+      check_not("c6b fOL no-log declines", %mr_functionOfLog(sin(x), x)),
+      check_not("c6b fOL two log args declines",
+                %mr_functionOfLog(log(x) + log(1+x), x)),
+      /* the outer cond's NonsumQ gate and the LogQ head test. */
+      check_not("c6b nonsumQ rejects a sum", %mr_nonsumQ(1+x)),
+      check_bool("c6b nonsumQ accepts a power", %mr_nonsumQ(x^2)),
+      check_bool("c6b logQ the log head", %mr_logQ(log(x))),
+      check_not("c6b logQ rejects the power over log", %mr_logQ(log(x)^2)),
+      /* pattern level: the single u_ catch-all slot binds the whole
+         integrand (the geteqR idiom); the cond is the NonsumQ gate. */
+      mm : _mr_pat_3_5_r42(1/(x*sqrt(-3+log(x)^2)), x),
+      check_bool("c6b r42 e134 binds", listp(mm)),
+      check_bool("c6b r42 e134 u capture (geteqR)",
+                 listp(mm) and is(geteqR(mm, '_mr_3_5_r42_u)
+                 = 1/(x*sqrt(-3+log(x)^2)))),
+      check_bool("c6b r42 e134 cond true",
+                 is(listp(mm)) and _mr_cond_3_5_r42(mm, x)),
+      /* GREEN pin for the NonsumQ cond: the u_ slot binds a sum
+         integrand too, but the cond must decline it (the .m's outer
+         /; NonsumQ[u] — the sum shapes are another wave group's). */
+      mm : _mr_pat_3_5_r42(1 + 1/(x*sqrt(-3+log(x)^2)), x),
+      check_bool("c6b r42 sum integrand binds", listp(mm)),
+      check_not("c6b r42 sum integrand cond false (NonsumQ)",
+                is(listp(mm)) and _mr_cond_3_5_r42(mm, x)),
+      /* answer level: rubi() on the three reps, non-noun + the
+         driver's ratsimp zero-chain stage. */
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_5]),
+      f : 1/(x*sqrt(-3+log(x)^2)),
+      ans : rubi(f, x),
+      check_not("c6b e134 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c6b e134 zero-chain (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      f : 2^log(x)/x,
+      ans : rubi(f, x),
+      check_not("c6b e139 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      check_bool("c6b e139 is the suite answer form",
+                 is(ans = 2^log(x)/log(2))),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c6b e139 zero-chain (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      f : 1/(x+x*log(7*x)+x*log(7*x)^2),
+      ans : rubi(f, x),
+      check_not("c6b e258 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      check_bool("c6b e258 is the suite answer form",
+                 is(ans = 2*atan((1+2*log(7*x))/sqrt(3))/sqrt(3))),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c6b e258 zero-chain (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      mr_rule_table : saved_table,
       true
     )$
 

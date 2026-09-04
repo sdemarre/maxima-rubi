@@ -668,6 +668,77 @@ def clean_cond(cond, key, n):
                        f"{cond[:60]!r}")
     return cond
 
+def _split_top_args(s, sep=","):
+    """Top-level split of s on sep, respecting [ ] ( ) { } nesting."""
+    parts, depth, cur = [], 0, []
+    for ch in s:
+        if ch in "[({":
+            depth += 1
+        elif ch in "])}":
+            depth -= 1
+        if depth == 0 and ch == sep:
+            parts.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    parts.append("".join(cur))
+    return parts
+
+_SHOWSTEPS_IF = re.compile(
+    r"^If\[TrueQ\[\$LoadShowSteps\],(.+)\]\s*$", re.DOTALL)
+
+def unwrap_showsteps_line(line):
+    """The single-line Rubi rule wrapper
+
+        If[TrueQ[$LoadShowSteps], <ShowStep rule>, <plain rule>]
+
+    (3.5.m L46 in class 3; the same shape in classes 4/5/7/9 is
+    single-line there too) -> the NON-ShowSteps branch (the 3rd arg).
+    Branch selection (class-3 deferred campaign C6b, decision recorded
+    in .superpowers/sdd/t4c6b-report.md): in the port the two branches
+    are semantically identical — the ShowStep branch's body VALUES to
+    its 4th argument, the held answer, which is exactly the plain
+    branch's body (the generator's ShowStep handler, FIX E4, emits the
+    4th arg unwrapping %mr_hold), and its extra `SimplifyFlag &&` gate
+    is mr_simplify_flag, constant true in the port
+    (maxima_rubi_utils.mac:11; MA's own ShowStepRoutines.m:3 default,
+    its Block[{SimplifyFlag=False}] scoping the step machinery only,
+    which the port has none of). Porting both would add a byte-
+    redundant u_ catch-all rule (same pattern, same effective cond,
+    same repl) that every integrand reaching this position pays for in
+    TLS slots and match time. (The 1.4.1 r7/r8 both-branches shape is
+    a by-product of that file's multi-line formatting — each branch
+    starts its own Int[-leading line and so its own run — not an
+    intentional double port.) The multi-line form does NOT match here
+    (the line carries no complete If), so the rule_runs convention
+    still splits each branch into its own run and the line is left
+    untouched. A line that is JUST the opener (the 1.4.1 multi-line
+    shape) passes through untouched; any other line that starts the
+    wrapper without carrying both branches to a closing ] is a parse
+    failure, not a pass-through."""
+    s = line.strip()
+    if not s.startswith("If[TrueQ[$LoadShowSteps],"):
+        return line
+    m = _SHOWSTEPS_IF.match(s)
+    if m is None:
+        if re.fullmatch(r"If\[TrueQ\[\$LoadShowSteps\],\s*", s):
+            return line
+        raise GenError(f"ShowSteps If wrapper is not self-contained on "
+                       f"one line (multi-line form?) — {s[:60]!r}")
+    args = _split_top_args(m.group(1))
+    if len(args) != 2:
+        raise GenError(f"ShowSteps If wrapper has {len(args)} branches "
+                       f"(expected 2): {s[:60]!r}")
+    plain = args[1].strip()
+    if not re.match(r"^Int\[[^\[\]]*,\s*x_Symbol\]\s*:=", plain):
+        raise GenError(f"ShowSteps If plain branch is not an Int rule: "
+                       f"{plain[:60]!r}")
+    return plain
+
+def unwrap_showsteps_lines(text):
+    """Map unwrap_showsteps_line over the comment-stripped .m text."""
+    return "\n".join(unwrap_showsteps_line(ln) for ln in text.split("\n"))
+
 def split_top_power(s):
     """(base, exp) if s is a top-level power `base^exp`; else (None, None)."""
     s = s.strip()
@@ -3094,6 +3165,39 @@ def _emit_c3_manual(spec, key, n, rule_vars, cond, rhs, ctx):
     return "\n".join(lines), []
 
 
+# BARE catch-all pattern (3.5 r42 = the .m 3.5.m L46 FunctionOfLog
+# catch-all, class-3 deferred campaign C6b).
+#
+# Defect (measured 2026-09-04, branch_5_50_base_84_g4204fb669 / SBCL
+# 2.6.7; repro probes /tmp/opencode/probe_md_calib.mac,
+# probe_r42_args.mac, probe_r42_cum2.mac): a defmatch pattern that is a
+# single bare pattern-variable symbol is re-EVALUATED on every re-run
+# of defmatch — the (atom pt) branch of proc-$defmatch (src/matcom.lisp)
+# mevals the slot symbol — and the compiled matcher assigns the matched
+# subexpression to the slot symbol on every successful match (the msetq
+# side effect the e44 snapshot note below documents). The Layer A suite
+# re-loads the rule siblings cumulatively (the b1 re-load design), so
+# after the first successful bare-pattern match the NEXT re-load's
+# defmatch collapses the pattern to the LITERAL of the last matched
+# value: the probe's pattern became the literal 1 (only the integrand 1
+# bound, every other expression declined), and in the suite the pattern
+# took the last matched integrand so the rule 0-fired all three of its
+# own reps. Compound patterns are immune: simplify keeps them compound
+# and the slot stays a sub-part (probe_md_compound.mac: the re-defmatch
+# after a bound slot still matches fresh values).
+#
+# Fix: NO defmatch, NO matchdeclare for a bare-variable pattern — the
+# pattern function is a := function that always binds (the .m u_
+# catch-all with the true matchdeclare matches every integrand): it
+# returns the matchlist [ u = f, x = x ] in the defmatch retlist shape,
+# so the cond/repl regenerate byte-identical (the geteqR binds, the
+# snapshot rewrite is the default one). It never assigns the slot
+# symbol, so the collapse hazard cannot arise. A bare-variable pattern
+# whose matchdeclare predicate is not true is a loud GenError
+# (unsupported — fail closed, as the other spec functions do).
+_BARE_PAT = re.compile(r"_mr[0-9A-Za-z_]+\Z")
+
+
 def emit_rule(run, key, n, rule_vars):
     """One rule run (lhs, rhs, cond) -> the five Maxima functions as text.
     rule_vars is the set of capture names (from the lhs)."""
@@ -3216,6 +3320,12 @@ def emit_rule(run, key, n, rule_vars):
             raise GenError(f"{key} r{n}: pattern token {tok!r} is not a "
                            f"declared capture or MatchQ marker of this "
                            f"rule (name corruption in the pattern text)")
+    # Bare catch-all detection (see the BARE catch-all block comment
+    # above): a pattern that is exactly one of this rule's capture
+    # tokens — the .m Int[u_, x_Symbol] whole-integrand shape.
+    bare_catchall = (len(rule_vars) == 1
+                     and _BARE_PAT.fullmatch(pat_text) is not None
+                     and pat_text == cap_name(key, n, next(iter(rule_vars))))
     # Leading coefficients of degree>=2 polynomial factors (and symbolic
     # exponents) must be nonzero: see nonzero_guard_caps (the Maxima
     # degenerate-0-binding misfire).
@@ -3338,8 +3448,21 @@ def emit_rule(run, key, n, rule_vars):
     snap_bind_block = ", ".join(snap_binds) if snap_binds else "true"
     snap_locals_txt = ", ".join(snaps[c] for c in caps) if caps else ""
     pat_name = f"_mr_pat_{key}_r{n}"
-    lines = list(decls)
-    lines.append(f"defmatch({pat_name}, {pat_text}, x)$")
+    if bare_catchall:
+        # BARE catch-all (see the block comment above): no defmatch, no
+        # matchdeclare — the hand-written pattern function returns the
+        # defmatch retlist shape for every integrand and never assigns
+        # the slot symbol, so a re-load's defmatch-time pattern
+        # re-evaluation cannot collapse the pattern to a literal.
+        if decls != [f"matchdeclare({pat_text}, true)$"]:
+            raise GenError(f"{key} r{n}: bare catch-all pattern "
+                           f"{pat_text} with matchdeclare decls "
+                           f"{decls} (only the true predicate is "
+                           f"supported)")
+        lines = [f"{pat_name}(f, x) := [ {pat_text} = f, x = x ]$"]
+    else:
+        lines = list(decls)
+        lines.append(f"defmatch({pat_name}, {pat_text}, x)$")
     lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
     lines.append(f"  {bind_block},")
     lines.append(f"  {cond_txt})$")
@@ -3507,7 +3630,11 @@ def configure(class_num):
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
     OUT = ROOT / "rules" / f"class{CLASS}"
-    EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL, 2: 125, 3: 333}[class_num]
+    # class 3: 334 — the 333 census count + the 3.5.m L46 FunctionOfLog
+    # catch-all (class-3 deferred campaign C6b; the single-line
+    # If[TrueQ[$LoadShowSteps], …] wrapper the census parser never
+    # picked up — unwrap_showsteps_line).
+    EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL, 2: 125, 3: 334}[class_num]
 
 
 def main(class_num=None):
@@ -3525,7 +3652,7 @@ def main(class_num=None):
         key = key_of(rel_m)
         if only and key != only:
             continue
-        text = strip_comments((RUBI / rel_m).read_text())
+        text = unwrap_showsteps_lines(strip_comments((RUBI / rel_m).read_text()))
         runs = rule_runs(text)
         out = OUT / f"{key}.mac"
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -3546,7 +3673,8 @@ def main(class_num=None):
             key = base + "b"
             if only and key != only:
                 continue
-            text = strip_comments((RUBI / rel_m).read_text())
+            text = unwrap_showsteps_lines(
+                strip_comments((RUBI / rel_m).read_text()))
             runs = rule_runs(text)
             out = OUT / f"{key}.mac"
             out.parent.mkdir(parents=True, exist_ok=True)

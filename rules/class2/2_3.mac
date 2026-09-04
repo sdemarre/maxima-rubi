@@ -2116,8 +2116,7 @@ _mr_rule_2_3_r95(f, x) := block([mm, ok],
   ok : _mr_cond_2_3_r95(mm, x),
   if is(ok) = true then _mr_repl_2_3_r95(mm, x) else false)$
 
-matchdeclare(_mr_2_3_r96_u, true)$
-defmatch(_mr_pat_2_3_r96, _mr_2_3_r96_u, x)$
+_mr_pat_2_3_r96(f, x) := [ _mr_2_3_r96_u = f, x = x ]$
 _mr_cond_2_3_r96(mm, x) := block([_mr_2_3_r96_u],
   _mr_2_3_r96_u : geteqR(mm, '_mr_2_3_r96_u),
   %mr_functionOfExponentialQ(_mr_2_3_r96_u, x)  and  not(%mr_matchQ(_mr_2_3_r96_u, _mr_2_3_r96mq1_w*(_mr_2_3_r96mq1_a*_mr_2_3_r96mq1_v^_mr_2_3_r96mq1_n)^_mr_2_3_r96mq1_m, lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq1_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq1_m, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq1_n, %mr_mqb))  and  integerp(%mr_mk(_mr_2_3_r96mq1_m, %mr_mqb)*%mr_mk(_mr_2_3_r96mq1_n, %mr_mqb)))))  and  not(%mr_matchQ(_mr_2_3_r96_u, %e^(_mr_2_3_r96mq2_c*(_mr_2_3_r96mq2_a + _mr_2_3_r96mq2_b*x))*_mr_2_3_r96mq2_F(_mr_2_3_r96mq2_v), lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))))$

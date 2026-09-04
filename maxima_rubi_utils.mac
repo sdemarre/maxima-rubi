@@ -7296,4 +7296,96 @@ mr_use_gamma_flag : false$
     tmp : %mr_simp(x^(n-1)*%mr_substForFractionalPower(u, part(lst, 2), n, -a/b + x^n/b, x)),
     [%mr_nonfreeFactors(tmp, x), n, part(lst, 2), %mr_freeFactors(tmp, x)/b]))$
 
+/* Rubi :188-190  NonsumQ[u] — true iff u is NOT a sum (the two upvalues
+   NonsumQ[_Plus] = False; NonsumQ[_] = True). The head test is op = "+"
+   (MEASURED 2026-09-04 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7:
+   is(op(1+x) = "+") = true; a unary-minus node is NOT a Plus and keeps
+   NonsumQ true, the MA head reading). The 3.5 L46 catch-all's outer
+   cond; the .m's two-branch form has no other class-3 call site. */
+%mr_nonsumQ(u) := block([],
+   if atom(u) then true
+   else not is(op(u) = "+"))$
+
+/* Rubi :238  LogQ[u] — Head[u] === Log. The bound log head is the
+   symbol 'log (MEASURED 2026-09-04, branch_5_50_base_84_g4204fb669 /
+   SBCL 2.6.7: is(op(log(x)) = 'log) = true, string(op(log(x))) =
+   "log"; a power over a log (log(x)^2, op "^") and the collapsed sqrt
+   head (symbol 'sqrt) are NOT logs — the FunctionOfLog walk recurses
+   into their parts instead). */
+%mr_logQ(u) := block([],
+   if atom(u) then false
+   else is(op(u) = 'log))$
+
+/* Rubi :4945-4949  FunctionOfLog[u, x] — {f, a*x^n, n} iff u is a
+   function of Log[a*x^n] with the log argument replaced by x in f;
+   false if u is not (the thrown False or the no-log-found v = False
+   tail). The 3.5 L46 catch-all's decomposition: the repl integrates
+   f in x and Subst's the log argument back. */
+%mr_functionOfLog(u, x) := block([lst],
+   lst : %mr_functionOfLog_aux(u, false, false, x),
+   if atom(lst) or %mr_falseQ(part(lst, 2)) then false
+   else lst)$
+
+/* Rubi :4952-4968  FunctionOfLog[u, v, n, x] — the 4-arg recursion:
+   (a) atom: {u, v, n} unless u === x (the variable itself is not a
+   function of a log -> False); (b) CalculusQ: False (a pending
+   integrate/sum node cannot be a log function); (c) LogQ with
+   BinomialParts[u[[1]], x] = [0, b, n0] (a pure power a*x^n, a = 0
+   part zero): {x, u[[1]], n0} iff v is the not-yet-set False or the
+   SAME log argument (a second, different log argument -> False), else
+   False; (d) else: the parts walk with the running (v, n) state.
+   The .m's Catch[Map[Function[lst=FunctionOfLog[#, lst[[2]],
+   lst[[3]], x]; If[AtomQ[lst], Throw[False], lst[[1]]]], u], v, n]
+   is the %mr_mofl_walk: each part recurses with the RUNNING v/n (a
+   matched log part sets them for the later parts), a thrown False
+   aborts the whole result, and the mapped first components are
+   reassembled under u's own head (the .m's Map keeps the head; the
+   apply(op(u), ...) rebuild is the house generic-head idiom, the
+   %mr_substForFractionalPower line 7263). Maxima adaptations: the
+   Throw[False] flag is a first-component false sentinel (return(value)
+   is loop-level, the line-7230 idiom); u === x / u[[1]] === v read as
+   is(=) per the house IdentityQ reading (the %mr_substForFractional-
+   Power line 7254). */
+%mr_functionOfLog_aux(u, v, n, x) := block([bp, i, r, res],
+   if atom(u) then (
+     if is(u = x) then false
+     else [u, v, n]
+   )
+   else if %mr_calculusQ(u) then false
+   else if %mr_logQ(u) then (
+     bp : %mr_binomial_parts(part(u, 1), x),
+     if not atom(bp) and %mr_eqQ(part(bp, 1), 0) then (
+       if %mr_falseQ(v) or is(part(u, 1) = v)
+       then [x, part(u, 1), part(bp, 3)]
+       else false
+     )
+     else %mr_mofl_walk(u, v, n, x)
+   )
+   else %mr_mofl_walk(u, v, n, x))$
+
+/* The FunctionOfLog else-branch parts walk (the .m's Catch/Map):
+   recurse into every part with the running (v, n); a thrown False from
+   any part aborts the whole result (the .m's Throw[False]); reassemble
+   the first components under u's head. The list branch mirrors the
+   .m's Map-over-list result. The abort is the dead flag + BARE
+   return() idiom: a return(value) inside a for loop is loop-level in
+   this build, not function-level (the line-81 note; %mr_mofl_walk
+   would fall through to the apply and hard-error on the partial res). */
+%mr_mofl_walk(u, v, n, x) := block([i, r, res, dead],
+   res : [],
+   dead : false,
+   for i : 1 thru length(u) do (
+     r : %mr_functionOfLog_aux(part(u, i), v, n, x),
+     if atom(r) then (
+       dead : true,
+       return()
+     ),
+     v : part(r, 2),
+     n : part(r, 3),
+     res : append(res, [part(r, 1)])
+   ),
+   if is(dead = true) then false
+   else if is(op(u) = "[") then [res, v, n]
+   else [apply(op(u), res), v, n])$
+
 mr_witness_utils() := true$

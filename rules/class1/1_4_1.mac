@@ -118,8 +118,7 @@ _mr_rule_1_4_1_r6(f, x) := block([mm, ok],
   ok : _mr_cond_1_4_1_r6(mm, x),
   if is(ok) = true then _mr_repl_1_4_1_r6(mm, x) else false)$
 
-matchdeclare(_mr_1_4_1_r7_u, true)$
-defmatch(_mr_pat_1_4_1_r7, _mr_1_4_1_r7_u, x)$
+_mr_pat_1_4_1_r7(f, x) := [ _mr_1_4_1_r7_u = f, x = x ]$
 _mr_cond_1_4_1_r7(mm, x) := block([_mr_1_4_1_r7_u],
   _mr_1_4_1_r7_u : geteqR(mm, '_mr_1_4_1_r7_u),
   mr_simplify_flag  and  %mr_sumQ(_mr_1_4_1_r7_u))$
@@ -133,8 +132,7 @@ _mr_rule_1_4_1_r7(f, x) := block([mm, ok],
   ok : _mr_cond_1_4_1_r7(mm, x),
   if is(ok) = true then _mr_repl_1_4_1_r7(mm, x) else false)$
 
-matchdeclare(_mr_1_4_1_r8_u, true)$
-defmatch(_mr_pat_1_4_1_r8, _mr_1_4_1_r8_u, x)$
+_mr_pat_1_4_1_r8(f, x) := [ _mr_1_4_1_r8_u = f, x = x ]$
 _mr_cond_1_4_1_r8(mm, x) := block([_mr_1_4_1_r8_u],
   _mr_1_4_1_r8_u : geteqR(mm, '_mr_1_4_1_r8_u),
   %mr_sumQ(_mr_1_4_1_r8_u))$
