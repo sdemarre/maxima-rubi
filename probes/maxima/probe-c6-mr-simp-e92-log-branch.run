@@ -1,0 +1,9 @@
+#!/bin/sh
+# probes/maxima/probe-c6-mr-simp-e92-log-branch.run — C6 e92 %mr_simp
+# log-branch probe.  Loads the full rule table (TLS flag mandatory).
+cd "$(dirname "$0")/../.." || exit 1
+[ -f test/mr_rules.core ] || sh test/build_rules_core.sh
+sbcl --tls-limit 100000 --core test/mr_rules.core --noinform --very-quiet \
+  -b probes/maxima/probe-c6-mr-simp-e92-log-branch.mac \
+  > probes/maxima/probe-c6-mr-simp-e92-log-branch.out
+echo "wrote probes/maxima/probe-c6-mr-simp-e92-log-branch.out"

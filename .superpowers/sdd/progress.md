@@ -4254,3 +4254,64 @@ test file + core + git index, so the dispatches are sequential).
     count-line update (house-standard gap) — main session
     fixed it in this ledger commit (851 -> 862 + the growth
     line).
+  - C6: DONE (2026-09-03; code commits c25e8f6 + 69b3de1, A/B
+    record commit 929b551) — M-cas-simp landed (3_5 r10 cond
+    `ratsimp` 0-bind fix), but the report's expected e92/e93
+    transitions did NOT materialize.  The C6 cycle is closed on
+    the measured no-residue/no-regression adjudication below; the
+    two non-transition blockers are recorded as separate
+    follow-up mechanisms, not C6 cond defects.  The other five C6
+    mechanism groups remain deferred per t4c6-report.md (C6b
+    carries M-functionoflog; T6 decides the rest).  MAIN-SESSION
+    REVIEW (all re-measured 2026-09-03): (1) Layer A RE-RUN
+    869/0 (flagged gate, `Results: 869 passed, 0 failed`).  (2)
+    `git status --porcelain rules/` clean; core stamp current:
+    fingerprint f882e9aebd1928956ed25408a08ab3f1, git_rev
+    c25e8f6, git_tree d6c6b498, git_dirty 0, rules 3513.  (3)
+    TARGETED 3.5 A/B (the clean adjudication; the full c6base
+    record is contaminated by the 02:06 core rebuild — handoff
+    item 3): C5-core vs C6-core both 314 integrals, both
+    `Results: 246 passed, 68 failed`; e92 `unverified` 1.4s in
+    both; e93 `timeout` 30.0s in both; e169 `timeout` in both
+    (30.1/30.3); the only class change is e172 `error` (C5,
+    22.5s) -> `timeout` (C6, 31.8s), a FAIL->FAIL cap-band
+    change.  (4) FULL c6base -> c6post: 2046/1039 -> 2045/1040;
+    the only PASS->FAIL is e44 (3.1.5) `verified` 28.1s ->
+    `timeout` 30.0s.  e44 isolation: `verified` 21.2s at the 30s
+    cap and 22.3s at the 100s cap — 30s-cap load noise, not a
+    C6 effect (the C6 diff is scoped to 3_5 r10).  (5) e169
+    (3.5 L214, `log(a*tan(x)^n)`) full c6post `error` 26.0s:
+    isolated 3x at 30s now reproduces `error` (23.5/26.0/23.6s);
+    the driver batch dies with SBCL `Heap exhausted during
+    garbage collection` while evaluating the zero-chain body.
+    `probe-c6-e169-r10-no-bind` pins r10 pattern no-bind on the
+    C6 core, and the targeted C5/C6 A/B is `timeout` in both —
+    disposition: pre-existing hard-entry verification-stage heap
+    exhaustion (the class-3 zero-chain OOM family), not a C6
+    regression.  e92 NON-TRANSITION ROOT CAUSE (probe
+    `probe-c6-mr-simp-e92-log-branch`): the C6 cond fix is
+    faithful and r10 fires, but r10's replacement calls
+    `%mr_simp(u*diff(Px,x)/Px, x)`; on the e92 log-form `u`, the
+    first `ratsimp` stage changes the nested integrand's numeric
+    value (x=0.35: t=0.12591905903949868 -> ratsimp=
+    -1.4242626997904677, delta=-1.5501817588299664; x=0.65:
+    t=0.3576261055530193 -> ratsimp=-2.132678738255944, delta=
+    -2.490304843808963).  Minimal mechanism: Maxima's `log(-z)`
+    branch rewrite evaluates a log argument to a value differing
+    by 2*%i*%pi from the principal branch (probe: log()=
+    5.772811102900462i vs abs+atan2 principal=-0.5103742042791239i,
+    difference=6.283185307179586i).  The self-diff therefore
+    cannot close; e92 stays `unverified`.  FOLLOW-UP MECHANISM
+    (not C6): `%mr_simp` is not value-preserving on log-carrying
+    nested integrands; a log-safe simplification (or a Maxima
+    branch fix) is required before r10 can rescue e92.  e93
+    NON-TRANSITION ROOT CAUSE (probe
+    `probe-c6-e93-nested-int-cost`): with the driver-style
+    pos-first answers placed after each call, the first r10
+    nested integral `u = mr_int(1/Qx, x)` is fast; the SECOND
+    nested integral, `mr_int(%mr_simp(u*diff(Px,x)/Px, x), x)`,
+    exceeds the 30s cap (TIMEOUT_AT_30S, no DONE).  FOLLOW-UP
+    MECHANISM (not C6): r10's second nested integral is too slow
+    for the general quadratic family; a faster quadratic
+    reciprocal/nested-integral route is required before r10 can
+    rescue e93.

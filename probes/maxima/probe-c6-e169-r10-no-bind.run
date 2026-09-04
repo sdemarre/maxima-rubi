@@ -1,0 +1,8 @@
+#!/bin/sh
+# probes/maxima/probe-c6-e169-r10-no-bind.run
+cd "$(dirname "$0")/../.." || exit 1
+[ -f test/mr_rules.core ] || sh test/build_rules_core.sh
+sbcl --tls-limit 100000 --core test/mr_rules.core --noinform --very-quiet \
+  -b probes/maxima/probe-c6-e169-r10-no-bind.mac \
+  > probes/maxima/probe-c6-e169-r10-no-bind.out
+echo "wrote probes/maxima/probe-c6-e169-r10-no-bind.out"

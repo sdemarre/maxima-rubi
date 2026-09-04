@@ -1,0 +1,8 @@
+/* probe-c6-e169-r10-no-bind.mac — C6 e169 disposition support.
+   e169 (3.5 L214, log(a*tan(x)^n)) is outside the 3.5 r10 quadratic
+   family; the C6 cond fix cannot change its routing.  The probe pins
+   the pattern-level no-bind on the current C6 core. */
+f169: log(a*tan(x)^n)$
+mm: _mr_pat_3_5_r10(f169, x)$
+printf(true, "r10_bound=~a~%", is(mm = false))$
+printf(true, "DONE~%")$

@@ -1,0 +1,15 @@
+#!/bin/sh
+# probes/maxima/probe-c6-e93-nested-int-cost.run — C6 e93 second nested
+# integral cost probe under the corpus 30 s cap.
+cd "$(dirname "$0")/../.." || exit 1
+[ -f test/mr_rules.core ] || sh test/build_rules_core.sh
+OUT=probes/maxima/probe-c6-e93-nested-int-cost.out
+timeout 30 sbcl --tls-limit 100000 --core test/mr_rules.core --noinform --very-quiet \
+  -b probes/maxima/probe-c6-e93-nested-int-cost.mac > "$OUT"
+st=$?
+if [ "$st" -eq 124 ]; then
+  printf 'TIMEOUT_AT_30S (no DONE line: the second nested integral exceeded the cap)\n' >> "$OUT"
+else
+  printf 'EXIT_%d\n' "$st" >> "$OUT"
+fi
+echo "wrote $OUT (exit $st)"
