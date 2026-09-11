@@ -1,0 +1,17 @@
+#!/bin/sh
+# probes/matcher/02-controls.run -- controls for the round trip's UNSOUND and
+# MISS findings (see 02-controls.lisp).  From anywhere:
+#   sh probes/matcher/02-controls.run        (~30 s; writes 02-controls.out)
+set -u
+cd "$(dirname "$0")/../.."
+WORK=${MR_WORK:-${TMPDIR:-/tmp}/mr-02-roundtrip}
+mkdir -p "$WORK"
+python3 probes/matcher/02-roundtrip.py controls > "$WORK/controls-data.lisp" || exit 1
+OUT=probes/matcher/02-controls.out
+{
+  echo "=== probes/matcher/02-controls  run: $(date -u '+%Y-%m-%d %H:%M UTC')"
+  echo "reference/rubi HEAD: $(git -C reference/rubi rev-parse HEAD 2>/dev/null)"
+  MR_CONTROLS="$WORK/controls-data.lisp" timeout 600 maxima --very-quiet -b probes/matcher/02-controls.mac 2>&1 \
+    | grep -E -A4 '^(CONTROL|%build_info)' | grep -v '^--$'
+} > "$OUT"
+grep -E '^CONTROL|result:' "$OUT"

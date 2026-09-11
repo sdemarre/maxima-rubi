@@ -1,0 +1,34 @@
+#!/bin/sh
+# probes/matcher/02-roundtrip.run -- per-rule round trip of every Rubi LHS
+# through mma4max (handoffs/2026-09-11-matcher-design.md, move 2 part B).
+# From anywhere:  sh probes/matcher/02-roundtrip.run [nshards]
+# Work files (case file, shard results, logs) go to $MR_WORK
+# (default ${TMPDIR:-/tmp}/mr-02-roundtrip); the report is written to
+# probes/matcher/02-roundtrip.out.  MR_LIMIT=<n> restricts each shard to its
+# first n rules (smoke runs; the report then shows missing results).
+# MR_JUDGE_ONLY=1 re-judges the shard results already in $MR_WORK (no gen,
+# no maxima).  ~5 min wall with 20 shards on the measurement machine.
+set -u
+cd "$(dirname "$0")/../.."
+N=${1:-20}
+WORK=${MR_WORK:-${TMPDIR:-/tmp}/mr-02-roundtrip}
+if [ -z "${MR_JUDGE_ONLY:-}" ]; then
+  mkdir -p "$WORK"
+  rm -f "$WORK"/shard*.tsv "$WORK"/shard*.log
+  python3 probes/matcher/02-roundtrip.py gen "$WORK/cases.tsv" > "$WORK/gen.log" || exit 1
+  i=0
+  while [ "$i" -lt "$N" ]; do
+    MR_CASES="$WORK/cases.tsv" MR_NSHARDS=$N MR_SHARD=$i MR_RESULTS="$WORK/shard$i.tsv" \
+      timeout 14400 maxima --very-quiet -b probes/matcher/02-roundtrip.mac > "$WORK/shard$i.log" 2>&1 &
+    i=$((i + 1))
+  done
+  wait
+fi
+OUT=${MR_OUT:-probes/matcher/02-roundtrip.out}
+{
+  echo "=== probes/matcher/02-roundtrip  shards: $N  limit: ${MR_LIMIT:-none}  shard results: $(date -u -r "$WORK/shard0.tsv" '+%Y-%m-%d %H:%M UTC')  judged: $(date -u '+%Y-%m-%d %H:%M UTC')"
+  echo "reference/rubi HEAD: $(git -C reference/rubi rev-parse HEAD 2>/dev/null)"
+  grep -h 'HEAD-FAIL' "$WORK"/shard0.log
+  python3 probes/matcher/02-roundtrip.py judge "$WORK" "$N"
+} > "$OUT"
+grep -E '^(SUMMARY|TIMING|completeness|shards|MISS)' "$OUT"

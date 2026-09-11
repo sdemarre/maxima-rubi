@@ -1,0 +1,268 @@
+=== probes/matcher/02-construct-census  run: 2026-09-11 21:55 UTC
+reference/rubi HEAD: 61e9c18ea248061cd83c67882f7c91a73cef912d
+python 3.12.3; no Maxima involved (static census)
+
+=== completeness
+files loaded by Rubi.m: 199
+inventory rule runs: 7432 (01-inventory count_rules, asserted per file)
+single-line If[TrueQ[$LoadShowSteps], .., ..] rules (outside the inventory convention): 12
+  WRAPPED 3.5.m L46  ShowStep branch LHS identical
+  WRAPPED 4.1.0.1.m L4  ShowStep branch LHS identical
+  WRAPPED 4.7.5.m L24  ShowStep branch LHS identical
+  WRAPPED 4.7.5.m L25  ShowStep branch LHS identical
+  WRAPPED 4.7.5.m L50  ShowStep branch LHS identical
+  WRAPPED 4.7.5.m L51  ShowStep branch LHS identical
+  WRAPPED 4.7.5.m L61  ShowStep branch LHS identical
+  WRAPPED 4.7.5.m L74  ShowStep branch LHS identical
+  WRAPPED 5.3.7.m L30  ShowStep branch LHS identical
+  WRAPPED 5.3.7.m L31  ShowStep branch LHS identical
+  WRAPPED 7.3.7.m L28  ShowStep branch LHS identical
+  WRAPPED 7.3.7.m L29  ShowStep branch LHS identical
+runs that are one branch of a multi-line If[TrueQ[$LoadShowSteps], .., ..]: 20 -- 1.4.1.m L80, 1.4.1.m L85, 9.3.m L302, 9.3.m L310, 9.3.m L319, 9.3.m L327, 9.3.m L414, 9.3.m L421, 9.3.m L430, 9.3.m L437, 9.3.m L447, 9.3.m L455, 9.3.m L472, 9.3.m L481, 9.3.m L491, 9.3.m L500, 9.3.m L510, 9.3.m L520, 9.3.m L581, 9.3.m L589
+runs extended past a stripped comment line: 1 -- 9.2.m L111 (run extended by 3 line(s) past a stripped comment line)
+statements glued onto a run: 15
+  GLUED 1.1.1.2.m L43: definition:IntLinearQ  SetDelayed[IntLinearQ[Pattern[a, Blank[]], Pattern[b, Blank[]], Pattern[c, Blank[]], Patte
+  GLUED 1.1.3.2.m L117: definition:IntBinomialQ  SetDelayed[IntBinomialQ[Pattern[a, Blank[]], Pattern[b, Blank[]], Pattern[c, Blank[]], Pat
+  GLUED 1.1.3.3.m L72: definition:IntBinomialQ  SetDelayed[IntBinomialQ[Pattern[a, Blank[]], Pattern[b, Blank[]], Pattern[c, Blank[]], Pat
+  GLUED 1.1.3.4.m L88: definition:IntBinomialQ  SetDelayed[IntBinomialQ[Pattern[a, Blank[]], Pattern[b, Blank[]], Pattern[c, Blank[]], Pat
+  GLUED 1.2.1.2.m L150: definition:IntQuadraticQ  SetDelayed[IntQuadraticQ[Pattern[a, Blank[]], Pattern[b, Blank[]], Pattern[c, Blank[]], Pa
+  GLUED 4.7.5.m L23: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Pattern[u, Blank[]], Pattern[x, Blank[Symbol]]], 
+  GLUED 4.7.5.m L23: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Pattern[u, Blank[]], Pattern[x, Blank[Symbol]]], 
+  GLUED 4.7.5.m L49: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Pattern[u, Blank[]], Pattern[x, Blank[Symbol]]], 
+  GLUED 4.7.5.m L49: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Pattern[u, Blank[]], Pattern[x, Blank[Symbol]]], 
+  GLUED 4.7.5.m L60: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Pattern[u, Blank[]], Pattern[x, Blank[Symbol]]], 
+  GLUED 4.7.5.m L73: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Pattern[u, Blank[]], Pattern[x, Blank[Symbol]]], 
+  GLUED 5.3.7.m L29: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Times[Pattern[u, Blank[]], Power[Pattern[v, Blank
+  GLUED 5.3.7.m L29: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Times[Pattern[u, Blank[]], Power[Pattern[v, Blank
+  GLUED 7.3.7.m L27: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Times[Pattern[u, Blank[]], Power[Pattern[v, Blank
+  GLUED 7.3.7.m L27: showsteps-if  If[TrueQ[$LoadShowSteps], SetDelayed[Int[Times[Pattern[u, Blank[]], Power[Pattern[v, Blank
+PARSE FAILURES: 0
+whole-file parse (as Get reads the file): failures 0 []
+  top-level statements by class: {'int-rule': 7412, 'definition': 6, 'showsteps-if': 22, 'showsteps-if branches': 44}
+  Int definitions at top level + inside ShowSteps If branches: 7412 + 44 = 7456 (inventory runs 7432 + single-line wrapped 12 x 2 branches = 7456)
+  helper (non-Int) definitions in rule files: 6 -- 1.1.1.2.m L44 IntLinearQ, 1.1.3.2.m L118 IntBinomialQ, 1.1.3.3.m L73 IntBinomialQ, 1.1.3.4.m L89 IntBinomialQ, 1.2.1.2.m L151 IntQuadraticQ, 2.1.m L4 $UseGamma
+  Int DownValues Mathematica defines with $LoadShowSteps=True (one branch per If): 7434
+
+=== (i) LHS pattern constructs (evaluated LHS; 7444 rules parsed)
+  construct | #rules | #files | #occurrences | matcher status | evidence | example rules
+  Blank typed _Symbol | 7443 | 199 | 7443 | TESTED | x_Symbol in every spike case (Int second argument) | 1.1.1.1.m L4, 1.1.1.1.m L5, 1.1.1.1.m L6, ... (+7440)
+  Blank named x_ directly under Times | 7278 | 198 | 34448 | TESTED | matchfol path, G1-G7; SCALE series; empty-remainder false match N-07/N-14/N-15 (mblank1, 01-FINDINGS root cause 1) | 1.1.1.1.m L6, 1.1.1.1.m L7, 1.1.1.1.m L8, ... (+7275)
+  Optional x_. under Times | 7227 | 198 | 23152 | TESTED | G1-05 G1-09 G3-06 G7-01 (Default[Times]=1, eval.lisp:733) | 1.1.1.1.m L6, 1.1.1.1.m L7, 1.1.1.1.m L8, ... (+7224)
+  x_ repeated (integration variable) | 7022 | 196 | 7022 | TESTED | every spike case | 1.1.1.1.m L4, 1.1.1.1.m L5, 1.1.1.1.m L6, ... (+7019)
+  Blank named x_ directly under Plus | 6887 | 191 | 16624 | TESTED | matchfol path, G1-G7; exponential search: SCALE series, 01-FINDINGS root cause 3 | 1.1.1.1.m L6, 1.1.1.1.m L7, 1.1.1.1.m L8, ... (+6884)
+  Blank named x_ (non-Flat parent) | 6847 | 199 | 22168 | TESTED | every spike case (e.g. Log[..], PolyLog[k_, ..] G4-03) | 1.1.1.1.m L4, 1.1.1.1.m L5, 1.1.1.1.m L7, ... (+6844)
+  Optional x_. under Plus | 4835 | 168 | 10089 | TESTED | G1-04t G1-06 G3-02 (Default[Plus]=0, eval.lisp:728) | 1.1.1.1.m L7, 1.1.1.1.m L8, 1.1.1.2.m L6, ... (+4832)
+  Optional x_. as Power exponent | 4100 | 191 | 7516 | TESTED | G1-01 G3-01 (Default[Power]=1, eval.lisp:735) | 1.1.1.1.m L5, 1.1.1.2.m L4, 1.1.1.2.m L7, ... (+4097)
+  literal integer (Power exponent) | 3773 | 169 | 5755 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 1.1.1.1.m L4, 1.1.1.1.m L6, 1.1.1.2.m L5, ... (+3770)
+  pattern-variable Power base F_^(..) | 2203 | 128 | 3881 | TESTED | G1-08 (2.1.m L8) | 1.1.1.1.m L5, 1.1.1.4.m L50, 1.1.1.4.m L51, ... (+2200)
+  repeated pattern name (not x) | 2152 | 117 | 3990 | TESTED | N-06, C-01 (1.1.1.2.m L8 m_ twice) | 1.1.1.2.m L8, 1.1.1.2.m L10, 1.1.1.2.m L11, ... (+2149)
+  literal rational (Power exponent) | 1133 | 97 | 1622 | CODE | newmatch.lisp:422 atom equality of Lisp ratios; newmatch.lisp:424 Rational pattern vs ratio | 1.1.1.2.m L9, 1.1.1.2.m L18, 1.1.1.2.m L20, ... (+1130)
+  literal E | 208 | 9 | 208 | CODE | newmatch.lisp:422 atom equality (target side: converter maps %e -> E, spike max2mm) | 2.3.m L88, 5.3.6.m L4, 5.3.6.m L5, ... (+205)
+  pattern-variable head F_[...] | 77 | 16 | 110 | CODE | newmatch.lisp:545-551 head matched recursively by m1; eval.lisp:997-1000 Attributes of a non-symbol head = (List) | 3.1.5.m L62, 3.1.5.m L63, 3.3.m L62, ... (+74)
+  literal integer (under Plus) | 28 | 5 | 32 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 3.5.m L17, 5.1.6.m L13, 5.1.6.m L14, ... (+25)
+  compound head h[..][..] | 21 | 1 | 98 | CODE | newmatch.lisp:545-551 same recursive head path | 9.1.m L23, 9.1.m L29, 9.1.m L35, ... (+18)
+  literal Pi | 13 | 5 | 13 | CODE | newmatch.lisp:422 atom equality (converter maps %pi -> Pi) | 4.1.1.1.m L8, 4.1.1.1.m L32, 4.1.10.m L12, ... (+10)
+  literal integer (argument of PolyLog) | 11 | 1 | 11 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 8.8.m L15, 8.8.m L16, 8.8.m L17, ... (+8)
+  literal integer (argument of Derivative) | 10 | 1 | 16 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 9.1.m L71, 9.1.m L77, 9.1.m L89, ... (+7)
+  Complex[re, im] pattern (matches complex-number atoms) | 9 | 3 | 9 | UNSUPPORTED | newmatch.lisp:424-437 extended-atom-match rebuilds the atom as (Complex re im) with an unescaped symbol (newmatch.lisp:436), not |Complex|; spike-01 SMOKE: Fateman suite #132 (Complex destructuring) fails; expression model: Maxima has no complex-number atom (2*%i is a product) | 4.1.10.m L6, 4.1.10.m L8, 4.1.10.m L9, ... (+6)
+  literal integer (argument of Complex) | 9 | 3 | 9 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 4.1.10.m L6, 4.1.10.m L8, 4.1.10.m L9, ... (+6)
+  literal rational (under Times) | 7 | 3 | 7 | CODE | newmatch.lisp:422 atom equality of Lisp ratios; newmatch.lisp:424 Rational pattern vs ratio | 4.1.1.1.m L5, 4.1.1.1.m L8, 4.1.1.1.m L32, ... (+4)
+  literal real | 3 | 2 | 3 | CODE | newmatch.lisp:422 atom equality (equal on floats) | 1.1.2.4.m L94, 1.1.2.4.m L100, 1.1.2.6.m L29
+  literal integer (argument of PolyGamma) | 2 | 1 | 2 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 8.6.m L22, 8.6.m L23
+  literal integer (argument of Zeta) | 2 | 1 | 2 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 8.7.m L4, 8.7.m L6
+  literal integer (under Times) | 2 | 1 | 2 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 9.1.m L149, 9.1.m L155
+  Int second argument not x_Symbol: Pattern[x, Blank[]] | 1 | 0 | 0 | CODE | an untyped named Blank (mblank1, newmatch.lisp:1041) | 9.3.m L596
+  literal integer (argument of BesselJ) | 1 | 1 | 1 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 8.10.m L4
+  literal integer (argument of ExpIntegralE) | 1 | 1 | 1 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 8.3.m L6
+  literal integer (argument of Gamma) | 1 | 1 | 1 | TESTED | 3.2.1.m L19 Power[.., -1] (G6), x_^2 (G1-09) | 8.6.m L5
+
+=== (ii) Optionals by parent head and count directly under that head (#heads-occurrences)
+  parent head | #Optionals among its arguments | #occurrences
+  Times | 1 | 23152
+  Plus | 1 | 10089
+  Power | 1 | 7516
+
+=== (ii) largest Plus/Times argument count in a rule's LHS pattern (#rules)
+  max args | #rules
+  0 | 76
+  2 | 3427
+  3 | 3646
+  4 | 265
+  5 | 30
+
+=== heads appearing in LHS patterns (the converter's head table)
+  head | #rules
+  Times | 7368
+  Power | 7214
+  Plus | 7027
+  sin | 796
+  Log | 564
+  csc | 426
+  cos | 386
+  tan | 369
+  Cos | 206
+  Sin | 204
+  ArcTanh | 202
+  ArcTan | 198
+  ArcCoth | 197
+  ArcCot | 192
+  Cosh | 171
+  Sinh | 169
+  sec | 162
+  ArcCosh | 142
+  ArcCos | 110
+  ArcSinh | 107
+  ArcSin | 105
+  cot | 97
+  Coth | 65
+  Tanh | 65
+  Cot | 60
+  Tan | 60
+  Csch | 48
+  Sech | 48
+  Csc | 45
+  Sec | 45
+  ProductLog | 43
+  PolyLog | 42
+  ArcSech | 37
+  ArcCsch | 35
+  ArcCsc | 30
+  ArcSec | 30
+  FresnelC | 27
+  FresnelS | 27
+  Erf | 22
+  Erfc | 22
+  Erfi | 22
+  Derivative | 21
+  Gamma | 17
+  CosIntegral | 14
+  CoshIntegral | 14
+  SinIntegral | 14
+  SinhIntegral | 14
+  ExpIntegralEi | 13
+  Complex | 9
+  ExpIntegralE | 9
+  PolyGamma | 6
+  Zeta | 5
+  LogIntegral | 4
+  BesselJ | 3
+  LogGamma | 3
+  Factorial | 1
+
+=== LHS evaluation effects (emulated Mathematica evaluation; 'parse:' = notation normalisation, 'eval:' = structural rewrite, 'risk:' = not emulated)
+  effect | #rules | rules
+  eval:numeric-fold | 1058 | 1.1.1.2.m L9, 1.1.1.2.m L18, 1.1.1.2.m L20, 1.1.1.2.m L24, 1.1.1.2.m L25, 1.1.1.2.m L26, 1.1.1.2.m L27, 1.1.1.2.m L28, ... (+1050)
+  eval:Power-of-Power | 1031 | 1.1.1.2.m L9, 1.1.1.2.m L18, 1.1.1.2.m L20, 1.1.1.2.m L24, 1.1.1.2.m L25, 1.1.1.2.m L26, 1.1.1.2.m L27, 1.1.1.2.m L28, ... (+1023)
+  eval:Power-distribute | 580 | 1.1.1.2.m L5, 1.1.1.2.m L6, 1.1.1.2.m L9, 1.1.1.2.m L18, 1.1.1.2.m L20, 1.1.1.2.m L24, 1.1.1.2.m L25, 1.1.1.2.m L26, ... (+572)
+  eval:Times-identity | 405 | 1.1.1.1.m L4, 1.1.1.1.m L6, 1.1.1.2.m L5, 1.1.1.2.m L6, 1.1.1.2.m L9, 1.1.1.2.m L18, 1.1.1.2.m L20, 1.1.1.2.m L24, ... (+397)
+  parse:Sqrt | 941 | 1.1.1.2.m L24, 1.1.1.2.m L25, 1.1.1.2.m L26, 1.1.1.3.m L24, 1.1.1.3.m L37, 1.1.1.3.m L38, 1.1.1.3.m L39, 1.1.1.3.m L40, ... (+933)
+  risk:numeric-or-negated-arg:PolyLog | 11 | 8.8.m L15, 8.8.m L16, 8.8.m L17, 8.8.m L20, 8.8.m L21, 8.8.m L22, 8.8.m L23, 8.8.m L24, ... (+3)
+  risk:numeric-or-negated-arg:Complex | 9 | 4.1.10.m L6, 4.1.10.m L8, 4.1.10.m L9, 4.1.10.m L30, 4.1.10.m L34, 4.3.10.m L4, 4.3.10.m L6, 4.5.10.m L4, ... (+1)
+  risk:Pi-arg:sin | 6 | 4.1.1.1.m L8, 4.1.1.1.m L32, 4.1.10.m L12, 4.1.10.m L15, 4.1.10.m L30, 4.1.10.m L31
+  risk:Pi-arg:tan | 3 | 4.3.10.m L4, 4.3.10.m L5, 4.3.10.m L20
+  risk:Pi-arg:csc | 2 | 4.5.10.m L4, 4.5.10.m L5
+  risk:numeric-or-negated-arg:PolyGamma | 2 | 8.6.m L22, 8.6.m L23
+  risk:numeric-or-negated-arg:Zeta | 2 | 8.7.m L4, 8.7.m L6
+  risk:Pi-arg:Sec | 1 | 4.7.7.m L24
+  risk:Pi-arg:Csc | 1 | 4.7.7.m L26
+  risk:numeric-or-negated-arg:ExpIntegralE | 1 | 8.3.m L6
+  risk:numeric-or-negated-arg:Gamma | 1 | 8.6.m L5
+  risk:numeric-or-negated-arg:BesselJ | 1 | 8.10.m L4
+rules whose evaluated LHS differs from the parsed LHS (ignoring Plus/Times argument order): 1814
+
+=== NAMED GAPS in the LHS pattern language (status UNSUPPORTED / DIFFERS / unassigned): 1
+GAP Complex[re, im] pattern (matches complex-number atoms) [UNSUPPORTED] #rules=9 -- newmatch.lisp:424-437 extended-atom-match rebuilds the atom as (Complex re im) with an unescaped symbol (newmatch.lisp:436), not |Complex|; spike-01 SMOKE: Fateman suite #132 (Complex destructuring) fails; expression model: Maxima has no complex-number atom (2*%i is a product)
+    rules: 4.1.10.m L6, 4.1.10.m L8, 4.1.10.m L9, 4.1.10.m L30, 4.1.10.m L34, 4.3.10.m L4, 4.3.10.m L6, 4.5.10.m L4, 4.5.10.m L6
+
+=== (iii) conditions riding next to the matcher
+rules with an outer /; condition: 7427 of 7444
+rules with a Condition inside the RHS, by the construct holding it (With/Module/Block body: the rule is withdrawn after it matched):
+  With: 373 conditions in 373 rules -- 1.1.1.5.m L11, 1.1.1.6.m L10, 1.1.1.7.m L10, 1.1.1.7.m L12, 1.1.1.7.m L13, 1.1.1.7.m L9, ... (+367)
+  Module: 11 conditions in 11 rules -- 1.1.1.7.m L14, 1.1.3.7.m L9, 1.2.3.5.m L13, 1.2.3.6.m L14, 1.3.3.m L53, 1.3.3.m L61, ... (+5)
+  distinct rules with any inner Condition: 384
+
+=== (iii) pattern uses inside rule conditions and RHSs, by consumer
+  where | consumer | #rules | rules
+  outer condition | MatchQ[pattern] | 47 | 1.1.1.7.m L4, 1.1.2.10.m L29, 1.1.3.7.m L6, 1.2.1.6.m L29, 1.2.2.5.m L5, 1.2.2.7.m L11, ... (+41)
+  RHS | MatchQ[pattern] | 2 | 4.3.10.m L28, 4.5.10.m L16
+
+=== (iii) constructs in those pattern uses
+  where | construct | #rules | matcher status | rules
+  outer condition | Condition inside a pattern | 47 | CODE | 1.1.1.7.m L4, 1.1.2.10.m L29, 1.1.3.7.m L6, 1.2.1.6.m L29, ... (+43)
+  outer condition | Optional x_. under Times | 47 | TESTED | 1.1.1.7.m L4, 1.1.2.10.m L29, 1.1.3.7.m L6, 1.2.1.6.m L29, ... (+43)
+  outer condition | Blank named x_ directly under Times | 47 | TESTED | 1.1.1.7.m L4, 1.1.2.10.m L29, 1.1.3.7.m L6, 1.2.1.6.m L29, ... (+43)
+  outer condition | Blank named x_ (non-Flat parent) | 45 | TESTED | 1.1.1.7.m L4, 1.1.2.10.m L29, 1.1.3.7.m L6, 1.2.1.6.m L29, ... (+41)
+  outer condition | Optional x_. as Power exponent | 36 | TESTED | 1.1.2.10.m L29, 1.1.3.7.m L6, 1.2.1.6.m L29, 1.2.2.5.m L5, ... (+32)
+  outer condition | Blank named x_ directly under Plus | 26 | TESTED | 1.1.1.7.m L4, 1.2.2.7.m L11, 1.2.2.7.m L12, 1.2.2.7.m L13, ... (+22)
+  outer condition | Optional x_. under Plus | 18 | TESTED | 1.4.2.m L121, 2.3.m L104, 5.1.6.m L45, 5.1.6.m L46, ... (+14)
+  outer condition | pattern-variable Power base F_^(..) | 7 | TESTED | 1.4.1.m L529, 1.4.1.m L54, 2.3.m L104, 5.3.7.m L30, ... (+3)
+  outer condition | pattern-variable head F_[...] | 7 | CODE | 2.3.m L104, 4.1.7.m L42, 4.1.7.m L43, 4.3.7.m L5, ... (+3)
+  RHS | Optional x_. under Times | 2 | TESTED | 4.3.10.m L28, 4.5.10.m L16
+  RHS | Blank named x_ directly under Times | 2 | TESTED | 4.3.10.m L28, 4.5.10.m L16
+  RHS | Complex[re, im] pattern (matches complex-number atoms) | 2 | UNSUPPORTED | 4.3.10.m L28, 4.5.10.m L16
+  RHS | Blank named x_ (non-Flat parent) | 2 | TESTED | 4.3.10.m L28, 4.5.10.m L16
+  RHS | Optional x_. under Plus | 2 | TESTED | 4.3.10.m L28, 4.5.10.m L16
+  RHS | Blank named x_ directly under Plus | 2 | TESTED | 4.3.10.m L28, 4.5.10.m L16
+  outer condition | repeated pattern name (not x) | 1 | TESTED | 4.7.5.m L61
+
+=== IntegrationUtilityFunctions.m
+whole-file parse: OK; top-level statements 1002
+statement classes: {'definition': 989, 'other': 13}
+functions with ::usage: 227; functions defined: 328; definitions: 757
+functions with more than one definition (pattern dispatch among definitions): 90
+  UnifyInertTrigFunction x75, FixInertTrigFunction x61, ExpandIntegrand x45, SimplifyAntiderivative x33, TrigSimplifyAux x31, FixSimplify x24, FixIntRule x16, Simp x8, SimpFixFactor x7, SubstAux x7, SimplifyAntiderivativeSum x7, PolyQ x6, GeneralizedTrinomialParts x6, QuotientOfLinearsP x6, QuotientOfLinearsParts x6, Star x6, GeneralizedBinomialParts x5, EulerIntegrandQ x5, RemoveContentAux x4, MergeMonomials x4, Subst x4, ReduceInertTrig x4, FixRhsIntRule x4, SqrtNumberQ x3, SumSimplerAuxQ x3, Numer x3, Denom x3, AbsurdNumberQ x3, AbsorbMinusSign x3, CollectReciprocals x3, ExpandTrigReduce x3, SmartNumerator x3, SmartDenominator x3, InertTrigQ x3, IntTerm x3, IntBinomialQ x3, FalseQ x2, IntegersQ x2, FractionQ x2, ComplexNumberQ x2, PowerQ x2, ProductQ x2, SumQ x2, NonsumQ x2, EqQ x2, NeQ x2, IGtQ x2, ILtQ x2, IGeQ x2, ILeQ x2, GtQ x2, LtQ x2, GeQ x2, LeQ x2, BinomialQ x2, Expon x2, Coeff x2, MonomialExponent x2, RationalFunctionExpand x2, SubstForInverseFunction x2, NormalizeIntegrandFactorBase x2, SimpHelp x2, IntPart x2, FracPart x2, UnifyNegativeBaseFactors x2, Smallest x2, PolynomialDivide x2, ExpandToSum x2, ExpandTrig x2, CollectRecipTerms x2, ExpandCleanup x2, SmartApart x2, IncrementalExpand x2, ApartCollect x2, ExpandAlgebraicFunction x2, NormalizeTrigReduce x2, ExpandTrigToExp x2, FunctionOfLinear x2, FunctionOfInverseLinear x2, FunctionOfTrig x2, FunctionOfHyperbolic x2, FunctionOfLog x2, FunctionOfSquareRootOfQuadratic x2, RectifyTangent x2, RectifyCotangent x2, SubstFor x2, DeactivateTrig x2, PiecewiseLinearQ x2, EasyDQ x2, FixIntRules x2
+functions with a /; condition on some definition: 53
+
+=== utility definition LHS constructs (#functions)
+  construct | #functions | matcher status | functions
+  Blank named x_ (non-Flat parent) | 307 | TESTED | AbsorbMinusSign, AbsurdNumberFactors, AbsurdNumberGCDList, AbsurdNumberQ, ActivateTrig, AlgebraicFunctionQ, ... (+301)
+  Blank typed _Symbol | 137 | TESTED | AlgebraicFunctionQ, AlgebraicTrigFunctionQ, ApartCollect, BinomialDegree, BinomialMatchQ, BinomialParts, ... (+131)
+  Blank named x_ directly under Times | 47 | TESTED | AbsorbMinusSign, AbsurdNumberQ, ApartCollect, CollectRecipTerms, CollectReciprocals, DeactivateTrig, ... (+41)
+  Optional x_. under Times | 33 | TESTED | AbsorbMinusSign, ApartCollect, CollectRecipTerms, CollectReciprocals, DeactivateTrig, EasyDQ, ... (+27)
+  pattern-variable Power base F_^(..) | 28 | TESTED | AbsorbMinusSign, AbsurdNumberQ, ApartCollect, Denom, EasyDQ, EulerIntegrandQ, ... (+22)
+  repeated pattern name (not x) | 25 | TESTED | ApartCollect, CollectRecipTerms, CollectReciprocals, DeactivateTrig, EasyDQ, EulerIntegrandQ, ... (+19)
+  Blank named x_ directly under Plus | 25 | TESTED | ApartCollect, CollectRecipTerms, CollectReciprocals, DeactivateTrig, ExpandCleanup, ExpandIntegrand, ... (+19)
+  Optional x_. as Power exponent | 22 | TESTED | DeactivateTrig, EasyDQ, EulerIntegrandQ, ExpandIntegrand, ExpandTrigReduce, FixInertTrigFunction, ... (+16)
+  Optional x_. under Plus | 16 | TESTED | CollectRecipTerms, DeactivateTrig, ExpandIntegrand, ExpandTrigReduce, FixInertTrigFunction, FixSimplify, ... (+10)
+  pattern-variable head F_[...] | 8 | CODE | DeactivateTrig, ExpandIntegrand, ExpandTrigReduce, FixInertTrigFunction, FixIntRule, NormalizeTrigReduce, ... (+2)
+  Blank anonymous _ | 6 | CODE | ComplexNumberQ, FalseQ, NonsumQ, PowerQ, ProductQ, SumQ
+  BlankNullSequence (named) | 6 | CODE | EqQ, IGeQ, IGtQ, ILeQ, ILtQ, NeQ
+  Blank typed _Integer | 6 | CODE | ApartCollect, Denom, Numer, PolyQ, Rt, SubstPower
+  Optional with explicit default x_:v | 5 | CODE | AlgebraicFunctionQ, FracPart, FunctionOfQ, IntPart, MakeAssocList
+  Blank typed _List | 5 | CODE | GensymSubst, KernelSubst, MakeAssocList, MostMainFactorPosition, Smallest
+  BlankSequence (named) | 4 | CODE | AbsurdNumberGCD, FractionOrNegativeQ, HalfIntegerQ, RationalQ
+  Complex[re, im] pattern (matches complex-number atoms) | 4 | UNSUPPORTED | FixSimplify, NormalizeHyperbolic, ReduceInertTrig, SimpFixFactor
+  Blank typed _Plus | 3 | CODE | AbsorbMinusSign, ExpandAlgebraicFunction, FixSimplify
+  BlankSequence (anonymous) | 2 | CODE | FractionQ, IntegersQ
+  Blank anonymous _ typed _Plus | 2 | CODE | NonsumQ, SumQ
+  Blank typed _Rational | 2 | CODE | Denom, Numer
+  BlankSequence (anonymous) typed _Integer | 1 | CODE | IntegersQ
+  BlankSequence (anonymous) typed _Rational | 1 | CODE | FractionQ
+  Blank anonymous _ typed _Complex | 1 | CODE | ComplexNumberQ
+  Blank anonymous _ typed _Power | 1 | CODE | PowerQ
+  Blank anonymous _ typed _Times | 1 | CODE | ProductQ
+
+=== pattern uses inside utility function bodies, by consumer (#functions)
+  consumer | #functions | functions
+  MatchQ[pattern] | 30 | BinomialMatchQ, CubicMatchQ, DerivativeDivides, ExpandIntegrand, FixSimplify, FractionalPowerOfSquareQ, FunctionOfSquareRootOfQuadratic, FunctionOfTrigOfLinearQ, ... (+22)
+  Switch[pattern] | 2 | FunctionOfQ, SubstFor
+  ReplaceAll rule LHS | 1 | DerivativeDivides
+
+=== constructs in utility body pattern uses (#functions)
+  construct | #functions | matcher status | functions
+  Condition inside a pattern | 28 | CODE | BinomialMatchQ, CubicMatchQ, DerivativeDivides, ExpandIntegrand, FixSimplify, FractionalPowerOfSquareQ, ... (+22)
+  Blank named x_ directly under Times | 28 | TESTED | BinomialMatchQ, CubicMatchQ, DerivativeDivides, ExpandIntegrand, FixSimplify, FractionalPowerOfSquareQ, ... (+22)
+  Optional x_. under Times | 27 | TESTED | BinomialMatchQ, CubicMatchQ, DerivativeDivides, ExpandIntegrand, FixSimplify, FractionalPowerOfSquareQ, ... (+21)
+  Blank named x_ (non-Flat parent) | 24 | TESTED | BinomialMatchQ, DerivativeDivides, ExpandIntegrand, FixSimplify, FunctionOfSquareRootOfQuadratic, FunctionOfTrigOfLinearQ, ... (+18)
+  Blank named x_ directly under Plus | 18 | TESTED | BinomialMatchQ, CubicMatchQ, ExpandIntegrand, FixSimplify, FractionalPowerOfSquareQ, FunctionOfSquareRootOfQuadratic, ... (+12)
+  Optional x_. as Power exponent | 14 | TESTED | BinomialMatchQ, FunctionOfSquareRootOfQuadratic, FunctionOfTrigOfLinearQ, GeneralizedBinomialMatchQ, GeneralizedTrinomialMatchQ, KnownTrigIntegrandQ, ... (+8)
+  Optional x_. under Plus | 11 | TESTED | BinomialMatchQ, CubicMatchQ, FunctionOfTrigOfLinearQ, KnownTrigIntegrandQ, LinearMatchQ, PowerOfInertTrigSumQ, ... (+5)
+  pattern-variable head F_[...] | 5 | CODE | FunctionOfTrigOfLinearQ, KnownTrigIntegrandQ, PiecewiseLinearQ, TryPureTanSubst, TryTanhSubst
+  pattern-variable Power base F_^(..) | 4 | TESTED | FixSimplify, PiecewiseLinearQ, ProductOfLinearPowersQ, TryTanhSubst
+  Complex[re, im] pattern (matches complex-number atoms) | 3 | UNSUPPORTED | RectifyCotangent, RectifyTangent, SimpHelp
+  Blank anonymous _ | 2 | CODE | FunctionOfQ, SubstFor
+  repeated pattern name (not x) | 2 | TESTED | KnownTrigIntegrandQ, PowerOfInertTrigSumQ
+
+=== NAMED GAPS in utility / condition pattern uses: 1
+UGAP Complex[re, im] pattern (matches complex-number atoms) [UNSUPPORTED] defs=FixSimplify, NormalizeHyperbolic, ReduceInertTrig, SimpFixFactor bodies=RectifyCotangent, RectifyTangent, SimpHelp -- newmatch.lisp:424-437 extended-atom-match rebuilds the atom as (Complex re im) with an unescaped symbol (newmatch.lisp:436), not |Complex|; spike-01 SMOKE: Fateman suite #132 (Complex destructuring) fails; expression model: Maxima has no complex-number atom (2*%i is a product)
+CGAP Complex[re, im] pattern (matches complex-number atoms) [UNSUPPORTED] rules=4.3.10.m L28, 4.5.10.m L16 -- newmatch.lisp:424-437 extended-atom-match rebuilds the atom as (Complex re im) with an unescaped symbol (newmatch.lisp:436), not |Complex|; spike-01 SMOKE: Fateman suite #132 (Complex destructuring) fails; expression model: Maxima has no complex-number atom (2*%i is a product)

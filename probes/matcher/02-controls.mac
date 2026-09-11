@@ -1,0 +1,14 @@
+/* probes/matcher/02-controls.mac -- run via sh probes/matcher/02-controls.run
+   (sets MR_CONTROLS to the generated data file).  No rule files are loaded,
+   so no --tls-limit flag. */
+display2d : false$
+build_info();
+load("probes/matcher/01-mma4max-load.lisp")$
+:lisp (cl-user::mma-load-all)
+load("probes/matcher/01-mma4max-feasibility.lisp")$
+load("probes/matcher/02-roundtrip.lisp")$
+load("probes/matcher/02-controls.lisp")$
+:lisp (load (sb-ext:posix-getenv "MR_CONTROLS"))
+:lisp (cl-user::controls-run "pub")
+:lisp (cl-user::install-mblank1-nil-guard)
+:lisp (cl-user::controls-run "guard")
