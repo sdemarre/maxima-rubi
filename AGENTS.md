@@ -11,9 +11,8 @@ Working state: `todo/TODO.md`.
 ## Git
 
 - **The default branch is `master`. There is no `main`** — do not create one.
-- A remote is **planned but not yet configured**; until it is set up,
-  `git push` has nowhere to go. Do not assume pushing is possible; once
-  it is configured, commits target `master`.
+- The remote is `origin` (`git@github.com:sdemarre/maxima-rubi.git`).
+  Push only when the user asks; `master` is the integration branch.
 - Do not add `Co-Authored-By` trailers to commit messages.
 
 ## Handoffs
@@ -167,8 +166,8 @@ setsid sh test/wait_and_merge.sh
 
 The watcher merges the shards to `test/corpus_class1.out` (completeness
 asserted: 25,697/25,697, no dupes/missing/extra). **The full-run A/B
-against the previous merged record is the regression gate.** The
-120-target canary (`python3 test/canary.py`, 60 s/target) is a smoke,
+against the previous merged record is the regression gate** (see
+**Record A/B** below). The 120-target canary (`python3 test/canary.py`, 60 s/target) is a smoke,
 not a gate: its broad set is biased toward currently-failing targets
 and cannot gate verified-target regressions.
 
@@ -187,6 +186,35 @@ The watcher merges the shards to `test/corpus_class2.out`
 class-N mechanics are runbooked in `docs/class-porting.md`
 (Steps 8-9); the measured acceptance is
 `docs/corpus-class2-baseline-uplift.md`.
+
+**Record A/B** — the entry-level diff of any two merged records (any
+class, shard files and re-check records too); use it for every
+regression gate instead of writing a one-off join:
+
+```sh
+python3 test/ab_records.py <old-record> <new-record> [--all]
+```
+
+It prints the key-set check (exit 2 when the records cover different
+entries), the PASS/FAIL 2x2 table, class transitions, per-file counts,
+and every PASS→FAIL line — each must be attributed before acceptance
+(`--all` adds the FAIL→PASS lines). PASS classes are read from the
+driver, so the table agrees with its `Results:` line.
+
+**Pinned-core A/B** — to measure an older rule set (e.g. the tree
+before a fix) against the current one, build its core in a worktree
+at that commit (`sh test/build_rules_core.sh` there) and run the
+normal launch with the env var pointing at it; the driver stays the
+single copy:
+
+```sh
+MR_RULES_CORE_PATH=<worktree>/test/mr_rules.core python3 test/corpus_driver.py ...
+MR_RULES_CORE_PATH=<worktree>/test/mr_rules.core python3 test/launch_class_shards.py ... --launch
+```
+
+The pinned core is used as-is (no fingerprint check against this
+tree, no rebuild); a missing core or `.stamp` exits nonzero; the
+record's `filter:` line ends `core: pinned <path>`.
 
 **Timeout re-check** — the standing answer to "is 30 s at the limit?"
 for any merged record: re-run exactly the record's `timeout` class at
