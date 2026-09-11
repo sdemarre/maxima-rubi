@@ -125,8 +125,17 @@ PRELOAD = os.path.join("test", "mr_preload.mac")
 # rule files or the core is STALE (it bakes the rules in — using it after a
 # rule edit without a rebuild would silently run the pre-edit rules).
 # MR_RULES_CORE=0 forces the standard load path (A/B baseline).
-RULES_CORE = os.path.join(ROOT, "test", "mr_rules.core")
-RULES_CORE_STAMP = os.path.join(ROOT, "test", "mr_rules.core.stamp")
+# MR_RULES_CORE_PATH=<core> pins a core built elsewhere (an A/B against a
+# pinned worktree's core — replaces the hand-edited driver copies of the
+# class-3 deferred campaign): its stamp is <core>.stamp, the fingerprint
+# check against THIS tree's rules is skipped (the pinned core is
+# deliberately different), and a missing pinned core is fatal — never
+# rebuilt, never bypassed by the standard load path (guarded by
+# test/test_driver_core_pin.py).
+RULES_CORE_PIN = os.environ.get("MR_RULES_CORE_PATH") or None
+RULES_CORE = (os.path.abspath(RULES_CORE_PIN) if RULES_CORE_PIN
+              else os.path.join(ROOT, "test", "mr_rules.core"))
+RULES_CORE_STAMP = RULES_CORE + ".stamp"
 SBCL = os.environ.get("MR_SBCL") or subprocess.run(
     ["sh", "-c", "command -v sbcl"], capture_output=True, text=True
 ).stdout.strip() or None
@@ -176,11 +185,14 @@ def _core_fingerprint():
 
 
 def rules_core_state():
-    """'off' | 'on' | 'stale' | 'missing' for the core vs current rules."""
+    """'off' | 'on' | 'stale' | 'missing' | 'pinned' for the core vs
+    current rules."""
     if os.environ.get("MR_RULES_CORE", "1") == "0":
         return "off"
     if not (os.path.exists(RULES_CORE) and os.path.exists(RULES_CORE_STAMP)):
         return "missing"
+    if RULES_CORE_PIN:
+        return "pinned"
     fp = None
     with open(RULES_CORE_STAMP, encoding="utf-8") as fh:
         for line in fh:
@@ -196,6 +208,12 @@ def ensure_rules_core():
     Builds (single-flight via a flock) when missing or stale; a failed build
     falls back to the standard load path rather than blocking the run."""
     st = rules_core_state()
+    if RULES_CORE_PIN:
+        if st != "pinned":
+            raise SystemExit(f"MR_RULES_CORE_PATH={RULES_CORE_PIN}: core is "
+                             f"{st} (a pinned core needs the image and its "
+                             ".stamp; it is never built or bypassed)")
+        return True
     if st == "on":
         return True
     if st == "off" or SBCL is None:
@@ -216,6 +234,12 @@ def ensure_rules_core():
         return rules_core_state() == "on"
     finally:
         fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def core_header():
+    """Suffix for the record's `filter:` header line: names a pinned core
+    (the shard merge accepts any `filter:` line), empty otherwise."""
+    return f"  core: pinned {RULES_CORE}" if RULES_CORE_PIN else ""
 
 
 USE_RULES_CORE = ensure_rules_core()
@@ -630,7 +654,8 @@ def main():
                 out_lines.append(f"maxima: {line}")
     out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
                      f"timeout: {TIMEOUT}s  files: {len(files)}"
-                     + (f"  shard: {SHARD_FILE}" if SHARD_FILE else ""))
+                     + (f"  shard: {SHARD_FILE}" if SHARD_FILE else "")
+                     + core_header())
     out_lines.append("")
 
     counts = {}
