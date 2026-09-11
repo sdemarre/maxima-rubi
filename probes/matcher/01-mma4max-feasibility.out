@@ -1,0 +1,798 @@
+=== probes/matcher/01-mma4max-feasibility  run: 2026-09-11 19:35 UTC
+reference/fateman/PROVENANCE.txt:
+  Assembled 2026-09-11. people.eecs.berkeley.edu/~fateman was unreachable (browser and fetcher).
+  
+  lisp/mma4max/  — Fateman's mma4max (final Berkeley state; listing dated files 2008-2019, newmatch.lisp 2011-03-21).
+    * 19 files fetched from the Wayback Machine snapshot of 2022-01-18 (alteval ... match.lisp, init.lisp);
+      18 byte-identical to the GitHub mirror below; init.lisp is the Berkeley original (mirror copy had ABCL path edits).
+    * all other files from the GitHub mirror nilqed/abcl_maxima @ 097b49b08aff958f72a3cf4449a7ac7912d9ef59 (commit 2019-08-23), subdir mma4max/ (compiled .abcl files dropped).
+    * rubi/ has all 15 files of the Berkeley listing (dates 2011-02/03); mmapatch/ present (not checked against Berkeley).
+  Not recovered at all: lisp/mmasim2015/ (e19a.lisp, rules-smules.tex, testmma.mac, 2016), lisp/mmasrc.zip (2011).
+  
+  other/mixima   — github.com/jlapeyre/mixima @ 05e510b77bedae0841e81bfa3f5693fffaf7a53e
+  other/mockmma  — github.com/dubrousky/mockmma @ 036e7ba0773e43da50438a4f93774966cf82011f
+reference/rubi HEAD: 61e9c18ea248061cd83c67882f7c91a73cef912d
+
+batch("probes/matcher/01-mma4max-feasibility.mac")
+display2d:false
+build_info()
+%build_info("branch_5_50_base_84_g4204fb669","2026-08-31 13:27:47",
+            "x86_64-pc-linux-gnu","SBCL","2.6.7","/home/serge/.maxima","/tmp",
+            "/home/serge/.maxima/binary/branch_5_50_base_84_g4204fb669/sbcl/2_6_7",
+            false,false)
+load("probes/matcher/01-mma4max-load.lisp")
+LOAD mma OK
+LOAD uconsalt OK
+LOAD parser OK
+LOAD stack1 OK
+LOAD disp1 OK
+LOAD poly OK
+LOAD rat1 OK
+LOAD simp1 OK
+LOAD pf OK
+LOAD eval OK
+LOAD newmatch OK
+LOAD diffrat OK
+LOAD morefuns OK
+LOAD function OK
+LOAD mma2maxfun OK
+LOAD batch OK
+LOAD initialize-mma OK
+NIL
+load("probes/matcher/01-mma4max-feasibility.lisp")
+
+
+
+SMOKE FAIL 132 ((QUOTE (|Complex| (|Pattern| R (|Blank|)) (|Pattern| I (|Blank|)))) #C(3 4)) => (FAILURE) EXPECTED (SUCCESS ((I . 4) (R . 3)))
+SMOKE FAIL 149 ((QUOTE (FF (|Pattern| X (|BlankSequence|)) (|Pattern| Y (|BlankSequence|)) (|Pattern| X (|BlankSequence|)))) (QUOTE (FF A A B B A A))) => (FAILURE) EXPECTED (SUCCESS ((X . A) (Y |Sequence| A B B A)))
+SMOKE matchtests 147/149 pass; failing: 132 149
+NIL
+
+
+
+
+SCALE S-N04 terms=4 (:MATCHED NIL :CORRECT T :BOUND "")  time min 0.321 max 0.467 ms
+SCALE S-N06 terms=6 (:MATCHED NIL :CORRECT T :BOUND "")  time min 3.044 max 3.138 ms
+SCALE S-N08 terms=8 (:MATCHED NIL :CORRECT T :BOUND "")  time min 27.604 max 68.968 ms
+SCALE S-N10 terms=10 (:MATCHED NIL :CORRECT T :BOUND "")  time min 267.289 max 285.853 ms
+SCALE S-N12 terms=12 (:MATCHED NIL :CORRECT T :BOUND "")  time min 2414.501 max 4068.415 ms
+SCALE S-M05 terms=5 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z2|)")  time min 1.683 max 1.763 ms
+SCALE S-M07 terms=7 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z2| MMA::|z3| MMA::|z4|)")  time min 17.701 max 17.732 ms
+SCALE S-M09 terms=9 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z2| MMA::|z3| MMA::|z4| MMA::|z5| MMA::|z6|)")  time min 138.382 max 141.564 ms
+SCALE S-M11 terms=11 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z2| MMA::|z3| MMA::|z4| MMA::|z5| MMA::|z6| MMA::|z7| MMA::|z8|)")  time min 1197.551 max 1372.663 ms
+SCALE S-M13 terms=13 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z10| MMA::|z2| MMA::|z3| MMA::|z4| MMA::|z5| MMA::|z6| MMA::|z7| MMA::|z8| MMA::|z9|)")  time min 7192.731 max 10598.074 ms
+NIL
+CASE G1-01 [G1] 1.1.1.1.m L5
+  target: x^3
+  tree:   (MMA::|Power| MMA::|x| 3)
+  expect: m=3
+  why:    Power[x,3] vs Power[x_,m_.]
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  m=3 x=MMA::|x|
+  time:   median 0.0008 ms  max 0.0029 ms  mean 0.0008 ms  (pattern prep 0.034 ms)
+CASE G1-02 [G1] 1.1.1.1.m L5
+  target: x^m
+  tree:   (MMA::|Power| MMA::|x| MMA::|m|)
+  expect: m=m
+  why:    symbolic exponent
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  m=MMA::|m| x=MMA::|x|
+  time:   median 0.0008 ms  max 0.0045 ms  mean 0.0008 ms  (pattern prep 0.010 ms)
+CASE G1-03 [G1] 1.1.1.1.m L7
+  target: (3+2*x)^4
+  tree:   (MMA::|Power| (MMA::|Plus| 3 (MMA::|Times| 2 MMA::|x|)) 4)
+  expect: a=3 b=2 m=4
+  why:    all slots explicit
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  m=4 x=MMA::|x| b=2 a=3
+  time:   median 0.0018 ms  max 0.0071 ms  mean 0.0018 ms  (pattern prep 0.020 ms)
+CASE G1-04 [G1, model] 1.1.1.1.m L7
+  target: (2*x)^m
+  tree:   (MMA::|Times| (MMA::|Power| 2 MMA::|m|) (MMA::|Power| MMA::|x| MMA::|m|))
+  expect: a=0 b=2 m=m
+  why:    Maxima's simplifier stores (2*x)^m as 2^m*x^m; Mathematica keeps Power[Times[2,x],m]
+  doc:    matcher-probe-series.md:62 dead shape C 'numeric-literal factor in the power base'
+  result: WRONG  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0005 ms  max 0.0056 ms  mean 0.0005 ms  (pattern prep 0.018 ms)
+CASE G1-04t [G1] 1.1.1.1.m L7
+  target: (Power (Times 2 x) m)
+  tree:   (MMA::|Power| (MMA::|Times| 2 MMA::|x|) MMA::|m|)
+  expect: a=0 b=2 m=m
+  why:    Mathematica-form tree of G1-04: Plus[a_.,..] vs Times -> a=Default[Plus]=0
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  m=MMA::|m| a=0 x=MMA::|x| b=2
+  time:   median 0.0031 ms  max 0.0081 ms  mean 0.0032 ms  (pattern prep 0.010 ms)
+CASE G1-05 [G1] 1.1.1.1.m L7
+  target: (1+x)^m
+  tree:   (MMA::|Power| (MMA::|Plus| 1 MMA::|x|) MMA::|m|)
+  expect: a=1 b=1 m=m
+  why:    Times[b_.,x_] vs x -> b=Default[Times]=1
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  m=MMA::|m| b=1 x=MMA::|x| a=1
+  time:   median 0.0023 ms  max 0.0068 ms  mean 0.0024 ms  (pattern prep 0.014 ms)
+CASE G1-06 [G1] 1.1.1.1.m L7
+  target: x^3
+  tree:   (MMA::|Power| MMA::|x| 3)
+  expect: a=0 b=1 m=3
+  why:    both linear-coefficient defaults
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  m=3 a=0 b=1 x=MMA::|x|
+  time:   median 0.0039 ms  max 0.0091 ms  mean 0.0039 ms  (pattern prep 0.014 ms)
+CASE G1-07 [G1] 1.1.1.2.m L15
+  target: (1+2*x)^3*(4+5*x)^(1/2)
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| 1 (MMA::|Times| 2 MMA::|x|)) 3) (MMA::|Power| (MMA::|Plus| 4 (MMA::|Times| 5 MMA::|x|)) 1/2))
+  expect: a=1 b=2 m=3 c=4 d=5 n=1/2 | a=4 b=5 m=1/2 c=1 d=2 n=3
+  why:    two linear powers, either assignment (IGtQ[m,0] picks in .m)
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  n=1/2 d=5 c=4 m=3 x=MMA::|x| b=2 a=1
+  time:   median 0.0232 ms  max 0.0418 ms  mean 0.0251 ms  (pattern prep 0.077 ms)
+CASE G1-08 [G1] 2.1.m L8
+  target: x*exp(2*x)
+  tree:   (MMA::|Times| (MMA::|Power| MMA::E (MMA::|Times| 2 MMA::|x|)) MMA::|x|)
+  expect: c=0 d=1 m=1 F=%e g=2 e=0 f=1 | c=0 d=1 m=1 F=%e g=1 e=0 f=2
+  why:    x -> (0+1*x)^1; g_.*(e_.+f_.*x_) vs 2*x: g=2,f=1 or g=1,f=2
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  e=0 f=1 g=2 F=MMA::E c=0 d=1 x=MMA::|x| m=1
+  time:   median 0.3351 ms  max 0.4674 ms  mean 0.3375 ms  (pattern prep 0.078 ms)
+CASE G1-09 [G1] 1.1.2.2.m L47
+  target: x*(a+b*x^2)^p
+  tree:   (MMA::|Times| MMA::|x| (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Power| MMA::|x| 2))) MMA::|p|))
+  expect: c=1 m=1 a=a b=b p=p
+  why:    (c_.*x_)^m_. vs bare x
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  p=MMA::|p| b=MMA::|b| a=MMA::|a| c=1 x=MMA::|x| m=1
+  time:   median 0.0173 ms  max 0.0349 ms  mean 0.0177 ms  (pattern prep 0.077 ms)
+CASE G1-10 [G1] 3.3.m L4
+  target: log(c*(d+e*x)^n)
+  tree:   (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| MMA::|x|)) MMA::|n|)))
+  expect: a=0 b=1 c=c d=d e=e n=n p=1
+  why:    three nested defaults: p, a, b
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  a=0 b=1 n=MMA::|n| x=MMA::|x| e=MMA::|e| d=MMA::|d| c=MMA::|c| p=1
+  time:   median 0.0188 ms  max 0.0373 ms  mean 0.0191 ms  (pattern prep 0.555 ms)
+CASE G1-11 [G1] 3.3.m L4
+  target: (a+b*log(d+e*x))^2
+  tree:   (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| MMA::|x|))))) 2)
+  expect: a=a b=b c=1 d=d e=e n=1 p=2
+  why:    c_. and n_. defaults inside Log
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  p=2 c=1 x=MMA::|x| e=MMA::|e| d=MMA::|d| n=1 b=MMA::|b| a=MMA::|a|
+  time:   median 0.0120 ms  max 0.0173 ms  mean 0.0122 ms  (pattern prep 0.557 ms)
+CASE G2-01 [G2] 1.2.1.2.m L26
+  target: (d*x)^m/(b*x+c*x^2)
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Times| MMA::|d| MMA::|x|) MMA::|m|) (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|b| MMA::|x|) (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| 2))) -1))
+  expect: e=d m=m b=b c=c p=-1
+  why:    1.2.1.2 e115 L136
+  doc:    record class1: deferred; maxima_rubi_dispatch.lisp:88 cites e115 (pass 2)
+  result: OK  matched=T struct=T
+  bound:  p=-1 c=MMA::|c| b=MMA::|b| m=MMA::|m| x=MMA::|x| e=MMA::|d|
+  time:   median 0.0129 ms  max 0.0224 ms  mean 0.0130 ms  (pattern prep 0.075 ms)
+CASE G2-02 [G2] 1.2.1.2.m L26 swap
+  target: (d*x)^m/(b*x+c*x^2)
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|b| MMA::|x|) (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| 2))) -1) (MMA::|Power| (MMA::|Times| MMA::|d| MMA::|x|) MMA::|m|))
+  expect: e=d m=m b=b c=c p=-1
+  why:    e115, other stored order
+  doc:    as G2-01
+  result: OK  matched=T struct=T
+  bound:  p=-1 c=MMA::|c| b=MMA::|b| m=MMA::|m| x=MMA::|x| e=MMA::|d|
+  time:   median 0.0495 ms  max 0.0638 ms  mean 0.0525 ms  (pattern prep 0.068 ms)
+CASE G2-03 [G2] 1.1.2.2.m L47
+  target: (c*x)^m*(a+b*x^2)^p
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Times| MMA::|c| MMA::|x|) MMA::|m|) (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Power| MMA::|x| 2))) MMA::|p|))
+  expect: c=c m=m a=a b=b p=p
+  why:    (c x)^m family
+  doc:    synthetic; dispatch.lisp:83 (c x)^m first-^-factor rule
+  result: OK  matched=T struct=T
+  bound:  p=MMA::|p| b=MMA::|b| a=MMA::|a| m=MMA::|m| x=MMA::|x| c=MMA::|c|
+  time:   median 0.0106 ms  max 0.0302 ms  mean 0.0109 ms  (pattern prep 0.083 ms)
+CASE G2-04 [G2] 1.1.2.2.m L47 swap
+  target: (c*x)^m*(a+b*x^2)^p
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Power| MMA::|x| 2))) MMA::|p|) (MMA::|Power| (MMA::|Times| MMA::|c| MMA::|x|) MMA::|m|))
+  expect: c=c m=m a=a b=b p=p
+  why:    other stored order
+  doc:    as G2-03
+  result: OK  matched=T struct=T
+  bound:  p=MMA::|p| b=MMA::|b| a=MMA::|a| m=MMA::|m| x=MMA::|x| c=MMA::|c|
+  time:   median 0.0454 ms  max 0.0604 ms  mean 0.0538 ms  (pattern prep 0.060 ms)
+CASE G2-05 [G2] 1.2.1.2.m L26
+  target: (d*x)^m*sqrt(b*x+c*x^2)
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Times| MMA::|d| MMA::|x|) MMA::|m|) (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|b| MMA::|x|) (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| 2))) 1/2))
+  expect: e=d m=m b=b c=c p=1/2
+  why:    fractional tail
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  p=1/2 c=MMA::|c| b=MMA::|b| m=MMA::|m| x=MMA::|x| e=MMA::|d|
+  time:   median 0.0147 ms  max 0.0265 ms  mean 0.0151 ms  (pattern prep 0.094 ms)
+CASE G2-06 [G2] 1.2.1.2.m L26 swap
+  target: (d*x)^m*sqrt(b*x+c*x^2)
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|b| MMA::|x|) (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| 2))) 1/2) (MMA::|Power| (MMA::|Times| MMA::|d| MMA::|x|) MMA::|m|))
+  expect: e=d m=m b=b c=c p=1/2
+  why:    other stored order
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  p=1/2 c=MMA::|c| b=MMA::|b| m=MMA::|m| x=MMA::|x| e=MMA::|d|
+  time:   median 0.0582 ms  max 0.0831 ms  mean 0.0605 ms  (pattern prep 0.105 ms)
+CASE G2-07 [G2] 3.1.2.m L13
+  target: (d*x)^m*(a+b*log(c*x^n))^2
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Times| MMA::|d| MMA::|x|) MMA::|m|) (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))) 2))
+  expect: d=d m=m a=a b=b c=c n=n p=2
+  why:    product-base power head x powered tail
+  doc:    matcher-probe-series.md:61 dead shape B
+  result: OK  matched=T struct=T
+  bound:  p=2 n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| m=MMA::|m| x=MMA::|x| d=MMA::|d|
+  time:   median 0.0489 ms  max 0.0645 ms  mean 0.0466 ms  (pattern prep 0.140 ms)
+CASE G2-08 [G2] 3.1.2.m L13 swap
+  target: (d*x)^m*(a+b*log(c*x^n))^2
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))) 2) (MMA::|Power| (MMA::|Times| MMA::|d| MMA::|x|) MMA::|m|))
+  expect: d=d m=m a=a b=b c=c n=n p=2
+  why:    other stored order
+  doc:    as G2-07
+  result: OK  matched=T struct=T
+  bound:  p=2 n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| m=MMA::|m| x=MMA::|x| d=MMA::|d|
+  time:   median 0.1220 ms  max 0.1393 ms  mean 0.1258 ms  (pattern prep 0.121 ms)
+CASE G3-01 [G3] 1.1.1.1.m L5
+  target: x
+  tree:   MMA::|x|
+  expect: m=1
+  why:    x_^m_. vs x -> m=Default[Power]=1
+  doc:    maxima_rubi_implicit1.lisp:14 x^pm vs x -> false
+  result: OK  matched=T struct=T
+  bound:  x=MMA::|x| m=1
+  time:   median 0.0009 ms  max 0.0075 ms  mean 0.0009 ms  (pattern prep 0.040 ms)
+CASE G3-02 [G3] 1.1.1.2.m L15
+  target: x*(a+b*x)
+  tree:   (MMA::|Times| MMA::|x| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)))
+  expect: a=0 b=1 m=1 c=a d=b n=1 | a=a b=b m=1 c=0 d=1 n=1
+  why:    both factors bare
+  doc:    maxima_rubi_implicit1.lisp:16 factor gap -> false
+  result: OK  matched=T struct=T
+  bound:  d=MMA::|b| c=MMA::|a| n=1 a=0 b=1 x=MMA::|x| m=1
+  time:   median 0.0392 ms  max 0.0771 ms  mean 0.0395 ms  (pattern prep 0.097 ms)
+CASE G3-03 [G3] 1.1.1.2.m L15
+  target: x*(a+b*x)^2
+  tree:   (MMA::|Times| MMA::|x| (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)) 2))
+  expect: a=0 b=1 m=1 c=a d=b n=2 | a=a b=b m=2 c=0 d=1 n=1
+  why:    atom base bare
+  doc:    maxima_rubi_implicit1.lisp:17 -> TRUE
+  result: OK  matched=T struct=T
+  bound:  n=2 d=MMA::|b| c=MMA::|a| a=0 b=1 x=MMA::|x| m=1
+  time:   median 0.0495 ms  max 0.0720 ms  mean 0.0521 ms  (pattern prep 0.128 ms)
+CASE G3-04 [G3] 1.1.2.6.m L48
+  target: (e*x)^m*(A+B*x^2)*(c+d*x^2)^3/(a+b*x^2)^2
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Times| MMA::|e| MMA::|x|) MMA::|m|) (MMA::|Plus| MMA::A (MMA::|Times| MMA::B (MMA::|Power| MMA::|x| 2))) (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Power| MMA::|x| 2))) -2) (MMA::|Power| (MMA::|Plus| MMA::|c| (MMA::|Times| MMA::|d| (MMA::|Power| MMA::|x| 2))) 3))
+  expect: g=e m=m a=a b=b p=-2 c=c d=d q=3 e=A f=B | g=e m=m a=c b=d p=3 c=a d=b q=-2 e=A f=B
+  why:    1.1.2.6 e20 L31: bare (e_+f_.*x_^2) takes A+B*x^2; the two powers either way
+  doc:    record class1: verified
+  result: OK  matched=T struct=T
+  bound:  f=MMA::B e=MMA::A q=3 d=MMA::|d| c=MMA::|c| p=-2 b=MMA::|b| a=MMA::|a| m=MMA::|m| x=MMA::|x| g=MMA::|e|
+  time:   median 0.0506 ms  max 0.0779 ms  mean 0.0523 ms  (pattern prep 0.110 ms)
+CASE G3-05 [G3] 3.1.4.m L5
+  target: x^5*(d+e*x^2)*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 5) (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| 2))) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: m=5 d=d e=e r=2 q=1 a=a b=b c=c n=n
+  why:    3.1.4 e171 L224: (d_+e_.*x_^r_.)^q_. has q_. optional -> bare binomial q=1
+  doc:    adjudication-g1.md:213 M1+M2 'faithful 0-bind in both systems'
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| r=2 e=MMA::|e| d=MMA::|d| q=1 m=5 x=MMA::|x|
+  time:   median 0.0445 ms  max 0.0676 ms  mean 0.0450 ms  (pattern prep 0.180 ms)
+CASE G3-06 [G3] 3.1.2.m L13
+  target: x/(a+b*log(c*x^n))
+  tree:   (MMA::|Times| MMA::|x| (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))) -1))
+  expect: d=1 m=1 a=a b=b c=c n=n p=-1
+  why:    3.1.2 e67 L84: bare x head
+  doc:    uplift sec.2 Wave1 M6 0-bind
+  result: OK  matched=T struct=T
+  bound:  p=-1 n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| d=1 x=MMA::|x| m=1
+  time:   median 0.0554 ms  max 0.0739 ms  mean 0.0592 ms  (pattern prep 0.131 ms)
+CASE G3-07 [G3] 3.1.4.m L29
+  target: x*(d+e*x^2)*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| MMA::|x| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| 2))) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: f=1 m=1 d=d e=e r=2 q=1 a=a b=b c=c n=n
+  why:    bare x and bare binomial together
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| r=2 e=MMA::|e| d=MMA::|d| q=1 f=1 x=MMA::|x| m=1
+  time:   median 0.0946 ms  max 0.1223 ms  mean 0.0959 ms  (pattern prep 0.191 ms)
+CASE G4-01 [G4] 3.1.5.m L45
+  target: (a+b*log(c*x^n))*log(1+e*x)
+  tree:   (MMA::|Times| (MMA::|Log| (MMA::|Plus| 1 (MMA::|Times| MMA::|e| MMA::|x|))) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: d=1 e=1 f=e m=1 r=1 a=a b=b c=c n=n p=1
+  why:    3.1.5 e5 L18
+  doc:    uplift sec.2 Wave1 A: pass-4-only rescue
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| p=1 d=1 x=MMA::|x| m=1 f=MMA::|e| e=1 r=1
+  time:   median 0.0442 ms  max 0.1479 ms  mean 0.0438 ms  (pattern prep 0.367 ms)
+CASE G4-02 [G4] 3.1.5.m L51
+  target: x*(a+b*log(c*x^n))*log(d*(e+f*x^2)^m)
+  tree:   (MMA::|Times| MMA::|x| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))) (MMA::|Log| (MMA::|Times| MMA::|d| (MMA::|Power| (MMA::|Plus| MMA::|e| (MMA::|Times| MMA::|f| (MMA::|Power| MMA::|x| 2))) MMA::|m|))))
+  expect: g=1 q=1 d=d e=e f=f m=2 r=m a=a b=b c=c n=n
+  why:    3.1.5 e91 L116
+  doc:    uplift sec.2 Wave1 A: pass-4 reverse-only rescue
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| r=MMA::|m| m=2 f=MMA::|f| e=MMA::|e| d=MMA::|d| g=1 x=MMA::|x| q=1
+  time:   median 0.0691 ms  max 0.0852 ms  mean 0.0724 ms  (pattern prep 0.260 ms)
+CASE G4-03 [G4] 3.1.5.m L60
+  target: x*(a+b*log(c*x^n))*polylog(2,e*x)
+  tree:   (MMA::|Times| (MMA::|PolyLog| 2 (MMA::|Times| MMA::|e| MMA::|x|)) MMA::|x| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: d=1 m=1 k=2 e=e q=1 a=a b=b c=c n=n
+  why:    3.1.5 e209 L258
+  doc:    uplift sec.2 Wave1 A: pass-4-only rescue
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=1 e=MMA::|e| k=2 d=1 x=MMA::|x| m=1
+  time:   median 0.0194 ms  max 0.0255 ms  mean 0.0198 ms  (pattern prep 0.148 ms)
+CASE G4-04 [G4] 3.1.5.m L60
+  target: x*(a+b*log(c*x^n))*polylog(3,e*x)
+  tree:   (MMA::|Times| (MMA::|PolyLog| 3 (MMA::|Times| MMA::|e| MMA::|x|)) MMA::|x| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: d=1 m=1 k=3 e=e q=1 a=a b=b c=c n=n
+  why:    3.1.5 e215 L264
+  doc:    uplift sec.2 Wave1 A: pass-4-only rescue
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=1 e=MMA::|e| k=3 d=1 x=MMA::|x| m=1
+  time:   median 0.0190 ms  max 0.0305 ms  mean 0.0196 ms  (pattern prep 0.127 ms)
+CASE G4-05 [G4] 3.1.5.m L56
+  target: (a+b*log(c*x^n))*polylog(2,e*x^2)
+  tree:   (MMA::|Times| (MMA::|PolyLog| 2 (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| 2))) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: k=2 e=e q=2 a=a b=b c=c n=n
+  why:    two bare factors, slotted q
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=2 x=MMA::|x| e=MMA::|e| k=2
+  time:   median 0.0052 ms  max 0.0119 ms  mean 0.0075 ms  (pattern prep 0.110 ms)
+CASE G4-06 [G4] 3.1.5.m L51 swap
+  target: x*(a+b*log(c*x^n))*log(d*(e+f*x^2)^m)
+  tree:   (MMA::|Times| (MMA::|Log| (MMA::|Times| MMA::|d| (MMA::|Power| (MMA::|Plus| MMA::|e| (MMA::|Times| MMA::|f| (MMA::|Power| MMA::|x| 2))) MMA::|m|))) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))) MMA::|x|)
+  expect: g=1 q=1 d=d e=e f=f m=2 r=m a=a b=b c=c n=n
+  why:    e91, reversed factor order
+  doc:    as G4-02
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| r=MMA::|m| m=2 f=MMA::|f| e=MMA::|e| d=MMA::|d| g=1 x=MMA::|x| q=1
+  time:   median 0.1316 ms  max 0.1460 ms  mean 0.1358 ms  (pattern prep 0.241 ms)
+CASE G5-01 [G5] 3.1.4.m L5
+  target: x^3*(d+e*x)*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 3) (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| MMA::|x|)) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: m=3 d=d e=e r=1 q=1 a=a b=b c=c n=n
+  why:    3.1.4 e1 L12: r=1 literal, q=1 bare
+  doc:    adjudication-g1.md:207 Q1 r2@e1 [false]
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| r=1 e=MMA::|e| d=MMA::|d| q=1 m=3 x=MMA::|x|
+  time:   median 0.0437 ms  max 0.0597 ms  mean 0.0463 ms  (pattern prep 0.200 ms)
+CASE G5-02 [G5] 3.1.4.m L5
+  target: x^5*(d+e*x^2)^2*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 5) (MMA::|Power| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| 2))) 2) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: m=5 d=d e=e r=2 q=2 a=a b=b c=c n=n
+  why:    3.1.4 e183 L236
+  doc:    adjudication-g1.md:216 Q2 r2@e183 [false]
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=2 r=2 e=MMA::|e| d=MMA::|d| m=5 x=MMA::|x|
+  time:   median 0.0484 ms  max 0.0747 ms  mean 0.0483 ms  (pattern prep 0.184 ms)
+CASE G5-03 [G5] 3.1.4.m L5
+  target: x^5*(d+e*x^r)^2*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 5) (MMA::|Power| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| MMA::|r|))) 2) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: m=5 d=d e=e r=r q=2 a=a b=b c=c n=n
+  why:    K1 target (3.1.4 e379 L484 family)
+  doc:    adjudication-g1.md:223 K1 r2 [false]
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=2 r=MMA::|r| e=MMA::|e| d=MMA::|d| m=5 x=MMA::|x|
+  time:   median 0.0474 ms  max 0.0672 ms  mean 0.0493 ms  (pattern prep 0.187 ms)
+CASE G5-04 [G5] 3.1.4.m L5
+  target: x^5*(d+e*x^r)*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 5) (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| MMA::|r|))) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: m=5 d=d e=e r=r q=1 a=a b=b c=c n=n
+  why:    3.1.4 e367 L472
+  doc:    adjudication-g1.md:222 M1
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| r=MMA::|r| e=MMA::|e| d=MMA::|d| q=1 m=5 x=MMA::|x|
+  time:   median 0.0435 ms  max 0.0531 ms  mean 0.0437 ms  (pattern prep 0.177 ms)
+CASE G5-05 [G5] 3.1.4.m L29
+  target: x^3*(a+b*log(c*x^n))*sqrt(d+e*x)
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 3) (MMA::|Power| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| MMA::|x|)) 1/2) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: f=1 m=3 d=d e=e r=1 q=1/2 a=a b=b c=c n=n
+  why:    3.1.4 e130 L165
+  doc:    adjudication-g1.md:234 M1 r23
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=1/2 r=1 e=MMA::|e| d=MMA::|d| m=3 f=1 x=MMA::|x|
+  time:   median 0.1111 ms  max 0.1223 ms  mean 0.1137 ms  (pattern prep 0.198 ms)
+CASE G5-06 [G5] 3.1.4.m L29
+  target: x^5*(a+b*log(c*x^n))*sqrt(d+e*x^2)
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 5) (MMA::|Power| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| 2))) 1/2) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: f=1 m=5 d=d e=e r=2 q=1/2 a=a b=b c=c n=n
+  why:    3.1.4 e251 L328
+  doc:    adjudication-g1.md:237 Q3/Q5 [false]
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=1/2 r=2 e=MMA::|e| d=MMA::|d| m=5 f=1 x=MMA::|x|
+  time:   median 0.1099 ms  max 2.0327 ms  mean 0.1131 ms  (pattern prep 0.207 ms)
+CASE G5-07 [G5] 3.1.3.m L6
+  target: (d+e/x^(1/(q+1)))^q*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| (MMA::|Times| -1 (MMA::|Power| (MMA::|Plus| 1 MMA::|q|) -1))))) MMA::|q|) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: d=d e=e r=-1/(1+q) q=q a=a b=b c=c n=n
+  why:    3.1.4 e446 L565
+  doc:    adjudication-g1.md:252 3_1_3_r3 0-binds (P1)
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=MMA::|q| r=(MMA::|Times| -1 (MMA::|Power| (MMA::|Plus| 1 MMA::|q|) -1)) x=MMA::|x| e=MMA::|e| d=MMA::|d|
+  time:   median 0.0057 ms  max 0.0125 ms  mean 0.0057 ms  (pattern prep 0.144 ms)
+CASE G5-08 [G5] 3.1.3.m L4
+  target: (d+e*x^r)^2*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| MMA::|r|))) 2) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: d=d e=e r=r q=2 a=a b=b c=c n=n
+  why:    3.1.4 e387 L492
+  doc:    adjudication-g1.md:246 K2 r24 [false]
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=2 r=MMA::|r| x=MMA::|x| e=MMA::|e| d=MMA::|d|
+  time:   median 0.0345 ms  max 0.0731 ms  mean 0.0348 ms  (pattern prep 0.166 ms)
+CASE G5-09 [G5] 3.4.m L12
+  target: x^3*log(c*(a+b*sqrt(x))^p)
+  tree:   (MMA::|Times| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Power| MMA::|x| 1/2))) MMA::|p|))) (MMA::|Power| MMA::|x| 3))
+  expect: m=3 a=0 b=1 c=c d=a e=b n=1/2 p=p q=1
+  why:    3.4 suite L63: x_^n_ vs sqrt(x)
+  doc:    adjudication-g3.md:57 3_4 matcher-gap
+  result: OK  matched=T struct=T
+  bound:  a=0 b=1 p=MMA::|p| n=1/2 e=MMA::|b| d=MMA::|a| c=MMA::|c| q=1 m=3 x=MMA::|x|
+  time:   median 0.1407 ms  max 0.1535 ms  mean 0.1491 ms  (pattern prep 1.052 ms)
+CASE G5-10 [G5] 3.4.m L5
+  target: log(c*(a+b*sqrt(x))^p)
+  tree:   (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Power| MMA::|x| 1/2))) MMA::|p|)))
+  expect: c=c d=a e=b n=1/2 p=p
+  why:    3.4 suite L66
+  doc:    adjudication-g3.md:57 3_4 matcher-gap
+  result: OK  matched=T struct=T
+  bound:  p=MMA::|p| n=1/2 x=MMA::|x| e=MMA::|b| d=MMA::|a| c=MMA::|c|
+  time:   median 0.0034 ms  max 0.0071 ms  mean 0.0034 ms  (pattern prep 0.144 ms)
+CASE G5-11 [G5] 3.4.m L12
+  target: log(c*(a+b*sqrt(x))^p)/x
+  tree:   (MMA::|Times| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Power| MMA::|x| 1/2))) MMA::|p|))) (MMA::|Power| MMA::|x| -1))
+  expect: m=-1 a=0 b=1 c=c d=a e=b n=1/2 p=p q=1
+  why:    3.4 suite L67
+  doc:    adjudication-g3.md:57 3_4 matcher-gap
+  result: OK  matched=T struct=T
+  bound:  a=0 b=1 p=MMA::|p| n=1/2 e=MMA::|b| d=MMA::|a| c=MMA::|c| q=1 m=-1 x=MMA::|x|
+  time:   median 0.1446 ms  max 0.1637 ms  mean 0.1461 ms  (pattern prep 0.999 ms)
+CASE G6-01 [G6] 3.2.1.m L19
+  target: (A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|a| MMA::|g|) (MMA::|Times| MMA::|b| MMA::|g| MMA::|x|)) -2) (MMA::|Plus| MMA::A (MMA::|Times| MMA::B (MMA::|Log| (MMA::|Times| MMA::|e| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)) (MMA::|Power| (MMA::|Plus| MMA::|c| (MMA::|Times| MMA::|d| MMA::|x|)) -1))))))
+  expect: f=a*g g=b*g m=-2 A=A B=B e=e a=a b=b c=c d=d n=1 p=1
+  why:    3.2.1 e93 L130: Times[e,P,Q^-1] regrouped under Power[..,n_.] n=1
+  doc:    adjudication-g2.md:97 D2 0-bind (probe pA)
+  result: OK  matched=T struct=T
+  bound:  d=MMA::|d| c=MMA::|c| b=MMA::|b| a=MMA::|a| n=1 e=MMA::|e| B=MMA::B A=MMA::A p=1 m=-2 x=MMA::|x| g=(MMA::|Times| MMA::|b| MMA::|g|) f=(MMA::|Times| MMA::|a| MMA::|g|)
+  time:   median 1.2943 ms  max 11.9152 ms  mean 1.1504 ms  (pattern prep 2.604 ms)
+CASE G6-02 [G6] 3.2.1.m L21
+  target: (A+B*log(e*(c+d*x)/(a+b*x)))/(a*g+b*g*x)^2
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|a| MMA::|g|) (MMA::|Times| MMA::|b| MMA::|g| MMA::|x|)) -2) (MMA::|Plus| MMA::A (MMA::|Times| MMA::B (MMA::|Log| (MMA::|Times| MMA::|e| (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)) -1) (MMA::|Plus| MMA::|c| (MMA::|Times| MMA::|d| MMA::|x|)))))))
+  expect: f=a*g g=b*g m=-2 A=A B=B e=e a=c b=d c=a d=b n=1 p=1
+  why:    3.2.1 e178 L235
+  doc:    adjudication-g2.md:98 D2
+  result: OK  matched=T struct=T
+  bound:  d=MMA::|b| c=MMA::|a| b=MMA::|d| a=MMA::|c| n=1 e=MMA::|e| B=MMA::B A=MMA::A p=1 m=-2 x=MMA::|x| g=(MMA::|Times| MMA::|b| MMA::|g|) f=(MMA::|Times| MMA::|a| MMA::|g|)
+  time:   median 1.1284 ms  max 4.3462 ms  mean 1.1368 ms  (pattern prep 2.902 ms)
+CASE G6-03 [G6] 3.2.1.m L23
+  target: (A+B*log(e*(a+b*x)/(c+d*x)))/(f+g*x)^2
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| MMA::|f| (MMA::|Times| MMA::|g| MMA::|x|)) -2) (MMA::|Plus| MMA::A (MMA::|Times| MMA::B (MMA::|Log| (MMA::|Times| MMA::|e| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)) (MMA::|Power| (MMA::|Plus| MMA::|c| (MMA::|Times| MMA::|d| MMA::|x|)) -1))))))
+  expect: f=f g=g m=-2 A=A B=B e=e a=a b=b c=c d=d n=1 p=1
+  why:    3.2.1 e236 L313
+  doc:    adjudication-g2.md:99 D2
+  result: OK  matched=T struct=T
+  bound:  d=MMA::|d| c=MMA::|c| b=MMA::|b| a=MMA::|a| n=1 e=MMA::|e| B=MMA::B A=MMA::A p=1 m=-2 x=MMA::|x| g=MMA::|g| f=MMA::|f|
+  time:   median 0.6273 ms  max 3.8074 ms  mean 0.6277 ms  (pattern prep 2.750 ms)
+CASE G6-04 [G6] 3.2.2.m L6
+  target: (a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x)))
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|a| MMA::|g|) (MMA::|Times| MMA::|b| MMA::|g| MMA::|x|)) 3) (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|c| MMA::|i|) (MMA::|Times| MMA::|d| MMA::|i| MMA::|x|)) 2) (MMA::|Plus| MMA::A (MMA::|Times| MMA::B (MMA::|Log| (MMA::|Times| MMA::|e| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)) (MMA::|Power| (MMA::|Plus| MMA::|c| (MMA::|Times| MMA::|d| MMA::|x|)) -1))))))
+  expect: f=a*g g=b*g m=3 h=c*i i=d*i q=2 A=A B=B e=e a=a b=b c=c d=d n=1 p=1 | f=c*i g=d*i m=2 h=a*g i=b*g q=3 A=A B=B e=e a=a b=b c=c d=d n=1 p=1
+  why:    3.2.2 e10 L21
+  doc:    adjudication-g2.md:101 D2 r3 cluster
+  result: OK  matched=T struct=T
+  bound:  d=MMA::|d| c=MMA::|c| b=MMA::|b| a=MMA::|a| n=1 e=MMA::|e| B=MMA::B A=MMA::A p=1 q=2 i=(MMA::|Times| MMA::|d| MMA::|i|) h=(MMA::|Times| MMA::|c| MMA::|i|) m=3 x=MMA::|x| g=(MMA::|Times| MMA::|b| MMA::|g|) f=(MMA::|Times| MMA::|a| MMA::|g|)
+  time:   median 0.2664 ms  max 0.3641 ms  mean 0.3104 ms  (pattern prep 2.997 ms)
+CASE G6-05 [G6] 3.2.2.m L8
+  target: (a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*((a+b*x)/(c+d*x))^n))
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|a| MMA::|g|) (MMA::|Times| MMA::|b| MMA::|g| MMA::|x|)) MMA::|m|) (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|c| MMA::|i|) (MMA::|Times| MMA::|d| MMA::|i| MMA::|x|)) (MMA::|Plus| -2 (MMA::|Times| -1 MMA::|m|))) (MMA::|Plus| MMA::A (MMA::|Times| MMA::B (MMA::|Log| (MMA::|Times| MMA::|e| (MMA::|Power| (MMA::|Times| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)) (MMA::|Power| (MMA::|Plus| MMA::|c| (MMA::|Times| MMA::|d| MMA::|x|)) -1)) MMA::|n|))))))
+  expect: f=a*g g=b*g m=m h=c*i i=d*i q=-2-m A=A B=B e=e a=a b=b c=c d=d n=n p=1 | f=c*i g=d*i m=-2-m h=a*g i=b*g q=m A=A B=B e=e a=a b=b c=c d=d n=n p=1
+  why:    3.2.2 e214 L247: explicit ratio power n
+  doc:    adjudication-g2.md:103 D2 L8 r5
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| d=MMA::|d| c=MMA::|c| b=MMA::|b| a=MMA::|a| e=MMA::|e| B=MMA::B A=MMA::A p=1 q=(MMA::|Plus| -2 (MMA::|Times| -1 MMA::|m|)) i=(MMA::|Times| MMA::|d| MMA::|i|) h=(MMA::|Times| MMA::|c| MMA::|i|) m=MMA::|m| x=MMA::|x| g=(MMA::|Times| MMA::|b| MMA::|g|) f=(MMA::|Times| MMA::|a| MMA::|g|)
+  time:   median 0.2733 ms  max 0.2880 ms  mean 0.2762 ms  (pattern prep 6.111 ms)
+CASE G7-01 [G7] 3.1.2.m L13
+  target: x^3/(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 3) (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))) -1))
+  expect: d=1 m=3 a=a b=b c=c n=n p=-1
+  why:    3.1.2 e65 L82: (d_.*x_)^m_. vs x^3 -> d=1
+  doc:    uplift sec.2 Wave1 M6 0-bind
+  result: OK  matched=T struct=T
+  bound:  p=-1 n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| m=3 d=1 x=MMA::|x|
+  time:   median 0.0570 ms  max 0.0747 ms  mean 0.0597 ms  (pattern prep 0.226 ms)
+CASE G7-02 [G7] 3.1.2.m L13
+  target: x^2/(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 2) (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))) -1))
+  expect: d=1 m=2 a=a b=b c=c n=n p=-1
+  why:    3.1.2 e66 L83
+  doc:    uplift sec.2 Wave1 M6 0-bind
+  result: OK  matched=T struct=T
+  bound:  p=-1 n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| m=2 d=1 x=MMA::|x|
+  time:   median 0.0571 ms  max 0.0901 ms  mean 0.0583 ms  (pattern prep 0.205 ms)
+CASE G7-03 [G7] 3.1.2.m L14
+  target: (Times (Power (Times d (Power x 2)) m) (Plus a (Times b (Log (Times c (Power x n))))))
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Times| MMA::|d| (MMA::|Power| MMA::|x| 2)) MMA::|m|) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: d=d q=2 m=m a=a b=b c=c n=n p=1
+  why:    (d x^2)^m (a+b log), Mathematica-form tree (Maxima rewrites it: G7-M1)
+  doc:    synthetic
+  result: OK  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| p=1 m=MMA::|m| q=2 x=MMA::|x| d=MMA::|d|
+  time:   median 0.0069 ms  max 0.0145 ms  mean 0.0070 ms  (pattern prep 0.292 ms)
+CASE G7-04 [G7] 3.1.2.m L13
+  target: x^(-1+n)*(a+b*log(c*x^n))^p
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| (MMA::|Plus| -1 MMA::|n|)) (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))) MMA::|p|))
+  expect: d=1 m=-1+n a=a b=b c=c n=n p=p
+  why:    3.1.2 e191 L224: FreeQ[-1+n,x] is True -> binds m=-1+n
+  doc:    uplift sec.2 Wave1 D: 'faithful reject ... FreeQ[m,x] rejects m=-1+n'
+  result: OK  matched=T struct=T
+  bound:  p=MMA::|p| n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| m=(MMA::|Plus| -1 MMA::|n|) d=1 x=MMA::|x|
+  time:   median 0.0580 ms  max 2.1153 ms  mean 0.0572 ms  (pattern prep 0.107 ms)
+CASE G7-M1 [G7, model] 3.1.2.m L14
+  target: (d*x^2)^m*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|d| MMA::|m|) (MMA::|Power| (MMA::|mabs| MMA::|x|) (MMA::|Times| 2 MMA::|m|)) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: d=d q=2 m=m a=a b=b c=c n=n p=1
+  why:    same integrand as G7-03 through Maxima's simplifier (d^m*abs(x)^(2*m)*...)
+  doc:    expression-model note
+  result: WRONG  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0904 ms  max 0.1020 ms  mean 0.0941 ms  (pattern prep 0.355 ms)
+CASE N-01 [NEG] 1.1.1.1.m L7
+  target: 5*(3+2*x)^4
+  tree:   (MMA::|Times| 5 (MMA::|Power| (MMA::|Plus| 3 (MMA::|Times| 2 MMA::|x|)) 4))
+  expect: no match
+  why:    Times head vs Power pattern; x_ cannot take (3+2x)^4 under x_Symbol
+  doc:    
+  result: OK  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0005 ms  max 0.0075 ms  mean 0.0005 ms  (pattern prep 0.112 ms)
+CASE N-02 [NEG] 3.1.4.m L7
+  target: x^5*(d+e*x^2)*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 5) (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| 2))) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: no match
+  why:    q_ non-optional vs bare binomial
+  doc:    matcher-probe-series.md:63 M2 (the real non-optional case)
+  result: OK  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0604 ms  max 0.0838 ms  mean 0.0622 ms  (pattern prep 0.129 ms)
+CASE N-03 [NEG] 1.1.1.1.m L7
+  target: (a+b*x)^x
+  tree:   (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)) MMA::|x|)
+  expect: no match
+  why:    FreeQ[m,x] veto
+  doc:    
+  result: OK  matched=NIL struct=T
+  bound:  
+  time:   median 0.0087 ms  max 0.0148 ms  mean 0.0088 ms  (pattern prep 0.103 ms)
+CASE N-04 [NEG] 1.1.1.1.m L7
+  target: (x^2+b*x)^3
+  tree:   (MMA::|Power| (MMA::|Plus| (MMA::|Times| MMA::|b| MMA::|x|) (MMA::|Power| MMA::|x| 2)) 3)
+  expect: no match
+  why:    only decompositions have a=x^2 or b=... containing x: FreeQ veto
+  doc:    
+  result: OK  matched=NIL struct=T
+  bound:  
+  time:   median 0.0087 ms  max 0.0180 ms  mean 0.0088 ms  (pattern prep 0.022 ms)
+CASE N-05 [NEG] 3.3.m L4
+  target: log(5+2*z)
+  tree:   (MMA::|Log| (MMA::|Plus| 5 (MMA::|Times| 2 MMA::|z|)))
+  expect: no match
+  why:    x_ would bind z inside, x_Symbol binds x
+  doc:    handoff NEG FreeQ/variable guard
+  result: OK  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0985 ms  max 0.1160 ms  mean 0.1011 ms  (pattern prep 0.671 ms)
+CASE N-06 [NEG] 1.1.1.2.m L8
+  target: (1+x)^(1/2)*(1-x)^(1/3)
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| 1 (MMA::|Times| -1 MMA::|x|)) 1/3) (MMA::|Power| (MMA::|Plus| 1 MMA::|x|) 1/2))
+  expect: no match
+  why:    repeated m_ must be consistent
+  doc:    
+  result: OK  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0729 ms  max 0.0917 ms  mean 0.0749 ms  (pattern prep 0.121 ms)
+CASE N-07 [NEG] 3.1.3.m L4
+  target: x^5*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| 5) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: no match
+  why:    d_ (no default) cannot match nothing: x^5 is not (d+e*x^r)^q
+  doc:    
+  result: WRONG  matched=T struct=T
+  bound:  n=MMA::|n| c=MMA::|c| b=MMA::|b| a=MMA::|a| q=5 d=0 e=1 x=MMA::|x| r=1
+  time:   median 0.0823 ms  max 0.1007 ms  mean 0.0842 ms  (pattern prep 0.267 ms)
+CASE N-08 [NEG] 1.1.2.2.m L47
+  target: (a+b*x^2)^p
+  tree:   (MMA::|Power| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Power| MMA::|x| 2))) MMA::|p|)
+  expect: no match
+  why:    (c_.*x_)^m_. is not optional as a whole factor
+  doc:    
+  result: OK  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0184 ms  max 0.0276 ms  mean 0.0206 ms  (pattern prep 0.166 ms)
+CASE N-09 [NEG] 2.1.m L8
+  target: %e^(a+b*x)
+  tree:   (MMA::|Power| MMA::E (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)))
+  expect: no match
+  why:    (c_.+d_.*x_)^m_. is not optional as a whole factor
+  doc:    
+  result: OK  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.1563 ms  max 0.1941 ms  mean 0.1577 ms  (pattern prep 0.181 ms)
+CASE N-10 [NEG] 3.2.1.m L19
+  target: (A+B*log(x*(a+b*x)/(c+d*x)))/(f+g*x)^2
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| MMA::|f| (MMA::|Times| MMA::|g| MMA::|x|)) -2) (MMA::|Plus| MMA::A (MMA::|Times| MMA::B (MMA::|Log| (MMA::|Times| MMA::|x| (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|)) (MMA::|Power| (MMA::|Plus| MMA::|c| (MMA::|Times| MMA::|d| MMA::|x|)) -1))))))
+  expect: no match
+  why:    every decomposition puts x into e or b: FreeQ veto
+  doc:    
+  result: OK  matched=NIL struct=T
+  bound:  
+  time:   median 7.0425 ms  max 16.5288 ms  mean 7.2284 ms  (pattern prep 2.978 ms)
+CASE N-11 [NEG] 1.1.1.1.m L5
+  target: z^3
+  tree:   (MMA::|Power| MMA::|z| 3)
+  expect: no match
+  why:    x_ binds z in the integrand, x in x_Symbol
+  doc:    
+  result: OK  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0013 ms  max 0.0052 ms  mean 0.0012 ms  (pattern prep 0.144 ms)
+CASE N-12 [NEG] 3.1.4.m L29
+  target: (d+e*x^r)^2*(a+b*log(c*x^n))
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| MMA::|r|))) 2) (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| MMA::|x| MMA::|n|))))))
+  expect: no match
+  why:    3.1.4 e387: no (f x)^m factor; L29/L30 need one
+  doc:    adjudication-g1.md:246 cites r24/L30 as the cover
+  result: OK  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.1327 ms  max 2.3665 ms  mean 0.1348 ms  (pattern prep 0.217 ms)
+CASE N-13 [NEG] 1.1.1.1.m L7
+  target: a+b*x
+  tree:   (MMA::|Plus| MMA::|a| (MMA::|Times| MMA::|b| MMA::|x|))
+  expect: no match
+  why:    m_ non-optional vs bare linear
+  doc:    
+  result: OK  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0005 ms  max 0.0017 ms  mean 0.0005 ms  (pattern prep 0.141 ms)
+CASE N-14 [NEG] 3.4.m L14
+  target: x^m*log(c*(d+e*x^n)^p)
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| MMA::|m|) (MMA::|Log| (MMA::|Times| MMA::|c| (MMA::|Power| (MMA::|Plus| MMA::|d| (MMA::|Times| MMA::|e| (MMA::|Power| MMA::|x| MMA::|n|))) MMA::|p|))))
+  expect: no match
+  why:    f_ has no default: Times[f_,x_] cannot match bare x (3.4.m L12 is the x^m rule)
+  doc:    
+  result: WRONG  matched=T struct=T
+  bound:  a=0 b=1 p=MMA::|p| n=MMA::|n| e=MMA::|e| d=MMA::|d| c=MMA::|c| q=1 m=MMA::|m| f=1 x=MMA::|x|
+  time:   median 0.1213 ms  max 0.1411 ms  mean 0.1268 ms  (pattern prep 1.017 ms)
+CASE N-15 [NEG] 1.1.1.2.m L4
+  target: x^m*(c+d*x)
+  tree:   (MMA::|Times| (MMA::|Power| MMA::|x| MMA::|m|) (MMA::|Plus| MMA::|c| (MMA::|Times| MMA::|d| MMA::|x|)))
+  expect: no match
+  why:    a_ has no default: Plus[a_,b_.*x_] cannot match bare x
+  doc:    
+  result: WRONG  matched=T struct=T
+  bound:  d=MMA::|d| c=MMA::|c| m=MMA::|m| a=0 b=1 x=MMA::|x|
+  time:   median 0.0213 ms  max 0.0425 ms  mean 0.0217 ms  (pattern prep 0.163 ms)
+CASE C-01 [CTL] 1.1.1.2.m L8
+  target: (1+x)^m*(1-x)^m
+  tree:   (MMA::|Times| (MMA::|Power| (MMA::|Plus| 1 (MMA::|Times| -1 MMA::|x|)) MMA::|m|) (MMA::|Power| (MMA::|Plus| 1 MMA::|x|) MMA::|m|))
+  expect: a=1 b=1 c=1 d=-1 m=m | a=1 b=-1 c=1 d=1 m=m
+  why:    twin of N-06 with equal exponents
+  doc:    
+  result: OK  matched=T struct=T
+  bound:  d=1 c=1 m=MMA::|m| x=MMA::|x| b=-1 a=1
+  time:   median 0.0035 ms  max 0.0085 ms  mean 0.0035 ms  (pattern prep 0.026 ms)
+CASE C-02 [CTL] synthetic two-optionals
+  target: x^3
+  tree:   (MMA::|Power| MMA::|x| 3)
+  expect: a=1 b=1 m=3
+  why:    Times[a_.,b_.,x_^m_] vs x^3: both factors default to 1
+  doc:    code reading only
+  result: WRONG  matched=NIL struct=NIL
+  bound:  
+  time:   median 0.0021 ms  max 0.0045 ms  mean 0.0021 ms  (pattern prep 0.036 ms)
+
+=== SUMMARY (mma4max as published)
+GROUP G1 correct 11/11 (100.0%)
+GROUP G2 correct 8/8 (100.0%)
+GROUP G3 correct 7/7 (100.0%)
+GROUP G4 correct 6/6 (100.0%)
+GROUP G5 correct 11/11 (100.0%)
+GROUP G6 correct 5/5 (100.0%)
+GROUP G7 correct 4/4 (100.0%)
+MODEL G1-04 correct=NIL matched=NIL (excluded from the gate)
+MODEL G7-M1 correct=NIL matched=NIL (excluded from the gate)
+NEG false matches 3/15: N-07 N-14 N-15
+CTL C-01 correct=T
+CTL C-02 correct=NIL
+TIMING cases=71 per-case median: min 0.0005 p50 0.0445 p90 0.1563 max 7.0425 ms; worst single 16.5288 ms; cases with a single >50 ms: 0
+TIMING slowest by mean: N-10 7.2284 ms (prep 2.978 ms), G6-01 1.1504 ms (prep 2.604 ms), G6-02 1.1368 ms (prep 2.902 ms), G6-03 0.6277 ms (prep 2.750 ms), G1-08 0.3375 ms (prep 0.078 ms)
+STATUS timeouts/errors: 0
+CONVERTER 29 lines (23 code lines) between the markers; no simplification (reads the simplified internal form)
+GATE LIBRARY clause groups>=90%: pass
+GATE LIBRARY clause zero NEG false matches: FAIL
+GATE LIBRARY clause median<=0.5ms and no case>50ms: pass
+GATE LIBRARY clause converter<=~300 lines, no simplification: pass
+
+=== EXPERIMENT: mblank1 nil-guard (not gated; FORK evidence)
+PCASE N-07 ok NIL->T matched T->NIL bound: 
+PCASE N-14 ok NIL->T matched T->NIL bound: 
+PCASE N-15 ok NIL->T matched T->NIL bound: 
+PATCHED GROUP G1 correct 11/11 (100.0%)
+PATCHED GROUP G2 correct 8/8 (100.0%)
+PATCHED GROUP G3 correct 7/7 (100.0%)
+PATCHED GROUP G4 correct 6/6 (100.0%)
+PATCHED GROUP G5 correct 11/11 (100.0%)
+PATCHED GROUP G6 correct 5/5 (100.0%)
+PATCHED GROUP G7 correct 4/4 (100.0%)
+PATCHED MODEL G1-04 correct=NIL matched=NIL (excluded from the gate)
+PATCHED MODEL G7-M1 correct=NIL matched=NIL (excluded from the gate)
+PATCHED NEG false matches 0/15
+PATCHED CTL C-01 correct=T
+PATCHED CTL C-02 correct=NIL
+PATCHED TIMING cases=71 per-case median: min 0.0005 p50 0.0083 p90 0.0643 max 2.2197 ms; worst single 11.9462 ms; cases with a single >50 ms: 0
+PATCHED TIMING slowest by mean: N-10 2.2820 ms (prep 3.139 ms), G6-01 0.4374 ms (prep 3.017 ms), G6-02 0.4254 ms (prep 3.057 ms), G5-09 0.1426 ms (prep 1.352 ms), G5-11 0.1351 ms (prep 1.110 ms)
+PATCHED STATUS timeouts/errors: 0
+T
+NIL
+8276
+0
+NILPATCHED-SMOKE FAIL 62 ((QUOTE (|Times| A B C (|Pattern| X (|Blank|)))) (QUOTE (|Times| A C B))) => (FAILURE) EXPECTED (SUCCESS ((X . 1)))
+PATCHED-SMOKE FAIL 63 ((QUOTE (|Plus| A B C (|Pattern| X (|Blank|)))) (QUOTE (|Plus| A C B))) => (FAILURE) EXPECTED (SUCCESS ((X . 0)))
+PATCHED-SMOKE FAIL 65 ((QUOTE (|Plus| A B C (|Times| D E (|Pattern| X (|Blank|))))) (QUOTE (|Plus| A C B (|Times| D E)))) => (FAILURE) EXPECTED (SUCCESS ((X . 1)))
+PATCHED-SMOKE FAIL 71 ((QUOTE (|Plus| (|Pattern| X (|Blank|)) (|Sin| A))) (QUOTE (|Sin| A))) => (FAILURE) EXPECTED (SUCCESS ((X . 0)))
+PATCHED-SMOKE FAIL 77 ((QUOTE (|Plus| A B (|Pattern| Z (|Blank|)))) (QUOTE (|Plus| A B))) => (FAILURE) EXPECTED (SUCCESS ((Z . 0)))
+PATCHED-SMOKE FAIL 80 ((QUOTE (|Plus| A (|Pattern| Z (|Blank|)))) (QUOTE (|Plus| A))) => (FAILURE) EXPECTED (SUCCESS ((Z . 0)))
+PATCHED-SMOKE FAIL 81 ((QUOTE (|Plus| A (|Pattern| X (|Blank|)))) (QUOTE A)) => (FAILURE) EXPECTED (SUCCESS ((X . 0)))
+PATCHED-SMOKE FAIL 83 ((QUOTE (|Plus| A B (|Pattern| Z (|Blank|)))) (QUOTE (|Plus| A B))) => (FAILURE) EXPECTED (SUCCESS ((Z . 0)))
+PATCHED-SMOKE FAIL 132 ((QUOTE (|Complex| (|Pattern| R (|Blank|)) (|Pattern| I (|Blank|)))) #C(3 4)) => (FAILURE) EXPECTED (SUCCESS ((I . 4) (R . 3)))
+PATCHED-SMOKE FAIL 139 (KP (QUOTE (|Sin| X))) => (SUCCESS ((B . 1) (A . 0) (N . 1))) EXPECTED (SUCCESS ((A . 0) (B . 1) (N . 1)))
+PATCHED-SMOKE FAIL 140 (KP (QUOTE (|Power| (|Sin| X) 5))) => (SUCCESS ((N . 5) (B . 1) (A . 0))) EXPECTED (SUCCESS ((N . 5) (A . 0) (B . 1)))
+PATCHED-SMOKE FAIL 146 (KQ (QUOTE (|Power| (|Times| X (|Plus| 3 (|Times| 4 X))) -1))) => (SUCCESS ((D . 4) (C . 3) (B . 1) (A . 0))) EXPECTED (SUCCESS ((D . 4) (C . 3) (A . 0) (B . 1)))
+PATCHED-SMOKE FAIL 147 (KQ (QUOTE (|Power| (|Times| X (|Plus| 3 X)) -1))) => (SUCCESS ((D . 1) (C . 3) (B . 1) (A . 0))) EXPECTED (SUCCESS ((D . 1) (C . 3) (A . 0) (B . 1)))
+PATCHED-SMOKE FAIL 149 ((QUOTE (FF (|Pattern| X (|BlankSequence|)) (|Pattern| Y (|BlankSequence|)) (|Pattern| X (|BlankSequence|)))) (QUOTE (FF A A B B A A))) => (FAILURE) EXPECTED (SUCCESS ((X . A) (Y |Sequence| A B B A)))
+PATCHED-SMOKE matchtests 135/149 pass; failing: 62 63 65 71 77 80 81 83 132 139 140 146 147 149
+NIL
+PATCHED-SCALE S-N04 terms=4 (:MATCHED NIL :CORRECT T :BOUND "")  time min 0.139 max 0.145 ms
+PATCHED-SCALE S-N06 terms=6 (:MATCHED NIL :CORRECT T :BOUND "")  time min 1.344 max 1.379 ms
+PATCHED-SCALE S-N08 terms=8 (:MATCHED NIL :CORRECT T :BOUND "")  time min 12.629 max 12.963 ms
+PATCHED-SCALE S-N10 terms=10 (:MATCHED NIL :CORRECT T :BOUND "")  time min 118.718 max 119.897 ms
+PATCHED-SCALE S-N12 terms=12 (:MATCHED NIL :CORRECT T :BOUND "")  time min 1083.659 max 1116.986 ms
+PATCHED-SCALE S-M05 terms=5 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z2|)")  time min 0.418 max 0.437 ms
+PATCHED-SCALE S-M07 terms=7 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z2| MMA::|z3| MMA::|z4|)")  time min 4.203 max 6.722 ms
+PATCHED-SCALE S-M09 terms=9 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z2| MMA::|z3| MMA::|z4| MMA::|z5| MMA::|z6|)")  time min 38.579 max 41.268 ms
+PATCHED-SCALE S-M11 terms=11 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z2| MMA::|z3| MMA::|z4| MMA::|z5| MMA::|z6| MMA::|z7| MMA::|z8|)")  time min 358.822 max 387.994 ms
+PATCHED-SCALE S-M13 terms=13 (:MATCHED T :CORRECT T :BOUND "p=1/2 c=3 x=MMA::|x| b=2 a=(MMA::|Plus| 1 MMA::|z1| MMA::|z10| MMA::|z2| MMA::|z3| MMA::|z4| MMA::|z5| MMA::|z6| MMA::|z7| MMA::|z8| MMA::|z9|)")  time min 3293.441 max 3339.632 ms
+NIL
+"/home/serge/src/maxima-rubi/probes/matcher/01-mma4max-feasibility.mac"
+
+=== secondary: the other matcher lineages (static)
+reference/fateman/lisp/mma4max/newmatch.lisp: lines=2108 Optional=31 remopts=11 matchfol=15 Flat=41
+reference/fateman/lisp/mma4max/match.lisp: lines=1077 Optional=3 remopts=0 matchfol=0 Flat=35
+reference/fateman/other/mockmma/match.lisp: lines=684 Optional=2 remopts=0 matchfol=0 Flat=27
+reference/fateman/other/mockmma/match16.lisp: lines=691 Optional=2 remopts=0 matchfol=0 Flat=27
+reference/fateman/other/mixima/translator/match.lisp: lines=688 Optional=2 remopts=0 matchfol=0 Flat=27
+header comments (version / what the file says it lacks):
+  reference/fateman/other/mixima/translator/match.lisp:2:;;; version 15 does not include
+  reference/fateman/other/mixima/translator/match.lisp:31:;;; All that matches in version 16
+  reference/fateman/other/mixima/translator/match.lisp:54:;;; (f) Orderless functions are matched only if they have a fixed
+  reference/fateman/other/mixima/translator/match.lisp:69:;;; not handled by this version.
+  reference/fateman/other/mockmma/match.lisp:2:;;; version 15 does not include
+  reference/fateman/other/mockmma/match.lisp:4:;;; version 16 doesn't work as well.  This doesn't work so well either...
+  reference/fateman/other/mockmma/match.lisp:32:;;; All that matches in version 16
+  reference/fateman/other/mockmma/match.lisp:55:;;; (f) Orderless functions are matched only if they have a fixed
+  reference/fateman/other/mockmma/match.lisp:70:;;; not handled by this version.
+  reference/fateman/lisp/mma4max/newmatch.lisp:97:;;; (f) Orderless functions are matched only if they have a fixed
+  reference/fateman/lisp/mma4max/newmatch.lisp:108:;;; not handled by this version. yet.
+diff reference/fateman/lisp/mma4max/match.lisp reference/fateman/other/mockmma/match.lisp: 1762 changed lines
+diff reference/fateman/other/mockmma/match.lisp reference/fateman/other/mixima/translator/match.lisp: 114 changed lines

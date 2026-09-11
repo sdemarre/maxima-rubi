@@ -1,0 +1,14 @@
+/* probes/matcher/01-mma4max-feasibility.mac -- matcher spike driver.
+   Run from the repo root via  sh probes/matcher/01-mma4max-feasibility.run
+   (writes probes/matcher/01-mma4max-feasibility.out).  No rule files are
+   loaded, so no --tls-limit flag is needed.  See the .lisp header. */
+display2d : false$
+build_info();
+load("probes/matcher/01-mma4max-load.lisp")$
+:lisp (cl-user::mma-load-all)
+load("probes/matcher/01-mma4max-feasibility.lisp")$
+:lisp (cl-user::matchtests-run "SMOKE")
+:lisp (cl-user::scale-run "SCALE")
+:lisp (cl-user::spike-run)
+:lisp (cl-user::matchtests-run "PATCHED-SMOKE")
+:lisp (cl-user::scale-run "PATCHED-SCALE")

@@ -180,3 +180,14 @@ Open follow-ups (tickets against the runbook):
 - `reference/rubi` @ `61e9c18ea248061cd83c67882f7c91a73cef912d` (cloned 2026-08-17)
 - `reference/maxima-syntax-test-suite` @ `60295e21c571ca210ecfbb695f4af99947454adf` (cloned 2026-08-17)
 - `reference/rubi-5` @ `37a71d650aa1ff7903d4de9cdd1a20c115969f4d` (cloned 2026-08-17)
+- `reference/fateman/lisp/mma4max` — Fateman's mma4max (assembled 2026-09-11;
+  `reference/fateman/PROVENANCE.txt`): 19 files from the Wayback Machine
+  snapshot of `people.eecs.berkeley.edu/~fateman/lisp/mma4max/` dated
+  2022-01-18 (18 byte-identical to the mirror below; `init.lisp` is the
+  Berkeley original), all other files from `nilqed/abcl_maxima` @
+  `097b49b08aff958f72a3cf4449a7ac7912d9ef59` subdir `mma4max/`.
+  `newmatch.lisp` listing date 2011-03-21.
+- `reference/fateman/other/mixima` — `jlapeyre/mixima` @ `05e510b77bedae0841e81bfa3f5693fffaf7a53e`
+- `reference/fateman/other/mockmma` — `dubrousky/mockmma` @ `036e7ba0773e43da50438a4f93774966cf82011f`
+  (both copied 2026-09-11 without `.git`: the commits are recorded in
+  `PROVENANCE.txt` only and cannot be re-read from the copies)
