@@ -509,6 +509,8 @@ def key(e):
         return (0, e)
     if isinstance(e, Real):
         return (1, e.text)
+    if isinstance(e, float):
+        return (1, repr(e))
     if isinstance(e, Str):
         return (3, str(e))
     return (2, e)
@@ -1027,7 +1029,16 @@ def _selftest():
                                            "SetDelayed[g[Pattern[y, Blank[]]], y]"]
     bad += not ok
     print("%s statement split -> %s" % ("PASS:" if ok else "FAIL:", [fullform(e) for _o, e in st]))
-    print("Results: %d passed, %d failed" % (len(cases) + 1 - bad, bad))
+    # key() is a total order over mixed atoms: 02-roundtrip.parse_sexp yields
+    # Python floats that sort next to symbols (03-model-touch, 2.3 e194 L219)
+    try:
+        sorted([("Times", "x", 0.1), "x", 0.1, Fraction(1, 3), 2], key=key)
+        ok = True
+    except TypeError:
+        ok = False
+    bad += not ok
+    print("%s key() orders a float among symbols" % ("PASS:" if ok else "FAIL:"))
+    print("Results: %d passed, %d failed" % (len(cases) + 2 - bad, bad))
     return bad
 
 

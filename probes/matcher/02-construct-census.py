@@ -468,6 +468,47 @@ def main():
     table("(ii) Optionals by parent head and count directly under that head (#heads-occurrences)",
           [(h, n, c) for (h, n), c in sorted(opt_hist.items(), key=lambda kv: (-kv[1], kv[0]))],
           ["parent head", "#Optionals among its arguments", "#occurrences"])
+
+    # (ii-b) what sits directly under each Plus/Times pattern node -- sizes the
+    # matcher's match-flat search (matcher substrate spec section 3.2)
+    def flat_nodes(e):
+        if isinstance(e, tuple):
+            if e[0] in ("Plus", "Times"):
+                yield e
+            for a in e:
+                yield from flat_nodes(a)
+
+    node_hist = Counter()            # (head, #bare, #optional, #structured) -> #nodes
+    two_bare = defaultdict(list)     # head -> rules with a node carrying >= 2 bare blanks
+    max_struct = 0
+    for r in ok:
+        heads_two = set()
+        for node in flat_nodes(r.lhs_eval[1]):
+            bare = opt = struct = 0
+            for a in node[1:]:
+                if isinstance(a, tuple) and a[0] == "Optional":
+                    opt += 1
+                elif isinstance(a, tuple) and a[0] == "Pattern" and a[2] == ("Blank",):
+                    bare += 1
+                elif isinstance(a, tuple):
+                    struct += 1
+            node_hist[(node[0], bare, opt, struct)] += 1
+            max_struct = max(max_struct, struct)
+            if bare >= 2:
+                heads_two.add(node[0])
+        for h in heads_two:
+            two_bare[h].append(r.id)
+    table("(ii-b) Plus/Times pattern nodes by what sits directly under them",
+          [(h, b, o, s, c) for (h, b, o, s), c in
+           sorted(node_hist.items(), key=lambda kv: (kv[0][0], -kv[1]))],
+          ["head", "#bare named blanks x_", "#Optionals x_.", "#structured children", "#nodes"])
+    print("largest number of structured children directly under one Plus/Times node: %d" % max_struct)
+    print("largest number of Optionals directly under one Plus/Times node: %d" %
+          max((o for (_h, _b, o, _s) in node_hist), default=0))
+    union_two = sorted({i for ids in two_bare.values() for i in ids})
+    print("rules with a Plus/Times node carrying >= 2 bare named blanks: %d (%s) -- %s" % (
+        len(union_two), ", ".join("%s %d" % (h, len(two_bare[h])) for h in sorted(two_bare)),
+        ids_str(union_two, 5)))
     table("(ii) largest Plus/Times argument count in a rule's LHS pattern (#rules)",
           sorted(flat_max.items()), ["max args", "#rules"])
     table("heads appearing in LHS patterns (the converter's head table)",
