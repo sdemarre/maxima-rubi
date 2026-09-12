@@ -4,8 +4,9 @@ Phase-2 decision record for the class-3 deferred campaign (spec
 `docs/superpowers/specs/2026-08-30-class3-deferred-campaign-design.md`;
 plan `docs/superpowers/plans/2026-08-30-class3-deferred-campaign.md`,
 Task 3). Every list below is data-bound to a committed probe output;
-§4–§7 are stubs that Tasks 4–6 fill with their own measurements
-(measured-claims discipline: no claim before its measurement).
+§1–§3 are the Phase-1/Phase-2 decision record, §4–§7 the campaign
+close (Tasks 4–6: the landed fixes, the re-measurement A/Bs with every
+PASS→FAIL attributed, the 788 recovery, the acceptance scorecard).
 
 ## Stamps
 
@@ -29,6 +30,11 @@ Task 3). Every list below is data-bound to a committed probe output;
   - 07 — the sweep-cost fallbacks on the 37 swept entries (committed
     `.out`).
   - 08 — the verdict × target-flag split (committed `.out`).
+- **Close (§4–§7)**: class-3 close record merged 2026-09-04 15:06 UTC;
+  class-1/class-2 close records merged 2026-09-12; attribution probes
+  09/10 run 2026-09-12 — all on build **2026-08-31 13:27:47**, rules
+  core `5ef9b3bc5ee07ffac0e76f1fea54fbac` (3,514 rules). The full stamp
+  is §7.
 
 ## 1. Triage distribution (measured)
 
@@ -705,24 +711,349 @@ certain entries) — the re-transcription list is where the verified
 recovery concentrates; the B-port fixes carry 26 enumerated certain
 entries (plus the g3 3_3 mass, not enumerated row-by-row here).
 
-## 4. Phase-2 fixes (Task 4) — STUB
+## 4. Phase-2 fixes (Task 4)
 
-Filled by Task 4 (4A: the pass-4 NO-GO record; 4B: the B list of §3.2;
-4C: the C-in-Rubi list of §3.3) with its own measurements. Not
-pre-written.
+Source: the per-sub-brief ledger entries in `.superpowers/sdd/progress.md`
+(section `## Plan: 2026-08-30 class-3 deferred campaign`, Task 4 — each
+entry records the main-session re-run of the Layer A gate, the
+regeneration byte-identity check and the core fingerprint it names)
+and, for C6b, the sub-brief report's gates (re-measured at this close:
+§7). Dispatch order B1 → B2 → B4 → C2 → C1 → C4 → C3 → B3 → C5 → C6 →
+C6b; every cycle rebuilt the rules core. The Layer A column is the
+suite count after the sub-brief (all `0 failed`); the fingerprint is
+the rules core built from that commit's tree (re-built from each
+commit at this close for the §5 attribution matrix — every rebuilt
+fingerprint equals the ledger's; probe 09).
 
-## 5. Phase-3 re-measurement (Task 5) — STUB
+| brief | commit(s) | what landed | rule-file / utils delta | Layer A | core |
+|-------|-----------|-------------|-------------------------|---------|------|
+| 4A | — | **skipped**: pass-4 production NO-GO (§3.1); no wiring, the `%mr_p4_once` seam stays unbaked; the 10 A entries (+ e47) stand as prototype-only rescues | none | 743 | `00e05dca` (campaign base 1d998cc) |
+| B1 | `464d29f` + `2838c3a` | the generator's `freeq_guarded` regex scoped (negative lookbehind + `[^\]}]` argument class): the spurious `freeof(x)` slot declarations removed. `2838c3a` is the B1 test follow-up (the non-noun discriminant gains the `string(op)` disjunct for the listcons `unintegrable` noun; test-only) | 9 decl-only lines `freeof(x)` → `true`: `3_5` r2/r31/r34/r35/r37/r39/r40 + `1_1_1_7` r5 + `1_4_1` r18 (conds untouched) | 750 | `3fb9ba05` |
+| B2 | `d6cee4e` | `%mr_linearQ` list arm restored (the `.m` `LinearQ[{u,v}]` ListQ arm, IntegrationUtilityFunctions.m:1373-1376) | utils only (shared by all classes) | 758 | `f486a7c1` |
+| B4 | `3c04b2e` | `%mr_derivativeDivides` stored-quotient gap: `y : expand(y)` at the y binding (the `.m` EasyDQ strip sees Times, Maxima stored `/`) | utils only (1 line) | 763 | `7bce44cb` |
+| C2 | `52ffb6f` | 3.1.2.m m10/L13 `(d*x)^m` head re-transcribed to `d*x^m` with `d` declared `is(u = 1)` (generator `dhead10_spec`) | `3_1_2` r10: 2 lines (decl + pattern) | 780 | `1ffbdc10` |
+| C1 | `2fd677a` + `5fd0dce` | the M1 slotted-inner-exponent 0-bind: 14 rules re-transcribed with the whole binomial-power factor as one `m1b` slot (`%mr_mbp_isfac` / `%mr_mbp_unwrap` / `%mr_mbp_base`; generator `m1_spec`); `.m` conds/repls byte-identical. `5fd0dce`: AGENTS.md — the Layer A gate becomes TLS-flag-mandatory | `3_1_3` r1/r2/r3/r18, `3_1_4` r2/r3/r4/r23/r24, `3_1_5` r5/r21/r22/r46/r47 + utils helpers | 798 | `6d86a287` |
+| C4 | `d2ae62d` | 3.2.1.m L20/L22/L24 (r16/r18/r20): defmatch replaced by the fail-closed structural matcher `%mr_logpow_match` (13 captures, `.m` natural orientation); conds/repls byte-identical | `3_2_1` r16/r18/r20 pattern lines + utils +273 | 815 | `20e3be6f` |
+| C3 | `1c8a306` | the ratio log-arg stored-`Quotient` 0-bind: six rules read by `%mr_logratio_match` / `%mr_logratio_sq_match` (the 99/99 census shapes S1–S4); conds/repls byte-identical | `3_2_1` r15/r17/r19, `3_2_2` r3/r5, `3_2_3` r5/r6 + utils +425 | 835 | `a02da1f0` |
+| B3 | `9533528` | 3_3 cover 0-binds, 3 of 4 mechanisms via the C1 `m1b` idiom: M1 quotient r11 (L14); M2 fractional-power products r2/r10/r12/r13; M4 slotted inner exponents r20/r21/r25/r26/r27. **Stopped** (entries stay deferred): M3 bare-log r46 (L50, two structured log factors), r24 (reciprocal-linear base), r28 (the `(h x)^m` head mis-bind) | `3_3` 10 rules | 851 | `128c4bf8` |
+| C5 | `4702d4d` | 3_4 slotted-inner-exponent: r8/r12 slot the whole outer log-power factor (`_mly`, `%mr_lpfac`); r4/r5/r6 the `m1b` idiom; `%mr_mbp_mono2` guard lifted `or` → `and` (signed-exponent monomials — widens `%mr_mbp_isfac` to reciprocal-linear binomials for every `m1b` rule) | `3_4` r4/r5/r6/r8/r12 + utils +189 | 862 | `d2a9e03a` |
+| C6 | `c25e8f6` + `69b3de1` | **1 of the 6 re-transcription groups**: M-cas-simp — 3_5 r10 cond `ratsimp` 0-bind fix (e92/e93); the two entries did not transition (root-caused in the ledger: `%mr_simp` log-branch rewrite on e92, the second nested integral's cost on e93). `69b3de1`: AGENTS.md count line | `3_5` r10 cond | 869 | `f882e9ae` |
+| C6b | `99e1eb1` | M-functionoflog: the unported 3.5.m **L46 FunctionOfLog catch-all** ported as `3_5` r42 (old r42/r43 → r43/r44); 5 utility ports (`%mr_nonsumQ`, `%mr_logQ`, `%mr_functionOfLog` + aux/walk); the generator's bare catch-all emission fix (a single-slot pattern is emitted as a `:=` function — the re-defmatch atomic-pattern collapse), which re-emits the three pre-existing bare catch-alls `1_4_1` r7/r8 and `2_3` r96 | `3_5` (new rule, count 44), `1_4_1` r7/r8, `2_3` r96 + utils | 892 | `5ef9b3bc` (3,514 rules) |
 
-Filled by Task 5: the full class-3 corpus A/B re-run vs
-`test/corpus_class3.out` (completeness 1,033/1,033 asserted), including
-the PENDING re-measures of §3.6 (e47 at 100 s — the A count 10 vs 11
-gate). Not pre-written.
+**Not landed — out of campaign scope, superseded by the matcher
+substrate.** The five remaining C6 mechanism groups were probed to their
+0-bind points during C6 (ledger C6 entry) and are **not** ported:
+M-implicit1 (e11, e49; e139 moved to C6b), M-plus-identity (e56, e58),
+M-barelog-optional (e266), M-factored-quad (e103, e106, e107), M-323
+(e243, e244). Every one is a Maxima-`defmatch` expressibility gap
+(Optional/identity absorption, factored-argument binding, the Plus
+zero-identity on a bare atom) — exactly the class the matcher substrate
+replaces. User decision 2026-09-11: close the campaign at its current
+state (spec `docs/superpowers/specs/2026-09-12-matcher-substrate-design.md`
+§0.1, on the `matcher-spike` branch). Their measured end state is in §6.
+Recorded-only groups (no fix was planned): M-class4 (5 entries — covers
+in the unported class 4) and M-multistep (e98 — no single-rule cover).
+The other in-brief stops (B3 M3/r24/r28; C1's shadowed `3_1_5` r4; C4's
+`3_2_1` r22 dead 0-binder) are likewise superseded.
 
-## 6. 788 recovery (Task 5) — STUB
+## 5. Phase-3 re-measurement (Task 5)
 
-Filled by Task 5: the target-mass movement (verified/expected/
-unverified) between the pre- and post-fix records, against the §3.7
-split. Not pre-written.
+### 5.1 The records
+
+| class | pre-campaign record (`.campaign-baseline.out`) | campaign-close record (`test/corpus_class<n>.out`) |
+|---|---|---|
+| 3 | merged 2026-08-30 00:18 UTC, build 2026-08-29 17:58:20, core `00e05dca` — `Results: 1736 passed, 1349 failed` | merged 2026-09-04 15:06 UTC (24 shards, 3,085/3,085), build 2026-08-31 13:27:47, core `5ef9b3bc` — `Results: 2058 passed, 1027 failed` |
+| 1 | merged 2026-08-28 18:32 UTC, build 2026-08-20 21:36:22 (`5.50.0`), core 3,180 rules (`aa53741f`, f8d2fde) — `Results: 20069 passed, 5628 failed` | merged 2026-09-12 09:22 UTC (24 shards, 25,697/25,697), build 2026-08-31 13:27:47, core `5ef9b3bc` — `Results: 20125 passed, 5572 failed` |
+| 2 | merged 2026-08-28 18:45 UTC, build 2026-08-20 21:36:22, core `aa53741f` — `Results: 594 passed, 371 failed` | merged 2026-09-12 09:36 UTC (merge `OK: 965/965 entries, 3 files, no dupes/missing/extra`, rc=0), build 2026-08-31 13:27:47, core `5ef9b3bc` — `Results: 614 passed, 351 failed` |
+
+The class-3 close record is the 2026-09-04 run on the final campaign
+tree (the rules core has not changed since: §7). The class-1 and class-2
+close runs were measured 2026-09-12 on the same tree and core (the
+matcher-substrate plan's P0 runs, which double as this gate). Note the
+**build confound**: every pre-campaign record was measured on an older
+Maxima build (class 3: 2026-08-29; classes 1–2: 2026-08-20) — the
+attribution below separates build/noise from rule changes by re-running
+each PASS→FAIL entry on the old rules under the current build.
+
+### 5.2 A/B tables (`python3 test/ab_records.py <campaign-baseline> <close record>`)
+
+Class 3 (key set: 0 missing, 0 extra):
+
+```
+PASS->PASS   1605
+PASS->FAIL    131
+FAIL->PASS    453
+FAIL->FAIL    896
+```
+
+Class 1 (key set: 0 missing, 0 extra):
+
+```
+PASS->PASS  20059
+PASS->FAIL     10
+FAIL->PASS     66
+FAIL->FAIL   5562
+```
+
+Class 2 (key set: 0 missing, 0 extra):
+
+```
+PASS->PASS    593
+PASS->FAIL      1
+FAIL->PASS     21
+FAIL->FAIL    350
+```
+
+The class-1/class-2 expected shape (spec §4 criterion 2: FAIL→PASS
+only) does **not** hold: 10 + 1 PASS→FAIL, each attributed below
+(§5.4). Class-3 FAIL→PASS: 442 of the 453 come from the deferred
+population (probe 10 §1).
+
+### 5.3 Attribution method (probe 09)
+
+`probes/corpus/09-deferred-close-passfail-attribution.py` runs one entry
+through the driver's exact per-entry text (`build_text`: same zero
+chain, same classification, 30 s cap) on a named rules core, prepending
+`rubi_verbose : true` so the pass-1 fired-rule sequence comes from the
+same run, and (noun-expected entries only) appending the self-diff zero
+chain after the CLASS line so an `unexpected` answer's correctness is
+measured. All runs on build 2026-08-31 13:27:47, 2026-09-12. Cores, each
+built with `test/build_rules_core.sh` from `git archive <commit>` (every
+rebuilt fingerprint equals the ledger's):
+
+- **base**: `1d998cc` (campaign base; `00e05dca`, the class-3
+  pre-campaign record's rules — no core-file change between the record's
+  commit f40d56b and 1d998cc) and, for classes 1–2, **`f8d2fde`**
+  (`aa53741f`, the class-1/2 pre-campaign records' rules);
+- **final**: the close core `5ef9b3bc` (99e1eb1, C6b);
+- **per commit**: `464d29f` B1, `d6cee4e` B2, `3c04b2e` B4, `52ffb6f`
+  C2, `2fd677a` C1, `d2ae62d` C4, `1c8a306` C3, `9533528` B3, `4702d4d`
+  C5, `c25e8f6` C6.
+
+Decision rule per entry: **PASS on the base core and FAIL on the final
+core under the same build ⇒ a campaign rule change** (deterministic —
+located by the per-commit cores: the full matrix for classes 1–2
+(`.matrix.run`), a binary search over the ordered cores for class 3
+(`.bisect.py`)); **PASS on the final core ⇒ run-to-run noise in the
+close record** (a near-cap timeout or a verification-stage variance);
+**FAIL on base and final ⇒ not a campaign change** (build or noise —
+then a 120 s cap run decides slow-correct vs genuine). The joined
+per-entry table is `…attribution.summary.out`
+(`…summary.py`).
+
+### 5.4 Class-1 and class-2 PASS→FAIL — attributed (11/11)
+
+Evidence: probe 09 `.class1-{final,base1d998cc,basef8d2fde}.out`,
+`.class2-…` and the per-commit matrix `.class{1,2}-<commit>.out`
+(`.matrix.run`); joined in `.summary.out`. Fired rules are listed in
+completion order (the top-level rule prints last).
+
+| entry | record (pre → close) | f8d2fde | 1d998cc | first FAIL core | mechanism (fire traces) | disposition |
+|---|---|---|---|---|---|---|
+| 1.2.2.3 e220, e221, e222 | verified 2.4–2.9 s → deferred 0.4–0.5 s | V | V | **B1 `464d29f`** | `1_4_1_r18` now binds and fires (B1 changed its `Qx` declaration `freeof(x)` → `true`, the `.m` 1.4.1 L174 guard) and returns a top-level no-answer; base route `1_2_2_3_r32` (verified) | deterministic regression from a faithful declaration fix: `1_4_1` precedes 1.2.2.3 in the table and its answer route declines. Not fixed in the campaign; route/table-order behaviour is inherited by the matcher substrate |
+| 1.1.1.2 e1890 | verified 3.6 s → deferred 0.2 s | V | V | **B2 `d6cee4e`** | `1_1_1_4_r46` fires (its cond carries the list-form `%mr_linearQ([u, v], x)` that B2's list arm makes true) → top-level no-answer; base route `1_4_2_r7` → `1_1_1_2_r39` | deterministic regression from the faithful `LinearQ` list arm; as above |
+| 1.2.1.2 e2387, 1.2.1.4 e882 | verified 3.8 / 2.8 s → timeout 30 s | V | V | **B2 `d6cee4e`** | top-level `1_2_1_2_r115` as before, but its nested dispatch now runs `1_1_2_1_r13` → `1_2_1_2_r99` → `9_1_r9` → `1_2_1_9b_r32` (list-form `LinearQ` guards now true): on the B2 core `rubi` itself exceeds 30 s; on the close core the answer returns and the zero chain exceeds 30 s | deterministic slowdown from B2 (route change); 120 s class in §5.5 |
+| 1.1.3.3 e181 | verified 3.9 s → unverified 0.2 s | V | V | **C5 `4702d4d`** | final route `1_4_1_r7` + `1_1_3_1_r60`; base `1_4_2_r7` | C5's shared-utils change: the `%mr_mbp_mono2` guard lift (`or` → `and`, signed-exponent monomials) widens `%mr_mbp2` (utils:4225), the structural matcher of the class-1 binpow rules `1_1_3_1_r60` / `1_1_3_3_r61`; C5 touched no class-1 rule file. Deterministic; the rebound route's answer does not verify |
+| 1.2.2.2 e1124, 1.2.2.3 e403 | verified 1.2 / 0.8 s → unverified 0.8 / 0.5 s | V | V | **C5 `4702d4d`** | final route `1_1_3_3_r61` + `1_2_2_1_r18`; base `1_4_2_r7` + `1_2_2_1_r18` | as e181 (the widened `%mr_mbp2` binds `1_1_3_3_r61` first) |
+| 1.2.1.6 e22 | verified 23.8 s → timeout 30 s | T | T | none | timeout at 30 s on the class-1/2 pre-campaign rules, the campaign base and the close core (no pass-1 fire before the cap) | **not a campaign change**: the pre-campaign record's 23.8 s verified was measured on the 2026-08-20 build; under the current build it exceeds 30 s on every rule set — build/near-cap timing; 120 s class in §5.5 |
+| 2.2 e52 | verified 9.9 s → unverified 10.8 s | **V** 7.2 s | U | **milestone 3** (f8d2fde → 1d998cc) | from the campaign base on, the class-3 rule `3_5_r14` (3.5.m `(f+g x)^m Log[1+e (F^(c(a+b x)))^n]`) fires inside the nested chain and the answer no longer verifies; unverified on every campaign core | **not a campaign change**: introduced by milestone 3's class-3 load into the shared table (the milestone-3 close validated classes 1–2 with 51-entry no-op slices only) |
+
+So the campaign's shared-dispatch cost on class 1 is 9 PASS→FAIL (B1 3,
+B2 3, C5 3), deterministic and located to the commit, against 66
+FAIL→PASS; on class 2 it is 0 (e52 predates the campaign), against 21
+FAIL→PASS. The spec's "FAIL→PASS only" expectation for classes 1–2
+fails on these 9 — recorded, not fixed (the campaign closed at its
+current state; §4).
+
+### 5.5 Class-3 PASS→FAIL — attributed (131/131)
+
+Evidence: probe 09 `.class3-{final,base1d998cc}.out` (all 131), the
+per-commit binary search `.class3-bisect.out` (the 127 entries PASS on
+the base core and FAIL on the close core; every run's class/time and
+the last-PASS / first-FAIL fire traces are in the file), the 120 s cap
+runs `.class3-final-cap120.out` / `.e47-final-cap120.out`, the 100 s
+re-check (§5.6); joined per entry in `.summary.out`. **All 131 are PASS
+on the campaign-base rules under the current build** — none is a build
+effect. 127 are deterministic campaign changes; 4 PASS on the close
+core (noise in the close record).
+
+| first FAIL core | n | entries | mechanism (fire traces: base → close) | disposition |
+|---|---:|---|---|---|
+| **B1 `464d29f`** | 6 | 3.1.4 e95, e96; 3.1.5 e46, e53, e122; 3.2.3 e61 | the de-spuriated slots bind: `3_5_r2` (e95/e96) and `3_5_r34` (e46/e53/e122) now enter the chain; the answers stop verifying (e95/e96/e46 unverified 2–14 s; e53 unverified, 36.1 s at 120 s; e122 still timeout at 100 s and 120 s). e61 (no-answer 23.8 s on base → timeout on every campaign core measured; no-answer at 31.3 s / 120 s cap and 84.0 s in the re-check) | route changes from the faithful B1 declaration fix. **e61 is timing-band evidence only** (its base run is itself 23.8 s against the 30 s cap) |
+| **C2 `52ffb6f`** | 24 | 3.1.2 e73–e75, e78–e83, e86–e88, e168, e169 (14); 3.1.5 e36, e38, e39, e45, e104, e106, e107, e111, e113, e114 (10) | the re-transcribed `3_1_2_r10` now binds first: the 3.1.2 rows get its m10 Subst answer instead of the base `3_1_5_r27` / nested `3_1_2_r6` routes and it does not verify (unverified 2–5 s); the 3.1.5 rows run r10 inside the nested chain and the route slows from 13–16 s (base) / 18–22 s (B4 core) to > 30 s | 3.1.2: the route change the ledger's C2 entry predicted for the p < 0 rows (`.m` fires m9 first; the port now fires m10 — both valid antiderivatives, the zero chain does not close m10's form). 3.1.5: **slow-correct** — verified in 34–69 s at 120 s and in 51–61 s at the 100 s re-check |
+| **C4 `d2ae62d`** | 6 | 3.2.1 e132, e140, e141, e145, e146; 3.2.2 e255 | e140/e141/e145/e146: the structural matcher `%mr_logpow_match` declines entries the old r16 defmatch bound; the r22 Unintegrable catch-all (kept as defmatch) fires → deferred 2–3 s. e132: r16 binds on a different route → unverified. e255: `3_2_1_r18` now fires ahead of the base cover `3_5_r1` → expected → unverified | deterministic: C4's acceptance boundary is narrower than the old defmatch on these shapes (4 entries) or reroutes (2) |
+| **C3 `1c8a306`** | 26 | 3.2.1 e14, e22, e23, e27, e28, e42, e50, e51, e55, e56; 3.2.2 e189, e210, e211, e216, e217, e222–e225, e241, e242, e244–e246, e248; 3.2.3 e39 | `%mr_logratio_match` declines 17 entries the old r15/r17 (3.2.1) and r3 (3.2.2) defmatches bound → the catch-alls `3_2_1_r21` / `3_2_2_r11` (or `3_2_3_r18` on e39) answer with a noun (deferred 1–4 s: 3.2.1 e22/e23/e27/e28/e50/e51/e55/e56 ×8, 3.2.2 e224/e225/e241/e242/e244–e246/e248 ×8, 3.2.3 e39). 9 reroute: r15/r17 bind through the matcher on e14/e42/e189 instead of base `3_5_r7`; `3_2_2_r5` binds e210/e211/e216/e217/e222/e223 with a different nested chain (`3_1_2_r10` in place of `9_1_r16`) → unverified | deterministic: C3's census-bounded acceptance (§4) misses these stored shapes (17) or changes the binding route (9) |
+| **B3 `9533528`** | 7 | 3.3 e130, e134, e135, e157, e158, e165, e166 | e130/e134/e135: the re-transcribed r12/r13 now bind first (base `3_3_r29`) → unverified; e157/e158: the base cover `3_3_r10`, re-transcribed, no longer binds (no pass-1 fire) → deferred; e165/e166: re-transcribed `3_3_r25` answers a noun-expected entry → **unexpected, and the answer self-verifies** (`self=1`) | e130–e158: deterministic regressions of the B3 re-emission. e165/e166: a correct antiderivative where the corpus expects a noun — a yardstick reclassification, not a wrong answer |
+| **C5 `4702d4d`** | 51 | 3.3 e5–e8, e12–e16 (9); 3.4 e536–e605 (42) | 3.3: the re-transcribed `3_4_r6` now binds the 3.3 linear-log shapes ahead of the base route (`3_1_5_r35`) and returns a noun → deferred 0.7–1.7 s. 3.4: the re-transcribed `3_4_r12` (34) / `3_4_r5` (5) answer noun-expected entries → unexpected; e551/e589/e603: the base `3_4_r39` no-answer (1 s) is no longer reached and nothing completes within 30 s, 100 s or 120 s | 3.3: deterministic regression (C5's binding widened into 3.3). 3.4 unexpected answers, self-check at 30 s: closes on 18 (e536, e537, e560, e561, e566, e567, e570–e574, e579, e580, e582–e584, e588, e590), does not close on 5 (e542, e543, e577, e578, e581), cut by the cap on 16 — re-run at 120 s: 3 close (e594, e595, e599), 3 do not close (e600, e601, e605), 10 still cut (e544–e546, e550, e552, e596–e598, e602, e604); the 5 non-closing ones stay non-closing at 120 s. Of the 39 answers: 21 self-verify (correct antiderivatives on noun-expected entries — yardstick reclassifications), 8 do not close under the zero chain, 10 unresolved within 120 s; the 3 timeouts stay FAIL |
+| **C6b `99e1eb1`** | 7 | 3.1.5 e57, e63, e112, e126, e132; 3.2.3 e63; 3.3 e179 | the FunctionOfLog catch-all r42 (tried on every non-sum integrand that reaches its table position, `factor()` in its body) adds cost to nested chains that were 21–26 s on the C6 core → timeout (3.1.5; 3.2.3 e63 no-answer 23.9 s → timeout); on e179 `3_5_r42` fires inside the chain and leaves the `unintegrable` marker → contains-noun | 3.1.5: **slow-correct** (verified in 21–47 s at 120 s, 35–48 s at the 100 s re-check). 3.2.3 e63: slow noun (no-answer 22.8 s at 120 s, 52.2 s in the re-check). e179: deterministic route change of the catch-all port (the C6b report's performance note) |
+| — (PASS on the close core) | 4 | 3.1.5 e22, e44; 3.3 e547; 3.5 e1 | close core at 30 s: verified 21.2 / 27.9 s, no-answer 10.3 s, verified 3.8 s; 100 s re-check: verified 26.7 / 40.2 s, no-answer 12.2 s, verified 6.0 s | **run-to-run noise** in the close record (timeouts at 30–33 s under the 24-shard load). e22/e44 sit near the cap: slower than on the base core (6.1 / 15.2 s) since C2 — recorded, not a class change |
+
+No PASS→FAIL is attributed to B2, B4, C1 or C6. By first FAIL core: B1
+6, C2 24, C4 6, C3 26, B3 7, C5 51, C6b 7 (= 127) + noise 4 = 131.
+Every deterministic entry is dispositioned **accepted as recorded, not
+fixed**: the campaign closed at its current state (user decision
+2026-09-11; §4) and each mechanism is a `defmatch`-emission side effect
+(a workaround matcher's acceptance boundary, a route order change, or a
+catch-all's cost) that the matcher substrate re-hosts.
+
+e47 (the PENDING A-shaped entry): close record timeout 30.0 s; the close
+core at a 120 s cap returns **deferred** in 15.3 s and the 100 s
+re-check deferred in 24.8 s — the record's timeout is cap-band noise and
+its production class is deferred (pass 4 is not wired, §3.1).
+
+Class-1 120 s runs (`.class1-final-cap120.out`): e2387 and e882 still
+timeout at 120 s (the B2 slowdown is not a cap-band effect); e22
+verifies in 30.8 s (just over the 30 s cap on the current build).
+
+### 5.6 The 100 s timeout re-check (standing protocol)
+
+Run 2026-09-12 (launched 13:10:10 UTC, 24 shards, merged 13:26:10 UTC,
+`merge rc=0`) on the close record's `timeout` class, same build and
+core. **Corrected command** (controller ruling R12 — the campaign
+plan's form omits the launcher's 4th positional section argument and
+fails the launcher's own file-list assertion against the class-1
+section):
+
+```bash
+python3 test/launch_timeout_rerun.py test/corpus_class3.out 100 test/corpus_class3.timeout-rerun2 "3 Logarithms" --launch
+setsid sh test/wait_timeout_rerun.sh test/corpus_class3.timeout-rerun2 >> test/corpus_class3.timeout-rerun2/wait.log 2>&1 &
+```
+
+Record `test/corpus_class3.timeout-rerun2/corpus_class3.timeout100s.out`
+(`Results: 22 passed, 190 failed`), transcript `…/merge.out`:
+`OK: 212/212 re-checked, no dupes/missing/extra`. Transitions of the
+212 (all `timeout` at 30 s):
+
+| at 100 s | n |
+|---|---:|
+| timeout | 130 |
+| unverified | 30 |
+| deferred | 19 |
+| verified | 18 |
+| error | 8 |
+| no-answer | 4 |
+| contains-noun | 2 |
+| unexpected | 1 |
+| **now PASS** | **22** |
+
+Still timeout at 100 s by family: 3.3 40, 3.1.5 28, 3.1.4 19, 3.2.1 14,
+3.4 13, 3.5 7, 3.2.2 5, 3.2.3 4. Reading: 190 of 212 remain FAIL at
+100 s (130 still `timeout` at 100 s) — the 30 s cap is not the binding
+constraint for the bulk; the 22 slow-correct entries (18 verified +
+4 no-answer) are the matcher-speed route of the standing decision (the
+cap STAYS). The merge transcript's "run-5 baseline status" block is the
+class-1-era template of `merge_timeout_rerun.py` (0 / 0 here) and has
+no class-3 meaning. The per-entry re-check class of every timed-out
+PASS→FAIL entry is in the probe-09 summary (`recheck100=` column).
+
+## 6. 788 recovery (Task 5)
+
+Source: probe 10 (`probes/corpus/10-class3-deferred-close-recovery.{py,out}`,
+no Maxima subprocess) — a deterministic join of the pre-campaign record
+`test/corpus_class3.campaign-baseline.out` (the §1 population: 1,033
+deferred; re-asserted 788 = 313 + 16 + 459), the integrate-baseline
+flags `test/corpus_class3.baseline.out`, the campaign-close record
+`test/corpus_class3.out` (merged 2026-09-04 15:06 UTC, build 2026-08-31
+13:27:47, core `5ef9b3bc`) and probe 08's enumerated entry sets.
+"Recovered" = a PASS class (verified / expected / no-answer) in the
+close record. (The 06/07/08 probes now read the pre-campaign record from
+its `.campaign-baseline.out` backup — byte-identical to the record they
+ran on — so they stay re-runnable after this close commits the new
+`test/corpus_class3.out`.)
+
+### 6.1 The target mass (spec §4 criterion 1)
+
+| population (pre record `deferred`) | n | recovered | → verified | → expected | still deferred | → unverified | → timeout |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| all deferred | 1,033 | **442** | 438 | 4 | 429 | 107 | 55 |
+| **target mass (788)** | 788 | **366** | 362 | 4 | 296 | 95 | 31 |
+| **certain subset (329)** | 329 | **222** | 222 | 0 | 62 | 44 | 1 |
+| unverified-flag (459) | 459 | 144 | 140 | 4 | 234 | 51 | 30 |
+| non-target (245) | 245 | 76 | 76 | 0 | 133 | 12 | 24 |
+
+**The 788 shrinks by 366 to 422** (296 still deferred + 95 unverified +
+31 timeout); **the 329 by 222 to 107** (62 + 44 + 1). Counted afresh on
+the close record, the deferred mass is **467 entries — target-flagged
+315, certain 71**: the 429 carried from the population plus 38 newly
+deferred entries (pre class verified 32 / unverified 1 / timeout 5; per
+file 3.2.1 12, 3.2.2 8, 3.2.3 2, 3.3 16). The 32 pre-verified ones are
+§5 PASS→FAIL entries and are attributed there.
+
+### 6.2 Recovery per fix row (the per-mechanism view)
+
+Rows are the fix's **input list** (the §3.2 / §3.3 enumerations as
+transcribed by probe 08). A recovery is counted on the list, not
+attributed to that row's commit: several fixes share routes (the §5
+matrix attributes the regression direction per commit; the recovery
+direction is not bisected). B3, C5 and the 81 3_4 spurious-freeof B1
+rows were never enumerated per entry, so they appear as file rows.
+
+| fix row (input list) | enumerated / claimed | recovered | target recovered | certain recovered | still deferred |
+|---|---|---:|---:|---:|---:|
+| B1 spurious freeof (g1 2 + g4 41) | 43 / 124 | 39 | 38 / 39 | 16 / 16 | 0 |
+| B2 `%mr_linearQ` list arm (g2) | 47 / 47 | 41 | 35 / 40 | 10 / 10 | 1 |
+| B4 e392 | 1 / 1 | 1 (deferred → expected) | 1 / 1 | 0 / 0 | 0 |
+| C1 M1 slotted inner exponent (g1, PARTIAL) | 117 / 209 | 83 | 78 / 109 | 70 / 75 | 13 |
+| C2 M6 `(d*x)^m` head | 3 / 3 | 3 | 0 / 0 | 0 / 0 | 0 |
+| C3 D2 ratio log-arg | 99 / 99 | 21 | 21 / 98 | 18 / 58 | 0 |
+| C4 D3/D4 r16/r18/r20 | 13 / 13 | 12 | 12 / 13 | 6 / 6 | 0 |
+| C6 + C6b (g4 C-in-Rubi, 9 groups) | 31 / 31 | 20 | 16 / 22 | 10 / 14 | 9 |
+| A — pass 4 not wired | 10 / 10 | 5 | 5 / 8 | 5 / 5 | 5 |
+| file 3.3 (B3 125 + D 16 + A 1 + PENDING 18) | 160 / 160 | 5 | 5 / 110 | 2 / 18 | 149 |
+| file 3.4 (B1 82 + C5 128 + C-absent 20 + PENDING 5) | 235 / 235 | 117 | 72 / 132 | 30 / 39 | 106 |
+
+Readings: C3 removed every binding failure on its list (0 still
+deferred) but 78 of the rebound answers do not close under the
+zero chain (the 3.2.2 residue below is `unverified`, not `deferred`) —
+the residue there is verification-stage, not matching. The five
+g2 A entries (3.2.1, `3_2_1_r14`) PASS on the production path of the
+close tree although pass 4 is not wired; the four g1 A entries and e360
+(g3) remain deferred — their only measured rescue is the unwired sweep.
+
+### 6.3 Per-file residue (target mass) and why not
+
+| file | target n | recovered | residue (close class) | why the residue was not recovered |
+|---|---:|---:|---|---|
+| 3.1.2 | 0 | — | — | no target entries (the 9 deferred are non-target D-NEST; 8 of 9 now PASS) |
+| 3.1.4 | 216 | 115 | deferred 90, timeout 6, unverified 5 | D: M2 ×28 bare-binomial faithful 0-bind in both systems, `.m`-coverage gap ×18 (catch-all only) (§2 g1); C1's enumerated rows still deferred: 13 (not re-triaged at this close) |
+| 3.1.5 | 28 | 3 | deferred 11, timeout 6, unverified 8 | M5 ×4 strict decline (e194–e197); C1a q = −1 rows (e92/e118/e141/e147: `.m` r47 declines, the r46 cover 0-binds the bare log — ledger C1); A e5/e91/e209/e215 rescued only by the unwired sweep |
+| 3.2.1 | 81 | 69 | deferred 4, timeout 5, unverified 3 | C-absent Ei group ×12 (no `.m` rule, §3.4); D (M3 `3_5_r13` families, e249 `.m` Unintegrable) |
+| 3.2.2 | 131 | 45 | deferred 3, timeout 5, unverified 78 | the C3 rebind answers that do not verify (78 `unverified`); D M3 ×26 + shadow ×12; C-absent e243/e247 |
+| 3.2.3 | 22 | 1 | deferred 18, timeout 3 | D ×27 (r18-faithful ×7, M3, the `3_5_r1 + 3_5_r38` variant ×10); C-absent e89/e102/e106; PENDING 4 (still deferred: 3) |
+| 3.3 | 110 | 5 | deferred 101, timeout 4 | B3 landed 10 rule binds, but the entries' answers stay nouns downstream (ledger B3: e88/e90 leave a 3.2.x nested sub-integral, e156's ExpandIntegrand no-ops; M3 r46/r24/r28 stopped); D-NEST ×16; PENDING ×18 (D-NEST-shaped on `3_2_3_r16`) |
+| 3.4 | 132 | 72 | deferred 58, timeout 2 | C-absent ×20 (no `.m` cover, §3.4); the non-enumerated B1/C5 residue is not re-triaged at this close |
+| 3.5 | 68 | 56 | deferred 11, unverified 1 | the superseded C6 groups still deferred (e11, e49, e266); M-class4 ×5 (class 4 unported); M-multistep e98; M-cas-simp e92 `unverified` (the `%mr_simp` log-branch rewrite) — ledger C6 |
+
+### 6.4 The C6 mechanism groups — end state per entry
+
+Probe 10 §7 (pre record / c6post record (C6 core, 2026-09-02) / close
+record; baseline flag in parentheses):
+
+| group | status at close | entries |
+|---|---|---|
+| M-functionoflog (C6b) | landed | e134 e135 e136 e140 e143 e149 e150 e151 e152 e225 e258 e261: deferred / deferred / **verified** (12/12) |
+| M-implicit1 (e139 moved to C6b) | e139 landed in C6b; e11/e49 **superseded** | e11, e49: deferred / deferred / deferred; e139: deferred / deferred / **verified** |
+| M-cas-simp (C6) | landed; no transition | e92: deferred / unverified / unverified; e93: deferred / timeout / timeout |
+| M-plus-identity | **superseded** — PASS via another route | e56, e58: deferred / deferred / verified |
+| M-barelog-optional | **superseded** | e266: deferred / deferred / deferred |
+| M-factored-quad | **superseded** — PASS via another route | e103, e106, e107: deferred / verified / verified |
+| M-323 | **superseded** — PASS via another route | e243, e244: deferred / verified / verified |
+| M-class4 | recorded only | e180 e181 e183 e186 e187: deferred / deferred / deferred |
+| M-multistep | recorded only | e98: deferred / deferred / deferred |
+
+So of the five superseded groups' 11 entries (e139 excluded), 7 PASS on
+the close tree through other rules (none of the five re-transcriptions
+landed; the routes changed with B1–C5) and 3 remain deferred (e11, e49,
+e266) — the residue the matcher substrate inherits.
+
+### 6.5 PENDING (28) and the A count
+
+The 28 PENDING-REMEASURE entries of §3.6 on the close record: g1 e47
+**timeout** (30.0 s; pre record deferred 8.3 s); g2 ×4 — 0 recovered, 3
+still deferred; g3 ×23 — 0 recovered, 22 still deferred. The A count's
+10-vs-11 gate is moot for production: pass 4 is not wired (§3.1), so
+e47's sweep rescue stays prototype-only whichever way it reads; e47's
+close-core class at a 120 s cap is recorded in §5.5.
 
 ## 7. Regression gates and acceptance (Task 6) — STUB
 
@@ -747,7 +1078,23 @@ gate, and the acceptance record. Not pre-written.
   `probes/corpus/06-class3-deferred-mechanisms.work/adjudication-g1.md`
   through `g4.md`; this record's §2 is self-contained against them.
 - Records: `test/corpus_class3.out` (1,033 deferred),
-  `test/corpus_class3.baseline.out` (788 target-flagged).
+  `test/corpus_class3.baseline.out` (788 target-flagged). **At the
+  close** the pre-campaign package record moved to
+  `test/corpus_class3.campaign-baseline.out` (byte-identical; probe 06's
+  `PKG_RECORD` points there) and `test/corpus_class3.out` is the
+  campaign-close record; likewise `test/corpus_class{1,2}.out` /
+  `.campaign-baseline.out`.
+- Close attribution: `probes/corpus/09-deferred-close-passfail-attribution.py`
+  (+ `.run` base/final cores, `.matrix.run` per-commit cores for classes
+  1–2, `.bisect.py` per-commit binary search for class 3, `.summary.py`
+  the joined table; shards `.class{1,2,3}.shard`, `.class1-matrix.shard`,
+  `.class{1,3}-cap120.shard`, `.e47.shard`; outputs `.class*-*.out`,
+  `.class3-bisect.out`, `.summary.out`) — build 2026-08-31 13:27:47,
+  run 2026-09-12.
+- Close recovery join: `probes/corpus/10-class3-deferred-close-recovery.{py,out}`
+  (no Maxima subprocess).
+- Mid-campaign records cited: `test/corpus_class3_c6base.out`,
+  `test/corpus_class3_c6post.out` (2026-09-02; ledger C6 entry).
 - Pinned Rubi sources: `reference/rubi/Rubi/IntegrationRules/3
   Logarithms/*.m` (11 files) + `IntegrationUtilityFunctions.m` +
   `4 Trig functions/4.7.5 Inert trig functions.m`; the suite:
