@@ -400,7 +400,11 @@ the leftover elements and the bindings."
 
 (defun flat-absorb (absorbers left h b k)
   "Bound absorbers consume their value's parts; unbound ones share the
-leftovers -- a blank takes >= 1 element (G-1), an Optional >= 0 (default)."
+leftovers -- a blank takes >= 1 element (G-1), an Optional >= 0 (default).
+The last absorber, if unbound, takes the whole leftover run directly: only
+that size can leave nothing over, so enumerating smaller sub-runs (2^n of
+them) is pure waste.  An absorber's pattern is a named Blank, so matching it
+calls no condition hook -- the pruning changes no result and no hook call."
   (if (null absorbers)
       (and (null left) (funcall k b))
       (let* ((item (car absorbers))
@@ -417,8 +421,14 @@ leftovers -- a blank takes >= 1 element (G-1), an Optional >= 0 (default)."
                                              left)))
                     (and (not (eq left2 :fail))
                          (flat-absorb (cdr absorbers) left2 h b k)))))
-            (loop for size from (if opt 0 1) to (length left)
-                  thereis (map-subsets size left
-                                       (lambda (run rest)
-                                         (m1 q (flat-value run h default) b
-                                             (lambda (b2) (flat-absorb (cdr absorbers) rest h b2 k))))))))))
+            (if (null (cdr absorbers))
+                ;; last absorber: the whole leftover run (a blank needs >= 1 element;
+                ;; an Optional on an empty leftover takes its default)
+                (and (or opt left)
+                     (m1 q (flat-value left h default) b
+                         (lambda (b2) (flat-absorb nil nil h b2 k))))
+                (loop for size from (if opt 0 1) to (length left)
+                      thereis (map-subsets size left
+                                           (lambda (run rest)
+                                             (m1 q (flat-value run h default) b
+                                                 (lambda (b2) (flat-absorb (cdr absorbers) rest h b2 k)))))))))))

@@ -43,6 +43,28 @@ pre-bound to themselves (the integration variable)."
     (m pattern expr :pre pre :cond-hook (lambda (b) (declare (ignore b)) (incf n) nil))
     n))
 
+(defun timed-m (pattern-string expr-tree &key pre (limit 5))
+  "Match like M against an already-built tree (prepare and canonicalize outside
+the clock), under a LIMIT-second guard so a runaway match still lets the suite
+print its Results line.  -> (values bindings matchedp ms timed-out-p)."
+  (let* ((compiled (prepare (read-pattern pattern-string)))
+         (expr (canonicalize expr-tree))
+         (bindings (mapcar (lambda (n) (cons (sym n) (sym n))) pre))
+         (t0 (get-internal-real-time)))
+    (flet ((ms () (/ (* 1000.0d0 (- (get-internal-real-time) t0)) internal-time-units-per-second)))
+      (handler-case
+          (sb-ext:with-timeout limit
+            (multiple-value-bind (b ok) (match compiled expr :bindings bindings)
+              (values b ok (ms) nil)))
+        (sb-ext:timeout () (values nil nil (ms) t))))))
+
+(defmacro check-fast-match (name bound-ms (pattern expr-tree &rest keys) &rest pairs)
+  "Match within BOUND-MS wall milliseconds, with the given bindings."
+  `(multiple-value-bind (b ok ms timed-out) (timed-m ,pattern ,expr-tree ,@keys)
+     (check ,name (and ok (not timed-out) (<= ms ,bound-ms) (binds-p b ,@pairs))
+            (format nil "matched=~a timed-out=~a ms=~,2f (bound ~a) bindings=~a"
+                    ok timed-out ms ,bound-ms (if timed-out "-" (tree-string b))))))
+
 (defun test-trees ()
   (format t "--- trees ---~%")
   (let ((e (tr "(Power x 1/2)")))
@@ -136,7 +158,25 @@ pre-bound to themselves (the integration variable)."
         (ex "(Times h x (Sin x))"))
     (check-no-match "G-6 narrow: Optional-reduced Plus does not take a run" (pat ex :pre '("x")))
     (let ((*flat-wide* t))
-      (check-match "G-6 wide: Optional-reduced Plus takes a run" (pat ex :pre '("x")) "g" "0" "h" "h"))))
+      (check-match "G-6 wide: Optional-reduced Plus takes a run" (pat ex :pre '("x")) "g" "0" "h" "h")))
+  (check-no-match "last unbound blank never takes an empty leftover" ("(Times u_ (Power x_ 2))" "(Power x 2)" :pre '("x")))
+  ;; cost bounds (final-review F1): the last unbound absorber takes the whole
+  ;; leftover run directly -- no subset enumeration of the leftovers
+  (check-fast-match "cost: last Optional a_. takes a 29-term leftover run (<= 50 ms)" 50
+                    ("(Int (Power (Plus a_. (Times b_. x_)) m_.) x_Symbol)"
+                     (list (sym "Int")
+                           (list* (sym "Plus") 1 (sym "x")
+                                  (loop for i from 2 to 29 collect (list (sym "Power") (sym "x") i)))
+                           (sym "x")))
+                    "a" (format nil "(Plus 1 ~{(Power x ~a)~^ ~})" (loop for i from 2 to 29 collect i))
+                    "b" "1" "m" "1" "x" "x")
+  (check-fast-match "cost: last blank u_ takes a 4999-factor leftover run (<= 50 ms)" 50
+                    ("(Times u_ (Power x_ 2))"
+                     (cons (sym "Times")
+                           (append (loop for i from 1 to 4999 collect (sym (format nil "a~d" i)))
+                                   (list (list (sym "Power") (sym "x") 2))))
+                     :pre '("x"))
+                    "u" (format nil "(Times ~{a~d~^ ~})" (loop for i from 1 to 4999 collect i))))
 
 (defun test-hooks ()
   (format t "--- condition hook and retry ---~%")
