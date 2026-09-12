@@ -154,6 +154,49 @@ cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1,
 → 892 C6b (3.5 r42 FunctionOfLog catch-all port + bare catch-all
 pattern fix, e134/e139/e258, 23 checks)).
 
+**Matcher substrate — unit suites** (the per-change gate for
+`maxima_rubi_match.lisp` / `maxima_rubi_tree.lisp`; branch
+`matcher-substrate`, spec
+`docs/superpowers/specs/2026-09-12-matcher-substrate-design.md`). No
+rule files are loaded, so no TLS flag:
+
+```sh
+maxima --very-quiet -b test/matcher/test_mr_match.mac
+maxima --very-quiet -b test/matcher/test_mr_tree.mac
+```
+
+Green: `Results: 51 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
++3 at the final-review fix wave: the last-absorber cost bounds and the
+empty-leftover lock) and `Results: 46 passed, 0 failed` (mr-tree).
+`test_mr_match.lisp` has no Maxima dependency and also runs in plain
+SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
+test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
+
+**Matcher substrate — regression suite** (spec section 4 P1/P2 gates:
+the probe-02 round trip over all 7,444 Rubi LHSs in narrow and wide
+modes, tree leg and Maxima leg through `mr-tree`, the probe-02
+controls, the spike-01 cases). 20 Maxima shards, ~70 s wall per arm;
+run the two arms sequentially, each detached (`setsid`) and polled:
+
+```sh
+MR_LEGS=tree,maxima MR_SPIKE=1 sh test/matcher/run.sh
+MR_LEGS=tree,maxima MR_MODEL_FLAGS=1 MR_SPIKE=1 sh test/matcher/run.sh
+```
+
+The first (Maxima defaults) writes `test/matcher/roundtrip.out`,
+`controls.out`, `spike01.out`, `gate.out`; the second (the
+`radexpand:false` + `logexpand:false` arm) writes
+`roundtrip.flags.out`, `gate.flags.out` and rewrites `controls.out` /
+`spike01.out`. Each prints its gate's line — green is
+`Results: 109 passed, 0 failed` in both arms; the gate
+(`test/matcher/gate.py`) requires every rule OK in both modes (no
+MISS), 0 UNSOUND, 0 false mutation matches. `MR_WORK=<dir>` moves the
+shard work directory (default `${TMPDIR:-/tmp}/mr-matcher-suite[.flags]`).
+A plain `sh test/matcher/run.sh` runs only the tree-leg P1 gate
+(`Results: 37 passed, 0 failed`) and **overwrites the committed P2
+records** `roundtrip.out` / `controls.out` / `gate.out` — run the two
+commands above to regenerate them.
+
 **Layer B — full class-1 corpus** (25,697 entries, 30 s per-entry cap,
 one fresh maxima subprocess per integral, verification by
 differentiation with the corpus expected answer as the secondary
