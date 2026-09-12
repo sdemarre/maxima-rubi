@@ -1,0 +1,99 @@
+/* Pass-4 mechanism calibration (class-3 deferred campaign, Task 1;
+   16 entries: f1, f2, f5 (the spec section 2.2 generic-parameter
+   shapes) + 3.1.5 e186-e197 (the 12 F_-domain corpus texts, verbatim)
+   + the "atom" row (integrand x, atomic top — the %mr_barefactors
+   atom-top guard regression test, review round 1).
+    Per entry: production trace (rubi_verbose), top-level op, factor
+    census, the sweep with P4SCAN markers, the diagnostic on
+    products, and the verdict label. Commit the output as
+    probes/corpus/06-class3-deferred-mechanisms.calibrate.out.
+
+    "fired on" attribution (measured 2026-08-30, Task-2 review): the
+    verbose print sits in %mr_dispatch AFTER the rule body ran, so a
+    firing rule's NESTED sub-integral fires print BEFORE the rule's
+    own line. A scan's top-level fire is the LAST "fired on <full
+    integrand>" line between its P4SCAN marker and the next one;
+    production's is the last such line before the PROD print. (An
+    earlier draft of this header said "the first such line after the
+    marker" - wrong: it named nested fires.)
+
+   Run under the rules core image (the package + the 3513-rule table
+   are baked in; a fresh "maxima -b" has no table):
+     sbcl --tls-limit 100000 --core test/mr_rules.core \
+       --noinform --very-quiet -b probes/corpus/06-calibration.pass4.mac
+
+   Build-note deviations from the brief's literal text (each measured
+   2026-08-30, Maxima branch_5_50_base_84_g4204fb669 / SBCL 2.6.7):
+   - string building uses concat(...) - in this build "+" on strings
+     does NOT concatenate (it treats the string contents as symbols
+     and returns their sum);
+   - P4DIAG renders the diagnostic list via string(...) - the brief's
+     sapply(lambda[[s],s], ...) errors on a flat list of strings;
+   - rubi_verbose stays on THROUGH the sweep (the brief turns it off
+     before the sweep, but Step 9 wants the sweep's "fired on" rule
+     names recorded - the first such line after each P4SCAN marker);
+     - the brief's "16 entries" is a typo: 3 f-forms + 12 F_-domain
+       forms = 15; this file now runs 16 = those 15 + the "atom"
+       row (review round 1).
+
+    Mechanism fix this calibration pins (maxima_rubi_implicit1.lisp):
+    the brief's Step-2 e-itself branch gated the leftover single-factor
+    wrap on (null *mr-implicit1-which*), i.e. which=nil only. Measured
+    2026-08-30: that guard 0-fired the which=i sweep (3_5_r43 on 3.1.5
+    e186) because an inner-match single-factor findfun call bailed; the
+    fix drops the guard (wrap for any which). Pass 3 (which=nil) is
+    byte-identical - it wrapped before too. The m=1 rows (e186-e193)
+    are the regression check for that fix: they 0-fired the sweep with
+    the guard, fire 3_5_r43 without it. */
+cali_entry(name, f, x) := block([ans, census, k, hp, d, i, ans4],
+  print(concat("CALI ", name)),
+  rubi_verbose : true,
+  ans : rubi(f, x),
+  print(concat("PROD ", if atom(ans) then "atom" else string(op(ans)))),
+  census : %mr_barefactors(f),
+  k : part(census, 1),
+  hp : part(census, 2),
+  print(concat("P4CENSUS ", string(k), " ", string(hp))),
+  /* (not atom(f)) first: op() on an atomic top hard-errors in this
+     build (the atom row); and short-circuits before the is() test. */
+  if (not atom(f)) and is(op(f) = "*") then
+    print(concat("P4DIAG ", string(%mr_p4_diag(f)))),
+  if is(hp = false) and is(k >= 2) then (
+    for d : 0 thru 1 do
+      for i : 1 thru k do (
+        print(concat("P4SCAN ", string(d), " ", string(i))),
+        ans4 : %mr_p4_once(f, x, mr_rule_table, 1, d, i),
+        if is(ans4 # false) then
+          print(concat("P4FIRE ", string(d), " ", string(i), " ",
+                       if atom(ans4) then "atom" else string(op(ans4))))
+      )
+  ) else print(concat("P4SKIP")),
+  rubi_verbose : false,
+  print(concat("CALIEND ", name)))$
+
+/* f2 - production pass 3 fires a 3_1_5 rule and answers (spec 2.2). */
+cali_entry("f2", (d+e*x)*(a+b*log(c*x^n)), x)$
+/* f1 - 0-fires all three passes; explicit x^3 shadows the sweep. */
+cali_entry("f1", x^3*(d+e*x)*(a+b*log(c*x^n)), x)$
+/* f5 - mquot top, 0-fires. */
+cali_entry("f5", (d+e*x)*(a+b*log(c*x^n))/x, x)$
+/* 3.1.5 e186-e197, verbatim corpus texts, one cali_entry each. */
+cali_entry("e186", (d+e*x^2)*asin(a*x)*log(c*x^n), x)$
+cali_entry("e187", (d+e*x^2)*acos(a*x)*log(c*x^n), x)$
+cali_entry("e188", (d+e*x^2)*atan(a*x)*log(c*x^n), x)$
+cali_entry("e189", (d+e*x^2)*acot(a*x)*log(c*x^n), x)$
+cali_entry("e190", (d+e*x^2)*asinh(a*x)*log(c*x^n), x)$
+cali_entry("e191", (d+e*x^2)*acosh(a*x)*log(c*x^n), x)$
+cali_entry("e192", (d+e*x^2)*atanh(a*x)*log(c*x^n), x)$
+cali_entry("e193", (d+e*x^2)*acoth(a*x)*log(c*x^n), x)$
+cali_entry("e194", (d+e*x^2)*asin(a*x)^2*log(c*x^n), x)$
+cali_entry("e195", (d+e*x^2)*acos(a*x)^2*log(c*x^n), x)$
+cali_entry("e196", (d+e*x^2)*asinh(a*x)^2*log(c*x^n), x)$
+cali_entry("e197", (d+e*x^2)*acosh(a*x)^2*log(c*x^n), x)$
+/* atom - ATOMIC TOP (review round 1): the %mr_barefactors atom-top
+   guard regression test. Pre-fix, op(x) on the atomic integrand died
+   with `part: argument must be a non-atomic expression` (hard error
+   on the PROD/census line); expected: no crash, PROD noun, census
+   0,false, P4SKIP, no P4DIAG. */
+cali_entry("atom", x, x)$
+print(concat("CALIDONE"))$

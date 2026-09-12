@@ -11,10 +11,18 @@ Working state: `todo/TODO.md`.
 ## Git
 
 - **The default branch is `master`. There is no `main`** — do not create one.
-- A remote is **planned but not yet configured**; until it is set up,
-  `git push` has nowhere to go. Do not assume pushing is possible; once
-  it is configured, commits target `master`.
+- The remote is `origin` (`git@github.com:sdemarre/maxima-rubi.git`).
+  Push only when the user asks; `master` is the integration branch.
 - Do not add `Co-Authored-By` trailers to commit messages.
+
+## Handoffs
+
+Cross-session handoff documents live in `handoffs/` (gitignored working
+docs), named `YYYY-MM-DD-<slug>.md`. When told to pick up "the latest
+handoff", read the most recent file there (ISO date in the filename) and
+work through its **Next moves** section; it references the authoritative
+artifacts (specs, plans, ledger, probe records) rather than duplicating
+them.
 
 ## Reference clones
 
@@ -31,17 +39,22 @@ The pinned commit (full 40-digit hash) of each is recorded in
 
 The installed build is **Maxima
 `branch_5_50_base_84_g4204fb669`** (5.50-series, build date
-2026-08-29 17:58:20) on SBCL 2.6.7. It replaced the 2026-08-20
-21:36:22 build (milestones 1–2's measurement build) during
-milestone 3, 2026-08-29. The research docs' 5.49-series expectation
-is superseded. The project does **not** pin to any build: every
-measurement is stamped with the build it was taken on (the class-1/
-class-2 accepted records carry the 2026-08-20 stamp; class-3
-records carry the 2026-08-29 stamp), and baselines are re-measured
-on upgrade rather than carried over — the milestone-3 close
-re-validated the class-1/class-2 accepted classifications under the
-new build via the Task-8 no-op slices (51/51 × 2, zero diffs;
-`docs/corpus-class3-baseline-uplift.md` §6).
+2026-08-31 13:27:47) on SBCL 2.6.7. It replaced the 2026-08-29
+17:58:20 build (the class-3 port build), which had in turn replaced
+the 2026-08-20 21:36:22 build (milestones 1–2's measurement build)
+during milestone 3, 2026-08-29. The research docs' 5.49-series
+expectation is superseded. The project does **not** pin to any
+build: every measurement is stamped with the build it was taken on
+(the class-1/class-2 accepted records carry the 2026-08-20 stamp;
+the class-3 triage record (probe 06) carries the 2026-08-29 stamp;
+the class-3 sweep-cost fallback and verdict-split probes (07/08)
+carry the 2026-08-31 stamp — the 2026-08-31 rebuild is the same
+branch hash / SBCL with the rules core NOT rebuilt, fingerprint
+`36b8bae7dba3c6e4fde614b6df70caa4` unchanged), and baselines are
+re-measured on upgrade rather than carried over — the milestone-3
+close re-validated the class-1/class-2 accepted classifications
+under the new build via the Task-8 no-op slices (51/51 × 2, zero
+diffs; `docs/corpus-class3-baseline-uplift.md` §6).
 
 ## Loading rule files: the TLS limit
 
@@ -119,12 +132,27 @@ printed at all, which is itself a failure.
 **Layer A — unit suite** (the per-change gate), one batch run:
 
 ```sh
-maxima --very-quiet -b test_maxima_rubi.mac
+maxima --very-quiet -X "--tls-limit 100000" -b test_maxima_rubi.mac
 ```
 
-743 targets (green at milestone-3 close: `Results: 743 passed,
-0 failed`; growth 511 → 581 across the pilot's clusters, 581 → 620
-headvar checks, → 691 cluster A, → 743 cluster B).
+The TLS flag is MANDATORY (measured 2026-09-01, class-3 deferred
+campaign C1): the test set loads rule siblings cumulatively per
+process, and the C1 tests (3_1_3/3_1_4/3_1_5) pushed the union over
+the ~4098 special-var cap — the flagless gate now dies with the
+uncatchable TLS HALT at 3_1_5 (slot cost is never freed; see the TLS
+section above). It was flagless only while the loaded subset fit.
+
+892 targets (green: `Results: 892 passed, 0 failed`; the
+milestone-3 close figure was 743 — growth 511 → 581 across the
+pilot's clusters, 581 → 620 headvar checks, → 691 cluster A, → 743
+cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1,
+→ 815 C4 (3_2_1 r16/r18/r20 log-arg structural match, 17 checks),
+→ 835 C3 (ratio log-arg stored-Quotient structural match, 20 checks),
+→ 851 B3 (3_3 cover-miss binpow/logpow slotting, 16 checks),
+→ 862 C5 (3_4 slotted-inner-exponent mly/m1b slotting, 11 checks),
+→ 869 C6-cassimp (3.5 r10 cond ratsimp, M-cas-simp e92/e93, 7 checks),
+→ 892 C6b (3.5 r42 FunctionOfLog catch-all port + bare catch-all
+pattern fix, e134/e139/e258, 23 checks)).
 
 **Layer B — full class-1 corpus** (25,697 entries, 30 s per-entry cap,
 one fresh maxima subprocess per integral, verification by
@@ -138,8 +166,8 @@ setsid sh test/wait_and_merge.sh
 
 The watcher merges the shards to `test/corpus_class1.out` (completeness
 asserted: 25,697/25,697, no dupes/missing/extra). **The full-run A/B
-against the previous merged record is the regression gate.** The
-120-target canary (`python3 test/canary.py`, 60 s/target) is a smoke,
+against the previous merged record is the regression gate** (see
+**Record A/B** below). The 120-target canary (`python3 test/canary.py`, 60 s/target) is a smoke,
 not a gate: its broad set is biased toward currently-failing targets
 and cannot gate verified-target regressions.
 
@@ -158,6 +186,35 @@ The watcher merges the shards to `test/corpus_class2.out`
 class-N mechanics are runbooked in `docs/class-porting.md`
 (Steps 8-9); the measured acceptance is
 `docs/corpus-class2-baseline-uplift.md`.
+
+**Record A/B** — the entry-level diff of any two merged records (any
+class, shard files and re-check records too); use it for every
+regression gate instead of writing a one-off join:
+
+```sh
+python3 test/ab_records.py <old-record> <new-record> [--all]
+```
+
+It prints the key-set check (exit 2 when the records cover different
+entries), the PASS/FAIL 2x2 table, class transitions, per-file counts,
+and every PASS→FAIL line — each must be attributed before acceptance
+(`--all` adds the FAIL→PASS lines). PASS classes are read from the
+driver, so the table agrees with its `Results:` line.
+
+**Pinned-core A/B** — to measure an older rule set (e.g. the tree
+before a fix) against the current one, build its core in a worktree
+at that commit (`sh test/build_rules_core.sh` there) and run the
+normal launch with the env var pointing at it; the driver stays the
+single copy:
+
+```sh
+MR_RULES_CORE_PATH=<worktree>/test/mr_rules.core python3 test/corpus_driver.py ...
+MR_RULES_CORE_PATH=<worktree>/test/mr_rules.core python3 test/launch_class_shards.py ... --launch
+```
+
+The pinned core is used as-is (no fingerprint check against this
+tree, no rebuild); a missing core or `.stamp` exits nonzero; the
+record's `filter:` line ends `core: pinned <path>`.
 
 **Timeout re-check** — the standing answer to "is 30 s at the limit?"
 for any merged record: re-run exactly the record's `timeout` class at

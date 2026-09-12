@@ -1,0 +1,26 @@
+=== class-1 ticket 01/02 entries across the campaign A/B (11-deferred-close-class1-ticket-entries) ===
+run date: 2026-09-12 18:23 UTC  git HEAD: 6b9cc09fc6cd5899065126123c247269bbc1af16  (no Maxima subprocess)
+record pre   test/corpus_class1.campaign-baseline.out  md5 6417dfd8be42c6a9a9eb9c9d169f5a89  Results: 20069 passed, 5628 failed
+record close test/corpus_class1.out  md5 386a0a316391ceec315944958a719f85  Results: 20125 passed, 5572 failed
+
+--- ticket 01 slow zero-chain forms (9 entries) ---
+1.1.4.3  e228   timeout/30.1s -> timeout/30.1s  FAIL->FAIL  class unchanged
+1.2.1.3  e1979  timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+1.2.1.4  e686   timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+1.2.1.4  e687   timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+1.2.1.5  e59    timeout/30.0s -> verified/23.4s  FAIL->PASS  class changed
+1.2.1.5  e66    verified/28.6s -> verified/23.9s  PASS->PASS  class unchanged
+1.2.1.5  e73    verified/29.7s -> verified/23.7s  PASS->PASS  class unchanged
+1.2.1.9  e308   timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+1.2.2.3  e149   timeout/30.0s -> verified/26.1s  FAIL->PASS  class changed
+
+--- ticket 02 matcher-state 9.1 load (7 entries) ---
+1.2.2.4  e223   deferred/27.6s -> deferred/29.0s  FAIL->FAIL  class unchanged
+1.2.1.2  e2514  timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+1.2.1.2  e2567  timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+1.2.1.2  e2568  timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+1.2.1.2  e2569  timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+1.2.1.2  e2572  timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+1.2.1.2  e2573  timeout/30.0s -> timeout/30.0s  FAIL->FAIL  class unchanged
+
+totals over the 16: PASS->PASS=2 PASS->FAIL=0 FAIL->PASS=2 FAIL->FAIL=12

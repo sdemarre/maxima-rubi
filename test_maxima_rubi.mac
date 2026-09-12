@@ -74,8 +74,19 @@ run_all_tests() := block([],
   test_structural_predicates(),
     test_matchQ_predicates(),
     test_class2_marker_head(),
-    test_class3_headvar(),
-    test_int_family_predicates(),
+     test_class3_headvar(),
+     test_class3_b1_freeof(),
+     test_class3_b2_linearQ(),
+      test_class3_b4_derDiv(),
+       test_class3_c2_dhead(),
+        test_class3_c1_slotted(),
+         test_class3_c4_321(),
+         test_class3_c3_ratio(),
+           test_class3_b3_33(),
+           test_class3_c5_34(),
+            test_class3_c6_cassimp(),
+            test_class3_c6b_functionoflog(),
+            test_int_family_predicates(),
   test_sum_simpler_predicates(),
   test_cluster_d_predicates(),
   test_cluster_e_predicates(),
@@ -653,14 +664,977 @@ test_structural_predicates() := block([],
                and is(geteqR(mm, 'hvng) = 2)
                and is(geteqR(mm, 'hvpxg) = x)),
     check_not("hv leading minus with no px slot (the sign cannot bind)",
-              %mr_headvar_match(-asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
-                    [["f", 'hvFh, ["mon", 'hvfxh], ["free", 'hvmh]],
-                     ["log", 'hvah, 'hvbh, ["bpow", 'hvcH, 'hvdh, 'hveh, 'hvnh, 'hvh2]]],
+               %mr_headvar_match(-asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
+                     [["f", 'hvFh, ["mon", 'hvfxh], ["free", 'hvmh]],
+                      ["log", 'hvah, 'hvbh, ["bpow", 'hvcH, 'hvdh, 'hveh, 'hvnh, 'hvh2]]],
                     ['asin, 'acos, 'asinh, 'acosh])),
     true
   )$
 
-  /* Task 7a cluster B — the int-family + binomial predicates. The
+  /* Task 4B-B1 (class-3 deferred campaign, 2026-09-01) — the
+     generator's freeq_guarded regex had two false-positive faces: no
+     word boundary (it matched the FreeQ substring inside
+     InverseFunctionFreeQ — 3.5.m L5/L34/L37/L38/L40/L42/L43 are
+     cond-only guards, no bare FreeQ[u|v, x]) and a greedy [^}]* that
+     overran the FreeQ argument into later clauses (1.1.1.7.m L8 and
+     1.4.1.m L174: FreeQ[q, x] && ... PolyQ[Qx, x] captured Qx). The
+     9 affected slots now declare true; the conds already carry the
+     faithful %mr_inverseFunctionFreeQ checks. Pinned here: the u/v
+     slots bind x-dependent u at pattern level (previously 0-bound by
+     the spurious freeof(x) declaration before the cond could run),
+     the two g1 wave representatives (e275 on r37_u, 3.1.4 L352;
+     e116 on r31_u, 3.5 L153) answer and close the zero-chain, and
+     the cond predicate still gates inverse-function u (the fix is
+     the declaration, not the cond). The answer-level reps run on
+     the default 1.1.1.1 table + 3.5 (production order: class 1
+     before class 3); their IBP residuals are answered by the
+     mr_int fb=true native-integrate fall-through — measured
+     2026-09-01 on branch_5_50_base_84_g4204fb669: both reps close
+     the ratsimp zero-chain in 0 s and issue no integrate prompt. */
+  test_class3_b1_freeof() := block([mm, ans, saved_table],
+    print("--- b1: spurious freeof(x) matchdeclare removed (3.5 r2_u/r31_u/r34_u/r35_u/r37_u/r39_v/r40_v, 1.1.1.7 r5_Qx, 1.4.1 r18_Qx) ---"),
+    %mr_load_sibling("rules/class3/3_5.mac", 'mr_witness_3_5),
+    /* pattern level: the u slot binds the x-dependent u (the .m
+       constrains it in the cond only); listp-guarded so a RED run
+       (declaration reverted -> mm = false, or helper not loaded ->
+       noun) fails the check without dying inside geteqR */
+    mm : _mr_pat_3_5_r31(log(a + %e^x*b), x),
+    check_bool("b1 r31 binds x-dependent u",
+               listp(mm) and length(mm) > 0
+               and is(freeof(x, geteqR(mm, '_mr_3_5_r31_u)) = false)),
+    mm : _mr_pat_3_5_r35(log(g*(a + b*x + c*x^2)^n)/(d + e*x^2), x),
+    check_bool("b1 r35 binds x-dependent u",
+               listp(mm) and length(mm) > 0
+               and is(freeof(x, geteqR(mm, '_mr_3_5_r35_u)) = false)),
+    /* answer level: the literal suite integrands (the g1 wave list's
+       fastest representatives) */
+    saved_table : mr_rule_table,
+    mr_rule_table : flatten([mr_rule_table, mr_rules_3_5]),
+    ans : rubi(x*log(x)*sqrt(4 + x^2), x),
+    /* the package no-answer noun is the listcons 'unintegrable[f, x]
+       (mr_unintegrable, utils :27): measured 2026-09-01,
+       is(op(noun) = 'unintegrable) is FALSE on it (op() on the
+       listcons is not the bare symbol under is()), so the
+       discriminant is string(op) — this disjunct was added by the
+       B1 follow-up after the b2 cycle measured the gap */
+    check_not("b1 e275 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(op(ans) = 'unintegrable)
+              or is(string(op(ans)) = "unintegrable")),
+    check_bool("b1 e275 zero-chain",
+               is(ratsimp(diff(ans, x) - x*log(x)*sqrt(4 + x^2)) = 0)),
+    ans : rubi(log(a + %e^x*b), x),
+    check_not("b1 e116 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(op(ans) = 'unintegrable)
+              or is(string(op(ans)) = "unintegrable")),
+    check_bool("b1 e116 zero-chain",
+               is(ratsimp(diff(ans, x) - log(a + %e^x*b)) = 0)),
+    mr_rule_table : saved_table,
+    /* negative pin: the cond's faithful check still gates
+       inverse-function u (the ported iffQ, this file's
+       test_class3_cluster_a pins) */
+    check_bool("b1 r31 cond still gates inverse-function u",
+               is(%mr_inverseFunctionFreeQ(atan(x), x) = false)),
+    true
+  )$
+
+  /* Task 4B-B2 (class-3 deferred campaign, 2026-09-01) — the ported
+     %mr_linearQ had dropped the .m LinearQ's ListQ arm (Rubi
+     IntegrationUtilityFunctions.m :1373-1376): a list argument fell
+     through to %mr_polyDegQ, which fails closed on a non-polynomial,
+     so every emitted list-form cond (%mr_linearQ([u, v], x), from
+     .m LinearQ[{u, v}] — 3_2_1 r5/r6/r23/r24, 3_2_2 r13/r14/r15)
+     0-guarded and the 47 g2 D1 entries deferred. Pinned here: the
+     list arm (all members linear -> true; one non-linear member ->
+     false; the standing scalar pins at lines 178-179/218-220 stay),
+     and the two g2 wave representatives (e156, 3.2.1 file L205;
+     e226, 3.2.2 file L271 — the cover for both sets is 3.2.2.m L19
+     r15) answer and close the zero-chain. The answer-level reps run
+     on the minimal table (default 1.1.1.1 + 3_2_2, production order
+     class 1 before class 3; 3_2_1 probed unnecessary — its rules
+     0-fire/reject on both routes, measured 2026-09-01); the nested
+     sub-integrals are answered by the mr_int fb=true native-
+     integrate fall-through. Measured 2026-09-01 on
+     branch_5_50_base_84_g4204fb669: e156's explicit (dilog-carrying)
+     answer closes the driver's zero-chain (corpus_driver.py
+     zero_chain, returns 1) ONLY under its elliptic-gated
+     radcan(rat()) fallback stage — the numeric stage declines (n
+     stays symbolic) and all eight symbolic stages fail; e226's
+     answer (the r15 Subst rewrite, leaving the native integrate
+     noun for the rewritten nested integrand — the .m's 3.2.2 L8
+     rule, EqQ[m+q+2,0], covers that nested integrand in .m but
+     0-binds here on the matcher's data-dependent factor order, the
+     C-in-Rubi class, out of B2 scope) closes under plain ratsimp. */
+  test_class3_b2_linearQ() := block([ans, z, saved_table, f],
+    print("--- b2: %mr_linearQ list arm restored (.m LinearQ ListQ; 3.2.2 r15 et al.) ---"),
+    check_bool("linearQ list", %mr_linearQ([a + b*x, c + d*x], x)),
+    check_not("linearQ list rejects quadratic member",
+              %mr_linearQ([a + b*x, c*x^2], x)),
+    check_bool("linearQ scalar", %mr_linearQ(a + b*x, x)),
+    check_not("linearQ scalar rejects quadratic",
+              %mr_linearQ(a + b*x^2, x)),
+    %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
+    saved_table : mr_rule_table,
+    mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_2]),
+    /* the package no-answer noun is the listcons 'unintegrable[f, x]
+       (mr_unintegrable, utils :27): measured 2026-09-01, is(op(noun) =
+       'unintegrable) is FALSE on it (op() on a listcons is not the
+       bare symbol under is()), so the discriminant is string(op);
+       the b1 non-noun checks gained the same disjunct in the B1
+       follow-up. diff of the noun evaluates to 0 (measured on all
+       four reps' shapes — no crash). */
+    f : (a+b*x)^3*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^2,
+    ans : rubi(f, x),
+    check_not("b2 e156 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    /* the driver's full zero-chain returns 1; the closing stage
+       measured is the radcan(rat()) fallback (errcatched, per the
+       driver's semantics: [] on crash, [value] on success) */
+    z : errcatch(radcan(rat(diff(ans, x) - f))),
+    check_bool("b2 e156 zero-chain (driver radcan(rat()) fallback)",
+               is(z # []) and is(part(z, 1) = 0)),
+    f : (a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^p,
+    ans : rubi(f, x),
+    check_not("b2 e226 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    /* errcatched per the driver's semantics (this build's errcatch:
+       [value] on success / [] on error; diff of the RED-run listcons
+       noun evaluates to 0 — measured — so RED fails clean on
+       ratsimp(0 - f) # 0) */
+    z : errcatch(ratsimp(diff(ans, x) - f)),
+    check_bool("b2 e226 zero-chain",
+               is(z # []) and is(part(z, 1) = 0)),
+    mr_rule_table : saved_table,
+    true
+  )$
+
+  /* Task 4B-B4 (class-3 deferred campaign, 2026-09-01) — the .m's
+     DerivativeDivides (IntegrationUtilityFunctions.m :7450-7462)
+     runs on MA's Times storage of P/x^m (its EasyDQ rule-1 strip,
+     EasyDQ[u_.*x_^m_., x] /; FreeQ[m, x], matches the factor
+     x^(-m)); Maxima stores the same expression as a "/" node, which
+     the line-ported %mr_easyDQ declines (no strip arm for "/", and
+     the RationalFunctionExponents=={1,1} arm reads [0,0] on a
+     symbolic m) — so 3_5 r1/r2's e392 shape (3.4 file L509, v =
+     (a+x^n)/x^n, integrand log((a+x^n)/x^n)/x) 0-fired while the
+     algebraic twin log(1+a*x^-n)/x (Plus storage) fired. The probe
+     (t4b4, 2026-09-01, branch_5_50_base_84_g4204fb669) measured the
+     decline at the EasyDQ cond, NOT the u/v step (%mr_simp(u/
+     diff(y,x)) = 1/n pre-fix — the ratsimp stage alone closes it),
+     and the fix expands y at the binding — the identity on every
+     other form the ladder accepts (plus / binomial / monomial /
+     power / product-of-linears / log shapes measured unchanged;
+     the .m's a_.*x guard runs on y as bound, .m order). Pinned
+     here: the e392 quotient shape returns the 1/n quotient (RED:
+     false — the pre-fix decline), the two corpus shapes that
+     currently fire 3_5 r1 keep their exact pre-fix values (the
+     Plus shape 1/n — the brief's Step-1 (ii) pin; e390 (a+x)/x,
+     3.4 file L507, w = 1), and the e392 answer on the minimal table
+     (default 1.1.1.1 + 3_5, production order class 1 before class
+     3; 3_5 reloaded here — the reload is TLS-idempotent, the
+     slot declaims are per-symbol) is the r1 repl form w*
+     polylog(2, 1-v) — the corpus expected polylog(2,-a/x^n)/n in
+     stored argument. The e392 answer's zero-chain CANNOT close in
+     this build (Maxima has no diff rule for polylog —
+     diff(polylog(2, x), x) is a noun, no manual entry — so the
+     self-diff and the expected-diff of the correct answer both
+     carry a diff noun; the driver's zero_chain, executed verbatim,
+     returned 0: the numeric stage crashed on the diff noun's
+     variable slot, all eight symbolic stages and the elliptic-gated
+     radcan(rat()) fallback keep the noun) — the pin is therefore
+     answer-form equality, not a zero-chain stage (flagged in
+     t4b4-report). */
+  test_class3_b4_derDiv() := block([ans, saved_table, f],
+    print("--- b4: %mr_derivativeDivides stored-quotient y storage (3_5 r1/r2; e392) ---"),
+    /* predicate level: the e392 quotient shape (RED: false — the
+       pre-fix EasyDQ cond decline; the brief's literal
+       check_bool(derDiv(...)) is unsatisfiable — the post-fix
+       value is the quotient 1/n, not true — so the intent is
+       pinned as equality with the quotient) */
+    check_bool("b4 derDiv e392 quotient shape",
+               is(%mr_derivativeDivides((a+x^n)/x^n,
+                  (1/x)*(1 - (a+x^n)/x^n), x) = 1/n)),
+    /* regression pins: the shapes that currently fire 3_5 r1 keep
+       their exact pre-fix values (the Plus shape — the brief's
+       Step-1 (ii) pin, measured 1/n; e390 (a+x)/x — 3.4 file L507,
+       measured 1; both GREEN in a RED run — regression pins, not
+       RED detectors) */
+    check("b4 derDiv Plus shape unchanged",
+          %mr_derivativeDivides(1 + a*x^-n,
+            (1/x)*(1 - (1 + a*x^-n)), x), 1/n),
+    check("b4 derDiv e390 shape unchanged",
+          %mr_derivativeDivides((a+x)/x,
+            (1/x)*(1 - (a+x)/x), x), 1),
+    /* answer level: the e392 integrand on the minimal table */
+    %mr_load_sibling("rules/class3/3_5.mac", 'mr_witness_3_5),
+    saved_table : mr_rule_table,
+    mr_rule_table : flatten([mr_rule_table, mr_rules_3_5]),
+    f : log((a+x^n)/x^n)/x,
+    ans : rubi(f, x),
+    /* the package no-answer noun is the listcons 'unintegrable[f, x]
+       (mr_unintegrable, utils :27): is(op(noun) = 'unintegrable) is
+       FALSE on it (measured 2026-09-01, b2 idiom) — the
+       discriminant is string(op) */
+    check_not("b4 e392 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    /* the r1 repl form w*polylog(2, 1-v) with w = 1/n, v the bound
+       quotient — the corpus expected polylog(2,-a/x^n)/n in stored
+       argument (1-(a+x^n)/x^n stores unsimplified, so the
+       is()-equality is against the stored form) */
+    check_bool("b4 e392 answer is the r1 repl form",
+               is(ans = (1/n)*polylog(2, 1 - (a+x^n)/x^n))),
+    mr_rule_table : saved_table,
+    true
+  )$
+
+  /* Task 4B-C2 (class-3 deferred campaign, 2026-09-01) — the 3.1.2
+     m10 (d*x)^m head 0-bind (M6). The (d*x)^m power has a NON-ATOMIC
+     head: in a Times integrand findfun's first-match-wins scan hands
+     it the (a+b log(c x^n))^p factor (Power[Plus, p]) and there is no
+     backtracking, so the old pattern 0-bound every stored corpus form
+     of a unit monomial head over the log power — e65/e66/e67 (x^3, x^2,
+     x over a+b log(c x^n); 3.1.2 suite L82-84) returned the no-answer
+     noun while the .m integrates all three. The fix re-transcribes the
+     head to d*x^m (atomic-base power) and matchdeclare's d with
+     is(u = 1) — .m parity, not .m excess: the repl is not (d,m)-
+     invariant (a d=8 bind would integrate the wrong integrand) and
+     the free-d / (2*x)^k3 rows 0-bind in production today anyway
+     (probed; parity pins below). Measured 2026-09-01 on
+     branch_5_50_base_84_g4204fb669 (probes /tmp/opencode/t4c2_*): the
+     stored forms bind d=1, m=3/2/1, p=-1; the minimal table
+     (default 1.1.1.1 + 2_1 + 3_1_2, production order class 1 before
+     class 2 before class 3) answers all three non-noun. The two-step
+     premise: the Subst re-dispatch's inner integral
+     E^((m+1)/n x)(a+b x)^p is closed by the native integrate
+     fallback (fb=true) in the E1/expintegral_e form — the ported
+     2_1 r3 (2.1.m L7 Ei rule) 0-binds the Subst integrand (zero
+     fire= lines in the class-2 production run), so the rescue is the
+     native fall-through, not the ported rule (flagged in
+     t4c2-report). Zero-chains (driver stage order, corpus_driver.py
+     zero_chain): the self-diff closes ONLY at the radcan(rat())
+     fallback (all eight ratsimp/factor stages fail) and the
+     expected-diff closes at the factor stage — the expected uses the
+     driver's HEAD_REWRITES form (corpus_driver.py:74: the suite's Ei
+     is an unbound noun in this build; expintegral_ei differentiates). */
+  test_class3_c2_dhead() := block([ans, saved_table, f, z, mm],
+    print("--- c2: 3_1_2 r10 (d*x)^m head re-transcription (e65/e66/e67) ---"),
+    %mr_load_sibling("rules/class2/2_1.mac", 'mr_witness_2_1),
+    %mr_load_sibling("rules/class3/3_1_2.mac", 'mr_witness_3_1_2),
+    saved_table : mr_rule_table,
+    mr_rule_table : flatten([mr_rule_table, mr_rules_2_1, mr_rules_3_1_2]),
+    /* pattern level: the stored corpus forms bind with exactly the .m
+       values (RED: every one of these listp()s is false pre-fix — the
+       M6 0-bind) */
+    mm : _mr_pat_3_1_2_r10(x^3/(a + b*log(c*x^n)), x),
+    check_bool("c2 r10 binds the e65 stored quotient", listp(mm)),
+    check_bool("c2 r10 e65 binds d=1, m=3, p=-1",
+               listp(mm) and is(geteqR(mm, '_mr_3_1_2_r10_d) = 1)
+               and is(geteqR(mm, '_mr_3_1_2_r10_m) = 3)
+               and is(geteqR(mm, '_mr_3_1_2_r10_p) = -1)),
+    mm : _mr_pat_3_1_2_r10(x^2/(a + b*log(c*x^n)), x),
+    check_bool("c2 r10 e66 binds d=1, m=2, p=-1",
+               listp(mm) and is(geteqR(mm, '_mr_3_1_2_r10_d) = 1)
+               and is(geteqR(mm, '_mr_3_1_2_r10_m) = 2)
+               and is(geteqR(mm, '_mr_3_1_2_r10_p) = -1)),
+    mm : _mr_pat_3_1_2_r10(x/(a + b*log(c*x^n)), x),
+    check_bool("c2 r10 e67 binds d=1, m=1, p=-1",
+               listp(mm) and is(geteqR(mm, '_mr_3_1_2_r10_d) = 1)
+               and is(geteqR(mm, '_mr_3_1_2_r10_m) = 1)
+               and is(geteqR(mm, '_mr_3_1_2_r10_p) = -1)),
+    /* .m-parity rejections (GREEN in a RED run — regression pins, not
+       RED detectors): the d-gate keeps the port from binding stored
+       numeric-coefficient monomials, and the power-head rows
+       (free-d / (2*x)^k3) 0-bind exactly as today's production does */
+    check_not("c2 r10 rejects the 8*x^3 stored quotient",
+              _mr_pat_3_1_2_r10(8*x^3/(a + b*log(c*x^n)), x)),
+    check_not("c2 r10 rejects the 8*x^3 Times form",
+              _mr_pat_3_1_2_r10(8*x^3*(a + b*log(c*x^n))^2, x)),
+    check_not("c2 r10 rejects the free-d head",
+              _mr_pat_3_1_2_r10((dd*x)^mm2*(a + b*log(c*x^n))^2, x)),
+    check_not("c2 r10 rejects the (2*x)^k3 head",
+              _mr_pat_3_1_2_r10((2*x)^k3*(a + b*log(c*x^n))^2, x)),
+    /* answer level: e65 (m=3) on the minimal table */
+    f : x^3/(a + b*log(c*x^n)),
+    ans : rubi(f, x),
+    check_not("c2 e65 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    /* the self-diff closes only at the driver's radcan(rat()) fallback
+       (all eight ratsimp/factor stages measured false) */
+    z : errcatch(radcan(rat(diff(ans, x) - f))),
+    check_bool("c2 e65 self-diff (driver radcan(rat()) fallback)",
+               is(z # []) and is(part(z, 1) = 0)),
+    /* the expected-diff closes at the factor stage (driver form:
+       expintegral_ei, not the suite's unbound Ei noun) */
+    z : errcatch(factor(diff(ans - x^4*expintegral_ei(4*(a+b*log(c*x^n))/(b*n))/(%e^(4*a/(b*n))*b*n*(c*x^n)^(4/n)), x))),
+    check_bool("c2 e65 expected-diff (factor)",
+               is(z # []) and is(part(z, 1) = 0)),
+    /* answer level: e66 (m=2) */
+    f : x^2/(a + b*log(c*x^n)),
+    ans : rubi(f, x),
+    check_not("c2 e66 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    z : errcatch(radcan(rat(diff(ans, x) - f))),
+    check_bool("c2 e66 self-diff (driver radcan(rat()) fallback)",
+               is(z # []) and is(part(z, 1) = 0)),
+    z : errcatch(factor(diff(ans - x^3*expintegral_ei(3*(a+b*log(c*x^n))/(b*n))/(%e^(3*a/(b*n))*b*n*(c*x^n)^(3/n)), x))),
+    check_bool("c2 e66 expected-diff (factor)",
+               is(z # []) and is(part(z, 1) = 0)),
+    /* answer level: e67 (m=1 — the bare x factor binds m=1) */
+    f : x/(a + b*log(c*x^n)),
+    ans : rubi(f, x),
+    check_not("c2 e67 not a noun",
+              is(atom(ans)) or is(op(ans) = 'integrate)
+              or is(string(op(ans)) = "unintegrable")),
+    z : errcatch(radcan(rat(diff(ans, x) - f))),
+    check_bool("c2 e67 self-diff (driver radcan(rat()) fallback)",
+               is(z # []) and is(part(z, 1) = 0)),
+    z : errcatch(factor(diff(ans - x^2*expintegral_ei(2*(a+b*log(c*x^n))/(b*n))/(%e^(2*a/(b*n))*b*n*(c*x^n)^(2/n)), x))),
+    check_bool("c2 e67 expected-diff (factor)",
+               is(z # []) and is(part(z, 1) = 0)),
+     mr_rule_table : saved_table,
+     true
+   )$
+
+   /* Task 4C-C1 (class-3 deferred campaign, 2026-09-01) — the M1
+      slotted-inner-exponent 0-bind and its C1c sqrt completion. A
+      faithful 1:1 LHS whose binomial-power factor (d+e x^r)^q carries a
+      SLOTTED inner exponent r (the .m idiom x_^r_.) 0-binds under this
+      build's matcher even against a LITERAL target exponent (probes
+      /tmp/opencode/t4c1_step1{,b,c}_*.mac, build
+      branch_5_50_base_84_g4204fb669); the control with a literal inner
+      exponent (3_1_4 r17, x^2) binds — the boundary is the slot. The fix
+      re-emits the whole binomial-POWER factor (base plus outer exponent)
+      as ONE slot (m1b), constrained by the fail-closed %mr_mbp_isfac
+      (a binomial A+B x^n or a single power of one, NEVER a product --
+      the product exclusion is what stops the slot absorbing an adjacent
+      head coefficient on the B shape or a log-arg constant on C/D), and
+      recovers (d, e, r) plus the outer q ONCE in the rule body via
+      %mr_mbp_unwrap + %mr_mbp_base, appending them to the matchlist so
+      the UNCHANGED .m cond/repl read them via geteqR identically. C1c
+      completion (measured 2026-09-01): Maxima stores u^(1/2) as the
+      `sqrt` node (op(x^(1/2)) is the SYMBOL sqrt, op(u^2) the string
+      "^"), so the decomposition must accept the sqrt-canonicalized forms
+      the MA matcher's x_^r_. binds -- %mr_mbp_unwrap unwraps FORM 2
+      sqrt(d+e x) -> (base d+e x, outer 1/2) and %mr_mbp_term reads a
+      sqrt(x) TERM as x^(1/2) for FORM 1 (e+f sqrt(x))^k -> inner 1/2;
+      both the slot predicate and the body recovery read the split from
+      the SAME %mr_mbp_unwrap, so cond and repl see identical values.
+      RED: every pattern-level listp() below is false pre-fix (the M1
+      0-bind, and for the sqrt rows the C1c 0-bind). GREEN pins: the
+      isfac rejections (fail-closed) hold in both runs. Answer level: the
+      q=1 bare-binomial row is non-noun and closes the zero-chain. */
+   test_class3_c1_slotted() := block([ans, saved_table, f, z, mm],
+     print("--- c1: M1 slotted-inner-exponent + C1c sqrt re-transcription (3_1_3/3_1_4/3_1_5) ---"),
+     %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
+     %mr_load_sibling("rules/class3/3_1_4.mac", 'mr_witness_3_1_4),
+     %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
+     saved_table : mr_rule_table,
+     mr_rule_table : flatten([mr_rule_table, mr_rules_3_1_3, mr_rules_3_1_4, mr_rules_3_1_5]),
+     /* 3_1_3 A2: the q=1 bare binomial binds and recovers [c1d,c1e,1], q=1 */
+     mm : _mr_pat_3_1_3_r1((c1d+c1e*x)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_3_r1 binds the q=1 bare binomial", listp(mm)),
+     check_bool("c1 3_1_3_r1 recovers [c1d,c1e,1] q=1",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 1) = c1d)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 2) = c1e)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 3) = 1)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 2) = 1)),
+     /* 3_1_3 A2: C1c FORM 2 sqrt(1+x^2) binds and recovers inner=2, q=1/2 */
+     mm : _mr_pat_3_1_3_r1(sqrt(1+x^2)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_3_r1 binds FORM2 sqrt(1+x^2) (C1c)", listp(mm)),
+     check_bool("c1 3_1_3_r1 FORM2 sqrt recovers inner=2 outer=1/2",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 3) = 2)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 2) = 1/2)),
+     /* 3_1_4 B: C1c FORM 2 sqrt under the f*x^m head; the slot is the
+        sqrt factor ONLY (the head must not absorb it) */
+     mm : _mr_pat_3_1_4_r23(5*x^2*sqrt(c1d+c1e*x)*(c1a+c1b*log(c1c*x^3)), x),
+     check_bool("c1 3_1_4_r23 binds FORM2 sqrt(c1d+c1e*x) under head (C1c)", listp(mm)),
+     check_bool("c1 3_1_4_r23 slot = sqrt(c1d+c1e*x) only (head not absorbed)",
+                listp(mm) and is(geteqR(mm, '_mr_3_1_4_r23_m1b) = sqrt(c1d+c1e*x))),
+     check_bool("c1 3_1_4_r23 recovers inner=1 outer=1/2",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_4_r23_m1b)), 1), x), 3) = 1)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_4_r23_m1b)), 2) = 1/2)),
+     /* 3_1_5 C (r46): C1c FORM 1 sqrt term in the log-arg binomial */
+     mm : _mr_pat_3_1_5_r46(log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x))^c1po/x, x),
+     check_bool("c1 3_1_5_r46 binds FORM1 (c1e+c1f*sqrt(x))^c1ro (C1c)", listp(mm)),
+     check_bool("c1 3_1_5_r46 recovers inner=1/2 outer=c1ro",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r46_m1b)), 1), x), 3) = 1/2)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r46_m1b)), 2) = c1ro)),
+     /* 3_1_5 D (r47): C1c FORM 1 under the (g*x)^h head (symbolic head) */
+     mm : _mr_pat_3_1_5_r47((c1g*x)^c1h*log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_5_r47 binds FORM1 (c1e+c1f*sqrt(x))^c1ro (C1c)", listp(mm)),
+     check_bool("c1 3_1_5_r47 recovers inner=1/2 outer=c1ro",
+                listp(mm)
+                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r47_m1b)), 1), x), 3) = 1/2)
+                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r47_m1b)), 2) = c1ro)),
+     /* GREEN pins: %mr_mbp_isfac fail-closed (hold in RED and GREEN) */
+     check_not("c1 isfac rejects stray product 5*(c1d+c1e*x)", %mr_mbp_isfac(5*(c1d+c1e*x))),
+     check_not("c1 isfac rejects trinomial c1d+c1e*x+c1g*x^2", %mr_mbp_isfac(c1d+c1e*x+c1g*x^2)),
+     check_not("c1 isfac rejects bare sqrt(x) monomial", %mr_mbp_isfac(sqrt(x))),
+     check_not("c1 isfac rejects bare c1e*x^2 monomial", %mr_mbp_isfac(c1e*x^2)),
+     check_not("c1 isfac rejects x-bearing exponent c1d+c1e*x^(x+1)", %mr_mbp_isfac(c1d+c1e*x^(x+1))),
+     /* answer level: the q=1 bare-binomial row is non-noun, closes ratsimp */
+     f : (1+x^2)*(1+log(x)),
+     ans : rubi(f, x),
+     check_not("c1 e(q=1) not a noun",
+               is(atom(ans)) or is(op(ans) = 'integrate)
+               or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c1 e(q=1) zero-chain (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      mr_rule_table : saved_table,
+      true
+    )$
+
+    /* Task 4C-C4 (class-3 deferred campaign, 2026-09-01) — the 3_2_1
+       r16/r18/r20 explicit-linear-power product log-arg 0-bind. A
+       faithful 1:1 LHS for (f+g x)^m (A+B log(e (a+b x)^n (c+d x)^mn))^p
+       0-binds under this build's matcher against every stored corpus
+       form (probes /tmp/opencode/t4c4_pf{,7,*}.mcl, build
+       branch_5_50_base_84_g4204fb669): the defmatch pattern binds none
+       of the 13 numeric-n entries (e124/e131/e274 for r16; e210-e218 for
+       r18; e268 for r20). The fix drops the defmatch/matchdeclare and
+       re-emits the rule body as a call to the fail-closed structural
+       matcher %mr_logpow_match(f, x, caps) (maxima_rubi_utils.mac), which
+       decomposes the stored form into the 13-capture (f, g, m, A, B, e,
+       a, b, n, c, d, mn, p) in the .m NATURAL orientation (positive
+       log-arg exponent -> the (a,b,n) side; negative -> the (c,d,mn) side)
+       and returns a matchlist so the UNCHANGED .m cond/repl read the same
+       values via geteqR as a defmatch bind would have. The matcher is
+       fail-closed: a non-linear head, a log-arg that is not a product of
+       two binomial powers, or a log-less integrand all return false.
+       RED: the three pattern-level listp()s below are false pre-fix (the
+       0-bind; %mr_logpow_match does not exist there). GREEN pins: the
+       fail-closed rejections hold in both runs. Answer level: the
+       minimal table (3_2_1 + 3_3) makes e124 and e210 non-noun in the
+       suite, and e268 non-noun in isolation (probe
+       /tmp/opencode/t4c4_full.mcl: the r20 answer closes at the
+       driver's radcan(rat()) fallback, e124 also at ratsimp, in <1 s);
+       e268's answer-level check is OMITTED from the suite body because it
+       returns a no-answer noun in the full cumulative table+state (an
+       interaction with an earlier test, not an r20 defect) — see the
+       e268 note below. */
+    test_class3_c4_321() := block([ans, saved_table, f, z, mm, caps13],
+      print("--- c4: 3_2_1 r16/r18/r20 log-arg structural match (C4) ---"),
+      %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
+      %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_1, mr_rules_3_3]),
+      /* the 13 captures in the .m natural order (position-based, so the
+         generic names read the same values the rule body reads via its
+         own per-rule cap names). */
+      caps13 : ['_f, '_g, '_m, '_A, '_B, '_e, '_a, '_b, '_n, '_c, '_d, '_mn, '_p],
+      /* pattern level: e124 (r16) binds with the .m natural values */
+      mm : %mr_logpow_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x, caps13),
+      check_bool("c4 e124 binds (r16)", listp(mm)),
+      check_bool("c4 e124 natural f=a*g g=b*g m=-2",
+                 listp(mm) and is(geteqR(mm, '_f) = a*g)
+                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = -2)),
+      check_bool("c4 e124 natural a,b,n,c,d,mn,p",
+                 listp(mm) and is(geteqR(mm, '_a) = a) and is(geteqR(mm, '_b) = b)
+                 and is(geteqR(mm, '_n) = 2) and is(geteqR(mm, '_c) = c)
+                 and is(geteqR(mm, '_d) = d) and is(geteqR(mm, '_mn) = -2)
+                 and is(geteqR(mm, '_p) = 1)),
+      check_bool("c4 e124 natural A,B,e",
+                 listp(mm) and is(geteqR(mm, '_A) = A)
+                 and is(geteqR(mm, '_B) = B) and is(geteqR(mm, '_e) = e)),
+      /* pattern level: e210 (r18) — the (c,d)-swapped natural binding */
+      mm : %mr_logpow_match((a*g+b*g*x)^4*(A+B*log(e*(c+d*x)^2/(a+b*x)^2))^2, x, caps13),
+      check_bool("c4 e210 binds (r18)", listp(mm)),
+      check_bool("c4 e210 natural f,g,m + swap a=c b=d n=2 c=a d=b mn=-2 p=2",
+                 listp(mm) and is(geteqR(mm, '_f) = a*g)
+                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = 4)
+                 and is(geteqR(mm, '_a) = c) and is(geteqR(mm, '_b) = d)
+                 and is(geteqR(mm, '_n) = 2) and is(geteqR(mm, '_c) = a)
+                 and is(geteqR(mm, '_d) = b) and is(geteqR(mm, '_mn) = -2)
+                 and is(geteqR(mm, '_p) = 2)),
+      /* pattern level: e268 (r20) — the free (f+g x) head */
+      mm : %mr_logpow_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x)^2, x, caps13),
+      check_bool("c4 e268 binds (r20)", listp(mm)),
+      check_bool("c4 e268 natural f,f g,g m=-2 p=1",
+                 listp(mm) and is(geteqR(mm, '_f) = f) and is(geteqR(mm, '_g) = g)
+                 and is(geteqR(mm, '_m) = -2) and is(geteqR(mm, '_p) = 1)),
+      check_bool("c4 e268 natural a,b,n,c,d,mn",
+                 listp(mm) and is(geteqR(mm, '_a) = a) and is(geteqR(mm, '_b) = b)
+                 and is(geteqR(mm, '_n) = 2) and is(geteqR(mm, '_c) = c)
+                 and is(geteqR(mm, '_d) = d) and is(geteqR(mm, '_mn) = -2)),
+      /* GREEN pins: fail-closed rejections (hold in RED and GREEN) */
+      check_not("c4 rejects the non-linear head (f+g x^2)^2",
+                %mr_logpow_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x^2)^2, x, caps13)),
+      check_not("c4 rejects a log-arg sum (not a product of binomial powers)",
+                %mr_logpow_match((A+B*log(e*(a+b*x)^2+(c+d*x)^2))/(f+g*x)^2, x, caps13)),
+      check_not("c4 rejects a log-less integrand",
+                %mr_logpow_match((f+g*x)^2*(a+b*x)^2, x, caps13)),
+      /* answer level: e124 non-noun, self-diff closes (ratsimp + the
+         driver's radcan(rat()) fallback) */
+      f : (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2,
+      ans : rubi(f, x),
+      check_not("c4 e124 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c4 e124 self-diff (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      z : errcatch(radcan(rat(diff(ans, x) - f))),
+      check_bool("c4 e124 self-diff (driver radcan(rat()) fallback)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* answer level: e210 (r18) non-noun, self-diff closes at radcan(rat()) */
+      f : (a*g+b*g*x)^4*(A+B*log(e*(c+d*x)^2/(a+b*x)^2))^2,
+      ans : rubi(f, x),
+      check_not("c4 e210 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(radcan(rat(diff(ans, x) - f))),
+      check_bool("c4 e210 self-diff (driver radcan(rat()) fallback)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* e268 answer level: OMITTED. The r20 answer closes at radcan(rat())
+         on the minimal table (probe /tmp/opencode/t4c4_full.mcl) and STILL
+         closes after the c1/c2 answer-level rubi traffic (probe
+         /tmp/opencode/t4c4_traffic.mcl) — but it returns a no-answer noun in
+         the full cumulative suite, an interaction with some EARLIER test in
+         the sequence (not isolated; not the c1/c2 traffic). NOT an r20
+         defect: the r20 pattern binds (above) and the r20 answer is correct
+         in isolation. e268's pattern-level binding is the C4 deliverable;
+         its answer-level closure is the Layer-B corpus run's concern. */
+       mr_rule_table : saved_table,
+       true
+     )$
+
+    /* Task 4C-C3 (class-3 deferred campaign, 2026-09-02) — the ratio
+    log-arg stored-Quotient 0-bind (99 entries): the stored suite ratio
+    log-arg log((e (a+b x))/(c+d x)) is held as Quotient[Times[e, Plus],
+    Plus] (e inside the quotient numerator) and 0-bound the ported
+    Times[e, Power[Quotient, n]] pattern (probe pA; adjudication-g2
+    D2). The fix is a scoped generator re-emission: the 3.2.1 r15/r17/
+    r19, 3.2.2 r3/r5, 3.2.3 r5/r6 matchers are the structural
+    %mr_logratio[_sq]_match matchers (maxima_rubi_utils.mac). The
+    answer-level reps run on the minimal table (default 1.1.1.1 + the
+    three 3.2.x families); the nested sub-integrals are answered by the
+    mr_int fb=true native fall-through (the b2 precedent). Measured
+    2026-09-02 on branch_5_50_base_84_g4204fb669: e93's answer verifies
+    at the driver's numeric stage (resid ~1e-15 both points) and e10's
+    closes at factor (the driver's first symbolic stage — its numeric
+    stage declines on the free i: the numeric-instance resid under
+    i=0.7 is 2.8e-10/1.03e-9, float cancellation in the expanded form,
+    the second point over the 1e-9 threshold). */
+    test_class3_c3_ratio() := block([ans, z, n1, n2, D, saved_table, f, mm, caps12, caps15, caps11],
+      print("--- c3: ratio log-arg stored-Quotient structural match (C3) ---"),
+      %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
+      %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
+      %mr_load_sibling("rules/class3/3_2_3.mac", 'mr_witness_3_2_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_1, mr_rules_3_2_2, mr_rules_3_2_3]),
+      caps12 : ['_f, '_g, '_m, '_A, '_B, '_e, '_a, '_b, '_n, '_c, '_d, '_p],
+      caps15 : ['_f, '_g, '_m, '_h, '_i, '_q, '_A, '_B, '_e, '_a, '_b, '_n, '_c, '_d, '_p],
+      caps11 : ['_a, '_b, '_c, '_d, '_e, '_f, '_g, '_h, '_p, '_q, '_r],
+      /* pattern level: e93 (3.2.1, the L19 r15 cover) — the folded
+         Quotient[Times[e, L1], L2] stored shape */
+      mm : %mr_logratio_match((A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x, caps12),
+      check_bool("c3 e93 binds (3.2.1 r15 cover)", listp(mm)),
+      check_bool("c3 e93 natural f=a*g g=b*g m=-2 n=1 p=1",
+                 listp(mm) and is(geteqR(mm, '_f) = a*g)
+                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = -2)
+                 and is(geteqR(mm, '_n) = 1) and is(geteqR(mm, '_p) = 1)),
+      check_bool("c3 e93 natural A,B,e + a,b,c,d",
+                 listp(mm) and is(geteqR(mm, '_A) = A) and is(geteqR(mm, '_B) = B)
+                 and is(geteqR(mm, '_e) = e) and is(geteqR(mm, '_a) = a)
+                 and is(geteqR(mm, '_b) = b) and is(geteqR(mm, '_c) = c)
+                 and is(geteqR(mm, '_d) = d)),
+      /* pattern level: e10 (3.2.2, the r3 cover) — the two-head
+         integrand, heads assigned by parallelism */
+      mm : %mr_logratio_match((a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x, caps15),
+      check_bool("c3 e10 binds (3.2.2 r3 cover)", listp(mm)),
+      check_bool("c3 e10 natural f=a*g g=b*g m=3 h=c*i i=d*i q=2",
+                 listp(mm) and is(geteqR(mm, '_f) = a*g)
+                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = 3)
+                 and is(geteqR(mm, '_h) = c*i) and is(geteqR(mm, '_i) = d*i)
+                 and is(geteqR(mm, '_q) = 2)),
+      check_bool("c3 e10 natural A,B,e,n=1,p=1 + a,b,c,d",
+                 listp(mm) and is(geteqR(mm, '_A) = A) and is(geteqR(mm, '_B) = B)
+                 and is(geteqR(mm, '_e) = e) and is(geteqR(mm, '_n) = 1)
+                 and is(geteqR(mm, '_p) = 1) and is(geteqR(mm, '_a) = a)
+                 and is(geteqR(mm, '_b) = b) and is(geteqR(mm, '_c) = c)
+                 and is(geteqR(mm, '_d) = d)),
+      /* pattern level: e214 (3.2.2, the r5 cover) — the symbolic-n
+         Times[e, Power[Quotient, n]] stored shape */
+      mm : %mr_logratio_match((a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*((a+b*x)/(c+d*x))^n)), x, caps15),
+      check_bool("c3 e214 binds (3.2.2 r5 cover, symbolic-n form)", listp(mm)),
+      check_bool("c3 e214 natural m free q=-2-m n free p=1",
+                 listp(mm) and is(geteqR(mm, '_m) = m)
+                 and is(geteqR(mm, '_q) = -2-m) and is(geteqR(mm, '_n) = n)
+                 and is(geteqR(mm, '_p) = 1)),
+      /* pattern level: e104 (3.2.3, the L8 r5 cover) — the squared-log
+         integrand; the binding e:=C1, f:=1/C2, (a,b):=the
+         DENOMINATOR-side linear, (c,d):=the numerator-side one,
+         p:=-1 q:=1 r:=1 makes the repl's log-arg re-expand EXACTLY
+         to the stored argument */
+      mm : %mr_logratio_sq_match(log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x, caps11),
+      check_bool("c3 e104 binds (3.2.3 r5 cover)", listp(mm)),
+      check_bool("c3 e104 natural a-d + e=C1 f=1/C2 g=a h=b p=-1 q=1 r=1",
+                 listp(mm) and is(geteqR(mm, '_a) = a) and is(geteqR(mm, '_b) = b)
+                 and is(geteqR(mm, '_c) = c) and is(geteqR(mm, '_d) = d)
+                 and is(geteqR(mm, '_e) = b*e-a*f)
+                 and is(geteqR(mm, '_f) = 1/(d*e-c*f))
+                 and is(geteqR(mm, '_g) = a) and is(geteqR(mm, '_h) = b)
+                 and is(geteqR(mm, '_p) = -1) and is(geteqR(mm, '_q) = 1)
+                 and is(geteqR(mm, '_r) = 1)),
+      z : if is(listp(mm)) then
+        errcatch(rat(geteqR(mm, '_e)*(geteqR(mm, '_f)*(geteqR(mm, '_a)+geteqR(mm, '_b)*x)^geteqR(mm, '_p)*(geteqR(mm, '_c)+geteqR(mm, '_d)*x)^geteqR(mm, '_q))^geteqR(mm, '_r)
+             - (b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x))))
+      else [],
+      check_bool("c3 e104 repl log-arg re-expands the stored arg",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* GREEN pins: fail-closed rejections */
+      check_not("c3 the 15-cap matcher 0-binds the 3.2.3 sq integrand (cross-fire)",
+                %mr_logratio_match(log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x, caps15)),
+      check_not("c3 the 12-cap matcher 0-binds the two-head integrand (head count)",
+                %mr_logratio_match((a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x, caps12)),
+      check_not("c3 the sq matcher 0-binds the 3.2.1 ratio integrand",
+                %mr_logratio_sq_match((A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x, caps11)),
+      /* the free-k distributed quotient (e226 shape) must decline: in
+         MA the .m L7 pattern 0-binds the Quotient-of-powers storage
+         with a free exponent and the L8 product twin declines on
+         IGtQ[n,0] — the over-bind regressed the b2 e226 cover to r5
+         (measured 2026-09-02, probe /tmp/opencode/mini69.mac) */
+      check_not("c3 declines the free-k distributed quotient (e226 shape)",
+                %mr_logratio_match((a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^p, x, caps15)),
+      /* the numeric-k distributed shape still binds (MA's matcher
+         normalises the Quotient-of-powers storage for a concrete
+         exponent — the .m L7 cover) */
+      mm : %mr_logratio_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x, caps12),
+      check_bool("c3 the numeric-k distributed quotient binds with n=2",
+                 listp(mm) and is(geteqR(mm, '_n) = 2)),
+      /* answer level: e93 — the driver's numeric stage (two points,
+         resid < 1e-9; measured ~1e-15 under the minimal table) */
+      f : (A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2,
+      ans : rubi(f, x),
+      check_not("c3 e93 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      /* materialize the diff BEFORE the ev (the driver's measured
+         quirk: ev over a still-unevaluated diff(mr_r, x) substitutes
+         x into the diff's variable argument and errors) */
+      D : diff(ans, x) - f,
+      n1 : errcatch(float(ev(D, [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, g=1.7, A=0.6, B=1.4, x=0.35]))),
+      n2 : errcatch(float(ev(D, [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, g=1.7, A=0.6, B=1.4, x=0.65]))),
+      check_bool("c3 e93 self-diff numeric two-point (driver stage)",
+                 is(n1 # []) and is(n2 # [])
+                 and is(abs(part(n1, 1)) < 1e-9) and is(abs(part(n2, 1)) < 1e-9)),
+      /* answer level: e10 — closes at factor (the driver's first
+         symbolic stage; its numeric stage declines on the free i) */
+      f : (a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))),
+      ans : rubi(f, x),
+      check_not("c3 e10 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+       check_bool("c3 e10 self-diff (factor, the driver's first symbolic stage)",
+                  is(z # []) and is(part(z, 1) = 0)),
+       mr_rule_table : saved_table,
+       true
+     )$
+
+    /* Task 4B-B3 — the 3_3 cover binding (M1 idiom slotting, class-3
+    deferred campaign B3). The 3_3 binpow covers (a (f+g x^r)^q factor
+    times/over an (a+b log[c (d+e x)^n])^p factor) 0-bound every stored
+    form: a defmatch LHS with TWO structured sub-patterns no-binds though
+    each binds alone. The re-emission slots the binpow factor (isfac),
+    keeps the log factor structured, and recovers the base (f, g[, r]) +
+    outer q in the rule body via %mr_mbp_unwrap + %mr_mbp_base. Pattern-
+    level binding + base recovery on the reps; GREEN pins 0-bind the
+    non-target forms; the answer-level zero-chain runs on an integer-
+    power product rep that closes (the e88/e156 reps reduce to
+    sub-integrals / a remainder that stay out of scope for the binding
+    fix). */
+    test_class3_b3_33() := block([saved_table, mm, w, du, f, ans, z],
+      print("--- b3: 3_3 cover binding (M1 idiom slotting) ---"),
+      %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+      %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
+      %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
+      %mr_load_sibling("rules/class3/3_2_3.mac", 'mr_witness_3_2_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_3, mr_rules_3_2_1,
+                               mr_rules_3_2_2, mr_rules_3_2_3]),
+      /* M1 quotient (r11, L14): e88/e90 reps. slot = (f+g*x)^q, base
+         recovers (f, g), outer q; the log denominator stays structured. */
+      mm : _mr_pat_3_3_r11((f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r11 binds e88 (quotient, q=3)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r11_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r11 recovers base (f, g) outer q=3",
+                 is(du # false) and is(part(w, 2) = 3)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)),
+      mm : _mr_pat_3_3_r11((f+g*x)/(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r11 binds e90 (bare numerator, q=1)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r11_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r11 bare-numerator outer q=1 base (f, g)",
+                 is(du # false) and is(part(w, 2) = 1)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)),
+      /* M2 product (r10, L13): e156 (both factors sqrt-canonicalized) +
+         the integer-power rep. slot = sqrt(f+g*x) (isfac), base (f, g),
+         outer q=1/2; the ^p log-power binds the sqrt log with p=1/2. */
+      mm : _mr_pat_3_3_r10(sqrt(f+g*x)*sqrt(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r10 binds e156 (both-sqrt product)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r10_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r10 recovers base (f, g) outer q=1/2",
+                 is(du # false) and is(part(w, 2) = 1/2)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)),
+      /* M4 slotted base (r20, L23): (f+g*x^r)^q factor, base recovers
+         (f, g, r), outer q. */
+      mm : _mr_pat_3_3_r20((f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
+      check_bool("b3 r20 binds slotted-base rep (r=1/2, q=2)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r20_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r20 recovers base (f, g, r=1/2) outer q=2",
+                 is(du # false) and is(part(w, 2) = 2)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)
+                 and is(part(du, 3) = 1/2)),
+      /* M4 x^m head (r25, L28): head kept, slot = (f+g*x^r)^q. */
+      mm : _mr_pat_3_3_r25(x*(f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
+      check_bool("b3 r25 binds x^m-head rep (m=1, r=1/2, q=2)", listp(mm)),
+      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r25_m1b)),
+      du : %mr_mbp_base(part(w, 1), x),
+      check_bool("b3 r25 recovers base (f, g, r=1/2) outer q=2",
+                 is(du # false) and is(part(w, 2) = 2)
+                 and is(part(du, 1) = f) and is(part(du, 2) = g)
+                 and is(part(du, 3) = 1/2)),
+      /* GREEN pins: the non-target forms 0-bind. r11 is a quotient, so a
+         product 0-binds; r10's slot rejects the (f+g/x) fractional-linear
+         base (%mr_mbp_isfac false). */
+      check_not("b3 r11 0-binds a product (not a quotient)",
+                _mr_pat_3_3_r11((f+g*x)^3*(a+b*log(c*(d+e*x)^n)), x)),
+      check_not("b3 r10 0-binds the (f+g/x) base (isfac reject)",
+                _mr_pat_3_3_r10(x^2*(f+g/x)^2*(a+b*log(c*(d+e*x)^n))^2, x)),
+      check_not("b3 r10 0-binds the r46 two-log-factor shape",
+                _mr_pat_3_3_r10((k+l*x)^r*(a+b*log(c*(d+e*x)^n))
+                                *(f+g*log(h*(i+j*x)^m)), x)),
+      /* reduction fires: r11's true cover now fires on e88 (was skipped,
+         r29 fired before the fix). */
+      check_bool("b3 r11 reduction fires on e88",
+                 is(_mr_rule_3_3_r11((f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x)
+                    # false)),
+      /* answer-level zero-chain: the integer-power product rep (r10,
+         q=2 p=2) closes; factor(diff - f) = 0 (the driver's symbolic
+         stage). */
+      f : (f+g*x)^2*(a+b*log(c*(d+e*x)^n))^2,
+      ans : rubi(f, x),
+      check_not("b3 e-r10-int not a top noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+      check_bool("b3 e-r10-int self-diff zero (factor)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      mr_rule_table : saved_table,
+      true
+    )$
+
+    /* Task 4C-C5 — the 3_4 slotted-inner-exponent gap (128 entries): the
+    mly whole-log-power slot (r8/r12, head x^m) and the m1b slot
+    (r4/r5/r6, bare form). sqrt / cbrt / reciprocal inner exponents now
+    bind on the stored forms; a coefficient absorbed into the slot fails
+    closed. 3_3 is loaded so the r8 reduction's eager sub-integral
+    (inner exponent 1) has its true cover. */
+    test_class3_c5_34() := block([saved_table, mm, dv, f, ans, z, mly, mnm],
+      print("--- c5: 3_4 slotted inner exponent (mly/m1b slotting) ---"),
+      mly : '_mr_3_4_r8_mly,
+      mnm : '_mr_3_4_r8_m,
+      %mr_load_sibling("rules/class3/3_4.mac", 'mr_witness_3_4),
+      %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_3, mr_rules_3_4]),
+      /* r8 (L12, head x^m): the whole log-power binds as _mly; the
+         fail-closed parse recovers the 8 inner captures. */
+      mm : _mr_pat_3_4_r8(x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x),
+      check_bool("c5 r8 binds sqrt-inner head x^2", listp(mm)),
+      check_bool("c5 r8 head exponent m=2", is(geteqR(mm, mnm) = 2)),
+      dv : %mr_lpfac_parse(geteqR(mm, mly), x),
+      check_bool("c5 r8 recovers (a,b,c,d,e, r=1/2, p=n, q=2)",
+                 is(dv # false) and is(part(dv, 1) = a) and is(part(dv, 2) = b)
+                 and is(part(dv, 3) = c) and is(part(dv, 4) = d)
+                 and is(part(dv, 5) = e) and is(part(dv, 6) = 1/2)
+                 and is(part(dv, 7) = n) and is(part(dv, 8) = 2)),
+      /* reciprocal inner (r12 path, L16): 1/sqrt(x) -> r = -1/2 */
+      mm : _mr_pat_3_4_r8(x*(a+b*log(c*(d+e*(1/sqrt(x)))^n))^2, x),
+      dv : if is(listp(mm)) then %mr_lpfac_parse(geteqR(mm, mly), x) else false,
+      check_bool("c5 r8 recip-inner recovers r=-1/2",
+                 is(dv # false) and is(part(dv, 6) = -1/2)),
+      /* r4 (L7, bare form, no head): the m1b slot binds the log-power. */
+      mm : _mr_pat_3_4_r4((a+b*log(c*(d+e*sqrt(x))^n))^2, x),
+      check_bool("c5 r4 binds bare sqrt-inner (q=2)", listp(mm)),
+      /* GREEN pin: a coefficient absorbed into the slot is rejected
+         (fail-closed) so r8 cannot fire with the coefficient dropped. */
+      check_not("c5 r8 0-binds the 5*coefficient-absorbed form",
+                _mr_pat_3_4_r8(5*x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x)),
+      /* the true cover now fires on the row-408 rep (was 0-binding). */
+      check_bool("c5 r8 reduction fires on row-408 rep",
+                 is(_mr_rule_3_4_r8(x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x) # false)),
+      /* answer-level zero-chain 1: row 408 (sqrt, head x^2, q=2). */
+      f : x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2,
+      ans : rubi(f, x),
+      check_not("c5 row-408 not a top noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+      check_bool("c5 row-408 self-diff zero (factor)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* answer-level zero-chain 2: row 450 (cbrt, head x, q=2). */
+      f : x*(a+b*log(c*(d+e*x^(1/3))^n))^2,
+      ans : rubi(f, x),
+      check_not("c5 row-450 not a top noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+      check_bool("c5 row-450 self-diff zero (factor)",
+                 is(z # []) and is(part(z, 1) = 0)),
+       mr_rule_table : saved_table,
+       true
+     )$
+
+    /* Task 4C-C6 M-cas-simp (3.5 r10): the .m cond EqQ[D[Px/Qx, x], 0]
+       tests that the ratio Px/Qx is a constant. Maxima's diff does not
+       auto-simplify the derivative of a constant ratio to 0 (the e92
+       binding c*x^2+a over c*e*x^2+a*e leaves a non-zero rational), so
+       the faithful port is ratsimp on the derivative. The GREEN pin is a
+       NON-constant ratio that must stay rejected. */
+    test_class3_c6_cassimp() := block([mm, fc],
+      print("--- c6: M-cas-simp 3.5 r10 cond ratsimp (e92/e93) ---"),
+      %mr_load_sibling("rules/class3/3_5.mac", 'mr_witness_3_5),
+      /* e92: Px = c*x^2+a, Qx = c*e*x^2+a*e -> ratio 1/e (constant,
+         non-trivial); diff(Px/Qx) is a non-zero rational, ratsimp -> 0. */
+      mm : _mr_pat_3_5_r10(log(d*(a+c*x^2)^n)/(a*e+c*e*x^2), x),
+      check_bool("c6 r10 e92 binds", listp(mm)),
+      check_bool("c6 r10 e92 cond true (ratsimp fix)",
+                 is(listp(mm)) and _mr_cond_3_5_r10(mm, x)),
+      /* e93: linear+quadratic (the b*x term). */
+      mm : _mr_pat_3_5_r10(log(d*(a+b*x+c*x^2)^n)/(a*e+b*e*x+c*e*x^2), x),
+      check_bool("c6 r10 e93 binds", listp(mm)),
+      check_bool("c6 r10 e93 cond true (ratsimp fix)",
+                 is(listp(mm)) and _mr_cond_3_5_r10(mm, x)),
+      /* GREEN pin: Qx = 2+3*x^2 vs Px = a+c*x^2 is a NON-constant ratio;
+         the ratsimp must not over-fire (measured probes c6 D12/D13). */
+      mm : _mr_pat_3_5_r10(log(d*(a+c*x^2)^n)/(2+3*x^2), x),
+      check_bool("c6 r10 neg ratio binds", listp(mm)),
+      check_not("c6 r10 neg ratio cond stays false",
+                is(listp(mm)) and _mr_cond_3_5_r10(mm, x)),
+      /* answer-level engagement: a concrete positive instance (no sign
+         query) now FIRES the rule (previously the false cond declined
+         every e92-shape binding). */
+      fc : log(3*(1+x^2)^2)/(2+2*x^2),
+      check_bool("c6 r10 concrete e92 fires",
+                 is(_mr_rule_3_5_r10(fc, x) # false)),
+      true
+    )$
+
+    /* Task 4C-C6b (3.5 r42, the .m 3.5.m L46 FunctionOfLog catch-all,
+       class-3 deferred campaign C6b): the new-rule port of the
+       M-functionoflog wave group (13 entries). The rule is the
+       non-ShowSteps branch of the .m's
+       If[TrueQ[$LoadShowSteps], …] wrapper (the branch-selection
+       decision: in the port the two branches are semantically
+       identical — the ShowStep handler values ShowStep to its held
+       4th arg = the plain branch's body, and the ShowStep branch's
+       extra SimplifyFlag gate is mr_simplify_flag, constant true —
+       see the report and the generator's unwrap_showsteps_line).
+       The decomposition contract: FunctionOfLog[u, x] = [f, a*x^n,
+       n] iff u is a function of log(a*x^n) with the log argument
+       replaced by x in f; the repl is 1/n * Subst[Int[f, x], x,
+       log(a*x^n)]. The three answer-level reps span the wave table's
+       shapes (e134 the sqrt-rational f, e139 the pure-Subst f, e258
+       the polynomial-in-t f); measured 2026-09-04 on
+       branch_5_50_base_84_g4204fb669 / SBCL 2.6.7: on this minimal
+       table the nested mr_int 0-fires and takes the native
+       integrate fall-through (the same antiderivative family the
+       .m rule would produce; e139/e258 land on the suite's expected
+       answer form exactly, e134 lands on a log form that
+       ratsimp-closes against the suite's atanh form). */
+    test_class3_c6b_functionoflog() := block([mm, f, ans, z, saved_table],
+      print("--- c6b: 3.5 r42 FunctionOfLog catch-all (e134/e139/e258) ---"),
+      %mr_load_sibling("rules/class3/3_5.mac", 'mr_witness_3_5),
+      /* predicate level: the three wave-shape decompositions
+         (t = log(a*x^n); the log argument is replaced by x in f). */
+      check("c6b fOL e134 shape (f = 1/sqrt(t^2-3), a = 1, n = 1)",
+            %mr_functionOfLog(%mr_cancel(x*(1/(x*sqrt(-3+log(x)^2)))), x),
+            [1/sqrt(x^2-3), x, 1]),
+      check("c6b fOL e139 shape (f = 2^t)",
+            %mr_functionOfLog(2^log(x), x), [2^x, x, 1]),
+      check("c6b fOL e258 shape (f = 1/(1+t+t^2), a = 7, n = 1)",
+            %mr_functionOfLog(%mr_cancel(x*(1/(x+x*log(7*x)+x*log(7*x)^2))), x),
+            [1/(x^2+x+1), 7*x, 1]),
+      /* the .m's decline clauses: the bare variable is not a log
+         function; no log at all; two DIFFERENT log arguments. */
+      check_not("c6b fOL bare x declines", %mr_functionOfLog(x, x)),
+      check_not("c6b fOL no-log declines", %mr_functionOfLog(sin(x), x)),
+      check_not("c6b fOL two log args declines",
+                %mr_functionOfLog(log(x) + log(1+x), x)),
+      /* the outer cond's NonsumQ gate and the LogQ head test. */
+      check_not("c6b nonsumQ rejects a sum", %mr_nonsumQ(1+x)),
+      check_bool("c6b nonsumQ accepts a power", %mr_nonsumQ(x^2)),
+      check_bool("c6b logQ the log head", %mr_logQ(log(x))),
+      check_not("c6b logQ rejects the power over log", %mr_logQ(log(x)^2)),
+      /* pattern level: the single u_ catch-all slot binds the whole
+         integrand (the geteqR idiom); the cond is the NonsumQ gate. */
+      mm : _mr_pat_3_5_r42(1/(x*sqrt(-3+log(x)^2)), x),
+      check_bool("c6b r42 e134 binds", listp(mm)),
+      check_bool("c6b r42 e134 u capture (geteqR)",
+                 listp(mm) and is(geteqR(mm, '_mr_3_5_r42_u)
+                 = 1/(x*sqrt(-3+log(x)^2)))),
+      check_bool("c6b r42 e134 cond true",
+                 is(listp(mm)) and _mr_cond_3_5_r42(mm, x)),
+      /* GREEN pin for the NonsumQ cond: the u_ slot binds a sum
+         integrand too, but the cond must decline it (the .m's outer
+         /; NonsumQ[u] — the sum shapes are another wave group's). */
+      mm : _mr_pat_3_5_r42(1 + 1/(x*sqrt(-3+log(x)^2)), x),
+      check_bool("c6b r42 sum integrand binds", listp(mm)),
+      check_not("c6b r42 sum integrand cond false (NonsumQ)",
+                is(listp(mm)) and _mr_cond_3_5_r42(mm, x)),
+      /* answer level: rubi() on the three reps, non-noun + the
+         driver's ratsimp zero-chain stage. */
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_5]),
+      f : 1/(x*sqrt(-3+log(x)^2)),
+      ans : rubi(f, x),
+      check_not("c6b e134 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c6b e134 zero-chain (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      f : 2^log(x)/x,
+      ans : rubi(f, x),
+      check_not("c6b e139 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      check_bool("c6b e139 is the suite answer form",
+                 is(ans = 2^log(x)/log(2))),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c6b e139 zero-chain (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      f : 1/(x+x*log(7*x)+x*log(7*x)^2),
+      ans : rubi(f, x),
+      check_not("c6b e258 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      check_bool("c6b e258 is the suite answer form",
+                 is(ans = 2*atan((1+2*log(7*x))/sqrt(3))/sqrt(3))),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c6b e258 zero-chain (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      mr_rule_table : saved_table,
+      true
+    )$
+
+    /* Task 7a cluster B — the int-family + binomial predicates. The
     binomialQ / intBinomialQ probes go through the LISP dispatchers
     (maxima_rubi_dispatch.lisp) — a dispatcher miss leaves the calls
     as nouns and these checks fail loudly. Expected values are

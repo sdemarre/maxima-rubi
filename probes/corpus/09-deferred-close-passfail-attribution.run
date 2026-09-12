@@ -1,0 +1,35 @@
+#!/bin/sh
+# Probe 09 run script — sequential (one maxima subprocess at a time).
+# Cores (built with `sh test/build_rules_core.sh` in a tree extracted at the
+# named commit, e.g. `git archive <commit> | tar -x -C <dir>`):
+#   FINAL_CORE  class3-deferred HEAD tree (fingerprint 5ef9b3bc5ee07ffac0e76f1fea54fbac)
+#   BASE_CORE   1d998cc campaign base = the class-3 baseline record's rules (00e05dca117aefd8df3d266652b11e93)
+#   M2_CORE     f8d2fde = the class-1/class-2 baseline records' rules (aa53741f7ac802e2c3b8bd93720b219d)
+# Usage (repo root): FINAL_CORE=... BASE_CORE=... M2_CORE=... sh probes/corpus/09-deferred-close-passfail-attribution.run [class...|cap120]
+#   class 3 / 1 / 2 : the final-core and base-core runs of the PASS->FAIL shard
+#   cap120          : the final core at a 120 s cap on the .classN-cap120.shard
+#                     entries (final-core timeouts + unexpected answers whose
+#                     self-check did not close) and on e47 (.e47.shard)
+# The per-commit attribution: .matrix.run (classes 1-2), .bisect.py (class 3);
+# the joined table: .summary.py.
+set -u
+P=probes/corpus/09-deferred-close-passfail-attribution
+CLASSES=${*:-"3 1"}
+for c in $CLASSES; do
+  if [ "$c" = cap120 ]; then
+    MR_RULES_CORE_PATH=$FINAL_CORE python3 $P.py "3 Logarithms" $P.class3-cap120.shard $P.class3-final-cap120.out 120
+    MR_RULES_CORE_PATH=$FINAL_CORE python3 $P.py "1 Algebraic functions" $P.class1-cap120.shard $P.class1-final-cap120.out 120
+    MR_RULES_CORE_PATH=$FINAL_CORE python3 $P.py "3 Logarithms" $P.e47.shard $P.e47-final-cap120.out 120
+    continue
+  fi
+  case $c in
+    3) SEC="3 Logarithms" ;;
+    1) SEC="1 Algebraic functions" ;;
+    2) SEC="2 Exponentials" ;;
+  esac
+  MR_RULES_CORE_PATH=$FINAL_CORE python3 $P.py "$SEC" $P.class$c.shard $P.class$c-final.out 30
+  MR_RULES_CORE_PATH=$BASE_CORE  python3 $P.py "$SEC" $P.class$c.shard $P.class$c-base1d998cc.out 30
+  if [ "$c" != 3 ]; then
+    MR_RULES_CORE_PATH=$M2_CORE python3 $P.py "$SEC" $P.class$c.shard $P.class$c-basef8d2fde.out 30
+  fi
+done

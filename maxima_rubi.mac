@@ -89,6 +89,24 @@ mr_witness_implicit1() :=
 
 %mr_load_sibling("maxima_rubi_implicit1.lisp", 'mr_witness_implicit1)$
 
+/* The pass-4 per-candidate implicit-1 seam (maxima_rubi_pass4.lisp):
+ * %mr_p4_setrev / %mr_p4_setwhich / %mr_dispatch_p4 / %mr_p4_diag for
+ * the class-3 deferred campaign (plan
+ * docs/superpowers/plans/2026-08-30-class3-deferred-campaign.md).
+ * Loads after the implicit-1 file (it consumes *mr-implicit1-which*). */
+mr_witness_pass4() := block([r],
+  /* %mr_dispatch_p4 on an EMPTY table 0-fires: a missed load leaves it
+   * a noun and this fails loudly. The setter round-trip catches a
+   * noun setter (string of a noun call would throw in is()). */
+  r : %mr_dispatch_p4(1, x, [], 1),
+  %mr_p4_setwhich(1),
+  %mr_p4_setwhich(false),
+  %mr_p4_setrev(1),
+  %mr_p4_setrev(0),
+  is(r = false))$
+
+%mr_load_sibling("maxima_rubi_pass4.lisp", 'mr_witness_pass4)$
+
 /* Milestone-1 core (eager): the 1.1.1.1 rule file — what the Layer A
  * suite verifies behaviorally; 5 rules, safe on any build. */
 %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1)$
@@ -193,12 +211,12 @@ mr_load_class1_all() := block([],
 /* Full table load (Rubi.m LoadRules order): class 1 (the 73-term
    flatten above) then class 2 — the first $LoadElementaryFunctionRules
    block (3 files, 125 rules; measured 2026-08-28) then class 3 — the
-   "3 Logarithms" LoadRules block (11 files, 333 rules; Rubi.m
-   :211-221 order, verified against the pinned clone 2026-08-29 —
-   3.3 and 3.4 load BEFORE the 3.2.x files: that is Rubi's LoadRules
-   order, not numeric order). The table is the 3-class load: the
-   87-term flatten (3,513 rules). MR: the driver and the rules core
-   call this; Layer A still loads only the 1.1.1.1 core file above (the
+    "3 Logarithms" LoadRules block (11 files, 334 rules; Rubi.m
+    :211-221 order, verified against the pinned clone 2026-08-29 —
+    3.3 and 3.4 load BEFORE the 3.2.x files: that is Rubi's LoadRules
+    order, not numeric order). The table is the 3-class load: the
+    87-term flatten (3,514 rules). MR: the driver and the rules core
+    call this; Layer A still loads only the 1.1.1.1 core file above (the
    defmatch budget of a plain process holds a handful of rules — see
    the load-wall note above). */
 mr_load_all() := block([],

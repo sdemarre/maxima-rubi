@@ -1,0 +1,43 @@
+=== class-3 deferred verdict x target-flag split (08-class3-deferred-verdict-flag-split) ===
+run date: 2026-09-01 10:54 UTC
+baseline record: test/corpus_class3.baseline.out (re-asserted 788 = 313+16+459, 329 = 313+16)
+method: the decision record's enumerated entry sets (adjudication-g1..g4.md, transcribed) joined to the baseline per-entry flags; PARTIAL classes enumerate only the explicitly listed entries (wave file carries the cluster count + ellipsis) and are not asserted complete
+
+g1 A           enum=   4 claim=   4 complete  verified=  0 expected= 0 unverified=  2 target=   2 certain=  0 remainder=  2
+g1 B-port      enum=   2 claim=   2 complete  verified=  2 expected= 0 unverified=  0 target=   2 certain=  2 remainder=  0
+g1 C-in-Rubi   enum= 120 claim= 212 PARTIAL   verified= 75 expected= 0 unverified= 34 target= 109 certain= 75 remainder= 11
+g1 D           enum=  39 claim=  61 PARTIAL   verified=  7 expected= 0 unverified= 20 target=  27 certain=  7 remainder= 12
+g1 PENDING     enum=   1 claim=   1 complete  verified=  0 expected= 0 unverified=  0 target=   0 certain=  0 remainder=  1
+
+g2 A           enum=   5 claim=   5 complete  verified=  5 expected= 0 unverified=  0 target=   5 certain=  5 remainder=  0
+g2 B-port      enum=  47 claim=  47 complete  verified=  8 expected= 2 unverified= 30 target=  40 certain= 10 remainder=  7
+g2 C-absent    enum=  17 claim=  17 complete  verified=  0 expected= 1 unverified=  4 target=   5 certain=  1 remainder= 12
+g2 C-in-Rubi   enum= 112 claim= 112 complete  verified= 62 expected= 2 unverified= 47 target= 111 certain= 64 remainder=  1
+g2 D           enum=  80 claim=  80 complete  verified= 27 expected= 1 unverified= 45 target=  73 certain= 28 remainder=  7
+g2 PENDING     enum=   4 claim=   4 complete  verified=  0 expected= 0 unverified=  0 target=   0 certain=  0 remainder=  4
+
+g3 A           enum=   1 claim=   1 complete  verified=  0 expected= 0 unverified=  1 target=   1 certain=  0 remainder=  0
+g3 B-port      enum=   1 claim= 207 PARTIAL   verified=  0 expected= 0 unverified=  1 target=   1 certain=  0 remainder=  0
+g3 C-absent    enum=  14 claim=  20 PARTIAL   verified=  0 expected= 0 unverified= 12 target=  12 certain=  0 remainder=  2
+g3 C-in-Rubi   enum=   0 claim= 128 PARTIAL   verified=  0 expected= 0 unverified=  0 target=   0 certain=  0 remainder=  0
+g3 D           enum=  16 claim=  16 complete  verified=  0 expected= 0 unverified=  6 target=   6 certain=  0 remainder= 10
+g3 PENDING     enum=  23 claim=  23 complete  verified=  0 expected= 0 unverified=  0 target=   0 certain=  0 remainder= 23
+
+g4 B-port      enum=  41 claim=  41 complete  verified= 14 expected= 0 unverified= 23 target=  37 certain= 14 remainder=  4
+g4 C-absent    enum=   4 claim=   4 complete  verified=  3 expected= 0 unverified=  1 target=   4 certain=  3 remainder=  0
+g4 C-in-Rubi   enum=  31 claim=  31 complete  verified=  5 expected= 9 unverified=  8 target=  22 certain= 14 remainder=  9
+g4 D           enum=  17 claim=  17 complete  verified=  5 expected= 0 unverified=  0 target=   5 certain=  5 remainder= 12
+
+--- totals (enumerated portion) ---
+class        enum claim  target(788)  certain(329)
+A              10    10            8             5
+B-port         91   297           80            26
+C-absent       35    41           21             4
+C-in-Rubi     263   483          242           153
+D             152   174          111            40
+PENDING        28    28            0             0
+total         579  1033          462           228
+
+claim totals must equal the post-reclassification grand total {'A': 10, 'B-port': 297, 'C-absent': 41, 'C-in-Rubi': 483, 'D': 174, 'PENDING': 28} summing to 1033
+06 record total row verified: 313 16 459 150 76 19 (313+16+459=788 target, 313+16=329 certain)
+

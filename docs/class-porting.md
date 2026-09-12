@@ -49,8 +49,8 @@ Spec: `docs/superpowers/specs/2026-08-28-milestone-2-class2-pilot-design.md`
    The project does not pin to a build — baselines are re-measured on
    upgrade, never carried over (current build: 5.50.0, build date
    2026-08-20 21:36:22, SBCL 2.6.7).
-6. **Git.** Default branch `master`; no remote configured — never
-   `git push`; no `Co-Authored-By` trailers; one commit per task step
+6. **Git.** Default branch `master`; remote `origin` — push only when
+   the user asks; no `Co-Authored-By` trailers; one commit per task step
    group; the SDD ledger gets an entry per task (measurements,
    deviations, findings).
 
@@ -282,11 +282,10 @@ carries over; a fresh section balances by count until measured times
 exist). Merge, read the Results line, then the **full A/B against the
 Step-8 baseline** (per verdict class + entry-level transitions,
 PASS = {expected, verified, no-answer} — the entry-level part is a
-**(rel, entry)-keyed comparison of the two records' T3 lines**,
-method as executed in the pilot (ledger Task-10; the uplift doc's
-309/216 split is the worked example) — reconstructible from the two
-records, not a committed script (the plan's Task-10 Step-3 python
-does the per-class tallies only); every PASS→FAIL remainder triaged
+**(rel, entry)-keyed comparison of the two records' T3 lines**:
+`python3 test/ab_records.py <baseline> <record>` (added
+2026-09-11; the pilot's 309/216 split, ledger Task-10, was the
+hand-joined worked example); every PASS→FAIL remainder triaged
 into genuine declines vs yardstick reclassification — the milestone-1
 discipline), then the **100 s timeout re-check** (read the
 transitions; now-PASS 0 = the cap is not the limit; `error` = the
@@ -296,7 +295,7 @@ death census — a reproducible build bug is its own ticket).
 ```
 python3 test/launch_class_shards.py "2 Exponentials" test/corpus_class2.out test/corpus_driver.py --launch
 setsid sh test/wait_and_merge.sh test/corpus_class2.shard-pids test/merge_class_shards.py test/class2_merge.out "2 Exponentials" test/corpus_class2.out test/corpus_driver.py "corpus_class2.shard*.out" &
-# ...A/B (per-class: the plan's Task-10 Step-3 python; entry-level: the (rel,entry) join, method per the paragraph above)...
+python3 test/ab_records.py test/corpus_class2.baseline.out test/corpus_class2.out
 python3 test/launch_timeout_rerun.py test/corpus_class2.out 100 test/corpus_class2.timeout-rerun "2 Exponentials" --launch
 setsid sh test/wait_timeout_rerun.sh test/corpus_class2.timeout-rerun >> test/corpus_class2.timeout-rerun/wait.log 2>&1 &
 ```

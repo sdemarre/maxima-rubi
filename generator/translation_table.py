@@ -144,6 +144,9 @@ RENAME = {
     "RationalFunctionExponents": "%mr_rationalFunctionExponents",
     "DerivativeDivides": "%mr_derivativeDivides",
     "SubstForFractionalPowerOfLinear": "%mr_substForFractionalPowerOfLinear",
+    # class-3 deferred campaign C6b (3.5.m L46 FunctionOfLog catch-all):
+    "FunctionOfLog": "%mr_functionOfLog",
+    "NonsumQ": "%mr_nonsumQ",
     # Rubi's undocumented $UseGamma control global (absent from Rubi.m;
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):

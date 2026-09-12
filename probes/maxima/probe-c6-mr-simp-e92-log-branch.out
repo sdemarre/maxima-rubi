@@ -1,0 +1,95 @@
+batch("probes/maxima/probe-c6-mr-simp-e92-log-branch.mac")
+ratprint:false
+f92:log(d*(a+c*x^2)^n)/(a*e+c*e*x^2)
+mm:_mr_pat_3_5_r10(f92,x)
+Px:geteqR(mm,'_mr_3_5_r10_Px)
+Qx:geteqR(mm,'_mr_3_5_r10_Qx)
+u:mr_int(1/Qx,x)
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+pos
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+no
+t:(u*diff(Px,x))/Px
+s1:ratsimp(t)
+s:%mr_simp(t,x)
+for xv in [0.35,0.65] do
+    (zt:float(rectform(ev(t,[a = 0.9,c = 0.5,d = 0.9,e = 1.1,n = 2,x = xv]))),
+     z1:float(rectform(ev(s1,
+                          [a = 0.9,c = 0.5,d = 0.9,e = 1.1,n = 2,x = xv]))),
+     zs:float(rectform(ev(s,[a = 0.9,c = 0.5,d = 0.9,e = 1.1,n = 2,x = xv]))),
+     printf(true,"x=~a t=~a ratsimp=~a mr_simp=~a ratsimp_minus_t=~a~%",xv,zt,
+            z1,zs,z1-zt))
+x=0.35 t=0.12591905903949868 ratsimp=-1.4242626997904677 mr_simp=5.478264277962219e-17*%i-1.4242626997904677 ratsimp_minus_t=-1.5501817588299664
+x=0.65 t=0.3576261055530193 ratsimp=-2.132678738255944 mr_simp=-(4.4003059606932604e-17*%i)-2.132678738255944 ratsimp_minus_t=-2.490304843808963
+z:-((-1.3416407864998738+0.35*%i)/(1.3416407864998738+0.35*%i))
+lz:float(rectform(log(z)))
+argz:atan2(imagpart(z),realpart(z))
+lz_principal:float(rectform(log(abs(z))+%i*argz))
+printf(true,"logarg=~a~%",float(rectform(z)))
+logarg=0.8725617685305591-0.4885037974251816*%i
+printf(true,"log(logarg) via log()=~a~%",lz)
+log(logarg) via log()=5.772811102900462*%i
+printf(true,"log(logarg) via abs+atan2=~a~%",lz_principal)
+log(logarg) via abs+atan2=-(0.5103742042791239*%i)
+printf(true,"log() minus principal=~a~%",float(rectform(lz-lz_principal)))
+log() minus principal=6.283185307179586*%i
+printf(true,"DONE~%")
+DONE
+ /home/serge/src/maxima-rubi/probes/maxima/probe-c6-mr-simp-e92-log-branch.mac

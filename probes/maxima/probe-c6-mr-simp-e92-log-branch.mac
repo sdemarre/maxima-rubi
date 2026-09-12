@@ -1,0 +1,95 @@
+/* probe-c6-mr-simp-e92-log-branch.mac — C6 e92 non-transition root cause.
+   Maxima branch_5_50_base_84_g4204fb669, SBCL 2.6.7.
+   Run: sh probes/maxima/probe-c6-mr-simp-e92-log-branch.run
+
+   The 3.5 r10 replacement calls %mr_simp(u*diff(Px,x)/Px, x).  For the
+   e92 family, u is a log-form antiderivative and the first ratsimp stage
+   rewrites a log argument so that its numeric value changes (a Maxima
+   log(-z) branch issue).  The probe measures the e92 nested integrand
+   before/after %mr_simp at the driver's two numeric test points. */
+ratprint: false$
+f92: log(d*(a+c*x^2)^n)/(a*e+c*e*x^2)$
+mm: _mr_pat_3_5_r10(f92, x)$
+Px: geteqR(mm, '_mr_3_5_r10_Px)$
+Qx: geteqR(mm, '_mr_3_5_r10_Qx)$
+u: mr_int(1/Qx, x)$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+t: u*diff(Px, x)/Px$
+s1: ratsimp(t)$
+s: %mr_simp(t, x)$
+for xv in [0.35, 0.65] do (
+  zt: float(rectform(ev(t, [a=0.9, c=0.5, d=0.9, e=1.1, n=2, x=xv]))),
+  z1: float(rectform(ev(s1, [a=0.9, c=0.5, d=0.9, e=1.1, n=2, x=xv]))),
+  zs: float(rectform(ev(s, [a=0.9, c=0.5, d=0.9, e=1.1, n=2, x=xv]))),
+  printf(true, "x=~a t=~a ratsimp=~a mr_simp=~a ratsimp_minus_t=~a~%",
+    xv, zt, z1, zs, z1 - zt)
+)$
+z: -((-1.3416407864998738 + 0.35*%i)/(1.3416407864998738 + 0.35*%i))$
+lz: float(rectform(log(z)))$
+argz: atan2(imagpart(z), realpart(z))$
+lz_principal: float(rectform(log(abs(z)) + %i*argz))$
+printf(true, "logarg=~a~%", float(rectform(z)))$
+printf(true, "log(logarg) via log()=~a~%", lz)$
+printf(true, "log(logarg) via abs+atan2=~a~%", lz_principal)$
+printf(true, "log() minus principal=~a~%", float(rectform(lz - lz_principal)))$
+printf(true, "DONE~%")$

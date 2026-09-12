@@ -1,0 +1,234 @@
+=== class-3 deferred campaign close — record join (10-class3-deferred-close-recovery) ===
+run date: 2026-09-12 18:23 UTC  git HEAD: 6b9cc09fc6cd5899065126123c247269bbc1af16  (no Maxima subprocess)
+record pre    test/corpus_class3.campaign-baseline.out  md5 128013c3844636572ff5326a535a8caf  Results: 1736 passed, 1349 failed
+record final  test/corpus_class3.out  md5 92565d7efafdd70879304b0551d22c5f  Results: 2058 passed, 1027 failed
+record integ  test/corpus_class3.baseline.out  md5 533e2d2291686b9cfee75d1950ea5f88  Results: 1441 passed, 1644 failed
+record c6base test/corpus_class3_c6base.out  md5 20c72d112205d27476acf887685b76bb  Results: 2046 passed, 1039 failed
+record c6post test/corpus_class3_c6post.out  md5 fe7b928c7e4de37deaa9de9c49e2428c  Results: 2045 passed, 1040 failed
+
+--- 1. whole record, pre -> final (PASS = expected/verified/no-answer) ---
+PASS->PASS  1605
+PASS->FAIL   131
+FAIL->PASS   453
+FAIL->FAIL   896
+
+FAIL->PASS from the deferred population: 442 of 453
+
+--- 2. deferred population (pre record) -> final class ---
+all deferred      n=1033 recovered= 442 still-deferred= 429  final: deferred=429 expected=4 timeout=55 unverified=107 verified=438
+target (788)      n= 788 recovered= 366 still-deferred= 296  final: deferred=296 expected=4 timeout=31 unverified=95 verified=362
+certain (329)     n= 329 recovered= 222 still-deferred=  62  final: deferred=62 timeout=1 unverified=44 verified=222
+unverified (459)  n= 459 recovered= 144 still-deferred= 234  final: deferred=234 expected=4 timeout=30 unverified=51 verified=140
+non-target (245)  n= 245 recovered=  76 still-deferred= 133  final: deferred=133 timeout=24 unverified=12 verified=76
+
+--- 3. per file (deferred population) ---
+3.1.2  target  n=   0 recovered=   0 residue: -
+3.1.2  certain n=   0 recovered=   0 residue: -
+3.1.2  all     n=   9 recovered=   8 still-deferred=0
+3.1.4  target  n= 216 recovered= 115 residue: deferred=90 timeout=6 unverified=5
+3.1.4  certain n= 128 recovered= 107 residue: deferred=21
+3.1.4  all     n= 230 recovered= 117 still-deferred=97
+3.1.5  target  n=  28 recovered=   3 residue: deferred=11 timeout=6 unverified=8
+3.1.5  certain n=   0 recovered=   0 residue: -
+3.1.5  all     n=  41 recovered=   6 still-deferred=15
+3.2.1  target  n=  81 recovered=  69 residue: deferred=4 timeout=5 unverified=3
+3.2.1  certain n=  34 recovered=  34 residue: -
+3.2.1  all     n=  91 recovered=  71 still-deferred=12
+3.2.2  target  n= 131 recovered=  45 residue: deferred=3 timeout=5 unverified=78
+3.2.2  certain n=  66 recovered=  21 residue: deferred=1 unverified=44
+3.2.2  all     n= 138 recovered=  49 still-deferred=6
+3.2.3  target  n=  22 recovered=   1 residue: deferred=18 timeout=3
+3.2.3  certain n=   8 recovered=   0 residue: deferred=8
+3.2.3  all     n=  36 recovered=   1 still-deferred=29
+3.3    target  n= 110 recovered=   5 residue: deferred=101 timeout=4
+3.3    certain n=  18 recovered=   2 residue: deferred=16
+3.3    all     n= 160 recovered=   5 still-deferred=149
+3.4    target  n= 132 recovered=  72 residue: deferred=58 timeout=2
+3.4    certain n=  39 recovered=  30 residue: deferred=8 timeout=1
+3.4    all     n= 235 recovered= 117 still-deferred=106
+3.5    target  n=  68 recovered=  56 residue: deferred=11 unverified=1
+3.5    certain n=  36 recovered=  28 residue: deferred=8
+3.5    all     n=  93 recovered=  68 still-deferred=15
+
+--- 4. final record deferred mass (flags from the integrate baseline) ---
+deferred=467  target=315  certain=71  unverified-flag=244
+of which deferred in the pre record: 429; newly deferred (pre class != deferred): 38 {'verified': 32, 'unverified': 1, 'timeout': 5}
+newly deferred per file: {'3.2.1': 12, '3.2.2': 8, '3.2.3': 2, '3.3': 16}
+
+--- 5. per verdict class x wave (probe 08 sets) ---
+g1 A                               enum=   4/4    complete recovered=   0 target=  0/2   certain=  0/0   still-deferred=  4
+g1 B-port                          enum=   2/2    complete recovered=   2 target=  2/2   certain=  2/2   still-deferred=  0
+g1 C-in-Rubi                       enum= 120/212  PARTIAL  recovered=  86 target= 78/109 certain= 70/75  still-deferred= 13
+g1 D                               enum=  39/61   PARTIAL  recovered=   9 target=  4/27  certain=  4/7   still-deferred= 19
+g1 PENDING                         enum=   1/1    complete recovered=   0 target=  0/0   certain=  0/0   still-deferred=  0
+g2 A                               enum=   5/5    complete recovered=   5 target=  5/5   certain=  5/5   still-deferred=  0
+g2 B-port                          enum=  47/47   complete recovered=  41 target= 35/40  certain= 10/10  still-deferred=  1
+g2 C-absent                        enum=  17/17   complete recovered=   0 target=  0/5   certain=  0/1   still-deferred= 16
+g2 C-in-Rubi                       enum= 112/112  complete recovered=  33 target= 33/111 certain= 24/64  still-deferred=  0
+g2 D                               enum=  80/80   complete recovered=  42 target= 42/73  certain= 16/28  still-deferred= 27
+g2 PENDING                         enum=   4/4    complete recovered=   0 target=  0/0   certain=  0/0   still-deferred=  3
+g3 A                               enum=   1/1    complete recovered=   0 target=  0/1   certain=  0/0   still-deferred=  1
+g3 B-port                          enum=   1/207  PARTIAL  recovered=   1 target=  1/1   certain=  0/0   still-deferred=  0
+g3 C-absent                        enum=  14/20   PARTIAL  recovered=   8 target=  8/12  certain=  0/0   still-deferred=  6
+g3 C-in-Rubi                       enum=   0/128  PARTIAL  recovered=   0 target=  0/0   certain=  0/0   still-deferred=  0
+g3 D                               enum=  16/16   complete recovered=   0 target=  0/6   certain=  0/0   still-deferred= 16
+g3 PENDING                         enum=  23/23   complete recovered=   0 target=  0/0   certain=  0/0   still-deferred= 22
+g4 B-port                          enum=  41/41   complete recovered=  37 target= 36/37  certain= 14/14  still-deferred=  0
+g4 C-absent                        enum=   4/4    complete recovered=   1 target=  1/4   certain=  1/3   still-deferred=  3
+g4 C-in-Rubi                       enum=  31/31   complete recovered=  20 target= 16/22  certain= 10/14  still-deferred=  9
+g4 D                               enum=  17/17   complete recovered=  10 target=  3/5   certain=  3/5   still-deferred=  3
+
+--- 6. per fix row (enumerated portions; B3/C5 and the 81 3_4 spurious-freeof rows are not enumerated — file rows) ---
+B1 (g1 2 + g4 41 enumerated)       enum=  43/124  complete recovered=  39 target= 38/39  certain= 16/16  still-deferred=  0
+B2 (g2 B-port)                     enum=  47/47   complete recovered=  41 target= 35/40  certain= 10/10  still-deferred=  1
+B4 (e392)                          enum=   1/1    complete recovered=   1 target=  1/1   certain=  0/0   still-deferred=  0
+C1 (g1 M1, enumerated part)        enum= 117/209  PARTIAL  recovered=  83 target= 78/109 certain= 70/75  still-deferred= 13
+C2 (g1 M6)                         enum=   3/3    complete recovered=   3 target=  0/0   certain=  0/0   still-deferred=  0
+C3 (g2 D2)                         enum=  99/99   complete recovered=  21 target= 21/98  certain= 18/58  still-deferred=  0
+C4 (g2 D3/D4)                      enum=  13/13   complete recovered=  12 target= 12/13  certain=  6/6   still-deferred=  0
+C6+C6b (g4 C-in-Rubi, 9 groups)    enum=  31/31   complete recovered=  20 target= 16/22  certain= 10/14  still-deferred=  9
+A (pass-4 NO-GO, 10)               enum=  10/10   complete recovered=   5 target=  5/8   certain=  5/5   still-deferred=  5
+file 3.3 (B3 125 + D16 + A1 + P18) enum= 160/160  complete recovered=   5 target=  5/110 certain=  2/18  still-deferred=149
+file 3.4 (B 82 + C5 128 + CA 20 + P5) enum= 235/235  complete recovered= 117 target= 72/132 certain= 30/39  still-deferred=106
+
+--- 7. C6 groups per entry (pre class / c6post / final; flag) ---
+M-implicit1         e11:deferred/deferred/deferred(unverified)  e49:deferred/deferred/deferred(unverified)  e139:deferred/deferred/verified(expected)
+M-plus-identity     e56:deferred/deferred/verified(verified)  e58:deferred/deferred/verified(verified)
+M-barelog-optional  e266:deferred/deferred/deferred(no-answer)
+M-cas-simp          e92:deferred/unverified/unverified(no-answer)  e93:deferred/timeout/timeout(no-answer)
+M-factored-quad     e103:deferred/verified/verified(no-answer)  e106:deferred/verified/verified(no-answer)  e107:deferred/verified/verified(no-answer)
+M-functionoflog     e134:deferred/deferred/verified(expected)  e135:deferred/deferred/verified(expected)  e136:deferred/deferred/verified(expected)  e140:deferred/deferred/verified(unverified)  e143:deferred/deferred/verified(verified)  e149:deferred/deferred/verified(unverified)  e150:deferred/deferred/verified(unverified)  e151:deferred/deferred/verified(unverified)  e152:deferred/deferred/verified(unverified)  e225:deferred/deferred/verified(expected)  e258:deferred/deferred/verified(no-answer)  e261:deferred/deferred/verified(unverified)
+M-class4            e180:deferred/deferred/deferred(expected)  e181:deferred/deferred/deferred(error)  e183:deferred/deferred/deferred(expected)  e186:deferred/deferred/deferred(expected)  e187:deferred/deferred/deferred(expected)
+M-multistep         e98:deferred/deferred/deferred(no-answer)
+M-323               e243:deferred/verified/verified(verified)  e244:deferred/verified/verified(verified)
+e47 (3.1.5 PENDING, A-shaped): pre=deferred t=8.3  final=timeout t=30.0  flag=no-answer
+
+--- 8. PASS->FAIL (pre -> final) x mid-campaign records (c6base mostly C5 core, c6post C6 core; P/F) ---
+  14  3.1.2  verified   -> unverified     c6base/c6post=FF
+   2  3.1.4  verified   -> unverified     c6base/c6post=FF
+  15  3.1.5  verified   -> timeout        c6base/c6post=FF
+   1  3.1.5  verified   -> timeout        c6base/c6post=PF
+   3  3.1.5  verified   -> timeout        c6base/c6post=PP
+   1  3.1.5  verified   -> unverified     c6base/c6post=FF
+  12  3.2.1  verified   -> deferred       c6base/c6post=FF
+   3  3.2.1  verified   -> unverified     c6base/c6post=FF
+   5  3.2.2  expected   -> unverified     c6base/c6post=FF
+   8  3.2.2  verified   -> deferred       c6base/c6post=FF
+   3  3.2.2  verified   -> unverified     c6base/c6post=FF
+   2  3.2.3  no-answer  -> timeout        c6base/c6post=FF
+   1  3.2.3  verified   -> deferred       c6base/c6post=FF
+   1  3.3    no-answer  -> timeout        c6base/c6post=PP
+   2  3.3    no-answer  -> unexpected     c6base/c6post=FF
+   1  3.3    verified   -> contains-noun  c6base/c6post=PP
+  11  3.3    verified   -> deferred       c6base/c6post=FF
+   3  3.3    verified   -> unverified     c6base/c6post=FF
+   4  3.4    no-answer  -> timeout        c6base/c6post=FF
+  38  3.4    no-answer  -> unexpected     c6base/c6post=FF
+   1  3.5    verified   -> timeout        c6base/c6post=PP
+total PASS->FAIL 131
+
+--- 9. per fix row: close class of the unrecovered entries (file:class=n) ---
+B1 (g1 2 + g4 41 enumerated)       all    unrecovered=   4  3.5:timeout=1 3.5:unverified=3
+B1 (g1 2 + g4 41 enumerated)       target unrecovered=   1  3.5:unverified=1
+B2 (g2 B-port)                     all    unrecovered=   6  3.2.2:deferred=1 3.2.2:timeout=5
+B2 (g2 B-port)                     target unrecovered=   5  3.2.2:timeout=5
+B4 (e392)                          all    unrecovered=   0  -
+B4 (e392)                          target unrecovered=   0  -
+C1 (g1 M1, enumerated part)        all    unrecovered=  34  3.1.4:deferred=13 3.1.4:timeout=7 3.1.4:unverified=5 3.1.5:timeout=5 3.1.5:unverified=4
+C1 (g1 M1, enumerated part)        target unrecovered=  31  3.1.4:deferred=13 3.1.4:timeout=5 3.1.4:unverified=5 3.1.5:timeout=5 3.1.5:unverified=3
+C2 (g1 M6)                         all    unrecovered=   0  -
+C2 (g1 M6)                         target unrecovered=   0  -
+C3 (g2 D2)                         all    unrecovered=  78  3.2.1:timeout=5 3.2.1:unverified=2 3.2.2:unverified=70 3.2.3:timeout=1
+C3 (g2 D2)                         target unrecovered=  77  3.2.1:timeout=5 3.2.1:unverified=2 3.2.2:unverified=70
+C4 (g2 D3/D4)                      all    unrecovered=   1  3.2.1:unverified=1
+C4 (g2 D3/D4)                      target unrecovered=   1  3.2.1:unverified=1
+C6+C6b (g4 C-in-Rubi, 9 groups)    all    unrecovered=  11  3.5:deferred=9 3.5:timeout=1 3.5:unverified=1
+C6+C6b (g4 C-in-Rubi, 9 groups)    target unrecovered=   6  3.5:deferred=6
+A (pass-4 NO-GO, 10)               all    unrecovered=   5  3.1.5:deferred=4 3.3:deferred=1
+A (pass-4 NO-GO, 10)               target unrecovered=   3  3.1.5:deferred=2 3.3:deferred=1
+file 3.3 (B3 125 + D16 + A1 + P18) all    unrecovered= 155  3.3:deferred=149 3.3:timeout=6
+file 3.3 (B3 125 + D16 + A1 + P18) target unrecovered= 105  3.3:deferred=101 3.3:timeout=4
+file 3.4 (B 82 + C5 128 + CA 20 + P5) all    unrecovered= 118  3.4:deferred=106 3.4:timeout=8 3.4:unverified=4
+file 3.4 (B 82 + C5 128 + CA 20 + P5) target unrecovered=  60  3.4:deferred=58 3.4:timeout=2
+
+--- 10. target residue per file x verdict class (probe 08 sets; record §2 per-family claims) ---
+3.1.2 target residue n=0 ()
+  C-in-Rubi claimed=  3 enum=  3 target-in-enum=  0 residue-in-enum=  0
+  D         claimed=  6 enum=  6 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.1.4 target residue n=101 (deferred=90 timeout=6 unverified=5)
+  B-port    claimed=  2 enum=  2 target-in-enum=  2 residue-in-enum=  0
+  C-in-Rubi claimed=194 enum=102 target-in-enum= 98 residue-in-enum= 23 [C1 M1=23]
+      deferred    13: e36 e144 e145 e146 e148 e149 e150 e153 e156 e281 e292 e303 e370
+      timeout      5: e136 e142 e143 e259 e271
+      unverified   5: e135 e256 e257 e268 e270
+  D         claimed= 34 enum= 12 target-in-enum= 12 residue-in-enum=  8
+      deferred     8: e5 e31 e32 e33 e41 e48 e174 e282
+  not enumerated: residue= 70 (deferred=69 timeout=1)  unenumerated claimed remainder: mixed: C-in-Rubi+92 D+22
+3.1.5 target residue n=25 (deferred=11 timeout=6 unverified=8)
+  A         claimed=  4 enum=  4 target-in-enum=  2 residue-in-enum=  2
+      deferred     2: e5 e91
+  C-in-Rubi claimed= 15 enum= 15 target-in-enum= 11 residue-in-enum=  8 [C1 M1=8]
+      timeout      5: e95 e97 e98 e99 e118
+      unverified   3: e92 e141 e147
+  D         claimed= 21 enum= 21 target-in-enum= 15 residue-in-enum= 15
+      deferred     9: e13 e20 e80 e86 e96 e180 e194 e195 e249
+      timeout      1: e1
+      unverified   5: e74 e243 e244 e247 e248
+  PENDING   claimed=  1 enum=  1 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.2.1 target residue n=12 (deferred=4 timeout=5 unverified=3)
+  A         claimed=  5 enum=  5 target-in-enum=  5 residue-in-enum=  0
+  B-port    claimed= 28 enum= 28 target-in-enum= 26 residue-in-enum=  0
+  C-in-Rubi claimed= 31 enum= 31 target-in-enum= 31 residue-in-enum=  8 [C3 D2=7 C4 D3/D4=1]
+      timeout      5: e244 e245 e246 e247 e248
+      unverified   3: e101 e186 e214
+  C-absent  claimed= 12 enum= 12 target-in-enum=  4 residue-in-enum=  4
+      deferred     4: e117 e118 e199 e200
+  D         claimed= 15 enum= 15 target-in-enum= 15 residue-in-enum=  0
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.2.2 target residue n=86 (deferred=3 timeout=5 unverified=78)
+  B-port    claimed= 19 enum= 19 target-in-enum= 14 residue-in-enum=  5
+      timeout      5: e249 e250 e251 e259 e260
+  C-in-Rubi claimed= 79 enum= 79 target-in-enum= 79 residue-in-enum= 70 [C3 D2=70]
+      unverified  70: e14 e15 e16 e17 e18 e19 e24 e25 e26 e27 e28 e29 e30 e31 e32 e35 e36 e37 e38 e39 e40 e43 e44 e45 e46 e47 e48 e51 e52 e53 e54 e59 e60 e61 e62 e63 e68 e69 e70 e71 e72 e73 e78 e79 e80 e81 e82 e83 e84 e85 e86 e87 e88 e89 e90 e91 e92 e93 e94 e96 e97 e98 e99 e100 e101 e102 e104 e105 e106 e107
+  C-absent  claimed=  2 enum=  2 target-in-enum=  0 residue-in-enum=  0
+  D         claimed= 38 enum= 38 target-in-enum= 38 residue-in-enum= 11
+      deferred     3: e230 e252 e261
+      unverified   8: e5 e6 e7 e8 e9 e33 e41 e49
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.2.3 target residue n=21 (deferred=18 timeout=3)
+  C-in-Rubi claimed=  2 enum=  2 target-in-enum=  1 residue-in-enum=  0
+  C-absent  claimed=  3 enum=  3 target-in-enum=  1 residue-in-enum=  1
+      deferred     1: e89
+  D         claimed= 27 enum= 27 target-in-enum= 20 residue-in-enum= 20
+      deferred    17: e2 e4 e5 e6 e21 e22 e23 e24 e40 e41 e42 e64 e72 e73 e90 e91 e105
+      timeout      3: e1 e58 e69
+  PENDING   claimed=  4 enum=  4 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.3 target residue n=105 (deferred=101 timeout=4)
+  A         claimed=  1 enum=  1 target-in-enum=  1 residue-in-enum=  1
+      deferred     1: e360
+  B-port    claimed=125 enum=  0 target-in-enum=  0 residue-in-enum=  0
+  D         claimed= 16 enum= 16 target-in-enum=  6 residue-in-enum=  6
+      deferred     6: e329 e330 e347 e348 e371 e372
+  PENDING   claimed= 18 enum= 18 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue= 98 (deferred=94 timeout=4)  unenumerated claimed remainder: => B-port (by elimination)
+3.4 target residue n=60 (deferred=58 timeout=2)
+  B-port    claimed= 82 enum=  1 target-in-enum=  1 residue-in-enum=  0
+  C-in-Rubi claimed=128 enum=  0 target-in-enum=  0 residue-in-enum=  0
+  C-absent  claimed= 20 enum= 14 target-in-enum= 12 residue-in-enum=  4
+      deferred     4: e125 e126 e127 e128
+  PENDING   claimed=  5 enum=  5 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue= 56 (deferred=54 timeout=2)  unenumerated claimed remainder: mixed: B-port+81 C-in-Rubi+128 C-absent+6
+3.5 target residue n=12 (deferred=11 unverified=1)
+  B-port    claimed= 41 enum= 41 target-in-enum= 37 residue-in-enum=  1 [r31_u=1]
+      unverified   1: e126
+  C-in-Rubi claimed= 31 enum= 31 target-in-enum= 22 residue-in-enum=  6 [M-class4=4 M-implicit1=2]
+      deferred     6: e11 e49 e180 e183 e186 e187
+  C-absent  claimed=  4 enum=  4 target-in-enum=  4 residue-in-enum=  3
+      deferred     3: e19 e34 e300
+  D         claimed= 17 enum= 17 target-in-enum=  5 residue-in-enum=  2
+      deferred     2: e301 e302
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+

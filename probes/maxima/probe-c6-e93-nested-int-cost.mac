@@ -1,0 +1,141 @@
+/* probe-c6-e93-nested-int-cost.mac — C6 e93 non-transition root cause.
+   Maxima branch_5_50_base_84_g4204fb669, SBCL 2.6.7.
+   Run: sh probes/maxima/probe-c6-e93-nested-int-cost.run
+
+   With the driver-style pos-first sign answers placed AFTER each call,
+   the first r10 nested integral u = mr_int(1/Qx, x) is fast; the cost
+   is the second nested integral, mr_int(%mr_simp(u*diff(Px,x)/Px, x),
+   x).  The run script applies the corpus 30 s cap to the whole batch;
+   a DONE line means the second nested integral finished inside the cap. */
+ratprint: false$
+f93: log(d*(a+b*x+c*x^2)^n)/(a*e+b*e*x+c*e*x^2)$
+mm: _mr_pat_3_5_r10(f93, x)$
+Px: geteqR(mm, '_mr_3_5_r10_Px)$
+Qx: geteqR(mm, '_mr_3_5_r10_Qx)$
+u: mr_int(1/Qx, x)$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+inner: %mr_simp(u*diff(Px, x)/Px, x)$
+v: mr_int(inner, x)$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+pos$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+no$
+printf(true, "v_freeof_integrate=~a~%", is(freeof('integrate, v)))$
+printf(true, "DONE~%")$
