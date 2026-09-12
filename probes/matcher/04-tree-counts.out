@@ -1,0 +1,72 @@
+=== probes/matcher/04-tree-counts  run: 2026-09-11 23:08 UTC
+git HEAD: adc55de0d0ea7d3466cb96ef0a68d735772bafc8
+counted files dirty vs HEAD: no
+rule files: 87
+
+SECTION rules per class (sum of mr_rules_count_<key>)
+  class1: 3055
+  class2: 125
+  class3: 334
+  total: 3514
+  9_1 (manual port): 29
+  EXTRA_CLASS1 b files: 5 files, 316 rules [('1_2_1_3b', 82), ('1_2_1_4b', 122), ('1_2_1_5b', 31), ('1_2_1_6b', 48), ('1_2_1_9b', 33)]
+
+SECTION pattern emission
+  _mr_rule_* functions: 3514
+  defmatch: 3462
+  without defmatch (workaround emitters): 52
+  call sites %mr_binpowfactors: 40
+  call sites %mr_mbp_base: 27
+  call sites %mr_logratio_match: 5
+  call sites %mr_headvar_match: 4
+  call sites %mr_logpow_match: 3
+  call sites %mr_logratio_sq_match: 2
+  matchdeclare statements: 24676
+
+SECTION repl bodies carrying the inner-condition guard '(if is(<inner>) = true then ... else false)'
+  class1: repl bodies 3052, with guard 187
+  class2: repl bodies 125, with guard 9
+  class3: repl bodies 334, with guard 31
+  total with guard: 227
+
+SECTION %mr_matchQ
+  rule files: 23 calls in 14 files
+    rules/class1/1_1_1_7.mac: 1
+    rules/class1/1_1_2_10.mac: 1
+    rules/class1/1_1_3_7.mac: 1
+    rules/class1/1_2_1_6.mac: 1
+    rules/class1/1_2_2_5.mac: 1
+    rules/class1/1_2_2_7.mac: 5
+    rules/class1/1_2_3_5.mac: 1
+    rules/class1/1_4_1.mac: 4
+    rules/class1/1_4_2.mac: 2
+    rules/class1/9_1.mac: 1
+    rules/class2/2_3.mac: 2
+    rules/class3/3_2_3.mac: 1
+    rules/class3/3_3.mac: 1
+    rules/class3/3_5.mac: 1
+  maxima_rubi_utils.mac: definition at [1121]; 9 call sites outside comments
+    :2383  and not %mr_matchQ(u, _mr_triQ_r1mq1_w^2,
+    :2398  else %mr_matchQ(u, _mr_linMq_r1mq1_a + _mr_linMq_r1mq1_b * x,
+    :2415  else %mr_matchQ(u,
+    :2421  or %mr_matchQ(u, _mr_quadMq_r2mq1_a + _mr_quadMq_r2mq1_c * x^2,
+    :2439  else %mr_matchQ(u, _mr_binMq_r1mq1_a + _mr_binMq_r1mq1_b * x^_mr_binMq_r1mq1_n,
+    :2460  else %mr_matchQ(u,
+    :2519  r : %mr_matchQ(u, pattern, %mr_mq_capture_lambda),
+    :2647  else %mr_matchQ(
+    :2811  else %mr_matchQ(
+
+SECTION rubi_hybrid references
+  rules/class1/9_1.mac: 25 (outside comments)
+
+SECTION test_maxima_rubi.mac lines containing each token
+  _mr_pat_: 31
+  defmatch: 11
+  %mr_mbp_base: 14
+  %mr_matchQ: 26
+  matchdeclare: 3
+  _mr_rule_: 3
+  %mr_dispatch_rev: 0
+  %mr_dispatch_i1: 0
+  %mr_dispatch_p4: 0
+  rubi_hybrid: 0
