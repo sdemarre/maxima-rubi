@@ -1,8 +1,11 @@
 /* test/matcher/roundtrip.mac -- one shard of the matcher round trip; run by
    test/matcher/run.sh (sets MR_CASES, MR_RESULTS, MR_NSHARDS, MR_SHARD,
-   MR_MODES, MR_LEGS).  No rule files are loaded, so no --tls-limit flag. */
+   MR_MODES, MR_LEGS, MR_MODEL_FLAGS).  No rule files are loaded, so no
+   --tls-limit flag. */
 display2d : false$
 build_info();
 load("maxima_rubi_match.lisp")$
+load("maxima_rubi_tree.lisp")$
 load("test/matcher/roundtrip.lisp")$
+load("test/matcher/maxima-leg.lisp")$
 :lisp (mr-roundtrip:run)
