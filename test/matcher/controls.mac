@@ -1,0 +1,7 @@
+/* test/matcher/controls.mac -- probe-02 controls through MR-MATCH; run by
+   test/matcher/run.sh (MR_CONTROLS = the generated data file). */
+display2d : false$
+load("maxima_rubi_match.lisp")$
+load("test/matcher/controls.lisp")$
+:lisp (load (sb-ext:posix-getenv "MR_CONTROLS"))
+:lisp (mr-controls:run)

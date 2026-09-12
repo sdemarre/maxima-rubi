@@ -75,6 +75,11 @@ BLANKS = {"Blank", "BlankSequence", "BlankNullSequence"}
 DEFAULT = {"Plus": 0, "Times": 1}
 MAX_SINGLE_VARIANTS = 10
 
+# modes / legs the judge scores (default: probe 02 as committed; the
+# matcher regression suite sets MR_MODES=narrow,wide and MR_LEGS=tree or tree,maxima)
+MODES = tuple(os.environ.get("MR_MODES", "pub,guard").split(","))
+LEGS = tuple(os.environ.get("MR_LEGS", "tree,maxima").split(","))
+
 # Mathematica head, arity -> Maxima function.  Every Maxima name was measured
 # to exist (its internal operator is re-derived at run time by
 # 02-roundtrip.lisp from these calls; a failure prints HEAD-FAIL).  PolyLog and
@@ -671,7 +676,7 @@ def cmd_judge(work, nshards):
     # completeness
     missing = []
     for rid, (r, lhs, pos, muts) in cases.items():
-        for mode in ("pub", "guard"):
+        for mode in MODES:
             if (rid, mode) not in prep:
                 missing.append("%s PREP %s" % (rid, mode))
                 continue
@@ -680,7 +685,7 @@ def cmd_judge(work, nshards):
             for v, (t, B, valid, ms) in pos.items():
                 if (rid, v, "tree", mode) not in results:
                     missing.append("%s %s tree %s" % (rid, v, mode))
-                if ms and (rid, v, "maxima", mode) not in results:
+                if ms and "maxima" in LEGS and (rid, v, "maxima", mode) not in results:
                     missing.append("%s %s maxima %s" % (rid, v, mode))
             for v in muts:
                 if (rid, v, "tree", mode) not in results:
@@ -711,7 +716,7 @@ def cmd_judge(work, nshards):
           "(False = collapsed, judged like mutations; None = unverifiable): %s" %
           dict(sorted(wit.items(), key=str)))
 
-    for mode in ("pub", "guard"):
+    for mode in MODES:
         print()
         print("=" * 72)
         print("MODE %s (%s)" % (mode, "mma4max as published" if mode == "pub" else "with the spike's mblank1 nil-guard"))
