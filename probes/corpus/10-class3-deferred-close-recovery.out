@@ -1,5 +1,5 @@
 === class-3 deferred campaign close — record join (10-class3-deferred-close-recovery) ===
-run date: 2026-09-12 14:05 UTC  git HEAD: d535e241020a8543e1ed880467948366fd3c47da  (no Maxima subprocess)
+run date: 2026-09-12 18:23 UTC  git HEAD: 6b9cc09fc6cd5899065126123c247269bbc1af16  (no Maxima subprocess)
 record pre    test/corpus_class3.campaign-baseline.out  md5 128013c3844636572ff5326a535a8caf  Results: 1736 passed, 1349 failed
 record final  test/corpus_class3.out  md5 92565d7efafdd70879304b0551d22c5f  Results: 2058 passed, 1027 failed
 record integ  test/corpus_class3.baseline.out  md5 533e2d2291686b9cfee75d1950ea5f88  Results: 1441 passed, 1644 failed
@@ -126,4 +126,109 @@ e47 (3.1.5 PENDING, A-shaped): pre=deferred t=8.3  final=timeout t=30.0  flag=no
   38  3.4    no-answer  -> unexpected     c6base/c6post=FF
    1  3.5    verified   -> timeout        c6base/c6post=PP
 total PASS->FAIL 131
+
+--- 9. per fix row: close class of the unrecovered entries (file:class=n) ---
+B1 (g1 2 + g4 41 enumerated)       all    unrecovered=   4  3.5:timeout=1 3.5:unverified=3
+B1 (g1 2 + g4 41 enumerated)       target unrecovered=   1  3.5:unverified=1
+B2 (g2 B-port)                     all    unrecovered=   6  3.2.2:deferred=1 3.2.2:timeout=5
+B2 (g2 B-port)                     target unrecovered=   5  3.2.2:timeout=5
+B4 (e392)                          all    unrecovered=   0  -
+B4 (e392)                          target unrecovered=   0  -
+C1 (g1 M1, enumerated part)        all    unrecovered=  34  3.1.4:deferred=13 3.1.4:timeout=7 3.1.4:unverified=5 3.1.5:timeout=5 3.1.5:unverified=4
+C1 (g1 M1, enumerated part)        target unrecovered=  31  3.1.4:deferred=13 3.1.4:timeout=5 3.1.4:unverified=5 3.1.5:timeout=5 3.1.5:unverified=3
+C2 (g1 M6)                         all    unrecovered=   0  -
+C2 (g1 M6)                         target unrecovered=   0  -
+C3 (g2 D2)                         all    unrecovered=  78  3.2.1:timeout=5 3.2.1:unverified=2 3.2.2:unverified=70 3.2.3:timeout=1
+C3 (g2 D2)                         target unrecovered=  77  3.2.1:timeout=5 3.2.1:unverified=2 3.2.2:unverified=70
+C4 (g2 D3/D4)                      all    unrecovered=   1  3.2.1:unverified=1
+C4 (g2 D3/D4)                      target unrecovered=   1  3.2.1:unverified=1
+C6+C6b (g4 C-in-Rubi, 9 groups)    all    unrecovered=  11  3.5:deferred=9 3.5:timeout=1 3.5:unverified=1
+C6+C6b (g4 C-in-Rubi, 9 groups)    target unrecovered=   6  3.5:deferred=6
+A (pass-4 NO-GO, 10)               all    unrecovered=   5  3.1.5:deferred=4 3.3:deferred=1
+A (pass-4 NO-GO, 10)               target unrecovered=   3  3.1.5:deferred=2 3.3:deferred=1
+file 3.3 (B3 125 + D16 + A1 + P18) all    unrecovered= 155  3.3:deferred=149 3.3:timeout=6
+file 3.3 (B3 125 + D16 + A1 + P18) target unrecovered= 105  3.3:deferred=101 3.3:timeout=4
+file 3.4 (B 82 + C5 128 + CA 20 + P5) all    unrecovered= 118  3.4:deferred=106 3.4:timeout=8 3.4:unverified=4
+file 3.4 (B 82 + C5 128 + CA 20 + P5) target unrecovered=  60  3.4:deferred=58 3.4:timeout=2
+
+--- 10. target residue per file x verdict class (probe 08 sets; record §2 per-family claims) ---
+3.1.2 target residue n=0 ()
+  C-in-Rubi claimed=  3 enum=  3 target-in-enum=  0 residue-in-enum=  0
+  D         claimed=  6 enum=  6 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.1.4 target residue n=101 (deferred=90 timeout=6 unverified=5)
+  B-port    claimed=  2 enum=  2 target-in-enum=  2 residue-in-enum=  0
+  C-in-Rubi claimed=194 enum=102 target-in-enum= 98 residue-in-enum= 23 [C1 M1=23]
+      deferred    13: e36 e144 e145 e146 e148 e149 e150 e153 e156 e281 e292 e303 e370
+      timeout      5: e136 e142 e143 e259 e271
+      unverified   5: e135 e256 e257 e268 e270
+  D         claimed= 34 enum= 12 target-in-enum= 12 residue-in-enum=  8
+      deferred     8: e5 e31 e32 e33 e41 e48 e174 e282
+  not enumerated: residue= 70 (deferred=69 timeout=1)  unenumerated claimed remainder: mixed: C-in-Rubi+92 D+22
+3.1.5 target residue n=25 (deferred=11 timeout=6 unverified=8)
+  A         claimed=  4 enum=  4 target-in-enum=  2 residue-in-enum=  2
+      deferred     2: e5 e91
+  C-in-Rubi claimed= 15 enum= 15 target-in-enum= 11 residue-in-enum=  8 [C1 M1=8]
+      timeout      5: e95 e97 e98 e99 e118
+      unverified   3: e92 e141 e147
+  D         claimed= 21 enum= 21 target-in-enum= 15 residue-in-enum= 15
+      deferred     9: e13 e20 e80 e86 e96 e180 e194 e195 e249
+      timeout      1: e1
+      unverified   5: e74 e243 e244 e247 e248
+  PENDING   claimed=  1 enum=  1 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.2.1 target residue n=12 (deferred=4 timeout=5 unverified=3)
+  A         claimed=  5 enum=  5 target-in-enum=  5 residue-in-enum=  0
+  B-port    claimed= 28 enum= 28 target-in-enum= 26 residue-in-enum=  0
+  C-in-Rubi claimed= 31 enum= 31 target-in-enum= 31 residue-in-enum=  8 [C3 D2=7 C4 D3/D4=1]
+      timeout      5: e244 e245 e246 e247 e248
+      unverified   3: e101 e186 e214
+  C-absent  claimed= 12 enum= 12 target-in-enum=  4 residue-in-enum=  4
+      deferred     4: e117 e118 e199 e200
+  D         claimed= 15 enum= 15 target-in-enum= 15 residue-in-enum=  0
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.2.2 target residue n=86 (deferred=3 timeout=5 unverified=78)
+  B-port    claimed= 19 enum= 19 target-in-enum= 14 residue-in-enum=  5
+      timeout      5: e249 e250 e251 e259 e260
+  C-in-Rubi claimed= 79 enum= 79 target-in-enum= 79 residue-in-enum= 70 [C3 D2=70]
+      unverified  70: e14 e15 e16 e17 e18 e19 e24 e25 e26 e27 e28 e29 e30 e31 e32 e35 e36 e37 e38 e39 e40 e43 e44 e45 e46 e47 e48 e51 e52 e53 e54 e59 e60 e61 e62 e63 e68 e69 e70 e71 e72 e73 e78 e79 e80 e81 e82 e83 e84 e85 e86 e87 e88 e89 e90 e91 e92 e93 e94 e96 e97 e98 e99 e100 e101 e102 e104 e105 e106 e107
+  C-absent  claimed=  2 enum=  2 target-in-enum=  0 residue-in-enum=  0
+  D         claimed= 38 enum= 38 target-in-enum= 38 residue-in-enum= 11
+      deferred     3: e230 e252 e261
+      unverified   8: e5 e6 e7 e8 e9 e33 e41 e49
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.2.3 target residue n=21 (deferred=18 timeout=3)
+  C-in-Rubi claimed=  2 enum=  2 target-in-enum=  1 residue-in-enum=  0
+  C-absent  claimed=  3 enum=  3 target-in-enum=  1 residue-in-enum=  1
+      deferred     1: e89
+  D         claimed= 27 enum= 27 target-in-enum= 20 residue-in-enum= 20
+      deferred    17: e2 e4 e5 e6 e21 e22 e23 e24 e40 e41 e42 e64 e72 e73 e90 e91 e105
+      timeout      3: e1 e58 e69
+  PENDING   claimed=  4 enum=  4 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
+3.3 target residue n=105 (deferred=101 timeout=4)
+  A         claimed=  1 enum=  1 target-in-enum=  1 residue-in-enum=  1
+      deferred     1: e360
+  B-port    claimed=125 enum=  0 target-in-enum=  0 residue-in-enum=  0
+  D         claimed= 16 enum= 16 target-in-enum=  6 residue-in-enum=  6
+      deferred     6: e329 e330 e347 e348 e371 e372
+  PENDING   claimed= 18 enum= 18 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue= 98 (deferred=94 timeout=4)  unenumerated claimed remainder: => B-port (by elimination)
+3.4 target residue n=60 (deferred=58 timeout=2)
+  B-port    claimed= 82 enum=  1 target-in-enum=  1 residue-in-enum=  0
+  C-in-Rubi claimed=128 enum=  0 target-in-enum=  0 residue-in-enum=  0
+  C-absent  claimed= 20 enum= 14 target-in-enum= 12 residue-in-enum=  4
+      deferred     4: e125 e126 e127 e128
+  PENDING   claimed=  5 enum=  5 target-in-enum=  0 residue-in-enum=  0
+  not enumerated: residue= 56 (deferred=54 timeout=2)  unenumerated claimed remainder: mixed: B-port+81 C-in-Rubi+128 C-absent+6
+3.5 target residue n=12 (deferred=11 unverified=1)
+  B-port    claimed= 41 enum= 41 target-in-enum= 37 residue-in-enum=  1 [r31_u=1]
+      unverified   1: e126
+  C-in-Rubi claimed= 31 enum= 31 target-in-enum= 22 residue-in-enum=  6 [M-class4=4 M-implicit1=2]
+      deferred     6: e11 e49 e180 e183 e186 e187
+  C-absent  claimed=  4 enum=  4 target-in-enum=  4 residue-in-enum=  3
+      deferred     3: e19 e34 e300
+  D         claimed= 17 enum= 17 target-in-enum=  5 residue-in-enum=  2
+      deferred     2: e301 e302
+  not enumerated: residue=  0 (-)  unenumerated claimed remainder: -
 

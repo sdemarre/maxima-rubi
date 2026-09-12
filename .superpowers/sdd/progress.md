@@ -4340,9 +4340,15 @@ Record: docs/corpus-class3-deferred-uplift.md §4-§7.
   - Regression gate: 142/142 PASS->FAIL attributed per entry (probe 09:
     per-entry re-runs on the pre-campaign cores under the current
     build + a core rebuilt at every campaign commit — class-1/2 matrix,
-    class-3 bisection — + 120 s runs). Class 3: 127 deterministic by
-    first-FAIL commit (B1 6, C2 24, C4 6, C3 26, B3 7, C5 51, C6b 7;
-    none from B2/B4/C1/C6) + 4 close-record noise. Class 1: 9
+    class-3 bisection — + 120 s runs). Class 3: 122 deterministic by
+    first-FAIL commit (B1 5, C2 24, C4 6, C3 26, B3 7, C5 51, C6b 3;
+    none from B2/B4/C1/C6) + 5 near-cap/indeterminate (3.1.5
+    e112/e126/e132 and 3.2.3 e63: the close core's 120 s run PASSes
+    inside 30 s; 3.2.3 e61: no route change base -> close, base run
+    23.8 s) + 4 close-record noise (probe 09 .summary.out
+    `disposition totals`). Ticket-01/02 class-1 entries (probe 11,
+    16 entries): no PASS->FAIL; 1.2.1.5 e59 and 1.2.2.3 e149
+    timeout -> verified, the other 14 unchanged. Class 1: 9
     deterministic (B1 3 `1_4_1_r18`; B2 3 list-form LinearQ; C5 3 the
     shared %mr_mbp2 widening) + 1 build/near-cap (e22). Class 2: e52 is
     milestone 3 (class-3 load), pre-campaign. All deterministic
@@ -4353,7 +4359,7 @@ Record: docs/corpus-class3-deferred-uplift.md §4-§7.
     certain 71). The five remaining C6 groups (M-implicit1,
     M-plus-identity, M-barelog-optional, M-factored-quad, M-323) are
     out of campaign scope, superseded by the matcher substrate; 7 of
-    their 11 entries PASS via other routes, e11/e49/e266 stay
+    their 10 entries PASS via other routes, e11/e49/e266 stay
     deferred.
   - Gates (re-measured 2026-09-12): Layer A `Results: 892 passed, 0
     failed`; byte-identity --class 1/2/3 clean; tree fingerprint =

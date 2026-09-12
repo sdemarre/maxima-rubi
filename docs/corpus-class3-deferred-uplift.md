@@ -837,9 +837,16 @@ located by the per-commit cores: the full matrix for classes 1–2
 (`.bisect.py`)); **PASS on the final core ⇒ run-to-run noise in the
 close record** (a near-cap timeout or a verification-stage variance);
 **FAIL on base and final ⇒ not a campaign change** (build or noise —
-then a 120 s cap run decides slow-correct vs genuine). The joined
-per-entry table is `…attribution.summary.out`
-(`…summary.py`).
+then a 120 s cap run decides slow-correct vs genuine). A class-3 entry
+located by the bisection is **near-cap / indeterminate** rather than
+deterministic when (a) the close core's 120 s cap run returns a PASS
+class within the standard 30 s, or (b) its pass-1 fire trace is
+identical on the base and close cores and its base run is itself
+≥ 20 s: the close core's own runs straddle the cap (or no route
+changed), so the single 30 s FAIL is not separable from timing noise.
+The joined per-entry table is `…attribution.summary.out`
+(`…summary.py`); its `disp=` column applies these rules mechanically
+and its `disposition totals` line counts them.
 
 ### 5.4 Class-1 and class-2 PASS→FAIL — attributed (11/11)
 
@@ -865,31 +872,54 @@ FAIL→PASS. The spec's "FAIL→PASS only" expectation for classes 1–2
 fails on these 9 — recorded, not fixed (the campaign closed at its
 current state; §4).
 
+**Ticket-01 / ticket-02 entries, checked explicitly** (campaign plan
+Task 5 Step 4, spec §5.3; tickets
+`.scratch/class1-ab-remainders/issues/01-slow-zero-chain-forms.md` and
+`02-matcher-state-91-pattern-load.md`). Probe 11
+(`probes/corpus/11-deferred-close-class1-ticket-entries.{py,out}`, no
+Maxima subprocess) reads the 16 entries from the two class-1 records:
+`totals over the 16: PASS->PASS=2 PASS->FAIL=0 FAIL->PASS=2
+FAIL->FAIL=12`. Ticket 01 (9 slow-form entries): 1.2.1.5 e59 and
+1.2.2.3 e149 timeout → verified (23.4 / 26.1 s); 1.2.1.5 e66 / e73
+verified → verified (28.6 → 23.9 s, 29.7 → 23.7 s); 1.1.4.3 e228,
+1.2.1.3 e1979, 1.2.1.4 e686 / e687, 1.2.1.9 e308 timeout → timeout.
+Ticket 02 (the 7-entry matcher-state families): 1.2.2.4 e223 deferred →
+deferred (27.6 → 29.0 s); 1.2.1.2 e2514, e2567–e2569, e2572, e2573
+timeout → timeout. No ticket entry regresses; the two FAIL→PASS are
+among the class-1 66.
+
 ### 5.5 Class-3 PASS→FAIL — attributed (131/131)
 
 Evidence: probe 09 `.class3-{final,base1d998cc}.out` (all 131), the
 per-commit binary search `.class3-bisect.out` (the 127 entries PASS on
-the base core and FAIL on the close core; every run's class/time and
-the last-PASS / first-FAIL fire traces are in the file), the 120 s cap
-runs `.class3-final-cap120.out` / `.e47-final-cap120.out`, the 100 s
-re-check (§5.6); joined per entry in `.summary.out`. **All 131 are PASS
-on the campaign-base rules under the current build** — none is a build
-effect. 127 are deterministic campaign changes; 4 PASS on the close
-core (noise in the close record).
+the base core and FAIL on the close core in the probe's 30 s runs;
+every run's class/time and the last-PASS / first-FAIL fire traces are
+in the file), the 120 s cap runs `.class3-final-cap120.out` /
+`.e47-final-cap120.out`, the 100 s re-check (§5.6); joined per entry,
+with the §5.3 disposition in the `disp=` column, in `.summary.out`.
+**All 131 are PASS on the campaign-base rules under the current build**
+— none is a build effect. By disposition (`.summary.out`:
+`disposition totals: deterministic 122 + near-cap 5 + noise 4 +
+unclassified 0 = 131`): **122 deterministic campaign changes; 5
+near-cap / indeterminate** (bisected, but the close core's own runs
+straddle the 30 s cap); **4 PASS on the close core** (noise in the
+close record).
 
 | first FAIL core | n | entries | mechanism (fire traces: base → close) | disposition |
 |---|---:|---|---|---|
-| **B1 `464d29f`** | 6 | 3.1.4 e95, e96; 3.1.5 e46, e53, e122; 3.2.3 e61 | the de-spuriated slots bind: `3_5_r2` (e95/e96) and `3_5_r34` (e46/e53/e122) now enter the chain; the answers stop verifying (e95/e96/e46 unverified 2–14 s; e53 unverified, 36.1 s at 120 s; e122 still timeout at 100 s and 120 s). e61 (no-answer 23.8 s on base → timeout on every campaign core measured; no-answer at 31.3 s / 120 s cap and 84.0 s in the re-check) | route changes from the faithful B1 declaration fix. **e61 is timing-band evidence only** (its base run is itself 23.8 s against the 30 s cap) |
+| **B1 `464d29f`** | 5 | 3.1.4 e95, e96; 3.1.5 e46, e53, e122 | the de-spuriated slots bind: `3_5_r2` (e95/e96) and `3_5_r34` (e46/e53/e122) now enter the chain; the answers stop verifying (e95/e96/e46 unverified 2–14 s; e53 unverified, 36.1 s at 120 s; e122 still timeout at 100 s and 120 s) | route changes from the faithful B1 declaration fix (3.2.3 e61, also bisected to this step, is near-cap: last row) |
 | **C2 `52ffb6f`** | 24 | 3.1.2 e73–e75, e78–e83, e86–e88, e168, e169 (14); 3.1.5 e36, e38, e39, e45, e104, e106, e107, e111, e113, e114 (10) | the re-transcribed `3_1_2_r10` now binds first: the 3.1.2 rows get its m10 Subst answer instead of the base `3_1_5_r27` / nested `3_1_2_r6` routes and it does not verify (unverified 2–5 s); the 3.1.5 rows run r10 inside the nested chain and the route slows from 13–16 s (base) / 18–22 s (B4 core) to > 30 s | 3.1.2: the route change the ledger's C2 entry predicted for the p < 0 rows (`.m` fires m9 first; the port now fires m10 — both valid antiderivatives, the zero chain does not close m10's form). 3.1.5: **slow-correct** — verified in 34–69 s at 120 s and in 51–61 s at the 100 s re-check |
 | **C4 `d2ae62d`** | 6 | 3.2.1 e132, e140, e141, e145, e146; 3.2.2 e255 | e140/e141/e145/e146: the structural matcher `%mr_logpow_match` declines entries the old r16 defmatch bound; the r22 Unintegrable catch-all (kept as defmatch) fires → deferred 2–3 s. e132: r16 binds on a different route → unverified. e255: `3_2_1_r18` now fires ahead of the base cover `3_5_r1` → expected → unverified | deterministic: C4's acceptance boundary is narrower than the old defmatch on these shapes (4 entries) or reroutes (2) |
 | **C3 `1c8a306`** | 26 | 3.2.1 e14, e22, e23, e27, e28, e42, e50, e51, e55, e56; 3.2.2 e189, e210, e211, e216, e217, e222–e225, e241, e242, e244–e246, e248; 3.2.3 e39 | `%mr_logratio_match` declines 17 entries the old r15/r17 (3.2.1) and r3 (3.2.2) defmatches bound → the catch-alls `3_2_1_r21` / `3_2_2_r11` (or `3_2_3_r18` on e39) answer with a noun (deferred 1–4 s: 3.2.1 e22/e23/e27/e28/e50/e51/e55/e56 ×8, 3.2.2 e224/e225/e241/e242/e244–e246/e248 ×8, 3.2.3 e39). 9 reroute: r15/r17 bind through the matcher on e14/e42/e189 instead of base `3_5_r7`; `3_2_2_r5` binds e210/e211/e216/e217/e222/e223 with a different nested chain (`3_1_2_r10` in place of `9_1_r16`) → unverified | deterministic: C3's census-bounded acceptance (§4) misses these stored shapes (17) or changes the binding route (9) |
 | **B3 `9533528`** | 7 | 3.3 e130, e134, e135, e157, e158, e165, e166 | e130/e134/e135: the re-transcribed r12/r13 now bind first (base `3_3_r29`) → unverified; e157/e158: the base cover `3_3_r10`, re-transcribed, no longer binds (no pass-1 fire) → deferred; e165/e166: re-transcribed `3_3_r25` answers a noun-expected entry → **unexpected, and the answer self-verifies** (`self=1`) | e130–e158: deterministic regressions of the B3 re-emission. e165/e166: a correct antiderivative where the corpus expects a noun — a yardstick reclassification, not a wrong answer |
 | **C5 `4702d4d`** | 51 | 3.3 e5–e8, e12–e16 (9); 3.4 e536–e605 (42) | 3.3: the re-transcribed `3_4_r6` now binds the 3.3 linear-log shapes ahead of the base route (`3_1_5_r35`) and returns a noun → deferred 0.7–1.7 s. 3.4: the re-transcribed `3_4_r12` (34) / `3_4_r5` (5) answer noun-expected entries → unexpected; e551/e589/e603: the base `3_4_r39` no-answer (1 s) is no longer reached and nothing completes within 30 s, 100 s or 120 s | 3.3: deterministic regression (C5's binding widened into 3.3). 3.4 unexpected answers, self-check at 30 s: closes on 18 (e536, e537, e560, e561, e566, e567, e570–e574, e579, e580, e582–e584, e588, e590), does not close on 5 (e542, e543, e577, e578, e581), cut by the cap on 16 — re-run at 120 s: 3 close (e594, e595, e599), 3 do not close (e600, e601, e605), 10 still cut (e544–e546, e550, e552, e596–e598, e602, e604); the 5 non-closing ones stay non-closing at 120 s. Of the 39 answers: 21 self-verify (correct antiderivatives on noun-expected entries — yardstick reclassifications), 8 do not close under the zero chain, 10 unresolved within 120 s; the 3 timeouts stay FAIL |
-| **C6b `99e1eb1`** | 7 | 3.1.5 e57, e63, e112, e126, e132; 3.2.3 e63; 3.3 e179 | the FunctionOfLog catch-all r42 (tried on every non-sum integrand that reaches its table position, `factor()` in its body) adds cost to nested chains that were 21–26 s on the C6 core → timeout (3.1.5; 3.2.3 e63 no-answer 23.9 s → timeout); on e179 `3_5_r42` fires inside the chain and leaves the `unintegrable` marker → contains-noun | 3.1.5: **slow-correct** (verified in 21–47 s at 120 s, 35–48 s at the 100 s re-check). 3.2.3 e63: slow noun (no-answer 22.8 s at 120 s, 52.2 s in the re-check). e179: deterministic route change of the catch-all port (the C6b report's performance note) |
+| **C6b `99e1eb1`** | 3 | 3.1.5 e57, e63; 3.3 e179 | e57/e63: the pass-1 fire trace does not change across the C6→C6b step (`.class3-bisect.out`: last-PASS = first-FAIL traces); the close core runs them past the cap — 30 s cut, 37.0 / 46.5 s at 120 s (one run each), 40.7 / 35.1 s in the loaded 100 s re-check — against 22.5 / 25.9 s on the C6 core (one run each); the slowdown accumulates over the campaign (base 10.0 / 20.6 s, C1 core 20.3 / 24.8 s). e179: `3_5_r42` fires inside the chain and leaves the `unintegrable` marker → contains-noun | e57/e63: **slow-correct on timing evidence only** — C6b is where the single-run bisection crosses the cap, not a traced route change; in the loaded mid-campaign records on the C5/C6 cores (`test/corpus_class3_c6base.out` / `_c6post.out`) e57 verified at 28.0 / 29.3 s and 3.1.5 e63 already timed out (30.0 s both). e179: deterministic route change of the catch-all port (the C6b report's performance note) |
+| — (near-cap / indeterminate) | 5 | 3.1.5 e112, e126, e132; 3.2.3 e61, e63 | rule (a) — e112/e126/e132 and 3.2.3 e63, bisected to C6→C6b by one 30 s timeout: the close core's 120 s run completes them inside the cap (verified 22.9 / 21.4 / 24.5 s, no-answer 22.8 s), matching their C6-core runs (23.1 / 21.0 / 24.5 / 23.9 s); last-PASS and first-FAIL fire traces identical for e126/e132/3.2.3 e63, e112 differing only by the top-level `3_5_r43` print the cut run never reached. Rule (b) — 3.2.3 e61, bisected to base→B1: identical fire trace on the base and close cores (`3_3_r60, 3_2_3_r10, 1_1_1_1_r2, 3_1_2_r2`), base run 23.8 s (28.5 s in the pre-campaign record); close core no-answer 31.3 s at 120 s, 84.0 s in the loaded re-check | **near-cap, not attributed to a commit**: a single 30 s FAIL against runs that straddle the cap. The rule-(a) entries did slow during the campaign (e126 10.0 s base → 21.0 s on the C1 core; 3.2.3 e63 6.3 s → 23.0 s on the B3 core), but not past 30 s on the close core's own 120 s run |
 | — (PASS on the close core) | 4 | 3.1.5 e22, e44; 3.3 e547; 3.5 e1 | close core at 30 s: verified 21.2 / 27.9 s, no-answer 10.3 s, verified 3.8 s; 100 s re-check: verified 26.7 / 40.2 s, no-answer 12.2 s, verified 6.0 s | **run-to-run noise** in the close record (timeouts at 30–33 s under the 24-shard load). e22/e44 sit near the cap: slower than on the base core (6.1 / 15.2 s) since C2 — recorded, not a class change |
 
-No PASS→FAIL is attributed to B2, B4, C1 or C6. By first FAIL core: B1
-6, C2 24, C4 6, C3 26, B3 7, C5 51, C6b 7 (= 127) + noise 4 = 131.
+No PASS→FAIL is attributed to B2, B4, C1 or C6. Deterministic, by first
+FAIL core: B1 5, C2 24, C4 6, C3 26, B3 7, C5 51, C6b 3 (= 122) +
+near-cap 5 + noise 4 = 131 (`.summary.out` `disposition counts`).
 Every deterministic entry is dispositioned **accepted as recorded, not
 fixed**: the campaign closed at its current state (user decision
 2026-09-11; §4) and each mechanism is a `defmatch`-emission side effect
@@ -1003,26 +1033,37 @@ rows were never enumerated per entry, so they appear as file rows.
 | file 3.4 (B1 82 + C5 128 + C-absent 20 + PENDING 5) | 235 / 235 | 117 | 72 / 132 | 30 / 39 | 106 |
 
 Readings: C3 removed every binding failure on its list (0 still
-deferred) but 78 of the rebound answers do not close under the
-zero chain (the 3.2.2 residue below is `unverified`, not `deferred`) —
-the residue there is verification-stage, not matching. The five
+deferred), but 78 of its 99 entries are not recovered (probe 10 §9:
+`3.2.1:timeout=5 3.2.1:unverified=2 3.2.2:unverified=70
+3.2.3:timeout=1`): 72 `unverified` — rebound answers that do not close
+under the zero chain — and 6 `timeout`. The C3 residue is
+verification- and cost-stage, not matching. The five
 g2 A entries (3.2.1, `3_2_1_r14`) PASS on the production path of the
 close tree although pass 4 is not wired; the four g1 A entries and e360
 (g3) remain deferred — their only measured rescue is the unwired sweep.
 
 ### 6.3 Per-file residue (target mass) and why not
 
-| file | target n | recovered | residue (close class) | why the residue was not recovered |
+The residue is the target-flagged population entries whose close class
+is not PASS. The why-not column counts each §2 verdict class **inside
+that residue** (probe 10 §10: the residue joined to the probe-08
+enumerations and to the §2 per-family claims), with the residue
+entries' close classes; residue entries in no enumerated set are
+counted as *not enumerated* and named by elimination only where the
+file leaves a single class unenumerated. A class not listed for a file
+has no residue entry.
+
+| file | target n | recovered | residue (close class) | why the residue was not recovered (verdict class × residue, probe 10 §10) |
 |---|---:|---:|---|---|
-| 3.1.2 | 0 | — | — | no target entries (the 9 deferred are non-target D-NEST; 8 of 9 now PASS) |
-| 3.1.4 | 216 | 115 | deferred 90, timeout 6, unverified 5 | D: M2 ×28 bare-binomial faithful 0-bind in both systems, `.m`-coverage gap ×18 (catch-all only) (§2 g1); C1's enumerated rows still deferred: 13 (not re-triaged at this close) |
-| 3.1.5 | 28 | 3 | deferred 11, timeout 6, unverified 8 | M5 ×4 strict decline (e194–e197); C1a q = −1 rows (e92/e118/e141/e147: `.m` r47 declines, the r46 cover 0-binds the bare log — ledger C1); A e5/e91/e209/e215 rescued only by the unwired sweep |
-| 3.2.1 | 81 | 69 | deferred 4, timeout 5, unverified 3 | C-absent Ei group ×12 (no `.m` rule, §3.4); D (M3 `3_5_r13` families, e249 `.m` Unintegrable) |
-| 3.2.2 | 131 | 45 | deferred 3, timeout 5, unverified 78 | the C3 rebind answers that do not verify (78 `unverified`); D M3 ×26 + shadow ×12; C-absent e243/e247 |
-| 3.2.3 | 22 | 1 | deferred 18, timeout 3 | D ×27 (r18-faithful ×7, M3, the `3_5_r1 + 3_5_r38` variant ×10); C-absent e89/e102/e106; PENDING 4 (still deferred: 3) |
-| 3.3 | 110 | 5 | deferred 101, timeout 4 | B3 landed 10 rule binds, but the entries' answers stay nouns downstream (ledger B3: e88/e90 leave a 3.2.x nested sub-integral, e156's ExpandIntegrand no-ops; M3 r46/r24/r28 stopped); D-NEST ×16; PENDING ×18 (D-NEST-shaped on `3_2_3_r16`) |
-| 3.4 | 132 | 72 | deferred 58, timeout 2 | C-absent ×20 (no `.m` cover, §3.4); the non-enumerated B1/C5 residue is not re-triaged at this close |
-| 3.5 | 68 | 56 | deferred 11, unverified 1 | the superseded C6 groups still deferred (e11, e49, e266); M-class4 ×5 (class 4 unported); M-multistep e98; M-cas-simp e92 `unverified` (the `%mr_simp` log-branch rewrite) — ledger C6 |
+| 3.1.2 | 0 | — | — | no target entries (the 9 deferred are non-target; 8 of 9 now PASS) |
+| 3.1.4 | 216 | 115 | deferred 90, timeout 6, unverified 5 | C-in-Rubi C1 M1 23 enumerated (deferred 13, timeout 5, unverified 5; not re-triaged at this close); D 8 enumerated (deferred: e5, e31–e33, e41, e48, e174, e282 — §2 g1 D: M2 faithful 0-bind / `.m` coverage gap); **70 not enumerated** (deferred 69, timeout 1), drawn from the unenumerated C-in-Rubi (92) and D (22) remainders — not separable without re-triage |
+| 3.1.5 | 28 | 3 | deferred 11, timeout 6, unverified 8 | D 15 (deferred 9, incl. the M5 strict declines e194/e195; timeout 1; unverified 5); C1 M1 8 (timeout 5: e95, e97–e99, e118; unverified 3: e92, e141, e147 — e92/e118/e141/e147 are the ledger C1 entry's C1a q = −1 rows); A 2 (e5, e91 deferred — rescued only by the unwired sweep) |
+| 3.2.1 | 81 | 69 | deferred 4, timeout 5, unverified 3 | C3 D2 7 (timeout 5: e244–e248; unverified 2: e101, e186); C-absent Ei 4 (deferred: e117, e118, e199, e200 — no `.m` rule, §3.4; the group's other 8 are non-target); C4 1 (e214 unverified) |
+| 3.2.2 | 131 | 45 | deferred 3, timeout 5, unverified 78 | C3 D2 70 `unverified` (rebound answers that do not close under the zero chain); D 11 (deferred 3: e230, e252, e261; unverified 8: e5–e9, e33, e41, e49); B2 B-port 5 `timeout` (e249–e251, e259, e260); C-absent e243/e247 are non-target |
+| 3.2.3 | 22 | 1 | deferred 18, timeout 3 | D 20 (deferred 17; timeout 3: e1, e58, e69 — §2 g2 D: r18-faithful, M3, the `3_5_r1 + 3_5_r38` variant, cross-family, POOL); C-absent 1 (e89 deferred); the 4 PENDING are non-target |
+| 3.3 | 110 | 5 | deferred 101, timeout 4 | **98 not enumerated** (deferred 94, timeout 4) = the B3 B-port cluster by elimination (125 claimed, none enumerated): B3 landed 10 rule binds, but the entries' answers stay nouns downstream (ledger B3: e88/e90 leave a 3.2.x nested sub-integral, e156's ExpandIntegrand no-ops; M3 r46/r24/r28 stopped); D 6 (deferred: e329, e330, e347, e348, e371, e372 — D-NEST); A 1 (e360 — unwired sweep only); the 18 PENDING are non-target |
+| 3.4 | 132 | 72 | deferred 58, timeout 2 | C-absent 4 enumerated (deferred: e125–e128 — no `.m` cover, §3.4; 8 of the 14 enumerated C-absent entries now PASS, probe 10 §5); **56 not enumerated** (deferred 54, timeout 2), drawn from the unenumerated B1 spurious-freeof (81), C5 C-in-Rubi (128) and C-absent (6) remainders — not separable without re-triage |
+| 3.5 | 68 | 56 | deferred 11, unverified 1 | C6 groups 6 deferred (M-implicit1 e11, e49 — superseded; M-class4 e180, e183, e186, e187 — class 4 unported); C-absent 3 (deferred: e19, e34, e300); D 2 (deferred: e301, e302 — D-NEST); B1 r31_u 1 (e126 `unverified`). e266 (M-barelog-optional), e98 (M-multistep), e92 (M-cas-simp) and e181 (M-class4) carry non-target flags |
 
 ### 6.4 The C6 mechanism groups — end state per entry
 
@@ -1041,7 +1082,7 @@ record; baseline flag in parentheses):
 | M-class4 | recorded only | e180 e181 e183 e186 e187: deferred / deferred / deferred |
 | M-multistep | recorded only | e98: deferred / deferred / deferred |
 
-So of the five superseded groups' 11 entries (e139 excluded), 7 PASS on
+So of the five superseded groups' 10 entries (e139 excluded), 7 PASS on
 the close tree through other rules (none of the five re-transcriptions
 landed; the routes changed with B1–C5) and 3 remain deferred (e11, e49,
 e266) — the residue the matcher substrate inherits.
@@ -1103,10 +1144,10 @@ close-core class at a 120 s cap is recorded in §5.5.
 
 | # | criterion | result | evidence |
 |---|---|---|---|
-| 1 | **The 788 shrinks** — new target-mass count, per-mechanism recovery of the 788 and of the 329, per-family residue with why-not | **Met.** 788 → 366 recovered (422 remain: 296 deferred + 95 unverified + 31 timeout); 329 → 222 recovered (107 remain). The close record's own deferred mass: 467 (target 315, certain 71). Per fix row and per file with why-not lines: §6.2–§6.3; the C6 groups per entry: §6.4 | probe 10; `test/corpus_class3.out` |
-| 2 | **Regression gate** — zero unattributed PASS→FAIL on class 3; classes 1–2 expected FAIL→PASS only, same rule | **Met on attribution: 142 / 142 PASS→FAIL attributed and dispositioned** (class 3 131: 127 deterministic by commit — B1 6, C2 24, C4 6, C3 26, B3 7, C5 51, C6b 7 — + 4 noise; class 1 10: 9 deterministic — B1 3, B2 3, C5 3 — + 1 build/near-cap; class 2 1: milestone 3, pre-campaign). **Not met on shape:** classes 1–2 are not FAIL→PASS-only — 9 class-1 regressions come from campaign commits (shared utils / class-1 declarations). All deterministic regressions are accepted as recorded, not fixed (campaign closed at its current state) | §5.4–§5.5; probe 09 |
+| 1 | **The 788 shrinks** — new target-mass count, per-mechanism recovery of the 788 and of the 329, per-family residue with why-not | **Met.** 788 → 366 recovered (422 remain: 296 deferred + 95 unverified + 31 timeout); 329 → 222 recovered (107 remain). The close record's own deferred mass: 467 (target 315, certain 71). Per fix row and per file with why-not lines (verdict classes counted inside the target residue): §6.2–§6.3; the C6 groups per entry: §6.4 | probe 10 (§5–§10); `test/corpus_class3.out` |
+| 2 | **Regression gate** — zero unattributed PASS→FAIL on class 3; classes 1–2 expected FAIL→PASS only, same rule | **Met on attribution: 142 / 142 PASS→FAIL attributed and dispositioned** (class 3 131: 122 deterministic by commit — B1 5, C2 24, C4 6, C3 26, B3 7, C5 51, C6b 3 — + 5 near-cap / indeterminate + 4 noise; class 1 10: 9 deterministic — B1 3, B2 3, C5 3 — + 1 build/near-cap; class 2 1: milestone 3, pre-campaign; the ticket-01/02 class-1 entries: no PASS→FAIL). **Not met on shape:** classes 1–2 are not FAIL→PASS-only — 9 class-1 regressions come from campaign commits (shared utils / class-1 declarations). All deterministic regressions are accepted as recorded, not fixed (campaign closed at its current state) | §5.4–§5.5; probes 09, 11 |
 | 3 | **Standing gates green** — Layer A, byte-identity, core fingerprint, the 100 s re-check executed | **Met.** Layer A 892/0; byte-identity ×3 clean; fingerprint tree = stamp `5ef9b3bc…`; 100 s re-check executed on the close record's 212 timeouts (22 now PASS) | §7.1, §5.6 |
-| 4 | **Measured-claims discipline** — every non-trivial claim cites a committed, re-runnable probe | **Met.** §1–§3: probes 06/07/08; §4: the ledger's per-brief re-measured entries; §5: `ab_records.py` + probe 09 (+ the re-check record); §6: probe 10; §7: the gate commands | Provenance |
+| 4 | **Measured-claims discipline** — every non-trivial claim cites a committed, re-runnable probe | **Met.** §1–§3: probes 06/07/08; §4: the ledger's per-brief re-measured entries; §5: `ab_records.py` + probes 09 / 11 (+ the re-check record); §6: probe 10; §7: the gate commands | Provenance |
 | 5 | **Ticket 04 updated** with the class-3 go/no-go number and the option-(ii) status | **Met.** Status → partially answered by this record: question 3 answered on the class-3 population (FIRE4 17 / 13 target; 0FIRE-EXPL 181), option (ii) implemented as pass 4 and NOT shipped (cost gate), remaining questions restated open | `.scratch/class1-ab-remainders/issues/04-matcher-backtracking-feasibility.md` |
 
 **Campaign verdict: closed** (user decision 2026-09-11) — class 3
@@ -1144,7 +1185,10 @@ handed to the matcher substrate (`docs/superpowers/specs/2026-09-12-matcher-subs
   `.class3-bisect.out`, `.summary.out`) — build 2026-08-31 13:27:47,
   run 2026-09-12.
 - Close recovery join: `probes/corpus/10-class3-deferred-close-recovery.{py,out}`
-  (no Maxima subprocess).
+  (no Maxima subprocess; §9 unrecovered classes per fix row, §10 the
+  target residue per file × verdict class).
+- Ticket-01/02 class-1 check: `probes/corpus/11-deferred-close-class1-ticket-entries.{py,out}`
+  (no Maxima subprocess; the two class-1 records).
 - Mid-campaign records cited: `test/corpus_class3_c6base.out`,
   `test/corpus_class3_c6post.out` (2026-09-02; ledger C6 entry).
 - Pinned Rubi sources: `reference/rubi/Rubi/IntegrationRules/3

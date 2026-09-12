@@ -15,6 +15,16 @@ For every PASS->FAIL entry of a class (the .classN.shard order):
   cap120   the final-core class at a 120 s cap (timeouts and unexpected
            answers whose self-check did not finish), if measured
   fires    the pass-1 fired-rule sequence on 1d998cc and on the final core
+  disp     (class 3 only; record §5.5) the disposition, mechanical:
+           noise         PASS on the final core (first = '-')
+           near-cap(a)   bisected, but the final core's 120 s cap run is a
+                         PASS class within the standard 30 s cap — the close
+                         core's own runs straddle the cap
+           near-cap(b)   bisected, but the pass-1 fire trace is identical on
+                         the base and final cores (no campaign route change)
+                         and the base run itself is >= 20 s (within 10 s of
+                         the cap) — timing evidence only
+           deterministic <commit>  otherwise: the bisection's first-FAIL core
 Letter codes: V verified, E expected, N no-answer, U unverified,
 D deferred, X unexpected, C contains-noun, T timeout, R error, . not run.
 Deterministic join of committed outputs (no Maxima subprocess).
@@ -98,6 +108,7 @@ def main():
         keys = list(per["final"].keys())
         L.append(f"--- class {k} ({SECTION[k]}): {len(keys)} PASS->FAIL entries ---")
         firsts = Counter()
+        disps = Counter()
         for key in keys:
             traj = "".join(CODE.get(per[c][key]["cls"], "?") if key in per[c]
                            else "." for c, _n in CORES)
@@ -123,15 +134,40 @@ def main():
                     if key in cap else "-")
             b = per["base1d998cc"].get(key, {})
             f = per["final"][key]
+            disp = ""
+            if k == 3:
+                if bkey in bis:
+                    c = cap.get(key)
+                    near_a = c is not None and c["cls"] in PASS and c["t"] <= 30.0
+                    near_b = b.get("fires") == f["fires"] and b.get("t", 0.0) >= 20.0
+                    if near_a or near_b:
+                        disp = ("near-cap(" + ("a" if near_a else "")
+                                + ("b" if near_b else "") + ")")
+                    else:
+                        disp = "deterministic " + bis[bkey]["step"].split("->")[1]
+                elif first == "-":
+                    disp = "noise"
+                else:
+                    disp = "unclassified"
+                disps[disp] += 1
             L.append(f"{short(key[0]):8s} e{key[1]:<5d} rec {pre[key][0]}/{pre[key][1]:.1f}s"
                      f" -> {fin[key][0]}/{fin[key][1]:.1f}s  cores {traj}  first={first}"
                      f"  final={f['cls']}/{f['t']:.1f}s self={f['self']}  cap120={c120}"
-                     + (f"  recheck100={rck[key][0]}/{rck[key][1]:.1f}s" if key in rck else ""))
+                     + (f"  recheck100={rck[key][0]}/{rck[key][1]:.1f}s" if key in rck else "")
+                     + (f"  disp={disp}" if disp else ""))
             if bkey in bis:
                 L.append(f"         bisect runs: {bis[bkey]['runs']}")
             L.append(f"         base fires: {b.get('fires', '.')}")
             L.append(f"         final fires: {f['fires']}")
         L.append(f"first-FAIL core counts: {dict(firsts)}")
+        if disps:
+            L.append("disposition counts: " + ", ".join(
+                f"{d}: {n}" for d, n in sorted(disps.items())))
+            det = sum(n for d, n in disps.items() if d.startswith("deterministic"))
+            near = sum(n for d, n in disps.items() if d.startswith("near-cap"))
+            L.append(f"disposition totals: deterministic {det} + near-cap {near}"
+                     f" + noise {disps['noise']} + unclassified {disps['unclassified']}"
+                     f" = {sum(disps.values())}")
         L.append("")
     txt = "\n".join(L) + "\n"
     open(OUT, "w", encoding="utf-8").write(txt)

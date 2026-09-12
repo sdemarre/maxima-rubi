@@ -18,6 +18,11 @@ Inputs (committed records only — no Maxima subprocess):
 Entry sets: probe 08's transcription of the decision record (SETS;
 PARTIAL classes join only their enumerated entries, flagged as such).
 
+Sections 9-10 (added in the acceptance record's review round 1): the
+close class of every fix row's unrecovered entries, and the target
+residue per file x verdict class (the §6.3 why-not counts, measured
+inside the residue rather than as pre-campaign file categories).
+
 Output: probes/corpus/10-class3-deferred-close-recovery.out
 Re-run: deterministic."""
 
@@ -222,19 +227,23 @@ def main():
     f34 = p8.rel_of(p8.F34)
     L.append("--- 6. per fix row (enumerated portions; B3/C5 and the 81 3_4 "
              "spurious-freeof rows are not enumerated — file rows) ---")
-    L.append(row("B1 (g1 2 + g4 41 enumerated)", b1, True, 124))
-    L.append(row("B2 (g2 B-port)", b2, True, 47))
-    L.append(row("B4 (e392)", b4, True, 1))
-    L.append(row("C1 (g1 M1, enumerated part)", c1, False, 209))
-    L.append(row("C2 (g1 M6)", c2, True, 3))
-    L.append(row("C3 (g2 D2)", c3, True, 99))
-    L.append(row("C4 (g2 D3/D4)", c4, True, 13))
-    L.append(row("C6+C6b (g4 C-in-Rubi, 9 groups)", c6, True, 31))
-    L.append(row("A (pass-4 NO-GO, 10)", a10, True, 10))
-    L.append(row("file 3.3 (B3 125 + D16 + A1 + P18)",
-                 [k for k in dkeys if k[0] == f33], True, 160))
-    L.append(row("file 3.4 (B 82 + C5 128 + CA 20 + P5)",
-                 [k for k in dkeys if k[0] == f34], True, 235))
+    fixrows = [
+        ("B1 (g1 2 + g4 41 enumerated)", b1, True, 124),
+        ("B2 (g2 B-port)", b2, True, 47),
+        ("B4 (e392)", b4, True, 1),
+        ("C1 (g1 M1, enumerated part)", c1, False, 209),
+        ("C2 (g1 M6)", c2, True, 3),
+        ("C3 (g2 D2)", c3, True, 99),
+        ("C4 (g2 D3/D4)", c4, True, 13),
+        ("C6+C6b (g4 C-in-Rubi, 9 groups)", c6, True, 31),
+        ("A (pass-4 NO-GO, 10)", a10, True, 10),
+        ("file 3.3 (B3 125 + D16 + A1 + P18)",
+         [k for k in dkeys if k[0] == f33], True, 160),
+        ("file 3.4 (B 82 + C5 128 + CA 20 + P5)",
+         [k for k in dkeys if k[0] == f34], True, 235),
+    ]
+    for name, ks, complete, claim in fixrows:
+        L.append(row(name, ks, complete, claim))
     L.append("")
 
     # 7. the C6 mechanism groups, per entry (+ e47 PENDING, A-shaped).
@@ -265,6 +274,96 @@ def main():
     for (fn, a, b, s), v in sorted(cnt.items()):
         L.append(f"{v:4d}  {fn:6s} {a:10s} -> {b:14s} c6base/c6post={s}")
     L.append(f"total PASS->FAIL {len(pf)}")
+    L.append("")
+
+    # 9. per fix row: the close-record class of the entries NOT recovered
+    #    (record §6.2 readings), all and target-flagged, per file.
+    L.append("--- 9. per fix row: close class of the unrecovered entries "
+             "(file:class=n) ---")
+    for name, ks, _complete, _claim in fixrows:
+        un = [k for k in ks if fin[k][0] not in PASSC]
+        for lab, sel in (("all", un), ("target", [k for k in un if flags[k] in TARGET])):
+            c = Counter((short(k[0]), fin[k][0]) for k in sel)
+            L.append(f"{name:34s} {lab:6s} unrecovered={len(sel):4d}  "
+                     + (" ".join(f"{fn}:{cl}={v}" for (fn, cl), v in sorted(c.items()))
+                        or "-"))
+    L.append("")
+
+    # 10. the target residue per file x verdict class (record §6.3 why-not).
+    #     residue = target-flagged deferred-population entries whose close
+    #     class is not PASS. Per class: the file's claimed count (record §2
+    #     per-family tables), the enumerated count (probe 08 SETS), and the
+    #     residue entries inside the enumeration (close class + entry
+    #     numbers). Residue entries in no enumerated set are counted once;
+    #     when only one class has an unenumerated remainder in the file,
+    #     they belong to that class by elimination.
+    FILE_CLAIMED = {  # A, B-port, C-in-Rubi, C-absent, D, PENDING
+        "3.1.2": (0, 0, 3, 0, 6, 0), "3.1.4": (0, 2, 194, 0, 34, 0),
+        "3.1.5": (4, 0, 15, 0, 21, 1), "3.2.1": (5, 28, 31, 12, 15, 0),
+        "3.2.2": (0, 19, 79, 2, 38, 0), "3.2.3": (0, 0, 2, 3, 27, 4),
+        "3.3": (1, 125, 0, 0, 16, 18), "3.4": (0, 82, 128, 20, 0, 5),
+        "3.5": (0, 41, 31, 4, 17, 0)}
+    CLS = ["A", "B-port", "C-in-Rubi", "C-absent", "D", "PENDING"]
+    SUB = {  # sub-list labels for the multi-mechanism enumerations
+        ("g1", "C-in-Rubi"): lambda pr, i: "C2 M6" if pr == p8.F12 else "C1 M1",
+        ("g2", "C-in-Rubi"): None,   # split C3/C4 by C4_NUMS below
+        ("g4", "C-in-Rubi"): lambda pr, i: C6_GROUPS[i],
+        ("g4", "B-port"): lambda pr, i: ["r31_u", "r35_u", "r37_u"][i],
+    }
+    member = {}
+    for wave in ("g1", "g2", "g3", "g4"):
+        for cls, (_c, pairs) in p8.SETS[wave].items():
+            for i, (prefix, nums) in enumerate(pairs):
+                rel = p8.rel_of(prefix)
+                for n in nums:
+                    k = (rel, n)
+                    assert k not in member, k
+                    f = SUB.get((wave, cls))
+                    if (wave, cls) == ("g2", "C-in-Rubi"):
+                        sub = "C4 D3/D4" if (rel == f21 and n in C4_NUMS) else "C3 D2"
+                    elif f is not None:
+                        sub = f(prefix, i)
+                    else:
+                        sub = ""
+                    member[k] = (cls, sub)
+    L.append("--- 10. target residue per file x verdict class (probe 08 sets; "
+             "record §2 per-family claims) ---")
+    for rel in files:
+        fn = short(rel)
+        allf = [k for k in dkeys if k[0] == rel]
+        assert len(allf) == sum(FILE_CLAIMED[fn]), (fn, len(allf))
+        res = [k for k in allf if flags[k] in TARGET and fin[k][0] not in PASSC]
+        cres = Counter(fin[k][0] for k in res)
+        L.append(f"{fn} target residue n={len(res)} ("
+                 + " ".join(f"{cl}={cres[cl]}" for cl in sorted(cres)) + ")")
+        remainder = {}
+        for ci, cls in enumerate(CLS):
+            claimed = FILE_CLAIMED[fn][ci]
+            enum = [k for k in allf if member.get(k, ("",))[0] == cls]
+            assert len(enum) <= claimed, (fn, cls, len(enum), claimed)
+            if claimed - len(enum):
+                remainder[cls] = claimed - len(enum)
+            if not claimed:
+                continue
+            inres = [k for k in res if member.get(k, ("",))[0] == cls]
+            subs = Counter(member[k][1] for k in inres)
+            L.append(f"  {cls:9s} claimed={claimed:3d} enum={len(enum):3d} "
+                     f"target-in-enum={sum(1 for k in enum if flags[k] in TARGET):3d} "
+                     f"residue-in-enum={len(inres):3d}"
+                     + (" [" + " ".join(f"{s}={v}" for s, v in sorted(subs.items()) if s)
+                        + "]" if any(subs) else ""))
+            for cl in sorted({fin[k][0] for k in inres}):
+                nums = sorted(k[1] for k in inres if fin[k][0] == cl)
+                L.append(f"      {cl:10s} {len(nums):3d}: " + " ".join(f"e{n}" for n in nums))
+        unen = [k for k in res if k not in member]
+        cun = Counter(fin[k][0] for k in unen)
+        who = ("=> " + next(iter(remainder)) + " (by elimination)"
+               if len(remainder) == 1 else
+               "mixed: " + " ".join(f"{c}+{v}" for c, v in remainder.items())
+               if remainder else "-")
+        L.append(f"  not enumerated: residue={len(unen):3d} ("
+                 + (" ".join(f"{cl}={cun[cl]}" for cl in sorted(cun)) or "-")
+                 + f")  unenumerated claimed remainder: {who}")
     L.append("")
 
     txt = "\n".join(L) + "\n"
