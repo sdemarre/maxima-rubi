@@ -31,7 +31,11 @@ H_EXPECT = {
     "H5": {"F": "F", "m": "m", "x": "x"}, "H6": {"u": "u", "F": "F", "m": "m", "x": "x"},
     "H7": {"n": 2, "f": "f", "x": "x"}, "H8": {"u": "u", "n": 2, "f": "f", "x": "x"},
 }
-MIN_RULES_OK = 7444 - 9   # spec section 4 P1: every rule but the 9 G-3 Complex rules
+# Spec section 4 P2: "no new MISS on the tree leg".  P1's floor (7444 - 9,
+# sparing the 9 G-3 Complex rules) was met in full -- 7444/7444 in both modes
+# at the P1 and P2 gates (test/matcher/roundtrip.out) -- so a rule losing a
+# positive in either mode is a new MISS.
+REQUIRED_RULES_OK = 7444
 
 
 class Gate:
@@ -69,11 +73,13 @@ def gate_report(g, report, g2_ids, maxima):
         m = line(report, r"^UNSOUNDRULES %s \((\d+)\)" % mode)
         g.check("%s: 0 rules with an UNSOUND binding (all legs, collapsed included; G-4 closed)" % mode,
                 bool(m) and m.group(1) == "0", m.group(0) if m else "no UNSOUNDRULES line")
-    m = line(report, r"^SUMMARY narrow rules with every positive OK \(tree leg\): (\d+)/(\d+)")
-    g.check("narrow: rules with every positive OK >= %d" % MIN_RULES_OK,
-            bool(m) and int(m.group(1)) >= MIN_RULES_OK, m.group(0) if m else "no rules-OK line")
-    m = line(report, r"^SUMMARY narrow mutations: .*rules with a FALSE match: (\d+)$")
-    g.check("narrow: 0 false mutation matches", bool(m) and m.group(1) == "0", m.group(0) if m else "no mutations line")
+    for mode in ("narrow", "wide"):
+        m = line(report, r"^SUMMARY %s rules with every positive OK \(tree leg\): (\d+)/(\d+)" % mode)
+        g.check("%s: rules with every positive OK = %d (no MISS)" % (mode, REQUIRED_RULES_OK),
+                bool(m) and int(m.group(1)) == REQUIRED_RULES_OK, m.group(0) if m else "no rules-OK line")
+        m = line(report, r"^SUMMARY %s mutations: .*rules with a FALSE match: (\d+)$" % mode)
+        g.check("%s: 0 false mutation matches" % mode, bool(m) and m.group(1) == "0",
+                m.group(0) if m else "no mutations line")
     m = line(report, r"^SUMMARY narrow collapsed witnesses .*$")
     g.check("narrow: 0 UNSOUND collapsed witnesses (tree leg)",
             bool(m) and "tree/FALSE/UNSOUND" not in m.group(0), m.group(0)[:300] if m else "no collapsed line")
@@ -95,6 +101,9 @@ def gate_report(g, report, g2_ids, maxima):
 
 
 def gate_controls(g, text):
+    for l in text.splitlines():
+        if l.startswith("CONTROL-BUILD\t"):
+            print("INFO: controls build: %s" % l.split("\t", 1)[1])
     rows = [l.split("\t") for l in text.splitlines() if l.startswith("CONTROL\t")]
     g.check("controls: 12 controls x 2 modes present", len(rows) == 24, "%d CONTROL lines" % len(rows))
     for _tag, mode, cid, matched, binds, target, pattern in rows:
@@ -111,6 +120,9 @@ def gate_controls(g, text):
 
 
 def gate_spike(g, text):
+    for l in text.splitlines():
+        if l.startswith("SPIKE-BUILD\t"):
+            print("INFO: spike-01 build: %s" % l.split("\t", 1)[1])
     rows = [l.split("\t") for l in text.splitlines() if l.startswith("SPIKE\t")]
     g.check("spike-01: 71 cases present", len(rows) == 71, "%d SPIKE lines" % len(rows))
     for _tag, cid, group, model, ok, detail in rows:

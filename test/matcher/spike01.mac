@@ -1,6 +1,10 @@
 /* test/matcher/spike01.mac -- spike-01 cases through MR-MATCH + MR-TREE; run by
-   test/matcher/run.sh with MR_SPIKE=1.  No rule files, no --tls-limit flag. */
+   test/matcher/run.sh with MR_SPIKE=1.  No rule files, no --tls-limit flag.
+   The SPIKE-BUILD line (build_info() stamp) survives run.sh's grep '^SPIKE';
+   gate.py reads only SPIKE<tab> rows. */
 display2d : false$
+bi : build_info()$
+printf(true, "~&SPIKE-BUILD~aMaxima ~a (build ~a), ~a ~a~%", ascii(9), bi@version, bi@timestamp, bi@lisp_name, bi@lisp_version)$
 load("maxima_rubi_match.lisp")$
 load("maxima_rubi_tree.lisp")$
 load("test/matcher/spike01.lisp")$

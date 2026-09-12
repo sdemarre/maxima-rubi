@@ -1,6 +1,10 @@
 /* test/matcher/controls.mac -- probe-02 controls through MR-MATCH; run by
-   test/matcher/run.sh (MR_CONTROLS = the generated data file). */
+   test/matcher/run.sh (MR_CONTROLS = the generated data file).  The
+   CONTROL-BUILD line (build_info() stamp) survives run.sh's grep '^CONTROL';
+   gate.py reads only CONTROL<tab> rows. */
 display2d : false$
+bi : build_info()$
+printf(true, "~&CONTROL-BUILD~aMaxima ~a (build ~a), ~a ~a~%", ascii(9), bi@version, bi@timestamp, bi@lisp_name, bi@lisp_version)$
 load("maxima_rubi_match.lisp")$
 load("test/matcher/controls.lisp")$
 :lisp (load (sb-ext:posix-getenv "MR_CONTROLS"))
