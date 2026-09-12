@@ -4367,3 +4367,26 @@ Record: docs/corpus-class3-deferred-uplift.md §4-§7.
     campaign-close section. Probe 06's PKG_RECORD now reads
     test/corpus_class3.campaign-baseline.out (the backup of the
     record it triaged).
+
+## Plan: 2026-09-12 matcher substrate plan 1 (P0–P2; branch matcher-substrate)
+
+Spec: docs/superpowers/specs/2026-09-12-matcher-substrate-design.md
+Plan: docs/superpowers/plans/2026-09-12-matcher-substrate-plan1.md
+
+### P0 baseline (Task 3 runs; campaign final tree)
+- build: branch_5_50_base_84_g4204fb669 / 2026-08-31 13:27:47 / SBCL 2.6.7
+- rules core fingerprint: 5ef9b3bc5ee07ffac0e76f1fea54fbac (unchanged by the campaign close)
+- Layer A: Results:  892  passed,  0  failed
+- test/corpus_class1.pre-matcher.out: entries 25697  PASS 20125  median 1.3s  p90 7.0s  timeout 778
+- test/corpus_class2.pre-matcher.out: entries 965  PASS 614  median 4.3s  p90 8.1s  timeout 6
+- test/corpus_class3.pre-matcher.out: entries 3085  PASS 2058  median 3.9s  p90 16.2s  timeout 201
+- class-3 run-to-run noise (2026-09-04 record vs pre-matcher, same core):
+    === PASS/FAIL table ===
+    PASS->PASS   2056
+    PASS->FAIL      2
+    FAIL->PASS      2
+    FAIL->FAIL   1025
+- P5 gates read from here: per-class PASS floor = the PASS figures above; per-class
+  median ceiling = the median figures above.
+- run notes: class 1 merged 2026-09-12 09:22 UTC, class 2 09:36 UTC, class 3 re-merged 13:09 UTC after a stale 2026-09-04 shard23 file (24-job run) duplicated one entry in the 23-job merge (moved aside; merge re-run only).
+
