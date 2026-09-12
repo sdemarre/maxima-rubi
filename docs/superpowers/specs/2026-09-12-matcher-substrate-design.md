@@ -73,6 +73,12 @@ section 2.3):
   in a non-Mathematica shape under default flags; 47 (0.16 %) under
   `radexpand:false` + `logexpand:false`; 42 (0.14 %) under
   `domain:complex` (section 2.2).
+  *Erratum 2026-09-12 (P0 re-run, figures above kept as measured at
+  writing):* the committed `probes/matcher/03-model-touch.out` reads
+  615 of 29,747 (2.07 %) — the reader float fix un-failed one entry
+  (e194); the committed flag-arm outputs read 48 (0.16 %,
+  `03-model-touch.radexpand-logexpand.out`) and 43 (0.14 %,
+  `03-model-touch.domain-complex.out`).
 
 ### 0.3 Decisions made in the brainstorm (user, 2026-09-11/12)
 
@@ -169,6 +175,15 @@ after that close, so the rules being replaced are the settled ones.
   | Maxima defaults (package and driver today) | 614 / 29,746 (2.06 %): product base of a non-integer power split 540, `abs` introduced 423, log of a power expanded 12, other 48 |
   | `radexpand:false` + `logexpand:false` | 47 (0.16 %) |
   | `domain:complex` | 42 (0.14 %) |
+
+  *Erratum 2026-09-12 (P0 re-run; the table keeps the figures as
+  measured at writing):* the committed outputs read 615 / 29,747
+  (2.07 %) under defaults — split 540, `abs` 423, other structure 49,
+  log of a power expanded 12, trig heads rewritten 2
+  (`probes/matcher/03-model-touch.out`, SECTION ALL; the reader float
+  fix un-failed e194) — 48 (0.16 %) under `radexpand:false` +
+  `logexpand:false` and 43 (0.14 %) under `domain:complex`
+  (`03-model-touch.{radexpand-logexpand,domain-complex}.out`).
 
 - Flag behaviour (`03-simp-flags.out`): `radexpand:false` or
   `domain:complex` keeps `(b*x^2)^p`, `(x^2)^p`, `sqrt(x^2)`, `(2*x)^m`,
