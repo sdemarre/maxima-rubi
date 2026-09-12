@@ -4386,6 +4386,10 @@ Plan: docs/superpowers/plans/2026-09-12-matcher-substrate-plan1.md
     PASS->FAIL      2
     FAIL->PASS      2
     FAIL->FAIL   1025
+- class-3 wall noise band (same build + core; probes/matcher/05-p0-wall-noise.{py,out}, run
+  2026-09-12 19:11 UTC): median t campaign 4.20 s vs P0 3.90 s (-0.30 s, -7.1 %); per-entry
+  ratio P0/campaign over 3,066 same-class entries median 0.97 (p10 0.72, p25 0.87, p75 1.04,
+  p90 1.15); 54.2 % within 0.90..1.10. A P5 median move of this size is inside run-to-run noise.
 - P5 gates read from here: per-class PASS floor = the PASS figures above; per-class
   median ceiling = the median figures above.
 - run notes: class 1 merged 2026-09-12 09:22 UTC, class 2 09:36 UTC, class 3 re-merged 13:09 UTC after a stale 2026-09-04 shard23 file (24-job run) duplicated one entry in the 23-job merge (moved aside; merge re-run only).
@@ -4411,3 +4415,43 @@ Plan: docs/superpowers/plans/2026-09-12-matcher-substrate-plan1.md
   MODEL-LOST wide by Maxima rewrite kind (flags, variants/rules): [same heads, different structure] 15/4, [-Plus] 8/2
 - spike-01: 69/69 gated cases; model cases G1-04, G7-M1 reported
 - Plan 1 complete: P0 baseline, P1 and P2 gates green. Next: Plan 2 (P3–P4).
+
+### Provenance — Tasks 5–8 cherry-picked from side branches
+- Tasks 5–8 were implemented on side branches and cherry-picked onto `matcher-substrate`:
+  8cc0f33 → 441c63c (T5; the same change is b8f1577 on task6-matcher-wip / task8-matcher-wip),
+  545685d → 236bf8c (T6), c1f6af6 / a13fd59 → 5157e8a (T7), 4139cf3 → 746e192 (T8).
+- The Task 6 and Task 8 gate records above were measured at b8f1577 and a13fd59 respectively
+  (the `git HEAD:` lines of the then-committed test/matcher/*.out), before the final-review fix wave.
+
+### Final-review fix wave (2026-09-12)
+- commits: ff224bb F1 (flat-absorb: the last unbound absorber takes the whole leftover run --
+  pure pruning); 78007d8 F2 + m5 (gate: REQUIRED_RULES_OK = 7444 in narrow and wide + wide
+  0-false-mutation check; CONTROL-BUILD / SPIKE-BUILD build_info() stamp lines); then the
+  regenerated suite records, docs (AGENTS.md suite commands, TODO, spec erratum, uplift pointer),
+  probe 05 and this ledger.
+- units: test_mr_match `Results: 51 passed, 0 failed` (Maxima batch and plain SBCL; 48 + 2 cost
+  bounds + 1 empty-leftover lock; the cost checks timed out at 5 s before the fix, 49/2);
+  test_mr_tree `Results: 46 passed, 0 failed`; hygiene grep clean (hits=1).
+- gate counts: tree-leg-only run 35 -> 37; P2 run (maxima leg + spike-01) 107 -> 109.
+- gate defaults arm (judged 2026-09-12 19:11 UTC, git HEAD 78007d8, ~68 s wall): Results: 109 passed, 0 failed
+- gate flags arm (judged 2026-09-12 19:13 UTC, git HEAD 78007d8, ~75 s wall): Results: 109 passed, 0 failed
+- figures vs the Task 8 records: identical -- every roundtrip{,.flags}.out line except judged / git
+  HEAD / TIMING, every CONTROL row, every SPIKE row (7444/7444 both modes both arms; 0 UNSOUND;
+  mutations 37747 = NOMATCH 37685 + LEGIT 62, 0 FALSE; MODEL-LOST narrow 1166/395, wide 1046/307
+  + WRONG/WIDE-OK 120; flags 23/4 both modes; spike 69 gated, G1-04 / G7-M1 model cases).
+- TIMING defaults, tree-leg single match ms p50/p90/p99/max: narrow 0.0043/0.0072/0.0164/10.728
+  (before 0.0046/0.0078/0.0168/6.323); wide 0.0041/0.0071/0.0170/5.473 (before 0.0042/0.0073/0.0163/6.452).
+- TIMING flags: narrow 0.0043/0.0072/0.0153/7.174 (before 0.0046/0.0079/0.0174/9.988);
+  wide 0.0041/0.0070/0.0165/3.300 (before 0.0044/0.0076/0.0181/5.057). >50 ms: 0 everywhere.
+- F1 cost (plain SBCL, ms, old 972042c -> new): `(Int (Power (Plus a_. (Times b_. x_)) m_.) x_Symbol)`
+  vs Int(1+x+..+x^(n-1)): n 16/18/20/22 = 16/42/85/335 -> 0/0/0/0; n 30 timeout (20 s) -> 0; n 1000 -> 0.
+  `(Times u_ (Power x_ 2))` vs k1..k(n-1)*x^2: n 16/20 = 5/57 -> 0/0; n 100 timeout -> 0; n 5000 -> 1.
+- still exponential (Plan 2 item, not changed): a collapsible claimer. `(Times (Power (Times c_. x_) m_.)
+  (Power (Plus a_ (Times b_. (Power x_ 2))) p_.))` vs k1..kn*x*(a+b*x^2)^p, new matcher: n 6/8/10/12/14
+  = 1/20/125/645/7412 ms, n 16 timeout (old 0/6/55/546/6369); no-match variant (no bare x) n 8/10/12/14
+  = 4/32/287/2026 ms, n 16 timeout. Sources: flat-claim's sub-run enumeration (sizes 2..n) and the
+  unbound c_. not being the last absorber inside the collapsed (Times c_. x_).
+- Layer A (after both arms, 2026-09-12 19:15 UTC): Results:  892  passed,  0  failed
+- `git diff --name-only 972042c..HEAD` touches none of maxima_rubi.mac, maxima_rubi_utils.mac,
+  maxima_rubi_dispatch.lisp, maxima_rubi_implicit1.lisp, maxima_rubi_pass4.lisp, rules/, generator/,
+  test/corpus_driver.py, test_maxima_rubi.mac.
