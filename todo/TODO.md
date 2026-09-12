@@ -122,7 +122,9 @@ package beats the baseline** (+295, +9.6 pt; of the 525 PASS→FAIL,
 reclassifications; FAIL→PASS 820; 96 confirmed non-terminators at
 the 100 s re-check, zero slow-correct answers). Record:
 `docs/corpus-class3-baseline-uplift.md` (run
-`test/corpus_class3.out`, baseline
+`test/corpus_class3.campaign-baseline.out` — committed at `f40d56b`
+as `test/corpus_class3.out`, which since the class-3 deferred campaign
+close holds the campaign record (below); baseline
 `test/corpus_class3.baseline.out`, 100 s re-check
 `test/corpus_class3.timeout-rerun/`). The 2026-08-29 rebuild
 (`branch_5_50_base_84_g4204fb669`, built 2026-08-29 17:58:20, SBCL
@@ -196,6 +198,32 @@ A/B + attribution + 100 s re-check, §6 recovery, §7 acceptance); runs
 `test/corpus_class{1,2,3}.out` with the pre-campaign records kept as
 `test/corpus_class{1,2,3}.campaign-baseline.out`. Ticket 04
 (`.scratch/class1-ab-remainders/issues/04-…`) partially answered.
+
+## Matcher substrate — in prog (Plan 1 complete 2026-09-12)
+
+Classes 1–3 re-hosted on a Mathematica-semantics matcher in place of
+`defmatch` (spec
+`docs/superpowers/specs/2026-09-12-matcher-substrate-design.md`, phases
+P0–P6). Plan 1 (P0–P2,
+`docs/superpowers/plans/2026-09-12-matcher-substrate-plan1.md`) is
+complete on branch `matcher-substrate`: P0 baseline records
+`test/corpus_class{1,2,3}.pre-matcher.out` (PASS 20,125 / 614 / 2,058;
+median per-entry wall 1.3 / 4.3 / 3.9 s — the P5 parity floor and
+performance ceiling; class-3 same-core wall noise
+`probes/matcher/05-p0-wall-noise.out`); `mr-match`
+(`maxima_rubi_match.lisp`) and `mr-tree` (`maxima_rubi_tree.lisp`)
+with unit suites 51/0 and 46/0; the P1/P2 regression gates green in
+both simplifier arms (`test/matcher/gate.out`, `gate.flags.out`,
+109/0). Suite commands: AGENTS.md, Tests. Ledger:
+`.superpowers/sdd/progress.md` (plan 1 section).
+
+- Next: Plan 2 = P3 (generator: pattern emission, `%mr_defrule`, static
+  check) – P4 (dispatcher and loader, Layer A rewrite), written just in
+  time — open
+- Known cost item for Plan 2: a collapsible claimer (e.g.
+  `(c_.*x_)^m_.` under Times) still enumerates every sub-run of a
+  product's factors (exponential in the factor count; measured in the
+  ledger's final-review fix-wave block) — open
 
 ## Pinned reference clones
 

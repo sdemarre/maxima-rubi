@@ -22,8 +22,12 @@ PASS→FAIL attributed, the 788 recovery, the acceptance scorecard).
     SBCL; the rules core was NOT rebuilt (fingerprint unchanged).
 - Rules core: `test/mr_rules.core` (3,513 rules, fingerprint
   `36b8bae7dba3c6e4fde614b6df70caa4`).
-- Records: `test/corpus_class3.out` (1,033 deferred),
-  `test/corpus_class3.baseline.out` (788 target-flagged).
+- Records: `test/corpus_class3.campaign-baseline.out` (1,033
+  deferred — the pre-campaign milestone-3 record the §1–§3 probes ran
+  on, byte-identical to `f40d56b:test/corpus_class3.out`),
+  `test/corpus_class3.baseline.out` (788 target-flagged). Since the
+  close, `test/corpus_class3.out` is the campaign-close record (merged
+  2026-09-04 15:06 UTC; 2,058 PASS / 3,085, 467 `deferred`; §5–§7).
 - Probes (all under `probes/corpus/`, re-runnable):
   - 06 — the triage run (committed `.out`; 1,033/1,033; 24 shards
     merged; calibration 16/16 + 6/6 attribution proofs).
