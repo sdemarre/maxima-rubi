@@ -4390,3 +4390,24 @@ Plan: docs/superpowers/plans/2026-09-12-matcher-substrate-plan1.md
   median ceiling = the median figures above.
 - run notes: class 1 merged 2026-09-12 09:22 UTC, class 2 09:36 UTC, class 3 re-merged 13:09 UTC after a stale 2026-09-04 shard23 file (24-job run) duplicated one entry in the 23-job merge (moved aside; merge re-run only).
 
+
+### Task 6 — P1 gate (matcher regression suite)
+- run: `=== test/matcher round trip  legs: tree  judged: 2026-09-12 13:26 UTC` / `Maxima branch_5_50_base_84_g4204fb669 (build 2026-08-31 13:27:47), SBCL 2.6.7 -- build_info() in shard0.log`
+- gate: `Results: 35 passed, 0 failed`
+- narrow: `SUMMARY narrow positives (tree leg): 72456 -- OK-EXACT 68588 (94.66%), OK-ALT 3868 (5.34%)` / `SUMMARY narrow rules with every positive OK (tree leg): 7444/7444 (100.00%)` / `SUMMARY narrow mutations: 37747 -- NOMATCH 37685, LEGIT 62; rules with a FALSE match: 0` / `SUMMARY narrow collapsed witnesses (omitted defaults collapse the integrand out of the LHS's Mathematica coverage; judged like mutations): tree/LEGIT 1039, tree/NOMATCH 6415; rules with a FALSE match: 0` / `TIMING narrow tree-leg single match (ms): p50 0.0045 p90 0.0083 p99 0.0191 max 5.069; >50 ms: 0` / `TIMING narrow slowest: 1.2.1.3.m L189 only-1 5.1 ms; 1.2.2.4.m L19 omit-1 4.1 ms; 1.2.1.5.m L205 omit-0 4.1 ms; 3.1.5.m L25 omit-7 3.7 ms; 1.1.1.4.m L9 omit-5 3.1 ms; 4.1.4.2.m L13 omit-10 3.1 ms; 1.1.2.5.m L36 only-0 3.1 ms; 4.7.7.m L49 omit-0 3.0 ms`
+- wide: `SUMMARY wide positives (tree leg): 72456 -- OK-EXACT 68588 (94.66%), OK-ALT 3868 (5.34%)` / `SUMMARY wide rules with every positive OK (tree leg): 7444/7444 (100.00%)` / `SUMMARY wide mutations: 37747 -- NOMATCH 37685, LEGIT 62; rules with a FALSE match: 0` / `SUMMARY wide collapsed witnesses (omitted defaults collapse the integrand out of the LHS's Mathematica coverage; judged like mutations): tree/FALSE/WIDE-OK 2041, tree/LEGIT 1039, tree/NOMATCH 4374; rules with a FALSE match: 1557` / `TIMING wide tree-leg single match (ms): p50 0.0042 p90 0.0073 p99 0.0172 max 1.738; >50 ms: 0` / `TIMING wide slowest: 1.2.3.4.m L96 omit-3 1.7 ms; 4.5.2.2.m L20 only-1 1.7 ms; 4.1.12.m L88 omit-0 1.2 ms; 4.1.9.m L39 all-present 1.1 ms; 4.3.9.m L34 omit-2 1.0 ms; 6.7.9.m L38 omit-2 0.8 ms; 4.1.7.m L60 omit-3 0.8 ms; 4.1.6.m L46 omit-0 0.8 ms`
+- G-2: 41/41 closed; G-4: UNSOUNDRULES narrow 0 / wide 0; G-6 wide arm: tree/FALSE/WIDE-OK 2041
+
+### Task 8 — P2 gate (converter, Maxima leg, spike-01)
+- gate defaults arm: Results: 107 passed, 0 failed
+- gate flags arm: Results: 107 passed, 0 failed
+- SUMMARY narrow maxima leg: 72347 -- OK 71181, MODEL-LOST 1166; witnesses changed by Maxima: 1717; rules with MODEL-LOST: 395
+  MODEL-LOST narrow by Maxima rewrite kind (variants/rules): [+Abs] 597/132, [same heads, different structure] 400/236, [-Power] 113/49, [+Abs -Power] 13/3, [+Plus] 12/4, [+Times] 10/5, [-Plus] 8/2, [+Abs+Times] 7/4, [+Times -Power] 6/3
+  SUMMARY wide maxima leg: 72347 -- OK 71181, MODEL-LOST 1046, WRONG/WIDE-OK 120; witnesses changed by Maxima: 1717; rules with MODEL-LOST: 307
+  MODEL-LOST wide by Maxima rewrite kind (variants/rules): [+Abs] 597/132, [same heads, different structure] 315/169, [-Power] 78/21, [+Abs -Power] 13/3, [+Plus] 12/4, [+Times] 10/5, [-Plus] 8/2, [+Abs+Times] 7/4, [+Times -Power] 6/3
+  SUMMARY narrow maxima leg (flags): 72347 -- OK 72324, MODEL-LOST 23; witnesses changed by Maxima: 23; rules with MODEL-LOST: 4
+  MODEL-LOST narrow by Maxima rewrite kind (flags, variants/rules): [same heads, different structure] 15/4, [-Plus] 8/2
+  SUMMARY wide maxima leg (flags): 72347 -- OK 72324, MODEL-LOST 23; witnesses changed by Maxima: 23; rules with MODEL-LOST: 4
+  MODEL-LOST wide by Maxima rewrite kind (flags, variants/rules): [same heads, different structure] 15/4, [-Plus] 8/2
+- spike-01: 69/69 gated cases; model cases G1-04, G7-M1 reported
+- Plan 1 complete: P0 baseline, P1 and P2 gates green. Next: Plan 2 (P3–P4).
