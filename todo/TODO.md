@@ -165,7 +165,8 @@ Open follow-ups (tickets against the runbook):
   coverage source) — needs-triage,
   `.scratch/class2-deferred-remainders/issues/01`
 - Class-1 A/B remainder tickets (5 open: 01/02/03/05 needs-triage,
-  04 ready-for-agent) — `.scratch/class1-ab-remainders/issues/`
+  04 partially answered by the class-3 deferred campaign — see below)
+  — `.scratch/class1-ab-remainders/issues/`
 - SBCL heap exhaustion on quotients of exponentials (class-2 2.3
   e56/e57 under the 300 s re-check, e68 in the run; reproducible) —
   open; related but distinct from the class-3 verification-stage OOM
@@ -174,6 +175,27 @@ Open follow-ups (tickets against the runbook):
 - Branch `maxima-zero-divisor-rootcause` (unmerged; ratsimp
   zero-divisor root-cause probe work) — a separate thread, not part
   of the class-port queue
+
+## Class-3 deferred campaign — closed 2026-09-12
+
+The follow-up to milestone 3's deferred remainder (the 1,033 class-3
+`deferred` entries, target mass 788 / certain 329): spec
+`docs/superpowers/specs/2026-08-30-class3-deferred-campaign-design.md`,
+plan `docs/superpowers/plans/2026-08-30-class3-deferred-campaign.md`,
+branch `class3-deferred`. Pass 4 (the backtracking sweep) measured and
+NOT wired (cost gate); 11 port sub-briefs landed (B1–B4, C1–C6b). Closed
+at its current state by user decision 2026-09-11 — the five remaining
+C6 mechanism groups are superseded by the matcher substrate (spec
+`docs/superpowers/specs/2026-09-12-matcher-substrate-design.md`).
+Measured close (30 s cap, build 2026-08-31 13:27:47, core `5ef9b3bc`):
+**class 3 1,736 → 2,058 / 3,085 (66.7 %)**; of the 788 target entries
+366 PASS (certain 329: 222); class 1 20,069 → 20,125 / 25,697; class 2
+594 → 614 / 965. Every PASS→FAIL of the three A/Bs is attributed in the
+record. Record: `docs/corpus-class3-deferred-uplift.md` (§4 fixes, §5
+A/B + attribution + 100 s re-check, §6 recovery, §7 acceptance); runs
+`test/corpus_class{1,2,3}.out` with the pre-campaign records kept as
+`test/corpus_class{1,2,3}.campaign-baseline.out`. Ticket 04
+(`.scratch/class1-ab-remainders/issues/04-…`) partially answered.
 
 ## Pinned reference clones
 

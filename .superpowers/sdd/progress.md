@@ -4315,3 +4315,49 @@ test file + core + git index, so the dispatches are sequential).
     for the general quadratic family; a faster quadratic
     reciprocal/nested-integral route is required before r10 can
     rescue e93.
+  - C6b: DONE (2026-09-04, commit 99e1eb1) — no per-brief ledger entry
+    was written at the time; recorded here from the report
+    (.superpowers/sdd/t4c6b-report.md) and re-measured at the close:
+    the 3.5.m L46 FunctionOfLog catch-all ported as 3_5 r42 (+ the
+    generator's bare catch-all emission fix re-emitting 1_4_1 r7/r8 and
+    2_3 r96); Layer A 869 -> 892; core 5ef9b3bc5ee07ffac0e76f1fea54fbac
+    (3,514 rules). M-functionoflog 12/12 + e139 verified on the close
+    record.
+
+Campaign close — Tasks 5 + 6: DONE (2026-09-12; commits 1620828 +
+the acceptance commit). The campaign is CLOSED at its current state
+(user decision 2026-09-11 — the matcher substrate replaces defmatch;
+spec docs/superpowers/specs/2026-09-12-matcher-substrate-design.md).
+Record: docs/corpus-class3-deferred-uplift.md §4-§7.
+  - Re-measurement (core 5ef9b3bc, build 2026-08-31 13:27:47): class 3
+    1,736 -> 2,058 / 3,085 (record 2026-09-04; PASS->FAIL 131,
+    FAIL->PASS 453); class 1 20,069 -> 20,125 / 25,697 (10 / 66);
+    class 2 594 -> 614 / 965 (1 / 21) (records 2026-09-12). 100 s
+    re-check of the 212 close-record timeouts
+    (test/corpus_class3.timeout-rerun2/): 22 now PASS, 130 still
+    timeout; command corrected with the launcher's section argument
+    (controller ruling R12).
+  - Regression gate: 142/142 PASS->FAIL attributed per entry (probe 09:
+    per-entry re-runs on the pre-campaign cores under the current
+    build + a core rebuilt at every campaign commit — class-1/2 matrix,
+    class-3 bisection — + 120 s runs). Class 3: 127 deterministic by
+    first-FAIL commit (B1 6, C2 24, C4 6, C3 26, B3 7, C5 51, C6b 7;
+    none from B2/B4/C1/C6) + 4 close-record noise. Class 1: 9
+    deterministic (B1 3 `1_4_1_r18`; B2 3 list-form LinearQ; C5 3 the
+    shared %mr_mbp2 widening) + 1 build/near-cap (e22). Class 2: e52 is
+    milestone 3 (class-3 load), pre-campaign. All deterministic
+    regressions accepted as recorded, not fixed; the spec's
+    classes-1/2 FAIL->PASS-only expectation is NOT met (9 class-1).
+  - Recovery (probe 10): of the 788 target entries 366 PASS (329
+    certain: 222); the close record's deferred mass 467 (target 315,
+    certain 71). The five remaining C6 groups (M-implicit1,
+    M-plus-identity, M-barelog-optional, M-factored-quad, M-323) are
+    out of campaign scope, superseded by the matcher substrate; 7 of
+    their 11 entries PASS via other routes, e11/e49/e266 stay
+    deferred.
+  - Gates (re-measured 2026-09-12): Layer A `Results: 892 passed, 0
+    failed`; byte-identity --class 1/2/3 clean; tree fingerprint =
+    core stamp 5ef9b3bc. Ticket 04 -> partially answered; TODO
+    campaign-close section. Probe 06's PKG_RECORD now reads
+    test/corpus_class3.campaign-baseline.out (the backup of the
+    record it triaged).

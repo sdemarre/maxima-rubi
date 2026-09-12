@@ -1055,12 +1055,64 @@ still deferred; g3 ×23 — 0 recovered, 22 still deferred. The A count's
 e47's sweep rescue stays prototype-only whichever way it reads; e47's
 close-core class at a 120 s cap is recorded in §5.5.
 
-## 7. Regression gates and acceptance (Task 6) — STUB
+## 7. Regression gates and acceptance (Task 6)
 
-Filled by Task 6: the Layer A suite (`test_maxima_rubi.mac`), the
-byte-identity check (`generator/generate_rules.py --class 1/2/3`), the
-core rebuild + fingerprint sync, the class-1/class-2 A/B regression
-gate, and the acceptance record. Not pre-written.
+### 7.1 Standing gates (re-measured at the close, 2026-09-12, tree `class3-deferred` @ d535e24 + the close's record/doc files — no rule, generator, utils or test-suite change)
+
+- **Layer A** — `maxima --very-quiet -X "--tls-limit 100000" -b test_maxima_rubi.mac`:
+  `Results:  892  passed,  0  failed` (0 `FAIL` lines; the count line
+  of AGENTS.md already reads 892 — unchanged).
+- **Byte-identity** — `python3 generator/generate_rules.py --class 1`,
+  `--class 2`, `--class 3`, then `git status --porcelain rules/`: empty
+  output (all three classes regenerate byte-identical).
+- **Core fingerprint** — the tree fingerprint (md5 over the loader,
+  utils, the dispatch / implicit-1 / pass-4 Lisp files and every
+  class-1/2/3 rule file, the `build_rules_core.sh` list) vs the core
+  stamp that measured every close record:
+  `tree 5ef9b3bc5ee07ffac0e76f1fea54fbac` /
+  `fingerprint 5ef9b3bc5ee07ffac0e76f1fea54fbac` — consistent.
+
+### 7.2 Stamp
+
+- Date of the close measurements: class-3 record 2026-09-04; class-1/2
+  records, probes 09/10, gates 2026-09-12.
+- `build_info()`: `Maxima-version: "branch_5_50_base_84_g4204fb669"`,
+  `Maxima build date: "2026-08-31 13:27:47"`, `Host type:
+  "x86_64-pc-linux-gnu"`, `Lisp implementation type: "SBCL"`, `Lisp
+  implementation version: "2.6.7"`.
+- Rules core **before** the campaign: `00e05dca117aefd8df3d266652b11e93`
+  (3,513 rules; campaign base 1d998cc — the class-3 pre-campaign
+  record's rules); the triage core with the pass-4 Lisp baked in:
+  `36b8bae7dba3c6e4fde614b6df70caa4`. **After**:
+  `5ef9b3bc5ee07ffac0e76f1fea54fbac` (3,514 rules; 99e1eb1). The
+  class-1/2 pre-campaign records' core: `aa53741f7ac802e2c3b8bd93720b219d`
+  (3,180 rules; f8d2fde).
+- Record file hashes (md5):
+
+| file | md5 |
+|---|---|
+| `test/corpus_class3.out` | `92565d7efafdd70879304b0551d22c5f` |
+| `test/corpus_class1.out` | `386a0a316391ceec315944958a719f85` |
+| `test/corpus_class2.out` | `2eb8f9c2703c8e855dad5c4f8e89fe06` |
+| `test/corpus_class3.campaign-baseline.out` | `128013c3844636572ff5326a535a8caf` |
+| `test/corpus_class1.campaign-baseline.out` | `6417dfd8be42c6a9a9eb9c9d169f5a89` |
+| `test/corpus_class2.campaign-baseline.out` | `c28c9803d69bce7b26c7818764557775` |
+| `test/corpus_class3.baseline.out` (integrate baseline) | `533e2d2291686b9cfee75d1950ea5f88` |
+
+### 7.3 Acceptance scorecard (spec §4)
+
+| # | criterion | result | evidence |
+|---|---|---|---|
+| 1 | **The 788 shrinks** — new target-mass count, per-mechanism recovery of the 788 and of the 329, per-family residue with why-not | **Met.** 788 → 366 recovered (422 remain: 296 deferred + 95 unverified + 31 timeout); 329 → 222 recovered (107 remain). The close record's own deferred mass: 467 (target 315, certain 71). Per fix row and per file with why-not lines: §6.2–§6.3; the C6 groups per entry: §6.4 | probe 10; `test/corpus_class3.out` |
+| 2 | **Regression gate** — zero unattributed PASS→FAIL on class 3; classes 1–2 expected FAIL→PASS only, same rule | **Met on attribution: 142 / 142 PASS→FAIL attributed and dispositioned** (class 3 131: 127 deterministic by commit — B1 6, C2 24, C4 6, C3 26, B3 7, C5 51, C6b 7 — + 4 noise; class 1 10: 9 deterministic — B1 3, B2 3, C5 3 — + 1 build/near-cap; class 2 1: milestone 3, pre-campaign). **Not met on shape:** classes 1–2 are not FAIL→PASS-only — 9 class-1 regressions come from campaign commits (shared utils / class-1 declarations). All deterministic regressions are accepted as recorded, not fixed (campaign closed at its current state) | §5.4–§5.5; probe 09 |
+| 3 | **Standing gates green** — Layer A, byte-identity, core fingerprint, the 100 s re-check executed | **Met.** Layer A 892/0; byte-identity ×3 clean; fingerprint tree = stamp `5ef9b3bc…`; 100 s re-check executed on the close record's 212 timeouts (22 now PASS) | §7.1, §5.6 |
+| 4 | **Measured-claims discipline** — every non-trivial claim cites a committed, re-runnable probe | **Met.** §1–§3: probes 06/07/08; §4: the ledger's per-brief re-measured entries; §5: `ab_records.py` + probe 09 (+ the re-check record); §6: probe 10; §7: the gate commands | Provenance |
+| 5 | **Ticket 04 updated** with the class-3 go/no-go number and the option-(ii) status | **Met.** Status → partially answered by this record: question 3 answered on the class-3 population (FIRE4 17 / 13 target; 0FIRE-EXPL 181), option (ii) implemented as pass 4 and NOT shipped (cost gate), remaining questions restated open | `.scratch/class1-ab-remainders/issues/04-matcher-backtracking-feasibility.md` |
+
+**Campaign verdict: closed** (user decision 2026-09-11) — class 3
+1,736 → 2,058 / 3,085 (+322 PASS; PASS→FAIL 131 all attributed), with
+the five remaining C6 groups and every recorded deterministic regression
+handed to the matcher substrate (`docs/superpowers/specs/2026-09-12-matcher-substrate-design.md`).
 
 ## Provenance
 
