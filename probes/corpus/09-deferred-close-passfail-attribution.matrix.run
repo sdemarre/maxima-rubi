@@ -1,0 +1,31 @@
+#!/bin/sh
+# Probe 09 per-commit core matrix — which campaign commit moved each
+# PASS->FAIL entry. Runs probe 09 on the entries that are FAIL on the final
+# core and PASS on the campaign-base core (the .classN-matrix.shard files,
+# derived from the .classN-final.out / .classN-base1d998cc.out pair; class 2
+# uses .class2.shard) on the core of every intermediate campaign code commit,
+# in dispatch order:
+#   464d29f B1, d6cee4e B2, 3c04b2e B4, 52ffb6f C2, 2fd677a C1, d2ae62d C4,
+#   1c8a306 C3, 9533528 B3, 4702d4d C5, c25e8f6 C6   (99e1eb1 C6b = final core)
+# Cores: CORE_DIR/core-<commit>/test/mr_rules.core, each built with
+# `sh test/build_rules_core.sh` in a tree extracted by
+# `git archive <commit> | tar -x -C CORE_DIR/core-<commit>`.
+# Usage (repo root): CORE_DIR=<dir> JOBS=3 sh probes/corpus/09-deferred-close-passfail-attribution.matrix.run
+set -u
+P=probes/corpus/09-deferred-close-passfail-attribution
+COMMITS="464d29f d6cee4e 3c04b2e 52ffb6f 2fd677a d2ae62d 1c8a306 9533528 4702d4d c25e8f6"
+# CLASSES selects the sections (default "1 2"; class 3 is attributed by the
+# bisection script 09-deferred-close-passfail-attribution.bisect.py — the
+# full 127-entry x 10-core class-3 matrix measured ~2 h wall at 3 jobs).
+for c in $COMMITS; do
+  for k in ${CLASSES:-1 2}; do echo "$c $k"; done
+done | xargs -P "${JOBS:-3}" -L 1 sh -c '
+  c=$0; k=$1; P=probes/corpus/09-deferred-close-passfail-attribution
+  case $k in
+    3) SEC="3 Logarithms"; SH=$P.class3-matrix.shard ;;
+    1) SEC="1 Algebraic functions"; SH=$P.class1-matrix.shard ;;
+    2) SEC="2 Exponentials"; SH=$P.class2.shard ;;
+  esac
+  MR_RULES_CORE_PATH=$CORE_DIR/core-$c/test/mr_rules.core \
+    python3 $P.py "$SEC" $SH $P.class$k-$c.out 30 > /dev/null 2>&1
+  echo "done $c class$k: $(grep "^Results:" $P.class$k-$c.out)"'

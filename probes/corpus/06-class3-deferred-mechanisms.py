@@ -205,7 +205,11 @@ from datetime import datetime, timezone
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SECTION = "3 Logarithms"
 SLUG = "06-class3-deferred-mechanisms"
-PKG_RECORD = os.path.join(ROOT, "test", "corpus_class3.out")
+# The pre-campaign package record. test/corpus_class3.out was re-measured
+# at the campaign close (2026-09-04 record); the population this probe
+# triaged is its plan-Task-5-Step-1 backup (byte-identical to the
+# 2026-08-30 record this probe was run on).
+PKG_RECORD = os.path.join(ROOT, "test", "corpus_class3.campaign-baseline.out")
 BASE_RECORD = os.path.join(ROOT, "test", "corpus_class3.baseline.out")
 OUT = os.path.join(ROOT, "probes", "corpus", SLUG + ".out")
 DEFAULT_WORKDIR = os.path.join(ROOT, "probes", "corpus", SLUG + ".work")
