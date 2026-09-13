@@ -1,0 +1,83 @@
+  /* Task 3 — the function-head capture rules (class 3: 3.1.5 r58/r59,
+     3.3 r58, 3.4 r37 — Px_. F_[d_.*(e_.+f_.*x_)]^m_. (a_.+b_.*Log[...])
+     with MemberQ[{ArcSin, ...}, F]). MR-MATCH binds the head pattern
+     variable F to the Maxima operator symbol (asin reads as %asin) and the
+     cond's %mr_memberQ compares it with the literal list. The class-3 corpus
+     carries twelve linear-argument inverse-function integrands (3.1.5
+     e186-e197, probes/corpus/05-class3-inverse-function-exposure); the
+     semantics are pinned here on synthetic integrands, through
+     %mr_rule_accept (pattern + cond) and %mr_rule_bindings (pattern only).
+     Bindings measured in the plan-2 pre-validation (probe_layerA_bind2.mac,
+     probe_rewrite.mac, 2026-09-13). */
+  test_class3_headvar() := block([mm],
+    print("--- head-position capture matcher (class 3 F_[...] rules) ---"),
+    %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
+    %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+    %mr_load_sibling("rules/class3/3_4.mac", 'mr_witness_3_4),
+    /* 3.1.5 r58: linear F-arg, free m, px log-arg, {ArcSin, ArcCos, ArcSinh, ArcCosh} */
+    mm : %mr_rule_accept(_mr_rule_3_1_5_r58, x^2*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x),
+    check_bool("hv r58 accepts (m = 3)", listp(mm)),
+    check_bool("hv r58 binds the head symbol", binds(mm, ['_mr_3_1_5_r58_F = 'asin])),
+    check_bool("hv r58 binds d, e, f, m",
+               binds(mm, ['_mr_3_1_5_r58_d = 2, '_mr_3_1_5_r58_e = 3,
+                          '_mr_3_1_5_r58_f = 4, '_mr_3_1_5_r58_m = 3])),
+    check_bool("hv r58 binds Px (the leftover product)", binds(mm, ['_mr_3_1_5_r58_Px = x^2])),
+    check_bool("hv r58 binds a, b, c, n",
+               binds(mm, ['_mr_3_1_5_r58_a = 5, '_mr_3_1_5_r58_b = 6,
+                          '_mr_3_1_5_r58_c = 7, '_mr_3_1_5_r58_n = 2])),
+    /* 3.1.5 r59: bare F factor, {ArcTan, ArcCot, ArcTanh, ArcCoth} */
+    mm : %mr_rule_accept(_mr_rule_3_1_5_r59, x*acot(2*(3+4*x))*(5+6*log(7*x^2)), x),
+    check_bool("hv r59 accepts (bare factor)", listp(mm)),
+    check_bool("hv r59 binds the head", binds(mm, ['_mr_3_1_5_r59_F = 'acot, '_mr_3_1_5_r59_Px = x])),
+    /* 3.3 r58: log-arg c*(d+e*x)^n, the eight-head list */
+    mm : %mr_rule_accept(_mr_rule_3_3_r58, x^2*atan(2*(3+4*x))*(5+6*log(7*(8+9*x)^3)), x),
+    check_bool("hv 3.3 r58 accepts", listp(mm)),
+    check_bool("hv 3.3 r58 binds the head", binds(mm, ['_mr_3_3_r58_F = 'atan])),
+    check_bool("hv 3.3 r58 binds the log-arg d, e, n",
+               binds(mm, ['_mr_3_3_r58_d = 8, '_mr_3_3_r58_e = 9, '_mr_3_3_r58_n = 3])),
+    /* 3.4 r37: monomial F-arg f*x, free m, log-arg c*(d+e*x^n)^p, no Px */
+    mm : %mr_rule_accept(_mr_rule_3_4_r37, asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x),
+    check_bool("hv 3.4 r37 accepts", listp(mm)),
+    check_bool("hv 3.4 r37 binds f, m, n, p",
+               binds(mm, ['_mr_3_4_r37_f = 5, '_mr_3_4_r37_m = 2,
+                          '_mr_3_4_r37_n = 3, '_mr_3_4_r37_p = 4])),
+    /* a leading minus is a factor of the Times, so it lands in Px */
+    check_bool("hv r58 binds Px with the sign",
+               binds(%mr_rule_bindings(_mr_rule_3_1_5_r58, -x*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x),
+                     ['_mr_3_1_5_r58_Px = -x])),
+    /* a written constant times the bare log: a = 0, b = 1 (the Optional
+       defaults) and the constant rides in Px */
+    mm : %mr_rule_bindings(_mr_rule_3_1_5_r58, x*asin(2*(3+4*x))^3*(6*log(7*x^2)), x),
+    check_bool("hv bare log factor binds a = 0, b = 1, Px = 6*x",
+               binds(mm, ['_mr_3_1_5_r58_a = 0, '_mr_3_1_5_r58_b = 1, '_mr_3_1_5_r58_Px = 6*x])),
+    mm : %mr_rule_bindings(_mr_rule_3_1_5_r58, x*asin(2*(3+4*x))^3*log(7*x^2), x),
+    check_bool("hv bare log (no constant) binds a = 0, b = 1, c, n, Px",
+               binds(mm, ['_mr_3_1_5_r58_a = 0, '_mr_3_1_5_r58_b = 1, '_mr_3_1_5_r58_c = 7,
+                          '_mr_3_1_5_r58_n = 2, '_mr_3_1_5_r58_Px = x])),
+    /* Px_. is Optional: no leftover factor binds Px = 1 */
+    check_bool("hv no leftover factor binds Px = 1",
+               binds(%mr_rule_bindings(_mr_rule_3_1_5_r58, asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x),
+                     ['_mr_3_1_5_r58_Px = 1])),
+    /* F_[...]^m_. reaches a bare F factor through its Optional exponent, m = 1 */
+    check_bool("hv bare factor vs the free-m rule binds m = 1",
+               binds(%mr_rule_accept(_mr_rule_3_1_5_r58, x*asin(2*(3+4*x))*(5+6*log(7*x^2)), x),
+                     ['_mr_3_1_5_r58_m = 1])),
+    /* negatives: each declines */
+    check_not("hv head outside the list (asin vs the r59 list)",
+              %mr_rule_accept(_mr_rule_3_1_5_r59, x^2*asin(2*(3+4*x))*(5+6*log(7*x^2)), x)),
+    check_not("hv non-linear F-arg",
+              %mr_rule_bindings(_mr_rule_3_1_5_r59, x*asin(2*x^2)*(5+6*log(7*x^2)), x)),
+    check_not("hv linear F-arg vs the monomial rule (3.4 r37)",
+              %mr_rule_bindings(_mr_rule_3_4_r37, asin(2*(3+4*x))^2*(7+8*log(9*(10+11*x^3)^4)), x)),
+    check_not("hv extra factor with no Px (3.4 r37)",
+              %mr_rule_bindings(_mr_rule_3_4_r37, x*asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x)),
+    check_not("hv powered factor vs the bare rule (r59)",
+              %mr_rule_bindings(_mr_rule_3_1_5_r59, x*acot(2*(3+4*x))^3*(5+6*log(7*x^2)), x)),
+    check_not("hv sum integrand (not a product)",
+              %mr_rule_bindings(_mr_rule_3_1_5_r58, asin(2*(3+4*x))^3 + 5 + 6*log(7*x^2), x)),
+    check_not("hv (d+e x)^n log-arg vs the x^n rule (r58)",
+              %mr_rule_bindings(_mr_rule_3_1_5_r58, x*asin(2*(3+4*x))^3*(5+6*log(7*(8+9*x)^3)), x)),
+    check_not("hv leading minus with no Px (3.4 r37: the sign cannot bind)",
+              %mr_rule_bindings(_mr_rule_3_4_r37, -asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x)),
+    true
+  )$

@@ -1,0 +1,161 @@
+--- a/maxima_rubi_utils.mac
++++ b/maxima_rubi_utils.mac
+@@ -95,7 +95,8 @@
+    the replacement downgrades the fire to a misfire and lets the next
+    rule (or the integrate fall-through) handle the integrand. No
+    early exit: `return` inside a `for` is loop-level in this build
+-   (measured 2026-08-20, the %mr_dispatch ans/return() note above). */
++   (measured 2026-08-20; recorded with the defmatch-era %mr_dispatch,
++   deleted with the matcher substrate). */
+ /* The boolean test is by STRING, not by = (measured 2026-08-25,
+    5.50.0/SBCL): a `false` factor inside a Times node is retrieved by
+    part() as an atom whose string is "false" but which is NEITHER
+@@ -178,7 +179,8 @@
+    formal diff check verifies. (b) An ERRORING integrate (a Lisp-level
+    crash, or the uncatchable RETRIEVE input-EOF when the 12 queued
+    answers are exhausted) must PROPAGATE: it kills the rule's
+-   replacement, %mr_dispatch's errcatch turns that into a misfire, and
++   replacement, the dispatcher's errcatch (maxima_rubi_dispatch.lisp
++   mr-apply-rule) turns that into a misfire, and
+    the next rule gets the integrand. errcatching it instead bakes the
+    no-answer noun into the answer and regresses targets that the
+    declining rule's successor handles (measured 2026-08-25: broad
+@@ -203,7 +205,7 @@
+     if is(looped) = false then (
+       d : errcatch(ratsimp(part(%mr_seen, i) - f)),
+       /* errcatch in this build returns [value] / []
+-         (probe-errcatch-semantics); the %mr_dispatch idiom */
++         (probe-errcatch-semantics) */
+       if d # [] and is(part(d, 1) = 0) then looped : true
+     ),
+   looped)$
+@@ -272,23 +274,16 @@
+ rubi(f, x) := mr_top(f, x, false)$
+ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
+ 
+-/* The 9.1 re-dispatch entry (rules/class1/9_1.mac calls it from every
+- * re-dispatching replacement). The .m's nested Int had the TOP LEVEL'S
+- * full matcher power AND its own residue behavior; no existing entry
+- * has both halves: mr_int (fb=true) has the integrate fall-through
+- * (the run-5 load-bearing native answers on stuck mquot sub-integrals,
+- * e.g. the 1.4.3 r19 T4-cascade x^(n-1)/(2e)) but runs passes 2-3
+- * OFF (a bare-factor sub-integral loses the lift — 1.1.2.6 e20
+- * regresses exactly that way); rubi (fb=false) keeps passes 2-3 but
+- * yields the mr_unintegrable noun (no native). This entry mirrors
+- * mr_top with the pass gates lifted and the integrate fall-through
+- * on both the seen-guard hit and the 0-firing: the 9.1 re-dispatch
+- * keeps whatever rescue the sub-integral had, in either nesting
+- * context. A plain mr_top parameterization was rejected: the fb flag
+- * couples the pass gate and the fall-through, and changing the
+- * coupling for the family entries is the measured-hang configuration
+- * (2026-08-27, 1.1.2.6 e20 looped in pattern recompilation past
+- * 900 s with the gates lifted process-wide). */
++/* The legacy 9.1 re-dispatch entry. The manual 9.1 port called it from
++ * every re-dispatching replacement; the generated rules/class1/9_1.mac
++ * calls mr_int instead, as its .m source calls Int (matcher substrate
++ * spec section 3.4), so no rule file calls it now. It stays until the P5
++ * A/B shows whether the exact seen-guard mode below is still needed (spec
++ * section 3.5; deleted in P6 otherwise). Its origin (2026-08-27, 1.1.2.6
++ * e20 / 1.4.3 r19): under the defmatch runner mr_int ran passes 2-3 off
++ * and rubi kept them but yielded the no-answer noun, so this entry lifted
++ * the pass gates AND kept the integrate fall-through on both the seen-guard
++ * hit and the 0-firing. The passes are gone with the matcher substrate. */
+ /* mode = "alg": the full %mr_seenp (exact member + the ratsimp
+  * algebraic comparison — the float/rat normalization-drift guard,
+  * 891240b, load-bearing). mode = "exact": the exact member check
+@@ -1573,24 +1568,15 @@
+  * QuadraticQ, TrinomialQ (+ TrinomialParts), BinomialDegree, and the
+  * four *MatchQ "simple shape" tests. Line-ports of the pinned Rubi
+  * definitions (provenance per function); the .m ListQ[u] arm is the
+- * generator's list-packing. The *MatchQ ports call the cluster-A3
+- * matcher with fresh marker atoms (the %mr_mq_ family binds by
+- * identity); the cond is the lambda-over-bindings-list form the
+- * matcher contract requires.
+- *
+- * The *MatchQ conds are threaded through the matcher's structural
+- * backtracking (the ["final"]/["match"]/["part"] continuation search
+- * in %mr_mq_search), so a unit-coefficient term (a bare x^n / x^(2n)
+- * summand) no longer traps the search on the coefficient-absorbing
+- * binding: the freeof cond fails on that binding and the search
+- * continues to the b := 1 / real-exponent binding. REMAINING DIVERGENCE
+- * (the matcher's absent rule, not the cond search): a product/sum
+- * factor that contains a literal (b_*x, c_*x^2) cannot be treated as
+- * ABSENT as a whole, so the .m corner where the optional coefficient
+- * defaults to 0 and deletes the whole literal-base term still answers
+- * false here. Those corners are unreachable at the class-1 call sites
+- * (the LinearQ / QuadraticQ / TrinomialQ guards guarantee a real
+- * literal-base term). */
++ * generator's list-packing. The *MatchQ ports call %mr_matchQ
++ * (MR-MATCH, maxima_rubi_dispatch.lisp) with a pattern string whose
++ * pattern variables are fresh marker names and whose (MRArg k) parts are
++ * x / x^2; the cond is a lambda over the binding list, run on every
++ * complete binding, so a unit-coefficient term (a bare x^n / x^(2n)
++ * summand) whose coefficient-absorbing binding fails the freeof cond
++ * goes on to the next binding. The defmatch-era cluster-A3 matcher and
++ * its divergence notes are gone; these predicates follow MR-MATCH's
++ * semantics (matcher regression suite, test/matcher/). */
+ 
+ /* Rubi :846  BinomialDegree[u,x] := BinomialParts[u,x][[3]]. The .m
+    False[[3]] hard-errors on a non-binomial; the port fails closed
+@@ -2533,32 +2519,37 @@
+   then true
+   else false)$
+ 
+-/* Rubi :1681  AlgebraicFunctionQ[u, x, flag_ = False]. The generated
+-   class-1 call is the 2-arg form, so flag is false: a power counts only
+-   with an explicit rational exponent (the 'sqrt node is the collapsed
+-   1/2 power). */
+-%mr_algebraicFunctionQ(u, x) := block([i, ok],
++/* Rubi :1681  AlgebraicFunctionQ[u, x, flag_ = False]. flag false: a
++   power counts only with an explicit rational exponent (the 'sqrt node is
++   the collapsed 1/2 power); flag true: also with an x-free exponent. The
++   3-arg form (flag = true) is called by 3_1_5 r30 and 3_3 r32/r61, whose
++   conds the matcher substrate first makes reachable (plan-2
++   pre-validation, 2026-09-13). */
++%mr_algebraicFunctionQ(u, x, [flag]) := block([fl, i, ok],
++  if length(flag) > 1
++  then error("%mr_algebraicFunctionQ: expected 2 or 3 args"),
++  fl : if flag = [] then false else is(first(flag) = true),
+   if %mr_atomQ(u) or freeof(x, u) then true
+   else if op(u) = "/"
+-  then %mr_algebraicFunctionQ(part(u, 1), x)
+-       and %mr_algebraicFunctionQ(part(u, 2), x)
++  then %mr_algebraicFunctionQ(part(u, 1), x, fl)
++       and %mr_algebraicFunctionQ(part(u, 2), x, fl)
+   else if op(u) = "-"
+-  then %mr_algebraicFunctionQ(part(u, 1), x)
++  then %mr_algebraicFunctionQ(part(u, 1), x, fl)
+   else if op(u) = "^"
+-  then %mr_algebraicFunctionQ(part(u, 1), x)
+-       and %mr_rationalQ(part(u, 2))
++  then %mr_algebraicFunctionQ(part(u, 1), x, fl)
++       and (%mr_rationalQ(part(u, 2)) or (fl and freeof(x, part(u, 2))))
+   else if op(u) = 'sqrt
+-  then %mr_algebraicFunctionQ(part(u, 1), x)
++  then %mr_algebraicFunctionQ(part(u, 1), x, fl)
+   else if op(u) = "*" or op(u) = "+" then (
+     ok : true,
+     for i : 1 thru length(u) do
+-      if %mr_algebraicFunctionQ(part(u, i), x) = false then ok : false,
++      if %mr_algebraicFunctionQ(part(u, i), x, fl) = false then ok : false,
+     ok
+   )
+   else if op(u) = "[" then (
+     ok : true,
+     for i : 1 thru length(u) do
+-      if %mr_algebraicFunctionQ(part(u, i), x) = false then ok : false,
++      if %mr_algebraicFunctionQ(part(u, i), x, fl) = false then ok : false,
+     ok
+   )
+   else false)$
+@@ -4695,8 +4686,8 @@
+    such factor. A Maxima product carries at most one x-power factor
+    (like powers auto-combine — x^2*x^(1/3) stores as x^(7/3)), so the
+    first hit is the .m's unique binding. return(value) is loop-level in
+-   this build (the %mr_dispatch note, this file's line 81), so the bare
+-   return() break + flag idiom. */
++   this build (measured 2026-08-20), so the bare return() break + flag
++   idiom. */
+ %mr_easyDQ_strip(u, x) := block([i, m, f, r, found],
+   found : false,
+   for i : 1 thru length(u) do (

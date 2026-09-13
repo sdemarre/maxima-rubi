@@ -1,0 +1,78 @@
+ /* %mr_matchQ (matcher substrate, spec section 3.4):
+    %mr_matchQ(u, "<pattern s-expression>", [<parts>], cond) matches u with
+    MR-MATCH. Each (MRArg k) in the pattern text is the k-th of the parts —
+    the pattern's pattern-free pieces (x, x^2, ...), evaluated at call time —
+    and cond is true or a lambda over the binding list, run on every complete
+    binding; %mr_matchQ_bindings returns the accepted binding list. The
+    patterns are the generated sites' shapes (1.1.2.10 x^m_.*u_., 1.2.2.7
+    (f_+g_.*x^2)^r_., 1.4.1 / 9.1 a_+b_.*v_); the expectations follow
+    MR-MATCH's Mathematica semantics (plan-2 pre-validation,
+    probe_rewrite.mac, 2026-09-13). */
+ test_matchQ_predicates() := block([P1, P2, Prb, intm, fr],
+   print("--- matchQ (structural matcher) ---"),
+   /* binding-list lookup: found / absent (fails closed) */
+   check_bool("mk found", is(%mr_mk(_mr_9_r1mq1_m, [_mr_9_r1mq1_m = 3]) = 3)),
+   check_not("mk absent", %mr_mk(_mr_9_r9mq9_z, [_mr_9_r1mq1_m = 3])),
+   P1 : "(Times (Optional (Pattern |_mr_9_r1mq1_u| (Blank))) (Power (MRArg 1) (Optional (Pattern |_mr_9_r1mq1_m| (Blank)))))",
+   intm : lambda([%mr_mqb], integerp(%mr_mk(_mr_9_r1mq1_m, %mr_mqb))),
+   check_bool("matchQ x^2 = x^m*u, m integer", %mr_matchQ(x^2, P1, [x], intm)),
+   check_bool("matchQ x^2 binds m = 2, u = 1",
+              binds(%mr_matchQ_bindings(x^2, P1, [x], intm),
+                    ['_mr_9_r1mq1_m = 2, '_mr_9_r1mq1_u = 1])),
+   check_bool("matchQ x^3*y = x^m*u, m integer", %mr_matchQ(x^3*y, P1, [x], intm)),
+   check_bool("matchQ x^3*y binds m = 3, u = y",
+              binds(%mr_matchQ_bindings(x^3*y, P1, [x], intm),
+                    ['_mr_9_r1mq1_m = 3, '_mr_9_r1mq1_u = y])),
+   /* the bare-power pattern forces m := y, so the cond is false */
+   check_not("matchQ cond false after binding (m -> y)",
+             %mr_matchQ(x^y, "(Power (MRArg 1) (Pattern |_mr_9_r1mq1_m| (Blank)))", [x], intm)),
+   /* MatchQ[5 x^2, x^m_. u_. /; IntegerQ[m]] is True (m = 2, u = 5): the
+      coefficient is absorbed by u, so the 1.1.2.10 guard blocks Pq = 5 x^2 */
+   check_bool("matchQ 5*x^2 = x^m*u (m=2, u=5)",
+              binds(%mr_matchQ_bindings(5*x^2, P1, [x], true),
+                    ['_mr_9_r1mq1_m = 2, '_mr_9_r1mq1_u = 5])),
+   /* x^2 + x^3 is a Plus: with u at its default x^m_. must match the whole
+      sum, and with m at its default x must — neither does (the defmatch-era
+      pin u = x^2 + x^3, m = 1 was not Mathematica's reading) */
+   check_not("matchQ x^2+x^3 vs x^m*u is false", %mr_matchQ(x^2 + x^3, P1, [x], true)),
+   P2 : "(Power (Plus (Pattern |_mr_9_r5mq1_f| (Blank)) (Times (Optional (Pattern |_mr_9_r5mq1_g| (Blank))) (MRArg 1))) (Optional (Pattern |_mr_9_r5mq1_r| (Blank))))",
+   fr : lambda([%mr_mqb], freeof(x, %mr_mk(_mr_9_r5mq1_f, %mr_mqb))
+                          and freeof(x, %mr_mk(_mr_9_r5mq1_g, %mr_mqb))
+                          and freeof(x, %mr_mk(_mr_9_r5mq1_r, %mr_mqb))),
+   /* (f_ + g_.*x^2)^r_. at the 1.2.2.7 sites: the power-less base takes r = 1 */
+   check_bool("matchQ 3+5x^2 = (f+g x^2)^r, freeofs (r=1)",
+              %mr_matchQ(3 + 5*x^2, P2, [x^2], fr)),
+   check_not("matchQ trinomial vs (f+g x^2)^r, freeofs",
+             %mr_matchQ(3 + 5*x^2 + 7*x^4, P2, [x^2], fr)),
+   /* Plus is Flat: without the FreeQ cond f_ takes the run 3 + 7*x^4 */
+   check_bool("matchQ trinomial vs (f+g x^2)^r, no cond (f takes a run)",
+              %mr_matchQ(3 + 5*x^2 + 7*x^4, P2, [x^2], true)),
+   /* a re-occurring pattern variable binds consistently */
+   Prb : "(Plus (Pattern |_mr_9_r7mq1_f| (Blank)) (Times (Pattern |_mr_9_r7mq1_f| (Blank)) (MRArg 1)))",
+   check_not("matchQ consistent re-binding", %mr_matchQ(3 + 5*x^2, Prb, [x^2], true)),
+   check_bool("matchQ consistent re-binding (equal values)",
+              %mr_matchQ(3 + 3*x^2, Prb, [x^2], true)),
+   /* a_+b_.*v_ at the 1.4.1 / 9.1 sites: v binds a whole sub-expression */
+   check_bool("matchQ c+d*y = a+b*v (freeofs)",
+              %mr_matchQ(c + d*y,
+                         "(Plus (Pattern |_mr_9_r8mq1_a| (Blank)) (Times (Optional (Pattern |_mr_9_r8mq1_b| (Blank))) (Pattern |_mr_9_r8mq1_v| (Blank))))",
+                         [],
+                         lambda([%mr_mqb], freeof(x, %mr_mk(_mr_9_r8mq1_a, %mr_mqb))
+                                           and freeof(x, %mr_mk(_mr_9_r8mq1_b, %mr_mqb))
+                                           and freeof(x, %mr_mk(_mr_9_r8mq1_v, %mr_mqb))))),
+   /* literals: a part and a number match only themselves; a symbol written
+      in the pattern text is a literal, not a wildcard */
+   check_bool("matchQ x = x", %mr_matchQ(x, "(MRArg 1)", [x], true)),
+   check_not("matchQ y = x", %mr_matchQ(y, "(MRArg 1)", [x], true)),
+   check_bool("matchQ 2 = 2", %mr_matchQ(2, "2", [], true)),
+   check_not("matchQ 3 = 2", %mr_matchQ(3, "2", [], true)),
+   check_not("matchQ literal symbol is not a wildcard", %mr_matchQ(y, "z", [], true)),
+   /* power base binds a whole sub-expression */
+   check_bool("matchQ (a+b x)^2 = v^2",
+              %mr_matchQ((a + b*x)^2, "(Power (Pattern |_mr_9_r12mq1_v| (Blank)) 2)", [], true)),
+   check_not("matchQ 3+5x^2 = (f+g x^2)^2 (literal exponent 2)",
+             %mr_matchQ(3 + 5*x^2,
+                        "(Power (Plus (Pattern |_mr_9_r13mq1_f| (Blank)) (Times (Optional (Pattern |_mr_9_r13mq1_g| (Blank))) (MRArg 1))) 2)",
+                        [x^2], true)),
+   true
+  )$

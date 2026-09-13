@@ -1,0 +1,86 @@
+    /* Task 4C-C4 (class-3 deferred campaign, 2026-09-01) — 3_2_1
+       r16/r18/r20, (f+g x)^m (A+B log(e (a+b x)^n (c+d x)^mn))^p on the
+       stored forms. The defmatch runner 0-bound all 13 numeric-n entries and
+       needed the %mr_logpow_match structural matcher; MR-MATCH binds the
+       faithful patterns and the cond, retried over the complete bindings,
+       selects the .m orientation — r18's accepted binding on
+       e*(c+d*x)^2/(a+b*x)^2 is (a, b) := (c, d), n = 2 (plan-2
+       pre-validation, probe_rewrite.mac, 2026-09-13). Answer level: the
+       minimal table is the default 1.1.1.1 + 3_1_x + 3_2_1 + 3_3 in
+       production order — without the 3_1_x files the substituted
+       (A+B log(e x^2))/x^2 reaches the 3_3 r61 Unintegrable catch-all
+       first (probe_c4v.mac, probe_tables.mac). e210's answer carries
+       polylog, which has no diff rule in this build (the b4 e392 note), so
+       its pin is non-noun with no nested no-answer noun, not a zero-chain.
+       e268's answer-level check stays omitted (the campaign's cumulative
+       suite interaction note). */
+    test_class3_c4_321() := block([ans, saved_table, f, z, mm],
+      print("--- c4: 3_2_1 r16/r18/r20 log-arg (C4) ---"),
+      %mr_load_sibling("rules/class3/3_1_1.mac", 'mr_witness_3_1_1),
+      %mr_load_sibling("rules/class3/3_1_2.mac", 'mr_witness_3_1_2),
+      %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
+      %mr_load_sibling("rules/class3/3_1_4.mac", 'mr_witness_3_1_4),
+      %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
+      %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
+      %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_1_1, mr_rules_3_1_2, mr_rules_3_1_3,
+                               mr_rules_3_1_4, mr_rules_3_1_5, mr_rules_3_2_1, mr_rules_3_3]),
+      /* pattern + cond: e124 (r16) */
+      mm : %mr_rule_accept(_mr_rule_3_2_1_r16, (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x),
+      check_bool("c4 e124 accepts (r16)", listp(mm)),
+      check_bool("c4 e124 f=a*g g=b*g m=-2",
+                 binds(mm, ['_mr_3_2_1_r16_f = a*g, '_mr_3_2_1_r16_g = b*g, '_mr_3_2_1_r16_m = -2])),
+      check_bool("c4 e124 a,b,n,c,d,mn,p",
+                 binds(mm, ['_mr_3_2_1_r16_a = a, '_mr_3_2_1_r16_b = b, '_mr_3_2_1_r16_n = 2,
+                            '_mr_3_2_1_r16_c = c, '_mr_3_2_1_r16_d = d, '_mr_3_2_1_r16_mn = -2,
+                            '_mr_3_2_1_r16_p = 1])),
+      check_bool("c4 e124 A,B,e",
+                 binds(mm, ['_mr_3_2_1_r16_A = A, '_mr_3_2_1_r16_B = B, '_mr_3_2_1_r16_e = e])),
+      /* pattern + cond: e210 (r18) — the (c,d)-swapped orientation */
+      mm : %mr_rule_accept(_mr_rule_3_2_1_r18, (a*g+b*g*x)^4*(A+B*log(e*(c+d*x)^2/(a+b*x)^2))^2, x),
+      check_bool("c4 e210 accepts (r18)", listp(mm)),
+      check_bool("c4 e210 f,g,m + swap a=c b=d n=2 c=a d=b mn=-2 p=2",
+                 binds(mm, ['_mr_3_2_1_r18_f = a*g, '_mr_3_2_1_r18_g = b*g, '_mr_3_2_1_r18_m = 4,
+                            '_mr_3_2_1_r18_a = c, '_mr_3_2_1_r18_b = d, '_mr_3_2_1_r18_n = 2,
+                            '_mr_3_2_1_r18_c = a, '_mr_3_2_1_r18_d = b, '_mr_3_2_1_r18_mn = -2,
+                            '_mr_3_2_1_r18_p = 2])),
+      /* pattern + cond: e268 (r20) — the free (f+g x) head */
+      mm : %mr_rule_accept(_mr_rule_3_2_1_r20, (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x)^2, x),
+      check_bool("c4 e268 accepts (r20)", listp(mm)),
+      check_bool("c4 e268 f=f g=g m=-2 p=1",
+                 binds(mm, ['_mr_3_2_1_r20_f = f, '_mr_3_2_1_r20_g = g, '_mr_3_2_1_r20_m = -2,
+                            '_mr_3_2_1_r20_p = 1])),
+      check_bool("c4 e268 a,b,n,c,d,mn",
+                 binds(mm, ['_mr_3_2_1_r20_a = a, '_mr_3_2_1_r20_b = b, '_mr_3_2_1_r20_n = 2,
+                            '_mr_3_2_1_r20_c = c, '_mr_3_2_1_r20_d = d, '_mr_3_2_1_r20_mn = -2])),
+      /* rejections */
+      check_not("c4 rejects the non-linear head (f+g x^2)^2",
+                %mr_rule_bindings(_mr_rule_3_2_1_r20, (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x^2)^2, x)),
+      check_not("c4 rejects a log-arg sum (not a product of binomial powers)",
+                %mr_rule_bindings(_mr_rule_3_2_1_r20, (A+B*log(e*(a+b*x)^2+(c+d*x)^2))/(f+g*x)^2, x)),
+      check_not("c4 rejects a log-less integrand",
+                %mr_rule_bindings(_mr_rule_3_2_1_r20, (f+g*x)^2*(a+b*x)^2, x)),
+      /* answer level: e124 non-noun, self-diff closes (ratsimp + the
+         driver's radcan(rat()) fallback) */
+      f : (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2,
+      ans : rubi(f, x),
+      check_not("c4 e124 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c4 e124 self-diff (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      z : errcatch(radcan(rat(diff(ans, x) - f))),
+      check_bool("c4 e124 self-diff (driver radcan(rat()) fallback)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* answer level: e210 (r18) non-noun, no nested no-answer noun */
+      f : (a*g+b*g*x)^4*(A+B*log(e*(c+d*x)^2/(a+b*x)^2))^2,
+      ans : rubi(f, x),
+      check_not("c4 e210 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      check_bool("c4 e210 has no nested no-answer noun", freeof('unintegrable, ans)),
+      mr_rule_table : saved_table,
+      true
+     )$

@@ -1,0 +1,109 @@
+--- a/generator/generate_rules.py
++++ b/generator/generate_rules.py
+@@ -509,6 +509,23 @@
+             # markers (a_ is no capture of the rule). Pass the RAW args.
+             parts = split_top(args, ",") if args.strip() else []
+             return _emit_matchq(parts, ctx)
++        if head == "MemberQ":
++            # MemberQ[{ArcSin, ArcCos, ...}, F] with F a function-valued
++            # capture (3_1_5 r58/r59, 3_3 r58, 3_4 r37): the dispatcher
++            # binds F to the Maxima operator symbol of the matched head
++            # (maxima_rubi_dispatch.lisp mr-binding-value), the symbol the
++            # typed native name reads as (asin reads as %asin), so the list
++            # carries the native spellings — not the %mr_ shims the RENAME
++            # table maps ArcSinh/ArcCosh/ArcTanh to (the corpus integrands
++            # carry the natives; probed 2026-08-29 and 2026-09-13).
++            parts = split_top(args, ",") if args.strip() else []
++            heads = parts[0].strip() if len(parts) == 2 else ""
++            names = ([h.strip() for h in heads[1:-1].split(",")]
++                     if heads.startswith("{") and heads.endswith("}") else [])
++            if (names and all(h in NATIVE_FUNCTION_HEADS for h in names)
++                    and parts[1].strip() in ctx["vars"]):
++                return (f"%mr_memberQ([{', '.join(NATIVE_FUNCTION_HEADS[h] for h in names)}], "
++                        f"{cap_name(ctx['key'], ctx['n'], parts[1].strip())})")
+         if ctx["markers"] is not None and head in ctx["markers"]:
+             # Marker-as-head, cond side (the r96 F[x]): the whole
+             # sub-expression is a bare MatchQ pattern variable applied
+@@ -890,6 +907,16 @@
+ _PATTERN_OBJECTS = {"Pattern", "Blank", "BlankSequence", "BlankNullSequence",
+                     "Optional", "Condition", "PatternTest"}
+ 
++# G-9 risk flags accepted after review (closed list; spec 3.4 makes every
++# other risk flag a GenError). The reader flags any head with a numeric
++# argument as possibly rewritten by evaluation; Complex[0, a_] has a pattern
++# argument, so it stays the unevaluated Complex[0, a_] expression — the
++# shape MR-MATCH matches against the converter's complex atoms (spec 3.2
++# G-3). 9.1 is outside the probe-02 census (not in LoadRules).
++ACCEPTED_RISKS = {
++    ("9_1", 11, "risk:numeric-or-negated-arg:Complex"),   # 9.1.m L15
++}
++
+ 
+ def _evaluated(text, key, n, what):
+     """Reader parse + evaluation of a pattern text. A G-9 risk effect (an
+@@ -900,7 +927,8 @@
+         raise GenError(f"{key} r{n}: reader cannot parse the {what} "
+                        f"{text[:60]!r}: {ex}")
+     ev, effects = rd.evaluate_lhs(tree)
+-    risks = [e for e in effects if e.startswith("risk:")]
++    risks = [e for e in effects if e.startswith("risk:")
++             and (key, n, e) not in ACCEPTED_RISKS]
+     if risks:
+         raise GenError(f"{key} r{n}: {what} evaluation not emulated "
+                        f"({', '.join(risks)}): {text[:60]!r}")
+@@ -955,6 +983,21 @@
+     return _sexp(out, key, n)
+ 
+ 
++# Mathematica inverse-trig heads -> the NATIVE Maxima function names, for a
++# head list compared with a function-valued capture (translate(), MemberQ).
++# Maxima reads each typed name as the operator symbol the dispatcher binds
++# the capture to (asin -> %asin; measured 2026-09-13). The corpus integrands
++# carry the natives, and probed 2026-08-29 on
++# branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 asin/acos/atan/acot/asinh/
++# acosh/atanh/acoth are all bound natives with closing diffs (arccot/arcoth
++# are unbound nouns) — NOT the RENAME table's %mr_ shims.
++NATIVE_FUNCTION_HEADS = {
++    "ArcSin": "asin", "ArcCos": "acos", "ArcTan": "atan",
++    "ArcCot": "acot", "ArcSinh": "asinh", "ArcCosh": "acosh",
++    "ArcTanh": "atanh", "ArcCoth": "acoth",
++}
++
++
+ def _input_form(e):
+     """A pattern-free evaluated tree -> InputForm text translate() accepts
+     (Plus/Times/Power as operators, every other head as a call)."""
+@@ -965,7 +1008,12 @@
+         if h == "Times":
+             return "(" + "*".join(_input_form(a) for a in args) + ")"
+         if h == "Power" and len(args) == 2:
+-            return f"({_input_form(args[0])})^({_input_form(args[1])})"
++            # Plus/Times, fractions and negative integers carry their own
++            # parentheses; a nested Power is the one operand that needs
++            # them (x^2 stays x^2 — _emit_expon reads the power form)
++            return "^".join(f"({_input_form(a)})" if isinstance(a, tuple)
++                            and a[0] == "Power" else _input_form(a)
++                            for a in args)
+         if h == "List":
+             return "{" + ", ".join(_input_form(a) for a in args) + "}"
+         return (f"{_input_form(h)}["
+@@ -1056,6 +1104,19 @@
+ def emit_head(head, arglist, ctx):
+     """Special forms first, then a plain renamed head(arglist)."""
+     key, n = ctx["key"], ctx["n"]
++    if head in ctx["vars"]:
++        # A function-valued capture applied (F[d*(e+f*x)] — 3_1_5 r58/r59,
++        # 3_3 r58, 3_4 r37): the dispatcher binds F to the Maxima operator
++        # symbol of the matched head (%asin), and apply builds the call
++        # (the idiom probed 2026-08-29: apply works for a symbol holding a
++        # native, a %mr_ port, or a noun function).
++        return f"apply({cap_name(key, n, head)}, [{', '.join(arglist)}])"
++    if head == "Complex":
++        # Complex[re, im] in a repl (9.1 L15 Complex[Identity[0], a]): the
++        # Mathematica complex number re + im I.
++        if len(arglist) != 2:
++            raise GenError(f"{key} r{n}: Complex arity {len(arglist)}")
++        return f"({arglist[0]} + {arglist[1]}*%i)"
+     if head == "FreeQ":
+         # FreeQ[e, x] -> freeof(x, e); FreeQ[{a,b}, x] -> and of freeof.
+         # (FIX F7) the arg list may arrive as [a, b] (braces already
