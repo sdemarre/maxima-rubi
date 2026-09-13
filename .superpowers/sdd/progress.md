@@ -4632,3 +4632,61 @@ Plan: docs/superpowers/plans/2026-09-13-matcher-substrate-plan3.md (+ .files/ at
 - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 13:10:45 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 770 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `INFO: PASS->FAIL 24  FAIL->PASS 180` / `INFO: p90 wall P0 8.1 s -> new 2.3 s` / `INFO: timeout P0 6 -> new 20; timeout in new only: 18` / `Results: 4 passed, 0 failed`
 - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 13:35:18 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 2287 >= P0 2058` / `PASS: wall ceiling: median 1.40 s <= P0 3.90 s` / `INFO: PASS->FAIL 181  FAIL->PASS 410` / `INFO: p90 wall P0 16.2 s -> new 7.5 s` / `INFO: timeout P0 201 -> new 145; timeout in new only: 62` / `Results: 4 passed, 0 failed`
 - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 15:01:58 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 21202 >= P0 20125` / `PASS: wall ceiling: median 0.40 s <= P0 1.30 s` / `INFO: PASS->FAIL 1833  FAIL->PASS 2910` / `INFO: p90 wall P0 7.0 s -> new 4.5 s` / `INFO: timeout P0 778 -> new 1217; timeout in new only: 941` / `Results: 4 passed, 0 failed`
+
+### Task 3 — P5 runs 2–4 (+5)
+- run 2 (mr_flat_wide=true):
+  - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 15:09:07 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 773 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `Results: 4 passed, 0 failed`
+  - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 15:31:42 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 2288 >= P0 2058` / `PASS: wall ceiling: median 1.30 s <= P0 3.90 s` / `Results: 4 passed, 0 failed`
+  - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 16:58:28 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 21211 >= P0 20125` / `PASS: wall ceiling: median 0.40 s <= P0 1.30 s` / `Results: 4 passed, 0 failed`
+- run 3 (mr_cond_retry=false):
+  - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true`; merge rc=0 (2026-09-13 17:03:19 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true` / `PASS: pass floor: PASS 775 >= P0 614` / `PASS: wall ceiling: median 0.20 s <= P0 4.30 s` / `Results: 4 passed, 0 failed`
+  - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true`; merge rc=0 (2026-09-13 19:11:53 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true` / `PASS: pass floor: PASS 2187 >= P0 2058` / `PASS: wall ceiling: median 0.40 s <= P0 3.90 s` / `Results: 4 passed, 0 failed`
+  - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true`; merge rc=0 (2026-09-13 21:00:40 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true` / `FAIL: pass floor: PASS 19374 >= P0 20125` / `PASS: wall ceiling: median 0.20 s <= P0 1.30 s` / `Results: 3 passed, 1 failed` (a flip-arm pass-floor FAIL is recorded, not a stop — per Step 1, only the final records are judged)
+- run 4 (mr_model_flags=false):
+  - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false`; merge rc=0 (2026-09-13 21:07:51 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false` / `PASS: pass floor: PASS 771 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `Results: 4 passed, 0 failed`
+  - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false`; merge rc=0 (2026-09-13 21:30:07 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false` / `PASS: pass floor: PASS 2270 >= P0 2058` / `PASS: wall ceiling: median 1.20 s <= P0 3.90 s` / `Results: 4 passed, 0 failed`
+  - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false`; merge rc=0 (2026-09-13 22:54:53 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false` / `PASS: pass floor: PASS 21032 >= P0 20125` / `PASS: wall ceiling: median 0.40 s <= P0 1.30 s` / `Results: 4 passed, 0 failed`
+- winners:
+  - `WINNER mr_flat_wide=true (more PASS in every class); differs from run 1 (mr_flat_wide=false)`
+  - `WINNER mr_cond_retry=true (tie or split across classes); same as run 1 (mr_cond_retry=true)`
+  - `WINNER mr_model_flags=false (tie or split across classes); differs from run 1 (mr_model_flags=true)`
+
+  The user's 2026-09-13 decision (made after mr_flat_wide read wide by +9/+3/+1 PASS with 16 of
+  19 changed entries at the 30 s cap, no noise tolerance in the raw rule): "Re-run changed
+  entries" — between corpus runs, re-run the changed entries under both arms, several reps each,
+  at 30 s; results that don't reproduce count as noise; the winner rule is re-applied to what
+  reproduces. Probe 11 (`probes/matcher/11-arm-noise-recheck.py`, commits ad83326 + 7871a45)
+  implements it. The controller's ruling applied the same method to mr_model_flags, whose raw
+  rule read false on a +1 class-2 margin whose three entries were all noise; mr_cond_retry needed
+  no re-check (a large-margin split: −1,828 / +5 / −100 PASS, class 1/2/3).
+
+  Noise-filtered re-checks (probes/matcher/11-arm-noise-recheck.mr_flat_wide.out,
+  probes/matcher/11-arm-noise-recheck.mr_model_flags.out):
+  - mr_flat_wide: per class repro-flip-better/repro-base-better/noise — c1 4/3/8 (of 15
+    selected), c2 0/0/3 (of 3), c3 0/0/1 (of 1); `WINNER (noise-filtered) mr_flat_wide=false (tie
+    or split across classes)`
+  - mr_model_flags: per class repro-flip-better/repro-base-better/noise — c1 92/273/13 (of 378
+    selected), c2 0/2/3 (of 5), c3 2/21/2 (of 25); `WINNER (noise-filtered) mr_model_flags=true
+    (more PASS in every class)`
+
+  Resulting winners (noise-filtered): mr_flat_wide=false, mr_cond_retry=true,
+  mr_model_flags=true — all three are the run-1 defaults.
+- FINAL_ARM: ""; final records: test/corpus_class{1,2,3}.p5-run1.out
+- run 5: not taken (FINAL_ARM empty)
+- arm A/B (run 1 -> run k):
+  - k=2, class 2: PASS->PASS 770, PASS->FAIL 0, FAIL->PASS 3, FAIL->FAIL 192
+  - k=2, class 3: PASS->PASS 2287, PASS->FAIL 0, FAIL->PASS 1, FAIL->FAIL 797
+  - k=2, class 1: PASS->PASS 21199, PASS->FAIL 3, FAIL->PASS 12, FAIL->FAIL 4483
+  - k=3, class 2: PASS->PASS 759, PASS->FAIL 11, FAIL->PASS 16, FAIL->FAIL 179
+  - k=3, class 3: PASS->PASS 2124, PASS->FAIL 163, FAIL->PASS 63, FAIL->FAIL 735
+  - k=3, class 1: PASS->PASS 19000, PASS->FAIL 2202, FAIL->PASS 374, FAIL->FAIL 4121
+  - k=4, class 2: PASS->PASS 768, PASS->FAIL 2, FAIL->PASS 3, FAIL->FAIL 192
+  - k=4, class 3: PASS->PASS 2266, PASS->FAIL 21, FAIL->PASS 4, FAIL->FAIL 794
+  - k=4, class 1: PASS->PASS 20928, PASS->FAIL 274, FAIL->PASS 104, FAIL->FAIL 4391
+- mr_model_flags reading: mr_model_flags=true won (noise-filtered); no MODEL-LOST investigation
+  needed (Step 8 turns only on a raw PASS->FAIL list when the raw rule's loser stands, and here
+  the noise-filtered winner keeps run 1's arm)
+
+Plan deviation (one line): the winner rule as executed = the spec rule applied to reproducible
+differences (probe 11), not to raw PASS counts — per the user's 2026-09-13 noise decision, applied
+uniformly to every switch with a thin raw margin.
