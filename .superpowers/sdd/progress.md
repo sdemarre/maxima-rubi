@@ -4455,3 +4455,97 @@ Plan: docs/superpowers/plans/2026-09-12-matcher-substrate-plan1.md
 - `git diff --name-only 972042c..HEAD` touches none of maxima_rubi.mac, maxima_rubi_utils.mac,
   maxima_rubi_dispatch.lisp, maxima_rubi_implicit1.lisp, maxima_rubi_pass4.lisp, rules/, generator/,
   test/corpus_driver.py, test_maxima_rubi.mac.
+
+## Plan: 2026-09-13 matcher substrate plan 2 (P3–P4; branch matcher-substrate)
+
+Spec: docs/superpowers/specs/2026-09-12-matcher-substrate-design.md
+Plan: docs/superpowers/plans/2026-09-13-matcher-substrate-plan2.md (+ .files/ attachments)
+
+### P3 — static gate (Tasks 1–2)
+- build: branch_5_50_base_84_g4204fb669 / 2026-08-31 13:27:47 / SBCL 2.6.7
+- Task 1, P0 tree (red): `FAIL: rule counts per file unchanged (9_1: 29 -> 28), 87 files` /
+  `FAIL: total rules 3,513 (3,514 - the dead 9.1 L4 rule)` /
+  `FAIL: no defmatch/matchdeclare; one %mr_defrule per rule; every cond/repl explained` /
+  `FAIL: inner conditions: moved + in exempt rules = 227` /
+  `FAIL: every moved inner condition calling a package entry is resolved (0)` /
+  `Results: 6 passed, 5 failed`
+- Task 2: `INFO: bodies identical 3209, nonzero guards removed 2347, inner conditions moved 226
+  (+1 in exempt rules), MatchQ sites compared 20 (+3 in exempt rules), rules without defmatch 52
+  (workaround emitters 50 of them outside 9.1), manual 9.1 rules 29` and `Results: 11 passed, 0
+  failed`; TOTAL lines 3054 / 125 / 334; regeneration idempotent
+
+### P4 — matcher, converter, dispatcher, runtime, Layer A (Tasks 3–6)
+- Task 3 red: match `FAIL: rejects a Power exponent Optional with default 2` / `Results: 52
+  passed, 1 failed`; tree — a Lisp error (`mr-tree: cannot convert (#:G646 1 (#:G645 1 1) 0
+  (#:G644 1 1))`), no Results line; green: `Results: 53 passed, 0 failed` (match, Maxima and
+  plain SBCL), `Results: 51 passed, 0 failed` (tree)
+- Task 3 regression suite: defaults `Results: 109 passed, 0 failed`, judged 2026-09-13 07:46 UTC,
+  git HEAD ff38230e2df0cc2cc6f164bb1201be049074c9db, wall real 1m12.884s; flags `Results: 109
+  passed, 0 failed`, judged 2026-09-13 07:47 UTC, git HEAD ff38230e2df0cc2cc6f164bb1201be049074c9db,
+  wall real 1m4.949s
+- Task 4 red: FAIL count 37, Results count 0 (batch dies before a Results line — old %mr_matchQ
+  rejects the new 4-arg call); green: `Results:  45  passed,  0  failed`
+- Task 5: utils `utils: 7392 -> 5017 lines` -> 5007 lines (after the handedits patch); `SMOKE
+  rules 3513` and `SMOKE answer (14*b*x^2*(b*x^2+a)^(7/2)-4*a*(b*x^2+a)^(7/2))/(126*b^2)`;
+  `Results: 53 passed, 0 failed` (match), `Results: 51 passed, 0 failed` (tree), `Results:  49
+  passed,  0  failed` (dispatch), `Results: 11 passed, 0 failed` (check_generated_rules), and
+  `built test/mr_rules.core (112775536 bytes) rules=3513 fingerprint=1c4c22ca8487ecdb4279865921db02cd`
+- Task 6 red: PASS 9 / FAIL 3 / Results 0; green: `Results: 897 passed, 0 failed`
+
+### P4 gate records (Task 7)
+- probe 08 (probes/matcher/08-runtime-load.out, `=== probes/matcher/08-runtime-load  git HEAD
+  6d467c5  2026-09-13 08:28 UTC`): `LOAD flagless wall 1.4 s; TLS lines 0` / `R load
+  maxima_rubi.mac s 0.33000399999999996 mr_load_all s 1.025014 rules 3513` / `R smoke answered
+  true radcan zero-chain true` / `LAYER-A flagless wall 1.3 s; TLS lines 0: Results:  897
+  passed,  0  failed` / `LOAD flag wall 1.4 s; TLS lines 0` / `R load maxima_rubi.mac s
+  0.32600399999999996 mr_load_all s 0.9940129999999999` (continuation line wraps `rules 3513` to
+  the next output line under the flag arm — Maxima's own line-wrap, not a missing count; verified
+  in the probe's scratch capture) / `R smoke answered true radcan zero-chain true` / `LAYER-A flag
+  wall 1.3 s; TLS lines 0: Results:  897  passed,  0  failed` / `DISPATCH-SUITE flagless wall
+  0.4 s: Results:  49  passed,  0  failed` / `CORE-BUILD wall 2.9 s exit 0: built
+  test/mr_rules.core (112775536 bytes) rules=3513 fingerprint=1c4c22ca8487ecdb4279865921db02cd`
+- probe 07 (probes/matcher/07-fault-survival.out, `=== probes/matcher/07-fault-survival  git HEAD
+  6d467c5  2026-09-13 08:29 UTC  runs per variant: 2`): fatal-pseudo in accept_cond_named,
+  dispatch_cond_2arg, dispatch_cond_lambda, dispatch_cond_named, matchq_cond_named (both runs);
+  survived in matchq_cond_lambda, dispatch_repl, top_2arg, top_mfuncall, top_w0, top_w2 (both
+  runs) — matches the plan's expected table exactly
+- probe 06 (probes/matcher/06-dispatch-cost.out, `=== probes/matcher/06-dispatch-cost  git HEAD
+  6d467c5  2026-09-13 08:29 UTC`): walk `sin(x)^x s 0.043000999999999845` / `(a+b*x)^2*(c+d*x)^3*
+  sin(x) s 1.079015` / `x^2*(a+b*x)^3*(c+d*x)^4*(e+f*x)^5*(g+h*x)^6*log(x) s 79.89306599999999` /
+  `(a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q s 5.520075000000006` / `x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2
+  s 0.4620049999999907`; dispatch `sin(x)^x s 0.026001000000007934 answered false` /
+  `(a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q s 0.1430029999999931 answered true`; claims k
+  6/8/10/12 wall 3.4/9.3/36.4/174.6 s (walk-only s 2.030027/7.872106/34.975469/173.186334, all
+  accepting 7); attr total s 77.484049, records over 50 ms 71, top three `[19.029257,"3_5
+  r37",true]` / `[9.158123000000003,"3_1_5 r28",true]` / `[9.137124,"3_5 r11",true]`; rubi
+  substrate `R rubi s 39.005528 answered [true]` (CASE wall 40.4 s) vs P0 `R rubi s 47.387644
+  answered [true]` (CASE wall 54.5 s, rules 3514, load_all 6.989095 s)
+- final tree (Task 7 Step 9): `Results: 897 passed, 0 failed` (flagless Layer A) /
+  `Results: 53 passed, 0 failed` (mr-match, Maxima and plain SBCL) / `Results: 51 passed, 0
+  failed` (mr-tree) / `Results:  49  passed,  0  failed` (dispatch — 49 per the Task 4 review
+  ruling, not the plan's stale 45) / `Results: 11 passed, 0 failed` (check_generated_rules) /
+  `0` (byte-identity `git status --porcelain rules/ | wc -l`); regression suite defaults
+  `Results: 109 passed, 0 failed`, judged 2026-09-13 08:41 UTC, git HEAD
+  46dffa232204678453077e221e694a14de5f88d7 / flags `Results: 109 passed, 0 failed`, judged
+  2026-09-13 08:41 UTC, git HEAD 46dffa232204678453077e221e694a14de5f88d7 (record diff check: 0
+  non-judged/HEAD/TIMING/build-line changes in all six records)
+- Plan 2 complete: P3 and P4 gates green. Next: Plan 3 (P5–P6).
+
+### Review fixes and controller rulings
+
+Copied verbatim from the execution ledger
+`.superpowers/sdd/2026-09-13-matcher-substrate-plan2/progress.md` (every `Ruling:` line and every
+`fix round` line):
+
+- Ruling: execute in the main checkout on `matcher-substrate`, no new worktree — the plan names that branch, Plan 1 ran the same way, commits never use `git add -A` so the untracked campaign logs stay untouched — cost if wrong: none beyond a noisier `git status`.
+- Ruling: Task 7 Step 10 appends the plan-2 section to the tracked project ledger `.superpowers/sdd/progress.md` (the spec's migration ledger; Plan 1's section is there) while this file is the SDD recovery ledger — the skill's "stray flat ledger = another plan's" rule is about recovery state, not the project record — cost if wrong: one extra section in a tracked file, revertable.
+- Ruling: implementers extract plan code blocks from the brief file programmatically where a block is long (the gate script, the dispatcher, the unit suite) rather than retyping them — byte-for-byte fidelity is what the replay validated — cost if wrong: none.
+- Ruling: runs up to ~9 min may run in the foreground with the Bash tool timeout raised (max 600000 ms); only probe 06 (~11 min) must go to the background — the plan's "120 s cap" is the tool default, not a limit — cost if wrong: a tool call times out and the step is re-run in the background.
+- Ruling: accept the implementer's `REPO = Path(__file__).resolve().parents[1]` change in generator/mma_reader.py (Step 1 omitted it; the move is one directory shallower and the Step 3 self-test cannot pass without it) — plan defect: the attachments replay copied the prototype's inline-edited files instead of applying the plan text, so inline-text gaps in Tasks 1–5 were not validated by it; the task gates are the net — cost if wrong: none (the self-test proves the path).
+- Ruling: the Files header's "3,712 → 1,580 lines" for generate_rules.py is a stale plan figure (actual 1,618); no step gates on it and the controller's Steps 1–3 reproduction checks the file byte for byte — cost if wrong: none.
+- Ruling: narrow `mr-guarded`'s handler so it no longer catches `sb-sys:interactive-interrupt` or `sb-ext:timeout` (keep error + storage-condition + other serious-conditions), with a unit check on the condition type — spec 3.5 step 5 guards matcher faults, and swallowing Ctrl-C makes an interactive rubi() uninterruptible across ~3,513 records per level; plan text (Task 4 Step 3) mandated the broad handler — cost if wrong: an interrupt inside a cond now unwinds the whole dispatch instead of one rule (the intended behaviour).
+- Ruling: `%mr_matchQ` / `%mr_matchQ_bindings` read, substitute and prepare the pattern outside `mr-guarded` and raise a Maxima error naming the pattern text when prepare rejects it; only `match` stays guarded; unit check that a rejected MatchQ pattern is an error — spec 3.4 treats an unpreparable pattern as an error (cf. %mr_defrule's load error) and a silent false is a swallowed error that changes rule selection; the static gate prepares rule-file MatchQ texts but not the utils' 16 sites (Task 5) — cost if wrong: a utils MatchQ pattern that fails prepare now surfaces as an error (caught as cond-false inside dispatch, loud at top level / in Layer A) instead of false.
+- Task 4: fix round 1/5 dispatched (resumed implementer; FIX_BASE bf60bb3; findings: interrupt/timeout swallowed by mr-guarded, MatchQ prepare rejection silent)
+- Task 4: fix round 1 implementer DONE, commit 2791755; test_mr_dispatch 49/0 (45 + 3 fault-type + 1 MatchQ prepare error), match 53/0, tree 51/0 — dispatcher suite count is now 49
+- Task 4: fix round 1/5 (2 addressed, 0 open — interrupt/timeout guard narrowed via deftype mr-fault; MatchQ prepare rejection → merror; commits bf60bb3..2791755)
+- Task 4: complete (commits 5e07270..2791755, review clean after 1 fix round)

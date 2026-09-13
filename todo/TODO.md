@@ -199,7 +199,7 @@ A/B + attribution + 100 s re-check, §6 recovery, §7 acceptance); runs
 `test/corpus_class{1,2,3}.campaign-baseline.out`. Ticket 04
 (`.scratch/class1-ab-remainders/issues/04-…`) partially answered.
 
-## Matcher substrate — in prog (Plan 1 complete 2026-09-12)
+## Matcher substrate — in prog (Plan 2 complete 2026-09-13)
 
 Classes 1–3 re-hosted on a Mathematica-semantics matcher in place of
 `defmatch` (spec
@@ -217,13 +217,36 @@ both simplifier arms (`test/matcher/gate.out`, `gate.flags.out`,
 109/0). Suite commands: AGENTS.md, Tests. Ledger:
 `.superpowers/sdd/progress.md` (plan 1 section).
 
-- Next: Plan 2 = P3 (generator: pattern emission, `%mr_defrule`, static
-  check) – P4 (dispatcher and loader, Layer A rewrite), written just in
+Plan 2 (P3–P4,
+`docs/superpowers/plans/2026-09-13-matcher-substrate-plan2.md`) is
+complete on the same branch: the generator emits evaluated-FullForm
+pattern records (`%mr_defrule`; 3,513 rules, 9.1 generated; P3 static
+gate `test/check_generated_rules.py` 11/0);
+`maxima_rubi_dispatch.lisp` dispatches on `mr-match` / `mr-tree` (unit
+suite 49/0); passes 2–4, the `defmatch`-era matchers and
+`maxima_rubi_implicit1.lisp` / `maxima_rubi_pass4.lisp` are deleted;
+Layer A 897/0; the TLS flag is no longer required
+(`probes/matcher/08-runtime-load.out`); dispatch cost
+`probes/matcher/06-dispatch-cost.out`; fault survival
+`probes/matcher/07-fault-survival.out`. Ledger: plan 2 section.
+
+- Next: Plan 3 = P5 (four full class 1–3 runs, one switch flipped per
+  run; gates against the P0 records) – P6 (close), written just in
   time — open
-- Known cost item for Plan 2: a collapsible claimer (e.g.
-  `(c_.*x_)^m_.` under Times) still enumerates every sub-run of a
-  product's factors (exponential in the factor count; measured in the
-  ledger's final-review fix-wave block) — open
+- Carried into Plan 3: the MODEL-LOST figures (1,166 / 395 measured vs
+  the spec's 1,142 / 312) unexplained; the shard launcher leaves stale
+  shard files; the speed-gate definition; the three switches written
+  into the driver's `filter:` line (plan 2 deviation 8); crash-class
+  counts against P0 (a runaway recursion in a cond is fatal inside
+  `mr-match:match`, probe 07) — open
+- Deferred: the `MX_` plist re-read issue in `mr-tree` (not reachable:
+  the dispatcher never prints and re-reads a tree) — open
+- Known cost item: a collapsible claimer (e.g. `(c_.*x_)^m_.` under
+  Times) still enumerates every sub-run of a product's factors — the
+  full-table walk on `x*y1*…*y12` takes minutes; on large products the
+  walk is dominated by moved inner conditions that integrate or expand
+  (3.5 r37, 3.1.5 r28, 3.5 r11) (`probes/matcher/06-dispatch-cost.out`)
+  — open, judged by the P5 median-wall gate
 
 ## Pinned reference clones
 
