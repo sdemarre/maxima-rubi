@@ -136,6 +136,12 @@ build + 3,513-rule core, zero diffs (record §6).
 
 Open follow-ups (tickets against the runbook):
 
+- Section 9.2 + 9.3 port (Rubi's always-loaded core rules alongside
+  class 1: `Rubi.m` loads them outside the elementary-function block;
+  our table has neither; 19 + 76 rule lines, pre-census; candidate
+  cause of `deferred` entries such as 2.3 e733) — open, needs-triage,
+  first in the queue: before class 4+, after the matcher substrate's
+  P6, `.scratch/class-ports/issues/06-section9-core-rules-9_2-9_3.md`
 - Class 8 (special functions, 1,949 entries — shares class 2's head
   table) — open, `.scratch/class-ports/issues/01-class8-special-functions.md`
 - Class 5 (inverse trig, 4,585 entries) — open,
