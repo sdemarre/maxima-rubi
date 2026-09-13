@@ -18,6 +18,7 @@ since() { python3 -c "print(round($(now) - $1, 1))"; }
 
 cat > "$W/load.mac" <<'EOF'
 display2d : false$
+linel : 10000$  /* print does not wrap: every R line stays whole for grep */
 t0 : elapsed_real_time()$
 load("maxima_rubi.mac")$
 t1 : elapsed_real_time()$

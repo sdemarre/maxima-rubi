@@ -4494,16 +4494,15 @@ Plan: docs/superpowers/plans/2026-09-13-matcher-substrate-plan2.md (+ .files/ at
 
 ### P4 gate records (Task 7)
 - probe 08 (probes/matcher/08-runtime-load.out, `=== probes/matcher/08-runtime-load  git HEAD
-  6d467c5  2026-09-13 08:28 UTC`): `LOAD flagless wall 1.4 s; TLS lines 0` / `R load
-  maxima_rubi.mac s 0.33000399999999996 mr_load_all s 1.025014 rules 3513` / `R smoke answered
+  b604f44  2026-09-13 08:52 UTC`): `LOAD flagless wall 1.4 s; TLS lines 0` / `R load
+  maxima_rubi.mac s 0.32600399999999996 mr_load_all s 1.014015 rules 3513` / `R smoke answered
   true radcan zero-chain true` / `LAYER-A flagless wall 1.3 s; TLS lines 0: Results:  897
   passed,  0  failed` / `LOAD flag wall 1.4 s; TLS lines 0` / `R load maxima_rubi.mac s
-  0.32600399999999996 mr_load_all s 0.9940129999999999` (continuation line wraps `rules 3513` to
-  the next output line under the flag arm — Maxima's own line-wrap, not a missing count; verified
-  in the probe's scratch capture) / `R smoke answered true radcan zero-chain true` / `LAYER-A flag
-  wall 1.3 s; TLS lines 0: Results:  897  passed,  0  failed` / `DISPATCH-SUITE flagless wall
-  0.4 s: Results:  49  passed,  0  failed` / `CORE-BUILD wall 2.9 s exit 0: built
-  test/mr_rules.core (112775536 bytes) rules=3513 fingerprint=1c4c22ca8487ecdb4279865921db02cd`
+  0.33600399999999997 mr_load_all s 1.014014 rules 3513` / `R smoke answered true radcan
+  zero-chain true` / `LAYER-A flag wall 1.3 s; TLS lines 0: Results:  897  passed,  0  failed` /
+  `DISPATCH-SUITE flagless wall 0.4 s: Results:  49  passed,  0  failed` / `CORE-BUILD wall
+  2.9 s exit 0: built test/mr_rules.core (112775536 bytes) rules=3513
+  fingerprint=1c4c22ca8487ecdb4279865921db02cd`
 - probe 07 (probes/matcher/07-fault-survival.out, `=== probes/matcher/07-fault-survival  git HEAD
   6d467c5  2026-09-13 08:29 UTC  runs per variant: 2`): fatal-pseudo in accept_cond_named,
   dispatch_cond_2arg, dispatch_cond_lambda, dispatch_cond_named, matchq_cond_named (both runs);
@@ -4549,3 +4548,5 @@ Copied verbatim from the execution ledger
 - Task 4: fix round 1 implementer DONE, commit 2791755; test_mr_dispatch 49/0 (45 + 3 fault-type + 1 MatchQ prepare error), match 53/0, tree 51/0 — dispatcher suite count is now 49
 - Task 4: fix round 1/5 (2 addressed, 0 open — interrupt/timeout guard narrowed via deftype mr-fault; MatchQ prepare rejection → merror; commits bf60bb3..2791755)
 - Task 4: complete (commits 5e07270..2791755, review clean after 1 fix round)
+- Ruling: fix the live probe rather than park the record defect — add `linel : 10000$` to probes/matcher/08-runtime-load.sh's load.mac (as 06-dispatch-cost.mac has), re-run probe 08, recommit the script and its record, and update the project ledger's probe 08 lines and wrap caveat; the plan's attachment copy stays as the plan-time record — AGENTS.md research discipline makes the committed record the evidence, and a must-hold missing from it is a record defect — cost if wrong: one extra probe run (~20 s) and a commit.
+- Task 7: fix round 1/5 dispatched (resumed implementer; FIX_BASE b604f44; finding: probe 08 record wrap)
