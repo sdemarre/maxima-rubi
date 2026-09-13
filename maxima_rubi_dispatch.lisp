@@ -161,17 +161,28 @@ without the pre-bound name SKIP."
   (multiple-value-bind (r ok) (mr-call '|$%mr_containsBoolean| e)
     (or (not ok) (eq r t))))
 
+(deftype mr-fault ()
+  "The condition classes mr-guarded catches: any serious-condition except
+sb-sys:interactive-interrupt (a Ctrl-C during matching — the dispatcher must
+stay interruptible, not turn every rule into a silent 'no match' and keep
+walking the table) and sb-ext:timeout (a future Lisp-level deadline must
+propagate, not be swallowed as a rule fault)."
+  '(and serious-condition
+        (not sb-sys:interactive-interrupt)
+        (not sb-ext:timeout)))
+
 (defmacro mr-guarded (fault-form &body body)
-  "Run BODY; a signalled fault inside it (any serious-condition — a Lisp
-error that escaped errcatch, a storage-condition) unwinds Maxima's dynamic
-bindings as errcatch does and yields FAULT-FORM (spec 3.5 step 5). Not
-covered: SBCL control-stack exhaustion hit inside an allocation is fatal
-before any condition is signalled — a runaway Maxima recursion in a cond
-killed the process in 5 of 6 measured shapes (probes/matcher/07)."
+  "Run BODY; a signalled fault inside it (an mr-fault — any serious-condition
+except an interactive-interrupt or a timeout, which propagate: a Lisp error
+that escaped errcatch, a storage-condition) unwinds Maxima's dynamic bindings
+as errcatch does and yields FAULT-FORM (spec 3.5 step 5). Not covered: SBCL
+control-stack exhaustion hit inside an allocation is fatal before any
+condition is signalled — a runaway Maxima recursion in a cond killed the
+process in 5 of 6 measured shapes (probes/matcher/07)."
   (let ((saved (gensym "SAVED")) (c (gensym "C")))
     `(let ((,saved (cons bindlist loclist)))
        (handler-case (progn ,@body)
-         (serious-condition (,c)
+         (mr-fault (,c)
            (errlfun1 ,saved)
            (let ((condition ,c))
              (declare (ignorable condition))
@@ -314,19 +325,26 @@ Mathematica's evaluation of the pattern would flatten it."
 of the pattern TEXT (its (MRArg k) placeholders replaced by the values PARTS)
 against U that COND accepts, or nil. COND is true or a function of the
 binding list. MatchQ semantics: every complete binding is tried
-(mr_cond_retry does not apply)."
-  (let ((accepted nil)
-        (raw (or (gethash text *mr-matchq-trees*)
-                 (setf (gethash text *mr-matchq-trees*) (mr-match:read-tree text)))))
-    (mr-guarded (setf accepted nil)
-      (let ((mr-match:*flat-wide* (not (null $mr_flat_wide)))
-            (mr-match:*cond-retry* t)
-            (compiled (mr-match:prepare
-                       (if (cdr parts)
-                           (mr-substitute-parts raw (mapcar #'mr-tree:max->tree (cdr parts)))
-                           raw))))
+(mr_cond_retry does not apply). A pattern prepare rejects is a Maxima error
+naming the pattern text (like %mr_defrule's load-time rejection) — reading,
+substituting and preparing the pattern run outside the fault guard, which
+covers only the match call itself."
+  (let* ((accepted nil)
+         (raw (or (gethash text *mr-matchq-trees*)
+                  (setf (gethash text *mr-matchq-trees*) (mr-match:read-tree text))))
+         (substituted (if (cdr parts)
+                          (mr-substitute-parts raw (mapcar #'mr-tree:max->tree (cdr parts)))
+                          raw))
+         (compiled (handler-case (mr-match:prepare substituted)
+                     (error (e)
+                       (merror (intl:gettext "%mr_matchQ: ~A: ~A") text
+                               (princ-to-string e)))))
+         (utree (mr-tree:max->tree u)))
+    (let ((mr-match:*flat-wide* (not (null $mr_flat_wide)))
+          (mr-match:*cond-retry* t))
+      (mr-guarded (setf accepted nil)
         (mr-match:match
-         compiled (mr-tree:max->tree u)
+         compiled utree
          :cond-hook (lambda (b)
                       (let ((r (errcatch
                                 (let ((mb (mr-binding-list b nil)))

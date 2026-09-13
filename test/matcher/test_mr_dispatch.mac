@@ -120,6 +120,15 @@ test_dispatch() := block([h42, h7, hm, hdecl, hmis, hleak, hcf, hce, hcu, hfault
   check("fault guard: a storage-condition signalled in cond -> next rule",
         %mr_dispatch_tree(x^3, x, [hfault, h7], 1), 7),
   check("the process survives the fault", %mr_dispatch_tree(x^3, x, [h42], 1), 42),
+  check("fault type excludes interactive-interrupt",
+        ?typep(?make\-condition(?intern("INTERACTIVE-INTERRUPT", "SB-SYS")), '?mr\-fault),
+        false),
+  check("fault type excludes timeout",
+        ?typep(?make\-condition(?intern("TIMEOUT", "SB-EXT")), '?mr\-fault),
+        false),
+  check("fault type includes storage-condition",
+        ?typep(?make\-condition('?storage\-condition), '?mr\-fault),
+        true),
   true)$
 
 /* Int[(g_.+h_.*x)*Sin[x], x] -- G-6: the narrow reading does not match
@@ -203,6 +212,8 @@ test_matchq() := block([B],
         %mr_matchQ(x, "(Pattern |_t_mq5_u| (Blank))", [], t_fault1), false),
   check("MatchQ wrong arity is an error",
         errcatch(%mr_matchQ(x, "(Pattern |_t_mq5_u| (Blank))", [], true, 5)), []),
+  check("MatchQ a pattern prepare rejects is an error",
+        errcatch(%mr_matchQ(x, "(Alternatives (Pattern |_t_mq6_a| (Blank)) (Pattern |_t_mq6_b| (Blank)))", [], true)), []),
   true)$
 
 test_records()$
