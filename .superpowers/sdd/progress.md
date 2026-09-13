@@ -4527,7 +4527,7 @@ Plan: docs/superpowers/plans/2026-09-13-matcher-substrate-plan2.md (+ .files/ at
   `Results: 109 passed, 0 failed`, judged 2026-09-13 08:41 UTC, git HEAD
   46dffa232204678453077e221e694a14de5f88d7 / flags `Results: 109 passed, 0 failed`, judged
   2026-09-13 08:41 UTC, git HEAD 46dffa232204678453077e221e694a14de5f88d7 (record diff check: 0
-  non-judged/HEAD/TIMING/build-line changes in all six records)
+  non-judged/HEAD/TIMING/build-line changes in all six records) (superseded by the final-review fix wave below)
 - Plan 2 complete: P3 and P4 gates green. Next: Plan 3 (P5–P6).
 
 ### Review fixes and controller rulings
@@ -4550,3 +4550,48 @@ Copied verbatim from the execution ledger
 - Task 4: complete (commits 5e07270..2791755, review clean after 1 fix round)
 - Ruling: fix the live probe rather than park the record defect — add `linel : 10000$` to probes/matcher/08-runtime-load.sh's load.mac (as 06-dispatch-cost.mac has), re-run probe 08, recommit the script and its record, and update the project ledger's probe 08 lines and wrap caveat; the plan's attachment copy stays as the plan-time record — AGENTS.md research discipline makes the committed record the evidence, and a must-hold missing from it is a record defect — cost if wrong: one extra probe run (~20 s) and a commit.
 - Task 7: fix round 1/5 dispatched (resumed implementer; FIX_BASE b604f44; finding: probe 08 record wrap)
+
+### Final-review fix wave
+
+- Final review: With fixes — 0 Critical, 1 Important, 6 Minor (range 96a6145..7b98b81); FIX_BASE 7b98b81
+- Important #1: MatchQ part substitution does not fold (Power e 1), so 1_4_2 r17's Not[MatchQ] guards
+  read true at m = 1 where Rubi's read false (measured: `%mr_matchQ(1+2*x, "(Power (Plus a_. (Times
+  (MRArg 1) b_.)) (MRArg 2))", [x, 1], true)` → false)
+
+Rulings copied verbatim from the execution ledger's "## Final review" section:
+
+- Ruling: the single final-review fix wave covers Important #1 (after MRArg substitution fold (Power e 1) → e, (Power e 0) → 1, drop a literal 1 under Times and 0 under Plus, collapse a one-argument Plus/Times; an out-of-range (MRArg k) is an error), Minor #4 restricted to caching the compiled pattern of part-free MatchQ calls, Minor #2 (AGENTS.md TLS mechanism wording), Minor #3 + T5 (stale loader comments), Minor #7 (verbose lines carry the binding; cond-false line); it carries Minor #5 (generator comments) and #6 (README) to P6, numeric folding of spliced numeric products, and a parts-keyed compiled cache (unbounded key space; measure first in P5) — the Important would confound the P5 A/B, the chosen Minors are cheap and spec-stated, the rest are P6 documentation or unmeasured optimisations — cost if wrong: a folding rule Mathematica does not apply would make a MatchQ guard match more than Rubi's (caught by the new unit checks only for the shapes tested).
+- Ruling: spec §6 "TLS may not disappear" states the same inaccurate mechanism (interpreted block locals take no TLS slot; the defmatch slots came from compiled matcher code); the approved spec is not edited — AGENTS.md is corrected now and the P6 acceptance record states the corrected mechanism — cost if wrong: none.
+- Ruling: the fix wave re-runs probe 08 so the committed flagless-load/Layer A evidence carries the final tree's counts (spec acceptance criterion 5), updates AGENTS.md / TODO counts, adds a final-review fix-wave subsection to the project ledger, and records the reviewer's Plan 3 recommendations (class-2 cost check first; mr_model_flags nested-fall-through attribution) in TODO's carried items — cost if wrong: ~1 min of runs.
+
+Evidence (build branch_5_50_base_84_g4204fb669 / 2026-08-31 13:27:47; 2026-09-13):
+
+- RED (tests added, dispatcher at 7b98b81): dispatch `FAIL:  MatchQ a part 1 in an exponent folds: (a+b x)^1
+  on 1+2x` / `FAIL:  MatchQ a part 0 in an exponent folds to 1: (a+b x)^0 on 1` / `FAIL:  MatchQ a
+  spliced 1 under Times drops: 1*u_ on sin(x) binds u` / `FAIL:  MatchQ a spliced 0 under Plus drops:
+  0+u_ on sin(x) binds u` / `FAIL:  MatchQ folds bottom-up: x^0*u_ on sin(x) binds u` / `FAIL:  MatchQ
+  an out-of-range (MRArg 2) with one part is an error` (actual `[false]`) / `Results:  51  passed,  6
+  failed` (the (a+b x)^2 control and the (MRArg 0) check passed before the fix); Layer A `FAIL:  shape
+  (d+e x)^m (f+g x)^2 (…)^t: m = 1 folds the first power` / `Results:  897  passed,  1  failed`
+- GREEN (commit 04a970e's tree): dispatch `Results:  57  passed,  0  failed` (all eight new checks
+  PASS); Layer A flagless `PASS:  shape (d+e x)^m (f+g x)^2 (…)^t: m = 1 folds the first power` /
+  `Results:  898  passed,  0  failed` (TLS lines 0)
+- covering runs: `Results: 53 passed, 0 failed` (mr-match) / `Results: 51 passed, 0 failed` (mr-tree)
+  / `Results: 11 passed, 0 failed` (check_generated_rules); `git diff --stat 7b98b81 --
+  maxima_rubi_match.lisp maxima_rubi_tree.lisp` empty (matcher regression suite not re-run)
+- verbose smoke (flagless, rubi_verbose true): `rubi(x^3*(a+b*x^2)^(5/2), x)` →
+  `(14*b*x^2*(b*x^2+a)^(7/2)-4*a*(b*x^2+a)^(7/2))/(126*b^2)` (unchanged; same answer with verbose
+  off); 12 `rubi: rule` lines, 10 of them `cond not accepted with [...]`; an out-of-range MRArg
+  prints `%mr_matchQ: (Power (MRArg 1) (MRArg 2)): (MRArg 2) is out of range: 1 part`
+- probe 08 (probes/matcher/08-runtime-load.out, `=== probes/matcher/08-runtime-load  git HEAD
+  04a970e  2026-09-13 09:14 UTC`): `LOAD flagless wall 1.4 s; TLS lines 0` / `R load
+  maxima_rubi.mac s 0.33200399999999997 mr_load_all s 1.029015 rules 3513` / `R smoke answered
+  true radcan zero-chain true` / `LAYER-A flagless wall 1.3 s; TLS lines 0: Results:  898
+  passed,  0  failed` / `LOAD flag wall 1.4 s; TLS lines 0` / `R load maxima_rubi.mac s
+  0.32400399999999996 mr_load_all s 0.9980129999999999 rules 3513` / `R smoke answered true
+  radcan zero-chain true` / `LAYER-A flag wall 1.3 s; TLS lines 0: Results:  898  passed,  0
+  failed` / `DISPATCH-SUITE flagless wall 0.4 s: Results:  57  passed,  0  failed` /
+  `CORE-BUILD wall 2.8 s exit 0: built test/mr_rules.core (112775536 bytes) rules=3513
+  fingerprint=6c396cf8be7a1fe5060d4d17bd37cc58`
+- carried (per the first ruling): numeric folding of spliced numeric products, a parts-keyed
+  compiled cache, Minor #5 (generator comments) and #6 (README) to P6 — recorded in todo/TODO.md

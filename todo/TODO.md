@@ -223,9 +223,9 @@ complete on the same branch: the generator emits evaluated-FullForm
 pattern records (`%mr_defrule`; 3,513 rules, 9.1 generated; P3 static
 gate `test/check_generated_rules.py` 11/0);
 `maxima_rubi_dispatch.lisp` dispatches on `mr-match` / `mr-tree` (unit
-suite 49/0); passes 2–4, the `defmatch`-era matchers and
+suite 57/0); passes 2–4, the `defmatch`-era matchers and
 `maxima_rubi_implicit1.lisp` / `maxima_rubi_pass4.lisp` are deleted;
-Layer A 897/0; the TLS flag is no longer required
+Layer A 898/0; the TLS flag is no longer required
 (`probes/matcher/08-runtime-load.out`); dispatch cost
 `probes/matcher/06-dispatch-cost.out`; fault survival
 `probes/matcher/07-fault-survival.out`. Ledger: plan 2 section.
@@ -238,7 +238,18 @@ Layer A 897/0; the TLS flag is no longer required
   shard files; the speed-gate definition; the three switches written
   into the driver's `filter:` line (plan 2 deviation 8); crash-class
   counts against P0 (a runaway recursion in a cond is fatal inside
-  `mr-match:match`, probe 07) — open
+  `mr-match:match`, probe 07); from the plan-2 final review: take P5
+  run 1 on class 2 first and compare median wall and the timeout class
+  against P0 before the class-1 runs (probe 06: full-table walk cost is
+  exponential in Times arity; the head index of spec 3.5 is the
+  fallback); when attributing the `mr_model_flags` arm, nested
+  integrate fall-throughs (depth cap, seen guard) run under the flags —
+  look at the seen-guard path first; the spec §6 TLS-mechanism wording
+  is inaccurate (interpreted block locals take no TLS slot) — state the
+  corrected mechanism in the P6 acceptance record; carried to P6: stale
+  generator comments (`generate_rules.py` `cap_name` docstring,
+  `CAP_REMAP` rationale, ctx decls) and README.md's `defmatch` TLS text
+  and deleted file list — open
 - Deferred: the `MX_` plist re-read issue in `mr-tree` (not reachable:
   the dispatcher never prints and re-reads a tree) — open
 - Known cost item: a collapsible claimer (e.g. `(c_.*x_)^m_.` under

@@ -75,8 +75,11 @@ is green, with no TLS message (`probes/matcher/08-runtime-load.out`,
 build `branch_5_50_base_84_g4204fb669`). **The flag is no longer
 required** (spec `docs/superpowers/specs/2026-09-12-matcher-substrate-design.md`
 §3.5). It is harmless: `test/build_rules_core.sh` and
-`test/corpus_driver.py` still pass it. cond/repl `block` locals are
-still special variables — if a later port brings the error back, re-run
+`test/corpus_driver.py` still pass it. Interpreted cond/repl `block`
+locals take no slot (`mbind-doit` binds them with `mset` + `mspeclist`,
+no special declaration); the `defmatch` slots came from compiled matcher
+code. Compiled or translated rule code is what could bring the error
+back — if a later change compiles or translates the rule files, re-run
 probe 08 and restore the flag rule (two argv tokens:
 `-X "--tls-limit 100000"`, not `--tls-limit=N`).
 
@@ -152,7 +155,7 @@ mandatory: the test set loads rule siblings cumulatively per process,
 and the `defmatch` slots of 3_1_3/3_1_4/3_1_5 overran the special-var
 cap.
 
-897 targets (green: `Results: 897 passed, 0 failed`; the
+898 targets (green: `Results: 898 passed, 0 failed`; the
 milestone-3 close figure was 743 — growth 511 → 581 across the
 pilot's clusters, 581 → 620 headvar checks, → 691 cluster A, → 743
 cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1,
@@ -164,7 +167,8 @@ cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1,
 → 892 C6b (3.5 r42 FunctionOfLog catch-all port + bare catch-all
 pattern fix, e134/e139/e258, 23 checks), → 897 matcher substrate P4
 (the matcher-coupled sections rewritten against the substrate entries,
-892 → 875, and the generated MatchQ pattern shapes, 22 checks)).
+892 → 875, and the generated MatchQ pattern shapes, 22 checks), → 898
+plan-2 final review (1.4.2 r17 MatchQ exponent part folding)).
 
 **Matcher substrate — unit suites** (the per-change gate for
 `maxima_rubi_match.lisp` / `maxima_rubi_tree.lisp` /
@@ -182,11 +186,12 @@ Green: `Results: 53 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
 +3 at the final-review fix wave: the last-absorber cost bounds and the
 empty-leftover lock, +2 at Plan 2: the Power-exponent Optional
 default), `Results: 51 passed, 0 failed` (mr-tree; 46, +5 at Plan 2:
-CRE input and the booleans) and `Results: 49 passed, 0 failed`
+CRE input and the booleans) and `Results: 57 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
-MatchQ pattern prepare rejects is an error).
+MatchQ pattern prepare rejects is an error, +8 at the final review:
+MatchQ part folding and an out-of-range part error).
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
 test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
