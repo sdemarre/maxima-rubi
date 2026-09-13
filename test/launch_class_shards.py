@@ -23,6 +23,13 @@ Usage:
                          # Popen one process per job
 Env:
   MR_N_PROCS    process count (default: os.cpu_count(), here 24)
+  MR_SWITCHES   the matcher-substrate switch arm the shards run
+                (test/run_records.py; unset = the defaults)
+
+A launch first deletes the previous run's shard files
+(test/corpus_<slug>.shard*.{out,log,files} and the pids file) and refuses
+while a pid of that run is alive: a stale shard of a run with more jobs
+reached the merge before (the P0 class-3 run, 2026-09-12).
 """
 
 import importlib.util
@@ -269,8 +276,14 @@ plan_lines.append(f"max job cost: {maxc:.0f}s  (balance spread "
                   f"{maxc / (total_cost / len(jobs)):.2f}x)")
 
 print("\n".join(plan_lines))
+print(f"switches: {driver.run_records.switches_text(driver.SWITCH_SETTINGS)}")
 
 if LAUNCH:
+    try:
+        removed = driver.run_records.clear_stale_shards(os.path.join(ROOT, "test"), SLUG)
+    except RuntimeError as exc:
+        raise SystemExit(f"launch_class_shards: {exc}")
+    print(f"removed {removed} shard files of the previous run")
     pidfile = os.path.join(ROOT, "test", f"corpus_{SLUG}.shard-pids")
     shardfile_dir = os.path.join(ROOT, "test")
     with open(pidfile, "w", encoding="utf-8") as pf:

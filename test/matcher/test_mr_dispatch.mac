@@ -84,6 +84,8 @@ test_records() := block([h1, h2],
         []),
   check("a non-handle is an error", errcatch(%mr_rule_apply(10^9, x^3, x)), []),
   check("wrong arity is an error", errcatch(%mr_defrule("t", 4, p_xm, t_true)), []),
+  check("switch defaults: mr_flat_wide false, mr_cond_retry true, mr_model_flags true",
+        [mr_flat_wide, mr_cond_retry, mr_model_flags], [false, true, true]),
   true)$
 
 test_dispatch() := block([h42, h7, hm, hdecl, hmis, hleak, hcf, hce, hcu, hfault],

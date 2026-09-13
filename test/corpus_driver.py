@@ -50,6 +50,7 @@ sets (measured 2026-08-25: the two giant files 1.1.1.2 / 1.1.1.3 are
 balance them).
 """
 
+import importlib.util
 import os
 import re
 import subprocess
@@ -236,6 +237,24 @@ def ensure_rules_core():
         fcntl.flock(lock, fcntl.LOCK_UN)
 
 
+# The matcher substrate switches (spec section 3.6): the arm this process
+# runs, from MR_SWITCHES (test/run_records.py), assigned at the head of
+# every entry text and stated on the record's filter: line.
+_rr_spec = importlib.util.spec_from_file_location(
+    "run_records", os.path.join(ROOT, "test", "run_records.py"))
+run_records = importlib.util.module_from_spec(_rr_spec)
+_rr_spec.loader.exec_module(run_records)
+try:
+    SWITCH_SETTINGS = run_records.switch_settings(os.environ)
+except ValueError as exc:
+    raise SystemExit(str(exc))
+
+
+def switch_header():
+    """Suffix for the record's `filter:` line: the switch arm."""
+    return "  switches: " + run_records.switches_text(SWITCH_SETTINGS)
+
+
 def core_header():
     """Suffix for the record's `filter:` header line: names a pinned core
     (the shard merge accepts any `filter:` line), empty otherwise."""
@@ -271,8 +290,16 @@ def maxima_run(mac_text, timeout):
         else:
             cmd = ["maxima", "--very-quiet", "-X", "--tls-limit 100000",
                    "-p", PRELOAD, "-b", fpath]
+        # stdin from /dev/null: a fatal SBCL error (control-stack
+        # exhaustion inside mr-match:match, probes/matcher/07) drops into
+        # the ldb monitor, which reads stdin — an inherited open stdin
+        # holds the process to the cap and the entry reads `timeout`;
+        # with /dev/null ldb exits and the entry reads `error`. The batch
+        # answers its prompts from the batch file
+        # (batch_answers_from_file), never from stdin.
         r = subprocess.run(
             cmd,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, timeout=timeout, cwd=ROOT,
         )
@@ -531,7 +558,9 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # answers verify normally (measured: 1.2.2.7 e1 carries a ∫-term
     # and its self-diff closes).
     has_noun = "not is(freeof(unintegrable, mr_r))"
-    head = (f"mr_f: {f_text}$\n"
+    switches = "".join(f"{name} : {value}$\n"
+                       for name, value in SWITCH_SETTINGS.items())
+    head = (switches + f"mr_f: {f_text}$\n"
             f"mr_r: {call}$\n"
             + "pos$\n" * 40 + "no$\n" * 20)
     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
@@ -655,6 +684,7 @@ def main():
     out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
                      f"timeout: {TIMEOUT}s  files: {len(files)}"
                      + (f"  shard: {SHARD_FILE}" if SHARD_FILE else "")
+                     + switch_header()
                      + core_header())
     out_lines.append("")
 
