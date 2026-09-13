@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""probes/matcher/02-mma-reader.py -- Mathematica InputForm reader for the
-matcher expressibility probes (handoffs/2026-09-11-matcher-design.md, move 2).
+"""generator/mma_reader.py -- Mathematica InputForm reader: the generator's
+pattern emitter (matcher substrate spec section 3.4) and the matcher
+expressibility probes (handoffs/2026-09-11-matcher-design.md, move 2).
 
-Library module, loaded by the other 02-* probes through importlib (the file
-name is not an importable module name).  Run directly it executes its
-self-test:  python3 probes/matcher/02-mma-reader.py
+Library module: generator/generate_rules.py imports it; the 02-* probes load
+it through importlib (it was probes/matcher/02-mma-reader.py until plan 2).
+Run directly it executes its self-test:  python3 generator/mma_reader.py
 
 What it provides:
 
@@ -55,7 +56,7 @@ import sys
 from fractions import Fraction
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[1]
 
 
 class Str(str):

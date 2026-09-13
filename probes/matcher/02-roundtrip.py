@@ -67,7 +67,7 @@ from itertools import combinations
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-_spec = importlib.util.spec_from_file_location("mmareader", HERE / "02-mma-reader.py")
+_spec = importlib.util.spec_from_file_location("mmareader", HERE.parents[1] / "generator" / "mma_reader.py")
 rd = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(rd)
 
