@@ -508,6 +508,8 @@ test_structural_predicates() := block([],
                       '_s7_c = 7, '_s7_t = tt])),
     check_not("shape (d+e x)^m (f+g x)^2 (…)^t: the literal exponent 2 does not take 3",
               %mr_matchQ((1+2*x)^mm*(3+4*x)^3*(5+6*x+7*x^2)^tt, P, [x, mm, x, x, x^2], true)),
+    check_bool("shape (d+e x)^m (f+g x)^2 (…)^t: m = 1 folds the first power",
+               %mr_matchQ((1+2*x)*(3+4*x)^2*(5+6*x+7*x^2)^tt, P, [x, 1, x, x, x^2], true)),
     /* 1.4.2 r17, second site: (a_.+c_.*x^2)^t_.*(d_.+x*e_.)^m*(f_.+x*g_.)^2, FreeQ cond */
     P : "(Times (Power (Plus (Optional (Pattern |_s8_a| (Blank))) (Times (Optional (Pattern |_s8_c| (Blank))) (MRArg 1))) (Optional (Pattern |_s8_t| (Blank)))) (Power (Plus (Optional (Pattern |_s8_d| (Blank))) (Times (MRArg 2) (Optional (Pattern |_s8_e| (Blank))))) (MRArg 3)) (Power (Plus (Optional (Pattern |_s8_f| (Blank))) (Times (MRArg 4) (Optional (Pattern |_s8_g| (Blank))))) 2))",
     check_bool("shape (a+c x^2)^t (d+e x)^m (f+g x)^2 with FreeQ: a = 5, c = 7, t = tt",

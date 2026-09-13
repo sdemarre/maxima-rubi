@@ -214,6 +214,30 @@ test_matchq() := block([B],
         errcatch(%mr_matchQ(x, "(Pattern |_t_mq5_u| (Blank))", [], true, 5)), []),
   check("MatchQ a pattern prepare rejects is an error",
         errcatch(%mr_matchQ(x, "(Alternatives (Pattern |_t_mq6_a| (Blank)) (Pattern |_t_mq6_b| (Blank)))", [], true)), []),
+  /* Part folding (final review, 1.4.2 r17): Mathematica evaluates the
+     pattern after inserting the parts, so (d_.+e_.*x)^m with m = 1 is
+     d_.+e_.*x, a part 0 exponent gives 1, a literal 1 under Times and 0
+     under Plus drop, a one-argument Times/Plus collapses — bottom-up.
+     Numeric products and sums are not folded. */
+  check_bool("MatchQ a part 1 in an exponent folds: (a+b x)^1 on 1+2x",
+             %mr_matchQ(1+2*x, "(Power (Plus (Optional (Pattern |_t_mq7_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_t_mq7_b| (Blank))))) (MRArg 2))", [x, 1], true)),
+  check_bool("MatchQ a part 2 in an exponent: (a+b x)^2 on (1+2x)^2",
+             %mr_matchQ((1+2*x)^2, "(Power (Plus (Optional (Pattern |_t_mq7_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_t_mq7_b| (Blank))))) (MRArg 2))", [x, 2], true)),
+  check_bool("MatchQ a part 0 in an exponent folds to 1: (a+b x)^0 on 1",
+             %mr_matchQ(1, "(Power (Plus (Optional (Pattern |_t_mq7_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_t_mq7_b| (Blank))))) (MRArg 2))", [x, 0], true)),
+  check("MatchQ a spliced 1 under Times drops: 1*u_ on sin(x) binds u",
+        %mr_matchQ_bindings(sin(x), "(Times (MRArg 1) (Pattern |_t_mq8_u| (Blank)))", [1], true),
+        [_t_mq8_u = sin(x)]),
+  check("MatchQ a spliced 0 under Plus drops: 0+u_ on sin(x) binds u",
+        %mr_matchQ_bindings(sin(x), "(Plus (MRArg 1) (Pattern |_t_mq8_u| (Blank)))", [0], true),
+        [_t_mq8_u = sin(x)]),
+  check("MatchQ folds bottom-up: x^0*u_ on sin(x) binds u",
+        %mr_matchQ_bindings(sin(x), "(Times (Power (MRArg 1) (MRArg 2)) (Pattern |_t_mq8_u| (Blank)))", [x, 0], true),
+        [_t_mq8_u = sin(x)]),
+  check("MatchQ an out-of-range (MRArg 2) with one part is an error",
+        errcatch(%mr_matchQ(1+2*x, "(Power (Plus (Optional (Pattern |_t_mq7_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_t_mq7_b| (Blank))))) (MRArg 2))", [x], true)), []),
+  check("MatchQ an out-of-range (MRArg 0) is an error",
+        errcatch(%mr_matchQ(x, "(Times (MRArg 0) (Pattern |_t_mq8_u| (Blank)))", [x], true)), []),
   true)$
 
 test_records()$

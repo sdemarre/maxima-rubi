@@ -211,7 +211,11 @@ binding (mr_cond_retry). Returns the accepted mm list, or nil."
                                 (and (not (mr-contains-boolean-p mm))
                                      (or (not check-cond)
                                          (multiple-value-bind (v ok) (mr-call (mr-rule-cond rule) mm x)
-                                           (and ok (mr-true-p v))))
+                                           (and ok (mr-true-p v)))
+                                         (progn
+                                           (mr-verbose "rubi: rule ~A r~A cond not accepted with ~M~%"
+                                                       (mr-rule-key rule) (mr-rule-n rule) mm)
+                                           nil))
                                      mm)))))
                       (when (car r)
                         (setf accepted (car r))
@@ -235,11 +239,11 @@ decline or misfire)."
     (when mm
       (multiple-value-bind (r ok) (mr-call (mr-rule-repl rule) mm x)
         (cond ((not ok)
-               (mr-verbose "rubi: rule ~A r~A misfire (repl error) on ~M~%" key n f) nil)
+               (mr-verbose "rubi: rule ~A r~A misfire (repl error) on ~M with ~M~%" key n f mm) nil)
               ((null r)
-               (mr-verbose "rubi: rule ~A r~A declined on ~M~%" key n f) nil)
+               (mr-verbose "rubi: rule ~A r~A declined on ~M with ~M~%" key n f mm) nil)
               ((and $%mr_boolcheck (mr-contains-boolean-p r))
-               (mr-verbose "rubi: rule ~A r~A misfire (boolean leaked) on ~M~%" key n f) nil)
+               (mr-verbose "rubi: rule ~A r~A misfire (boolean leaked) on ~M with ~M~%" key n f mm) nil)
               (t
                (mr-verbose "rubi: rule ~A r~A fired on ~M with ~M~%" key n f mm) r))))))
 
@@ -301,44 +305,79 @@ cond, repl, as the dispatcher runs it), or false."
 (defvar *mr-matchq-trees* (make-hash-table :test 'equal)
   "%mr_matchQ pattern text -> its tree, read once.")
 
+(defvar *mr-matchq-compiled* (make-hash-table :test 'equal)
+  "%mr_matchQ pattern text -> its prepared pattern, for part-free calls only
+(a call with parts substitutes and prepares per call).")
+
 (defun mr-substitute-parts (tree parts)
-  "Replace each (MRArg k) in TREE with the k-th of PARTS (trees); a
-substituted Plus/Times directly under the same head is spliced in, as
-Mathematica's evaluation of the pattern would flatten it."
+  "Replace each (MRArg k) in TREE with the k-th of PARTS (trees), then fold
+bottom-up as Mathematica's evaluation of the pattern would (final review,
+1.4.2 r17): (Power e 1) -> e, (Power e 0) -> 1; a literal 1 argument of Times
+and 0 argument of Plus drop; a Plus/Times argument directly under the same
+head is spliced in; a Times/Plus left with one argument is that argument (with
+none, 1 / 0). Numeric products and sums are not folded ((Times 2 3) stays). An
+(MRArg k) with k outside 1..(length PARTS) is an error."
   (let ((mrarg (mr-match:sym "MRArg"))
-        (flat (list (mr-match:sym "Plus") (mr-match:sym "Times"))))
+        (power (mr-match:sym "Power"))
+        (plus (mr-match:sym "Plus"))
+        (times (mr-match:sym "Times"))
+        (nparts (length parts)))
     (labels ((walk (e)
                (cond ((atom e) e)
-                     ((eq (car e) mrarg) (nth (1- (second e)) parts))
-                     (t (let ((h (walk (car e)))
-                              (args (mapcar #'walk (cdr e))))
-                          (cons h (if (member h flat)
-                                      (loop for a in args
-                                            if (and (consp a) (eq (car a) h))
-                                              append (cdr a)
-                                            else collect a)
-                                      args)))))))
+                     ((eq (car e) mrarg)
+                      (let ((k (second e)))
+                        (unless (and (integerp k) (<= 1 k nparts))
+                          (error "(MRArg ~A) is out of range: ~A part~:P" k nparts))
+                        (nth (1- k) parts)))
+                     (t (fold (walk (car e)) (mapcar #'walk (cdr e))))))
+             (fold (h args)
+               (cond ((and (eq h power) (= (length args) 2) (eql (second args) 1))
+                      (first args))
+                     ((and (eq h power) (= (length args) 2) (eql (second args) 0))
+                      1)
+                     ((or (eq h plus) (eq h times))
+                      (let* ((unit (if (eq h times) 1 0))
+                             (kept (loop for a in args
+                                         if (and (consp a) (eq (car a) h))
+                                           append (cdr a)
+                                         else if (not (eql a unit))
+                                           collect a)))
+                        (cond ((null kept) unit)
+                              ((null (cdr kept)) (car kept))
+                              (t (cons h kept)))))
+                     (t (cons h args)))))
       (walk tree))))
+
+(defun mr-matchq-pattern (text parts)
+  "The prepared pattern of TEXT with PARTS (a Lisp list of Maxima values)
+substituted and folded. A part-free pattern is prepared once and cached by its
+text. A pattern the substitution or prepare rejects is a Maxima error naming
+the pattern text."
+  (let ((raw (or (gethash text *mr-matchq-trees*)
+                 (setf (gethash text *mr-matchq-trees*) (mr-match:read-tree text))))
+        (ptrees (mapcar #'mr-tree:max->tree parts)))
+    (flet ((compile-pattern ()
+             (handler-case (mr-match:prepare (mr-substitute-parts raw ptrees))
+               (error (e)
+                 (merror (intl:gettext "%mr_matchQ: ~A: ~A") text
+                         (princ-to-string e))))))
+      (if parts
+          (compile-pattern)
+          (or (gethash text *mr-matchq-compiled*)
+              (setf (gethash text *mr-matchq-compiled*) (compile-pattern)))))))
 
 (defun mr-matchq (u text parts cond)
   "The Maxima binding list [marker = value, ...] of the first complete binding
 of the pattern TEXT (its (MRArg k) placeholders replaced by the values PARTS)
 against U that COND accepts, or nil. COND is true or a function of the
 binding list. MatchQ semantics: every complete binding is tried
-(mr_cond_retry does not apply). A pattern prepare rejects is a Maxima error
-naming the pattern text (like %mr_defrule's load-time rejection) — reading,
-substituting and preparing the pattern run outside the fault guard, which
-covers only the match call itself."
+(mr_cond_retry does not apply). A pattern prepare rejects, or an out-of-range
+(MRArg k), is a Maxima error naming the pattern text (like %mr_defrule's
+load-time rejection) — reading, substituting and preparing the pattern
+(mr-matchq-pattern) run outside the fault guard, which covers only the match
+call itself."
   (let* ((accepted nil)
-         (raw (or (gethash text *mr-matchq-trees*)
-                  (setf (gethash text *mr-matchq-trees*) (mr-match:read-tree text))))
-         (substituted (if (cdr parts)
-                          (mr-substitute-parts raw (mapcar #'mr-tree:max->tree (cdr parts)))
-                          raw))
-         (compiled (handler-case (mr-match:prepare substituted)
-                     (error (e)
-                       (merror (intl:gettext "%mr_matchQ: ~A: ~A") text
-                               (princ-to-string e)))))
+         (compiled (mr-matchq-pattern text (cdr parts)))
          (utree (mr-tree:max->tree u)))
     (let ((mr-match:*flat-wide* (not (null $mr_flat_wide)))
           (mr-match:*cond-retry* t))

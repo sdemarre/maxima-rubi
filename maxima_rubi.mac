@@ -80,13 +80,15 @@ mr_rule_table : mr_rules_1_1_1_1$
  * LoadRules files + the five corpus-matched `b`-suffixed 1.2.1
  * siblings + the 9.1 legacy file, generated from its .m source at the
  * end of the class-1 table; matcher substrate spec section 3.4).
- * The table becomes the 73-term flatten (3,054 rules).
+ * The table becomes the 73-term flatten (3,054 rules: the pinned 9.1
+ * source's first rule is commented out, so 9.1 generates 28 rules — the
+ * manual port carried it as a 29th, dead rule, 3,055 before plan 2).
  *
  * TLS: the defmatch/matchdeclare slots that exhausted SBCL's
  * special-variable pool (probes/load_wall/probe-load-wall.out) are gone
- * with the matcher substrate; whether the cond/repl block locals alone
- * fit the default pool is measured in plan 2's P4 task, and the AGENTS.md
- * -X "--tls-limit 100000" rule stands until that measurement retires it. */
+ * with the matcher substrate; probe 08 (probes/matcher/08-runtime-load.out)
+ * measured the flagless load (no TLS message) and a green flagless Layer
+ * A, and AGENTS.md no longer requires -X "--tls-limit 100000". */
 mr_load_class1_all() := block([],
   %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
   %mr_load_sibling("rules/class1/1_1_1_2.mac", 'mr_witness_1_1_1_2),
