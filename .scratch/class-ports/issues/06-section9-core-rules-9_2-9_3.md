@@ -93,3 +93,18 @@ Blocked by: the matcher substrate close (Plan 3 P6) — the port targets
 the substrate's generator and dispatcher.
 
 ## Comments
+
+2026-09-13 — first half of the e733 check (an ad-hoc session trace,
+not a committed probe; matcher-substrate tree `af64cf2`, build
+2026-08-31 13:27:47, load path, table 3,513 rules):
+`rubi_verbose : true; rubi((1+%e^x)/(%e^x+x), x)` answers
+`unintegrable((%e^x+1)/(%e^x+x), x)` in ~2 s. The 175 verbose lines
+are all `cond not accepted`: no rule fires, declines or misfires. The
+rules whose pattern matched but whose cond refused are in 1.4.1 (33),
+1.4.2 (27), 1.3.4 (22), 1.3.3 (19), 1.1.1.7 (16), 2.1 (10), 9.1 (9,
+rules r1/r2/r7/r8/r12/r13/r21: integrand-simplification rules —
+zero-coefficient, sum-splitting and `(a+b x)`/`(c+d x)` reductions,
+none a derivative-divides rule), 1.1.3.7 (9), 2.3 (8), and smaller
+counts. So nothing in the current table handles the
+numerator-is-the-denominator's-derivative shape. The second half
+(9.3's rule answering once ported) needs the port.
