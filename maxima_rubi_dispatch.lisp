@@ -1,25 +1,19 @@
-;; maxima_rubi_dispatch.lisp
+;; maxima_rubi_dispatch.lisp — the rule records, the dispatcher and the
+;; MatchQ entries on MR-MATCH / MR-TREE (matcher substrate spec
+;; docs/superpowers/specs/2026-09-12-matcher-substrate-design.md sections
+;; 3.4-3.6), and the arity dispatchers for the two Rubi predicates the
+;; rules call at more than one arity.
 ;;
-;; $X: the matchfix pattern-argument slot. Every generated matcher
-;; lambda that must locate the pattern argument in a product references
-;; it as a FREE VARIABLE (findexpon <node> $x 'times — the matcher
-;; runner sets it to the actual variable before each match attempt).
-;; It is not declared anywhere visible to the compiler, so SBCL warns
-;; "undefined variable: MAXIMA::$X" for EVERY compilation unit that
-;; references it. That is invisible in batch (load() compiles each rule
-;; file as ONE unit and SBCL dedupes the warning per unit — the full
-;; class-1 load prints 16) but loud in an INTERACTIVE session, where
-;; load() does not compile the matchfix matchers: each match attempt
-;; compiles its matcher lambda as its OWN unit, so a top-level rubi()
-;; call that scans the table prints ~1,300 of the blocks (measured
-;; 2026-08-27, pty session: 1,313 on call 1, 1,273 on call 2 of the
-;; same integrand). SBCL already compiles an undefined free variable
-;; as a dynamic (special) reference — the warning is the only signal —
-;; so declaring the slot special silences it with ZERO codegen change.
-;; This file loads before every rule file (maxima_rubi.mac), and
-;; special declarations are package-level, so it covers both the
-;; batch load-time units and the interactive per-match units.
-(declaim (special $X))
+;; Loaded by maxima_rubi.mac after maxima_rubi_utils.mac (geteqR,
+;; %mr_containsBoolean, rubi_verbose, %mr_boolcheck),
+;; maxima_rubi_match.lisp and maxima_rubi_tree.lisp.
+;;
+;; Naming (measured 2026-08-27, this build): the Lisp symbol of an
+;; ALL-LOWERCASE Maxima name is upper-cased — a defmfun for %mr_defrule
+;; must be |$%MR_DEFRULE| — while a name containing an uppercase letter
+;; keeps its typed case (|$%mr_matchQ|). A fixed-parameter defmfun does not
+;; become a callable Maxima function in this build, so every entry takes
+;; (&rest args) and checks its arity.
 
 ;; Arity dispatchers for the two Rubi predicates the generated class-1
 ;; rules call at more than one arity: %mr_binomialQ (2 and 3 args) and
@@ -38,22 +32,7 @@
 ;; multi-arity names. %mr_integersQ / %mr_fractionQ / %mr_rationalQ
 ;; are 1-arg only (scalar-or-list in that one arg) and take their calls
 ;; directly as committed := ports; intLinearQ (7) and intQuadraticQ (8)
-;; are fixed-arity. (An earlier draft dispatched %mr_integersQ 1/2/3
-;; and %mr_binomialQ 2/3/4 — the census disproves the 2/3-arg
-;; integersQ and 4-arg binomialQ readings; that draft was never
-;; loaded.)
-;;
-;; Symbol mapping (measured, task-7a): a Maxima name `foo_bar` maps to
-;; the Lisp symbol `|$foo_bar|` ($-prefixed, case-preserving,
-;; bar-quoted).
-;;
-;; Load path (measured, task-7a): maxima's load() COMPILES a .lisp, and
-;; a defmfun body returning a plain (non-mlambda) value fails that
-;; compile; these dispatchers return only (mlambda ...) results, which
-;; compile cleanly. maxima_rubi.mac loads this file through
-;; %mr_load_sibling and fails loudly (witness mr_witness_dispatch,
-;; which CALLS the dispatched names — a missed load leaves them nouns)
-;; if the load misses.
+;; are fixed-arity.
 
 (defmfun |$%mr_binomialQ| (&rest args)
   (let ((f (case (length args)
@@ -72,132 +51,307 @@
     (if f (mlambda (mget f 'mexpr) args f t nil)
         (merror (intl:gettext "%mr_intBinomialQ: bad arity ~A") (length args)))))
 
-;; Reverse-scan rule-table rescan (2026-08-26, W1 diagnosis).
-;;
-;; Maxima's commutative product matcher picks, for a pattern factor with a
-;; non-atomic base, the FIRST factor of the target whose head is ^ — in the
-;; REVERSED stored-factor order (matrun.lisp findfun, gated on the lisp
-;; global matchreverse, nil = reverse). There is no backtracking: if that
-;; first ^-factor's base does not match the pattern's base, the whole
-;; pattern fails even when a later factor would match (measured 2026-08-26:
-;; (_c*x)^_m*_r matches (d*x)^m*(c+e*x)^3 IFF the monomial power is stored
-;; LAST; the stored order is Maxima's canonical sort, data-dependent). The
-;; defmatch port of a Rubi rule whose product pattern carries a monomial-
-;; power factor therefore 0-fires on a data-dependent subset of its own
-;; family (the 1.1.3.x / 1.2.x (c x)^m classes, ~thousands of corpus
-;; entries, e.g. 1.2.1.2 e115).
-;;
-;; matchreverse is a defmvar but the Maxima-level value does NOT reach this
-;; lisp global in the installed 5.50.0 build (measured 2026-08-26: assigning
-;; matchreverse in Maxima leaves the lisp global NIL and the matcher
-;; unchanged), so the toggle lives here, in the same compile environment
-;; as matrun.lisp. This rescan runs the WHOLE table a second time with the
-;; scan direction flipped, restoring the global in unwind-protect. It is
-;; strictly additive: called only after a top-level 0-firing, so pass 1 is
-;; bit-identical and nothing currently passing can change.
-;; (&rest args), not a fixed lambda list: in the installed 5.50.0 build a
-;; fixed-parameter defmfun does NOT become a callable Maxima function
-;; (the call stays a noun — measured 2026-08-27, even the documented
-;; `(defmfun $foo (a b) ...)` form); the &rest dispatch is what the two
-;; arity dispatchers above use and what is callable.
-;;
-;; The symbol is the ALL-UPPERCASE $%MR_DISPATCH_REV: Maxima names are
-;; case-insensitive and an ALL-LOWERCASE name's canonical lisp symbol is
-;; uppercased, while a name containing any uppercase keeps its typed case
-;; (measured 2026-08-27: defmfun |$%mr_all| is dead for the call
-;; %mr_all(...), |$%MR_ALL| works; |$%mr_binomialQ| works because the Q
-;; keeps the typed case). A defmfun on the wrong-case symbol loads
-;; fine but every call stays a noun.
-(defmfun |$%MR_DISPATCH_REV| (&rest args)
+;;; ------------------------------------------------------------------
+;;; Migration switches (spec 3.6). Maxima option variables; the dispatcher
+;;; and MatchQ read the first two, mr_top the third.
+
+(defmvar $mr_flat_wide nil
+  "Matcher substrate switch: true = the wide G-6 run-grouping of an
+Optional-reduced Plus/Times item; false (default) = the narrow reading.")
+
+(defmvar $mr_cond_retry t
+  "Matcher substrate switch: true (default) = a rule's cond runs on every
+complete binding until one is accepted; false = on the first complete
+binding only.")
+
+(defmvar $mr_model_flags t
+  "Matcher substrate switch: true (default) = mr_top binds radexpand:false
+and logexpand:false around the dispatch (the G-5 arm); false = Maxima
+defaults.")
+
+;; Maxima variables the utils define before this file loads (declared here
+;; so their references compile as special).
+(defvar $rubi_verbose nil)
+(defvar $%mr_boolcheck t)
+
+(defun mr-verbose (fmt &rest args)
+  (when $rubi_verbose
+    (apply #'mtell fmt args)))
+
+;;; ------------------------------------------------------------------
+;;; Rule records (spec 3.4): %mr_defrule(key, n, pattern, cond, repl)
+;;; prepares the pattern once, at load, and returns the rule's handle (its
+;;; 1-based index in *mr-rules*); mr_rules_<key> and mr_rule_table are
+;;; Maxima lists of handles.
+
+(defstruct (mr-rule (:constructor make-mr-rule (key n pattern cond repl)))
+  key n pattern cond repl)
+
+(defvar *mr-rules* (make-array 4096 :adjustable t :fill-pointer 0)
+  "Every rule record %mr_defrule registered, in load order.")
+
+(defmfun |$%MR_DEFRULE| (&rest args)
+  (unless (= (length args) 5)
+    (merror (intl:gettext "%mr_defrule: expected 5 args, found ~A") (length args)))
+  (destructuring-bind (key n pattern cond repl) args
+    (let ((compiled (handler-case (mr-match:prepare (mr-match:read-tree pattern))
+                      (error (e)
+                        (merror (intl:gettext "%mr_defrule: ~A r~A: ~A") key n
+                                (princ-to-string e))))))
+      (vector-push-extend (make-mr-rule key n compiled cond repl) *mr-rules*)
+      (fill-pointer *mr-rules*))))
+
+(defun mr-rule-of (handle)
+  (if (and (integerp handle) (<= 1 handle (fill-pointer *mr-rules*)))
+      (aref *mr-rules* (1- handle))
+      (merror (intl:gettext "rubi: not a rule handle: ~M") handle)))
+
+;;; ------------------------------------------------------------------
+;;; Bindings -> Maxima
+
+(defvar *mr-head-verbs* nil
+  "Tree head symbol -> the Maxima operator symbol of the MR-TREE head table
+(built on first use; the smallest arity wins).")
+
+;; The table's operator is the symbol Maxima itself reads for the typed name:
+;; `asin` reads as the noun %ASIN (the parser's alias), so the cond's literal
+;; list [asin, acos, ...] holds %ASIN — a $verbify'd $ASIN is not member of it
+;; (measured 2026-09-13, plan-2 pre-validation, probe_f12.mac).
+(defun mr-head-verb (sym)
+  (unless *mr-head-verbs*
+    (let ((table (make-hash-table :test 'eq)))
+      (dolist (row (sort (copy-list (mr-tree:head-table)) #'> :key #'second))
+        (setf (gethash (first row) table) (third row)))
+      (setf *mr-head-verbs* table)))
+  (gethash sym *mr-head-verbs*))
+
+(defun mr-binding-value (tree)
+  "A bound tree -> its Maxima value. A function head bound to a pattern
+variable (F_[...], 3_1_5 r58/r59, 3_3 r58, 3_4 r37) becomes the Maxima
+operator symbol the typed name reads as (ArcSinh -> %asinh), which the cond
+compares with %mr_memberQ and the repl applies; anything else goes through
+tree->max."
+  (or (and (symbolp tree) (mr-head-verb tree))
+      (mr-tree:tree->max tree)))
+
+(defun mr-binding-list (bindings skip)
+  "MR-MATCH bindings -> the Maxima list [name = value, ...] in pattern order,
+without the pre-bound name SKIP."
+  (cons '(mlist simp)
+        (loop for (name . value) in (reverse bindings)
+              unless (eq name skip)
+                collect (list '(mequal simp) (mr-tree:tree->max name)
+                              (mr-binding-value value)))))
+
+;;; ------------------------------------------------------------------
+;;; Calling Maxima under errcatch
+
+(defun mr-call (fn &rest args)
+  "Call the Maxima function (or lambda) FN on ARGS under errcatch:
+(values result t), or (values nil nil) when the call signals an error."
+  (let ((r (errcatch (apply #'mfuncall fn args))))
+    (if r (values (car r) t) (values nil nil))))
+
+(defun mr-true-p (v)
+  "is(v) = true (unknown and false are not true)."
+  (eq (meval `(($is) ((mquote) ,v))) t))
+
+(defun mr-contains-boolean-p (e)
+  "%mr_containsBoolean(e); an error counts as containing one."
+  (multiple-value-bind (r ok) (mr-call '|$%mr_containsBoolean| e)
+    (or (not ok) (eq r t))))
+
+(defmacro mr-guarded (fault-form &body body)
+  "Run BODY; a signalled fault inside it (any serious-condition — a Lisp
+error that escaped errcatch, a storage-condition) unwinds Maxima's dynamic
+bindings as errcatch does and yields FAULT-FORM (spec 3.5 step 5). Not
+covered: SBCL control-stack exhaustion hit inside an allocation is fatal
+before any condition is signalled — a runaway Maxima recursion in a cond
+killed the process in 5 of 6 measured shapes (probes/matcher/07)."
+  (let ((saved (gensym "SAVED")) (c (gensym "C")))
+    `(let ((,saved (cons bindlist loclist)))
+       (handler-case (progn ,@body)
+         (serious-condition (,c)
+           (errlfun1 ,saved)
+           (let ((condition ,c))
+             (declare (ignorable condition))
+             ,fault-form))))))
+
+;;; ------------------------------------------------------------------
+;;; The dispatcher (spec 3.5)
+
+(defun mr-accept (rule expr pre x check-cond)
+  "Match RULE's pattern against EXPR (x pre-bound). The condition hook
+converts each complete binding into the mm list, rejects one holding a
+boolean and — when CHECK-COND — runs the rule's cond under errcatch:
+is(cond) = true accepts; false, unknown or an error goes on to the next
+binding (mr_cond_retry). Returns the accepted mm list, or nil."
+  (let ((accepted nil)
+        (xname (car (first pre))))
+    (mr-guarded
+        (progn (mr-verbose "rubi: rule ~A r~A matcher fault: ~A~%"
+                           (mr-rule-key rule) (mr-rule-n rule) (princ-to-string condition))
+               (setf accepted nil))
+      (mr-match:match
+       (mr-rule-pattern rule) expr :bindings pre
+       :cond-hook (lambda (b)
+                    (let ((r (errcatch
+                              (let ((mm (mr-binding-list b xname)))
+                                (and (not (mr-contains-boolean-p mm))
+                                     (or (not check-cond)
+                                         (multiple-value-bind (v ok) (mr-call (mr-rule-cond rule) mm x)
+                                           (and ok (mr-true-p v))))
+                                     mm)))))
+                      (when (car r)
+                        (setf accepted (car r))
+                        t)))))
+    accepted))
+
+(defun mr-integrand (f x)
+  "-> (values expr pre) for matching Int[f, x], or nil when f does not
+convert."
+  (let ((xtree (mr-tree:max->tree x)))
+    (mr-guarded (progn (mr-verbose "rubi: integrand does not convert: ~M~%" f) nil)
+      (values (list (mr-match:sym "Int") (mr-tree:max->tree f) xtree)
+              (list (cons (mr-match:sym "x") xtree))))))
+
+(defun mr-apply-rule (rule expr pre f x)
+  "Try one rule on the converted integrand: the answer, or nil (no match,
+decline or misfire)."
+  (let ((mm (mr-accept rule expr pre x t))
+        (key (mr-rule-key rule))
+        (n (mr-rule-n rule)))
+    (when mm
+      (multiple-value-bind (r ok) (mr-call (mr-rule-repl rule) mm x)
+        (cond ((not ok)
+               (mr-verbose "rubi: rule ~A r~A misfire (repl error) on ~M~%" key n f) nil)
+              ((null r)
+               (mr-verbose "rubi: rule ~A r~A declined on ~M~%" key n f) nil)
+              ((and $%mr_boolcheck (mr-contains-boolean-p r))
+               (mr-verbose "rubi: rule ~A r~A misfire (boolean leaked) on ~M~%" key n f) nil)
+              (t
+               (mr-verbose "rubi: rule ~A r~A fired on ~M with ~M~%" key n f mm) r))))))
+
+(defmacro with-mr-switches (&body body)
+  `(let ((mr-match:*flat-wide* (not (null $mr_flat_wide)))
+         (mr-match:*cond-retry* (not (null $mr_cond_retry))))
+     ,@body))
+
+(defmfun |$%MR_DISPATCH_TREE| (&rest args)
+  "%mr_dispatch_tree(f, x, table, depth): walk the rule handles of TABLE in
+order; the first rule whose pattern binds, whose cond accepts and whose repl
+answers wins. false when no rule answers."
   (unless (= (length args) 4)
-    (merror (intl:gettext "%mr_dispatch_rev: expected 4 args, found ~A")
-            (length args)))
-  (unwind-protect
-      (progn
-        (setf matchreverse t)
-        (mlambda (mget '|$%MR_DISPATCH| 'mexpr)
-                args
-                '|$%MR_DISPATCH| t nil))
-    (setf matchreverse nil)))
+    (merror (intl:gettext "%mr_dispatch_tree: expected 4 args, found ~A") (length args)))
+  ;; (the fourth argument, the recursion depth, is informational: DEPTH is
+  ;; a Maxima special variable, so it is not bound here)
+  (destructuring-bind (f x table &rest ignored) args
+    (declare (ignore ignored))
+    (unless ($listp table)
+      (merror (intl:gettext "%mr_dispatch_tree: the table is not a list: ~M") table))
+    (multiple-value-bind (expr pre) (mr-integrand f x)
+      (when expr
+        (with-mr-switches
+          (dolist (h (cdr table) nil)
+            (let ((r (mr-apply-rule (mr-rule-of h) expr pre f x)))
+              (when r (return r)))))))))
 
-;; Pattern-variable slot declarations (the second per-match warning
-;; class, after $X above). A pattern variable that the generated
-;; matcher references as a FREE variable — the structurally
-;; significant slots, i.e. a power's base inside a product (the
-;; u^m*(...) families: the matcher code is
-;; (findexpon <node> $SLOT 'times) — the code that locates the power
-;; of the matched base reads the slot) — makes each compilation unit
-;; that contains it print "undefined variable: MAXIMA::<slot>". $X
-;; covers the pattern-ARGUMENT slot only; the pattern-VARIABLE slots
-;; (20,847 in class 1) each need their own declaration.
-;;
-;; %mr_load_sibling scans each rule file's matchdeclare lines and
-;; declares every slot special BEFORE the load. A runtime-evaluated
-;; (declaim (special ...)) reaches SBCL's later compilations — the
-;; declaim must merely be executed before the unit that references the
-;; slot is compiled: in batch, load() compiles the .mac at load time
-;; (so the declaim precedes it), in interactive the per-match units
-;; are compiled later, at call time. Measured 2026-08-27 (pty
-;; sessions, foo_u^foo_m*(...) probe rule): a verified-executed
-;; runtime declaim before the rule-file load -> 0 warnings (a static
-;; declaim in a loaded .lisp file works too; the runtime form was
-;; kept — no 21k-line generated artifact to desync from the rules).
-;; Same zero-codegen property as $X: SBCL already compiles the free
-;; reference as a dynamic (special) lookup.
-;;
-;; Every matchdeclare line in rules/class1 (generated + the manual
-;; 9_1 port) is single-variable and column-0
-;; "matchdeclare(<name>, <pred>)$" with <pred> in {freeof(x), true}
-;; (20,847 + 149 lines, verified 2026-08-27) — the name is the first
-;; comma-delimited field, which can never contain a comma.
-;;
-;; Maxima -> lisp name mapping for the slots (measured against the
-;; observed warning symbols): "$" + the name, uppercased when the name
-;; is all lowercase (foo_u -> $FOO_U, _mr_1_2_4_2_r21_u ->
-;; $_MR_1_2_4_2_R21_U), typed case kept when it contains an uppercase
-;; (_mr_1_4_1_r24_Pq -> $_mr_1_4_1_r24_Pq).
-;;
-;; The defmfun below is |$%MR_DECLAIM_MATCHVARS| — the Maxima name
-;; %mr_declaim_matchvars carries its % into the lisp symbol ($ prefix,
-;; % kept, no underscore inserted); a $-only symbol is defined but
-;; never found and the call silently stays a noun (measured 2026-08-27).
-;;
-;; The scanner's with-open-file uses the all-keyword form
-;; (:direction :input ...): the positional direction arg (the usual
-;; `(in path nil ...)`) compiles but throws "odd number of &KEY
-;; arguments" at run time in the installed 5.50.0 build (measured
-;; 2026-08-27).
-(defun |$mr-scan-matchvars| (path)
-  (let ((names '()))
-    (when (probe-file path)
-      (with-open-file (in path :direction :input :if-does-not-exist nil)
-        (loop for line = (read-line in nil nil)
-              while line
-              when (string= (if (>= (length line) 13)
-                                (subseq line 0 13)
-                                "")
-                            "matchdeclare(") do
-              (let ((comma (position #\, (subseq line 13))))
-                ;; position is relative to the subseq — add the 13 back
-                ;; for the absolute end index; comma = 0 (no name) is
-                ;; skipped so the bare $ symbol is never touched
-                (when (and comma (plusp comma))
-                  (push (subseq line 13 (+ 13 comma)) names))))))
-    (nreverse names)))
+(defmfun |$%MR_RULE_BINDINGS| (&rest args)
+  "%mr_rule_bindings(handle, f, x): the mm list of the rule's first complete
+binding of Int[f, x] (no cond), or false — a test and debugging entry."
+  (unless (= (length args) 3)
+    (merror (intl:gettext "%mr_rule_bindings: expected 3 args, found ~A") (length args)))
+  (destructuring-bind (h f x) args
+    (multiple-value-bind (expr pre) (mr-integrand f x)
+      (and expr (with-mr-switches (mr-accept (mr-rule-of h) expr pre x nil))))))
 
-(defun |$mr-declaim-matchvars| (path)
-  (dolist (name (remove-duplicates (|$mr-scan-matchvars| path)
-                                   :test #'string=))
-    (eval `(declaim (special
-                     ,(intern (concatenate 'string "$"
-                                           (if (string= name
-                                                        (string-downcase name))
-                                               (string-upcase name)
-                                               name)))))))
-  nil)
+(defmfun |$%MR_RULE_ACCEPT| (&rest args)
+  "%mr_rule_accept(handle, f, x): the mm list of the rule's first complete
+binding of Int[f, x] that its cond accepts (under mr_cond_retry, as the
+dispatcher runs it), or false — a test and debugging entry."
+  (unless (= (length args) 3)
+    (merror (intl:gettext "%mr_rule_accept: expected 3 args, found ~A") (length args)))
+  (destructuring-bind (h f x) args
+    (multiple-value-bind (expr pre) (mr-integrand f x)
+      (and expr (with-mr-switches (mr-accept (mr-rule-of h) expr pre x t))))))
 
-(defmfun |$%MR_DECLAIM_MATCHVARS| (&rest args)
-  (unless (= (length args) 1)
-    (merror (intl:gettext "%mr_declaim_matchvars: expected 1 arg, found ~A")
-            (length args)))
-  (|$mr-declaim-matchvars| (first args)))
+(defmfun |$%MR_RULE_APPLY| (&rest args)
+  "%mr_rule_apply(handle, f, x): the one rule's answer on Int[f, x] (pattern,
+cond, repl, as the dispatcher runs it), or false."
+  (unless (= (length args) 3)
+    (merror (intl:gettext "%mr_rule_apply: expected 3 args, found ~A") (length args)))
+  (destructuring-bind (h f x) args
+    (multiple-value-bind (expr pre) (mr-integrand f x)
+      (and expr (with-mr-switches (mr-apply-rule (mr-rule-of h) expr pre f x))))))
+
+;;; ------------------------------------------------------------------
+;;; MatchQ (spec 3.4): %mr_matchQ(u, "<pattern>", [<parts>], cond)
+
+(defvar *mr-matchq-trees* (make-hash-table :test 'equal)
+  "%mr_matchQ pattern text -> its tree, read once.")
+
+(defun mr-substitute-parts (tree parts)
+  "Replace each (MRArg k) in TREE with the k-th of PARTS (trees); a
+substituted Plus/Times directly under the same head is spliced in, as
+Mathematica's evaluation of the pattern would flatten it."
+  (let ((mrarg (mr-match:sym "MRArg"))
+        (flat (list (mr-match:sym "Plus") (mr-match:sym "Times"))))
+    (labels ((walk (e)
+               (cond ((atom e) e)
+                     ((eq (car e) mrarg) (nth (1- (second e)) parts))
+                     (t (let ((h (walk (car e)))
+                              (args (mapcar #'walk (cdr e))))
+                          (cons h (if (member h flat)
+                                      (loop for a in args
+                                            if (and (consp a) (eq (car a) h))
+                                              append (cdr a)
+                                            else collect a)
+                                      args)))))))
+      (walk tree))))
+
+(defun mr-matchq (u text parts cond)
+  "The Maxima binding list [marker = value, ...] of the first complete binding
+of the pattern TEXT (its (MRArg k) placeholders replaced by the values PARTS)
+against U that COND accepts, or nil. COND is true or a function of the
+binding list. MatchQ semantics: every complete binding is tried
+(mr_cond_retry does not apply)."
+  (let ((accepted nil)
+        (raw (or (gethash text *mr-matchq-trees*)
+                 (setf (gethash text *mr-matchq-trees*) (mr-match:read-tree text)))))
+    (mr-guarded (setf accepted nil)
+      (let ((mr-match:*flat-wide* (not (null $mr_flat_wide)))
+            (mr-match:*cond-retry* t)
+            (compiled (mr-match:prepare
+                       (if (cdr parts)
+                           (mr-substitute-parts raw (mapcar #'mr-tree:max->tree (cdr parts)))
+                           raw))))
+        (mr-match:match
+         compiled (mr-tree:max->tree u)
+         :cond-hook (lambda (b)
+                      (let ((r (errcatch
+                                (let ((mb (mr-binding-list b nil)))
+                                  (and (or (eq cond t)
+                                           (multiple-value-bind (v ok) (mr-call cond mb)
+                                             (and ok (mr-true-p v))))
+                                       mb)))))
+                        (when (car r)
+                          (setf accepted (car r))
+                          t))))))
+    accepted))
+
+(defun mr-matchq-args (name args)
+  (unless (= (length args) 4)
+    (merror (intl:gettext "~A: expected 4 args, found ~A") name (length args)))
+  (unless (and (stringp (second args)) ($listp (third args)))
+    (merror (intl:gettext "~A: expected (u, \"<pattern>\", [<parts>], cond)") name))
+  args)
+
+(defmfun |$%mr_matchQ| (&rest args)
+  "%mr_matchQ(u, \"<pattern>\", [<parts>], cond): true iff some binding of the
+pattern against u satisfies cond (true or lambda([%mr_mqb], ...))."
+  (if (apply #'mr-matchq (mr-matchq-args "%mr_matchQ" args)) t nil))
+
+(defmfun |$%mr_matchQ_bindings| (&rest args)
+  "%mr_matchQ_bindings(u, \"<pattern>\", [<parts>], cond): the accepted
+binding list [marker = value, ...], or false."
+  (apply #'mr-matchq (mr-matchq-args "%mr_matchQ_bindings" args)))
