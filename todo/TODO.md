@@ -122,7 +122,9 @@ package beats the baseline** (+295, +9.6 pt; of the 525 PASS→FAIL,
 reclassifications; FAIL→PASS 820; 96 confirmed non-terminators at
 the 100 s re-check, zero slow-correct answers). Record:
 `docs/corpus-class3-baseline-uplift.md` (run
-`test/corpus_class3.out`, baseline
+`test/corpus_class3.campaign-baseline.out` — committed at `f40d56b`
+as `test/corpus_class3.out`, which since the class-3 deferred campaign
+close holds the campaign record (below); baseline
 `test/corpus_class3.baseline.out`, 100 s re-check
 `test/corpus_class3.timeout-rerun/`). The 2026-08-29 rebuild
 (`branch_5_50_base_84_g4204fb669`, built 2026-08-29 17:58:20, SBCL
@@ -197,8 +199,79 @@ A/B + attribution + 100 s re-check, §6 recovery, §7 acceptance); runs
 `test/corpus_class{1,2,3}.campaign-baseline.out`. Ticket 04
 (`.scratch/class1-ab-remainders/issues/04-…`) partially answered.
 
+## Matcher substrate — in prog (Plan 2 complete 2026-09-13)
+
+Classes 1–3 re-hosted on a Mathematica-semantics matcher in place of
+`defmatch` (spec
+`docs/superpowers/specs/2026-09-12-matcher-substrate-design.md`, phases
+P0–P6). Plan 1 (P0–P2,
+`docs/superpowers/plans/2026-09-12-matcher-substrate-plan1.md`) is
+complete on branch `matcher-substrate`: P0 baseline records
+`test/corpus_class{1,2,3}.pre-matcher.out` (PASS 20,125 / 614 / 2,058;
+median per-entry wall 1.3 / 4.3 / 3.9 s — the P5 parity floor and
+performance ceiling; class-3 same-core wall noise
+`probes/matcher/05-p0-wall-noise.out`); `mr-match`
+(`maxima_rubi_match.lisp`) and `mr-tree` (`maxima_rubi_tree.lisp`)
+with unit suites 51/0 and 46/0; the P1/P2 regression gates green in
+both simplifier arms (`test/matcher/gate.out`, `gate.flags.out`,
+109/0). Suite commands: AGENTS.md, Tests. Ledger:
+`.superpowers/sdd/progress.md` (plan 1 section).
+
+Plan 2 (P3–P4,
+`docs/superpowers/plans/2026-09-13-matcher-substrate-plan2.md`) is
+complete on the same branch: the generator emits evaluated-FullForm
+pattern records (`%mr_defrule`; 3,513 rules, 9.1 generated; P3 static
+gate `test/check_generated_rules.py` 11/0);
+`maxima_rubi_dispatch.lisp` dispatches on `mr-match` / `mr-tree` (unit
+suite 57/0); passes 2–4, the `defmatch`-era matchers and
+`maxima_rubi_implicit1.lisp` / `maxima_rubi_pass4.lisp` are deleted;
+Layer A 898/0; the TLS flag is no longer required
+(`probes/matcher/08-runtime-load.out`); dispatch cost
+`probes/matcher/06-dispatch-cost.out`; fault survival
+`probes/matcher/07-fault-survival.out`. Ledger: plan 2 section.
+
+- Next: Plan 3 = P5 (four full class 1–3 runs, one switch flipped per
+  run; gates against the P0 records) – P6 (close), written just in
+  time — open
+- Carried into Plan 3: the MODEL-LOST figures (1,166 / 395 measured vs
+  the spec's 1,142 / 312) unexplained; the shard launcher leaves stale
+  shard files; the speed-gate definition; the three switches written
+  into the driver's `filter:` line (plan 2 deviation 8); crash-class
+  counts against P0 (a runaway recursion in a cond is fatal inside
+  `mr-match:match`, probe 07); from the plan-2 final review: take P5
+  run 1 on class 2 first and compare median wall and the timeout class
+  against P0 before the class-1 runs (probe 06: full-table walk cost is
+  exponential in Times arity; the head index of spec 3.5 is the
+  fallback); when attributing the `mr_model_flags` arm, nested
+  integrate fall-throughs (depth cap, seen guard) run under the flags —
+  look at the seen-guard path first; the spec §6 TLS-mechanism wording
+  is inaccurate (interpreted block locals take no TLS slot) — state the
+  corrected mechanism in the P6 acceptance record; carried to P6: stale
+  generator comments (`generate_rules.py` `cap_name` docstring,
+  `CAP_REMAP` rationale, ctx decls) and README.md's `defmatch` TLS text
+  and deleted file list — open
+- Deferred: the `MX_` plist re-read issue in `mr-tree` (not reachable:
+  the dispatcher never prints and re-reads a tree) — open
+- Known cost item: a collapsible claimer (e.g. `(c_.*x_)^m_.` under
+  Times) still enumerates every sub-run of a product's factors — the
+  full-table walk on `x*y1*…*y12` takes minutes; on large products the
+  walk is dominated by moved inner conditions that integrate or expand
+  (3.5 r37, 3.1.5 r28, 3.5 r11) (`probes/matcher/06-dispatch-cost.out`)
+  — open, judged by the P5 median-wall gate
+
 ## Pinned reference clones
 
 - `reference/rubi` @ `61e9c18ea248061cd83c67882f7c91a73cef912d` (cloned 2026-08-17)
 - `reference/maxima-syntax-test-suite` @ `60295e21c571ca210ecfbb695f4af99947454adf` (cloned 2026-08-17)
 - `reference/rubi-5` @ `37a71d650aa1ff7903d4de9cdd1a20c115969f4d` (cloned 2026-08-17)
+- `reference/fateman/lisp/mma4max` — Fateman's mma4max (assembled 2026-09-11;
+  `reference/fateman/PROVENANCE.txt`): 19 files from the Wayback Machine
+  snapshot of `people.eecs.berkeley.edu/~fateman/lisp/mma4max/` dated
+  2022-01-18 (18 byte-identical to the mirror below; `init.lisp` is the
+  Berkeley original), all other files from `nilqed/abcl_maxima` @
+  `097b49b08aff958f72a3cf4449a7ac7912d9ef59` subdir `mma4max/`.
+  `newmatch.lisp` listing date 2011-03-21.
+- `reference/fateman/other/mixima` — `jlapeyre/mixima` @ `05e510b77bedae0841e81bfa3f5693fffaf7a53e`
+- `reference/fateman/other/mockmma` — `dubrousky/mockmma` @ `036e7ba0773e43da50438a4f93774966cf82011f`
+  (both copied 2026-09-11 without `.git`: the commits are recorded in
+  `PROVENANCE.txt` only and cannot be re-read from the copies)

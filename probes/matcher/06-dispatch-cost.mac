@@ -1,0 +1,71 @@
+/* probes/matcher/06-dispatch-cost.mac -- dispatch cost of the matcher
+   substrate on the full table (matcher substrate plan 2, Task 7; plan 1's
+   carried item 1). Loaded by probes/matcher/06-dispatch-cost.sh through a
+   driver that sets mr_cost_case first (Maxima has no getenv):
+     "walk"      pattern + cond of every record (%mr_rule_accept) on five
+                 integrands, and two %mr_dispatch_tree calls
+     "claim<k>"  the walk on x*y1*...*yk (the collapsible-claimer shape)
+     "attr"      per-record cost on the costliest walk integrand, top 25
+     "rubi"      end-to-end rubi() wall on that integrand (needs only
+                 mr_load_all and rubi, so it also runs on the P0 package)
+   Each %mr_rule_accept call re-converts the integrand: the walk slightly
+   overestimates a dispatch that never fires. */
+display2d : false$
+linel : 10000$  /* print does not wrap: every R line stays whole for grep */
+print("R build", build_info()@version, build_info()@timestamp)$
+load("maxima_rubi.mac")$
+t0 : elapsed_real_time()$
+mr_load_all()$
+print("R load_all s", elapsed_real_time() - t0, "rules", length(mr_rule_table))$
+big : x^2*(a+b*x)^3*(c+d*x)^4*(e+f*x)^5*(g+h*x)^6*log(x)$
+
+walk(name, ig) := block([t0, n, dt],
+  t0 : elapsed_real_time(),
+  n : 0,
+  for h in mr_rule_table do if %mr_rule_accept(h, ig, x) # false then n : n + 1,
+  dt : elapsed_real_time() - t0,
+  print("R walk", name, "s", dt, "ms/rule", float(1000*dt/length(mr_rule_table)),
+        "accepting", n))$
+
+dispatch(name, ig) := block([t0, r, dt],
+  t0 : elapsed_real_time(),
+  r : errcatch(%mr_dispatch_tree(ig, x, mr_rule_table, 1)),
+  dt : elapsed_real_time() - t0,
+  print("R dispatch", name, "s", dt, "answered", is(r # [] and part(r, 1) # false)))$
+
+cc : mr_cost_case$
+if cc = "walk" then (
+  walk("sin(x)^x", sin(x)^x),
+  walk("(a+b*x)^2*(c+d*x)^3*sin(x)", (a+b*x)^2*(c+d*x)^3*sin(x)),
+  walk("x^2*(a+b*x)^3*(c+d*x)^4*(e+f*x)^5*(g+h*x)^6*log(x)", big),
+  walk("(a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q", (a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q),
+  walk("x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2", x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2),
+  dispatch("sin(x)^x", sin(x)^x),
+  dispatch("(a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q", (a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q)
+) else if cc = "attr" then block([costs, t_all],
+  costs : [],
+  t_all : elapsed_real_time(),
+  for h in mr_rule_table do block([t1, r, dt],
+    t1 : elapsed_real_time(),
+    r : %mr_rule_accept(h, big, x),
+    dt : elapsed_real_time() - t1,
+    if dt > 0.05 then
+      costs : cons([dt, sconcat(?mr\-rule\-key(?mr\-rule\-of(h)), " r",
+                                ?mr\-rule\-n(?mr\-rule\-of(h))),
+                    is(r # false)], costs)),
+  print("R attr total s", elapsed_real_time() - t_all, "records over 50 ms", length(costs),
+        "their sum s", if costs = [] then 0 else apply("+", map(first, costs))),
+  costs : sort(costs, lambda([p, q], is(first(p) > first(q)))),
+  for c in rest(costs, -max(0, length(costs) - 25)) do print("R attr", c)
+) else if cc = "rubi" then block([t1, r],
+  t1 : elapsed_real_time(),
+  r : errcatch(rubi(big, x)),
+  print("R rubi s", elapsed_real_time() - t1, "answered",
+        errcatch(is(r # [] and string(op(part(r, 1))) # "unintegrable")))
+) else if slength(cc) > 5 and sequal(substring(cc, 1, 6), "claim") then block([k],
+  /* (the length test first: substring past the end of a shorter case
+     name is an error, and and short-circuits) */
+  k : parse_string(substring(cc, 6)),
+  walk(sconcat("x * ", k, " symbols"), x * apply("*", makelist(concat(y, i), i, 1, k)))
+)$
+print("R DONE")$

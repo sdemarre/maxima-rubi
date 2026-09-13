@@ -58,17 +58,30 @@ diffs; `docs/corpus-class3-baseline-uplift.md` §6).
 
 ## Loading rule files: the TLS limit
 
-The SBCL special-variable pool is a hard per-process cap: creating a
-`defmatch`/`matchdeclare` slot beyond it is the **uncatchable** FATAL
-"Thread local storage exhausted". The installed core's baked-in limit is
-~4098 special vars (`probes/load_wall/probe-tls-calibration.out`), and a
-generated class-1 rule costs ~9.6 of them on average
-(`probes/load_wall/probe-load-curve.out`) — the default limit holds only
-~310 class-1 rules. **Any maxima process that loads rule files must be
-run with `-X "--tls-limit 100000"`** (user decision 2026-08-22). The flag
-takes two argv tokens — not `--tls-limit=N`. 100000 covers the full
-loaded Rubi set (7,432 rules, T1 count) at ~1.4x headroom; the probes
-above self-flag if the build moves.
+The SBCL special-variable pool is a hard per-process cap (~4098 in the
+installed core, `probes/load_wall/probe-tls-calibration.out`); creating a
+special variable beyond it is the **uncatchable** FATAL "Thread local
+storage exhausted". Under `defmatch` every generated rule's
+`defmatch`/`matchdeclare` slots were special variables (~9.6 per class-1
+rule, `probes/load_wall/probe-load-curve.out`), so from 2026-08-22 (user
+decision) until the matcher substrate's P4 every maxima process that
+loaded rule files ran with `-X "--tls-limit 100000"`.
+
+The rule files are now `%mr_defrule` records: a pattern is a string the
+Lisp matcher prepares, and no rule creates a pattern-variable slot.
+Without the flag, `load("maxima_rubi.mac")` + `mr_load_all()` (3,513
+rules) answers and verifies a smoke integral and the whole Layer A run
+is green, with no TLS message (`probes/matcher/08-runtime-load.out`,
+build `branch_5_50_base_84_g4204fb669`). **The flag is no longer
+required** (spec `docs/superpowers/specs/2026-09-12-matcher-substrate-design.md`
+§3.5). It is harmless: `test/build_rules_core.sh` and
+`test/corpus_driver.py` still pass it. Interpreted cond/repl `block`
+locals take no slot (`mbind-doit` binds them with `mset` + `mspeclist`,
+no special declaration); the `defmatch` slots came from compiled matcher
+code. Compiled or translated rule code is what could bring the error
+back — if a later change compiles or translates the rule files, re-run
+probe 08 and restore the flag rule (two argv tokens:
+`-X "--tls-limit 100000"`, not `--tls-limit=N`).
 
 ## Looking up Maxima itself
 
@@ -132,17 +145,17 @@ printed at all, which is itself a failure.
 **Layer A — unit suite** (the per-change gate), one batch run:
 
 ```sh
-maxima --very-quiet -X "--tls-limit 100000" -b test_maxima_rubi.mac
+maxima --very-quiet -b test_maxima_rubi.mac
 ```
 
-The TLS flag is MANDATORY (measured 2026-09-01, class-3 deferred
-campaign C1): the test set loads rule siblings cumulatively per
-process, and the C1 tests (3_1_3/3_1_4/3_1_5) pushed the union over
-the ~4098 special-var cap — the flagless gate now dies with the
-uncatchable TLS HALT at 3_1_5 (slot cost is never freed; see the TLS
-section above). It was flagless only while the loaded subset fit.
+No TLS flag since the matcher substrate's P4 (the flagless run is
+green, `probes/matcher/08-runtime-load.out`; see the TLS section above).
+From 2026-09-01 (class-3 deferred campaign C1) until then the flag was
+mandatory: the test set loads rule siblings cumulatively per process,
+and the `defmatch` slots of 3_1_3/3_1_4/3_1_5 overran the special-var
+cap.
 
-892 targets (green: `Results: 892 passed, 0 failed`; the
+898 targets (green: `Results: 898 passed, 0 failed`; the
 milestone-3 close figure was 743 — growth 511 → 581 across the
 pilot's clusters, 581 → 620 headvar checks, → 691 cluster A, → 743
 cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1,
@@ -152,7 +165,80 @@ cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1,
 → 862 C5 (3_4 slotted-inner-exponent mly/m1b slotting, 11 checks),
 → 869 C6-cassimp (3.5 r10 cond ratsimp, M-cas-simp e92/e93, 7 checks),
 → 892 C6b (3.5 r42 FunctionOfLog catch-all port + bare catch-all
-pattern fix, e134/e139/e258, 23 checks)).
+pattern fix, e134/e139/e258, 23 checks), → 897 matcher substrate P4
+(the matcher-coupled sections rewritten against the substrate entries,
+892 → 875, and the generated MatchQ pattern shapes, 22 checks), → 898
+plan-2 final review (1.4.2 r17 MatchQ exponent part folding)).
+
+**Matcher substrate — unit suites** (the per-change gate for
+`maxima_rubi_match.lisp` / `maxima_rubi_tree.lisp` /
+`maxima_rubi_dispatch.lisp`; branch `matcher-substrate`, spec
+`docs/superpowers/specs/2026-09-12-matcher-substrate-design.md`). No
+rule files are loaded:
+
+```sh
+maxima --very-quiet -b test/matcher/test_mr_match.mac
+maxima --very-quiet -b test/matcher/test_mr_tree.mac
+maxima --very-quiet -b test/matcher/test_mr_dispatch.mac < /dev/null
+```
+
+Green: `Results: 53 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
++3 at the final-review fix wave: the last-absorber cost bounds and the
+empty-leftover lock, +2 at Plan 2: the Power-exponent Optional
+default), `Results: 51 passed, 0 failed` (mr-tree; 46, +5 at Plan 2:
+CRE input and the booleans) and `Results: 57 passed, 0 failed`
+(dispatch: rule records, dispatcher outcomes, bindings / retry / head
+symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
++4 at its review: the fault type excludes interrupts and timeouts, a
+MatchQ pattern prepare rejects is an error, +8 at the final review:
+MatchQ part folding and an out-of-range part error).
+`test_mr_match.lisp` has no Maxima dependency and also runs in plain
+SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
+test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
+
+**Generator — P3 static gate** (the per-change gate for
+`generator/generate_rules.py` and the regenerated rule files; spec
+section 4 P3). No Maxima; `sbcl` must be on the PATH:
+
+```sh
+python3 test/check_generated_rules.py
+```
+
+Green: `Results: 11 passed, 0 failed`. It compares the working tree's
+`rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
+<commit>` for another base): rule counts and `mr_rules_<key>` lines, no
+`defmatch`, every cond/repl body byte-identical to the base except the
+spec's closed exception list (each exception checked as the exact text
+transformation it claims to be), the reader self-test
+(`python3 generator/mma_reader.py`), and every pattern string preparing
+in `MR-MATCH`. Regeneration is byte-identical:
+`python3 generator/generate_rules.py --class <1|2|3>` leaves
+`git status --porcelain rules/` empty.
+
+**Matcher substrate — regression suite** (spec section 4 P1/P2 gates:
+the probe-02 round trip over all 7,444 Rubi LHSs in narrow and wide
+modes, tree leg and Maxima leg through `mr-tree`, the probe-02
+controls, the spike-01 cases). 20 Maxima shards, ~70 s wall per arm;
+run the two arms sequentially, each detached (`setsid`) and polled:
+
+```sh
+MR_LEGS=tree,maxima MR_SPIKE=1 sh test/matcher/run.sh
+MR_LEGS=tree,maxima MR_MODEL_FLAGS=1 MR_SPIKE=1 sh test/matcher/run.sh
+```
+
+The first (Maxima defaults) writes `test/matcher/roundtrip.out`,
+`controls.out`, `spike01.out`, `gate.out`; the second (the
+`radexpand:false` + `logexpand:false` arm) writes
+`roundtrip.flags.out`, `gate.flags.out` and rewrites `controls.out` /
+`spike01.out`. Each prints its gate's line — green is
+`Results: 109 passed, 0 failed` in both arms; the gate
+(`test/matcher/gate.py`) requires every rule OK in both modes (no
+MISS), 0 UNSOUND, 0 false mutation matches. `MR_WORK=<dir>` moves the
+shard work directory (default `${TMPDIR:-/tmp}/mr-matcher-suite[.flags]`).
+A plain `sh test/matcher/run.sh` runs only the tree-leg P1 gate
+(`Results: 37 passed, 0 failed`) and **overwrites the committed P2
+records** `roundtrip.out` / `controls.out` / `gate.out` — run the two
+commands above to regenerate them.
 
 **Layer B — full class-1 corpus** (25,697 entries, 30 s per-entry cap,
 one fresh maxima subprocess per integral, verification by

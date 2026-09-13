@@ -1,0 +1,103 @@
+    /* Task 4C-C3 (class-3 deferred campaign, 2026-09-02) — the ratio
+    log-arg rules 3.2.1 r15, 3.2.2 r3/r5, 3.2.3 r5 on the stored Quotient
+    forms. The defmatch runner 0-bound them (99 entries) and needed the
+    %mr_logratio[_sq]_match structural matchers; MR-MATCH binds the faithful
+    patterns, and %mr_rule_accept reads the binding the cond accepts. e104's
+    accepted binding is e := (b*e-a*f)/(d*e-c*f), f := 1, p := -1, q := 1
+    (the defmatch-era pin had e := b*e-a*f, f := 1/(d*e-c*f)); both make
+    the repl's log-arg re-expand to the stored argument. The numeric-k
+    distributed quotient e*(a+b*x)^2/(c+d*x)^2 does not bind r15's
+    e*((a+b*x)/(c+d*x))^n — a power of a quotient is not a product of
+    powers — and r16 covers it (test_class3_c4_321). Bindings measured in
+    the plan-2 pre-validation (probe_rewrite.mac, 2026-09-13). The
+    answer-level reps run on the default 1.1.1.1 + the three 3.2.x
+    families: e93 verifies at the driver's numeric stage, e10 at factor. */
+    test_class3_c3_ratio() := block([ans, z, n1, n2, D, saved_table, f, mm],
+      print("--- c3: ratio log-arg (C3) ---"),
+      %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
+      %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
+      %mr_load_sibling("rules/class3/3_2_3.mac", 'mr_witness_3_2_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_1, mr_rules_3_2_2, mr_rules_3_2_3]),
+      /* e93 (3.2.1 r15) */
+      mm : %mr_rule_accept(_mr_rule_3_2_1_r15, (A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x),
+      check_bool("c3 e93 accepts (3.2.1 r15)", listp(mm)),
+      check_bool("c3 e93 f=a*g g=b*g m=-2 n=1 p=1",
+                 binds(mm, ['_mr_3_2_1_r15_f = a*g, '_mr_3_2_1_r15_g = b*g, '_mr_3_2_1_r15_m = -2,
+                            '_mr_3_2_1_r15_n = 1, '_mr_3_2_1_r15_p = 1])),
+      check_bool("c3 e93 A,B,e + a,b,c,d",
+                 binds(mm, ['_mr_3_2_1_r15_A = A, '_mr_3_2_1_r15_B = B, '_mr_3_2_1_r15_e = e,
+                            '_mr_3_2_1_r15_a = a, '_mr_3_2_1_r15_b = b, '_mr_3_2_1_r15_c = c,
+                            '_mr_3_2_1_r15_d = d])),
+      /* e10 (3.2.2 r3): the two-head integrand */
+      mm : %mr_rule_accept(_mr_rule_3_2_2_r3, (a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x),
+      check_bool("c3 e10 accepts (3.2.2 r3)", listp(mm)),
+      check_bool("c3 e10 f=a*g g=b*g m=3 h=c*i i=d*i q=2",
+                 binds(mm, ['_mr_3_2_2_r3_f = a*g, '_mr_3_2_2_r3_g = b*g, '_mr_3_2_2_r3_m = 3,
+                            '_mr_3_2_2_r3_h = c*i, '_mr_3_2_2_r3_i = d*i, '_mr_3_2_2_r3_q = 2])),
+      check_bool("c3 e10 A,B,e,n=1,p=1 + a,b,c,d",
+                 binds(mm, ['_mr_3_2_2_r3_A = A, '_mr_3_2_2_r3_B = B, '_mr_3_2_2_r3_e = e,
+                            '_mr_3_2_2_r3_n = 1, '_mr_3_2_2_r3_p = 1, '_mr_3_2_2_r3_a = a,
+                            '_mr_3_2_2_r3_b = b, '_mr_3_2_2_r3_c = c, '_mr_3_2_2_r3_d = d])),
+      /* e214 (3.2.2 r5): the symbolic-n Times[e, Power[Quotient, n]] form */
+      mm : %mr_rule_accept(_mr_rule_3_2_2_r5, (a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*((a+b*x)/(c+d*x))^n)), x),
+      check_bool("c3 e214 accepts (3.2.2 r5, symbolic-n form)", listp(mm)),
+      check_bool("c3 e214 m free q=-2-m n free p=1",
+                 binds(mm, ['_mr_3_2_2_r5_m = m, '_mr_3_2_2_r5_q = -2-m,
+                            '_mr_3_2_2_r5_n = n, '_mr_3_2_2_r5_p = 1])),
+      /* e104 (3.2.3 r5): the squared-log integrand */
+      mm : %mr_rule_accept(_mr_rule_3_2_3_r5, log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x),
+      check_bool("c3 e104 accepts (3.2.3 r5)", listp(mm)),
+      check_bool("c3 e104 a-d + e=C1/C2 f=1 g=a h=b p=-1 q=1 r=1",
+                 binds(mm, ['_mr_3_2_3_r5_a = a, '_mr_3_2_3_r5_b = b, '_mr_3_2_3_r5_c = c,
+                            '_mr_3_2_3_r5_d = d, '_mr_3_2_3_r5_e = (b*e-a*f)/(d*e-c*f),
+                            '_mr_3_2_3_r5_f = 1, '_mr_3_2_3_r5_g = a, '_mr_3_2_3_r5_h = b,
+                            '_mr_3_2_3_r5_p = -1, '_mr_3_2_3_r5_q = 1, '_mr_3_2_3_r5_r = 1])),
+      z : if is(listp(mm)) then
+        errcatch(rat(geteqR(mm, '_mr_3_2_3_r5_e)
+                     *(geteqR(mm, '_mr_3_2_3_r5_f)*(geteqR(mm, '_mr_3_2_3_r5_a)+geteqR(mm, '_mr_3_2_3_r5_b)*x)^geteqR(mm, '_mr_3_2_3_r5_p)
+                       *(geteqR(mm, '_mr_3_2_3_r5_c)+geteqR(mm, '_mr_3_2_3_r5_d)*x)^geteqR(mm, '_mr_3_2_3_r5_q))^geteqR(mm, '_mr_3_2_3_r5_r)
+             - (b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x))))
+      else [],
+      check_bool("c3 e104 repl log-arg re-expands the stored arg",
+                 is(z # []) and is(part(z, 1) = 0)),
+      /* cross-rule rejections */
+      check_not("c3 3.2.2 r3 does not bind the 3.2.3 squared-log integrand",
+                %mr_rule_bindings(_mr_rule_3_2_2_r3, log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x)),
+      check_not("c3 3.2.1 r15 does not bind the two-head integrand",
+                %mr_rule_bindings(_mr_rule_3_2_1_r15, (a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x)),
+      check_not("c3 3.2.3 r5 does not bind the 3.2.1 ratio integrand",
+                %mr_rule_bindings(_mr_rule_3_2_3_r5, (A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x)),
+      /* the free-k distributed quotient (e226 shape) does not bind r5 */
+      check_not("c3 declines the free-k distributed quotient (e226 shape)",
+                %mr_rule_bindings(_mr_rule_3_2_2_r5, (a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^p, x)),
+      check_not("c3 r15 declines the numeric-k distributed quotient (r16's form)",
+                %mr_rule_bindings(_mr_rule_3_2_1_r15, (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x)),
+      /* answer level: e93 — the driver's numeric stage (two points,
+         resid < 1e-9) */
+      f : (A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2,
+      ans : rubi(f, x),
+      check_not("c3 e93 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      /* materialize the diff BEFORE the ev (the driver's measured quirk: ev
+         over a still-unevaluated diff(mr_r, x) substitutes x into the diff's
+         variable argument and errors) */
+      D : diff(ans, x) - f,
+      n1 : errcatch(float(ev(D, [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, g=1.7, A=0.6, B=1.4, x=0.35]))),
+      n2 : errcatch(float(ev(D, [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, g=1.7, A=0.6, B=1.4, x=0.65]))),
+      check_bool("c3 e93 self-diff numeric two-point (driver stage)",
+                 is(n1 # []) and is(n2 # [])
+                 and is(abs(part(n1, 1)) < 1e-9) and is(abs(part(n2, 1)) < 1e-9)),
+      /* answer level: e10 — closes at factor */
+      f : (a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))),
+      ans : rubi(f, x),
+      check_not("c3 e10 not a noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+       check_bool("c3 e10 self-diff (factor, the driver's first symbolic stage)",
+                  is(z # []) and is(part(z, 1) = 0)),
+       mr_rule_table : saved_table,
+       true
+     )$

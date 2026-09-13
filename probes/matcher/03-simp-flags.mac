@@ -1,0 +1,23 @@
+/* probes/matcher/03-simp-flags.mac -- which Maxima settings control the
+   simplifier rewrites that cost the round trip matches (02-FINDINGS G-5).
+   Each shape is parsed AND printed inside the setting's block, so the
+   simplification runs under that setting (parsing outside the block
+   simplifies with the defaults first -- the mistake this probe replaces).
+   Run:  maxima --very-quiet -b probes/matcher/03-simp-flags.mac 2>&1 \
+           | grep -E "^(SHAPE|  [a-z])|^%build_info" > probes/matcher/03-simp-flags.out
+   Settings looked up first: describe("radexpand"), describe("logexpand"). */
+display2d : false$
+build_info();
+mr_shapes : ["(b*x^2)^p", "(x^2)^p", "sqrt(x^2)", "(2*x)^m", "(d*x)^(-1/3)",
+             "(d*x)^m", "log(x^n)", "log(c*x^n)", "log(x^2)", "sec(%pi+x)",
+             "sin(-x)", "2*%i*x", "(a*b)^m", "(x^3)^(1/3)", "(-x)^m",
+             "sqrt(x)*sqrt(x)", "(e*x)^m*(a+b*x^2)^p"]$
+mr_try(s) := (
+  print("SHAPE", s),
+  block([r], r : parse_string(s), print("  default                          ", r)),
+  block([radexpand : false, r], r : parse_string(s), print("  radexpand:false                  ", r)),
+  block([domain : complex, r], r : parse_string(s), print("  domain:complex                   ", r)),
+  block([logexpand : false, r], r : parse_string(s), print("  logexpand:false                  ", r)),
+  block([radexpand : false, domain : complex, logexpand : false, r], r : parse_string(s),
+        print("  radexpand:false domain:complex logexpand:false ", r)))$
+for s in mr_shapes do mr_try(s)$

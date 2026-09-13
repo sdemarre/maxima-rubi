@@ -147,6 +147,10 @@ RENAME = {
     # class-3 deferred campaign C6b (3.5.m L46 FunctionOfLog catch-all):
     "FunctionOfLog": "%mr_functionOfLog",
     "NonsumQ": "%mr_nonsumQ",
+    # 9.1 as a generated source (matcher substrate spec 3.4): Identity[-1],
+    # Complex[Identity[0], a] (9.1.m L14/L15). Maxima's identity(x)
+    # returns x (describe("identity", exact), 2026-09-12).
+    "Identity": "identity",
     # Rubi's undocumented $UseGamma control global (absent from Rubi.m;
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):

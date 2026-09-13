@@ -56,6 +56,13 @@ check_not(test_name, actual) := block([v],
   true
 )$
 
+/* binds(mm, [name = value, ...]): mm is a binding list (not false) and
+   geteqR finds every name bound to its value — the idiom for
+   %mr_rule_bindings / %mr_rule_accept / %mr_matchQ_bindings results
+   (matcher substrate). */
+binds(mm, eqs) := listp(mm)
+  and every(lambda([q], is(geteqR(mm, lhs(q)) = rhs(q))), eqs)$
+
 test_smoke() := block([],
   print("--- smoke ---"),
   check("smoke equality", 1 + 1, 2),
@@ -74,6 +81,7 @@ run_all_tests() := block([],
   test_structural_predicates(),
     test_matchQ_predicates(),
     test_class2_marker_head(),
+    test_generated_matchq_shapes(),
      test_class3_headvar(),
      test_class3_b1_freeof(),
      test_class3_b2_linearQ(),
@@ -145,22 +153,51 @@ test_load_and_api() := block([r, saved_table],
 )$
 
 /* Non-vacuous dispatch regression test (guards the loop-level-return bug):
-   %mr_dispatch must return the FIRING rule's result, not false. Uses
-   controlled lambda rules so the result does not depend on any answer
-   coinciding with Maxima's own integrate. */
-test_dispatch() := block([saved_table],
+   %mr_dispatch_tree must return the FIRING rule's result, not false. Uses
+   controlled %mr_defrule records (synthetic cond/repl functions) so the
+   result does not depend on any answer coinciding with Maxima's own
+   integrate; test/matcher/test_mr_dispatch.mac covers the dispatcher's
+   outcomes in full. */
+t_disp_true(mm, x) := true$
+t_disp_false(mm, x) := false$
+t_disp_42(mm, x) := 42$
+t_disp_7(mm, x) := 7$
+t_disp_99(mm, x) := 99$
+t_disp_flags(mm, x) := sconcat(radexpand, " ", logexpand)$
+test_dispatch() := block([saved_table, pu, hf, h42, h7, h99, hfl],
   print("--- dispatch mechanism (non-vacuous) ---"),
+  pu : "(Int (Pattern |_t_u| (Blank)) (Pattern x (Blank Symbol)))",
+  hf : %mr_defrule("layerA", 1, pu, t_disp_true, t_disp_false),
+  h42 : %mr_defrule("layerA", 2, pu, t_disp_true, t_disp_42),
+  h7 : %mr_defrule("layerA", 3, pu, t_disp_true, t_disp_7),
   check("dispatch returns firing rule's result",
-        %mr_dispatch(x^2, x, [lambda([f, x], false), lambda([f, x], 42)], 1), 42),
+        %mr_dispatch_tree(x^2, x, [hf, h42], 1), 42),
   check("dispatch returns false when no rule fires",
-        %mr_dispatch(x^2, x, [lambda([f, x], false)], 1), false),
+        %mr_dispatch_tree(x^2, x, [hf], 1), false),
   check("dispatch: first firing rule wins (order)",
-        %mr_dispatch(x^2, x, [lambda([f, x], 42), lambda([f, x], false)], 1), 42),
+        %mr_dispatch_tree(x^2, x, [h42, h7], 1), 42),
   /* end-to-end: rubi() must return the firing rule's result, not the
      fall-through (integrate(x^7,x) = x^8/8, not 99) — save/restore the table */
+  h99 : %mr_defrule("layerA", 4,
+                    "(Int (Power (Pattern x (Blank)) 7) (Pattern x (Blank Symbol)))",
+                    t_disp_true, t_disp_99),
   saved_table : mr_rule_table,
-  mr_rule_table : [lambda([f, x], if f = x^7 then 99 else false)],
+  mr_rule_table : [h99],
   check("rubi uses the table (end-to-end, not fall-through)", rubi(x^7, x), 99),
+  /* mr_model_flags (spec 3.6): mr_top binds radexpand:false and
+     logexpand:false around the dispatch while the switch is true */
+  hfl : %mr_defrule("layerA", 5,
+                    "(Int (Power (Pattern x (Blank)) 7) (Pattern x (Blank Symbol)))",
+                    t_disp_true, t_disp_flags),
+  mr_rule_table : [hfl],
+  mr_model_flags : true,
+  check("mr_model_flags true: radexpand, logexpand false inside the dispatch",
+        rubi(x^7, x), "false false"),
+  mr_model_flags : false,
+  check("mr_model_flags false: Maxima defaults inside the dispatch",
+        rubi(x^7, x), "true true"),
+  mr_model_flags : true,
+  check("the flags are restored after mr_top", [radexpand, logexpand], [true, true]),
   mr_rule_table : saved_table,
   true
 )$
@@ -326,348 +363,288 @@ test_structural_predicates() := block([],
   true
  )$
 
-/* Task 7a cluster A3 — %mr_matchQ: the structural matcher for Rubi's
-   MatchQ (matchq is a NOUN in this build). Contract (generate_class1.py
-   _emit_matchq): 3-arg %mr_matchQ(u, pattern, cond), the pattern
-   UNQUOTED with fresh marker atoms _mr_<key>_r<n>mq<k>_<v> as wildcards
-   (detected by name — the generator mints exactly that shape); the
-   pattern may embed COMPUTED values (captures, %mr_expon results).
-   Semantics: structural match with flat partition matching on "*" and
-   "+" (a pattern factor absorbs a consecutive run of factors, possibly
-   empty — the empty run binds the group identity, 1 for "*", 0 for
-   "+"); a marker matches anything and binds; a literal atom must be
-   =-equal; a "^" pattern against a power-less expression takes the
-   exponent as 1 (Maxima drops ^1 — the .m optional r_. reading).
-   A re-occurring marker must bind consistently. DEVIATION (documented):
-   the empty-run binding and the flat partition order are the
-   operational reading of the .m MatchQ uses at the 17 class-1 call
-   sites; a lone power vs the Times-pattern corner (MonomialQ x^a) is
-   pinned by the monomialQ probes, not here. */
- test_matchQ_predicates() := block([],
+ /* %mr_matchQ (matcher substrate, spec section 3.4):
+    %mr_matchQ(u, "<pattern s-expression>", [<parts>], cond) matches u with
+    MR-MATCH. Each (MRArg k) in the pattern text is the k-th of the parts —
+    the pattern's pattern-free pieces (x, x^2, ...), evaluated at call time —
+    and cond is true or a lambda over the binding list, run on every complete
+    binding; %mr_matchQ_bindings returns the accepted binding list. The
+    patterns are the generated sites' shapes (1.1.2.10 x^m_.*u_., 1.2.2.7
+    (f_+g_.*x^2)^r_., 1.4.1 / 9.1 a_+b_.*v_); the expectations follow
+    MR-MATCH's Mathematica semantics (plan-2 pre-validation,
+    probe_rewrite.mac, 2026-09-13). */
+ test_matchQ_predicates() := block([P1, P2, Prb, intm, fr],
    print("--- matchQ (structural matcher) ---"),
-    /* marker test: MEMBERSHIP, not name-shape (see %mr_isMQMarker, maxima_rubi_utils.mac); unit markers register here */
-    %mr_register_markers([ _mr_1_1_2_10_r2mq1_m, _mr_9_r1mq1_m, _mr_9_r1mq1_u, _mr_9_r2mq1_m, _mr_9_r2mq1_u ]),
-    %mr_register_markers([ _mr_9_r3mq1_m, _mr_9_r3mq1_u, _mr_9_r4mq1_m, _mr_9_r4mq1_u, _mr_9_r5mq1_f, _mr_9_r5mq1_g, _mr_9_r5mq1_r ]),
-    %mr_register_markers([ _mr_9_r6mq1_f, _mr_9_r6mq1_g, _mr_9_r6mq1_r, _mr_9_r7mq1_f, _mr_9_r8mq1_a, _mr_9_r8mq1_b, _mr_9_r8mq1_v ]),
-    %mr_register_markers([ _mr_9_r9mq9_z, _mr_9_r12mq1_v, _mr_9_r13mq1_f, _mr_9_r13mq1_g, _mr_9_r20mq1_m ]),
-    check_bool("isMQMarker real rule-file marker",
-               %mr_isMQMarker(_mr_1_1_2_10_r2mq1_m)),
-   check_bool("isMQMarker unit-shape marker",
-              %mr_isMQMarker(_mr_9_r1mq1_m)),
-   check_not("isMQMarker capture (no mq)",
-             %mr_isMQMarker(_mr_9_r1_c)),
-   check_not("isMQMarker mq not digit-flanked (var named mq1)",
-             %mr_isMQMarker(_mr_9_r1_mq1)),
-   check_not("isMQMarker integration variable", %mr_isMQMarker(x)),
-   check_not("isMQMarker number", %mr_isMQMarker(5)),
-   /* x^m_*u_. at the 6 1.1.2.10/1.2.2.7 guard sites */
    /* binding-list lookup: found / absent (fails closed) */
-   check_bool("mk found", is(%mr_mk(_mr_9_r1mq1_m,
-                                    [_mr_9_r1mq1_m = 3]) = 3)),
+   check_bool("mk found", is(%mr_mk(_mr_9_r1mq1_m, [_mr_9_r1mq1_m = 3]) = 3)),
    check_not("mk absent", %mr_mk(_mr_9_r9mq9_z, [_mr_9_r1mq1_m = 3])),
-   /* the cond is a LAMBDA over the binding list (generator contract,
-      FIX E7 + A3): the marker-dependent parts must survive to the
-      binding (Maxima evaluates call args eagerly; this build's ev()
-      does not strip quotes) */
-    /* we bind m=1, u=x^2; Rubi's search order binds m=2, u=1 — the
-       cond (integerp m) holds under either reading */
-    check_bool("matchQ x^2 = x^m*u, m integer",
-               %mr_matchQ(x^2, x^_mr_9_r1mq1_m*_mr_9_r1mq1_u,
-                          lambda([%mr_mqb],
-                                 integerp(%mr_mk(_mr_9_r1mq1_m, %mr_mqb))))),
-    /* orderless: the stored-order search binds m=1, u=x^3*y first;
-       Rubi's order binds m=3, u=y — the cond holds under either
-       reading (what matters: the match SUCCEEDS where the old
-       stored-order partition missed it) */
-    check_bool("matchQ x^3*y = x^m*u, m integer",
-               %mr_matchQ(x^3*y, x^_mr_9_r2mq1_m*_mr_9_r2mq1_u,
-                          lambda([%mr_mqb],
-                                 integerp(%mr_mk(_mr_9_r2mq1_m, %mr_mqb))))),
-    /* the held cond evaluated on the binding (m := y, forced by the
-       bare-power pattern — no Optional-absent route) must be false;
-       note x^y vs x^m_*u_. matches in Rubi too (x^m_. absent, m=1,
-       u=x^y, IntegerQ[1]), so the u factor must NOT be there */
-    check_not("matchQ cond false after binding (m -> y)",
-              %mr_matchQ(x^y, x^_mr_9_r20mq1_m,
-                         lambda([%mr_mqb],
-                                integerp(%mr_mk(_mr_9_r20mq1_m, %mr_mqb))))),
-    /* orderless (commutative) match, Rubi-faithful: MatchQ[5 x^2,
-       x^m_. u_. /; IntegerQ[m]] is TRUE in Rubi (m=2, u=5), so the
-       1.1.2.10 guard blocks Pq = 5 x^2; the coefficient is
-       absorbed by u, it does not block the match */
-    check_bool("matchQ 5*x^2 = x^m*u (m=2, u=5)",
-               %mr_matchQ(5*x^2, x^_mr_9_r3mq1_m*_mr_9_r3mq1_u, true)),
-    /* x^2 + x^3 is one multiplicative factor: the whole sum goes to
-       u, m takes the Optional default 1 — Rubi's own binding
-       (m=1, u=x^2+x^3); the guard's Not[MatchQ[...]] blocks it */
-    check_bool("matchQ x^2+x^3 = x^m*u (m=1, u=x^2+x^3)",
-               %mr_matchQ(x^2 + x^3, x^_mr_9_r4mq1_m*_mr_9_r4mq1_u, true)),
-   /* (f_ + g_*x^2)^r_. at the 4 positive 1.2.2.7 sites: the power-less
-      base takes r = 1 (Maxima drops ^1 — the optional r_. reading) */
+   P1 : "(Times (Optional (Pattern |_mr_9_r1mq1_u| (Blank))) (Power (MRArg 1) (Optional (Pattern |_mr_9_r1mq1_m| (Blank)))))",
+   intm : lambda([%mr_mqb], integerp(%mr_mk(_mr_9_r1mq1_m, %mr_mqb))),
+   check_bool("matchQ x^2 = x^m*u, m integer", %mr_matchQ(x^2, P1, [x], intm)),
+   check_bool("matchQ x^2 binds m = 2, u = 1",
+              binds(%mr_matchQ_bindings(x^2, P1, [x], intm),
+                    ['_mr_9_r1mq1_m = 2, '_mr_9_r1mq1_u = 1])),
+   check_bool("matchQ x^3*y = x^m*u, m integer", %mr_matchQ(x^3*y, P1, [x], intm)),
+   check_bool("matchQ x^3*y binds m = 3, u = y",
+              binds(%mr_matchQ_bindings(x^3*y, P1, [x], intm),
+                    ['_mr_9_r1mq1_m = 3, '_mr_9_r1mq1_u = y])),
+   /* the bare-power pattern forces m := y, so the cond is false */
+   check_not("matchQ cond false after binding (m -> y)",
+             %mr_matchQ(x^y, "(Power (MRArg 1) (Pattern |_mr_9_r1mq1_m| (Blank)))", [x], intm)),
+   /* MatchQ[5 x^2, x^m_. u_. /; IntegerQ[m]] is True (m = 2, u = 5): the
+      coefficient is absorbed by u, so the 1.1.2.10 guard blocks Pq = 5 x^2 */
+   check_bool("matchQ 5*x^2 = x^m*u (m=2, u=5)",
+              binds(%mr_matchQ_bindings(5*x^2, P1, [x], true),
+                    ['_mr_9_r1mq1_m = 2, '_mr_9_r1mq1_u = 5])),
+   /* x^2 + x^3 is a Plus: with u at its default x^m_. must match the whole
+      sum, and with m at its default x must — neither does (the defmatch-era
+      pin u = x^2 + x^3, m = 1 was not Mathematica's reading) */
+   check_not("matchQ x^2+x^3 vs x^m*u is false", %mr_matchQ(x^2 + x^3, P1, [x], true)),
+   P2 : "(Power (Plus (Pattern |_mr_9_r5mq1_f| (Blank)) (Times (Optional (Pattern |_mr_9_r5mq1_g| (Blank))) (MRArg 1))) (Optional (Pattern |_mr_9_r5mq1_r| (Blank))))",
+   fr : lambda([%mr_mqb], freeof(x, %mr_mk(_mr_9_r5mq1_f, %mr_mqb))
+                          and freeof(x, %mr_mk(_mr_9_r5mq1_g, %mr_mqb))
+                          and freeof(x, %mr_mk(_mr_9_r5mq1_r, %mr_mqb))),
+   /* (f_ + g_.*x^2)^r_. at the 1.2.2.7 sites: the power-less base takes r = 1 */
    check_bool("matchQ 3+5x^2 = (f+g x^2)^r, freeofs (r=1)",
-              %mr_matchQ(3 + 5*x^2,
-                         (_mr_9_r5mq1_f + _mr_9_r5mq1_g*x^2)^_mr_9_r5mq1_r,
-                         lambda([%mr_mqb],
-                                freeof(x, %mr_mk(_mr_9_r5mq1_f, %mr_mqb))
-                                and freeof(x, %mr_mk(_mr_9_r5mq1_g, %mr_mqb))
-                                and freeof(x, %mr_mk(_mr_9_r5mq1_r, %mr_mqb))))),
-   check_not("matchQ trinomial vs (f+g x^2)^r",
-             %mr_matchQ(3 + 5*x^2 + 7*x^4,
-                        (_mr_9_r6mq1_f + _mr_9_r6mq1_g*x^2)^_mr_9_r6mq1_r,
-                        true)),
-   /* re-occurring marker binds consistently (f + f*x^2 vs 3 + 5x^2:
-      f would need to be 3 and 5) */
-   check_not("matchQ consistent re-binding",
-             %mr_matchQ(3 + 5*x^2, _mr_9_r7mq1_f + _mr_9_r7mq1_f*x^2, true)),
-   /* a_+b_*v_ at the 1.3.4 site: the marker binds a whole sub-expression */
-   check_bool("matchQ c+d*y = a+b*v (v=y, freeofs)",
-              %mr_matchQ(c + d*y, _mr_9_r8mq1_a + _mr_9_r8mq1_b*_mr_9_r8mq1_v,
-                         lambda([%mr_mqb],
-                                freeof(x, %mr_mk(_mr_9_r8mq1_a, %mr_mqb))
-                                and freeof(x, %mr_mk(_mr_9_r8mq1_b, %mr_mqb))
-                                and freeof(x, %mr_mk(_mr_9_r8mq1_v, %mr_mqb))))),
-   /* literals: the integration variable and numbers are not markers */
-   check_bool("matchQ x = x", %mr_matchQ(x, x, true)),
-   check_not("matchQ y = x", %mr_matchQ(y, x, true)),
-   check_bool("matchQ 2 = 2", %mr_matchQ(2, 2, true)),
-   check_not("matchQ 3 = 2", %mr_matchQ(3, 2, true)),
-   /* a marker cannot be hidden: an unbound-elsewhere literal symbol in
-      the pattern is a literal, not a wildcard */
-   check_not("matchQ literal symbol is not a wildcard",
-             %mr_matchQ(y, z, true)),
+              %mr_matchQ(3 + 5*x^2, P2, [x^2], fr)),
+   check_not("matchQ trinomial vs (f+g x^2)^r, freeofs",
+             %mr_matchQ(3 + 5*x^2 + 7*x^4, P2, [x^2], fr)),
+   /* Plus is Flat: without the FreeQ cond f_ takes the run 3 + 7*x^4 */
+   check_bool("matchQ trinomial vs (f+g x^2)^r, no cond (f takes a run)",
+              %mr_matchQ(3 + 5*x^2 + 7*x^4, P2, [x^2], true)),
+   /* a re-occurring pattern variable binds consistently */
+   Prb : "(Plus (Pattern |_mr_9_r7mq1_f| (Blank)) (Times (Pattern |_mr_9_r7mq1_f| (Blank)) (MRArg 1)))",
+   check_not("matchQ consistent re-binding", %mr_matchQ(3 + 5*x^2, Prb, [x^2], true)),
+   check_bool("matchQ consistent re-binding (equal values)",
+              %mr_matchQ(3 + 3*x^2, Prb, [x^2], true)),
+   /* a_+b_.*v_ at the 1.4.1 / 9.1 sites: v binds a whole sub-expression */
+   check_bool("matchQ c+d*y = a+b*v (freeofs)",
+              %mr_matchQ(c + d*y,
+                         "(Plus (Pattern |_mr_9_r8mq1_a| (Blank)) (Times (Optional (Pattern |_mr_9_r8mq1_b| (Blank))) (Pattern |_mr_9_r8mq1_v| (Blank))))",
+                         [],
+                         lambda([%mr_mqb], freeof(x, %mr_mk(_mr_9_r8mq1_a, %mr_mqb))
+                                           and freeof(x, %mr_mk(_mr_9_r8mq1_b, %mr_mqb))
+                                           and freeof(x, %mr_mk(_mr_9_r8mq1_v, %mr_mqb))))),
+   /* literals: a part and a number match only themselves; a symbol written
+      in the pattern text is a literal, not a wildcard */
+   check_bool("matchQ x = x", %mr_matchQ(x, "(MRArg 1)", [x], true)),
+   check_not("matchQ y = x", %mr_matchQ(y, "(MRArg 1)", [x], true)),
+   check_bool("matchQ 2 = 2", %mr_matchQ(2, "2", [], true)),
+   check_not("matchQ 3 = 2", %mr_matchQ(3, "2", [], true)),
+   check_not("matchQ literal symbol is not a wildcard", %mr_matchQ(y, "z", [], true)),
    /* power base binds a whole sub-expression */
    check_bool("matchQ (a+b x)^2 = v^2",
-              %mr_matchQ((a + b*x)^2, _mr_9_r12mq1_v^2, true)),
-     check_not("matchQ 3+5x^2 = (f+g x^2)^2 (literal exponent 2)",
-               %mr_matchQ(3 + 5*x^2,
-                          (_mr_9_r13mq1_f + _mr_9_r13mq1_g*x^2)^2, true)),
-     true
-    )$
+              %mr_matchQ((a + b*x)^2, "(Power (Pattern |_mr_9_r12mq1_v| (Blank)) 2)", [], true)),
+   check_not("matchQ 3+5x^2 = (f+g x^2)^2 (literal exponent 2)",
+             %mr_matchQ(3 + 5*x^2,
+                        "(Power (Plus (Pattern |_mr_9_r13mq1_f| (Blank)) (Times (Optional (Pattern |_mr_9_r13mq1_g| (Blank))) (MRArg 1))) 2)",
+                        [x^2], true)),
+   true
+  )$
 
-  /* Milestone-2 Task 3 — %mr_matchQ's marker-as-head case (r96: the
-     first ported rule whose MatchQ pattern carries a marker in HEAD
-     position — F_[v_], the function-valued pattern variable). This
-     build's defmatch REJECTS pattern variables in head position
-     (measured 2026-08-28, 5.50.0/SBCL: "defmatch: some pattern
-     variables are not atoms"), so the case lives in the custom
-     matcher (maxima_rubi_utils.mac), not Maxima's. Semantics: a
-     marker head binds ANY head of a non-atomic E, the stored op must
-     be atomic, strict arity, arguments ORDERED (no permutation —
-     function-call arguments are ordered, unlike the "*" / "+" flat
-     match). The bound value is the op atom; a cond re-applies it as
-     <atom>(<arg>) — probed 2026-08-28 for known (asin) and unknown
-     (noun) function ops. Checks 1-4 use synthetic registered markers
-     (the membership test is registry-based — unregistered names fail
-     closed); the final checks load the generated 2.3 file (its
-     trailing %mr_register_markers line registers the r96 markers)
-     and evaluate the EMITTED second MatchQ of r96 verbatim. */
-  test_class2_marker_head() := block([],
+  /* Milestone-2 Task 3 — %mr_matchQ's function-head case (2.3 r96: the
+     first ported rule whose MatchQ pattern carries a pattern variable in
+     HEAD position — F_[v_]). MR-MATCH binds a head pattern variable to the
+     head of a non-atomic target (strict arity, ordered arguments); the bound
+     value is the Maxima operator symbol the typed name reads as (asin reads
+     as the noun %asin), which a cond re-applies as <symbol>(<arg>). The
+     final checks load the generated 2.3 file and evaluate r96's emitted
+     second MatchQ verbatim. */
+  test_class2_marker_head() := block([P, P2, mh],
     print("--- matchQ marker-as-head (class 2 r96) ---"),
-    %mr_register_markers([ _mF, _mV, _mW ]),
-    check_bool("marker head binds the inverse (asin)",
-               %mr_matchQ(asin(x), _mF(_mV),
-                          lambda([%mr_mqb],
-                                 %mr_inverseFunctionQ(%mr_mk(_mF, %mr_mqb)
-                                    (%mr_mk(_mV, %mr_mqb)))))),
-    check_not("marker head: non-inverse fails closed (sin)",
-              %mr_matchQ(sin(x), _mF(_mV),
-                         lambda([%mr_mqb],
-                                %mr_inverseFunctionQ(%mr_mk(_mF, %mr_mqb)
-                                   (%mr_mk(_mV, %mr_mqb)))))),
-    check_not("marker head: 2-arg + target (strict arity)",
-              %mr_matchQ(x + 1, _mF(_mV), true)),
-    check_not("marker head: atom target",
-              %mr_matchQ(x, _mF(_mV), true)),
+    P : "((Pattern |_mF| (Blank)) (Pattern |_mV| (Blank)))",
+    P2 : "(Times ((Pattern |_mF| (Blank)) (Pattern |_mV| (Blank))) ((Pattern |_mF| (Blank)) (Pattern |_mW| (Blank))))",
+    mh : lambda([%mr_mqb], %mr_inverseFunctionQ(%mr_mk(_mF, %mr_mqb)(%mr_mk(_mV, %mr_mqb)))),
+    check_bool("marker head binds the inverse (asin)", %mr_matchQ(asin(x), P, [], mh)),
+    check_not("marker head: non-inverse fails closed (sin)", %mr_matchQ(sin(x), P, [], mh)),
+    check_not("marker head: 2-arg + target (strict arity)", %mr_matchQ(x + 1, P, [], true)),
+    check_not("marker head: atom target", %mr_matchQ(x, P, [], true)),
     check_not("marker head: consistent re-binding (asin*sin)",
-              %mr_matchQ(asin(x)*sin(x), _mF(_mV)*_mF(_mW), true)),
+              %mr_matchQ(asin(x)*sin(x), P2, [], true)),
+    check_bool("marker head: consistent re-binding (asin*asin)",
+               %mr_matchQ(asin(x)*asin(y), P2, [], true)),
     %mr_load_sibling("rules/class2/2_3.mac", 'mr_witness_2_3),
     check_bool("2.3 witness survived", is(mr_witness_2_3() = true)),
     check_bool("r96 emitted MatchQ: asin head matches",
-               %mr_matchQ(%e^(c*(a+b*x))*asin(x),
-                          %e^(_mr_2_3_r96mq2_c*(_mr_2_3_r96mq2_a + _mr_2_3_r96mq2_b*x))*_mr_2_3_r96mq2_F(_mr_2_3_r96mq2_v),
-                          lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
+               %mr_matchQ(%e^(c*(a+b*x))*asin(x), "(Times (Power E (Times (Optional (Pattern |_mr_2_3_r96mq2_c| (Blank))) (Plus (Optional (Pattern |_mr_2_3_r96mq2_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_2_3_r96mq2_b| (Blank))))))) ((Pattern |_mr_2_3_r96mq2_F| (Blank)) (Pattern |_mr_2_3_r96mq2_v| (Blank))))", [x], lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
     check_not("r96 emitted MatchQ: sin head fails closed",
-              %mr_matchQ(%e^(c*(a+b*x))*sin(x),
-                         %e^(_mr_2_3_r96mq2_c*(_mr_2_3_r96mq2_a + _mr_2_3_r96mq2_b*x))*_mr_2_3_r96mq2_F(_mr_2_3_r96mq2_v),
-                          lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
-     true
-    )$
+              %mr_matchQ(%e^(c*(a+b*x))*sin(x), "(Times (Power E (Times (Optional (Pattern |_mr_2_3_r96mq2_c| (Blank))) (Plus (Optional (Pattern |_mr_2_3_r96mq2_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_2_3_r96mq2_b| (Blank))))))) ((Pattern |_mr_2_3_r96mq2_F| (Blank)) (Pattern |_mr_2_3_r96mq2_v| (Blank))))", [x], lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
+    true
+   )$
 
-  /* Task 3 — the head-position capture matcher %mr_headvar_match
-     (class 3: 3.1.5 r62-63, 3.3 r62, 3.4 r41). The .m pattern
-     F_[d_*(e_+f_*x_)] cannot go through defmatch in this build
-     (head-position pattern variables are rejected — the class-2 r96
-     finding), so the generator emits a structural rule that calls
-      %mr_headvar_match with a slot spec. The class-3 corpus carries
-      twelve linear-argument inverse-function integrands (3.1.5
-      e186-e197, the (d+e x^2) F(a x)^m log(c x^n) shape —
-      probes/corpus/05-class3-inverse-function-exposure, 2026-08-30),
-      but every one sits at the e:=0 identity-default corner the
-      headvar matcher declines by recorded design (finding 2; the
-      uplift record §1), so the package answers the m=1 rows via the
-      3.5 catch-all, never via these rules — the matcher semantics
-      are pinned here on synthetic integrands. The listp-guarded
-      positive checks keep a
-     RED run (helper not yet defined — the call stays a noun) from
-     dying inside geteqR. */
+  /* The generated MatchQ sites' pattern shapes (matcher substrate spec
+     section 3.4: each distinct pattern the MatchQ sites use gets a unit
+     test). The 24 generated sites carry 13 distinct pattern texts;
+     test_matchQ_predicates and test_class2_marker_head pin four of them
+     (x^m_.*u_., (f_+g_.*x^2)^r_., a_+b_.*v_ and the 2.3 r96 head F_[v_]),
+     this section pins the other nine — one positive and one negative each,
+     on the emitted pattern text with generic marker names and the site's
+     cond where it carries one (plan-2 pre-validation, probe_shapes.mac and
+     probe_s10.mac, 2026-09-13). Maxima distributes a power over a product
+     even for a symbolic exponent ((2*x^3)^m stores as 2^m*x^(3*m), (3*x)^n
+     as 3^n*x^n), so a pattern holding a power of a product is pinned on a
+     nested power instead. */
+  test_generated_matchq_shapes() := block([P],
+    print("--- generated MatchQ shapes (spec 3.4) ---"),
+    /* 1.1.1.7 r1, 1.4.1 r16: Qx_.*(c_+d_.*x^m_)^q_ */
+    P : "(Times (Optional (Pattern |_s1_Qx| (Blank))) (Power (Plus (Pattern |_s1_c| (Blank)) (Times (Optional (Pattern |_s1_d| (Blank))) (Power (MRArg 1) (Pattern |_s1_m| (Blank))))) (Pattern |_s1_q| (Blank))))",
+    check_bool("shape Qx*(c+d*x^m)^q on (2+3x^2)^3: Qx = 1, c = 2, d = 3, m = 2, q = 3",
+               binds(%mr_matchQ_bindings((2+3*x^2)^3, P, [x], true),
+                     ['_s1_Qx = 1, '_s1_c = 2, '_s1_d = 3, '_s1_m = 2, '_s1_q = 3])),
+    check_bool("shape Qx*(c+d*x^m)^q on x*(2+3x^2)^3: Qx = x",
+               binds(%mr_matchQ_bindings(x*(2+3*x^2)^3, P, [x], true), ['_s1_Qx = x])),
+    check_not("shape Qx*(c+d*x^m)^q: a bare x term has no x^m_ (m_ is not Optional)",
+              %mr_matchQ((2+3*x)^3, P, [x], true)),
+    /* 1.4.1 r4 / r68: a_.*v_^k, k the computed Expon[Px, x] part */
+    P : "(Times (Optional (Pattern |_s4_a| (Blank))) (Power (Pattern |_s4_v| (Blank)) (MRArg 1)))",
+    check_bool("shape a*v^k, k = 3, on 5*(1+2x)^3: a = 5, v = 1+2x",
+               binds(%mr_matchQ_bindings(5*(1+2*x)^3, P, [3], true), ['_s4_a = 5, '_s4_v = 1+2*x])),
+    check_not("shape a*v^k, k = 3, on 5*(1+2x)^2", %mr_matchQ(5*(1+2*x)^2, P, [3], true)),
+    /* 1.4.2 r17, first site: (d_.+x*e_.)^m*(f_.+x*g_.)^2*(a_.+x*b_.+c_.*x^2)^t_. */
+    P : "(Times (Power (Plus (Optional (Pattern |_s7_d| (Blank))) (Times (MRArg 1) (Optional (Pattern |_s7_e| (Blank))))) (MRArg 2)) (Power (Plus (Optional (Pattern |_s7_f| (Blank))) (Times (MRArg 3) (Optional (Pattern |_s7_g| (Blank))))) 2) (Power (Plus (Optional (Pattern |_s7_a| (Blank))) (Times (MRArg 4) (Optional (Pattern |_s7_b| (Blank)))) (Times (Optional (Pattern |_s7_c| (Blank))) (MRArg 5))) (Optional (Pattern |_s7_t| (Blank)))))",
+    check_bool("shape (d+e x)^m (f+g x)^2 (a+b x+c x^2)^t: d..g, a..c, t = tt",
+               binds(%mr_matchQ_bindings((1+2*x)^mm*(3+4*x)^2*(5+6*x+7*x^2)^tt, P, [x, mm, x, x, x^2], true),
+                     ['_s7_d = 1, '_s7_e = 2, '_s7_f = 3, '_s7_g = 4, '_s7_a = 5, '_s7_b = 6,
+                      '_s7_c = 7, '_s7_t = tt])),
+    check_not("shape (d+e x)^m (f+g x)^2 (…)^t: the literal exponent 2 does not take 3",
+              %mr_matchQ((1+2*x)^mm*(3+4*x)^3*(5+6*x+7*x^2)^tt, P, [x, mm, x, x, x^2], true)),
+    check_bool("shape (d+e x)^m (f+g x)^2 (…)^t: m = 1 folds the first power",
+               %mr_matchQ((1+2*x)*(3+4*x)^2*(5+6*x+7*x^2)^tt, P, [x, 1, x, x, x^2], true)),
+    /* 1.4.2 r17, second site: (a_.+c_.*x^2)^t_.*(d_.+x*e_.)^m*(f_.+x*g_.)^2, FreeQ cond */
+    P : "(Times (Power (Plus (Optional (Pattern |_s8_a| (Blank))) (Times (Optional (Pattern |_s8_c| (Blank))) (MRArg 1))) (Optional (Pattern |_s8_t| (Blank)))) (Power (Plus (Optional (Pattern |_s8_d| (Blank))) (Times (MRArg 2) (Optional (Pattern |_s8_e| (Blank))))) (MRArg 3)) (Power (Plus (Optional (Pattern |_s8_f| (Blank))) (Times (MRArg 4) (Optional (Pattern |_s8_g| (Blank))))) 2))",
+    check_bool("shape (a+c x^2)^t (d+e x)^m (f+g x)^2 with FreeQ: a = 5, c = 7, t = tt",
+               binds(%mr_matchQ_bindings((5+7*x^2)^tt*(1+2*x)^mm*(3+4*x)^2, P, [x^2, x, mm, x],
+                                         lambda([%mr_mqb], freeof(x, %mr_mk(_s8_a, %mr_mqb))
+                                                           and freeof(x, %mr_mk(_s8_c, %mr_mqb))
+                                                           and freeof(x, %mr_mk(_s8_t, %mr_mqb)))),
+                     ['_s8_a = 5, '_s8_c = 7, '_s8_t = tt, '_s8_d = 1, '_s8_e = 2, '_s8_f = 3, '_s8_g = 4])),
+    check_not("shape (a+c x^2)^t …: a trinomial base fails the FreeQ cond",
+              %mr_matchQ((5+6*x+7*x^2)^tt*(1+2*x)^mm*(3+4*x)^2, P, [x^2, x, mm, x],
+                         lambda([%mr_mqb], freeof(x, %mr_mk(_s8_a, %mr_mqb))
+                                           and freeof(x, %mr_mk(_s8_c, %mr_mqb))))),
+    check_bool("shape (a+c x^2)^t …: without the cond a_ takes the run 5+6x (Plus is Flat)",
+               %mr_matchQ((5+6*x+7*x^2)^tt*(1+2*x)^mm*(3+4*x)^2, P, [x^2, x, mm, x], true)),
+    /* 9.1 r12: b_*v_ /; FreeQ[b, x] */
+    P : "(Times (Pattern |_s9_b| (Blank)) (Pattern |_s9_v| (Blank)))",
+    check_bool("shape b*v on 3*sin(x): b = 3, v = sin(x)",
+               binds(%mr_matchQ_bindings(3*sin(x), P, [], lambda([%mr_mqb], freeof(x, %mr_mk(_s9_b, %mr_mqb)))),
+                     ['_s9_b = 3, '_s9_v = sin(x)])),
+    check_not("shape b*v on sin(x): no product", %mr_matchQ(sin(x), P, [], true)),
+    check_not("shape b*v /; FreeQ[b, x] on x*sin(x)",
+              %mr_matchQ(x*sin(x), P, [], lambda([%mr_mqb], freeof(x, %mr_mk(_s9_b, %mr_mqb))))),
+    /* 2.3 r96, first site: w_*(a_.*v_^n_)^m_ */
+    P : "(Times (Pattern |_s10_w| (Blank)) (Power (Times (Optional (Pattern |_s10_a| (Blank))) (Power (Pattern |_s10_v| (Blank)) (Pattern |_s10_n| (Blank)))) (Pattern |_s10_m| (Blank))))",
+    check_bool("shape w*(a*v^n)^m on sin(x)*((1+x)^n)^mm: w = sin(x), a = 1, v = 1+x",
+               binds(%mr_matchQ_bindings(sin(x)*((1+x)^n)^mm, P, [], true),
+                     ['_s10_w = sin(x), '_s10_a = 1, '_s10_v = 1+x, '_s10_n = n, '_s10_m = mm])),
+    check_not("shape w*(a*v^n)^m on sin(x)*(2+x^3)^mm: a sum is no a*v^n",
+              %mr_matchQ(sin(x)*(2+x^3)^mm, P, [], true)),
+    /* 3.2.3 r16: u_.*(a+b x)^m_.*(c+d x)^n_. /; IntegersQ[m, n] (outer captures as parts) */
+    P : "(Times (Optional (Pattern |_s12_u| (Blank))) (Power (MRArg 1) (Optional (Pattern |_s12_m| (Blank)))) (Power (MRArg 2) (Optional (Pattern |_s12_n| (Blank)))))",
+    check_bool("shape u*(a+b x)^m*(c+d x)^n on k*(a+b x)^2*(c+d x)^3: u = k, m = 2, n = 3",
+               binds(%mr_matchQ_bindings(k*(a+b*x)^2*(c+d*x)^3, P, [a+b*x, c+d*x],
+                                         lambda([%mr_mqb], %mr_integersQ([%mr_mk(_s12_m, %mr_mqb),
+                                                                          %mr_mk(_s12_n, %mr_mqb)]))),
+                     ['_s12_u = k, '_s12_m = 2, '_s12_n = 3])),
+    check_not("shape u*(a+b x)^m*(c+d x)^n /; IntegersQ: m = 1/2 fails",
+              %mr_matchQ(k*sqrt(a+b*x)*(c+d*x)^3, P, [a+b*x, c+d*x],
+                         lambda([%mr_mqb], %mr_integersQ([%mr_mk(_s12_m, %mr_mqb), %mr_mk(_s12_n, %mr_mqb)])))),
+    /* 3.3 r59: e_.*(f_+x*g_.) /; FreeQ[{e, f, g}, x] */
+    P : "(Times (Optional (Pattern |_s13_e| (Blank))) (Plus (Pattern |_s13_f| (Blank)) (Times (MRArg 1) (Optional (Pattern |_s13_g| (Blank))))))",
+    check_bool("shape e*(f+g x) on 3*(4+5x): e = 3, f = 4, g = 5",
+               binds(%mr_matchQ_bindings(3*(4+5*x), P, [x], true), ['_s13_e = 3, '_s13_f = 4, '_s13_g = 5])),
+    check_not("shape e*(f+g x) on 3*(4+5x^2)", %mr_matchQ(3*(4+5*x^2), P, [x], true)),
+    /* 3.5 r20: (x*g_.)^m_. /; FreeQ[{g, m}, x] */
+    P : "(Power (Times (MRArg 1) (Optional (Pattern |_s14_g| (Blank)))) (Optional (Pattern |_s14_m| (Blank))))",
+    check_bool("shape (g x)^m on 3*x: g = 3, m = 1",
+               binds(%mr_matchQ_bindings(3*x, P, [x], true), ['_s14_g = 3, '_s14_m = 1])),
+    check_bool("shape (g x)^m on x^2: g = 1, m = 2",
+               binds(%mr_matchQ_bindings(x^2, P, [x], true), ['_s14_g = 1, '_s14_m = 2])),
+    check_not("shape (g x)^m on 3*x^2", %mr_matchQ(3*x^2, P, [x], true)),
+    true
+  )$
+
+  /* Task 3 — the function-head capture rules (class 3: 3.1.5 r58/r59,
+     3.3 r58, 3.4 r37 — Px_. F_[d_.*(e_.+f_.*x_)]^m_. (a_.+b_.*Log[...])
+     with MemberQ[{ArcSin, ...}, F]). MR-MATCH binds the head pattern
+     variable F to the Maxima operator symbol (asin reads as %asin) and the
+     cond's %mr_memberQ compares it with the literal list. The class-3 corpus
+     carries twelve linear-argument inverse-function integrands (3.1.5
+     e186-e197, probes/corpus/05-class3-inverse-function-exposure); the
+     semantics are pinned here on synthetic integrands, through
+     %mr_rule_accept (pattern + cond) and %mr_rule_bindings (pattern only).
+     Bindings measured in the plan-2 pre-validation (probe_layerA_bind2.mac,
+     probe_rewrite.mac, 2026-09-13). */
   test_class3_headvar() := block([mm],
     print("--- head-position capture matcher (class 3 F_[...] rules) ---"),
-    /* 3.1.5 r62 shape: px slot, lin F-arg, free m > 1, px log-arg,
-       the {ArcSin,ArcCos,ArcSinh,ArcCosh} list */
-    mm : %mr_headvar_match(x^2*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
-          [["px", 'hvpx1],
-           ["f", 'hvF1, ["lin", 'hvd1, 'hve1, 'hvfx1], ["free", 'hvm1]],
-           ["log", 'hva1, 'hvb1, ["px", 'hvc1, 'hvn1]]],
-          ['asin, 'acos, 'asinh, 'acosh]),
-    check_bool("hv r62-shape matches (m = 3)", listp(mm) and length(mm) > 0),
-    check_bool("hv r62 binds the head symbol",
-               listp(mm) and is(geteqR(mm, 'hvF1) = 'asin)),
-    check_bool("hv r62 binds d", listp(mm) and is(geteqR(mm, 'hvd1) = 2)),
-    check_bool("hv r62 binds e", listp(mm) and is(geteqR(mm, 'hve1) = 3)),
-    check_bool("hv r62 binds the x-coef", listp(mm) and is(geteqR(mm, 'hvfx1) = 4)),
-    check_bool("hv r62 binds m", listp(mm) and is(geteqR(mm, 'hvm1) = 3)),
-    check_bool("hv r62 binds px (the leftover product)",
-               listp(mm) and is(geteqR(mm, 'hvpx1) = x^2)),
-    check_bool("hv r62 binds a", listp(mm) and is(geteqR(mm, 'hva1) = 5)),
-    check_bool("hv r62 binds b", listp(mm) and is(geteqR(mm, 'hvb1) = 6)),
-    check_bool("hv r62 binds c", listp(mm) and is(geteqR(mm, 'hvc1) = 7)),
-    check_bool("hv r62 binds n", listp(mm) and is(geteqR(mm, 'hvn1) = 2)),
-    /* 3.1.5 r63 shape: bare F factor (m = 1), the
-       {ArcTan,ArcCot,ArcTanh,ArcCoth} list */
-    mm : %mr_headvar_match(x*acot(2*(3+4*x))*(5+6*log(7*x^2)), x,
-          [["px", 'hvpx2],
-           ["f", 'hvF2, ["lin", 'hvd2, 'hve2, 'hvfx2], ["bare"]],
-           ["log", 'hva2, 'hvb2, ["px", 'hvc2, 'hvn2]]],
-          ['atan, 'acot, 'atanh, 'acoth]),
-    check_bool("hv r63-shape matches (bare factor, m = 1)",
-               listp(mm) and length(mm) > 0),
-    check_bool("hv r63 binds the head", listp(mm) and is(geteqR(mm, 'hvF2) = 'acot)),
-    /* 3.3 shape: lpow log-arg c*(d+e*x)^n, the eight-head list */
-    mm : %mr_headvar_match(x^2*atan(2*(3+4*x))*(5+6*log(7*(8+9*x)^3)), x,
-          [["px", 'hvpx3],
-           ["f", 'hvF3, ["lin", 'hvd3, 'hve3, 'hvfx3], ["bare"]],
-           ["log", 'hva3, 'hvb3, ["lpow", 'hvc3, 'hvd3b, 'hve3b, 'hvn3]]],
-          ['asin, 'acos, 'atan, 'acot, 'asinh, 'acosh, 'atanh, 'acoth]),
-    check_bool("hv 3.3-shape matches", listp(mm) and length(mm) > 0),
-    check_bool("hv 3.3 binds the head", listp(mm) and is(geteqR(mm, 'hvF3) = 'atan)),
-    check_bool("hv 3.3 binds the log-arg d",
-               listp(mm) and is(geteqR(mm, 'hvd3b) = 8)),
-    check_bool("hv 3.3 binds the log-arg e",
-               listp(mm) and is(geteqR(mm, 'hve3b) = 9)),
-    check_bool("hv 3.3 binds the log-arg n",
-               listp(mm) and is(geteqR(mm, 'hvn3) = 3)),
-    /* 3.4 shape: mon F-arg f*x, free m, bpow log-arg c*(d+e*x^n)^p,
-       NO px slot */
-    mm : %mr_headvar_match(asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
-          [["f", 'hvF4, ["mon", 'hvfx4], ["free", 'hvm4]],
-           ["log", 'hva4, 'hvb4, ["bpow", 'hvc4, 'hvd4, 'hve4, 'hvn4, 'hvp4]]],
-          ['asin, 'acos, 'asinh, 'acosh]),
-    check_bool("hv 3.4-shape matches", listp(mm) and length(mm) > 0),
-    check_bool("hv 3.4 binds the mon coef", listp(mm) and is(geteqR(mm, 'hvfx4) = 5)),
-    check_bool("hv 3.4 binds m", listp(mm) and is(geteqR(mm, 'hvm4) = 2)),
-    check_bool("hv 3.4 binds the bpow n", listp(mm) and is(geteqR(mm, 'hvn4) = 3)),
-    check_bool("hv 3.4 binds the bpow p", listp(mm) and is(geteqR(mm, 'hvp4) = 4)),
-    /* the lifted-sign fold: the leading minus is a top-level "-" node
-       in this build (measured 2026-08-29) and lands in px */
-    mm : %mr_headvar_match(-x*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
-          [["px", 'hvpx5],
-           ["f", 'hvF5, ["lin", 'hvd5, 'hve5, 'hvfx5], ["free", 'hvm5]],
-           ["log", 'hva5, 'hvb5, ["px", 'hvc5, 'hvn5]]],
-          ['asin, 'acos, 'asinh, 'acosh]),
-    check_bool("hv binds px with the folded sign",
-               listp(mm) and is(geteqR(mm, 'hvpx5) = -x)),
-    /* the bare log factor with a written constant: times is Flat, so
-       x*f*(6*log(g)) stores the 6 as its own factor (measured
-       2026-08-29) — the MA binding is a = 0, b = 1 and the constant
-       rides in px */
-    mm : %mr_headvar_match(x*asin(2*(3+4*x))^3*(6*log(7*x^2)), x,
-          [["px", 'hvpx6],
-           ["f", 'hvF6, ["lin", 'hvd6, 'hve6, 'hvfx6], ["free", 'hvm6]],
-           ["log", 'hva6, 'hvb6, ["px", 'hvc6, 'hvn6]]],
-          ['asin, 'acos, 'asinh, 'acosh]),
-    check_bool("hv bare log factor binds a = 0",
-               listp(mm) and is(geteqR(mm, 'hva6) = 0)),
-    check_bool("hv bare log factor binds b = 1 (the MA default)",
-               listp(mm) and is(geteqR(mm, 'hvb6) = 1)),
-    check_bool("hv bare log factor: the constant rides in px",
-               listp(mm) and is(geteqR(mm, 'hvpx6) = 6*x)),
-    /* negatives: each declines, none may misbind */
-    check_not("hv head outside the list (asin vs the r63 list)",
-              %mr_headvar_match(x^2*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
-                    [["px", 'hvpx7],
-                     ["f", 'hvF7, ["lin", 'hvd7, 'hve7, 'hvfx7], ["free", 'hvm7]],
-                     ["log", 'hva7, 'hvb7, ["px", 'hvc7, 'hvn7]]],
-                    ['atan, 'acot, 'atanh, 'acoth])),
-    check_not("hv non-linear F-arg vs the lin spec (x^2)",
-              %mr_headvar_match(x*asin(2*x^2)*(5+6*log(7*x^2)), x,
-                    [["px", 'hvpx8],
-                     ["f", 'hvF8, ["lin", 'hvd8, 'hve8, 'hvfx8], ["bare"]],
-                     ["log", 'hva8, 'hvb8, ["px", 'hvc8, 'hvn8]]],
-                    ['asin, 'acos, 'asinh, 'acosh])),
-    check_not("hv linear F-arg vs the mon spec",
-              %mr_headvar_match(x*asin(2*(3+4*x))*(5+6*log(7*x^2)), x,
-                    [["px", 'hvpx9],
-                     ["f", 'hvF9, ["mon", 'hvfx9], ["bare"]],
-                     ["log", 'hva9, 'hvb9, ["px", 'hvc9, 'hvn9]]],
-                    ['asin, 'acos, 'asinh, 'acosh])),
-    check_not("hv extra factor with no px slot (3.4 shape)",
-              %mr_headvar_match(x*asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
-                    [["f", 'hvFa, ["mon", 'hvfxa], ["free", 'hvma]],
-                     ["log", 'hvaa, 'hvba, ["bpow", 'hvca, 'hvda, 'hvea, 'hvna, 'hvpa]]],
-                    ['asin, 'acos, 'asinh, 'acosh])),
-    check_not("hv no leftover factor for the px slot",
-              %mr_headvar_match(asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
-                    [["px", 'hvpxb],
-                     ["f", 'hvFb, ["lin", 'hvdb, 'hveb, 'hvfxb], ["free", 'hvmb]],
-                     ["log", 'hvab, 'hvbb, ["px", 'hvcB, 'hvnb]]],
-                    ['asin, 'acos, 'asinh, 'acosh])),
-    check_not("hv powered factor vs the bare spec",
-              %mr_headvar_match(x*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x,
-                    [["px", 'hvpxc],
-                     ["f", 'hvFc, ["lin", 'hvdc, 'hvec, 'hvfxc], ["bare"]],
-                     ["log", 'hvac, 'hvbc, ["px", 'hvcC, 'hvnc]]],
-                    ['asin, 'acos, 'asinh, 'acosh])),
-    /* the bare F factor vs the free-m spec: the Power pattern
-       F_[...]^m_ reaches a non-power target via Power OneIdentity,
-       m := 1 (MA-consistent) */
-    mm : %mr_headvar_match(x*asin(2*(3+4*x))*(5+6*log(7*x^2)), x,
-          [["px", 'hvpxd],
-           ["f", 'hvFd, ["lin", 'hvdd, 'hved, 'hvfxd], ["free", 'hvmd]],
-           ["log", 'hvad, 'hvbd, ["px", 'hvcD, 'hvnd]]],
-          ['asin, 'acos, 'asinh, 'acosh]),
-    check_bool("hv bare factor vs the free-m spec matches (m = 1)",
-               listp(mm) and is(geteqR(mm, 'hvmd) = 1)),
+    %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
+    %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+    %mr_load_sibling("rules/class3/3_4.mac", 'mr_witness_3_4),
+    /* 3.1.5 r58: linear F-arg, free m, px log-arg, {ArcSin, ArcCos, ArcSinh, ArcCosh} */
+    mm : %mr_rule_accept(_mr_rule_3_1_5_r58, x^2*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x),
+    check_bool("hv r58 accepts (m = 3)", listp(mm)),
+    check_bool("hv r58 binds the head symbol", binds(mm, ['_mr_3_1_5_r58_F = 'asin])),
+    check_bool("hv r58 binds d, e, f, m",
+               binds(mm, ['_mr_3_1_5_r58_d = 2, '_mr_3_1_5_r58_e = 3,
+                          '_mr_3_1_5_r58_f = 4, '_mr_3_1_5_r58_m = 3])),
+    check_bool("hv r58 binds Px (the leftover product)", binds(mm, ['_mr_3_1_5_r58_Px = x^2])),
+    check_bool("hv r58 binds a, b, c, n",
+               binds(mm, ['_mr_3_1_5_r58_a = 5, '_mr_3_1_5_r58_b = 6,
+                          '_mr_3_1_5_r58_c = 7, '_mr_3_1_5_r58_n = 2])),
+    /* 3.1.5 r59: bare F factor, {ArcTan, ArcCot, ArcTanh, ArcCoth} */
+    mm : %mr_rule_accept(_mr_rule_3_1_5_r59, x*acot(2*(3+4*x))*(5+6*log(7*x^2)), x),
+    check_bool("hv r59 accepts (bare factor)", listp(mm)),
+    check_bool("hv r59 binds the head", binds(mm, ['_mr_3_1_5_r59_F = 'acot, '_mr_3_1_5_r59_Px = x])),
+    /* 3.3 r58: log-arg c*(d+e*x)^n, the eight-head list */
+    mm : %mr_rule_accept(_mr_rule_3_3_r58, x^2*atan(2*(3+4*x))*(5+6*log(7*(8+9*x)^3)), x),
+    check_bool("hv 3.3 r58 accepts", listp(mm)),
+    check_bool("hv 3.3 r58 binds the head", binds(mm, ['_mr_3_3_r58_F = 'atan])),
+    check_bool("hv 3.3 r58 binds the log-arg d, e, n",
+               binds(mm, ['_mr_3_3_r58_d = 8, '_mr_3_3_r58_e = 9, '_mr_3_3_r58_n = 3])),
+    /* 3.4 r37: monomial F-arg f*x, free m, log-arg c*(d+e*x^n)^p, no Px */
+    mm : %mr_rule_accept(_mr_rule_3_4_r37, asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x),
+    check_bool("hv 3.4 r37 accepts", listp(mm)),
+    check_bool("hv 3.4 r37 binds f, m, n, p",
+               binds(mm, ['_mr_3_4_r37_f = 5, '_mr_3_4_r37_m = 2,
+                          '_mr_3_4_r37_n = 3, '_mr_3_4_r37_p = 4])),
+    /* a leading minus is a factor of the Times, so it lands in Px */
+    check_bool("hv r58 binds Px with the sign",
+               binds(%mr_rule_bindings(_mr_rule_3_1_5_r58, -x*asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x),
+                     ['_mr_3_1_5_r58_Px = -x])),
+    /* a written constant times the bare log: a = 0, b = 1 (the Optional
+       defaults) and the constant rides in Px */
+    mm : %mr_rule_bindings(_mr_rule_3_1_5_r58, x*asin(2*(3+4*x))^3*(6*log(7*x^2)), x),
+    check_bool("hv bare log factor binds a = 0, b = 1, Px = 6*x",
+               binds(mm, ['_mr_3_1_5_r58_a = 0, '_mr_3_1_5_r58_b = 1, '_mr_3_1_5_r58_Px = 6*x])),
+    mm : %mr_rule_bindings(_mr_rule_3_1_5_r58, x*asin(2*(3+4*x))^3*log(7*x^2), x),
+    check_bool("hv bare log (no constant) binds a = 0, b = 1, c, n, Px",
+               binds(mm, ['_mr_3_1_5_r58_a = 0, '_mr_3_1_5_r58_b = 1, '_mr_3_1_5_r58_c = 7,
+                          '_mr_3_1_5_r58_n = 2, '_mr_3_1_5_r58_Px = x])),
+    /* Px_. is Optional: no leftover factor binds Px = 1 */
+    check_bool("hv no leftover factor binds Px = 1",
+               binds(%mr_rule_bindings(_mr_rule_3_1_5_r58, asin(2*(3+4*x))^3*(5+6*log(7*x^2)), x),
+                     ['_mr_3_1_5_r58_Px = 1])),
+    /* F_[...]^m_. reaches a bare F factor through its Optional exponent, m = 1 */
+    check_bool("hv bare factor vs the free-m rule binds m = 1",
+               binds(%mr_rule_accept(_mr_rule_3_1_5_r58, x*asin(2*(3+4*x))*(5+6*log(7*x^2)), x),
+                     ['_mr_3_1_5_r58_m = 1])),
+    /* negatives: each declines */
+    check_not("hv head outside the list (asin vs the r59 list)",
+              %mr_rule_accept(_mr_rule_3_1_5_r59, x^2*asin(2*(3+4*x))*(5+6*log(7*x^2)), x)),
+    check_not("hv non-linear F-arg",
+              %mr_rule_bindings(_mr_rule_3_1_5_r59, x*asin(2*x^2)*(5+6*log(7*x^2)), x)),
+    check_not("hv linear F-arg vs the monomial rule (3.4 r37)",
+              %mr_rule_bindings(_mr_rule_3_4_r37, asin(2*(3+4*x))^2*(7+8*log(9*(10+11*x^3)^4)), x)),
+    check_not("hv extra factor with no Px (3.4 r37)",
+              %mr_rule_bindings(_mr_rule_3_4_r37, x*asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x)),
+    check_not("hv powered factor vs the bare rule (r59)",
+              %mr_rule_bindings(_mr_rule_3_1_5_r59, x*acot(2*(3+4*x))^3*(5+6*log(7*x^2)), x)),
     check_not("hv sum integrand (not a product)",
-              %mr_headvar_match(asin(2*(3+4*x))^3 + 5 + 6*log(7*x^2), x,
-                    [["px", 'hvpxe],
-                     ["f", 'hvFe, ["lin", 'hvde, 'hvee, 'hvfxe], ["free", 'hvme]],
-                     ["log", 'hvae, 'hvee2, ["px", 'hvcE, 'hvne]]],
-                    ['asin, 'acos, 'asinh, 'acosh])),
-    check_not("hv lpow log-arg vs the px logspec",
-              %mr_headvar_match(x*asin(2*(3+4*x))^3*(5+6*log(7*(8+9*x)^3)), x,
-                    [["px", 'hvpxf],
-                     ["f", 'hvFf, ["lin", 'hvdf, 'hvfe, 'hvfxe2], ["free", 'hvme2]],
-                     ["log", 'hvaf, 'hvbf, ["px", 'hvcF, 'hvne2]]],
-                    ['asin, 'acos, 'asinh, 'acosh])),
-    /* the bare log factor (no written b at all): a = 0, b = 1, the
-       MA Plus-OneIdentity/BlankOptional-default reading */
-    mm : %mr_headvar_match(x*asin(2*(3+4*x))^3*log(7*x^2), x,
-          [["px", 'hvpxg],
-           ["f", 'hvFg, ["lin", 'hvdg, 'hvfg, 'hvfxg], ["free", 'hvmg]],
-           ["log", 'hvag, 'hvbg, ["px", 'hvcG, 'hvng]]],
-          ['asin, 'acos, 'asinh, 'acosh]),
-    check_bool("hv bare log factor matches (a = 0, b = 1)",
-               listp(mm) and is(geteqR(mm, 'hvag) = 0)
-               and is(geteqR(mm, 'hvbg) = 1)),
-    check_bool("hv bare log factor binds c, n, px",
-               listp(mm) and is(geteqR(mm, 'hvcG) = 7)
-               and is(geteqR(mm, 'hvng) = 2)
-               and is(geteqR(mm, 'hvpxg) = x)),
-    check_not("hv leading minus with no px slot (the sign cannot bind)",
-               %mr_headvar_match(-asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x,
-                     [["f", 'hvFh, ["mon", 'hvfxh], ["free", 'hvmh]],
-                      ["log", 'hvah, 'hvbh, ["bpow", 'hvcH, 'hvdh, 'hveh, 'hvnh, 'hvh2]]],
-                    ['asin, 'acos, 'asinh, 'acosh])),
+              %mr_rule_bindings(_mr_rule_3_1_5_r58, asin(2*(3+4*x))^3 + 5 + 6*log(7*x^2), x)),
+    check_not("hv (d+e x)^n log-arg vs the x^n rule (r58)",
+              %mr_rule_bindings(_mr_rule_3_1_5_r58, x*asin(2*(3+4*x))^3*(5+6*log(7*(8+9*x)^3)), x)),
+    check_not("hv leading minus with no Px (3.4 r37: the sign cannot bind)",
+              %mr_rule_bindings(_mr_rule_3_4_r37, -asin(5*x)^2*(7+8*log(9*(10+11*x^3)^4)), x)),
     true
   )$
 
@@ -698,11 +675,11 @@ test_structural_predicates() := block([],
        constrains it in the cond only); listp-guarded so a RED run
        (declaration reverted -> mm = false, or helper not loaded ->
        noun) fails the check without dying inside geteqR */
-    mm : _mr_pat_3_5_r31(log(a + %e^x*b), x),
+    mm : %mr_rule_bindings(_mr_rule_3_5_r31, log(a + %e^x*b), x),
     check_bool("b1 r31 binds x-dependent u",
                listp(mm) and length(mm) > 0
                and is(freeof(x, geteqR(mm, '_mr_3_5_r31_u)) = false)),
-    mm : _mr_pat_3_5_r35(log(g*(a + b*x + c*x^2)^n)/(d + e*x^2), x),
+    mm : %mr_rule_bindings(_mr_rule_3_5_r35, log(g*(a + b*x + c*x^2)^n)/(d + e*x^2), x),
     check_bool("b1 r35 binds x-dependent u",
                listp(mm) and length(mm) > 0
                and is(freeof(x, geteqR(mm, '_mr_3_5_r35_u)) = false)),
@@ -929,18 +906,18 @@ test_structural_predicates() := block([],
     /* pattern level: the stored corpus forms bind with exactly the .m
        values (RED: every one of these listp()s is false pre-fix — the
        M6 0-bind) */
-    mm : _mr_pat_3_1_2_r10(x^3/(a + b*log(c*x^n)), x),
+    mm : %mr_rule_bindings(_mr_rule_3_1_2_r10, x^3/(a + b*log(c*x^n)), x),
     check_bool("c2 r10 binds the e65 stored quotient", listp(mm)),
     check_bool("c2 r10 e65 binds d=1, m=3, p=-1",
                listp(mm) and is(geteqR(mm, '_mr_3_1_2_r10_d) = 1)
                and is(geteqR(mm, '_mr_3_1_2_r10_m) = 3)
                and is(geteqR(mm, '_mr_3_1_2_r10_p) = -1)),
-    mm : _mr_pat_3_1_2_r10(x^2/(a + b*log(c*x^n)), x),
+    mm : %mr_rule_bindings(_mr_rule_3_1_2_r10, x^2/(a + b*log(c*x^n)), x),
     check_bool("c2 r10 e66 binds d=1, m=2, p=-1",
                listp(mm) and is(geteqR(mm, '_mr_3_1_2_r10_d) = 1)
                and is(geteqR(mm, '_mr_3_1_2_r10_m) = 2)
                and is(geteqR(mm, '_mr_3_1_2_r10_p) = -1)),
-    mm : _mr_pat_3_1_2_r10(x/(a + b*log(c*x^n)), x),
+    mm : %mr_rule_bindings(_mr_rule_3_1_2_r10, x/(a + b*log(c*x^n)), x),
     check_bool("c2 r10 e67 binds d=1, m=1, p=-1",
                listp(mm) and is(geteqR(mm, '_mr_3_1_2_r10_d) = 1)
                and is(geteqR(mm, '_mr_3_1_2_r10_m) = 1)
@@ -950,13 +927,17 @@ test_structural_predicates() := block([],
        numeric-coefficient monomials, and the power-head rows
        (free-d / (2*x)^k3) 0-bind exactly as today's production does */
     check_not("c2 r10 rejects the 8*x^3 stored quotient",
-              _mr_pat_3_1_2_r10(8*x^3/(a + b*log(c*x^n)), x)),
+              %mr_rule_bindings(_mr_rule_3_1_2_r10, 8*x^3/(a + b*log(c*x^n)), x)),
     check_not("c2 r10 rejects the 8*x^3 Times form",
-              _mr_pat_3_1_2_r10(8*x^3*(a + b*log(c*x^n))^2, x)),
-    check_not("c2 r10 rejects the free-d head",
-              _mr_pat_3_1_2_r10((dd*x)^mm2*(a + b*log(c*x^n))^2, x)),
+              %mr_rule_bindings(_mr_rule_3_1_2_r10, 8*x^3*(a + b*log(c*x^n))^2, x)),
+    /* the faithful (d_.*x_)^m_. binds a free-d power head (d = dd,
+       m = mm2) — the defmatch-era is(u = 1) gate went with the
+       re-transcription (plan-2 pre-validation, 2026-09-13) */
+    check_bool("c2 r10 binds the free-d head (d = dd, m = mm2)",
+               binds(%mr_rule_bindings(_mr_rule_3_1_2_r10, (dd*x)^mm2*(a + b*log(c*x^n))^2, x),
+                     ['_mr_3_1_2_r10_d = dd, '_mr_3_1_2_r10_m = mm2])),
     check_not("c2 r10 rejects the (2*x)^k3 head",
-              _mr_pat_3_1_2_r10((2*x)^k3*(a + b*log(c*x^n))^2, x)),
+              %mr_rule_bindings(_mr_rule_3_1_2_r10, (2*x)^k3*(a + b*log(c*x^n))^2, x)),
     /* answer level: e65 (m=3) on the minimal table */
     f : x^3/(a + b*log(c*x^n)),
     ans : rubi(f, x),
@@ -1001,87 +982,56 @@ test_structural_predicates() := block([],
      true
    )$
 
-   /* Task 4C-C1 (class-3 deferred campaign, 2026-09-01) — the M1
-      slotted-inner-exponent 0-bind and its C1c sqrt completion. A
-      faithful 1:1 LHS whose binomial-power factor (d+e x^r)^q carries a
-      SLOTTED inner exponent r (the .m idiom x_^r_.) 0-binds under this
-      build's matcher even against a LITERAL target exponent (probes
-      /tmp/opencode/t4c1_step1{,b,c}_*.mac, build
-      branch_5_50_base_84_g4204fb669); the control with a literal inner
-      exponent (3_1_4 r17, x^2) binds — the boundary is the slot. The fix
-      re-emits the whole binomial-POWER factor (base plus outer exponent)
-      as ONE slot (m1b), constrained by the fail-closed %mr_mbp_isfac
-      (a binomial A+B x^n or a single power of one, NEVER a product --
-      the product exclusion is what stops the slot absorbing an adjacent
-      head coefficient on the B shape or a log-arg constant on C/D), and
-      recovers (d, e, r) plus the outer q ONCE in the rule body via
-      %mr_mbp_unwrap + %mr_mbp_base, appending them to the matchlist so
-      the UNCHANGED .m cond/repl read them via geteqR identically. C1c
-      completion (measured 2026-09-01): Maxima stores u^(1/2) as the
-      `sqrt` node (op(x^(1/2)) is the SYMBOL sqrt, op(u^2) the string
-      "^"), so the decomposition must accept the sqrt-canonicalized forms
-      the MA matcher's x_^r_. binds -- %mr_mbp_unwrap unwraps FORM 2
-      sqrt(d+e x) -> (base d+e x, outer 1/2) and %mr_mbp_term reads a
-      sqrt(x) TERM as x^(1/2) for FORM 1 (e+f sqrt(x))^k -> inner 1/2;
-      both the slot predicate and the body recovery read the split from
-      the SAME %mr_mbp_unwrap, so cond and repl see identical values.
-      RED: every pattern-level listp() below is false pre-fix (the M1
-      0-bind, and for the sqrt rows the C1c 0-bind). GREEN pins: the
-      isfac rejections (fail-closed) hold in both runs. Answer level: the
+   /* Task 4C-C1 (class-3 deferred campaign, 2026-09-01) — the slotted
+      inner exponent (d_.+e_.*x_^r_.)^q_. of 3.1.3 / 3.1.4 / 3.1.5, including
+      the sqrt nodes Maxima stores for q = 1/2 or r = 1/2. The defmatch runner
+      0-bound the slot and needed the M1 / C1c single-slot re-emission;
+      MR-MATCH binds the faithful patterns, so the checks read the captures
+      directly (bindings measured in the plan-2 pre-validation,
+      probe_layerA_bind2.mac, 2026-09-13). The 3.1.4 r23 rep has an x^2 head:
+      with 5*x^2 the head item (f_.*x_)^m_. cannot absorb the 5 ((f*x)^2 is
+      not 5*x^2) and the rule declines, as in Mathematica. Answer level: the
       q=1 bare-binomial row is non-noun and closes the zero-chain. */
    test_class3_c1_slotted() := block([ans, saved_table, f, z, mm],
-     print("--- c1: M1 slotted-inner-exponent + C1c sqrt re-transcription (3_1_3/3_1_4/3_1_5) ---"),
+     print("--- c1: slotted inner exponent (3_1_3/3_1_4/3_1_5) ---"),
      %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
      %mr_load_sibling("rules/class3/3_1_4.mac", 'mr_witness_3_1_4),
      %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
      saved_table : mr_rule_table,
      mr_rule_table : flatten([mr_rule_table, mr_rules_3_1_3, mr_rules_3_1_4, mr_rules_3_1_5]),
-     /* 3_1_3 A2: the q=1 bare binomial binds and recovers [c1d,c1e,1], q=1 */
-     mm : _mr_pat_3_1_3_r1((c1d+c1e*x)*(c1a+c1b*log(c1c*x)), x),
+     /* 3_1_3 r1: the q=1 bare binomial */
+     mm : %mr_rule_bindings(_mr_rule_3_1_3_r1, (c1d+c1e*x)*(c1a+c1b*log(c1c*x)), x),
      check_bool("c1 3_1_3_r1 binds the q=1 bare binomial", listp(mm)),
-     check_bool("c1 3_1_3_r1 recovers [c1d,c1e,1] q=1",
-                listp(mm)
-                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 1) = c1d)
-                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 2) = c1e)
-                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 3) = 1)
-                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 2) = 1)),
-     /* 3_1_3 A2: C1c FORM 2 sqrt(1+x^2) binds and recovers inner=2, q=1/2 */
-     mm : _mr_pat_3_1_3_r1(sqrt(1+x^2)*(c1a+c1b*log(c1c*x)), x),
-     check_bool("c1 3_1_3_r1 binds FORM2 sqrt(1+x^2) (C1c)", listp(mm)),
-     check_bool("c1 3_1_3_r1 FORM2 sqrt recovers inner=2 outer=1/2",
-                listp(mm)
-                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 1), x), 3) = 2)
-                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_3_r1_m1b)), 2) = 1/2)),
-     /* 3_1_4 B: C1c FORM 2 sqrt under the f*x^m head; the slot is the
-        sqrt factor ONLY (the head must not absorb it) */
-     mm : _mr_pat_3_1_4_r23(5*x^2*sqrt(c1d+c1e*x)*(c1a+c1b*log(c1c*x^3)), x),
-     check_bool("c1 3_1_4_r23 binds FORM2 sqrt(c1d+c1e*x) under head (C1c)", listp(mm)),
-     check_bool("c1 3_1_4_r23 slot = sqrt(c1d+c1e*x) only (head not absorbed)",
-                listp(mm) and is(geteqR(mm, '_mr_3_1_4_r23_m1b) = sqrt(c1d+c1e*x))),
-     check_bool("c1 3_1_4_r23 recovers inner=1 outer=1/2",
-                listp(mm)
-                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_4_r23_m1b)), 1), x), 3) = 1)
-                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_4_r23_m1b)), 2) = 1/2)),
-     /* 3_1_5 C (r46): C1c FORM 1 sqrt term in the log-arg binomial */
-     mm : _mr_pat_3_1_5_r46(log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x))^c1po/x, x),
-     check_bool("c1 3_1_5_r46 binds FORM1 (c1e+c1f*sqrt(x))^c1ro (C1c)", listp(mm)),
-     check_bool("c1 3_1_5_r46 recovers inner=1/2 outer=c1ro",
-                listp(mm)
-                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r46_m1b)), 1), x), 3) = 1/2)
-                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r46_m1b)), 2) = c1ro)),
-     /* 3_1_5 D (r47): C1c FORM 1 under the (g*x)^h head (symbolic head) */
-     mm : _mr_pat_3_1_5_r47((c1g*x)^c1h*log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x)), x),
-     check_bool("c1 3_1_5_r47 binds FORM1 (c1e+c1f*sqrt(x))^c1ro (C1c)", listp(mm)),
-     check_bool("c1 3_1_5_r47 recovers inner=1/2 outer=c1ro",
-                listp(mm)
-                and is(part(%mr_mbp_base(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r47_m1b)), 1), x), 3) = 1/2)
-                and is(part(%mr_mbp_unwrap(geteqR(mm, '_mr_3_1_5_r47_m1b)), 2) = c1ro)),
-     /* GREEN pins: %mr_mbp_isfac fail-closed (hold in RED and GREEN) */
-     check_not("c1 isfac rejects stray product 5*(c1d+c1e*x)", %mr_mbp_isfac(5*(c1d+c1e*x))),
-     check_not("c1 isfac rejects trinomial c1d+c1e*x+c1g*x^2", %mr_mbp_isfac(c1d+c1e*x+c1g*x^2)),
-     check_not("c1 isfac rejects bare sqrt(x) monomial", %mr_mbp_isfac(sqrt(x))),
-     check_not("c1 isfac rejects bare c1e*x^2 monomial", %mr_mbp_isfac(c1e*x^2)),
-     check_not("c1 isfac rejects x-bearing exponent c1d+c1e*x^(x+1)", %mr_mbp_isfac(c1d+c1e*x^(x+1))),
+     check_bool("c1 3_1_3_r1 binds d=c1d, e=c1e, r=1, q=1",
+                binds(mm, ['_mr_3_1_3_r1_d = c1d, '_mr_3_1_3_r1_e = c1e,
+                           '_mr_3_1_3_r1_r = 1, '_mr_3_1_3_r1_q = 1])),
+     /* 3_1_3 r1: the sqrt node sqrt(1+x^2) is (1+x^2)^(1/2) */
+     mm : %mr_rule_bindings(_mr_rule_3_1_3_r1, sqrt(1+x^2)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_3_r1 binds sqrt(1+x^2)", listp(mm)),
+     check_bool("c1 3_1_3_r1 sqrt binds d=1, e=1, r=2, q=1/2",
+                binds(mm, ['_mr_3_1_3_r1_d = 1, '_mr_3_1_3_r1_e = 1,
+                           '_mr_3_1_3_r1_r = 2, '_mr_3_1_3_r1_q = 1/2])),
+     /* 3_1_4 r23: sqrt(c1d+c1e*x) under the (f_.*x_)^m_. head */
+     mm : %mr_rule_accept(_mr_rule_3_1_4_r23, x^2*sqrt(c1d+c1e*x)*(c1a+c1b*log(c1c*x^3)), x),
+     check_bool("c1 3_1_4_r23 accepts sqrt(c1d+c1e*x) under the x^2 head", listp(mm)),
+     check_bool("c1 3_1_4_r23 binds f=1, m=2 and d=c1d, e=c1e, r=1, q=1/2",
+                binds(mm, ['_mr_3_1_4_r23_f = 1, '_mr_3_1_4_r23_m = 2,
+                           '_mr_3_1_4_r23_d = c1d, '_mr_3_1_4_r23_e = c1e,
+                           '_mr_3_1_4_r23_r = 1, '_mr_3_1_4_r23_q = 1/2])),
+     check_not("c1 3_1_4_r23 declines the 5*x^2 head",
+               %mr_rule_bindings(_mr_rule_3_1_4_r23, 5*x^2*sqrt(c1d+c1e*x)*(c1a+c1b*log(c1c*x^3)), x)),
+     /* 3_1_5 r46: the sqrt(x) term in the log-arg binomial, inner exponent 1/2 */
+     mm : %mr_rule_bindings(_mr_rule_3_1_5_r46, log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x))^c1po/x, x),
+     check_bool("c1 3_1_5_r46 binds (c1e+c1f*sqrt(x))^c1ro", listp(mm)),
+     check_bool("c1 3_1_5_r46 binds inner exponent 1/2, outer c1ro",
+                binds(mm, ['_mr_3_1_5_r46_m = 1/2, '_mr_3_1_5_r46_r = c1ro,
+                           '_mr_3_1_5_r46_e = c1e, '_mr_3_1_5_r46_f = c1f])),
+     /* 3_1_5 r47: the same under the (g*x)^h head */
+     mm : %mr_rule_bindings(_mr_rule_3_1_5_r47, (c1g*x)^c1h*log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_5_r47 binds under the (g*x)^h head", listp(mm)),
+     check_bool("c1 3_1_5_r47 binds g=c1g, q=c1h and inner 1/2, outer c1ro",
+                binds(mm, ['_mr_3_1_5_r47_g = c1g, '_mr_3_1_5_r47_q = c1h,
+                           '_mr_3_1_5_r47_m = 1/2, '_mr_3_1_5_r47_r = c1ro])),
      /* answer level: the q=1 bare-binomial row is non-noun, closes ratsimp */
      f : (1+x^2)*(1+log(x)),
      ans : rubi(f, x),
@@ -1095,85 +1045,69 @@ test_structural_predicates() := block([],
       true
     )$
 
-    /* Task 4C-C4 (class-3 deferred campaign, 2026-09-01) — the 3_2_1
-       r16/r18/r20 explicit-linear-power product log-arg 0-bind. A
-       faithful 1:1 LHS for (f+g x)^m (A+B log(e (a+b x)^n (c+d x)^mn))^p
-       0-binds under this build's matcher against every stored corpus
-       form (probes /tmp/opencode/t4c4_pf{,7,*}.mcl, build
-       branch_5_50_base_84_g4204fb669): the defmatch pattern binds none
-       of the 13 numeric-n entries (e124/e131/e274 for r16; e210-e218 for
-       r18; e268 for r20). The fix drops the defmatch/matchdeclare and
-       re-emits the rule body as a call to the fail-closed structural
-       matcher %mr_logpow_match(f, x, caps) (maxima_rubi_utils.mac), which
-       decomposes the stored form into the 13-capture (f, g, m, A, B, e,
-       a, b, n, c, d, mn, p) in the .m NATURAL orientation (positive
-       log-arg exponent -> the (a,b,n) side; negative -> the (c,d,mn) side)
-       and returns a matchlist so the UNCHANGED .m cond/repl read the same
-       values via geteqR as a defmatch bind would have. The matcher is
-       fail-closed: a non-linear head, a log-arg that is not a product of
-       two binomial powers, or a log-less integrand all return false.
-       RED: the three pattern-level listp()s below are false pre-fix (the
-       0-bind; %mr_logpow_match does not exist there). GREEN pins: the
-       fail-closed rejections hold in both runs. Answer level: the
-       minimal table (3_2_1 + 3_3) makes e124 and e210 non-noun in the
-       suite, and e268 non-noun in isolation (probe
-       /tmp/opencode/t4c4_full.mcl: the r20 answer closes at the
-       driver's radcan(rat()) fallback, e124 also at ratsimp, in <1 s);
-       e268's answer-level check is OMITTED from the suite body because it
-       returns a no-answer noun in the full cumulative table+state (an
-       interaction with an earlier test, not an r20 defect) — see the
-       e268 note below. */
-    test_class3_c4_321() := block([ans, saved_table, f, z, mm, caps13],
-      print("--- c4: 3_2_1 r16/r18/r20 log-arg structural match (C4) ---"),
+    /* Task 4C-C4 (class-3 deferred campaign, 2026-09-01) — 3_2_1
+       r16/r18/r20, (f+g x)^m (A+B log(e (a+b x)^n (c+d x)^mn))^p on the
+       stored forms. The defmatch runner 0-bound all 13 numeric-n entries and
+       needed the %mr_logpow_match structural matcher; MR-MATCH binds the
+       faithful patterns and the cond, retried over the complete bindings,
+       selects the .m orientation — r18's accepted binding on
+       e*(c+d*x)^2/(a+b*x)^2 is (a, b) := (c, d), n = 2 (plan-2
+       pre-validation, probe_rewrite.mac, 2026-09-13). Answer level: the
+       minimal table is the default 1.1.1.1 + 3_1_x + 3_2_1 + 3_3 in
+       production order — without the 3_1_x files the substituted
+       (A+B log(e x^2))/x^2 reaches the 3_3 r61 Unintegrable catch-all
+       first (probe_c4v.mac, probe_tables.mac). e210's answer carries
+       polylog, which has no diff rule in this build (the b4 e392 note), so
+       its pin is non-noun with no nested no-answer noun, not a zero-chain.
+       e268's answer-level check stays omitted (the campaign's cumulative
+       suite interaction note). */
+    test_class3_c4_321() := block([ans, saved_table, f, z, mm],
+      print("--- c4: 3_2_1 r16/r18/r20 log-arg (C4) ---"),
+      %mr_load_sibling("rules/class3/3_1_1.mac", 'mr_witness_3_1_1),
+      %mr_load_sibling("rules/class3/3_1_2.mac", 'mr_witness_3_1_2),
+      %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
+      %mr_load_sibling("rules/class3/3_1_4.mac", 'mr_witness_3_1_4),
+      %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
       %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
       %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
       saved_table : mr_rule_table,
-      mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_1, mr_rules_3_3]),
-      /* the 13 captures in the .m natural order (position-based, so the
-         generic names read the same values the rule body reads via its
-         own per-rule cap names). */
-      caps13 : ['_f, '_g, '_m, '_A, '_B, '_e, '_a, '_b, '_n, '_c, '_d, '_mn, '_p],
-      /* pattern level: e124 (r16) binds with the .m natural values */
-      mm : %mr_logpow_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x, caps13),
-      check_bool("c4 e124 binds (r16)", listp(mm)),
-      check_bool("c4 e124 natural f=a*g g=b*g m=-2",
-                 listp(mm) and is(geteqR(mm, '_f) = a*g)
-                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = -2)),
-      check_bool("c4 e124 natural a,b,n,c,d,mn,p",
-                 listp(mm) and is(geteqR(mm, '_a) = a) and is(geteqR(mm, '_b) = b)
-                 and is(geteqR(mm, '_n) = 2) and is(geteqR(mm, '_c) = c)
-                 and is(geteqR(mm, '_d) = d) and is(geteqR(mm, '_mn) = -2)
-                 and is(geteqR(mm, '_p) = 1)),
-      check_bool("c4 e124 natural A,B,e",
-                 listp(mm) and is(geteqR(mm, '_A) = A)
-                 and is(geteqR(mm, '_B) = B) and is(geteqR(mm, '_e) = e)),
-      /* pattern level: e210 (r18) — the (c,d)-swapped natural binding */
-      mm : %mr_logpow_match((a*g+b*g*x)^4*(A+B*log(e*(c+d*x)^2/(a+b*x)^2))^2, x, caps13),
-      check_bool("c4 e210 binds (r18)", listp(mm)),
-      check_bool("c4 e210 natural f,g,m + swap a=c b=d n=2 c=a d=b mn=-2 p=2",
-                 listp(mm) and is(geteqR(mm, '_f) = a*g)
-                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = 4)
-                 and is(geteqR(mm, '_a) = c) and is(geteqR(mm, '_b) = d)
-                 and is(geteqR(mm, '_n) = 2) and is(geteqR(mm, '_c) = a)
-                 and is(geteqR(mm, '_d) = b) and is(geteqR(mm, '_mn) = -2)
-                 and is(geteqR(mm, '_p) = 2)),
-      /* pattern level: e268 (r20) — the free (f+g x) head */
-      mm : %mr_logpow_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x)^2, x, caps13),
-      check_bool("c4 e268 binds (r20)", listp(mm)),
-      check_bool("c4 e268 natural f,f g,g m=-2 p=1",
-                 listp(mm) and is(geteqR(mm, '_f) = f) and is(geteqR(mm, '_g) = g)
-                 and is(geteqR(mm, '_m) = -2) and is(geteqR(mm, '_p) = 1)),
-      check_bool("c4 e268 natural a,b,n,c,d,mn",
-                 listp(mm) and is(geteqR(mm, '_a) = a) and is(geteqR(mm, '_b) = b)
-                 and is(geteqR(mm, '_n) = 2) and is(geteqR(mm, '_c) = c)
-                 and is(geteqR(mm, '_d) = d) and is(geteqR(mm, '_mn) = -2)),
-      /* GREEN pins: fail-closed rejections (hold in RED and GREEN) */
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_1_1, mr_rules_3_1_2, mr_rules_3_1_3,
+                               mr_rules_3_1_4, mr_rules_3_1_5, mr_rules_3_2_1, mr_rules_3_3]),
+      /* pattern + cond: e124 (r16) */
+      mm : %mr_rule_accept(_mr_rule_3_2_1_r16, (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x),
+      check_bool("c4 e124 accepts (r16)", listp(mm)),
+      check_bool("c4 e124 f=a*g g=b*g m=-2",
+                 binds(mm, ['_mr_3_2_1_r16_f = a*g, '_mr_3_2_1_r16_g = b*g, '_mr_3_2_1_r16_m = -2])),
+      check_bool("c4 e124 a,b,n,c,d,mn,p",
+                 binds(mm, ['_mr_3_2_1_r16_a = a, '_mr_3_2_1_r16_b = b, '_mr_3_2_1_r16_n = 2,
+                            '_mr_3_2_1_r16_c = c, '_mr_3_2_1_r16_d = d, '_mr_3_2_1_r16_mn = -2,
+                            '_mr_3_2_1_r16_p = 1])),
+      check_bool("c4 e124 A,B,e",
+                 binds(mm, ['_mr_3_2_1_r16_A = A, '_mr_3_2_1_r16_B = B, '_mr_3_2_1_r16_e = e])),
+      /* pattern + cond: e210 (r18) — the (c,d)-swapped orientation */
+      mm : %mr_rule_accept(_mr_rule_3_2_1_r18, (a*g+b*g*x)^4*(A+B*log(e*(c+d*x)^2/(a+b*x)^2))^2, x),
+      check_bool("c4 e210 accepts (r18)", listp(mm)),
+      check_bool("c4 e210 f,g,m + swap a=c b=d n=2 c=a d=b mn=-2 p=2",
+                 binds(mm, ['_mr_3_2_1_r18_f = a*g, '_mr_3_2_1_r18_g = b*g, '_mr_3_2_1_r18_m = 4,
+                            '_mr_3_2_1_r18_a = c, '_mr_3_2_1_r18_b = d, '_mr_3_2_1_r18_n = 2,
+                            '_mr_3_2_1_r18_c = a, '_mr_3_2_1_r18_d = b, '_mr_3_2_1_r18_mn = -2,
+                            '_mr_3_2_1_r18_p = 2])),
+      /* pattern + cond: e268 (r20) — the free (f+g x) head */
+      mm : %mr_rule_accept(_mr_rule_3_2_1_r20, (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x)^2, x),
+      check_bool("c4 e268 accepts (r20)", listp(mm)),
+      check_bool("c4 e268 f=f g=g m=-2 p=1",
+                 binds(mm, ['_mr_3_2_1_r20_f = f, '_mr_3_2_1_r20_g = g, '_mr_3_2_1_r20_m = -2,
+                            '_mr_3_2_1_r20_p = 1])),
+      check_bool("c4 e268 a,b,n,c,d,mn",
+                 binds(mm, ['_mr_3_2_1_r20_a = a, '_mr_3_2_1_r20_b = b, '_mr_3_2_1_r20_n = 2,
+                            '_mr_3_2_1_r20_c = c, '_mr_3_2_1_r20_d = d, '_mr_3_2_1_r20_mn = -2])),
+      /* rejections */
       check_not("c4 rejects the non-linear head (f+g x^2)^2",
-                %mr_logpow_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x^2)^2, x, caps13)),
+                %mr_rule_bindings(_mr_rule_3_2_1_r20, (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(f+g*x^2)^2, x)),
       check_not("c4 rejects a log-arg sum (not a product of binomial powers)",
-                %mr_logpow_match((A+B*log(e*(a+b*x)^2+(c+d*x)^2))/(f+g*x)^2, x, caps13)),
+                %mr_rule_bindings(_mr_rule_3_2_1_r20, (A+B*log(e*(a+b*x)^2+(c+d*x)^2))/(f+g*x)^2, x)),
       check_not("c4 rejects a log-less integrand",
-                %mr_logpow_match((f+g*x)^2*(a+b*x)^2, x, caps13)),
+                %mr_rule_bindings(_mr_rule_3_2_1_r20, (f+g*x)^2*(a+b*x)^2, x)),
       /* answer level: e124 non-noun, self-diff closes (ratsimp + the
          driver's radcan(rat()) fallback) */
       f : (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2,
@@ -1187,150 +1121,109 @@ test_structural_predicates() := block([],
       z : errcatch(radcan(rat(diff(ans, x) - f))),
       check_bool("c4 e124 self-diff (driver radcan(rat()) fallback)",
                  is(z # []) and is(part(z, 1) = 0)),
-      /* answer level: e210 (r18) non-noun, self-diff closes at radcan(rat()) */
+      /* answer level: e210 (r18) non-noun, no nested no-answer noun */
       f : (a*g+b*g*x)^4*(A+B*log(e*(c+d*x)^2/(a+b*x)^2))^2,
       ans : rubi(f, x),
       check_not("c4 e210 not a noun",
                 is(atom(ans)) or is(op(ans) = 'integrate)
                 or is(string(op(ans)) = "unintegrable")),
-      z : errcatch(radcan(rat(diff(ans, x) - f))),
-      check_bool("c4 e210 self-diff (driver radcan(rat()) fallback)",
-                 is(z # []) and is(part(z, 1) = 0)),
-      /* e268 answer level: OMITTED. The r20 answer closes at radcan(rat())
-         on the minimal table (probe /tmp/opencode/t4c4_full.mcl) and STILL
-         closes after the c1/c2 answer-level rubi traffic (probe
-         /tmp/opencode/t4c4_traffic.mcl) — but it returns a no-answer noun in
-         the full cumulative suite, an interaction with some EARLIER test in
-         the sequence (not isolated; not the c1/c2 traffic). NOT an r20
-         defect: the r20 pattern binds (above) and the r20 answer is correct
-         in isolation. e268's pattern-level binding is the C4 deliverable;
-         its answer-level closure is the Layer-B corpus run's concern. */
-       mr_rule_table : saved_table,
-       true
+      check_bool("c4 e210 has no nested no-answer noun", freeof('unintegrable, ans)),
+      mr_rule_table : saved_table,
+      true
      )$
 
     /* Task 4C-C3 (class-3 deferred campaign, 2026-09-02) — the ratio
-    log-arg stored-Quotient 0-bind (99 entries): the stored suite ratio
-    log-arg log((e (a+b x))/(c+d x)) is held as Quotient[Times[e, Plus],
-    Plus] (e inside the quotient numerator) and 0-bound the ported
-    Times[e, Power[Quotient, n]] pattern (probe pA; adjudication-g2
-    D2). The fix is a scoped generator re-emission: the 3.2.1 r15/r17/
-    r19, 3.2.2 r3/r5, 3.2.3 r5/r6 matchers are the structural
-    %mr_logratio[_sq]_match matchers (maxima_rubi_utils.mac). The
-    answer-level reps run on the minimal table (default 1.1.1.1 + the
-    three 3.2.x families); the nested sub-integrals are answered by the
-    mr_int fb=true native fall-through (the b2 precedent). Measured
-    2026-09-02 on branch_5_50_base_84_g4204fb669: e93's answer verifies
-    at the driver's numeric stage (resid ~1e-15 both points) and e10's
-    closes at factor (the driver's first symbolic stage — its numeric
-    stage declines on the free i: the numeric-instance resid under
-    i=0.7 is 2.8e-10/1.03e-9, float cancellation in the expanded form,
-    the second point over the 1e-9 threshold). */
-    test_class3_c3_ratio() := block([ans, z, n1, n2, D, saved_table, f, mm, caps12, caps15, caps11],
-      print("--- c3: ratio log-arg stored-Quotient structural match (C3) ---"),
+    log-arg rules 3.2.1 r15, 3.2.2 r3/r5, 3.2.3 r5 on the stored Quotient
+    forms. The defmatch runner 0-bound them (99 entries) and needed the
+    %mr_logratio[_sq]_match structural matchers; MR-MATCH binds the faithful
+    patterns, and %mr_rule_accept reads the binding the cond accepts. e104's
+    accepted binding is e := (b*e-a*f)/(d*e-c*f), f := 1, p := -1, q := 1
+    (the defmatch-era pin had e := b*e-a*f, f := 1/(d*e-c*f)); both make
+    the repl's log-arg re-expand to the stored argument. The numeric-k
+    distributed quotient e*(a+b*x)^2/(c+d*x)^2 does not bind r15's
+    e*((a+b*x)/(c+d*x))^n — a power of a quotient is not a product of
+    powers — and r16 covers it (test_class3_c4_321). Bindings measured in
+    the plan-2 pre-validation (probe_rewrite.mac, 2026-09-13). The
+    answer-level reps run on the default 1.1.1.1 + the three 3.2.x
+    families: e93 verifies at the driver's numeric stage, e10 at factor. */
+    test_class3_c3_ratio() := block([ans, z, n1, n2, D, saved_table, f, mm],
+      print("--- c3: ratio log-arg (C3) ---"),
       %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
       %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
       %mr_load_sibling("rules/class3/3_2_3.mac", 'mr_witness_3_2_3),
       saved_table : mr_rule_table,
       mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_1, mr_rules_3_2_2, mr_rules_3_2_3]),
-      caps12 : ['_f, '_g, '_m, '_A, '_B, '_e, '_a, '_b, '_n, '_c, '_d, '_p],
-      caps15 : ['_f, '_g, '_m, '_h, '_i, '_q, '_A, '_B, '_e, '_a, '_b, '_n, '_c, '_d, '_p],
-      caps11 : ['_a, '_b, '_c, '_d, '_e, '_f, '_g, '_h, '_p, '_q, '_r],
-      /* pattern level: e93 (3.2.1, the L19 r15 cover) — the folded
-         Quotient[Times[e, L1], L2] stored shape */
-      mm : %mr_logratio_match((A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x, caps12),
-      check_bool("c3 e93 binds (3.2.1 r15 cover)", listp(mm)),
-      check_bool("c3 e93 natural f=a*g g=b*g m=-2 n=1 p=1",
-                 listp(mm) and is(geteqR(mm, '_f) = a*g)
-                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = -2)
-                 and is(geteqR(mm, '_n) = 1) and is(geteqR(mm, '_p) = 1)),
-      check_bool("c3 e93 natural A,B,e + a,b,c,d",
-                 listp(mm) and is(geteqR(mm, '_A) = A) and is(geteqR(mm, '_B) = B)
-                 and is(geteqR(mm, '_e) = e) and is(geteqR(mm, '_a) = a)
-                 and is(geteqR(mm, '_b) = b) and is(geteqR(mm, '_c) = c)
-                 and is(geteqR(mm, '_d) = d)),
-      /* pattern level: e10 (3.2.2, the r3 cover) — the two-head
-         integrand, heads assigned by parallelism */
-      mm : %mr_logratio_match((a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x, caps15),
-      check_bool("c3 e10 binds (3.2.2 r3 cover)", listp(mm)),
-      check_bool("c3 e10 natural f=a*g g=b*g m=3 h=c*i i=d*i q=2",
-                 listp(mm) and is(geteqR(mm, '_f) = a*g)
-                 and is(geteqR(mm, '_g) = b*g) and is(geteqR(mm, '_m) = 3)
-                 and is(geteqR(mm, '_h) = c*i) and is(geteqR(mm, '_i) = d*i)
-                 and is(geteqR(mm, '_q) = 2)),
-      check_bool("c3 e10 natural A,B,e,n=1,p=1 + a,b,c,d",
-                 listp(mm) and is(geteqR(mm, '_A) = A) and is(geteqR(mm, '_B) = B)
-                 and is(geteqR(mm, '_e) = e) and is(geteqR(mm, '_n) = 1)
-                 and is(geteqR(mm, '_p) = 1) and is(geteqR(mm, '_a) = a)
-                 and is(geteqR(mm, '_b) = b) and is(geteqR(mm, '_c) = c)
-                 and is(geteqR(mm, '_d) = d)),
-      /* pattern level: e214 (3.2.2, the r5 cover) — the symbolic-n
-         Times[e, Power[Quotient, n]] stored shape */
-      mm : %mr_logratio_match((a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*((a+b*x)/(c+d*x))^n)), x, caps15),
-      check_bool("c3 e214 binds (3.2.2 r5 cover, symbolic-n form)", listp(mm)),
-      check_bool("c3 e214 natural m free q=-2-m n free p=1",
-                 listp(mm) and is(geteqR(mm, '_m) = m)
-                 and is(geteqR(mm, '_q) = -2-m) and is(geteqR(mm, '_n) = n)
-                 and is(geteqR(mm, '_p) = 1)),
-      /* pattern level: e104 (3.2.3, the L8 r5 cover) — the squared-log
-         integrand; the binding e:=C1, f:=1/C2, (a,b):=the
-         DENOMINATOR-side linear, (c,d):=the numerator-side one,
-         p:=-1 q:=1 r:=1 makes the repl's log-arg re-expand EXACTLY
-         to the stored argument */
-      mm : %mr_logratio_sq_match(log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x, caps11),
-      check_bool("c3 e104 binds (3.2.3 r5 cover)", listp(mm)),
-      check_bool("c3 e104 natural a-d + e=C1 f=1/C2 g=a h=b p=-1 q=1 r=1",
-                 listp(mm) and is(geteqR(mm, '_a) = a) and is(geteqR(mm, '_b) = b)
-                 and is(geteqR(mm, '_c) = c) and is(geteqR(mm, '_d) = d)
-                 and is(geteqR(mm, '_e) = b*e-a*f)
-                 and is(geteqR(mm, '_f) = 1/(d*e-c*f))
-                 and is(geteqR(mm, '_g) = a) and is(geteqR(mm, '_h) = b)
-                 and is(geteqR(mm, '_p) = -1) and is(geteqR(mm, '_q) = 1)
-                 and is(geteqR(mm, '_r) = 1)),
+      /* e93 (3.2.1 r15) */
+      mm : %mr_rule_accept(_mr_rule_3_2_1_r15, (A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x),
+      check_bool("c3 e93 accepts (3.2.1 r15)", listp(mm)),
+      check_bool("c3 e93 f=a*g g=b*g m=-2 n=1 p=1",
+                 binds(mm, ['_mr_3_2_1_r15_f = a*g, '_mr_3_2_1_r15_g = b*g, '_mr_3_2_1_r15_m = -2,
+                            '_mr_3_2_1_r15_n = 1, '_mr_3_2_1_r15_p = 1])),
+      check_bool("c3 e93 A,B,e + a,b,c,d",
+                 binds(mm, ['_mr_3_2_1_r15_A = A, '_mr_3_2_1_r15_B = B, '_mr_3_2_1_r15_e = e,
+                            '_mr_3_2_1_r15_a = a, '_mr_3_2_1_r15_b = b, '_mr_3_2_1_r15_c = c,
+                            '_mr_3_2_1_r15_d = d])),
+      /* e10 (3.2.2 r3): the two-head integrand */
+      mm : %mr_rule_accept(_mr_rule_3_2_2_r3, (a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x),
+      check_bool("c3 e10 accepts (3.2.2 r3)", listp(mm)),
+      check_bool("c3 e10 f=a*g g=b*g m=3 h=c*i i=d*i q=2",
+                 binds(mm, ['_mr_3_2_2_r3_f = a*g, '_mr_3_2_2_r3_g = b*g, '_mr_3_2_2_r3_m = 3,
+                            '_mr_3_2_2_r3_h = c*i, '_mr_3_2_2_r3_i = d*i, '_mr_3_2_2_r3_q = 2])),
+      check_bool("c3 e10 A,B,e,n=1,p=1 + a,b,c,d",
+                 binds(mm, ['_mr_3_2_2_r3_A = A, '_mr_3_2_2_r3_B = B, '_mr_3_2_2_r3_e = e,
+                            '_mr_3_2_2_r3_n = 1, '_mr_3_2_2_r3_p = 1, '_mr_3_2_2_r3_a = a,
+                            '_mr_3_2_2_r3_b = b, '_mr_3_2_2_r3_c = c, '_mr_3_2_2_r3_d = d])),
+      /* e214 (3.2.2 r5): the symbolic-n Times[e, Power[Quotient, n]] form */
+      mm : %mr_rule_accept(_mr_rule_3_2_2_r5, (a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*((a+b*x)/(c+d*x))^n)), x),
+      check_bool("c3 e214 accepts (3.2.2 r5, symbolic-n form)", listp(mm)),
+      check_bool("c3 e214 m free q=-2-m n free p=1",
+                 binds(mm, ['_mr_3_2_2_r5_m = m, '_mr_3_2_2_r5_q = -2-m,
+                            '_mr_3_2_2_r5_n = n, '_mr_3_2_2_r5_p = 1])),
+      /* e104 (3.2.3 r5): the squared-log integrand */
+      mm : %mr_rule_accept(_mr_rule_3_2_3_r5, log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x),
+      check_bool("c3 e104 accepts (3.2.3 r5)", listp(mm)),
+      check_bool("c3 e104 a-d + e=C1/C2 f=1 g=a h=b p=-1 q=1 r=1",
+                 binds(mm, ['_mr_3_2_3_r5_a = a, '_mr_3_2_3_r5_b = b, '_mr_3_2_3_r5_c = c,
+                            '_mr_3_2_3_r5_d = d, '_mr_3_2_3_r5_e = (b*e-a*f)/(d*e-c*f),
+                            '_mr_3_2_3_r5_f = 1, '_mr_3_2_3_r5_g = a, '_mr_3_2_3_r5_h = b,
+                            '_mr_3_2_3_r5_p = -1, '_mr_3_2_3_r5_q = 1, '_mr_3_2_3_r5_r = 1])),
       z : if is(listp(mm)) then
-        errcatch(rat(geteqR(mm, '_e)*(geteqR(mm, '_f)*(geteqR(mm, '_a)+geteqR(mm, '_b)*x)^geteqR(mm, '_p)*(geteqR(mm, '_c)+geteqR(mm, '_d)*x)^geteqR(mm, '_q))^geteqR(mm, '_r)
+        errcatch(rat(geteqR(mm, '_mr_3_2_3_r5_e)
+                     *(geteqR(mm, '_mr_3_2_3_r5_f)*(geteqR(mm, '_mr_3_2_3_r5_a)+geteqR(mm, '_mr_3_2_3_r5_b)*x)^geteqR(mm, '_mr_3_2_3_r5_p)
+                       *(geteqR(mm, '_mr_3_2_3_r5_c)+geteqR(mm, '_mr_3_2_3_r5_d)*x)^geteqR(mm, '_mr_3_2_3_r5_q))^geteqR(mm, '_mr_3_2_3_r5_r)
              - (b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x))))
       else [],
       check_bool("c3 e104 repl log-arg re-expands the stored arg",
                  is(z # []) and is(part(z, 1) = 0)),
-      /* GREEN pins: fail-closed rejections */
-      check_not("c3 the 15-cap matcher 0-binds the 3.2.3 sq integrand (cross-fire)",
-                %mr_logratio_match(log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x, caps15)),
-      check_not("c3 the 12-cap matcher 0-binds the two-head integrand (head count)",
-                %mr_logratio_match((a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x, caps12)),
-      check_not("c3 the sq matcher 0-binds the 3.2.1 ratio integrand",
-                %mr_logratio_sq_match((A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x, caps11)),
-      /* the free-k distributed quotient (e226 shape) must decline: in
-         MA the .m L7 pattern 0-binds the Quotient-of-powers storage
-         with a free exponent and the L8 product twin declines on
-         IGtQ[n,0] — the over-bind regressed the b2 e226 cover to r5
-         (measured 2026-09-02, probe /tmp/opencode/mini69.mac) */
+      /* cross-rule rejections */
+      check_not("c3 3.2.2 r3 does not bind the 3.2.3 squared-log integrand",
+                %mr_rule_bindings(_mr_rule_3_2_2_r3, log((b*e-a*f)*(c+d*x)/((d*e-c*f)*(a+b*x)))^2/(a+b*x), x)),
+      check_not("c3 3.2.1 r15 does not bind the two-head integrand",
+                %mr_rule_bindings(_mr_rule_3_2_1_r15, (a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))), x)),
+      check_not("c3 3.2.3 r5 does not bind the 3.2.1 ratio integrand",
+                %mr_rule_bindings(_mr_rule_3_2_3_r5, (A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2, x)),
+      /* the free-k distributed quotient (e226 shape) does not bind r5 */
       check_not("c3 declines the free-k distributed quotient (e226 shape)",
-                %mr_logratio_match((a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^p, x, caps15)),
-      /* the numeric-k distributed shape still binds (MA's matcher
-         normalises the Quotient-of-powers storage for a concrete
-         exponent — the .m L7 cover) */
-      mm : %mr_logratio_match((A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x, caps12),
-      check_bool("c3 the numeric-k distributed quotient binds with n=2",
-                 listp(mm) and is(geteqR(mm, '_n) = 2)),
+                %mr_rule_bindings(_mr_rule_3_2_2_r5, (a*g+b*g*x)^m*(c*i+d*i*x)^(-2-m)*(A+B*log(e*(a+b*x)^n/(c+d*x)^n))^p, x)),
+      check_not("c3 r15 declines the numeric-k distributed quotient (r16's form)",
+                %mr_rule_bindings(_mr_rule_3_2_1_r15, (A+B*log(e*(a+b*x)^2/(c+d*x)^2))/(a*g+b*g*x)^2, x)),
       /* answer level: e93 — the driver's numeric stage (two points,
-         resid < 1e-9; measured ~1e-15 under the minimal table) */
+         resid < 1e-9) */
       f : (A+B*log(e*(a+b*x)/(c+d*x)))/(a*g+b*g*x)^2,
       ans : rubi(f, x),
       check_not("c3 e93 not a noun",
                 is(atom(ans)) or is(op(ans) = 'integrate)
                 or is(string(op(ans)) = "unintegrable")),
-      /* materialize the diff BEFORE the ev (the driver's measured
-         quirk: ev over a still-unevaluated diff(mr_r, x) substitutes
-         x into the diff's variable argument and errors) */
+      /* materialize the diff BEFORE the ev (the driver's measured quirk: ev
+         over a still-unevaluated diff(mr_r, x) substitutes x into the diff's
+         variable argument and errors) */
       D : diff(ans, x) - f,
       n1 : errcatch(float(ev(D, [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, g=1.7, A=0.6, B=1.4, x=0.35]))),
       n2 : errcatch(float(ev(D, [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, g=1.7, A=0.6, B=1.4, x=0.65]))),
       check_bool("c3 e93 self-diff numeric two-point (driver stage)",
                  is(n1 # []) and is(n2 # [])
                  and is(abs(part(n1, 1)) < 1e-9) and is(abs(part(n2, 1)) < 1e-9)),
-      /* answer level: e10 — closes at factor (the driver's first
-         symbolic stage; its numeric stage declines on the free i) */
+      /* answer level: e10 — closes at factor */
       f : (a*g+b*g*x)^3*(c*i+d*i*x)^2*(A+B*log(e*(a+b*x)/(c+d*x))),
       ans : rubi(f, x),
       check_not("c3 e10 not a noun",
@@ -1343,90 +1236,72 @@ test_structural_predicates() := block([],
        true
      )$
 
-    /* Task 4B-B3 — the 3_3 cover binding (M1 idiom slotting, class-3
-    deferred campaign B3). The 3_3 binpow covers (a (f+g x^r)^q factor
-    times/over an (a+b log[c (d+e x)^n])^p factor) 0-bound every stored
-    form: a defmatch LHS with TWO structured sub-patterns no-binds though
-    each binds alone. The re-emission slots the binpow factor (isfac),
-    keeps the log factor structured, and recovers the base (f, g[, r]) +
-    outer q in the rule body via %mr_mbp_unwrap + %mr_mbp_base. Pattern-
-    level binding + base recovery on the reps; GREEN pins 0-bind the
-    non-target forms; the answer-level zero-chain runs on an integer-
-    power product rep that closes (the e88/e156 reps reduce to
-    sub-integrals / a remainder that stay out of scope for the binding
-    fix). */
-    test_class3_b3_33() := block([saved_table, mm, w, du, f, ans, z],
-      print("--- b3: 3_3 cover binding (M1 idiom slotting) ---"),
+    /* Task 4B-B3 — the 3_3 binomial-power covers: a (f+g x^r)^q factor
+    times/over an (a+b log(c (d+e x)^n))^p factor. The defmatch runner
+    0-bound every stored form (two structured sub-patterns) and needed the
+    M1 slot re-emission with %mr_mbp_unwrap / %mr_mbp_base recovery;
+    MR-MATCH binds the faithful patterns, so the checks read the captures
+    directly (plan-2 pre-validation, probe_layerA_bind2.mac, 2026-09-13).
+    The answer-level rep runs on the default 1.1.1.1 + 3_1_x + 3_3 + the
+    3.2.x families in production order: without the 3_1_x files the
+    reduction's sub-integral reaches the 3_3 r61 Unintegrable catch-all
+    first (probe_tables.mac). */
+    test_class3_b3_33() := block([saved_table, mm, f, ans, z],
+      print("--- b3: 3_3 binomial-power covers ---"),
+      %mr_load_sibling("rules/class3/3_1_1.mac", 'mr_witness_3_1_1),
+      %mr_load_sibling("rules/class3/3_1_2.mac", 'mr_witness_3_1_2),
+      %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
+      %mr_load_sibling("rules/class3/3_1_4.mac", 'mr_witness_3_1_4),
+      %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
       %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
       %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
       %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
       %mr_load_sibling("rules/class3/3_2_3.mac", 'mr_witness_3_2_3),
       saved_table : mr_rule_table,
-      mr_rule_table : flatten([mr_rule_table, mr_rules_3_3, mr_rules_3_2_1,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_1_1, mr_rules_3_1_2, mr_rules_3_1_3,
+                               mr_rules_3_1_4, mr_rules_3_1_5, mr_rules_3_3, mr_rules_3_2_1,
                                mr_rules_3_2_2, mr_rules_3_2_3]),
-      /* M1 quotient (r11, L14): e88/e90 reps. slot = (f+g*x)^q, base
-         recovers (f, g), outer q; the log denominator stays structured. */
-      mm : _mr_pat_3_3_r11((f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x),
+      /* r11 (quotient): e88 / e90 */
+      mm : %mr_rule_bindings(_mr_rule_3_3_r11, (f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x),
       check_bool("b3 r11 binds e88 (quotient, q=3)", listp(mm)),
-      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r11_m1b)),
-      du : %mr_mbp_base(part(w, 1), x),
-      check_bool("b3 r11 recovers base (f, g) outer q=3",
-                 is(du # false) and is(part(w, 2) = 3)
-                 and is(part(du, 1) = f) and is(part(du, 2) = g)),
-      mm : _mr_pat_3_3_r11((f+g*x)/(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r11 binds base (f, g) and q=3",
+                 binds(mm, ['_mr_3_3_r11_f = f, '_mr_3_3_r11_g = g, '_mr_3_3_r11_q = 3])),
+      mm : %mr_rule_bindings(_mr_rule_3_3_r11, (f+g*x)/(a+b*log(c*(d+e*x)^n)), x),
       check_bool("b3 r11 binds e90 (bare numerator, q=1)", listp(mm)),
-      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r11_m1b)),
-      du : %mr_mbp_base(part(w, 1), x),
-      check_bool("b3 r11 bare-numerator outer q=1 base (f, g)",
-                 is(du # false) and is(part(w, 2) = 1)
-                 and is(part(du, 1) = f) and is(part(du, 2) = g)),
-      /* M2 product (r10, L13): e156 (both factors sqrt-canonicalized) +
-         the integer-power rep. slot = sqrt(f+g*x) (isfac), base (f, g),
-         outer q=1/2; the ^p log-power binds the sqrt log with p=1/2. */
-      mm : _mr_pat_3_3_r10(sqrt(f+g*x)*sqrt(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r11 bare numerator binds (f, g) and q=1",
+                 binds(mm, ['_mr_3_3_r11_f = f, '_mr_3_3_r11_g = g, '_mr_3_3_r11_q = 1])),
+      /* r10 (product): e156, both factors sqrt nodes */
+      mm : %mr_rule_bindings(_mr_rule_3_3_r10, sqrt(f+g*x)*sqrt(a+b*log(c*(d+e*x)^n)), x),
       check_bool("b3 r10 binds e156 (both-sqrt product)", listp(mm)),
-      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r10_m1b)),
-      du : %mr_mbp_base(part(w, 1), x),
-      check_bool("b3 r10 recovers base (f, g) outer q=1/2",
-                 is(du # false) and is(part(w, 2) = 1/2)
-                 and is(part(du, 1) = f) and is(part(du, 2) = g)),
-      /* M4 slotted base (r20, L23): (f+g*x^r)^q factor, base recovers
-         (f, g, r), outer q. */
-      mm : _mr_pat_3_3_r20((f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
-      check_bool("b3 r20 binds slotted-base rep (r=1/2, q=2)", listp(mm)),
-      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r20_m1b)),
-      du : %mr_mbp_base(part(w, 1), x),
-      check_bool("b3 r20 recovers base (f, g, r=1/2) outer q=2",
-                 is(du # false) and is(part(w, 2) = 2)
-                 and is(part(du, 1) = f) and is(part(du, 2) = g)
-                 and is(part(du, 3) = 1/2)),
-      /* M4 x^m head (r25, L28): head kept, slot = (f+g*x^r)^q. */
-      mm : _mr_pat_3_3_r25(x*(f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
-      check_bool("b3 r25 binds x^m-head rep (m=1, r=1/2, q=2)", listp(mm)),
-      w : %mr_mbp_unwrap(geteqR(mm, '_mr_3_3_r25_m1b)),
-      du : %mr_mbp_base(part(w, 1), x),
-      check_bool("b3 r25 recovers base (f, g, r=1/2) outer q=2",
-                 is(du # false) and is(part(w, 2) = 2)
-                 and is(part(du, 1) = f) and is(part(du, 2) = g)
-                 and is(part(du, 3) = 1/2)),
-      /* GREEN pins: the non-target forms 0-bind. r11 is a quotient, so a
-         product 0-binds; r10's slot rejects the (f+g/x) fractional-linear
-         base (%mr_mbp_isfac false). */
-      check_not("b3 r11 0-binds a product (not a quotient)",
-                _mr_pat_3_3_r11((f+g*x)^3*(a+b*log(c*(d+e*x)^n)), x)),
-      check_not("b3 r10 0-binds the (f+g/x) base (isfac reject)",
-                _mr_pat_3_3_r10(x^2*(f+g/x)^2*(a+b*log(c*(d+e*x)^n))^2, x)),
-      check_not("b3 r10 0-binds the r46 two-log-factor shape",
-                _mr_pat_3_3_r10((k+l*x)^r*(a+b*log(c*(d+e*x)^n))
-                                *(f+g*log(h*(i+j*x)^m)), x)),
-      /* reduction fires: r11's true cover now fires on e88 (was skipped,
-         r29 fired before the fix). */
+      check_bool("b3 r10 binds (f, g), q=1/2, p=1/2",
+                 binds(mm, ['_mr_3_3_r10_f = f, '_mr_3_3_r10_g = g,
+                            '_mr_3_3_r10_q = 1/2, '_mr_3_3_r10_p = 1/2])),
+      /* r20: (f+g*x^r)^q factor */
+      mm : %mr_rule_bindings(_mr_rule_3_3_r20, (f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
+      check_bool("b3 r20 binds the slotted-base rep (r=1/2, q=2)", listp(mm)),
+      check_bool("b3 r20 binds (f, g, r=1/2), q=2, p=3",
+                 binds(mm, ['_mr_3_3_r20_f = f, '_mr_3_3_r20_g = g, '_mr_3_3_r20_r = 1/2,
+                            '_mr_3_3_r20_q = 2, '_mr_3_3_r20_p = 3])),
+      /* r25: x^m head kept */
+      mm : %mr_rule_bindings(_mr_rule_3_3_r25, x*(f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
+      check_bool("b3 r25 binds the x^m-head rep (m=1, r=1/2, q=2)", listp(mm)),
+      check_bool("b3 r25 binds m=1, (f, g, r=1/2), q=2",
+                 binds(mm, ['_mr_3_3_r25_m = 1, '_mr_3_3_r25_f = f, '_mr_3_3_r25_g = g,
+                            '_mr_3_3_r25_r = 1/2, '_mr_3_3_r25_q = 2])),
+      /* rejections */
+      check_not("b3 r11 does not bind a product (not a quotient)",
+                %mr_rule_bindings(_mr_rule_3_3_r11, (f+g*x)^3*(a+b*log(c*(d+e*x)^n)), x)),
+      check_not("b3 r10 does not bind the (f+g/x) base",
+                %mr_rule_bindings(_mr_rule_3_3_r10, x^2*(f+g/x)^2*(a+b*log(c*(d+e*x)^n))^2, x)),
+      check_not("b3 r10 does not bind the r46 two-log-factor shape",
+                %mr_rule_bindings(_mr_rule_3_3_r10, (k+l*x)^r*(a+b*log(c*(d+e*x)^n))
+                                                    *(f+g*log(h*(i+j*x)^m)), x)),
+      /* the reduction fires on e88 */
       check_bool("b3 r11 reduction fires on e88",
-                 is(_mr_rule_3_3_r11((f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x)
+                 is(%mr_rule_apply(_mr_rule_3_3_r11, (f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x)
                     # false)),
-      /* answer-level zero-chain: the integer-power product rep (r10,
-         q=2 p=2) closes; factor(diff - f) = 0 (the driver's symbolic
-         stage). */
+      /* answer-level zero-chain: the integer-power product rep (r10, q=2
+         p=2); factor(diff - f) = 0 (the driver's symbolic stage) */
       f : (f+g*x)^2*(a+b*log(c*(d+e*x)^n))^2,
       ans : rubi(f, x),
       check_not("b3 e-r10-int not a top noun",
@@ -1439,47 +1314,50 @@ test_structural_predicates() := block([],
       true
     )$
 
-    /* Task 4C-C5 — the 3_4 slotted-inner-exponent gap (128 entries): the
-    mly whole-log-power slot (r8/r12, head x^m) and the m1b slot
-    (r4/r5/r6, bare form). sqrt / cbrt / reciprocal inner exponents now
-    bind on the stored forms; a coefficient absorbed into the slot fails
-    closed. 3_3 is loaded so the r8 reduction's eager sub-integral
-    (inner exponent 1) has its true cover. */
-    test_class3_c5_34() := block([saved_table, mm, dv, f, ans, z, mly, mnm],
-      print("--- c5: 3_4 slotted inner exponent (mly/m1b slotting) ---"),
-      mly : '_mr_3_4_r8_mly,
-      mnm : '_mr_3_4_r8_m,
-      %mr_load_sibling("rules/class3/3_4.mac", 'mr_witness_3_4),
+    /* Task 4C-C5 — the 3_4 slotted inner exponents (128 entries):
+    x^m (a+b log(c (d+e x^n)^p))^q with a sqrt / cbrt / reciprocal inner
+    exponent on the stored forms. The defmatch runner needed the mly / m1b
+    slot re-emission with %mr_lpfac_parse recovery; MR-MATCH binds the
+    faithful r8 / r4 patterns, so the checks read the captures directly
+    (plan-2 pre-validation, probe_layerA_bind2.mac, 2026-09-13). A 5*x^2
+    head declines: the x_^m_. item cannot absorb the 5. The answer-level
+    reps run on the default 1.1.1.1 + 3_1_x + 3_3 + 3_4 in production order:
+    without the 3_1_x files the reduction's sub-integral reaches the 3_3 r61
+    Unintegrable catch-all first (probe_tables.mac). */
+    test_class3_c5_34() := block([saved_table, mm, f, ans, z],
+      print("--- c5: 3_4 slotted inner exponent ---"),
+      %mr_load_sibling("rules/class3/3_1_1.mac", 'mr_witness_3_1_1),
+      %mr_load_sibling("rules/class3/3_1_2.mac", 'mr_witness_3_1_2),
+      %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
+      %mr_load_sibling("rules/class3/3_1_4.mac", 'mr_witness_3_1_4),
+      %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
       %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+      %mr_load_sibling("rules/class3/3_4.mac", 'mr_witness_3_4),
       saved_table : mr_rule_table,
-      mr_rule_table : flatten([mr_rule_table, mr_rules_3_3, mr_rules_3_4]),
-      /* r8 (L12, head x^m): the whole log-power binds as _mly; the
-         fail-closed parse recovers the 8 inner captures. */
-      mm : _mr_pat_3_4_r8(x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x),
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_1_1, mr_rules_3_1_2, mr_rules_3_1_3,
+                               mr_rules_3_1_4, mr_rules_3_1_5, mr_rules_3_3, mr_rules_3_4]),
+      /* r8 (head x^m): sqrt inner exponent */
+      mm : %mr_rule_bindings(_mr_rule_3_4_r8, x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x),
       check_bool("c5 r8 binds sqrt-inner head x^2", listp(mm)),
-      check_bool("c5 r8 head exponent m=2", is(geteqR(mm, mnm) = 2)),
-      dv : %mr_lpfac_parse(geteqR(mm, mly), x),
-      check_bool("c5 r8 recovers (a,b,c,d,e, r=1/2, p=n, q=2)",
-                 is(dv # false) and is(part(dv, 1) = a) and is(part(dv, 2) = b)
-                 and is(part(dv, 3) = c) and is(part(dv, 4) = d)
-                 and is(part(dv, 5) = e) and is(part(dv, 6) = 1/2)
-                 and is(part(dv, 7) = n) and is(part(dv, 8) = 2)),
-      /* reciprocal inner (r12 path, L16): 1/sqrt(x) -> r = -1/2 */
-      mm : _mr_pat_3_4_r8(x*(a+b*log(c*(d+e*(1/sqrt(x)))^n))^2, x),
-      dv : if is(listp(mm)) then %mr_lpfac_parse(geteqR(mm, mly), x) else false,
-      check_bool("c5 r8 recip-inner recovers r=-1/2",
-                 is(dv # false) and is(part(dv, 6) = -1/2)),
-      /* r4 (L7, bare form, no head): the m1b slot binds the log-power. */
-      mm : _mr_pat_3_4_r4((a+b*log(c*(d+e*sqrt(x))^n))^2, x),
-      check_bool("c5 r4 binds bare sqrt-inner (q=2)", listp(mm)),
-      /* GREEN pin: a coefficient absorbed into the slot is rejected
-         (fail-closed) so r8 cannot fire with the coefficient dropped. */
-      check_not("c5 r8 0-binds the 5*coefficient-absorbed form",
-                _mr_pat_3_4_r8(5*x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x)),
-      /* the true cover now fires on the row-408 rep (was 0-binding). */
+      check_bool("c5 r8 head exponent m=2", binds(mm, ['_mr_3_4_r8_m = 2])),
+      check_bool("c5 r8 binds (a,b,c,d,e, inner n=1/2, p=n, q=2)",
+                 binds(mm, ['_mr_3_4_r8_a = a, '_mr_3_4_r8_b = b, '_mr_3_4_r8_c = c,
+                            '_mr_3_4_r8_d = d, '_mr_3_4_r8_e = e, '_mr_3_4_r8_n = 1/2,
+                            '_mr_3_4_r8_p = n, '_mr_3_4_r8_q = 2])),
+      /* reciprocal inner exponent: 1/sqrt(x) -> n = -1/2 */
+      check_bool("c5 r8 recip-inner binds n=-1/2",
+                 binds(%mr_rule_bindings(_mr_rule_3_4_r8, x*(a+b*log(c*(d+e*(1/sqrt(x)))^n))^2, x),
+                       ['_mr_3_4_r8_n = -1/2, '_mr_3_4_r8_m = 1])),
+      /* r4 (no head) */
+      mm : %mr_rule_bindings(_mr_rule_3_4_r4, (a+b*log(c*(d+e*sqrt(x))^n))^2, x),
+      check_bool("c5 r4 binds bare sqrt-inner (q=2)",
+                 binds(mm, ['_mr_3_4_r4_n = 1/2, '_mr_3_4_r4_q = 2])),
+      check_not("c5 r8 does not bind the 5*x^2 head",
+                %mr_rule_bindings(_mr_rule_3_4_r8, 5*x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x)),
+      /* the reduction fires on the row-408 rep */
       check_bool("c5 r8 reduction fires on row-408 rep",
-                 is(_mr_rule_3_4_r8(x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x) # false)),
-      /* answer-level zero-chain 1: row 408 (sqrt, head x^2, q=2). */
+                 is(%mr_rule_apply(_mr_rule_3_4_r8, x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2, x) # false)),
+      /* answer-level zero-chain 1: row 408 (sqrt, head x^2, q=2) */
       f : x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2,
       ans : rubi(f, x),
       check_not("c5 row-408 not a top noun",
@@ -1488,7 +1366,7 @@ test_structural_predicates() := block([],
       z : errcatch(factor(diff(ans, x) - f)),
       check_bool("c5 row-408 self-diff zero (factor)",
                  is(z # []) and is(part(z, 1) = 0)),
-      /* answer-level zero-chain 2: row 450 (cbrt, head x, q=2). */
+      /* answer-level zero-chain 2: row 450 (cbrt, head x, q=2) */
       f : x*(a+b*log(c*(d+e*x^(1/3))^n))^2,
       ans : rubi(f, x),
       check_not("c5 row-450 not a top noun",
@@ -1512,18 +1390,18 @@ test_structural_predicates() := block([],
       %mr_load_sibling("rules/class3/3_5.mac", 'mr_witness_3_5),
       /* e92: Px = c*x^2+a, Qx = c*e*x^2+a*e -> ratio 1/e (constant,
          non-trivial); diff(Px/Qx) is a non-zero rational, ratsimp -> 0. */
-      mm : _mr_pat_3_5_r10(log(d*(a+c*x^2)^n)/(a*e+c*e*x^2), x),
+      mm : %mr_rule_accept(_mr_rule_3_5_r10, log(d*(a+c*x^2)^n)/(a*e+c*e*x^2), x),
       check_bool("c6 r10 e92 binds", listp(mm)),
       check_bool("c6 r10 e92 cond true (ratsimp fix)",
                  is(listp(mm)) and _mr_cond_3_5_r10(mm, x)),
       /* e93: linear+quadratic (the b*x term). */
-      mm : _mr_pat_3_5_r10(log(d*(a+b*x+c*x^2)^n)/(a*e+b*e*x+c*e*x^2), x),
+      mm : %mr_rule_accept(_mr_rule_3_5_r10, log(d*(a+b*x+c*x^2)^n)/(a*e+b*e*x+c*e*x^2), x),
       check_bool("c6 r10 e93 binds", listp(mm)),
       check_bool("c6 r10 e93 cond true (ratsimp fix)",
                  is(listp(mm)) and _mr_cond_3_5_r10(mm, x)),
       /* GREEN pin: Qx = 2+3*x^2 vs Px = a+c*x^2 is a NON-constant ratio;
          the ratsimp must not over-fire (measured probes c6 D12/D13). */
-      mm : _mr_pat_3_5_r10(log(d*(a+c*x^2)^n)/(2+3*x^2), x),
+      mm : %mr_rule_bindings(_mr_rule_3_5_r10, log(d*(a+c*x^2)^n)/(2+3*x^2), x),
       check_bool("c6 r10 neg ratio binds", listp(mm)),
       check_not("c6 r10 neg ratio cond stays false",
                 is(listp(mm)) and _mr_cond_3_5_r10(mm, x)),
@@ -1532,7 +1410,7 @@ test_structural_predicates() := block([],
          every e92-shape binding). */
       fc : log(3*(1+x^2)^2)/(2+2*x^2),
       check_bool("c6 r10 concrete e92 fires",
-                 is(_mr_rule_3_5_r10(fc, x) # false)),
+                 is(%mr_rule_apply(_mr_rule_3_5_r10, fc, x) # false)),
       true
     )$
 
@@ -1584,7 +1462,7 @@ test_structural_predicates() := block([],
       check_not("c6b logQ rejects the power over log", %mr_logQ(log(x)^2)),
       /* pattern level: the single u_ catch-all slot binds the whole
          integrand (the geteqR idiom); the cond is the NonsumQ gate. */
-      mm : _mr_pat_3_5_r42(1/(x*sqrt(-3+log(x)^2)), x),
+      mm : %mr_rule_bindings(_mr_rule_3_5_r42, 1/(x*sqrt(-3+log(x)^2)), x),
       check_bool("c6b r42 e134 binds", listp(mm)),
       check_bool("c6b r42 e134 u capture (geteqR)",
                  listp(mm) and is(geteqR(mm, '_mr_3_5_r42_u)
@@ -1594,7 +1472,7 @@ test_structural_predicates() := block([],
       /* GREEN pin for the NonsumQ cond: the u_ slot binds a sum
          integrand too, but the cond must decline it (the .m's outer
          /; NonsumQ[u] — the sum shapes are another wave group's). */
-      mm : _mr_pat_3_5_r42(1 + 1/(x*sqrt(-3+log(x)^2)), x),
+      mm : %mr_rule_bindings(_mr_rule_3_5_r42, 1 + 1/(x*sqrt(-3+log(x)^2)), x),
       check_bool("c6b r42 sum integrand binds", listp(mm)),
       check_not("c6b r42 sum integrand cond false (NonsumQ)",
                 is(listp(mm)) and _mr_cond_3_5_r42(mm, x)),

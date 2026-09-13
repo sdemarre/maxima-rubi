@@ -1,0 +1,49 @@
+/* Non-vacuous dispatch regression test (guards the loop-level-return bug):
+   %mr_dispatch_tree must return the FIRING rule's result, not false. Uses
+   controlled %mr_defrule records (synthetic cond/repl functions) so the
+   result does not depend on any answer coinciding with Maxima's own
+   integrate; test/matcher/test_mr_dispatch.mac covers the dispatcher's
+   outcomes in full. */
+t_disp_true(mm, x) := true$
+t_disp_false(mm, x) := false$
+t_disp_42(mm, x) := 42$
+t_disp_7(mm, x) := 7$
+t_disp_99(mm, x) := 99$
+t_disp_flags(mm, x) := sconcat(radexpand, " ", logexpand)$
+test_dispatch() := block([saved_table, pu, hf, h42, h7, h99, hfl],
+  print("--- dispatch mechanism (non-vacuous) ---"),
+  pu : "(Int (Pattern |_t_u| (Blank)) (Pattern x (Blank Symbol)))",
+  hf : %mr_defrule("layerA", 1, pu, t_disp_true, t_disp_false),
+  h42 : %mr_defrule("layerA", 2, pu, t_disp_true, t_disp_42),
+  h7 : %mr_defrule("layerA", 3, pu, t_disp_true, t_disp_7),
+  check("dispatch returns firing rule's result",
+        %mr_dispatch_tree(x^2, x, [hf, h42], 1), 42),
+  check("dispatch returns false when no rule fires",
+        %mr_dispatch_tree(x^2, x, [hf], 1), false),
+  check("dispatch: first firing rule wins (order)",
+        %mr_dispatch_tree(x^2, x, [h42, h7], 1), 42),
+  /* end-to-end: rubi() must return the firing rule's result, not the
+     fall-through (integrate(x^7,x) = x^8/8, not 99) — save/restore the table */
+  h99 : %mr_defrule("layerA", 4,
+                    "(Int (Power (Pattern x (Blank)) 7) (Pattern x (Blank Symbol)))",
+                    t_disp_true, t_disp_99),
+  saved_table : mr_rule_table,
+  mr_rule_table : [h99],
+  check("rubi uses the table (end-to-end, not fall-through)", rubi(x^7, x), 99),
+  /* mr_model_flags (spec 3.6): mr_top binds radexpand:false and
+     logexpand:false around the dispatch while the switch is true */
+  hfl : %mr_defrule("layerA", 5,
+                    "(Int (Power (Pattern x (Blank)) 7) (Pattern x (Blank Symbol)))",
+                    t_disp_true, t_disp_flags),
+  mr_rule_table : [hfl],
+  mr_model_flags : true,
+  check("mr_model_flags true: radexpand, logexpand false inside the dispatch",
+        rubi(x^7, x), "false false"),
+  mr_model_flags : false,
+  check("mr_model_flags false: Maxima defaults inside the dispatch",
+        rubi(x^7, x), "true true"),
+  mr_model_flags : true,
+  check("the flags are restored after mr_top", [radexpand, logexpand], [true, true]),
+  mr_rule_table : saved_table,
+  true
+)$

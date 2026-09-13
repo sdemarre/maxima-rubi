@@ -1,0 +1,11 @@
+/* probes/matcher/02-roundtrip.mac -- one shard of the per-rule round trip.
+   Run via  sh probes/matcher/02-roundtrip.run  (sets MR_CASES, MR_RESULTS,
+   MR_NSHARDS, MR_SHARD).  No rule files are loaded, so no --tls-limit flag.
+   See probes/matcher/02-roundtrip.py for the method. */
+display2d : false$
+build_info();
+load("probes/matcher/01-mma4max-load.lisp")$
+:lisp (cl-user::mma-load-all)
+load("probes/matcher/01-mma4max-feasibility.lisp")$
+load("probes/matcher/02-roundtrip.lisp")$
+:lisp (cl-user::roundtrip-run)

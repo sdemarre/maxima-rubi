@@ -1,0 +1,251 @@
+/* test/matcher/test_mr_dispatch.mac -- unit tests for the rule records, the
+   dispatcher and the MatchQ entries (maxima_rubi_dispatch.lisp; matcher
+   substrate spec sections 3.4-3.6). Synthetic rules only; loads the matcher,
+   the converter, the utils and the dispatcher directly — no rule files, so
+   no TLS flag (mr_top's mr_model_flags binding is pinned in Layer A).
+   From the repo root:
+     maxima --very-quiet -b test/matcher/test_mr_dispatch.mac
+   Ends with a Results: line; a missing Results line is a failure. */
+display2d : false$
+
+tests_passed : 0$
+tests_failed : 0$
+
+check(test_name, actual, expected) := block([],
+  if actual = expected then (
+    tests_passed : tests_passed + 1,
+    print("  PASS: ", test_name)
+  ) else (
+    tests_failed : tests_failed + 1,
+    print("  FAIL: ", test_name),
+    print("    expected: ", expected),
+    print("    actual:   ", actual)
+  ),
+  true)$
+
+check_bool(test_name, actual) := block([v],
+  v : is(actual),
+  if v = true then (
+    tests_passed : tests_passed + 1,
+    print("  PASS: ", test_name)
+  ) else (
+    tests_failed : tests_failed + 1,
+    print("  FAIL: ", test_name),
+    print("    actual:   ", actual)
+  ),
+  true)$
+
+load("maxima_rubi_match.lisp")$
+load("maxima_rubi_tree.lisp")$
+load("maxima_rubi_utils.mac")$
+load("maxima_rubi_dispatch.lisp")$
+
+/* ---- synthetic conds and repls (the generated (mm, x) signature) ---- */
+t_true(mm, x) := true$
+t_false(mm, x) := false$
+t_err(mm, x) := error("t_err: deliberate")$
+t_unknown(mm, x) := tq > 0$
+/* The fault guard catches any serious-condition a match signals. It is
+   tested with a signalled storage-condition, not with runaway recursion:
+   SBCL control-stack exhaustion is fatal ("Control stack exhausted while
+   pseudo-atomic") when the guard page is hit inside an allocation, which
+   a runaway Maxima recursion does (measured 2026-09-13, plan-2
+   pre-validation) — the guard cannot make that case survivable. */
+t_fault(mm, x) := ?error('?storage\-condition)$
+t_42(mm, x) := 42$
+t_7(mm, x) := 7$
+t_m(mm, x) := geteqR(mm, '_t_m)$
+t_u(mm, x) := geteqR(mm, '_t_u)$
+t_leak(mm, x) := [1, true]$
+t_half(mm, x) := is(geteqR(mm, '_t_p) = 1/2)$
+t_p(mm, x) := geteqR(mm, '_t_p)$
+t_inv(mm, x) := %mr_memberQ([asin, acos], geteqR(mm, '_t_F))$
+t_app(mm, x) := apply(geteqR(mm, '_t_F), [2])$
+t_flags(mm, x) := sconcat(radexpand, " ", logexpand)$
+
+/* Int[x^m_., x] */
+p_xm : "(Int (Power (Pattern x (Blank)) (Optional (Pattern |_t_m| (Blank)))) (Pattern x (Blank Symbol)))"$
+/* Int[u_, x] */
+p_u : "(Int (Pattern |_t_u| (Blank)) (Pattern x (Blank Symbol)))"$
+/* Int[(a_.+b_.*x)^p_.*(c_.+d_.*x)^q_., x] -- two complete bindings on
+   (1+2x)^3*(4+5x)^(1/2) */
+p_two : "(Int (Times (Power (Plus (Optional (Pattern |_t_a| (Blank))) (Times (Optional (Pattern |_t_b| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_t_p| (Blank)))) (Power (Plus (Optional (Pattern |_t_c| (Blank))) (Times (Optional (Pattern |_t_d| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_t_q| (Blank))))) (Pattern x (Blank Symbol)))"$
+/* Int[F_[x], x] */
+p_head : "(Int ((Pattern |_t_F| (Blank)) (Pattern x (Blank))) (Pattern x (Blank Symbol)))"$
+
+test_records() := block([h1, h2],
+  print("--- rule records ---"),
+  h1 : %mr_defrule("t", 1, p_xm, t_true, t_42),
+  h2 : %mr_defrule("t", 2, p_xm, t_true, t_7),
+  check_bool("%mr_defrule returns an integer handle", integerp(h1)),
+  check("handles are consecutive", h2, h1 + 1),
+  check("a pattern prepare rejects is a load error",
+        errcatch(%mr_defrule("t", 3, "(Int (Alternatives (Pattern |_t_a| (Blank)) (Pattern |_t_b| (Blank))) (Pattern x (Blank Symbol)))", t_true, t_42)),
+        []),
+  check("a non-handle is an error", errcatch(%mr_rule_apply(10^9, x^3, x)), []),
+  check("wrong arity is an error", errcatch(%mr_defrule("t", 4, p_xm, t_true)), []),
+  true)$
+
+test_dispatch() := block([h42, h7, hm, hdecl, hmis, hleak, hcf, hce, hcu, hfault],
+  print("--- dispatcher: firing, order, outcomes ---"),
+  h42 : %mr_defrule("t", 10, p_xm, t_true, t_42),
+  h7 : %mr_defrule("t", 11, p_xm, t_true, t_7),
+  hm : %mr_defrule("t", 12, p_xm, t_true, t_m),
+  hdecl : %mr_defrule("t", 13, p_xm, t_true, t_false),
+  hmis : %mr_defrule("t", 14, p_xm, t_true, t_err),
+  hleak : %mr_defrule("t", 15, p_xm, t_true, t_leak),
+  hcf : %mr_defrule("t", 16, p_xm, t_false, t_42),
+  hce : %mr_defrule("t", 17, p_xm, t_err, t_42),
+  hcu : %mr_defrule("t", 18, p_xm, t_unknown, t_42),
+  hfault : %mr_defrule("t", 19, p_xm, t_fault, t_42),
+  check("the firing rule's answer", %mr_dispatch_tree(x^3, x, [h42], 1), 42),
+  check("first firing rule wins (order a)", %mr_dispatch_tree(x^3, x, [h42, h7], 1), 42),
+  check("first firing rule wins (order b)", %mr_dispatch_tree(x^3, x, [h7, h42], 1), 7),
+  check("no match -> false", %mr_dispatch_tree(sin(x), x, [h42], 1), false),
+  check("empty table -> false", %mr_dispatch_tree(x^3, x, [], 1), false),
+  check("binding reaches repl", %mr_dispatch_tree(x^3, x, [hm], 1), 3),
+  check("Optional exponent default 1", %mr_dispatch_tree(x, x, [hm], 1), 1),
+  check("x is pre-bound to the integration variable",
+        %mr_dispatch_tree(y^3, x, [hm], 1), false),
+  check("decline (repl false) -> next rule", %mr_dispatch_tree(x^3, x, [hdecl, h7], 1), 7),
+  check("misfire (repl error) -> next rule", %mr_dispatch_tree(x^3, x, [hmis, h7], 1), 7),
+  check("misfire (boolean leak) -> next rule", %mr_dispatch_tree(x^3, x, [hleak, h7], 1), 7),
+  %mr_boolcheck : false,
+  check("boolean leak passes with %mr_boolcheck false",
+        %mr_dispatch_tree(x^3, x, [hleak, h7], 1), [1, true]),
+  %mr_boolcheck : true,
+  check("cond false -> next rule", %mr_dispatch_tree(x^3, x, [hcf, h7], 1), 7),
+  check("cond error -> next rule", %mr_dispatch_tree(x^3, x, [hce, h7], 1), 7),
+  check("cond unknown -> next rule", %mr_dispatch_tree(x^3, x, [hcu, h7], 1), 7),
+  check("fault guard: a storage-condition signalled in cond -> next rule",
+        %mr_dispatch_tree(x^3, x, [hfault, h7], 1), 7),
+  check("the process survives the fault", %mr_dispatch_tree(x^3, x, [h42], 1), 42),
+  check("fault type excludes interactive-interrupt",
+        ?typep(?make\-condition(?intern("INTERACTIVE-INTERRUPT", "SB-SYS")), '?mr\-fault),
+        false),
+  check("fault type excludes timeout",
+        ?typep(?make\-condition(?intern("TIMEOUT", "SB-EXT")), '?mr\-fault),
+        false),
+  check("fault type includes storage-condition",
+        ?typep(?make\-condition('?storage\-condition), '?mr\-fault),
+        true),
+  true)$
+
+/* Int[(g_.+h_.*x)*Sin[x], x] -- G-6: the narrow reading does not match
+   h*x*sin(x); the wide reading binds g = 0, h = h */
+p_wide : "(Int (Times (Plus (Optional (Pattern |_t_g| (Blank))) (Times (Optional (Pattern |_t_h| (Blank))) (Pattern x (Blank)))) (Sin (Pattern x (Blank)))) (Pattern x (Blank Symbol)))"$
+t_h(mm, x) := geteqR(mm, '_t_h)$
+
+test_bindings() := block([hu, hm, hr, hF, hw],
+  print("--- dispatcher: bindings, retry, head symbols, CRE ---"),
+  hu : %mr_defrule("t", 20, p_u, t_true, t_u),
+  check("u_ binds a constant integrand", %mr_dispatch_tree(5, x, [hu], 1), 5),
+  check("a binding holding a boolean is rejected", %mr_dispatch_tree(true, x, [hu], 1), false),
+  hm : %mr_defrule("t", 21, p_xm, t_true, t_m),
+  check("CRE integrand converts", %mr_dispatch_tree(rat(x^3), x, [hm], 1), 3),
+  hr : %mr_defrule("t", 22, p_two, t_half, t_p),
+  mr_cond_retry : true,
+  check("mr_cond_retry true: the cond reaches the second binding",
+        %mr_dispatch_tree((1+2*x)^3*sqrt(4+5*x), x, [hr], 1), 1/2),
+  mr_cond_retry : false,
+  check("mr_cond_retry false: the first complete binding is final",
+        %mr_dispatch_tree((1+2*x)^3*sqrt(4+5*x), x, [hr], 1), false),
+  mr_cond_retry : true,
+  hF : %mr_defrule("t", 23, p_head, t_inv, t_app),
+  check("a head capture binds the symbol the cond's list holds",
+        %mr_dispatch_tree(asin(x), x, [hF], 1), asin(2)),
+  check("a head outside the cond's list declines",
+        %mr_dispatch_tree(sin(x), x, [hF], 1), false),
+  hw : %mr_defrule("t", 24, p_wide, t_true, t_h),
+  mr_flat_wide : false,
+  check("mr_flat_wide false: an Optional-reduced Plus takes no run (G-6 narrow)",
+        %mr_dispatch_tree(h*x*sin(x), x, [hw], 1), false),
+  mr_flat_wide : true,
+  check("mr_flat_wide true: an Optional-reduced Plus takes a run (G-6 wide)",
+        %mr_dispatch_tree(h*x*sin(x), x, [hw], 1), h),
+  mr_flat_wide : false,
+  true)$
+
+test_entries() := block([hm, hcf],
+  print("--- test entries: bindings / accept / apply ---"),
+  hm : %mr_defrule("t", 30, p_xm, t_true, t_m),
+  hcf : %mr_defrule("t", 31, p_xm, t_false, t_42),
+  check("%mr_rule_bindings ignores the cond", %mr_rule_bindings(hcf, x^3, x), [_t_m = 3]),
+  check("%mr_rule_accept honours the cond (false)", %mr_rule_accept(hcf, x^3, x), false),
+  check("%mr_rule_accept returns the accepted binding", %mr_rule_accept(hm, x^3, x), [_t_m = 3]),
+  check("%mr_rule_apply answers", %mr_rule_apply(hm, x^3, x), 3),
+  check("%mr_rule_apply on a cond-false rule", %mr_rule_apply(hcf, x^3, x), false),
+  check("%mr_rule_bindings on no match", %mr_rule_bindings(hm, sin(x), x), false),
+  true)$
+
+t_fault1(b) := ?error('?storage\-condition)$
+
+test_matchq() := block([B],
+  print("--- MatchQ entries ---"),
+  check_bool("MatchQ 5*x^2 vs u_.*x^m_. /; IntegerQ[m]",
+             %mr_matchQ(5*x^2, "(Times (Optional (Pattern |_t_mq1_u| (Blank))) (Power (MRArg 1) (Optional (Pattern |_t_mq1_m| (Blank)))))",
+                        [x], lambda([%mr_mqb], integerp(%mr_mk(_t_mq1_m, %mr_mqb))))),
+  B : %mr_matchQ_bindings(5*x^2, "(Times (Optional (Pattern |_t_mq1_u| (Blank))) (Power (MRArg 1) (Optional (Pattern |_t_mq1_m| (Blank)))))",
+                          [x], true),
+  check_bool("MatchQ bindings u = 5, m = 2",
+             listp(B) and is(geteqR(B, '_t_mq1_u) = 5) and is(geteqR(B, '_t_mq1_m) = 2)),
+  check("MatchQ x^y vs x^m_ /; IntegerQ[m] is false",
+        %mr_matchQ(x^y, "(Power (MRArg 1) (Pattern |_t_mq2_m| (Blank)))",
+                   [x], lambda([%mr_mqb], integerp(%mr_mk(_t_mq2_m, %mr_mqb)))),
+        false),
+  check_bool("MatchQ a Times part splices into Plus (f_+g_.*x^2)^r_.",
+             %mr_matchQ(3 + 5*x^2, "(Power (Plus (Pattern |_t_mq3_f| (Blank)) (Times (Optional (Pattern |_t_mq3_g| (Blank))) (MRArg 1))) (Optional (Pattern |_t_mq3_r| (Blank))))",
+                        [x^2], true)),
+  /* Plus is Flat: f_ alone can take the run 3 + 7*x^4, so only the
+     FreeQ cond rejects the trinomial */
+  check("MatchQ trinomial vs (f_+g_.*x^2)^r_. /; FreeQ[f, x] is false",
+        %mr_matchQ(3 + 5*x^2 + 7*x^4, "(Power (Plus (Pattern |_t_mq3_f| (Blank)) (Times (Optional (Pattern |_t_mq3_g| (Blank))) (MRArg 1))) (Optional (Pattern |_t_mq3_r| (Blank))))",
+                   [x^2], lambda([%mr_mqb], freeof(x, %mr_mk(_t_mq3_f, %mr_mqb)))),
+        false),
+  mr_cond_retry : false,
+  check_bool("MatchQ tries every binding whatever mr_cond_retry says",
+             %mr_matchQ((1+2*x)^3*sqrt(4+5*x),
+                        "(Times (Power (Plus (Optional (Pattern |_t_mq4_a| (Blank))) (Times (Optional (Pattern |_t_mq4_b| (Blank))) (MRArg 1))) (Optional (Pattern |_t_mq4_p| (Blank)))) (Power (Plus (Optional (Pattern |_t_mq4_c| (Blank))) (Times (Optional (Pattern |_t_mq4_d| (Blank))) (MRArg 1))) (Optional (Pattern |_t_mq4_q| (Blank)))))",
+                        [x], lambda([%mr_mqb], is(%mr_mk(_t_mq4_p, %mr_mqb) = 1/2)))),
+  mr_cond_retry : true,
+  check("MatchQ fault guard: a storage-condition signalled in cond -> false",
+        %mr_matchQ(x, "(Pattern |_t_mq5_u| (Blank))", [], t_fault1), false),
+  check("MatchQ wrong arity is an error",
+        errcatch(%mr_matchQ(x, "(Pattern |_t_mq5_u| (Blank))", [], true, 5)), []),
+  check("MatchQ a pattern prepare rejects is an error",
+        errcatch(%mr_matchQ(x, "(Alternatives (Pattern |_t_mq6_a| (Blank)) (Pattern |_t_mq6_b| (Blank)))", [], true)), []),
+  /* Part folding (final review, 1.4.2 r17): Mathematica evaluates the
+     pattern after inserting the parts, so (d_.+e_.*x)^m with m = 1 is
+     d_.+e_.*x, a part 0 exponent gives 1, a literal 1 under Times and 0
+     under Plus drop, a one-argument Times/Plus collapses — bottom-up.
+     Numeric products and sums are not folded. */
+  check_bool("MatchQ a part 1 in an exponent folds: (a+b x)^1 on 1+2x",
+             %mr_matchQ(1+2*x, "(Power (Plus (Optional (Pattern |_t_mq7_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_t_mq7_b| (Blank))))) (MRArg 2))", [x, 1], true)),
+  check_bool("MatchQ a part 2 in an exponent: (a+b x)^2 on (1+2x)^2",
+             %mr_matchQ((1+2*x)^2, "(Power (Plus (Optional (Pattern |_t_mq7_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_t_mq7_b| (Blank))))) (MRArg 2))", [x, 2], true)),
+  check_bool("MatchQ a part 0 in an exponent folds to 1: (a+b x)^0 on 1",
+             %mr_matchQ(1, "(Power (Plus (Optional (Pattern |_t_mq7_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_t_mq7_b| (Blank))))) (MRArg 2))", [x, 0], true)),
+  check("MatchQ a spliced 1 under Times drops: 1*u_ on sin(x) binds u",
+        %mr_matchQ_bindings(sin(x), "(Times (MRArg 1) (Pattern |_t_mq8_u| (Blank)))", [1], true),
+        [_t_mq8_u = sin(x)]),
+  check("MatchQ a spliced 0 under Plus drops: 0+u_ on sin(x) binds u",
+        %mr_matchQ_bindings(sin(x), "(Plus (MRArg 1) (Pattern |_t_mq8_u| (Blank)))", [0], true),
+        [_t_mq8_u = sin(x)]),
+  check("MatchQ folds bottom-up: x^0*u_ on sin(x) binds u",
+        %mr_matchQ_bindings(sin(x), "(Times (Power (MRArg 1) (MRArg 2)) (Pattern |_t_mq8_u| (Blank)))", [x, 0], true),
+        [_t_mq8_u = sin(x)]),
+  check("MatchQ an out-of-range (MRArg 2) with one part is an error",
+        errcatch(%mr_matchQ(1+2*x, "(Power (Plus (Optional (Pattern |_t_mq7_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_t_mq7_b| (Blank))))) (MRArg 2))", [x], true)), []),
+  check("MatchQ an out-of-range (MRArg 0) is an error",
+        errcatch(%mr_matchQ(x, "(Times (MRArg 0) (Pattern |_t_mq8_u| (Blank)))", [x], true)), []),
+  true)$
+
+test_records()$
+test_dispatch()$
+test_bindings()$
+test_entries()$
+test_matchq()$
+print("")$
+print("========================================")$
+print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$
+print("========================================")$

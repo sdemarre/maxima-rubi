@@ -1,0 +1,29 @@
+  /* Milestone-2 Task 3 — %mr_matchQ's function-head case (2.3 r96: the
+     first ported rule whose MatchQ pattern carries a pattern variable in
+     HEAD position — F_[v_]). MR-MATCH binds a head pattern variable to the
+     head of a non-atomic target (strict arity, ordered arguments); the bound
+     value is the Maxima operator symbol the typed name reads as (asin reads
+     as the noun %asin), which a cond re-applies as <symbol>(<arg>). The
+     final checks load the generated 2.3 file and evaluate r96's emitted
+     second MatchQ verbatim. */
+  test_class2_marker_head() := block([P, P2, mh],
+    print("--- matchQ marker-as-head (class 2 r96) ---"),
+    P : "((Pattern |_mF| (Blank)) (Pattern |_mV| (Blank)))",
+    P2 : "(Times ((Pattern |_mF| (Blank)) (Pattern |_mV| (Blank))) ((Pattern |_mF| (Blank)) (Pattern |_mW| (Blank))))",
+    mh : lambda([%mr_mqb], %mr_inverseFunctionQ(%mr_mk(_mF, %mr_mqb)(%mr_mk(_mV, %mr_mqb)))),
+    check_bool("marker head binds the inverse (asin)", %mr_matchQ(asin(x), P, [], mh)),
+    check_not("marker head: non-inverse fails closed (sin)", %mr_matchQ(sin(x), P, [], mh)),
+    check_not("marker head: 2-arg + target (strict arity)", %mr_matchQ(x + 1, P, [], true)),
+    check_not("marker head: atom target", %mr_matchQ(x, P, [], true)),
+    check_not("marker head: consistent re-binding (asin*sin)",
+              %mr_matchQ(asin(x)*sin(x), P2, [], true)),
+    check_bool("marker head: consistent re-binding (asin*asin)",
+               %mr_matchQ(asin(x)*asin(y), P2, [], true)),
+    %mr_load_sibling("rules/class2/2_3.mac", 'mr_witness_2_3),
+    check_bool("2.3 witness survived", is(mr_witness_2_3() = true)),
+    check_bool("r96 emitted MatchQ: asin head matches",
+               %mr_matchQ(%e^(c*(a+b*x))*asin(x), "(Times (Power E (Times (Optional (Pattern |_mr_2_3_r96mq2_c| (Blank))) (Plus (Optional (Pattern |_mr_2_3_r96mq2_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_2_3_r96mq2_b| (Blank))))))) ((Pattern |_mr_2_3_r96mq2_F| (Blank)) (Pattern |_mr_2_3_r96mq2_v| (Blank))))", [x], lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
+    check_not("r96 emitted MatchQ: sin head fails closed",
+              %mr_matchQ(%e^(c*(a+b*x))*sin(x), "(Times (Power E (Times (Optional (Pattern |_mr_2_3_r96mq2_c| (Blank))) (Plus (Optional (Pattern |_mr_2_3_r96mq2_a| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_2_3_r96mq2_b| (Blank))))))) ((Pattern |_mr_2_3_r96mq2_F| (Blank)) (Pattern |_mr_2_3_r96mq2_v| (Blank))))", [x], lambda([%mr_mqb], freeof(x, %mr_mk(_mr_2_3_r96mq2_a, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_b, %mr_mqb)) and freeof(x, %mr_mk(_mr_2_3_r96mq2_c, %mr_mqb))  and  %mr_inverseFunctionQ(%mr_mk(_mr_2_3_r96mq2_F, %mr_mqb)(x))))),
+    true
+   )$

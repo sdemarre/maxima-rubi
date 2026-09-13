@@ -1,0 +1,77 @@
+    /* Task 4B-B3 — the 3_3 binomial-power covers: a (f+g x^r)^q factor
+    times/over an (a+b log(c (d+e x)^n))^p factor. The defmatch runner
+    0-bound every stored form (two structured sub-patterns) and needed the
+    M1 slot re-emission with %mr_mbp_unwrap / %mr_mbp_base recovery;
+    MR-MATCH binds the faithful patterns, so the checks read the captures
+    directly (plan-2 pre-validation, probe_layerA_bind2.mac, 2026-09-13).
+    The answer-level rep runs on the default 1.1.1.1 + 3_1_x + 3_3 + the
+    3.2.x families in production order: without the 3_1_x files the
+    reduction's sub-integral reaches the 3_3 r61 Unintegrable catch-all
+    first (probe_tables.mac). */
+    test_class3_b3_33() := block([saved_table, mm, f, ans, z],
+      print("--- b3: 3_3 binomial-power covers ---"),
+      %mr_load_sibling("rules/class3/3_1_1.mac", 'mr_witness_3_1_1),
+      %mr_load_sibling("rules/class3/3_1_2.mac", 'mr_witness_3_1_2),
+      %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
+      %mr_load_sibling("rules/class3/3_1_4.mac", 'mr_witness_3_1_4),
+      %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
+      %mr_load_sibling("rules/class3/3_3.mac", 'mr_witness_3_3),
+      %mr_load_sibling("rules/class3/3_2_1.mac", 'mr_witness_3_2_1),
+      %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
+      %mr_load_sibling("rules/class3/3_2_3.mac", 'mr_witness_3_2_3),
+      saved_table : mr_rule_table,
+      mr_rule_table : flatten([mr_rule_table, mr_rules_3_1_1, mr_rules_3_1_2, mr_rules_3_1_3,
+                               mr_rules_3_1_4, mr_rules_3_1_5, mr_rules_3_3, mr_rules_3_2_1,
+                               mr_rules_3_2_2, mr_rules_3_2_3]),
+      /* r11 (quotient): e88 / e90 */
+      mm : %mr_rule_bindings(_mr_rule_3_3_r11, (f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r11 binds e88 (quotient, q=3)", listp(mm)),
+      check_bool("b3 r11 binds base (f, g) and q=3",
+                 binds(mm, ['_mr_3_3_r11_f = f, '_mr_3_3_r11_g = g, '_mr_3_3_r11_q = 3])),
+      mm : %mr_rule_bindings(_mr_rule_3_3_r11, (f+g*x)/(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r11 binds e90 (bare numerator, q=1)", listp(mm)),
+      check_bool("b3 r11 bare numerator binds (f, g) and q=1",
+                 binds(mm, ['_mr_3_3_r11_f = f, '_mr_3_3_r11_g = g, '_mr_3_3_r11_q = 1])),
+      /* r10 (product): e156, both factors sqrt nodes */
+      mm : %mr_rule_bindings(_mr_rule_3_3_r10, sqrt(f+g*x)*sqrt(a+b*log(c*(d+e*x)^n)), x),
+      check_bool("b3 r10 binds e156 (both-sqrt product)", listp(mm)),
+      check_bool("b3 r10 binds (f, g), q=1/2, p=1/2",
+                 binds(mm, ['_mr_3_3_r10_f = f, '_mr_3_3_r10_g = g,
+                            '_mr_3_3_r10_q = 1/2, '_mr_3_3_r10_p = 1/2])),
+      /* r20: (f+g*x^r)^q factor */
+      mm : %mr_rule_bindings(_mr_rule_3_3_r20, (f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
+      check_bool("b3 r20 binds the slotted-base rep (r=1/2, q=2)", listp(mm)),
+      check_bool("b3 r20 binds (f, g, r=1/2), q=2, p=3",
+                 binds(mm, ['_mr_3_3_r20_f = f, '_mr_3_3_r20_g = g, '_mr_3_3_r20_r = 1/2,
+                            '_mr_3_3_r20_q = 2, '_mr_3_3_r20_p = 3])),
+      /* r25: x^m head kept */
+      mm : %mr_rule_bindings(_mr_rule_3_3_r25, x*(f+g*x^(1/2))^2*(a+b*log(c*(d+e*x)^n))^3, x),
+      check_bool("b3 r25 binds the x^m-head rep (m=1, r=1/2, q=2)", listp(mm)),
+      check_bool("b3 r25 binds m=1, (f, g, r=1/2), q=2",
+                 binds(mm, ['_mr_3_3_r25_m = 1, '_mr_3_3_r25_f = f, '_mr_3_3_r25_g = g,
+                            '_mr_3_3_r25_r = 1/2, '_mr_3_3_r25_q = 2])),
+      /* rejections */
+      check_not("b3 r11 does not bind a product (not a quotient)",
+                %mr_rule_bindings(_mr_rule_3_3_r11, (f+g*x)^3*(a+b*log(c*(d+e*x)^n)), x)),
+      check_not("b3 r10 does not bind the (f+g/x) base",
+                %mr_rule_bindings(_mr_rule_3_3_r10, x^2*(f+g/x)^2*(a+b*log(c*(d+e*x)^n))^2, x)),
+      check_not("b3 r10 does not bind the r46 two-log-factor shape",
+                %mr_rule_bindings(_mr_rule_3_3_r10, (k+l*x)^r*(a+b*log(c*(d+e*x)^n))
+                                                    *(f+g*log(h*(i+j*x)^m)), x)),
+      /* the reduction fires on e88 */
+      check_bool("b3 r11 reduction fires on e88",
+                 is(%mr_rule_apply(_mr_rule_3_3_r11, (f+g*x)^3/(a+b*log(c*(d+e*x)^n)), x)
+                    # false)),
+      /* answer-level zero-chain: the integer-power product rep (r10, q=2
+         p=2); factor(diff - f) = 0 (the driver's symbolic stage) */
+      f : (f+g*x)^2*(a+b*log(c*(d+e*x)^n))^2,
+      ans : rubi(f, x),
+      check_not("b3 e-r10-int not a top noun",
+                is(atom(ans)) or is(op(ans) = 'integrate)
+                or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(factor(diff(ans, x) - f)),
+      check_bool("b3 e-r10-int self-diff zero (factor)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      mr_rule_table : saved_table,
+      true
+    )$

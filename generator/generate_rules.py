@@ -39,6 +39,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # table lookup would NameError/TypeError. Import under an alias.
 from translation_table import translate as table_translate
 from translation_table import RENAME, RESTRUCTURE
+import mma_reader as rd  # the evaluated-FullForm reader (spec 3.4)
+from fractions import Fraction
 
 class GenError(SystemExit):
     def __init__(self, msg):
@@ -201,378 +203,6 @@ def pattern_vars(lhs):
     vs = set(re.findall(r"([A-Za-z][A-Za-z0-9]*)_\.", lhs))
     vs |= set(re.findall(r"(?<!\.)\b([A-Za-z][A-Za-z0-9]*)_(?![.\w])", lhs))
     return vs - {"x"}
-
-# --- Manual matcher for the two-binomial-power (a+b x^n)^p (c+d x^n)^q
-# family (1.1.3.3 and siblings). matchfix CANNOT match the free-n
-# pattern: it binds (a + b*x^3) against (A + B*x_^n) degenerately as
-# n := 0 with B := b*x^3, and the freeof(x) matchdeclare predicate that
-# kills the degenerate binding kills the whole match — no backtracking
-# to the correct reading (measured 2026-08-25, 5.50.0/SBCL,
-# /tmp/opencode/n1133b.mac). The generator therefore emits a structural
-# matcher (%mr_mbp2 in maxima_rubi_utils.mac) for exactly this shape.
-
-def _binpow_factor(pat):
-    """One whitespace-free .m factor -> (a, b, n, e) or None, where
-    a/b/n are the BARE capture names and e is ("free", var) or
-    ("fixed", literal-string). Accepted:
-      Sqrt[(A + B.*x_^N)]            e = ("fixed", "1/2")
-      (A + B.*x_^N)                  e = ("fixed", "1")
-      (A + B.*x_^N)^E                E a pattern var or positive literal
-    A/B/N must carry the .m variable suffix (_ or _.) — a literal
-    exponent base (x^2, x^3, x^4) yields None (those rules keep the
-    working defmatch path)."""
-    v = r"([A-Za-z][A-Za-z0-9]*)([._]*)?"
-    m = re.match(r"^Sqrt\[\(" + v + r"\+" + v + r"\.\*x_\^" + v + r"\)\]$",
-                 pat)
-    e = ("fixed", "1/2") if m else None
-    if e is None:
-        m = re.match(r"^\(" + v + r"\+" + v + r"\.\*x_\^" + v + r"\)$",
-                     pat)
-        e = ("fixed", "1") if m else None
-    if e is None:
-        m = re.match(r"^\(" + v + r"\+" + v + r"\.\*x_\^" + v +
-                     r"\)\^(\S+)$", pat)
-        if m:
-            e2 = m.group(7)
-            if re.match(r"^[A-Za-z][A-Za-z0-9]*[._]*$", e2):
-                e = ("free", e2.rstrip("._"))
-            elif re.match(r"^\d+(/\d+)?$", e2):
-                e = ("fixed", e2)
-            else:
-                e = None
-    if e is None or m is None:
-        return None
-    a, b, n, n_sfx = m.group(1), m.group(3), m.group(5), m.group(6)
-    # N must be a pattern variable (suffixed _ or _.) — a literal base
-    # power (x^2, x^3, x^4) has no suffix and keeps the defmatch path.
-    if n_sfx not in ("_", "_."):
-        return None
-    # the x_ slot is literal in every accepted form; a/b must be
-    # pattern variables too (suffixed)
-    if m.group(2) not in ("_", "_.") or m.group(4) not in ("_", "_."):
-        return None
-    return (a, b, n, e)
-
-def binpow_manual_match(pat_body):
-    """Whitespace-free integrand pattern -> the manual-matcher spec
-    dict, or None. The pattern must be EXACTLY two binpow factors
-    (numerator and/or denominator) sharing one free n variable."""
-    p = pat_body
-    if p.startswith("1/(") and p.endswith(")"):
-        sides = [(p[3:-1], -1)]
-    elif "/" in p:
-        parts = split_top(p, sep="/")
-        if len(parts) != 2:
-            return None
-        sides = [(parts[0], 1), (parts[1], -1)]
-    else:
-        sides = [(p, 1)]
-    factors = []
-    for body, sgn in sides:
-        for part in split_top(body, sep="*"):
-            if part == "1":
-                continue
-            f = _binpow_factor(part)
-            if f is None:
-                return None
-            a, b, n, e = f
-            kind, e2 = e
-            if kind == "fixed":
-                e2 = _signed_rational(sgn, e2)
-            factors.append({"a": a, "b": b, "n": n, "sgn": sgn,
-                            "free": kind == "free",
-                            "var": e2 if kind == "free" else None,
-                            "lit": None if kind == "free" else e2})
-    if len(factors) != 2:
-        return None
-    if factors[0]["n"] != factors[1]["n"]:
-        return None
-    return {"n": factors[0]["n"], "factors": factors}
-
-def _signed_rational(sgn, s):
-    """Maxima rational literal with the factor sign folded in:
-    (1, '1/2') -> '1/2', (-1, '1/2') -> '-(1/2)', (-1, '1') -> '-1'."""
-    if sgn < 0:
-        return f"-({s})" if "/" in s else f"-{s}"
-    return s
-
-# ---------------------------------------------------------------------
-# Manual slot matcher (phase 1: 1.1.1.4-7 + 1.3.2).
-#
-# The .m's free-exponent slot (a_+b_.*x_)^m_ (or P_^p_, (c_.*x_)^m_)
-# cannot match a BARE target factor in Maxima: the matcher needs a
-# Power node, and Maxima's canonical form strips (expr)^1 (measured
-# 2026-08-25, 5.50.0/SBCL — probes/maxima/probe-matchfix-bare-factor.out).
-# Mathematica's matcher allows the slot to bind the bare factor with the
-# exponent := 1, which is how the corpus expected answers for those
-# entries were generated. The hybrid rule keeps the defmatch path first
-# (unchanged behavior for every entry that matches today) and falls back
-# to a structural decomposition (%mr_binpowfactors) that recovers the
-# implicit E=1, trying every slot assignment until the .m condition
-# accepts one.
-# 1_1_1_7 is EXCLUDED (2026-08-26): its hybrid fallbacks (r16-class
-# m/(sqrt sqrt sqrt)) return wrong answers / blow up the symbolic
-# cascade on the corpus's 10-parameter entries — see the _slot_factor
-# note. 1.1.1.4/5/6 stay (1.1.1.4 verified 6/6 in the driver;
-# canary shows no 1.1.1.5/6 regression).
-SLOT_KEYS_PHASE1 = {"1_1_1_4", "1_1_1_5", "1_1_1_6", "1_3_2"}
-
-_V = r"([A-Za-z][A-Za-z0-9]*)([._]*)"
-
-def _slot_factor(part, sgn):
-    """One whitespace-free .m factor -> list of slot dicts, else None.
-    (The parenthesized sqrt-product expansion for the 1.1.1.7 r16-class
-    LHSes was tried 2026-08-26 and REVERTED: the resulting 1.1.1.7
-    hybrid fallbacks returned a WRONG answer on the symbolic
-    m/(sqrt sqrt sqrt) cascade (V1 = 0.48, /tmp/opencode/e17v) and
-    timed out in the driver (e1/e2 150s each, /tmp/opencode/e17drv).
-    1_1_1_7 is therefore back to defmatch-only; revisit with a
-    cascade budget before re-adding.)"""
-    in_sqrt = False
-    m = re.match(r"^Sqrt\[(.*)\]$", part)
-    if m:
-        in_sqrt = True
-        part = m.group(1)
-    e2 = None
-    m = re.match(r"^\((.*)\)\^(\S+)$", part)
-    if m:
-        base, e2 = m.group(1), m.group(2)
-    else:
-        base = part
-    if base.startswith("(") and base.endswith(")") and _balanced_outer(base):
-        base = base[1:-1]
-    # linear base: (A + B.*x_) / (A + B.*x_^n) / (A + B.*u_)
-    m = re.match(r"^" + _V + r"\+" + _V + r"\.\*" + _V +
-                 r"(?:\^([A-Za-z][A-Za-z0-9]*)([._]*))?$", base)
-    if m:
-        a, a_s, b, b_s, bv, bv_s, nv, nv_s = (m.group(i) for i in range(1, 9))
-        if a_s == "" or b_s == "":
-            return None
-        if bv_s == "":
-            return None
-        if nv is not None and nv_s == "":
-            return None
-        if in_sqrt and e2 is not None and re.match(r"^[A-Za-z]", e2):
-            return None
-        slot = {"kind": "binpow", "a": a, "b": b,
-                "n": nv.rstrip("._") if nv else None,
-                "basevar": bv if bv != "x" else None}
-        slot["E"] = _slot_e(e2, in_sqrt, sgn)
-        if slot["E"] is None:
-            return None
-        return [slot]
-    # monomial base: x_ / (C.*x_)
-    m = re.match(r"^" + _V + r"\.\*x_$", base)
-    if m:
-        c, c_s = m.group(1), m.group(2)
-        if c_s == "":
-            return None
-        slot = {"kind": "monom", "c": c, "basevar": None}
-        slot["E"] = _slot_e(e2, in_sqrt, sgn)
-        if slot["E"] is None:
-            return None
-        return [slot]
-    m = re.match(r"^x_$", base)
-    if m:
-        slot = {"kind": "monom", "c": None, "basevar": None}
-        slot["E"] = _slot_e(e2, in_sqrt, sgn)
-        if slot["E"] is None:
-            return None
-        return [slot]
-    # P(x)-style single-variable base: Pq_ (bare or ^p)
-    m = re.match(r"^" + _V + r"$", base)
-    if m:
-        P, p_s = m.group(1), m.group(2)
-        if p_s == "":
-            return None
-        if e2 is None:
-            return [{"kind": "barevar", "P": P}]
-        slot = {"kind": "polypow", "P": P}
-        slot["E"] = _slot_e(e2, in_sqrt, sgn)
-        if slot["E"] is None:
-            return None
-        return [slot]
-    # quadratic P(x) factor: (A + B.*x_ + C.*x_^2) / (A + C.*x_^2), BARE
-    if not in_sqrt and e2 is None:
-        m = re.match(r"^" + _V + r"\+" + _V + r"\.\*x_\+" + _V + r"\.\*x_\^2$",
-                     base)
-        if m:
-            A, A_s, B, B_s, C, C_s = (m.group(i) for i in range(1, 7))
-            if A_s == "" or B_s == "" or C_s == "":
-                return None
-            return [{"kind": "quadvar", "A": A, "B": B, "C": C}]
-        m = re.match(r"^" + _V + r"\+" + _V + r"\.\*x_\^2$", base)
-        if m:
-            A, A_s, C, C_s = (m.group(i) for i in range(1, 5))
-            if A_s == "" or C_s == "":
-                return None
-            return [{"kind": "quadvar", "A": A, "B": None, "C": C}]
-    return None
-
-def _balanced_outer(s):
-    """s = '(' + ... + ')' where the FIRST ( closes at the LAST char."""
-    depth = 0
-    for i, ch in enumerate(s):
-        if ch == "(":
-            depth += 1
-        elif ch == ")":
-            depth -= 1
-            if depth == 0 and i != len(s) - 1:
-                return False
-    return depth == 0
-
-def _slot_e(e2, in_sqrt, sgn):
-    """The slot's exponent spec from the outer ^E2 and sqrt:
-    (free, var) or (fixed, signed-literal); None = unsupported."""
-    if in_sqrt:
-        e_base = "1/2"
-    else:
-        e_base = "1"
-    if e2 is None:
-        return ("fixed", _signed_rational(sgn, e_base))
-    if re.match(r"^[A-Za-z][A-Za-z0-9]*[._]*$", e2):
-        if in_sqrt:
-            return None
-        return ("free", e2.rstrip("._"))
-    if re.match(r"^-?\d+(/\d+)?$", e2):
-        e = e_base if e_base == "1" else f"({e_base})*{e2}"
-        if in_sqrt:
-            # 1/2 * literal: fold
-            num = 1 if e2 == "1" else None
-            if num is None:
-                return None
-        return ("fixed", _signed_rational(sgn, e))
-    return None
-
-def slots_from_lhs(pat_body):
-    """Whitespace-free integrand pattern -> list of slot dicts, else None.
-    The LHS may be a single top-level quotient (num/den). Every factor
-    must be a supported slot; anything else (product bases, nested
-    powers, literal constants, polynomial bases with two free exponents)
-    declines the manual path for the whole rule (the defmatch path
-    stays the sole mechanism for it)."""
-    if "/" in pat_body:
-        parts = split_top(pat_body, sep="/")
-        if len(parts) != 2:
-            return None
-        sides = [(parts[0], 1), (parts[1], -1)]
-    else:
-        sides = [(pat_body, 1)]
-    slots = []
-    for body, sgn in sides:
-        for part in split_top(body, sep="*"):
-            if part == "1":
-                continue
-            sl = _slot_factor(part, sgn)
-            if sl is None:
-                return None
-            slots.extend(sl)
-    return slots or None
-
-def slot_captures(slots):
-    """Every capture name a slot binds (the union must equal rule_vars)."""
-    out = set()
-    for s in slots:
-        k = s["kind"]
-        if k == "binpow":
-            out.add(s["a"]); out.add(s["b"])
-            if s["n"]:
-                out.add(s["n"])
-            if s["E"][0] == "free":
-                out.add(s["E"][1])
-            if s["basevar"]:
-                out.add(s["basevar"])
-        elif k == "monom":
-            if s["c"]:
-                out.add(s["c"])
-            if s["E"][0] == "free":
-                out.add(s["E"][1])
-        elif k in ("barevar", "polypow"):
-            out.add(s["P"])
-            if k == "polypow" and s["E"][0] == "free":
-                out.add(s["E"][1])
-        elif k == "quadvar":
-            out.add(s["A"]); out.add(s["C"])
-            if s["B"]:
-                out.add(s["B"])
-    return out
-
-def _has_free_e(slots):
-    """The bare-factor hazard: some slot's exponent is a pattern var."""
-    return any(s["E"][0] == "free" for s in slots if "E" in s)
-
-def _slot_tag_branches(s, key, n, caps, elem):
-    """The per-tag (L/R/M) branch text for slot s over pool element
-    `elem` (a Maxima expression naming the pool item): (checks, eqs,
-    nvals-expr) per accepted tag, in L, R, M order. checks is a Maxima
-    boolean (and-chain) or None; eqs a list of Maxima equation strings;
-    nv-expr the nvals append argument (the n expression or None)."""
-    out = []
-    if s["kind"] == "binpow":
-        cks = [f'is(part({elem}, 4) = 1) = true'] if s["n"] is None else []
-        eqs = [f"{caps[s['a']]} = part({elem}, 2)",
-               f"{caps[s['b']]} = part({elem}, 3)"]
-        nv = None
-        if s["n"]:
-            eqs.append(f"{caps[s['n']]} = part({elem}, 4)")
-            nv = f"part({elem}, 4)"
-        if s["E"][0] == "free":
-            eqs.append(f"{caps[s['E'][1]]} = part({elem}, 5)")
-        else:
-            cks.append(f'is(part({elem}, 5) = {s["E"][1]}) = true')
-        if s["basevar"]:
-            eqs.append(f"{caps[s['basevar']]} = x")
-        out.append(("L", " and ".join(cks) if cks else None, eqs, nv))
-    elif s["kind"] == "monom":
-        cks = None
-        eqs = []
-        if s["c"]:
-            eqs.append(f"{caps[s['c']]} = part({elem}, 2)")
-        if s["E"][0] == "free":
-            eqs.append(f"{caps[s['E'][1]]} = part({elem}, 3)")
-        else:
-            cks = f'is(part({elem}, 3) = {s["E"][1]}) = true'
-        out.append(("M", cks, eqs, None))
-    elif s["kind"] == "barevar":
-        out.append(("R", None, [f"{caps[s['P']]} = part({elem}, 2)"], None))
-        out.append(("L", 'is(part(' + elem + ', 5) = 1) = true',
-                    [f"{caps[s['P']]} = part({elem}, 2) + "
-                     f"part({elem}, 3)*x^part({elem}, 4)"], None))
-        out.append(("M", 'is(part(' + elem + ', 3) = 1) = true',
-                    [f"{caps[s['P']]} = part({elem}, 2)*x"], None))
-    elif s["kind"] == "polypow":
-        P = caps[s["P"]]
-        if s["E"][0] == "free":
-            out.append(("L", None,
-                        [f"{P} = part({elem}, 2) + part({elem}, 3)*"
-                         f"x^part({elem}, 4)",
-                         f"{caps[s['E'][1]]} = part({elem}, 5)"], None))
-        else:
-            out.append(("L", f'is(part({elem}, 5) = {s["E"][1]}) = true',
-                        [f"{P} = part({elem}, 2) + part({elem}, 3)*"
-                         f"x^part({elem}, 4)"], None))
-        if s["E"][0] == "free":
-            out.append(("R", None, [f"{P} = part({elem}, 2)",
-                                    f"{caps[s['E'][1]]} = 1"], None))
-            out.append(("M", None,
-                        [f"{P} = part({elem}, 2)*x",
-                         f"{caps[s['E'][1]]} = part({elem}, 3)"], None))
-        else:
-            if s["E"][1] in ("1", "-(1)"):
-                out.append(("R", None, [f"{P} = part({elem}, 2)"], None))
-            out.append(("M", f'is(part({elem}, 3) = {s["E"][1]}) = true',
-                        [f"{P} = part({elem}, 2)*x"], None))
-    elif s["kind"] == "quadvar":
-        cks = ("is(op(part(" + elem + ", 2)) = \"*\") = false  and  "
-               "is(deg(part(" + elem + ", 2), x) <= 2) = true")
-        eqs = [f"{caps[s['A']]} = coeff(part({elem}, 2), x, 0)",
-               f"{caps[s['C']]} = coeff(part({elem}, 2), x, 2)"]
-        if s["B"]:
-            eqs.insert(1, f"{caps[s['B']]} = coeff(part({elem}, 2), x, 1)")
-        out.append(("R", cks, eqs, None))
-    else:
-        raise GenError(f"{key} r{n}: unknown slot kind {s['kind']}")
-    return out
 
 def split_top(s, sep=","):
     """Split s on top-level sep, honouring [ ] ( ) { } nesting."""
@@ -747,98 +377,6 @@ def split_top_power(s):
         return (None, None)
     return (s[:pos].strip(), s[pos+1:].strip())
 
-def _term_deg_coef(t):
-    """(exp_str, coef) for a monomial-in-x term; exp None if x-free.
-    exp_str is the literal text after x^ (a digit run) or '1' for a bare x;
-    a non-digit exp (a capture var) is passed through so the caller can flag
-    the factor ambiguous. coef is the text multiplying the x-part."""
-    t = t.strip()
-    if t[:1] in ("+", "-"):
-        t = t[1:].strip()
-    m = re.search(r"(?<![A-Za-z0-9_])x\^([A-Za-z0-9_]+|\d+)\s*$", t)
-    if m:
-        return (m.group(1), t[:m.start()])
-    m = re.search(r"(?<![A-Za-z0-9_])x\s*$", t)
-    if m:
-        return ("1", t[:m.start()])
-    return (None, t)
-
-def _split_sum(s):
-    """Top-level terms of a Plus/Minus sum (sign kept with the following
-    term; bracket nesting honoured)."""
-    terms, depth, cur = [], 0, []
-    for i, ch in enumerate(s):
-        if ch in "([{":
-            depth += 1
-        elif ch in ")]}":
-            depth -= 1
-        if depth == 0 and ch in "+-" and i > 0:
-            if "".join(cur).strip():
-                terms.append("".join(cur)); cur = []
-            cur.append(ch)
-        else:
-            cur.append(ch)
-    if "".join(cur).strip():
-        terms.append("".join(cur))
-    return terms
-
-def _paren_groups(s):
-    """Every balanced (start, end) paren group in s."""
-    out, depth, start = [], 0, -1
-    for i, ch in enumerate(s):
-        if ch == "(":
-            if depth == 0:
-                start = i
-            depth += 1
-        elif ch == ")":
-            depth -= 1
-            if depth == 0 and start >= 0:
-                out.append((start, i)); start = -1
-    return out
-
-def nonzero_guard_caps(pat):
-    """Capture names whose degenerate 0-binding must be rejected by the
-    matcher: (a) the LEADING coefficient of a parenthesized polynomial-in-x
-    factor of numeric degree >= 2, and (b) any SYMBOLIC exponent of an x-term.
-
-    Maxima's defmatch, unlike Mathematica's, binds a missing leading term of
-    a lower-degree polynomial to 0, so a quadratic/quartic pattern matches a
-    binomial/monomial (the flat first-match-wins table then lets the
-    higher-form rule fire on the lower-form integrand — the measured
-    2026-08-24 source of the wrong-answer misfires). Likewise a symbolic
-    exponent n bound to 0 turns b*x^n into the constant b (a degenerate
-    constant denominator, the 1_2_3_5_r20 case). Declaring such a capture to
-    match only nonzero values makes the matcher itself reject the binding
-    (probe /tmp/md4: rejects C=0, keeps the missing-middle-term case B=0).
-    A numeric exponent (x^2, x^4) is never 0, so only symbolic ones are
-    flagged; a numeric leading coefficient needs degree >= 2 (a binomial's
-    b*x bound to b=0 against a constant is not the misfire seen)."""
-    res = set()
-    for (s, e) in _paren_groups(pat):
-        content = pat[s+1:e]
-        if "x" not in content:
-            continue
-        terms = _split_sum(content)
-        if any(("(" in t) or ("[" in t) for t in terms):
-            continue  # not a flat monomial-in-x sum
-        infos = [_term_deg_coef(t) for t in terms]
-        if all(exp is None for exp, _ in infos):
-            continue  # no x term at all
-        sym = [exp for exp, _ in infos
-               if exp is not None and not re.fullmatch(r"-?\d+", exp)]
-        for exp in sym:
-            res.add(exp.strip())  # a genuine x-term requires n != 0
-        if sym:
-            continue  # degrees are symbolic: exponents guard the factor
-        degs = [int(exp) for exp, _ in infos if exp is not None]
-        mx = max(degs)
-        if mx < 2:
-            continue  # binomials/monomials: degenerate-0 is not the bug
-        for exp, coef in infos:
-            if exp is not None and int(exp) == mx:
-                res.update(re.findall(r"_mr_[A-Za-z0-9_]+", coef))
-    return res
-
 def split_utility_def(text):
     """(rule_text, [utility def lines]) — a Rubi rule file may inline a
     C-tier utility definition (IntLinearQ/IntBinomialQ/IntQuadraticQ) on
@@ -971,6 +509,23 @@ def translate(s, ctx):
             # markers (a_ is no capture of the rule). Pass the RAW args.
             parts = split_top(args, ",") if args.strip() else []
             return _emit_matchq(parts, ctx)
+        if head == "MemberQ":
+            # MemberQ[{ArcSin, ArcCos, ...}, F] with F a function-valued
+            # capture (3_1_5 r58/r59, 3_3 r58, 3_4 r37): the dispatcher
+            # binds F to the Maxima operator symbol of the matched head
+            # (maxima_rubi_dispatch.lisp mr-binding-value), the symbol the
+            # typed native name reads as (asin reads as %asin), so the list
+            # carries the native spellings — not the %mr_ shims the RENAME
+            # table maps ArcSinh/ArcCosh/ArcTanh to (the corpus integrands
+            # carry the natives; probed 2026-08-29 and 2026-09-13).
+            parts = split_top(args, ",") if args.strip() else []
+            heads = parts[0].strip() if len(parts) == 2 else ""
+            names = ([h.strip() for h in heads[1:-1].split(",")]
+                     if heads.startswith("{") and heads.endswith("}") else [])
+            if (names and all(h in NATIVE_FUNCTION_HEADS for h in names)
+                    and parts[1].strip() in ctx["vars"]):
+                return (f"%mr_memberQ([{', '.join(NATIVE_FUNCTION_HEADS[h] for h in names)}], "
+                        f"{cap_name(ctx['key'], ctx['n'], parts[1].strip())})")
         if ctx["markers"] is not None and head in ctx["markers"]:
             # Marker-as-head, cond side (the r96 F[x]): the whole
             # sub-expression is a bare MatchQ pattern variable applied
@@ -1004,52 +559,13 @@ def translate_atom(s, ctx):
             name = m.group()
             j = i + len(name)
             if s[j:j+1] == "_":
-                # A pattern-variable marker. MatchQ pattern scope first
-                # (ctx["markers"] active), then the integration variable,
-                # then this rule's lhs captures. FIX F11: a marker on a
-                # name in none of those is a variable the emitter cannot
-                # rename — fail loudly, never emit a bare underscore that
-                # Maxima would read as a fresh pattern variable.
-                if ctx["markers"] and name in ctx["markers"]:
-                    if s[j:j+2] != "_.":
-                        # Marker-as-head, pattern side (the r96 gap,
-                        # milestone-2 Task 3 Step 4): F_[v_] — a
-                        # function-valued pattern variable applied to
-                        # its argument(s). This build's defmatch
-                        # REJECTS pattern variables in head position
-                        # (measured 2026-08-28, 5.50.0/SBCL: "defmatch:
-                        # some pattern variables are not atoms" — the
-                        # predicate is never even defined), so emit a
-                        # Maxima application whose op is the RAW marker
-                        # name — the %mr_matchQ marker-head case
-                        # (maxima_rubi_utils.mac) consumes exactly that
-                        # shape; the pattern text takes no post-pass,
-                        # so the marker atom stays literal here.
-                        k2 = j + 1
-                        while k2 < L and s[k2] in " \t":
-                            k2 += 1
-                        if k2 < L and s[k2] == "[":
-                            depth, t2 = 0, k2
-                            while t2 < L:
-                                if s[t2] == "[":
-                                    depth += 1
-                                elif s[t2] == "]":
-                                    depth -= 1
-                                    if depth == 0:
-                                        break
-                                t2 += 1
-                            inner = s[k2+1:t2]
-                            args = ([translate(p, ctx)
-                                     for p in split_top(inner, ",")]
-                                    if inner.strip() else [])
-                            out.append(ctx["markers"][name]
-                                       + "(" + ", ".join(args) + ")")
-                            i = t2 + 1
-                            continue
-                    end = j + 2 if s[j:j+2] == "_." else j + 1
-                    out.append(ctx["markers"][name])
-                    i = end
-                    continue
+                # A pattern-variable marker in cond/repl text (patterns are
+                # emitted by pattern_sexp / _emit_matchq, never translated):
+                # the integration variable, then this rule's lhs captures.
+                # FIX F11: a marker on a name in neither is a variable the
+                # emitter cannot rename — fail loudly, never emit a bare
+                # underscore that Maxima would read as a fresh pattern
+                # variable.
                 if name == "x":
                     # `x_Symbol` -> x (the pattern argument). FIX F10:
                     # require name == "x" — a capture named xs_ followed by
@@ -1297,25 +813,6 @@ def _maxima_stmts(body):
         segs.append(seg)
     return ", ".join(segs)
 
-def power_dups(pattern, key, n, varset):
-    """Return the list of pattern texts to emit for one rule: the plain
-    pattern, plus a duplicate with each optional Power exponent (`u_^m_.`)
-    dropped and `m` bound to 1 — the structural case decomposition cannot
-    fill (measured 2026-08-20). Most rules yield exactly one pattern.
-
-    DEFERRED (human decision 2026-08-20): NOT wired into emit_rule; Task 9's
-    divergence loop adds it where the corpus shows the gap."""
-    pats = [pattern]
-    for m in re.finditer(r"([A-Za-z][A-Za-z0-9]*)\^\s*("
-                         + "|".join(sorted(varset, key=len, reverse=True))
-                         + r")_\.\b", pattern):
-        base, exp = m.group(1), m.group(2)
-        dup = pattern.replace(base + f"^{exp}_.", base, 1)
-        pats.append((dup, exp))
-    # (dup, exp) pairs become extra matchers binding <exp> := 1; a single
-    # element returns the plain pattern only.)
-    return pats
-
 CMP_OPS = {"GtQ": ">", "LtQ": "<", "LeQ": "<=", "GeQ": ">=",
            "IGtQ": ">", "ILtQ": "<", "ILeQ": "<="}
 
@@ -1401,29 +898,152 @@ def _emit_coeff(arglist, key, n):
         return f"%mr_coeff({u}, x, {v}, {k})"
     raise GenError(f"{key} r{n}: unmappable Coeff form {form!r}")
 
+# --- Patterns as evaluated FullForm s-expressions (matcher substrate spec
+# docs/superpowers/specs/2026-09-12-matcher-substrate-design.md section
+# 3.4). The reader (generator/mma_reader.py) parses a pattern text and
+# emulates Mathematica's evaluation of it; maxima_rubi_dispatch.lisp
+# prepares the s-expression with MR-MATCH.
+
+_PATTERN_OBJECTS = {"Pattern", "Blank", "BlankSequence", "BlankNullSequence",
+                    "Optional", "Condition", "PatternTest"}
+
+# G-9 risk flags accepted after review (closed list; spec 3.4 makes every
+# other risk flag a GenError). The reader flags any head with a numeric
+# argument as possibly rewritten by evaluation; Complex[0, a_] has a pattern
+# argument, so it stays the unevaluated Complex[0, a_] expression — the
+# shape MR-MATCH matches against the converter's complex atoms (spec 3.2
+# G-3). 9.1 is outside the probe-02 census (not in LoadRules).
+ACCEPTED_RISKS = {
+    ("9_1", 11, "risk:numeric-or-negated-arg:Complex"),   # 9.1.m L15
+}
+
+
+def _evaluated(text, key, n, what):
+    """Reader parse + evaluation of a pattern text. A G-9 risk effect (an
+    evaluation the reader does not emulate) is a GenError."""
+    try:
+        tree = rd.parse(text)
+    except rd.ParseError as ex:
+        raise GenError(f"{key} r{n}: reader cannot parse the {what} "
+                       f"{text[:60]!r}: {ex}")
+    ev, effects = rd.evaluate_lhs(tree)
+    risks = [e for e in effects if e.startswith("risk:")
+             and (key, n, e) not in ACCEPTED_RISKS]
+    if risks:
+        raise GenError(f"{key} r{n}: {what} evaluation not emulated "
+                       f"({', '.join(risks)}): {text[:60]!r}")
+    return ev
+
+
+def _sexp(tree, key, n):
+    """The s-expression text of a pattern tree, checked to be a plain
+    Maxima string literal body."""
+    s = rd.to_sexp(tree)
+    if '"' in s or "\\" in s:
+        raise GenError(f"{key} r{n}: pattern s-expression carries a quote or "
+                       f"a backslash: {s[:60]!r}")
+    return s
+
+
+def _has_pattern(e):
+    return isinstance(e, tuple) and (
+        e[0] in _PATTERN_OBJECTS or any(_has_pattern(a) for a in e))
+
+
+def pattern_sexp(lhs, key, n, rule_vars):
+    """The rule's Int[<pattern>, x_Symbol] LHS as the evaluated FullForm
+    s-expression %mr_defrule prepares. Each capture's Pattern name becomes
+    its Maxima capture name cap_name(key, n, v), so the dispatcher's
+    binding list is the mm list the cond and repl read with geteqR; x keeps
+    its name (the dispatcher pre-binds it to the integration variable)."""
+    ev = _evaluated(lhs, key, n, "LHS")
+    if not (isinstance(ev, tuple) and len(ev) == 3 and ev[0] == "Int"
+            and ev[2] == ("Pattern", "x", ("Blank", "Symbol"))):
+        raise GenError(f"{key} r{n}: LHS is not Int[<pattern>, x_Symbol]: "
+                       f"{rd.fullform(ev)[:60]!r}")
+    seen = set()
+
+    def rename(e):
+        if not isinstance(e, tuple):
+            return e
+        if (e[0] == "Pattern" and len(e) == 3 and e[1] != "x"
+                and not isinstance(e[1], (tuple, rd.Str))):
+            if e[1] not in rule_vars:
+                raise GenError(f"{key} r{n}: pattern variable {e[1]!r} is "
+                               f"not a capture ({sorted(rule_vars)})")
+            seen.add(e[1])
+            return ("Pattern", cap_name(key, n, e[1]), rename(e[2]))
+        return tuple(rename(a) for a in e)
+
+    out = rename(ev)
+    if seen != set(rule_vars):
+        raise GenError(f"{key} r{n}: captures "
+                       f"{sorted(set(rule_vars) - seen)} vanish from the "
+                       f"evaluated LHS")
+    return _sexp(out, key, n)
+
+
+# Mathematica inverse-trig heads -> the NATIVE Maxima function names, for a
+# head list compared with a function-valued capture (translate(), MemberQ).
+# Maxima reads each typed name as the operator symbol the dispatcher binds
+# the capture to (asin -> %asin; measured 2026-09-13). The corpus integrands
+# carry the natives, and probed 2026-08-29 on
+# branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 asin/acos/atan/acot/asinh/
+# acosh/atanh/acoth are all bound natives with closing diffs (arccot/arcoth
+# are unbound nouns) — NOT the RENAME table's %mr_ shims.
+NATIVE_FUNCTION_HEADS = {
+    "ArcSin": "asin", "ArcCos": "acos", "ArcTan": "atan",
+    "ArcCot": "acot", "ArcSinh": "asinh", "ArcCosh": "acosh",
+    "ArcTanh": "atanh", "ArcCoth": "acoth",
+}
+
+
+def _input_form(e):
+    """A pattern-free evaluated tree -> InputForm text translate() accepts
+    (Plus/Times/Power as operators, every other head as a call)."""
+    if isinstance(e, tuple):
+        h, args = e[0], e[1:]
+        if h == "Plus":
+            return "(" + " + ".join(_input_form(a) for a in args) + ")"
+        if h == "Times":
+            return "(" + "*".join(_input_form(a) for a in args) + ")"
+        if h == "Power" and len(args) == 2:
+            # Plus/Times, fractions and negative integers carry their own
+            # parentheses; a nested Power is the one operand that needs
+            # them (x^2 stays x^2 — _emit_expon reads the power form)
+            return "^".join(f"({_input_form(a)})" if isinstance(a, tuple)
+                            and a[0] == "Power" else _input_form(a)
+                            for a in args)
+        if h == "List":
+            return "{" + ", ".join(_input_form(a) for a in args) + "}"
+        return (f"{_input_form(h)}["
+                f"{', '.join(_input_form(a) for a in args)}]")
+    if isinstance(e, rd.Str):
+        return '"' + e + '"'
+    if isinstance(e, Fraction):
+        return f"({e.numerator}/{e.denominator})"
+    if isinstance(e, int):
+        return f"({e})" if e < 0 else str(e)
+    if isinstance(e, rd.Real):
+        return e.text
+    return e
+
+
 def _emit_matchq(arglist, ctx):
-    """MatchQ[u, pat /; cond] — called from translate() with the RAW
-    (untranslated) args, since the pattern must be translated in the
-    fresh marker scope, not the outer one. Every class-1 use is this
-    pattern-form (the pattern carries its own pattern variables). Fresh
-    names per (file, rule, occurrence, variable), matchdeclare'd as
-    pattern vars;
-    the uniform 3-arg call %mr_matchQ(u, pattern, cond) is emitted with
-    the pattern UNQUOTED so computed parts (renamed outer captures)
-    evaluate at call time while the pattern vars stay literal (a bare
-    symbol not matchdeclare'd in the active pattern is a literal in
-    Maxima), and the cond as a LAMBDA over the binding list:
-    lambda([%mr_mqb], <cond with each marker m rewritten to
-    %mr_mk(m, %mr_mqb)>). Maxima evaluates call arguments eagerly, so
-    an unquoted cond would evaluate its marker-dependent parts
-    (IntegerQ[m], m > 1, FreeQ[m, x]) on the unbound marker symbols
-    before the match; a quote does not help either — this build's ev()
-    does not strip quotes (measured 2026-08-23, task 7a A3). A lambda
-    body is held until called and keeps the lexical environment, so
-    the cond's outer-capture references resolve when the matcher calls
-    it with the binding list. Named lookups (%mr_mk) keep the marker
-    order decoupled between generator and matcher. Task 7 ports
-    %mr_matchQ. FIX E7."""
+    """MatchQ[u, pat /; cond] -> %mr_matchQ(u, "<pattern>", [<parts>],
+    <cond>) — called from translate() with the RAW args.
+
+    The pattern is the reader's evaluated s-expression with each pattern
+    variable renamed to a fresh marker _mr_<key>_r<n>mq<k>_<v>. MatchQ
+    evaluates its pattern argument, so every pattern-free part that is not
+    a number or E/Pi/I — the integration variable x, an outer capture, a
+    computed Expon[Px, x] — becomes the placeholder (MRArg <k>), and its
+    translated Maxima text is the k-th element of the list argument,
+    evaluated at call time (maxima_rubi_dispatch.lisp |$%mr_matchQ|
+    substitutes the values). The cond is a lambda over the binding list
+    with each marker rewritten to %mr_mk(<marker>, %mr_mqb) — held until
+    the matcher calls it (Maxima evaluates call arguments eagerly, FIX E7);
+    an empty cond is bare true."""
     key, n = ctx["key"], ctx["n"]
     if len(arglist) != 2:
         raise GenError(f"{key} r{n}: MatchQ arity {len(arglist)}")
@@ -1435,48 +1055,68 @@ def _emit_matchq(arglist, ctx):
         pat, mcond = patpart[:last].strip(), patpart[last+2:].strip()
     else:
         pat, mcond = patpart, ""
-    markers = set(re.findall(r"([A-Za-z][A-Za-z0-9]*)_\.", pat))
-    markers |= set(re.findall(r"(?<!\.)\b([A-Za-z][A-Za-z0-9]*)_(?![.\w])",
-                              pat))
-    if not markers:
+    ev = _evaluated(pat, key, n, "MatchQ pattern")
+    ctx["mq"] += 1
+    mq = ctx["mq"]
+    mark, parts = {}, []
+
+    def placeholder(e):
+        parts.append(translate(_input_form(e), ctx))
+        return ("MRArg", len(parts))
+
+    def conv(e):
+        if isinstance(e, tuple):
+            if e[0] == "Pattern" and len(e) == 3:
+                mark.setdefault(e[1], f"_mr_{key}_r{n}mq{mq}_{e[1]}")
+                return ("Pattern", mark[e[1]], conv(e[2]))
+            if e[0] in ("Blank", "BlankSequence", "BlankNullSequence"):
+                return e
+            if not _has_pattern(e):
+                return placeholder(e)
+            head = conv(e[0]) if isinstance(e[0], tuple) else e[0]
+            return (head,) + tuple(conv(a) for a in e[1:])
+        if (isinstance(e, (int, Fraction, rd.Real, rd.Str))
+                or e in ("E", "Pi", "I")):
+            return e
+        return placeholder(e)
+
+    tree = conv(ev)
+    if not mark:
         raise GenError(f"{key} r{n}: MatchQ pattern without variables: "
                        f"{pat!r}")
-    ctx["mq"] += 1
-    mark = {v: f"_mr_{key}_r{n}mq{ctx['mq']}_{v}" for v in markers}
-    ctx["decls"].update(mark.values())
-    saved = ctx["markers"]
-    ctx["markers"] = mark
-    try:
-        pat_txt = translate(pat, ctx)
-        cond_txt = translate(mcond, ctx) if mcond else ""
-    finally:
-        ctx["markers"] = saved
-    if not cond_txt:
-        cond_emit = "true"
-    else:
-        # rewrite each marker to a named lookup in the binding list the
-        # matcher passes; \b...\b guards the prefix-collision case
-        # (one marker name beginning with another, e.g. Q vs Qx)
+    if mcond:
+        saved = ctx["markers"]
+        ctx["markers"] = mark
+        try:
+            cond_txt = translate(mcond, ctx)
+        finally:
+            ctx["markers"] = saved
+        # \b...\b guards the prefix-collision case (Q vs Qx)
         for m in mark.values():
             cond_txt = re.sub(rf"\b{re.escape(m)}\b",
                               f"%mr_mk({m}, %mr_mqb)", cond_txt)
         cond_emit = f"lambda([%mr_mqb], {cond_txt})"
-    return f"%mr_matchQ({u_txt}, {pat_txt}, {cond_emit})"
+    else:
+        cond_emit = "true"
+    return (f'%mr_matchQ({u_txt}, "{_sexp(tree, key, n)}", '
+            f'[{", ".join(parts)}], {cond_emit})')
 
 def emit_head(head, arglist, ctx):
     """Special forms first, then a plain renamed head(arglist)."""
     key, n = ctx["key"], ctx["n"]
-    if head == ctx.get("headvar"):
-        # The head-position capture applied in the repl (F[d*(e+f*x)]):
-        # rebuild the call from the head symbol %mr_headvar_match bound
-        # to F — apply(<F capture>, [arg]) (the idiom probed
-        # 2026-08-29: apply works for a symbol holding a native, a
-        # %mr_ port, or a noun function).
-        if len(arglist) != 1:
-            raise GenError(f"{key} r{n}: headvar capture {head!r} "
-                           f"applied to {len(arglist)} args (only the "
-                           f"single-arg call is supported)")
-        return f"apply({cap_name(key, n, head)}, [{arglist[0]}])"
+    if head in ctx["vars"]:
+        # A function-valued capture applied (F[d*(e+f*x)] — 3_1_5 r58/r59,
+        # 3_3 r58, 3_4 r37): the dispatcher binds F to the Maxima operator
+        # symbol of the matched head (%asin), and apply builds the call
+        # (the idiom probed 2026-08-29: apply works for a symbol holding a
+        # native, a %mr_ port, or a noun function).
+        return f"apply({cap_name(key, n, head)}, [{', '.join(arglist)}])"
+    if head == "Complex":
+        # Complex[re, im] in a repl (9.1 L15 Complex[Identity[0], a]): the
+        # Mathematica complex number re + im I.
+        if len(arglist) != 2:
+            raise GenError(f"{key} r{n}: Complex arity {len(arglist)}")
+        return f"({arglist[0]} + {arglist[1]}*%i)"
     if head == "FreeQ":
         # FreeQ[e, x] -> freeof(x, e); FreeQ[{a,b}, x] -> and of freeof.
         # (FIX F7) the arg list may arrive as [a, b] (braces already
@@ -1502,43 +1142,16 @@ def emit_head(head, arglist, ctx):
     if head == "With" or head == "Module":
         if len(arglist) != 2:
             raise GenError(f"{key} r{n}: {head} arity {len(arglist)}")
-        decls_txt, body = arglist[0].strip(), arglist[1].strip()
-        if not (decls_txt.startswith("[") and decls_txt.endswith("]")):
-            raise GenError(f"{key} r{n}: {head} locals not a list: "
-                           f"{decls_txt[:40]!r}")
-        locals_, assigns = [], []
-        for p in split_top(decls_txt[1:-1], ","):
-            p = p.strip()
-            parts = split_top(p, "=")
-            name = parts[0].strip()
-            if not name:
-                raise GenError(f"{key} r{n}: empty {head} local: {p!r}")
-            if len(parts) > 1 and parts[1].strip():
-                # FIX E11: the arglist is ALREADY translated — re-translating
-                # double-renames the captures (the walk sees `_mr_…_a` and
-                # raises "pattern variable 'mr'") and mis-translates the
-                # value. Use the text as is; a bare local (Module[{k, u}, …])
-                # declares without an assignment.
-                val = ", ".join(q.strip() for q in parts[1:])
-                assigns.append(f"{name} : {val}")
-            locals_.append(name)
-        # FIX E1 (body half): a body may carry its own top-level /; (a
-        # Conditional inside the With/Module). Emit the explicit guard —
-        # false means the rule declines (Rubi's unevaluated Conditional
-        # never yields an answer).
-        last = _find_top(body,
-                         lambda i, ch: ch == "/" and body[i+1] == ";")
-        if last >= 0:
-            inner, inner_cond = body[:last].strip(), body[last+2:].strip()
-            # FIX P2/P5: statement syntax (';' / 'v = e') -> block
-            # syntax (',' / 'v : e'); the '/;' is consumed by the split
-            # above, so its ';' never reaches _maxima_stmts.
-            inner = _maxima_stmts(inner)
-            body = f"(if is({inner_cond}) = true then {inner} else false)"
-        else:
-            body = _maxima_stmts(body)
-        lead = ", ".join(assigns) + ", " if assigns else ""
-        return f"block([{', '.join(locals_)}], {lead}{body})"
+        locals_, assigns = _scope_locals(head, arglist[0], key, n)
+        body = arglist[1].strip()
+        # An inner /; is moved into the cond by emit_rule
+        # (split_inner_condition, spec 3.4); one that reaches here sits
+        # below the top of the RHS — none in classes 1-3 (census
+        # 2026-09-12) — and has no faithful cond placement: fail loudly.
+        if _find_top(body, lambda i, ch: ch == "/" and body[i+1:i+2] == ";") >= 0:
+            raise GenError(f"{key} r{n}: {head} with an inner condition "
+                           f"below the top of the RHS")
+        return _scope_block(locals_, assigns, _maxima_stmts(body))
     if head == "If":
         if len(arglist) != 3:
             raise GenError(f"{key} r{n}: If arity {len(arglist)}")
@@ -1673,1708 +1286,63 @@ def emit_head(head, arglist, ctx):
     # form in Maxima.
     return f"{name}({', '.join(arglist)})"
 
-def _emit_binpow_manual(spec, key, n, rule_vars, cond, rhs, ctx):
-    """Manual-matcher rule for the (a+b x^n)^p (c+d x^n)^q family:
-    no matchdeclare/defmatch — the rule body calls %mr_mbp2 (the
-    structural two-binpow matcher) and builds the matchlist itself.
-    The cond/repl are the usual generated functions (they read the
-    captures via geteqR(mm, 'cap), which works on any equation list).
-    The factor SLOT order (which factor binds (a,b) vs (c,d)) is
-    Maxima's canonical times order, not the .m text order, so the body
-    tries the canonical assignment and then the swapped one — the
-    cond decides, exactly like the %mr_matchQ cond threading."""
-    f1, f2 = spec["factors"]
-    caps = {v: cap_name(key, n, v) for v in rule_vars}
-    used = {f1["a"], f1["b"], f2["a"], f2["b"], spec["n"]}
-    for f in (f1, f2):
-        if f["free"]:
-            used.add(f["var"])
-    if used != set(rule_vars):
-        raise GenError(f"{key} r{n}: manual-matcher spec names {sorted(used)}"
-                       f" != rule vars {sorted(rule_vars)}")
-    # MatchQ is a defmatch mechanism — a manual rule cannot use markers.
-    if "MatchQ" in (cond or ""):
-        raise GenError(f"{key} r{n}: manual-matcher shape with a MatchQ "
-                       f"condition (unsupported)")
 
-    def mm_list(fa, fb):
-        """Equation list for the assignment fa -> slot 1, fb -> slot 2.
-        Each factor's captures come from ITS OWN position's locals
-        (a1/e1 = matcher factor 1, a2/e2 = factor 2; e1/e2 already
-        carry the factor's numerator/denominator sign)."""
-        eqs = []
-        for f, pos in ((fa, 1), (fb, 2)):
-            e_local = "e1" if f is f1 else "e2"
-            eqs.append(f"{caps[f['a']]} = a{pos}")
-            eqs.append(f"{caps[f['b']]} = b{pos}")
-            if f["free"]:
-                eqs.append(f"{caps[f['var']]} = {e_local}")
-        eqs.append(f"{caps[spec['n']]} = nmbp")
-        return "[" + ", ".join(eqs) + "]"
-
-    lines = []
-    lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm0, mm, ok, nmbp, "
-                 f"a1, b1, e1, a2, b2, e2],")
-    lines.append("  mm0 : %mr_mbp2(f, x),")
-    lines.append("  if mm0 = false then return(false),")
-    lines.append("  nmbp : part(part(mm0, 1), 3),")
-    lines.append(f"  a1 : part(part(mm0, 1), 1), b1 : part(part(mm0, 1), 2),")
-    lines.append(f"  e1 : part(part(mm0, 1), 4),")
-    lines.append(f"  a2 : part(part(mm0, 2), 1), b2 : part(part(mm0, 2), 2),")
-    lines.append(f"  e2 : part(part(mm0, 2), 4),")
-
-    def attempt(fa, fb):
-        """One slot assignment: fa -> slot 1, fb -> slot 2. The fixed-
-        exponent check reads the LOCAL exponent of the factor occupying
-        the slot (e1/e2 carry the sign of the factor's ORIGINAL side,
-        which is what the matcher produced and what the .m literal
-        refers to)."""
-        efa = "e1" if fa is f1 else "e2"
-        efb = "e1" if fb is f1 else "e2"
-        ca = "true" if fa["free"] else f"is({efa} = {fa['lit']}) = true"
-        cb = "true" if fb["free"] else f"is({efb} = {fb['lit']}) = true"
-        # Group-body comma rules (measured 2026-08-25, 5.50.0/SBCL):
-        # statements are COMMA-SEPARATED, but the LAST statement of a
-        # parenthesized group takes NO trailing comma (one -> "Illegal
-        # use of delimiter )"; none earlier -> "if is not an infix
-        # operator"). The defmatch-path rules never hit this because
-        # their last block statement is the bare if-expression value.
-        return [
-            f"  if {ca} and {cb} then (",
-            f"    mm : {mm_list(fa, fb)},",
-            f"    ok : _mr_cond_{key}_r{n}(mm, x),",
-            f"    if is(ok) = true then return(_mr_repl_{key}_r{n}(mm, x))",
-            "  ),",
-        ]
-
-    lines += attempt(f1, f2)
-    lines += attempt(f2, f1)
-    lines.append("  false)$")
-    # cond/repl: the usual generated bodies (translated here).
-    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
-                 if cond else "true")
-    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
-    if ctx["decls"]:
-        raise GenError(f"{key} r{n}: manual-matcher rule produced MatchQ "
-                       f"markers (unsupported)")
-    caps_sorted = sorted(caps[c] for c in rule_vars)
-    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
-    snaps = {c: c + "__s" for c in caps_sorted}
-    for c in caps_sorted:
-        repl_txt = re.sub(r"(?<![0-9A-Za-z_])" + re.escape(c) +
-                          r"(?![0-9A-Za-z_])", snaps[c], repl_txt)
-    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
-                           for c in caps_sorted) or "true"
-    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
-    locals_txt = ", ".join(caps_sorted)
-    body = []
-    body.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
-    body.append(f"  {binds},")
-    body.append(f"  {base_cond})$")
-    body.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
-    body.append(f"  {snap_binds},")
-    body.append(f"  {repl_txt})$")
-    return "\n".join(lines + body), []
+def _scope_locals(head, decls_txt, key, n):
+    """The translated locals list of a With/Module -> (names, assignment
+    texts). FIX E11: the list is ALREADY translated — re-translating
+    double-renames the captures; a bare local (Module[{k, u}, …]) declares
+    without an assignment."""
+    decls_txt = decls_txt.strip()
+    if not (decls_txt.startswith("[") and decls_txt.endswith("]")):
+        raise GenError(f"{key} r{n}: {head} locals not a list: "
+                       f"{decls_txt[:40]!r}")
+    locals_, assigns = [], []
+    for p in split_top(decls_txt[1:-1], ","):
+        p = p.strip()
+        parts = split_top(p, "=")
+        name = parts[0].strip()
+        if not name:
+            raise GenError(f"{key} r{n}: empty {head} local: {p!r}")
+        if len(parts) > 1 and parts[1].strip():
+            assigns.append(f"{name} : {', '.join(q.strip() for q in parts[1:])}")
+        locals_.append(name)
+    return locals_, assigns
 
 
-# Defmatch in this build binds PATTERN SLOTS THAT CANNOT BE FILLED to
-# `false` (measured 2026-08-25: 1.1.1.7 r25's Px*(lin)^m*(lin)^n*
-# (lin)^p*(lin)^q degenerate-binds two unfilled exponent slots to false
-# on the 3-factor target (0.3x+1.7)^2*(0.8x+1.1)*(0.9x+0.5); freeof(x,
-# false) = true sails the .m condition, and the repl rebuilds
-# (false*x+false)^false garbage whose own mr_int sub-dispatch re-fires
-# r25 with fresh false bindings — an unbounded cascade the result-level
-# leak check only catches too late). A false matchlist value can never
-# be a genuine binding (an integrand factor is never a boolean), so
-# every rule body rejects matchlists containing a boolean.
-_MM_BOOL_GUARD = "  if %mr_containsBoolean(mm) then return(false),"
-
-# --- Head-position capture F_[...] (class 3: 3.1.5 r58-59, 3.3 r58,
-# 3.4 r37). defmatch in this build rejects pattern variables in head
-# position (measured 2026-08-28, class 2 r96: "defmatch: some pattern
-# variables are not atoms"), so the generator emits a STRUCTURAL rule:
-# the body calls %mr_headvar_match (maxima_rubi_utils.mac) with a slot
-# spec and the allow-list of head symbols the rule's
-# MemberQ[{...}, F] clause names, and binds F to the matched head
-# symbol (the repl rebuilds the call apply(F, [arg]) — the idiom
-# probed 2026-08-29). The allow-list uses the NATIVE spellings: the
-# corpus integrands carry them, and probed 2026-08-29 on
-# branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 asin/acos/atan/acot/
-# asinh/acosh/atanh/acoth are all bound natives with closing diffs
-# (arccot/arcoth are unbound nouns) — NOT the RENAME table's %mr_
-# shims, which no integrand carries.
-HEADVAR_HEADS = {
-    "ArcSin": "asin", "ArcCos": "acos", "ArcTan": "atan",
-    "ArcCot": "acot", "ArcSinh": "asinh", "ArcCosh": "acosh",
-    "ArcTanh": "atanh", "ArcCoth": "acoth",
-}
-
-# The closed lhs shape set (whitespace-free text): one F_[...] factor,
-# one (a_+b_.*Log[...]) factor, at most one bare-capture Px factor.
-# Anything else with a head-position capture is a loud GenError — the
-# defmatch path cannot take it, so a silent pass-through would emit a
-# pattern this build's defmatch rejects at load.
-_HV_CAP = r"([A-Za-z][A-Za-z0-9]*)_[.]?"
-_HV_F_ARG_LIN = re.compile(
-    r"^" + _HV_CAP + r"\.\*\(" + _HV_CAP + r"\+" + _HV_CAP
-    + r"\.\*x_\)$")                      # d_.*(e_+f_.*x_)
-_HV_F_ARG_MON = re.compile(
-    r"^" + _HV_CAP + r"\.\*x_$")         # f_.*x_
-_HV_LOG_FACTOR = re.compile(
-    r"^\(" + _HV_CAP + r"\+" + _HV_CAP + r"\.\*Log\[(.+)\]\)$")
-_HV_LOG_ARG_PX = re.compile(
-    r"^" + _HV_CAP + r"\.\*x_\^" + _HV_CAP + r"$")         # c_.*x_^n_.
-_HV_LOG_ARG_LP = re.compile(
-    r"^" + _HV_CAP + r"\.\*\(" + _HV_CAP + r"\+" + _HV_CAP
-    + r"\.\*x_\)\^" + _HV_CAP + r"$")       # c_.*(d_+e_.*x_)^n_.
-_HV_LOG_ARG_BP = re.compile(
-    r"^" + _HV_CAP + r"\.\*\(" + _HV_CAP + r"\+" + _HV_CAP
-    + r"\.\*x_\^" + _HV_CAP + r"\)\^" + _HV_CAP + r"$")
-                                       # c_.*(d_+e_.*x_^n_)^p_.
-_HV_BARE_CAP = re.compile(r"^" + _HV_CAP + r"$")
+def _scope_block(locals_, assigns, body):
+    lead = ", ".join(assigns) + ", " if assigns else ""
+    return f"block([{', '.join(locals_)}], {lead}{body})"
 
 
-def _split_and(s):
-    """Top-level clauses of an && chain (split_top is single-char)."""
-    out, depth, cur, i = [], 0, [], 0
-    while i < len(s):
-        ch = s[i]
-        if ch in "[({":
-            depth += 1
-        elif ch in "])}":
-            depth -= 1
-        if depth == 0 and ch == "&" and s[i+1:i+2] == "&":
-            out.append("".join(cur)); cur = []; i += 2
-            continue
-        cur.append(ch); i += 1
-    out.append("".join(cur))
-    return [c.strip() for c in out]
-
-
-def headvar_spec(body, key, n, rule_vars, cond):
-    """A head-position capture (a rule var immediately followed by '[')
-    in the whitespace-free integrand body -> the parsed slot spec; None
-    if there is none; a loud GenError on one outside the closed shape
-    set (including a capture without a MemberQ[{...}, F] allow-list in
-    the cond — no silent pass-through). An optional-form head capture
-    (a rule var's optional marker immediately before the bracket,
-    'F_.[') is a loud GenError — class 3's .m sources use only the
-    required 'F_[' form (grep-verified 2026-08-29, zero '_.[' in the
-    eleven class-3 .m files) and the default defmatch path would emit
-    a symbol x list-literal product the generator would not name."""
-    opt = re.findall(r"([A-Za-z][A-Za-z0-9]*)_\.\[", body)
-    if opt:
-        raise GenError(f"{key} r{n}: optional-form head capture "
-                       f"({opt[0]}_.[...]) is not supported")
-    hits = re.findall(r"([A-Za-z][A-Za-z0-9]*)_\[", body)
-    if not hits:
+def split_inner_condition(rhs):
+    """A raw .m RHS With[{…}, body /; c] or Module[{…}, body /; c] ->
+    (head, locals text, body, c); None for any other RHS. Spec 3.4: the
+    inner condition moves from repl into cond, so it runs under the
+    matcher's condition hook and takes part in the binding retry. All 227
+    class 1-3 inner conditions have this top-level shape (census
+    2026-09-12, 0 nested)."""
+    head, args = head_args(rhs)
+    if head not in ("With", "Module"):
         return None
-    if len(hits) != 1 or hits[0] not in rule_vars:
-        raise GenError(f"{key} r{n}: head-position capture(s) {hits!r} "
-                       f"outside the supported class-3 shape (one "
-                       f"capture, a rule var)")
-    F = hits[0]
-    factors = split_top(body, "*")
-    fF = [t for t in factors if t.startswith(F + "_[")]
-    fL = [t for t in factors if t.startswith("(")]
-    fR = [t for t in factors
-          if not t.startswith(F + "_[") and not t.startswith("(")]
-    if len(fF) != 1 or len(fL) != 1 or len(fR) > 1:
-        raise GenError(f"{key} r{n}: head-position rule factor split "
-                       f"(F/log/other) = ({len(fF)}, {len(fL)}, "
-                       f"{len(fR)}) != (1, 1, <=1): {factors!r}")
-    base, exp = split_top_power(fF[0])
-    if base is None:
-        base, exp = fF[0], None
-    # base is F_[...]: the capture underscore is not in head_args's head
-    # regex — rewrite it with the bare head for the parse.
-    head, arg = head_args(F + base[len(F)+1:])
-    if head != F or not base.startswith(F + "_["):
-        raise GenError(f"{key} r{n}: F factor base is not {F}_[...]: "
-                       f"{base!r}")
-    if exp is None:
-        expspec = ("bare",)
-    else:
-        me = _HV_BARE_CAP.match(exp)
-        if not me:
-            raise GenError(f"{key} r{n}: F factor exponent {exp!r} is "
-                           f"not a single capture (the closed set has "
-                           f"^m_ or no power)")
-        expspec = ("free", me.group(1))
-    ml = _HV_F_ARG_LIN.match(arg)
-    if ml:
-        argspec = ("lin", ml.group(1), ml.group(2), ml.group(3))
-    else:
-        mm = _HV_F_ARG_MON.match(arg)
-        if not mm:
-            raise GenError(f"{key} r{n}: F argument {arg!r} outside the "
-                           f"closed set (d_.*(e_+f_.*x_) / f_.*x_)")
-        argspec = ("mon", mm.group(1))
-    mg = _HV_LOG_FACTOR.match(fL[0])
-    if not mg:
-        raise GenError(f"{key} r{n}: log factor {fL[0]!r} outside the "
-                       f"closed set ((a_+b_.*Log[...]))")
-    a, b, larg = mg.group(1), mg.group(2), mg.group(3)
-    logspec = None
-    for rx, tag in ((_HV_LOG_ARG_PX, "px"), (_HV_LOG_ARG_LP, "lpow"),
-                    (_HV_LOG_ARG_BP, "bpow")):
-        mlg = rx.match(larg)
-        if mlg:
-            logspec = (tag,) + mlg.groups()
-            break
-    if logspec is None:
-        raise GenError(f"{key} r{n}: log argument {larg!r} outside the "
-                       f"closed set (c_.*x_^n_ / c_.*(d_+e_.*x_)^n_ / "
-                       f"c_.*(d_+e_.*x_^n_)^p_)")
-    px = None
-    if fR:
-        mp = _HV_BARE_CAP.match(fR[0])
-        if not mp:
-            raise GenError(f"{key} r{n}: leftover factor {fR[0]!r} is "
-                           f"not a single capture (the Px slot)")
-        px = mp.group(1)
-    clauses = _split_and(cond or "")
-    member = [c for c in clauses if c.startswith("MemberQ[")]
-    if len(member) != 1:
-        raise GenError(f"{key} r{n}: head-position capture requires "
-                       f"exactly one MemberQ[...,{F}] allow-list clause "
-                       f"(found {len(member)})")
-    mmem = re.fullmatch(r"MemberQ\[\{([^}]*)\},\s*" + F + r"\]",
-                        member[0])
-    if not mmem:
-        raise GenError(f"{key} r{n}: the MemberQ clause is not "
-                       f"MemberQ[{{...}},{F}]: {member[0]!r}")
-    head_names = [h.strip() for h in mmem.group(1).split(",")]
-    for h in head_names:
-        if h not in HEADVAR_HEADS:
-            raise GenError(f"{key} r{n}: unlisted headvar head {h!r} — "
-                           f"probe the build and extend HEADVAR_HEADS")
-    cond_rest = " && ".join(c for c in clauses if c != member[0])
-    used = {F, a, b} | set(logspec[1:])
-    if argspec[0] == "lin":
-        used |= {argspec[1], argspec[2], argspec[3]}
-    else:
-        used.add(argspec[1])
-    if expspec[0] == "free":
-        used.add(expspec[1])
-    if px is not None:
-        used.add(px)
-    if used != set(rule_vars):
-        raise GenError(f"{key} r{n}: headvar spec names {sorted(used)} "
-                       f"!= rule vars {sorted(rule_vars)}")
-    return {"F": F, "argspec": argspec, "expspec": expspec,
-            "log": (a, b, logspec), "px": px, "heads": head_names,
-            "cond_rest": cond_rest}
-
-
-def _emit_headvar_manual(spec, key, n, rule_vars, cond, rhs, ctx):
-    """The structural emission for the head-position capture (no
-    matchdeclare/defmatch — see the HEADVAR_HEADS block comment); the
-    cond/repl are the usual generated functions (geteqR reads, the
-    snapshot rewrite — the _emit_binpow_manual emission mirrored)."""
-    F = spec["F"]
-    a, b, logspec = spec["log"]
-    if ctx["decls"]:
-        raise GenError(f"{key} r{n}: headvar rule produced MatchQ "
-                       f"markers (unsupported)")
-    cs = lambda v: f"'{cap_name(key, n, v)}"
-    argspec, expspec = spec["argspec"], spec["expspec"]
-    if argspec[0] == "lin":
-        aspec = f'["lin",{cs(argspec[1])},{cs(argspec[2])},{cs(argspec[3])}]'
-    else:
-        aspec = f'["mon",{cs(argspec[1])}]'
-    espec = (f'["free",{cs(expspec[1])}]' if expspec[0] == "free"
-             else '["bare"]')
-    if logspec[0] == "px":
-        lspec = f'["px",{cs(logspec[1])},{cs(logspec[2])}]'
-    elif logspec[0] == "lpow":
-        lspec = (f'["lpow",{cs(logspec[1])},{cs(logspec[2])},'
-                 f'{cs(logspec[3])},{cs(logspec[4])}]')
-    else:
-        lspec = (f'["bpow",{cs(logspec[1])},{cs(logspec[2])},'
-                 f'{cs(logspec[3])},{cs(logspec[4])},{cs(logspec[5])}]')
-    parts = []
-    if spec["px"] is not None:
-        parts.append(f'["px",{cs(spec["px"])}]')
-    parts.append(f'["f",{cs(F)},{aspec},{espec}]')
-    parts.append(f'["log",{cs(a)},{cs(b)},{lspec}]')
-    slots = "[" + ", ".join(parts) + "]"
-    heads = ("[" + ",".join("'" + HEADVAR_HEADS[h]
-                            for h in spec["heads"]) + "]")
-    base_cond = (translate(drop_optionals(spec["cond_rest"], rule_vars),
-                           ctx) if spec["cond_rest"] else "true")
-    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
-    caps = sorted(cap_name(key, n, v) for v in rule_vars)
-    snaps = {c: c + "__s" for c in caps}
-    if set(snaps.values()) & set(caps):
-        raise GenError(f"{key} r{n}: a snapshot name collides with a "
-                       f"capture name (a Rubi variable named __s?)")
-    for c in caps:
-        repl_txt = re.sub(
-            r"(?<![0-9A-Za-z_])" + re.escape(c) + r"(?![0-9A-Za-z_])",
-            snaps[c], repl_txt)
-    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps) or "true"
-    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
-                           for c in caps) or "true"
-    locals_txt = ", ".join(caps)
-    snap_locals = ", ".join(snaps[c] for c in caps)
-    lines = []
-    lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
-    lines.append(f"  mm : %mr_headvar_match(f, x, {slots}, {heads}),")
-    lines.append("  if mm = false then return(false),")
-    lines.append(_MM_BOOL_GUARD)
-    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
-    lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) "
-                 f"else false)$")
-    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
-    lines.append(f"  {binds},")
-    lines.append(f"  {base_cond})$")
-    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
-    lines.append(f"  {snap_binds},")
-    lines.append(f"  {repl_txt})$")
-    return "\n".join(lines), []
-
-
-def _slot_backtrack_lines(slots, key, n, rule_vars):
-    """The _mr_slots backtracking function for a slot list:
-    _mr_slots(j, used, acc, nvals, pool, x) -> the rule's repl (an
-    antiderivative) or false. j walks the slots in .m order; used is
-    the set of consumed pool indices; acc the matchlist equations;
-    nvals the x-exponent values of the shared-n slots (in slot order);
-    pool the tagged factor list from %mr_binpowfactors (["L",A,B,n,E]
-    lin factors, ["R",rest], ["M",c0,k]). A slot consumes one pool
-    item of an accepted tag; the first assignment whose .m condition
-    accepts wins (any condition-passing binding is a valid
-    antiderivative — the driver verifies by differentiation)."""
-    caps = {v: cap_name(key, n, v) for v in rule_vars}
-    k = len(slots)
-    nvars = {}
-    for s in slots:
-        if s["kind"] == "binpow" and s["n"]:
-            nvars.setdefault(s["n"], []).append(s)
-    shared = [v for v, ss in nvars.items() if len(ss) > 1]
-
-    def tag_stmts(s):
-        """The per-tag branch statements over the loop variable i.
-        The recursion RESULT is stored in r2 (the flag); a successful
-        assignment is detected on the NEXT iteration by the guard,
-        which then skips the remaining pool items."""
-        stmts = []
-        for tag, checks, eqs, nv in _slot_tag_branches(s, key, n, caps,
-                                                       "part(pool, i)"):
-            pre = (f'is(part(part(pool, i), 1) = "{tag}") = true'
-                   + (f"  and  {checks}" if checks else ""))
-            nvals_arg = (f"append(nvals, [{nv}])" if nv else "nvals")
-            stmts.append(
-                f"      if {pre} then\n"
-                f"        r2 : _mr_slots_{key}_r{n}(j + 1, append(used, "
-                f"[i]), append(acc, [{', '.join(eqs)}]), {nvals_arg}, "
-                f"pool, x)")
-        return " else\n".join(stmts)
-
-    # return() inside a for body does NOT return the function in this
-    # build: it terminates the loop and its value is DISCARDED
-    # (measured 2026-08-26, /tmp/opencode/retprobe: f1(5) returned the
-    # block-level -1 instead of the loop-level 3). The backtracker
-    # therefore stores the recursion result in the r2 flag, guards the
-    # remaining iterations on it, and the branch value after the loop
-    # is r2 itself. (The F1 pool-append idiom is unaffected: it never
-    # returned from inside the loop.)
-    # Two parse traps, both measured 2026-08-26 (/tmp/opencode/jtest,
-    # jtest3, forif, retprobe):
-    #  (a) return() inside a for body terminates the LOOP and its
-    #      value is DISCARDED — the recursion result must be stored
-    #      in the r2 flag instead;
-    #  (b) `if C then <value>, NEXT` in a block SWALLOWS NEXT into
-    #      the then-branch (the whole j-chain collapses to the tail
-    #      value), while `if C then <statement>, NEXT` separates
-    #      correctly — every j-group must therefore END IN A
-    #      STATEMENT: return(r2) at block level (outside the for).
-    body = []
-    for j in range(1, k + 1):
-        s = slots[j - 1]
-        stmts = tag_stmts(s)
-        body.append(f"  if is(j = {j}) then (")
-        body.append(f"    r2 : false,")
-        body.append(f"    for i : 1 thru length(pool) do (")
-        body.append(f"      if is(r2 = false) and is(member(i, used) = "
-                    f"false) then (")
-        body.append(f"        ({stmts}\n        )")
-        body.append(f"      )")
-        body.append(f"    ),")
-        body.append(f"    return(r2)")
-        if j == k:
-            cks = []
-            for v in shared:
-                js = [slots.index(s) + 1 for s in nvars[v]]
-                for a in range(len(js)):
-                    for b in range(a + 1, len(js)):
-                        cks.append(f"is(part(nvals, {a + 1}) = "
-                                   f"part(nvals, {b + 1})) = true")
-            # FULL-CONSUMPTION CHECK (2026-08-26, canary 1.1.1.7 e14
-            # regression): without it a k-slot rule's fallback accepts
-            # ANY integrand whose factors include a valid k-subset —
-            # a 4-slot 1.1.1.4 rule fired on a 5-factor quotient
-            # (1.1.1.7 e14's shape), bound four factors, and its repl
-            # integrated the wrong integrand. The pattern's shape is
-            # "exactly these factors", so every pool element (L/R/M)
-            # must be consumed by the time the terminal is reached.
-            cks.append("is(length(used) = length(pool)) = true")
-            ck_txt = "  and  ".join(cks)
-            body.append(f"  ),")
-            body.append(f"  if is(j = {k + 1}) then (")
-            body.append(f"    if {ck_txt} then (")
-            body.append(f"      r2 : _mr_cond_{key}_r{n}(acc, x),")
-            body.append(f"      if is(r2) = true then "
-                        f"return(_mr_repl_{key}_r{n}(acc, x)),")
-            body.append(f"      return(false)")
-            body.append(f"    ) else return(false)")
-            body.append(f"  ),")
-        else:
-            body.append(f"  ),")
-    body.append(f"  false)$")
-    return ([f"_mr_slots_{key}_r{n}(j, used, acc, nvals, pool, x) := "
-             f"block([i, r2],"] + body)
-
-def _slot_rule_lines(key, n, rule_vars):
-    """The hybrid _mr_rule body: defmatch first (unchanged behavior),
-    the structural fallback on decline. rule_vars: the capture names,
-    remvalued at the top of the fallback (see the pollution note)."""
-    # remvalue must be called UNQUOTED, one statement per capture:
-    # quoted form remvalue('sym) does not unbind in this build, and
-    # map(lambda([v], remvalue(v)), [sym]) evaluates the argument to
-    # its value before the lambda sees it (measured 2026-08-26,
-    # /tmp/opencode/remcmp, remmap2-4, remg).
-    caps = sorted(cap_name(key, n, v) for v in rule_vars)
-    rem = ",\n    ".join(f"remvalue({c})" for c in caps)
-    return [
-        f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok, d, pool, r0, i],",
-        f"  mm : _mr_pat_{key}_r{n}(f, x),",
-        # the mm # false guard: false is the legitimate declination
-        # signal that opens the structural fallback
-        f"  if mm # false and %mr_containsBoolean(mm) then return(false),",
-        f"  if mm = false then (",
-        # Pollution (measured 2026-08-26, /tmp/opencode/termpois vs
-        # termclean): a DECLINED defmatch that partially matched
-        # (e.g. the 3/1-quotient shape: three slots bound, the fourth
-        # unmatched) COMMITS the capture bindings as globals. The
-        # fallback then builds acc equations with those names and the
-        # LHS auto-evaluates (`_mr_.._a = 1.1` -> `1.7 = 1.1`), so
-        # geteqR finds no capture, cond degrades to unknown, and every
-        # terminal declines — even though the same pool integrates
-        # fine in a clean process. remvalue the rule's own captures
-        # (uniquely named per rule; remvalue is a no-op on unbound).
-        f"    {rem},",
-        f"    d : %mr_binpowfactors(f, x),",
-        f"    if is(d = false) then return(false),",
-        f"    if is(part(d, 1) # 1) then return(false),",
-        # LINEAR-ONLY GUARD (2026-08-26, 1.3.2 e151 class): the walker
-        # classifies ANY (A+B x^n)^E as a binpow L entry — the n=3
-        # cubic (0.5+0.9 x^3) came back [0.5, 0.9, 3, 1]. Every
-        # phase-1 slot family is linear (n=1), so an n # 1 L factor
-        # must decline the fallback instead of filling a linear slot
-        # (E-matching would misbind and integrate the wrong integrand).
-        f"    linok : true,",
-        f"    pool : [],",
-        f"    for i : 1 thru length(part(d, 4)) do (",
-        f"      if is(part(part(part(d, 4), i), 3) = 1) then",
-        f"        pool : append(pool, [[\"L\", part(part(part(d, 4), i), 1),",
-        f"          part(part(part(d, 4), i), 2), part(part(part(d, 4), i), 3),",
-        f"          part(part(part(d, 4), i), 4)]])",
-        f"      else linok : false",
-        f"    ),",
-        f"    if is(linok = false) then return(false),",
-        f"    if is(part(d, 3) = 1) = false then",
-        f"      pool : append(pool, [[\"R\", part(d, 3)]]),",
-        f"    if is(part(d, 2) = false) = false then",
-        f"      pool : append(pool, [[\"M\", part(part(d, 2), 1),",
-        f"        part(part(d, 2), 2)]]),",
-        f"    r0 : _mr_slots_{key}_r{n}(1, [], [], [], pool, x),",
-        f"    return(r0)",
-        f"  ),",
-        f"  ok : _mr_cond_{key}_r{n}(mm, x),",
-        f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$",
-    ]
-
-# The exact 3.1.2 r10 (m10) integrand shape: (d_.*x_)^m_.
-# (a_.+b_.*Log[c_.*x_^n_.])^p_ with every marker pinned (d/m/a/b/c/n
-# optional, x/p required).
-_DHEAD10_SHAPE = re.compile(
-    r"^\("
-    r"([A-Za-z][A-Za-z0-9]*)_\.\*x_\)"
-    r"\^([A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"([A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"([A-Za-z][A-Za-z0-9]*)_\.\*Log\["
-    r"([A-Za-z][A-Za-z0-9]*)_\.\*x_\^"
-    r"([A-Za-z][A-Za-z0-9]*)_\.\]"
-    r"\)\^"
-    r"([A-Za-z][A-Za-z0-9]*)_$")
-
-
-def dhead10_spec(body, key, n, rule_vars, cond):
-    """(d_.*x_)^m_.* head re-transcription (3.1.2 r10, class-3 deferred
-    campaign C2); None for every other rule.
-
-    The (d*x)^m power has a NON-ATOMIC head: in a Times integrand
-    findfun's first-match-wins scan hands it the (a+b log(c x^n))^p
-    factor (Power[Plus, p]) and there is no backtracking, so the full
-    pattern 0-binds every stored corpus form of a unit monomial head
-    over the log power (e65/e66/e67: x^3, x^2, x — the .m integrates
-    all three; measured 2026-09-01 on
-    branch_5_50_base_84_g4204fb669, probe
-    /tmp/opencode/t4c2_step1_boundary.mac). Re-transcribing the head to
-    d_.*x_^m_.* makes it an atomic-base power and the pattern binds the
-    stored forms with exactly the .m values (d=1, m=3/2/1, p=-1).
-
-    .m parity, not .m excess: the r10 repl is NOT (d,m)-invariant, so a
-    numeric-coefficient bind (8*x^3 -> d=8) would integrate the wrong
-    integrand, and free-d rows ((dd*x)^mm*(...)) 0-bind in production
-    today anyway (probed) — d is matchdeclare'd is(u = 1). That is the
-    only match-time lambda in the class-3 table, and it tests one
-    symbol of the head factor, not the whole-factor %mr_neQ the e8
-    timing (2026-08-24) rejected.
-
-    The shape is closed and exact: a fullmatch whose capture set is not
-    exactly this rule's lhs captures is a loud GenError. r6 (L9) shares
-    the IDENTICAL lhs with r10 (L13) — the pair is distinguished by the
-    cond (r6 carries NeQ[m, -1] && LtQ[p, -1]), so only the FreeQ-only
-    member is re-transcribed; any other clause keeps the rule on the
-    current emission. The remaining same-head variants (r3/r4 bare
-    log, r5 ^p_. optional-p, r8 /Log, r11 x_^q_ head, r12 double head)
-    fail the fullmatch and take the default path — today's behavior.
-    Returns {"old_head", "d"}: emit_rule performs the raw-text rewrite
-    (the head minus its two parens, whitespace-tolerant) so the
-    source's original spacing survives the translation."""
-    m = _DHEAD10_SHAPE.fullmatch(body)
-    if m is None:
+    parts = split_top(args, ",")
+    decls, body = parts[0], ",".join(parts[1:])
+    last = _find_top(body, lambda i, ch: ch == "/" and body[i+1:i+2] == ";")
+    if last < 0:
         return None
-    d, mvar, a, b, c, nvar, p = m.groups()
-    used = {d, mvar, a, b, c, nvar, p}
-    if used != set(rule_vars):
-        raise GenError(f"{key} r{n}: (d*x)^m head shape matched with "
-                       f"captures {sorted(used)} != lhs captures "
-                       f"{sorted(rule_vars)}")
-    fvars = set()
-    for clause in _split_and(cond or ""):
-        mfq = re.fullmatch(r"FreeQ\[\{([^}]*)\},\s*x\]", clause)
-        if mfq is None:
-            return None
-        fvars |= {t.strip() for t in mfq.group(1).split(",")}
-    if fvars != used:
-        return None
-    return {"old_head": f"({d}_.*x_)^{mvar}_.*", "d": d}
-
-
-# ============================================================================
-# M1 slotted-inner-exponent re-transcription (class-3 deferred campaign C1).
-#
-# Defect (measured 2026-09-01, branch_5_50_base_84_g4204fb669, probes
-# /tmp/opencode/t4c1_step1{,b,c}_probe.mac): a faithful 1:1 LHS whose
-# binomial-power factor (A + B*x^I)^O carries a SLOTTED inner exponent I
-# (the .m idiom x_^I_.) 0-binds under this build's matcher even against a
-# LITERAL target exponent; the control with a literal inner exponent (3_1_4
-# r17, x^2) binds — the boundary is the slot. Re-emitting the factor's BASE
-# as one unconstrained slot (keeping the outer exponent O) binds every stored
-# form; the cond/repl recover (A, B, I) from the slot via the fail-closed
-# %mr_mbp_base decomposition (a non-binomial base, a non-monomial or
-# x-bearing term, or an x-bearing exponent declines the factor — the
-# over-bind rejection). The slot is defmatch'd and the rule body builds the
-# matchlist structurally (appending the recovered captures), so the .m
-# cond/repl run UNCHANGED: they read every capture via geteqR(mm, 'cap),
-# which works on any equation list (the %mr_mbp2 manual-matcher precedent).
-#
-# Closed shape set (whitespace-free marker text); a matching capture set that
-# is not the lhs captures is a loud GenError, and anything outside the set
-# returns None (the rule keeps its current emission).
-#   A1  x^m (d+e x^r)^q (a+b log)        3_1_4 r2/r3   (unit head kept)
-#   A2  (d+e x^r)^q (a+b log)            3_1_3 r3      (no head)
-#   B   (f x)^m (d+e x^r)^q (a+b log)    3_1_4 r23/r24 ((f x)^m head re-transcribed
-#                                                       to f x^m — the C2/M6 idiom;
-#                                                       REQUIRED: binomial-only 0-binds)
-#   C   log(d (e+f x^m)^r) (a+b log)^p / x   3_1_5 r46 (log-arg binomial, no head)
-#   D   (g x)^q log(d (e+f x^m)^r) (a+b log) 3_1_5 r47 (log-arg binomial, head kept
-#                                                       — the head re-transcription is
-#                                                       optional here and NOT taken)
-_M1_SLOT = "m1b"
-_M1_BASE = r"\((?P<A>\w+)_(?P<sign>[+\-])(?P<B>\w+)_\.\*x_\^(?P<I>\w+)_\.\)"
-_M1_OUT  = r"\^_?(?P<o>\w+)_\.?"
-_M1_OUTP = r"\^_?(?P<p>\w+)_\.?"
-_M1_LOGF = (r"\((?P<a>\w+)_\.\+(?P<b>\w+)_\.\*Log\["
-            r"(?P<c>\w+)_\.\*x_\^(?P<n>\w+)_\.\]\)")
-_M1_HEAD = r"\((?P<f>\w+)_\.\*x_\)\^_?(?P<hm>\w+)_\.?"
-_M1_UMON = r"x_\^_?(?P<hm>\w+)_\.?"
-_M1_LOGARG = r"Log\[(?P<d>\w+)_\.\*" + _M1_BASE + _M1_OUT + r"\]"
-_M1_T = r"\*"
-_M1_SHAPES = (
-    ("A1", re.compile(_M1_UMON + _M1_T + _M1_BASE + _M1_OUT + _M1_T + _M1_LOGF)),
-    ("A2", re.compile(_M1_BASE + _M1_OUT + _M1_T + _M1_LOGF)),
-    ("B",  re.compile(_M1_HEAD + _M1_T + _M1_BASE + _M1_OUT + _M1_T + _M1_LOGF)),
-    ("C",  re.compile(_M1_LOGARG + _M1_T + _M1_LOGF + _M1_OUTP + r"/x_")),
-    ("D",  re.compile(_M1_HEAD + _M1_T + _M1_LOGARG + _M1_T + _M1_LOGF)),
-)
-
-
-def m1_spec(body, key, n, rule_vars):
-    """M1 shape -> {"shape", "rewritten", "decomp", "outer"}; None otherwise.
-    `rewritten` is the re-transcribed whitespace-free marker body (the whole
-    binomial-POWER factor -- base plus its outer exponent -- replaced by the
-    single _M1_SLOT slot; for shape B the (f x)^m head re-transcribed to
-    f x^m as well). `decomp` = [A, B, I]: the base's constant / coefficient /
-    inner-exponent captures, recovered from the slot's base in that order (the
-    %mr_mbp_base result positions). `outer` = the outer-exponent capture, which
-    is NOT a pattern slot (the single slot covers base^o whole); it is
-    recovered once in the rule body (qv) and used identically by cond and
-    repl."""
-    for shape, rx in _M1_SHAPES:
-        m = rx.fullmatch(body)
-        if m is None:
-            continue
-        g = m.groupdict()
-        outer = g["o"]
-        decomp = [g["A"], g["B"], g["I"]]
-        if set(decomp) - set(rule_vars):
-            raise GenError(f"{key} r{n}: M1 {shape} base captures "
-                           f"{decomp} not all among lhs captures "
-                           f"{sorted(rule_vars)}")
-        if outer not in rule_vars:
-            raise GenError(f"{key} r{n}: M1 {shape} outer-exponent capture "
-                           f"{outer!r} not among lhs captures "
-                           f"{sorted(rule_vars)}")
-        if _M1_SLOT in rule_vars:
-            raise GenError(f"{key} r{n}: M1 slot {_M1_SLOT} collides "
-                           f"with an lhs capture")
-        bstart = m.start("A") - 1
-        bend = m.end("I") + 3
-        if body[bstart] != "(" or body[bend - 1] != ")":
-            raise GenError(f"{key} r{n}: M1 {shape} base span "
-                           f"{body[bstart:bend]!r} is not a paren group")
-        # the single slot covers the whole binomial-power factor: extend the
-        # base span past the outer-exponent marker so `m1b` matches base^o
-        # (and, for the bare-binomial q=1 rows, base alone with o implicit).
-        outm = re.match(_M1_OUT, body[bend:])
-        if outm is None:
-            raise GenError(f"{key} r{n}: M1 {shape} no outer-exponent marker "
-                           f"after base span {body[bstart:bend]!r}")
-        bend = bend + outm.end()
-        if shape == "B":
-            hstart = m.start("f") - 1
-            he = m.end("hm") + 1
-            if body[he:he + 1] == ".":
-                he += 1
-            if not (body[hstart] == "(" and hstart < he < bstart):
-                raise GenError(f"{key} r{n}: M1 B head span "
-                               f"{body[hstart:he]!r} malformed")
-            new_head = g["f"] + "_.*x_^" + g["hm"] + "_."
-            rewritten = (body[:hstart] + new_head + body[he:bstart]
-                         + _M1_SLOT + "_" + body[bend:])
-        else:
-            rewritten = body[:bstart] + _M1_SLOT + "_" + body[bend:]
-        return {"shape": shape, "rewritten": rewritten, "decomp": decomp,
-                "outer": outer}
-    return None
-
-
-def _emit_m1_manual(spec, key, n, rule_vars, cond, rhs, ctx):
-    """M1 rule: defmatch the re-transcribed pattern (the whole binomial-power
-    factor as the single _M1_SLOT slot), then in the rule body recover the
-    outer exponent ONCE (qv) and the base's (A, B, I) captures (the fail-closed
-    %mr_mbp_base decomposition), append them to the matchlist, and run the
-    UNCHANGED .m cond/repl on it (they read every capture via geteqR, so they
-    see the recovered values identically)."""
-    shape, rewritten, decomp, outer = (spec["shape"], spec["rewritten"],
-                                       spec["decomp"], spec["outer"])
-    slot = _M1_SLOT
-    u_cap = cap_name(key, n, slot)
-    if "MatchQ" in (cond or ""):
-        raise GenError(f"{key} r{n}: M1 shape with a MatchQ condition "
-                       f"(unsupported)")
-    caps = {v: cap_name(key, n, v) for v in rule_vars}
-    # the base decomposition AND the recovered outer exponent are NOT pattern
-    # slots: they are computed in the rule body (fail-closed) and appended to
-    # the matchlist, so the .m cond/repl read them via geteqR as if matched.
-    decomp_set = set(decomp) | {outer}
-    keep = [v for v in sorted(rule_vars) if v not in decomp_set]
-    # the pattern is translated with the slot added to the capture set (the
-    # slot is renamed to a _mr_... capture); the decomp captures are not in
-    # the rewritten body, so they simply do not appear in the pattern.
-    pctx = dict(ctx)
-    pctx["vars"] = set(rule_vars) | {slot}
-    pat_text = translate(rewritten, pctx)
-    # pattern-token guard: every _mr* token must be a keep capture or the slot.
-    expected = {caps[v] for v in keep} | {u_cap}
-    for tok in re.findall(r"_mr[0-9A-Za-z_]*", pat_text):
-        if tok not in expected:
-            raise GenError(f"{key} r{n}: M1 pattern token {tok!r} is not a "
-                           f"keep capture or the slot (name corruption)")
-    # matchdeclare: the keep captures (freeof(x)-guarded when the .m cond
-    # FreeQ-guards them) plus the slot (true — it is the x-bearing base).
-    freeq_guarded = set(v.strip()
-                        for part in re.findall(
-                            r"(?<![A-Za-z0-9])FreeQ\[\{?([^\]}]*)\}?,\s*x\]",
-                            cond or "")
-                        for v in part.split(","))
-    decls = [f"matchdeclare({caps[v]}, "
-             f"{'freeof(x)' if v in freeq_guarded else 'true'})$"
-             for v in keep]
-    # the slot is the binomial-POWER factor (base, or base^o): constrain it
-    # with %mr_mbp_isfac so defmatch cannot absorb an adjacent head
-    # coefficient (shape B) or log-arg constant (shapes C/D) -- an
-    # unconstrained `true` slot grabs `5*(d+e x^r)^q` whole and the
-    # fail-closed %mr_mbp_base then rejects the valid integrand.
-    decls.append(f"matchdeclare({u_cap}, %mr_mbp_isfac)$")
-    # cond/repl: the usual generated bodies (translated; every capture —
-    # including the decomposed ones — is bound via geteqR(mm, 'cap), which the
-    # structural matchlist satisfies).
-    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
-                 if cond else "true")
-    leadcaps = nonzero_guard_caps(pat_text)
-    if leadcaps:
-        base_cond = f"({base_cond})  and  " + "  and  ".join(
-            f"%mr_neQ({c}, 0)" for c in sorted(leadcaps))
-    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
-    caps_sorted = sorted(caps.values())
-    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
-    snaps = {c: c + "__s" for c in caps_sorted}
-    for c in caps_sorted:
-        repl_txt = re.sub(r"(?<![0-9A-Za-z_])" + re.escape(c) +
-                          r"(?![0-9A-Za-z_])", snaps[c], repl_txt)
-    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
-                           for c in caps_sorted) or "true"
-    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
-    locals_txt = ", ".join(caps_sorted)
-    pat_name = f"_mr_pat_{key}_r{n}"
-    lines = list(decls)
-    lines.append(f"defmatch({pat_name}, {pat_text}, x)$")
-    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
-    lines.append(f"  {binds},")
-    lines.append(f"  {base_cond})$")
-    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
-    lines.append(f"  {snap_binds},")
-    lines.append(f"  {repl_txt})$")
-    # the structural rule body: the single slot `m1b` covers base^o whole.
-    # Recover the outer exponent ONCE (qv), decompose the base (fail closed),
-    # append the recovered captures (d/e/r from the decomposition, outer from
-    # qv) so cond and repl read the SAME recovered values via geteqR.
-    du_eqs = (", ".join(f"{caps[d]} = part(du, {i + 1})"
-                        for i, d in enumerate(decomp))
-              + f", {caps[outer]} = qv")
-    lines.append(f"_mr_rule_{key}_r{n}(f, x) := "
-                 f"block([mm0, mm, du, ok, whole, base, qv, w],")
-    lines.append(f"  mm0 : {pat_name}(f, x),")
-    lines.append("  if mm0 = false then return(false),")
-    lines.append("  if %mr_containsBoolean(mm0) then return(false),")
-    lines.append(f"  whole : geteqR(mm0, '{u_cap}),")
-    # the base/outer split is read ONCE via %mr_mbp_unwrap: it unwraps a
-    # trailing `^` AND a sqrt-canonicalized `^(1/2)` (Maxima stores
-    # u^(1/2) as the `sqrt` node). cond and repl read the SAME recovered
-    # values (base -> the %mr_mbp_base decomposition; qv -> the outer).
-    lines.append('  w : %mr_mbp_unwrap(whole),')
-    lines.append('  base : part(w, 1),')
-    lines.append('  qv : part(w, 2),')
-    lines.append("  du : %mr_mbp_base(base, x),")
-    lines.append("  if is(du = false) then return(false),")
-    lines.append(f"  mm : append(mm0, [{du_eqs}]),")
-    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
-    lines.append("  if is(ok) = true then _mr_repl_"
-                  f"{key}_r{n}(mm, x) else false)$")
-    return "\n".join(lines), sorted(ctx["decls"])
-
-
-# ============================================================================
-# B33 3_3 cover re-transcription (class-3 deferred campaign B3, Task 4B-B3).
-#
-# Defect (measured 2026-09-01, branch_5_50_base_84_g4204fb669, probes
-# /tmp/opencode/t4b3_pB_storage.mac / t4b3_pC_slotted.mac): the 3_3
-# binomial-power covers -- a (f+g x^r)^q factor times or over an
-# (a+b log[c (d+e x)^n])^p factor -- 0-bind every stored corpus form: a
-# defmatch LHS with TWO structured sub-patterns (the binpow factor and the
-# log factor, each carrying its own captures) no-binds even though each
-# sub-pattern binds alone (the same two-structured-sides limitation as M1).
-# The stored forms vary the outer exponents freely -- the e156 family is
-# stored as sqrt(f+g*x)*sqrt(a+b log[...]) (BOTH factors sqrt-canonicalized),
-# e88/e89/e90 as the Quotient (f+g*x)^q/(a+b log[...]) with e90's numerator a
-# BARE (f+g*x) -- and a single structured binpow factor cannot match across
-# those forms.
-#
-# Fix: the M1 idiom (see m1_spec / _emit_m1_manual) -- slot the
-# binomial-POWER factor as the single isfac slot, keep the log factor
-# structured, and recover the base's (f, g, [r]) captures plus the outer q in
-# the rule body via %mr_mbp_unwrap + %mr_mbp_base. The ^p log-power pattern
-# binds a stored sqrt(...) with p=1/2 (measured: p_p(e156) binds _p=1/2) and
-# a bare logplus binds only the bare form -- the same split the .m cond/repl
-# already exploit. Reuses _emit_m1_manual verbatim; the b33 shapes differ only
-# in the log-arg (c (d+e x)^n) and the decomp ([f, g] linear / [f, g, r]
-# slotted). The .m cond/repl regenerate byte-identical.
-#
-# Closed shape set (whitespace-free marker text). A matching capture set that
-# is not the lhs captures is a loud GenError; anything outside the set returns
-# None (the rule keeps its current emission).
-#   Q    (f+g x)^q / (a+b log[c (d+e x)^n])          3_3 r11
-#   P    (f+g x)^q (a+b log[c (d+e x)^n])^p          3_3 r2/r10/r12/r13
-#   PS   (f+g x^r)^q (a+b log[c (d+e x)^n])^p        3_3 r20/r21
-#   HXP  x^m (f+g x^r)^q (a+b log[c (d+e x)^n])^p    3_3 r25/r27
-#   HXPL x^m (f+g x^r)^q (a+b log[c (d+e x)^n])      3_3 r26
-#
-# NOT taken (reported, stay deferred): r24 ((f+g/x)^q -- the base is rejected
-# by %mr_mbp_isfac, would need a shared-helper extension), r28 ((h x)^m head
-# -- the re-transcribed head mis-binds _h:=((h x)^m), _m:=0), r46 (two log
-# factors + a bare-log factor). The slot name is the M1 slot (_M1_SLOT,
-# "m1b"): _emit_m1_manual adds _M1_SLOT (not this local) to the capture set
-# when it translates the re-transcribed body, so the two must agree.
-_B33_SLOT = _M1_SLOT
-
-
-def _b33_cap(v):
-    # a Rubi capture marker in whitespace-free text: v_ or v_.
-    return re.escape(v) + r"_{1}\.?"
-
-
-_B33_LOGARG = (r"Log\[" + _b33_cap("c") + r"\*\(" + _b33_cap("d") + r"\+"
-               + _b33_cap("e") + r"\*x_\)\^" + _b33_cap("n") + r"\]")
-_B33_LOGPLUS = r"\(" + _b33_cap("a") + r"\+" + _b33_cap("b") + r"\*" \
-    + _B33_LOGARG + r"\)"
-_B33_LOGPOW = _B33_LOGPLUS + r"\^" + _b33_cap("p")
-# the binomial base's g-term may be implicit-multiply (g_.x_, 3_3 r2) or
-# explicit (g_.*x_, the other rows) -- the `*` is optional.
-_B33_BPOW_LIN = (r"\(" + _b33_cap("f") + r"\+" + _b33_cap("g") + r"\*?x_\)\^"
-                 + _b33_cap("q"))
-_B33_BPOW_SLOT = (r"\(" + _b33_cap("f") + r"\+" + _b33_cap("g") + r"\*?x_\^"
-                  + _b33_cap("r") + r"\)\^" + _b33_cap("q"))
-_B33_HEAD_XMON = r"x_{1}\^" + _b33_cap("m") + r"\*"
-_B33_SHAPES = (
-    ("Q", re.compile(r"(?P<bw>" + _B33_BPOW_LIN + r")"
-                     + r"\/" + _B33_LOGPLUS), ("f", "g"), "q"),
-    ("P", re.compile(r"(?P<bw>" + _B33_BPOW_LIN + r")"
-                     + r"\*" + _B33_LOGPOW), ("f", "g"), "q"),
-    ("PS", re.compile(r"(?P<bw>" + _B33_BPOW_SLOT + r")"
-                      + r"\*" + _B33_LOGPOW), ("f", "g", "r"), "q"),
-    ("HXP", re.compile(_B33_HEAD_XMON + r"(?P<bw>" + _B33_BPOW_SLOT + r")"
-                       + r"\*" + _B33_LOGPOW), ("f", "g", "r"), "q"),
-    ("HXPL", re.compile(_B33_HEAD_XMON + r"(?P<bw>" + _B33_BPOW_SLOT + r")"
-                        + r"\*" + _B33_LOGPLUS), ("f", "g", "r"), "q"),
-)
-
-
-def b33_spec(body, key, n, rule_vars):
-    """3_3 binpow cover shape -> {"shape", "rewritten", "decomp", "outer"}
-    (consumed by _emit_m1_manual), else None. The single isfac slot replaces
-    the whole binomial-power factor; decomp is the base's (f, g[, r]) captures
-    recovered in %mr_mbp_base order (the linear base's inner exponent is the
-    non-captured 1); outer is the q exponent."""
-    for shape, rx, decomp, outer in _B33_SHAPES:
-        m = rx.fullmatch(body)
-        if m is None:
-            continue
-        if set(decomp) - set(rule_vars) or outer not in rule_vars:
-            raise GenError(f"{key} r{n}: B33 {shape} base/outer captures "
-                           f"{list(decomp)}+{outer!r} not all among lhs "
-                           f"captures {sorted(rule_vars)}")
-        if _B33_SLOT in rule_vars:
-            raise GenError(f"{key} r{n}: B33 slot {_B33_SLOT} collides "
-                           f"with an lhs capture")
-        bstart, bend = m.start("bw"), m.end("bw")
-        if body[bstart] != "(":
-            raise GenError(f"{key} r{n}: B33 {shape} binpow span "
-                           f"{body[bstart:bend]!r} is not a paren group")
-        rewritten = body[:bstart] + _B33_SLOT + "_" + body[bend:]
-        return {"shape": shape, "rewritten": rewritten,
-                "decomp": list(decomp), "outer": outer}
-    return None
-
-
-# ============================================================================
-# C5 3.4 log-arg slotted-inner-exponent re-transcription (class-3 deferred
-# campaign C5).
-#
-# Defect (measured 2026-09-02, branch_5_50_base_84_g4204fb669, probes
-# /tmp/opencode/t4c5_p3/p11-p13/p17/p21-p29): the 3.4 covers whose log
-# argument is a binomial-power (d_ + e_.*x_^n_)^p_. with a SLOTTED inner
-# exponent n 0-bind the stored Maxima forms whose inner term is a
-# fractional or reciprocal power -- sqrt(x), x^(1/3), x^(2/3), 1/sqrt(x),
-# 1/x^(1/3), 1/x^(2/3), and the /x^k denominator forms. The boundary is
-# the slot (the same matcher class as C1/M1). The .m covers are 3.4.m
-# L7/L9/L10 (r4/r5/r6, the bare log-power (a+b Log[c (d+e x^n)^p])^q) and
-# L12/L16 (r8/r12, the x^m-headed form x^m (a+b Log[c (d+e x^n)^p])^q).
-#
-# Fix, R4 (r4/r5/r6): the C1/M1 single-slot idiom applied to the LOG-ARG
-# binomial-power factor. The whole (d_ + e_.*x_^n_)^p_. factor becomes ONE
-# slot m1b (matchdeclare(<slot>, %mr_mbp_isfac)); the base's (d, e, n) and
-# the outer p are recovered once in the rule body (%mr_mbp_unwrap +
-# %mr_mbp_base) and appended to the matchlist, so the unchanged .m
-# cond/repl read them via geteqR identically. The reciprocal inner forms
-# additionally require the %mr_mbp_mono2 exponent-0 guard lift
-# (maxima_rubi_utils.mac, C5 note) so %mr_mbp_base decomposes
-# e/sqrt(x) -> [e, -1/2] (probe t4c5_p13). Measured green: the re-
-# transcribed r4 binds and recovers all six inner forms (probe t4c5_p14).
-#
-# Fix, R8 (r8/r12): the headed form must NOT take the M1 pattern -- a
-# times pattern with TWO power-pattern factors, x^_m*(...)^_q, 0-binds
-# every stored target that contains a power of x (probe t4c5_p26:
-# _mA^_mQ*_mB^_mR binds a^2*b^2 / a^2*c^3 / a^2*y^2 but 0-binds a^2*x^2,
-# independent of factor order and of the defmatch main variable; the full
-# 7-inner x 5-head matrix 0-binds every fractional/reciprocal inner at
-# heads x^2/x^3/1/x/1/x^2, probe t4c5_p17). Instead the WHOLE outer
-# log-power factor (a+b Log[c (d+e x^n)^p])^q becomes ONE slot mly
-# (matchdeclare(<slot>, %mr_lpfac)); the rule body recovers the eight
-# inner captures (a, b, c, d, e, n, p, q) with the fail-closed
-# %mr_lpfac_parse and appends them, so the unchanged .m cond/repl read
-# them via geteqR identically. Measured: the single whole-power slot
-# binds all 35 matrix targets, quotient heads capture m = -k (probes
-# t4c5_p28/p29); %mr_lpfac rejects a coefficient product 5*(...)^q so the
-# slot cannot absorb an adjacent head coefficient (t4c5_p30).
-#
-# Closed shape set (whitespace-free marker text; the inner-marker dots are
-# optional so the required/optional .m variants -- r4 q_ vs r8 q_. -- both
-# match). A matching capture set that is not the lhs captures is a loud
-# GenError; anything outside the set returns None (the rule keeps its
-# current emission).
-#   R4  (a_.+b_.*Log[c_.*(d_+e_.*x_^n_)^p_.])^q_.          3_4 r4/r5/r6
-#   R8  x_^m_.*(a_.+b_.*Log[c_.*(d_+e_.*x_^n_)^p_.])^q_.    3_4 r8/r12
-_C5_SLOT = _M1_SLOT  # "m1b" -- _emit_m1_manual adds this (not a local)
-_C5_R8_SLOT = "mly"  # whole log-power factor slot (R8, _emit_c5_r8)
-# the log-arg binomial-power factor (d_+e_.*x_^n_)^p_. as a named span
-_C5_BPOW = (r"(?P<bpow>\((?P<d>\w+)_\.?(?P<sign>[+\-])(?P<e>\w+)_\.?"
-            r"\*x_\^(?P<n>\w+)_\.?\)\^_?(?P<p>\w+)_\.?)")
-_C5_R4_BODY = (r"\((?P<a>\w+)_\.?\+(?P<b>\w+)_\.?\*Log\[(?P<c>\w+)_\.?\*"
-               + _C5_BPOW + r"\]\)\^_?(?P<q>\w+)_\.?")
-# R8: the head plus the WHOLE outer log-power factor as the lpow span
-_C5_R8_FULL = (r"x_\^_?(?P<m>\w+)_\.?\*"
-               + r"(?P<lpow>" + _C5_R4_BODY + r")")
-_C5_SHAPES = (
-    ("R4", re.compile(_C5_R4_BODY)),
-    ("R8", re.compile(_C5_R8_FULL)),
-)
-
-
-def c5_spec(body, key, n, rule_vars):
-    """3.4 log-arg slotted-inner-exponent shape -> the emission spec, else
-    None. R4: the M1 spec {"shape", "rewritten", "decomp", "outer"}
-    (consumed by _emit_m1_manual): the single isfac slot replaces the whole
-    log-arg binomial-power factor; decomp is the base's (d, e, n) captures
-    in %mr_mbp_base order; outer is the p exponent. R8: the spec
-    {"shape", "rewritten", "decomp"} (consumed by _emit_c5_r8): the single
-    lpfac slot replaces the whole outer log-power factor and decomp is the
-    eight captures in %mr_lpfac_parse order (a, b, c, d, e, n, p, q)."""
-    for shape, rx in _C5_SHAPES:
-        m = rx.fullmatch(body)
-        if m is None:
-            continue
-        g = m.groupdict()
-        if shape == "R8":
-            decomp = [g["a"], g["b"], g["c"], g["d"], g["e"],
-                      g["n"], g["p"], g["q"]]
-            if set(decomp) - set(rule_vars) or g["m"] not in rule_vars:
-                raise GenError(f"{key} r{n}: C5 R8 captures "
-                               f"{[g['m']] + decomp} not all among lhs "
-                               f"captures {sorted(rule_vars)}")
-            if _C5_R8_SLOT in rule_vars:
-                raise GenError(f"{key} r{n}: C5 R8 slot {_C5_R8_SLOT} "
-                               f"collides with an lhs capture")
-            if body[m.start("lpow")] != "(":
-                raise GenError(f"{key} r{n}: C5 R8 log-power span "
-                               f"{body[m.start('lpow'):m.end('lpow')]!r} "
-                               f"is not a paren group")
-            rewritten = (body[:m.start("lpow")] + _C5_R8_SLOT + "_"
-                         + body[m.end("lpow"):])
-            return {"shape": "R8", "rewritten": rewritten,
-                    "decomp": decomp}
-        decomp = [g["d"], g["e"], g["n"]]
-        outer = g["p"]
-        if set(decomp) - set(rule_vars):
-            raise GenError(f"{key} r{n}: C5 {shape} base captures "
-                           f"{decomp} not all among lhs captures "
-                           f"{sorted(rule_vars)}")
-        if outer not in rule_vars:
-            raise GenError(f"{key} r{n}: C5 outer-exponent capture "
-                           f"{outer!r} not among lhs captures "
-                           f"{sorted(rule_vars)}")
-        if _C5_SLOT in rule_vars:
-            raise GenError(f"{key} r{n}: C5 slot {_C5_SLOT} collides "
-                           f"with an lhs capture")
-        if body[m.start("bpow")] != "(":
-            raise GenError(f"{key} r{n}: C5 {shape} binpow span "
-                           f"{body[m.start('bpow'):m.end('bpow')]!r} is not "
-                           f"a paren group")
-        rewritten = (body[:m.start("bpow")] + _C5_SLOT + "_"
-                     + body[m.end("bpow"):])
-        return {"shape": shape, "rewritten": rewritten,
-                "decomp": decomp, "outer": outer}
-    return None
-
-
-def _emit_c5_r8(spec, key, n, rule_vars, cond, rhs, ctx):
-    """C5 R8 rule: defmatch the head x^_m plus the WHOLE outer log-power
-    factor as the single _C5_R8_SLOT slot (%mr_lpfac-guarded), then in
-    the rule body recover the eight inner captures with the fail-closed
-    %mr_lpfac_parse, append them to the matchlist, and run the UNCHANGED
-    .m cond/repl on it (they read every capture via geteqR, so they see
-    the recovered values identically)."""
-    rewritten, decomp = spec["rewritten"], spec["decomp"]
-    slot = _C5_R8_SLOT
-    u_cap = cap_name(key, n, slot)
-    if "MatchQ" in (cond or ""):
-        raise GenError(f"{key} r{n}: C5 R8 shape with a MatchQ condition "
-                       f"(unsupported)")
-    caps = {v: cap_name(key, n, v) for v in rule_vars}
-    # the eight inner captures are NOT pattern slots: they are computed in
-    # the rule body (fail-closed) and appended to the matchlist, so the
-    # .m cond/repl read them via geteqR as if matched.
-    keep = [v for v in sorted(rule_vars) if v not in set(decomp)]
-    # the pattern is translated with the slot added to the capture set (the
-    # slot is renamed to a _mr_... capture); the decomp captures do not
-    # appear in the pattern.
-    pctx = dict(ctx)
-    pctx["vars"] = set(rule_vars) | {slot}
-    pat_text = translate(rewritten, pctx)
-    # pattern-token guard: every _mr* token must be a keep capture or the
-    # slot.
-    expected = {caps[v] for v in keep} | {u_cap}
-    for tok in re.findall(r"_mr[0-9A-Za-z_]*", pat_text):
-        if tok not in expected:
-            raise GenError(f"{key} r{n}: C5 R8 pattern token {tok!r} is "
-                           f"not a keep capture or the slot (name "
-                           f"corruption)")
-    # matchdeclare: the keep captures (freeof(x)-guarded when the .m cond
-    # FreeQ-guards them) plus the slot (%mr_lpfac -- it is the whole
-    # x-bearing log-power factor; the product exclusion stops it from
-    # absorbing an adjacent head coefficient).
-    freeq_guarded = set(v.strip()
-                        for part in re.findall(
-                            r"(?<![A-Za-z0-9])FreeQ\[\{?([^\]}]*)\}?,\s*x\]",
-                            cond or "")
-                        for v in part.split(","))
-    decls = [f"matchdeclare({caps[v]}, "
-             f"{'freeof(x)' if v in freeq_guarded else 'true'})$"
-             for v in keep]
-    decls.append(f"matchdeclare({u_cap}, %mr_lpfac)$")
-    # cond/repl: the usual generated bodies (translated; every capture --
-    # including the recovered ones -- is bound via geteqR(mm, 'cap), which
-    # the augmented matchlist satisfies).
-    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
-                 if cond else "true")
-    leadcaps = nonzero_guard_caps(pat_text)
-    if leadcaps:
-        base_cond = f"({base_cond})  and  " + "  and  ".join(
-            f"%mr_neQ({c}, 0)" for c in sorted(leadcaps))
-    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
-    caps_sorted = sorted(caps.values())
-    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
-    snaps = {c: c + "__s" for c in caps_sorted}
-    for c in caps_sorted:
-        repl_txt = re.sub(r"(?<![0-9A-Za-z_])" + re.escape(c) +
-                          r"(?![0-9A-Za-z_])", snaps[c], repl_txt)
-    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
-                           for c in caps_sorted) or "true"
-    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
-    locals_txt = ", ".join(caps_sorted)
-    pat_name = f"_mr_pat_{key}_r{n}"
-    lines = list(decls)
-    lines.append(f"defmatch({pat_name}, {pat_text}, x)$")
-    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
-    lines.append(f"  {binds},")
-    lines.append(f"  {base_cond})$")
-    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
-    lines.append(f"  {snap_binds},")
-    lines.append(f"  {repl_txt})$")
-    # the structural rule body: the single slot `mly` covers the whole
-    # (a+b log(c (d+e x^n)^p))^q factor. Recover the eight captures ONCE
-    # (fail-closed %mr_lpfac_parse) and append them so cond and repl read
-    # the SAME recovered values via geteqR.
-    du_eqs = ", ".join(f"{caps[d]} = part(dv, {i + 1})"
-                       for i, d in enumerate(decomp))
-    lines.append(f"_mr_rule_{key}_r{n}(f, x) := "
-                 f"block([mm0, mm, dv, ok, ly],")
-    lines.append(f"  mm0 : {pat_name}(f, x),")
-    lines.append("  if mm0 = false then return(false),")
-    lines.append("  if %mr_containsBoolean(mm0) then return(false),")
-    lines.append(f"  ly : geteqR(mm0, '{u_cap}),")
-    lines.append("  dv : %mr_lpfac_parse(ly, x),")
-    lines.append("  if is(dv = false) then return(false),")
-    lines.append(f"  mm : append(mm0, [{du_eqs}]),")
-    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
-    lines.append("  if is(ok) = true then _mr_repl_"
-                 f"{key}_r{n}(mm, x) else false)$")
-    return "\n".join(lines), sorted(ctx["decls"])
-
-
-# ============================================================================
-# C4 log-power structural re-transcription (class-3 deferred campaign C4).
-#
-# Defect (measured 2026-09-02, branch_5_50_base_84_g4204fb669, probes
-# /tmp/opencode/t4c4_pf1..pf7.mcl): the 3.2.1 r16/r18/r20 LHS
-# (f_.+g_.*x_)^m_.*(A_.+B_.*Log[e_.*(a_.+b_.*x_)^n_.*(c_.+d_.*x_)^mn_])^p_.
-# (whitespace-free marker text, exact) 0-binds every stored corpus
-# form of the family (13 numeric-n entries,
-# e124/e131/e274 + e210-e218 + e268): a slotted u^v pattern factor binds
-# a Quotient base but NOT a bare one (Maxima strips ^1 on input, so the
-# m = 1 / p = 1 rows have no power node to bind), and the e-anchored
-# log argument admits no backtracking to the right (linear, exponent)
-# pairing once a predicate kills the first candidate (the 1.1.1.4 note
-# above). The three rules' current defmatch emission has zero live
-# firings (probes/corpus/06-class3-deferred-mechanisms.out), so nothing
-# to regress.
-#
-# Fix: NO defmatch, NO matchdeclare for the three rules — the rule body
-# decomposes the integrand structurally with the fail-closed
-# %mr_logpow_match (maxima_rubi_utils.mac, the same idiom as
-# %mr_headvar_match) and appends nothing: the 13 captures come straight
-# from the decomposition in the .m NATURAL orientation (the
-# positive-exponent log-arg linear is the n side; for the c-side
-# numerator block that is the (a,b)/(c,d) swap of the integrand
-# symbols — the exact .m binding of both blocks). The .m cond/repl run
-# UNCHANGED and regenerate byte-identical: they read every capture via
-# geteqR(mm, 'cap), which the structural matchlist satisfies, and the
-# closed shape has no degree>=2 polynomial factor nor symbolic exponent
-# (nonzero_guard_caps is vacuous — verified against the pre-C4
-# emission, which carries no %mr_neQ guard).
-#
-# The shape is closed and exact (fullmatch, every marker pinned). The
-# Unintegrable catch-all 3.2.1 r22 carries the IDENTICAL lhs but no
-# IGtQ[n, 0] cond clause — it is declined here (returns None) and keeps
-# its current defmatch emission, so its 0-bind behavior is untouched.
-# A matching capture set that is not the lhs captures is a loud GenError.
-_C4_BODY_ORDER = ("f", "g", "m", "A", "B", "e", "a", "b", "n", "c",
-                  "d", "mn", "p")
-_C4_SHAPE = re.compile(
-    r"^\("
-    r"(?P<f>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<g>[A-Za-z][A-Za-z0-9]*)_\.\*x_\)"
-    r"\^"
-    r"(?P<m>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"(?P<A>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<B>[A-Za-z][A-Za-z0-9]*)_\.\*Log\["
-    r"(?P<e>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"(?P<a>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<b>[A-Za-z][A-Za-z0-9]*)_\.\*x_\)"
-    r"\^"
-    r"(?P<n>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"(?P<c>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<d>[A-Za-z][A-Za-z0-9]*)_\.\*x_\)"
-    r"\^"
-    r"(?P<mn>[A-Za-z][A-Za-z0-9]*)_\]"
-    r"\)\^"
-    r"(?P<p>[A-Za-z][A-Za-z0-9]*)_\.$"
-)
-
-
-def c4_spec(body, key, n, rule_vars, cond):
-    """C4 log-power shape -> {"order": the 13 .m var names in the fixed
-    capture order}; None for every other rule (and for the r22
-    catch-all, which shares the lhs but lacks IGtQ[n, 0] in its cond);
-    a loud GenError on a matched capture set that is not the lhs
-    captures."""
-    m = _C4_SHAPE.fullmatch(body)
-    if m is None:
-        return None
-    g = m.groupdict()
-    if set(g.values()) != set(rule_vars):
-        raise GenError(f"{key} r{n}: C4 shape matched with captures "
-                       f"{sorted(set(g.values()))} != lhs captures "
-                       f"{sorted(rule_vars)}")
-    nvar = g["n"]
-    need = re.compile(r"IGtQ\[\s*" + nvar + r"\s*,\s*0\]")
-    if not any(need.fullmatch(cl) for cl in _split_and(cond or "")):
-        return None
-    return {"order": [g[v] for v in _C4_BODY_ORDER]}
-
-
-def _emit_c4_manual(spec, key, n, rule_vars, cond, rhs, ctx):
-    """The structural emission for the C4 family (no matchdeclare/
-    defmatch — see the _C4_SHAPE block comment). The cond/repl are the
-    usual generated functions (byte-identical to the default-path
-    emission: the geteqR binds, the snapshot rewrite, the full .m cond
-    — the _emit_headvar_manual emission mirrored); only the rule body's
-    matcher call is structural: %mr_logpow_match(f, x, caps) with the
-    13 captures in the fixed order."""
-    if ctx["decls"]:
-        raise GenError(f"{key} r{n}: C4 rule produced MatchQ "
-                       f"markers (unsupported)")
-    if "MatchQ" in (cond or ""):
-        raise GenError(f"{key} r{n}: C4 shape with a MatchQ condition "
-                       f"(unsupported)")
-    caps = {v: cap_name(key, n, v) for v in rule_vars}
-    cplist = ", ".join("'" + caps[v] for v in spec["order"])
-    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
-                 if cond else "true")
-    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
-    caps_sorted = sorted(caps.values())
-    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
-    snaps = {c: c + "__s" for c in caps_sorted}
-    if set(snaps.values()) & set(caps_sorted):
-        raise GenError(f"{key} r{n}: a snapshot name collides with a "
-                       f"capture name (a Rubi variable named __s?)")
-    for c in caps_sorted:
-        repl_txt = re.sub(
-            r"(?<![0-9A-Za-z_])" + re.escape(c) + r"(?![0-9A-Za-z_])",
-            snaps[c], repl_txt)
-    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
-                           for c in caps_sorted) or "true"
-    locals_txt = ", ".join(caps_sorted)
-    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
-    # Emit in the DEFAULT order (cond, repl, rule-body — the default path
-    # is defmatch, cond, repl, rule-body) so a C4 rule's diff against a
-    # defmatch rule is only the removed matchdeclare/defmatch lines plus
-    # the rule body's single structural `mm :` line (no cosmetic reflow of
-    # the cond/repl/rule-body blocks).
-    lines = []
-    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
-    lines.append(f"  {binds},")
-    lines.append(f"  {base_cond})$")
-    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
-    lines.append(f"  {snap_binds},")
-    lines.append(f"  {repl_txt})$")
-    lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
-    lines.append(f"  mm : %mr_logpow_match(f, x, [{cplist}]),")
-    lines.append("  if mm = false then return(false),")
-    lines.append(_MM_BOOL_GUARD)
-    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
-    lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) "
-                 f"else false)$")
-    return "\n".join(lines), []
-
-
-# ============================================================================
-# C3 ratio log-argument structural re-transcription (class-3 deferred
-# campaign C3).
-#
-# Defect (measured 2026-09-01..02, branch_5_50_base_84_g4204fb669, probes
-# /tmp/opencode/c3-p9..p23): the three quotient-log LHS families
-#   3.2.1 (f_.+g_.*x_)^m_.*(A_.+B_.*Log[e_.*((a_.+b_.*x_)/(c_.+d_.*x_))^n_.])^p_.
-#   3.2.2 (f_.+g_.*x_)^m_.*(h_.+i_.*x_)^q_.*(A_.+B_.*Log[e_.*((a_.+b_.*x_)/(c_.+d_.*x_))^n_.])^p_.
-#   3.2.3 Log[e_.*(f_.*(a_.+b_.*x_)^p_.*(c_.+d_.*x_)^q_.)^r_.]^2/(g_.+h_.*x_)
-# (whitespace-free marker text, exact) 0-bind the stored corpus forms of
-# the family (the same defect as C4 — a slotted power pattern factor
-# binds a Quotient base but not a bare one, and the e-anchored log
-# argument admits no backtracking; probes
-# /tmp/opencode/t4c4_pf1.mcl, /tmp/opencode/c3-p10-census.out). Target
-# rules: 3.2.1 r15/r17/r19 (12 captures), 3.2.2 r3/r5 (15 captures),
-# 3.2.3 r5/r6 (11 captures) — 99 corpus entries. The same-LHS siblings
-# (3.2.1 r21 Unintegrable; 3.2.2 r7/r9/r11; 3.2.2 r1 lacks the q/p
-# slots) are declined by the missing cond clause below (or by the
-# shape itself) and keep their current defmatch emission untouched.
-#
-# Fix: NO defmatch, NO matchdeclare for the target rules — the rule
-# body decomposes the integrand structurally with the fail-closed
-# %mr_logratio_match (the 12/15-capture shapes) or
-# %mr_logratio_sq_match (the 11-capture shape) (maxima_rubi_utils.mac,
-# the C3 section after the C4 section). The .m cond/repl run UNCHANGED
-# and regenerate byte-identical: they read every capture via
-# geteqR(mm, 'cap), which the structural matchlist satisfies, and the
-# snapshot rewrite is the default-path one.
-#
-# Each shape is closed and exact (fullmatch, every marker pinned; the
-# 3.2.1/3.2.2 shapes are mutually exclusive — the 3.2.2 second-head
-# slots force a *Log[ where the 3.2.1 tail demands one, and vice
-# versa — and neither matches the C4 product-log shape). The decline
-# signal per shape (a shape-matching rule whose cond lacks the clause
-# returns None and keeps its defmatch emission): 3.2.1 requires
-# NeQ[b*c - a*d, 0] (the Unintegrable r21 catch-all shares the lhs but
-# has no NeQ); 3.2.2 requires BOTH EqQ[b*f - a*g, 0] AND
-# EqQ[d*h - c*i, 0] (r7 carries only the second, r9 and r11 neither);
-# 3.2.3 requires NeQ[b*c - a*d, 0] (both r5 and r6 carry it — the
-# ^2-pinned shape is already closed, this is belt-and-braces).
-# A matching capture set that is not the lhs captures is a loud GenError.
-_C3_321_SHAPE = re.compile(
-    r"^\("
-    r"(?P<f>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<g>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)\^"
-    r"(?P<m>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"(?P<A>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<B>[A-Za-z][A-Za-z0-9]*)_\.\*Log\["
-    r"(?P<e>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\(\("
-    r"(?P<a>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<b>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)/\("
-    r"(?P<c>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<d>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)\)\^"
-    r"(?P<n>[A-Za-z][A-Za-z0-9]*)_\.\]"
-    r"\)\^"
-    r"(?P<p>[A-Za-z][A-Za-z0-9]*)_\.$"
-)
-_C3_321_BODY_ORDER = ("f", "g", "m", "A", "B", "e", "a", "b", "n",
-                      "c", "d", "p")
-_C3_322_SHAPE = re.compile(
-    r"^\("
-    r"(?P<f>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<g>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)\^"
-    r"(?P<m>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"(?P<h>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<i>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)\^"
-    r"(?P<q>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"(?P<A>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<B>[A-Za-z][A-Za-z0-9]*)_\.\*Log\["
-    r"(?P<e>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\(\("
-    r"(?P<a>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<b>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)/\("
-    r"(?P<c>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<d>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)\)\^"
-    r"(?P<n>[A-Za-z][A-Za-z0-9]*)_\.\]"
-    r"\)\^"
-    r"(?P<p>[A-Za-z][A-Za-z0-9]*)_\.$"
-)
-_C3_322_BODY_ORDER = ("f", "g", "m", "h", "i", "q", "A", "B", "e",
-                      "a", "b", "n", "c", "d", "p")
-_C3_323_SHAPE = re.compile(
-    r"^Log\["
-    r"(?P<e>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"(?P<f>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"(?P<a>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<b>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)\^"
-    r"(?P<p>[A-Za-z][A-Za-z0-9]*)_\.\*"
-    r"\("
-    r"(?P<c>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<d>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)\^"
-    r"(?P<q>[A-Za-z][A-Za-z0-9]*)_\.\)"
-    r"\^"
-    r"(?P<r>[A-Za-z][A-Za-z0-9]*)_\.\]"
-    r"\^2/"
-    r"\("
-    r"(?P<g>[A-Za-z][A-Za-z0-9]*)_\.\+"
-    r"(?P<h>[A-Za-z][A-Za-z0-9]*)_\.\*x_"
-    r"\)$"
-)
-_C3_323_BODY_ORDER = ("a", "b", "c", "d", "e", "f", "g", "h", "p",
-                      "q", "r")
-
-
-def _c3_captures_ok(m, key, n, rule_vars):
-    g = m.groupdict()
-    if set(g.values()) != set(rule_vars):
-        raise GenError(f"{key} r{n}: C3 shape matched with captures "
-                       f"{sorted(set(g.values()))} != lhs captures "
-                       f"{sorted(rule_vars)}")
-    return g
-
-
-def _c3_has_clause(clauses, pattern):
-    return any(re.fullmatch(pattern, cl) for cl in clauses)
-
-
-def c3_spec(body, key, n, rule_vars, cond):
-    """C3 quotient-log shape -> {"matcher": the structural matcher
-    function, "order": the .m var names in the fixed capture order};
-    None for every other rule (and for a same-LHS sibling whose cond
-    lacks the shape's decline clause); a loud GenError on a matched
-    capture set that is not the lhs captures."""
-    clauses = _split_and(cond or "")
-    m = _C3_321_SHAPE.fullmatch(body)
-    if m is not None:
-        g = _c3_captures_ok(m, key, n, rule_vars)
-        need = (r"NeQ\[\s*" + g["b"] + r"\s*\*\s*" + g["c"]
-                + r"\s*-\s*" + g["a"] + r"\s*\*\s*" + g["d"]
-                + r"\s*,\s*0\]")
-        if not _c3_has_clause(clauses, need):
-            return None
-        return {"matcher": "%mr_logratio_match",
-                "order": [g[v] for v in _C3_321_BODY_ORDER]}
-    m = _C3_322_SHAPE.fullmatch(body)
-    if m is not None:
-        g = _c3_captures_ok(m, key, n, rule_vars)
-        need1 = (r"EqQ\[\s*" + g["b"] + r"\s*\*\s*" + g["f"]
-                 + r"\s*-\s*" + g["a"] + r"\s*\*\s*" + g["g"]
-                 + r"\s*,\s*0\]")
-        need2 = (r"EqQ\[\s*" + g["d"] + r"\s*\*\s*" + g["h"]
-                 + r"\s*-\s*" + g["c"] + r"\s*\*\s*" + g["i"]
-                 + r"\s*,\s*0\]")
-        if not _c3_has_clause(clauses, need1) \
-           or not _c3_has_clause(clauses, need2):
-            return None
-        return {"matcher": "%mr_logratio_match",
-                "order": [g[v] for v in _C3_322_BODY_ORDER]}
-    m = _C3_323_SHAPE.fullmatch(body)
-    if m is not None:
-        g = _c3_captures_ok(m, key, n, rule_vars)
-        need = (r"NeQ\[\s*" + g["b"] + r"\s*\*\s*" + g["c"]
-                + r"\s*-\s*" + g["a"] + r"\s*\*\s*" + g["d"]
-                + r"\s*,\s*0\]")
-        if not _c3_has_clause(clauses, need):
-            return None
-        return {"matcher": "%mr_logratio_sq_match",
-                "order": [g[v] for v in _C3_323_BODY_ORDER]}
-    return None
-
-
-def _emit_c3_manual(spec, key, n, rule_vars, cond, rhs, ctx):
-    """The structural emission for the C3 families (no matchdeclare/
-    defmatch — see the _C3_*_SHAPE block comment). Identical to
-    _emit_c4_manual except the rule body's structural matcher call:
-    spec["matcher"] with the captures in the spec's fixed order."""
-    if ctx["decls"]:
-        raise GenError(f"{key} r{n}: C3 rule produced MatchQ "
-                       f"markers (unsupported)")
-    if "MatchQ" in (cond or ""):
-        raise GenError(f"{key} r{n}: C3 shape with a MatchQ condition "
-                       f"(unsupported)")
-    caps = {v: cap_name(key, n, v) for v in rule_vars}
-    cplist = ", ".join("'" + caps[v] for v in spec["order"])
-    base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
-                 if cond else "true")
-    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
-    caps_sorted = sorted(caps.values())
-    binds = ", ".join(f"{c} : geteqR(mm, '{c})" for c in caps_sorted) or "true"
-    snaps = {c: c + "__s" for c in caps_sorted}
-    if set(snaps.values()) & set(caps_sorted):
-        raise GenError(f"{key} r{n}: a snapshot name collides with a "
-                       f"capture name (a Rubi variable named __s?)")
-    for c in caps_sorted:
-        repl_txt = re.sub(
-            r"(?<![0-9A-Za-z_])" + re.escape(c) + r"(?![0-9A-Za-z_])",
-            snaps[c], repl_txt)
-    snap_binds = ", ".join(f"{snaps[c]} : geteqR(mm, '{c})"
-                           for c in caps_sorted) or "true"
-    locals_txt = ", ".join(caps_sorted)
-    snap_locals = ", ".join(snaps[c] for c in caps_sorted)
-    # Emit in the DEFAULT order (cond, repl, rule-body — the default
-    # path is defmatch, cond, repl, rule-body) so a C3 rule's diff
-    # against a defmatch rule is only the removed matchdeclare/defmatch
-    # lines plus the rule body's single structural `mm :` line (no
-    # cosmetic reflow of the cond/repl/rule-body blocks).
-    lines = []
-    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
-    lines.append(f"  {binds},")
-    lines.append(f"  {base_cond})$")
-    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals}],")
-    lines.append(f"  {snap_binds},")
-    lines.append(f"  {repl_txt})$")
-    lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
-    lines.append(f"  mm : {spec['matcher']}(f, x, [{cplist}]),")
-    lines.append("  if mm = false then return(false),")
-    lines.append(_MM_BOOL_GUARD)
-    lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
-    lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) "
-                 f"else false)$")
-    return "\n".join(lines), []
-
-
-# BARE catch-all pattern (3.5 r42 = the .m 3.5.m L46 FunctionOfLog
-# catch-all, class-3 deferred campaign C6b).
-#
-# Defect (measured 2026-09-04, branch_5_50_base_84_g4204fb669 / SBCL
-# 2.6.7; repro probes /tmp/opencode/probe_md_calib.mac,
-# probe_r42_args.mac, probe_r42_cum2.mac): a defmatch pattern that is a
-# single bare pattern-variable symbol is re-EVALUATED on every re-run
-# of defmatch — the (atom pt) branch of proc-$defmatch (src/matcom.lisp)
-# mevals the slot symbol — and the compiled matcher assigns the matched
-# subexpression to the slot symbol on every successful match (the msetq
-# side effect the e44 snapshot note below documents). The Layer A suite
-# re-loads the rule siblings cumulatively (the b1 re-load design), so
-# after the first successful bare-pattern match the NEXT re-load's
-# defmatch collapses the pattern to the LITERAL of the last matched
-# value: the probe's pattern became the literal 1 (only the integrand 1
-# bound, every other expression declined), and in the suite the pattern
-# took the last matched integrand so the rule 0-fired all three of its
-# own reps. Compound patterns are immune: simplify keeps them compound
-# and the slot stays a sub-part (probe_md_compound.mac: the re-defmatch
-# after a bound slot still matches fresh values).
-#
-# Fix: NO defmatch, NO matchdeclare for a bare-variable pattern — the
-# pattern function is a := function that always binds (the .m u_
-# catch-all with the true matchdeclare matches every integrand): it
-# returns the matchlist [ u = f, x = x ] in the defmatch retlist shape,
-# so the cond/repl regenerate byte-identical (the geteqR binds, the
-# snapshot rewrite is the default one). It never assigns the slot
-# symbol, so the collapse hazard cannot arise. A bare-variable pattern
-# whose matchdeclare predicate is not true is a loud GenError
-# (unsupported — fail closed, as the other spec functions do).
-_BARE_PAT = re.compile(r"_mr[0-9A-Za-z_]+\Z")
+    return head, decls, body[:last], body[last+2:]
 
 
 def emit_rule(run, key, n, rule_vars):
-    """One rule run (lhs, rhs, cond) -> the five Maxima functions as text.
-    rule_vars is the set of capture names (from the lhs)."""
+    """One rule run (lhs, rhs, cond) -> its cond and repl functions and its
+    %mr_defrule registration, as Maxima text (spec 3.4). rule_vars is the
+    set of capture names (from the lhs)."""
     lhs, rhs, cond = run
-    # integrand pattern: strip Int[ ... , x_Symbol]
-    m = re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL)
-    if not m:
+    if not re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL):
         raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
-    ctx = {"key": key, "n": n, "vars": rule_vars, "decls": set(),
-           "markers": None, "mq": 0}
-    # BUG FIX (2026-08-24, 138 dead rules): this used to be
-    # drop_optionals(translate(...), rule_vars) — drop_optionals on
-    # TRANSLATED text is NOT the no-op its docstring claims: its
-    # text.replace(v + "_", v) hits any occurrence of v+"_" anywhere in
-    # the text, and a capture named `r` corrupted the `_mr_` prefix of
-    # every renamed capture in the pattern (`_mr_1_1_2_6_r3_g` ->
-    # `_mr1_1_2_6_r3_g`). The corrupted names are never matchdeclare'd
-    # (the decls use cap_name), so Maxima read them as LITERAL symbols
-    # and every rule carrying an `r` capture matched no integrand — all
-    # of 1.2.4.1/1.2.4.2 dead, 138 rules across 17 files. translate()
-    # already consumes every v_ / v_. marker (and raises on a stray one),
-    # so the pattern needs no optional-dropping at all.
-    body = re.sub(r"\s+", "", m.group(1))
-    # Head-position capture (class 3 F_[...] family) FIRST: defmatch
-    # cannot take a head-position pattern variable in this build, and
-    # the default translate pass would emit the raw bracket form
-    # (a Maxima load error) or raise on F as an unlisted head in the
-    # repl. headvar_spec is loud on any head-position capture outside
-    # the closed shape set (no silent pass-through).
-    hv = headvar_spec(body, key, n, rule_vars, cond)
-    if hv is not None:
-        ctx["headvar"] = hv["F"]
-        return _emit_headvar_manual(hv, key, n, rule_vars, cond, rhs,
-                                    ctx)
-    spec = binpow_manual_match(body)
-    if spec is not None:
-        return _emit_binpow_manual(spec, key, n, rule_vars, cond, rhs,
-                                   ctx)
-    # M1 slotted-inner-exponent re-transcription (3.1.4/3.1.3/3.1.5, class-3
-    # deferred campaign C1): the binomial base is re-emitted as one slot and
-    # the rule body recovers its (A, B, I) captures by the fail-closed
-    # %mr_mbp_base decomposition (see m1_spec / _emit_m1_manual). Mutually
-    # exclusive with the binpow manual matcher above (those have two binpow
-    # factors; M1 has one plus a log/monomial factor).
-    m1 = m1_spec(body, key, n, rule_vars)
-    if m1 is not None:
-        return _emit_m1_manual(m1, key, n, rule_vars, cond, rhs, ctx)
-    # B33 3_3 binpow-cover re-transcription (class-3 deferred campaign B3,
-    # Task 4B-B3): the same M1 idiom on the 3.3 shapes (a (f+g x^r)^q factor
-    # times or over an (a+b log[c (d+e x)^n])^p factor) -- the two-structured-
-    # sides 0-bind (see b33_spec). Reuses _emit_m1_manual; the .m cond/repl
-    # regenerate byte-identical.
-    b33 = b33_spec(body, key, n, rule_vars)
-    if b33 is not None:
-        return _emit_m1_manual(b33, key, n, rule_vars, cond, rhs, ctx)
-    # 3.4 log-arg slotted-inner-exponent re-transcription (class-3 deferred
-    # campaign C5): the (a+b Log[c (d+e x^n)^p])^q covers (3.4.m L7/L9/L10/
-    # L12/L16) 0-bind the stored forms whose inner term is a fractional or
-    # reciprocal power. R4 (r4/r5/r6) slots the log-arg binomial-power
-    # factor as the single m1b (_emit_m1_manual); R8 (r8/r12) slots the
-    # whole outer log-power factor as the single mly because a two-
-    # power-factor times pattern 0-binds every stored target containing a
-    # power of x (see c5_spec / _emit_c5_r8, the %mr_lpfac section and the
-    # %mr_mbp_mono2 C5 note in maxima_rubi_utils.mac). The .m cond/repl
-    # regenerate byte-identical.
-    c5 = c5_spec(body, key, n, rule_vars)
-    if c5 is not None:
-        if c5["shape"] == "R8":
-            return _emit_c5_r8(c5, key, n, rule_vars, cond, rhs, ctx)
-        return _emit_m1_manual(c5, key, n, rule_vars, cond, rhs, ctx)
-    # (f_.+g_.*x_)^m_.*(A_.+B_.*Log[...])^p_. log-power structural
-    # re-transcription (3.2.1 r16/r18/r20, class-3 deferred campaign
-    # C4): the faithful defmatch LHS 0-binds the stored forms (a
-    # slotted power binds a Quotient base but not a bare one; the
-    # log-arg pairing has no backtracking) — see c4_spec /
-    # _emit_c4_manual and the %mr_logpow_match section in
-    # maxima_rubi_utils.mac. No defmatch/matchdeclare is emitted; the
-    # cond/repl regenerate byte-identical.
-    c4 = c4_spec(body, key, n, rule_vars, cond)
-    if c4 is not None:
-        return _emit_c4_manual(c4, key, n, rule_vars, cond, rhs, ctx)
-    # (ratio log-argument structural re-transcription (3.2.1 r15/r17/
-    # r19, 3.2.2 r3/r5, 3.2.3 r5/r6, class-3 deferred campaign C3): the
-    # faithful defmatch LHS 0-binds the stored quotient-log forms (the
-    # slotted power binds a Quotient base but not a bare one; the
-    # log-arg pairing has no backtracking — the same defect as C4).
-    # See c3_spec / _emit_c3_manual and the %mr_logratio_match /
-    # %mr_logratio_sq_match sections in maxima_rubi_utils.mac. No
-    # defmatch/matchdeclare is emitted; the cond/repl regenerate
-    # byte-identical.
-    c3 = c3_spec(body, key, n, rule_vars, cond)
-    if c3 is not None:
-        return _emit_c3_manual(c3, key, n, rule_vars, cond, rhs, ctx)
-    # (d_.*x_)^m_. head re-transcription (3.1.2 r10, class-3 deferred
-    # campaign C2): the non-atomic head power steals the log-power
-    # factor from findfun and 0-binds the stored unit-monomial heads —
-    # translate d_.*x_^m_.* instead and gate the d capture with
-    # is(u = 1) in its matchdeclare (see dhead10_spec). The raw rewrite
-    # is the head span minus its two parens; the loose match tolerates
-    # inter-token whitespace so the source spacing survives.
-    dh = dhead10_spec(body, key, n, rule_vars, cond)
-    if dh is not None:
-        loose = re.compile(r"\s*".join(re.escape(ch)
-                                       for ch in dh["old_head"]))
-        mh = loose.match(m.group(1))
-        if mh is None:
-            raise GenError(f"{key} r{n}: re-transcribed head "
-                           f"{dh['old_head']!r} not found in the raw "
-                           f"body (whitespace mismatch)")
-        new_head = mh.group(0).replace("(", "", 1).replace(")", "", 1)
-        pat_text = translate(new_head + m.group(1)[mh.end():], ctx)
-    else:
-        pat_text = translate(m.group(1), ctx)
-    # Guard the class, not just this instance: every _mr* token in the
-    # emitted pattern must be one of THIS rule's declared captures or
-    # MatchQ markers — a corrupted/foreign name can never match.
-    expected = {cap_name(key, n, v) for v in rule_vars} | set(ctx["decls"])
-    for tok in re.findall(r"_mr[0-9A-Za-z_]*", pat_text):
-        if tok not in expected:
-            raise GenError(f"{key} r{n}: pattern token {tok!r} is not a "
-                           f"declared capture or MatchQ marker of this "
-                           f"rule (name corruption in the pattern text)")
-    # Bare catch-all detection (see the BARE catch-all block comment
-    # above): a pattern that is exactly one of this rule's capture
-    # tokens — the .m Int[u_, x_Symbol] whole-integrand shape.
-    bare_catchall = (len(rule_vars) == 1
-                     and _BARE_PAT.fullmatch(pat_text) is not None
-                     and pat_text == cap_name(key, n, next(iter(rule_vars))))
-    # Leading coefficients of degree>=2 polynomial factors (and symbolic
-    # exponents) must be nonzero: see nonzero_guard_caps (the Maxima
-    # degenerate-0-binding misfire).
-    leadcaps = nonzero_guard_caps(pat_text)
-    # declare each capture; freeof(x)-guarded if the cond has FreeQ[..., x].
-    # FIX F4: the brief did set(re.findall(...)).split(",") — a set has no
-    # split; split the group strings instead.
-    # FIX B1 (2026-09-01, class-3 deferred campaign): the old regex
-    # r"FreeQ\[\{?([^}]*)\}?,\s*x\]" had two false-positive faces — no word
-    # boundary (it matched the substring FreeQ inside InverseFunctionFreeQ,
-    # 3.5.m L5/L34/L37/L38/L40/L42/L43 cond-only guards -> 7 spurious sites
-    # in 3_5.mac) and a greedy [^}]* that overran the FreeQ argument into
-    # later clauses (1.1.1.7.m L8 / 1.4.1.m L174: FreeQ[q, x] ... PolyQ[Qx,
-    # x] captured Qx -> 2 spurious class-1 sites). The lookbehind excludes
-    # *FreeQ predicates; [^\]}] stops the argument class at the first ].
-    freeq_guarded = set(v.strip()
-                        for part in re.findall(
-                            r"(?<![A-Za-z0-9])FreeQ\[\{?([^\]}]*)\}?,\s*x\]",
-                            cond or "")
-                        for v in part.split(","))
-    decls = []
-    for v in sorted(rule_vars):
-        if dh is not None and v == dh["d"]:
-            # The re-transcribed head's d gate: a match-time lambda
-            # (probed working on this build) — the one match-time
-            # lambda in the class-3 table, and a one-symbol test, not
-            # the whole-factor %mr_neQ the e8 timing rejected.
-            decls.append(
-                f"matchdeclare({cap_name(key, n, v)}, "
-                f"lambda([u], is(u = 1)))$")
-        else:
-            pred = "freeof(x)" if v in freeq_guarded else "true"
-            decls.append(f"matchdeclare({cap_name(key, n, v)}, {pred})$")
-    for d in sorted(ctx["decls"]):
-        decls.append(f"matchdeclare({d}, true)$")
-    # cond: translate; an empty cond -> true. A rule whose pattern can
-    # degenerate-bind a leading coeff / symbolic exponent to 0 (see
-    # nonzero_guard_caps) gets %mr_neQ(<cap>, 0) appended: evaluated once in
-    # the cond per matched rule (a regular function) rather than as a match-
-    # time matchdeclare lambda, which the 2026-08-24 e8 timing showed pushes
-    # hard quartics past the 30 s cap (13.4 s -> 30 s).
+    ctx = {"key": key, "n": n, "vars": rule_vars, "markers": None, "mq": 0}
+    pattern = pattern_sexp(lhs, key, n, rule_vars)
     base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
                  if cond else "true")
-    if leadcaps:
-        guards = "  and  ".join(f"%mr_neQ({c}, 0)"
-                                for c in sorted(leadcaps))
-        cond_txt = f"({base_cond})  and  {guards}"
-    else:
-        cond_txt = base_cond
     # M-cas-simp (3.5 r10, class-3 deferred campaign C6): the .m cond
     # EqQ[D[Px/Qx, x], 0] tests that the ratio Px/Qx is a constant (its
     # x-derivative is 0). Mathematica's D auto-simplifies the derivative of
@@ -3384,58 +1352,46 @@ def emit_rule(run, key, n, rule_vars):
     # rational Px, Qx, ratsimp(diff(Px/Qx, x)) = 0 iff Px/Qx is constant.
     # Measured 2026-09-02 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7
     # (probes c6 D5/D7 positive; D12/D13 the negative shape a+c*x^2 over
-    # 2+3*x^2 stays non-zero, so the cond stays false). The ONE sanctioned
-    # cond change of this campaign; the defmatch/repl stay byte-identical.
+    # 2+3*x^2 stays non-zero, so the cond stays false).
     if key == "3_5" and n == 10:
         old = "diff(_mr_3_5_r10_Px/_mr_3_5_r10_Qx, x)"
         new = "ratsimp(diff(_mr_3_5_r10_Px/_mr_3_5_r10_Qx, x))"
-        if cond_txt.count(old) != 1:
+        if base_cond.count(old) != 1:
             raise GenError("3_5 r10: expected exactly one "
                            f"{old!r} in the translated cond, found "
-                           f"{cond_txt.count(old)} (M-cas-simp hook)")
-        cond_txt = cond_txt.replace(old, new)
-    # FIX F12: the brief passed `varset` here — an undefined name in
-    # emit_rule (the parameter is rule_vars); a NameError on every rule.
-    repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
-    # FIX F13: the brief bound the BARE capture names (a : geteqR(mm,
-    # '_mr_…_a')) while the translated cond/repl read the RENAMED names —
-    # the cond would then evaluate on unbound symbols (freeof vacuously
-    # true) and the repl on symbols instead of the captured values. Bind
-    # the renamed names, the ones the bodies actually reference.
-    # The geteqR name argument uses the UNBALANCED Rubi quote idiom
-    # geteqR(mm, 'name) — NO closing quote. Measured 2026-08-20
-    # (branch_5_49_base_796_g60186bb22_dirty, nparse.lisp): this build's
-    # quote NUD (def-nud |$'|) parses the quoted operand at lbp 190, which
-    # stops after the atom and never consumes a closing quote; a balanced
-    # 'name' leaves the closing ' in the input and raises
-    # "' is not an infix operator" (repro: `t : 'v'$` fails; the brief's
-    # own loader line uses the unbalanced idiom, as do the committed
-    # Task-3 rules, which the 20/20 suite verifies behaviorally).
+                           f"{base_cond.count(old)} (M-cas-simp hook)")
+        base_cond = base_cond.replace(old, new)
+    inner = split_inner_condition(rhs)
+    if inner is None:
+        cond_txt = base_cond
+        repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
+    else:
+        head, decls, body, inner_cond = inner
+        repl_txt = translate(drop_optionals(f"{head}[{decls},{body}]",
+                                            rule_vars), ctx)
+        locals_, assigns = _scope_locals(
+            head, translate(drop_optionals(decls, rule_vars), ctx), key, n)
+        test = translate(drop_optionals(inner_cond, rule_vars), ctx)
+        # parenthesized: the outer cond may be an `or` chain
+        cond_txt = (f"({base_cond})  and  "
+                    f"{_scope_block(locals_, assigns, f'is({test}) = true')}")
+    # The cond and repl bind each capture from the matchlist mm with
+    # geteqR — the dispatcher builds mm from the matcher's bindings, one
+    # [<capture name> = value] per capture. The geteqR name argument uses
+    # the UNBALANCED Rubi quote idiom geteqR(mm, 'name) — NO closing quote
+    # (this build's quote NUD parses the quoted operand at lbp 190; a
+    # balanced 'name' raises "' is not an infix operator", measured
+    # 2026-08-20).
     caps = sorted(cap_name(key, n, v) for v in rule_vars)
     binds = [f"{c} : geteqR(mm, '{c})" for c in caps]
     bind_block = ", ".join(binds) if binds else "true"
-    # FIX F5: the block locals are the renamed captures; the brief listed
-    # the bare names, which are dead locals there (and would shadow the
-    # mm/x parameters if a capture were ever named mm or x).
     locals_txt = ", ".join(caps) if caps else ""
-    # Capture snapshots (2026-08-25, e44 wrong-answer fix). Maxima block
-    # scoping is DYNAMIC, and a defmatch matcher assigns the pattern
-    # symbols as a side effect of every match attempt. A repl whose body
-    # makes a nested mr_int call re-dispatches the whole rule list, which
-    # re-matches THIS rule's own pattern against the cascade's
-    # intermediate integrands and clobbers the capture bindings the repl
-    # still reads after the nested call. Measured on e44 (1.2.2.5 r3):
-    # the even-part cascade rebound _mr_1_2_2_5_r3_b/_mr_1_2_2_5_r3_c to
-    # -240/348 (a matched intermediate quartic 348x^4-240x^2+4), and the
-    # odd-part integrand was then built from the wrong quartic — a
-    # non-antiderivative answer that the zero-test rightly rejects. The
-    # matchlist mm is an immutable value, so the repl reads each capture
-    # from mm into a fresh local no matcher can assign and the body is
-    # rewritten to those locals. The cond keeps the capture names: it
-    # runs before any nested dispatch and its predicates never re-match
-    # this rule's pattern. The __s suffix cannot collide: a capture name
-    # is strictly shorter than its snapshot, and a Rubi variable named
-    # v__s would be asserted against below.
+    # Capture snapshots (2026-08-25, e44 wrong-answer fix): the repl reads
+    # each capture into a fresh __s local and its body is rewritten to
+    # those locals — a nested mr_int call can then never clobber a capture
+    # the repl still reads. (The defmatch matcher that assigned the pattern
+    # symbols is gone; the snapshots are kept so every repl regenerates
+    # byte-identical — spec 3.4.)
     snaps = {c: c + "__s" for c in caps}
     if set(snaps.values()) & set(caps):
         raise GenError(f"{key} r{n}: a snapshot name collides with a "
@@ -3447,66 +1403,16 @@ def emit_rule(run, key, n, rule_vars):
     snap_binds = [f"{snaps[c]} : geteqR(mm, '{c})" for c in caps]
     snap_bind_block = ", ".join(snap_binds) if snap_binds else "true"
     snap_locals_txt = ", ".join(snaps[c] for c in caps) if caps else ""
-    pat_name = f"_mr_pat_{key}_r{n}"
-    if bare_catchall:
-        # BARE catch-all (see the block comment above): no defmatch, no
-        # matchdeclare — the hand-written pattern function returns the
-        # defmatch retlist shape for every integrand and never assigns
-        # the slot symbol, so a re-load's defmatch-time pattern
-        # re-evaluation cannot collapse the pattern to a literal.
-        if decls != [f"matchdeclare({pat_text}, true)$"]:
-            raise GenError(f"{key} r{n}: bare catch-all pattern "
-                           f"{pat_text} with matchdeclare decls "
-                           f"{decls} (only the true predicate is "
-                           f"supported)")
-        lines = [f"{pat_name}(f, x) := [ {pat_text} = f, x = x ]$"]
-    else:
-        lines = list(decls)
-        lines.append(f"defmatch({pat_name}, {pat_text}, x)$")
-    lines.append(f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],")
-    lines.append(f"  {bind_block},")
-    lines.append(f"  {cond_txt})$")
-    lines.append(f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals_txt}],")
-    lines.append(f"  {snap_bind_block},")
-    lines.append(f"  {repl_txt})$")
-    # Slot-matcher hybrid (SLOT_KEYS_PHASE1): a pattern with a
-    # free-exponent slot also gets the structural fallback — the
-    # defmatch path above is unchanged (every entry that matches today
-    # behaves exactly as before), the fallback runs only on decline.
-    # Slot-matcher hybrid (SLOT_KEYS_PHASE1): a pattern with a
-    # free-exponent slot gets the structural fallback INSTEAD of the
-    # plain defmatch rule body — the defmatch pattern itself is kept
-    # and tried first, so every entry that matches today behaves
-    # exactly as before; the fallback runs only on decline.
-    slots = None
-    if key in SLOT_KEYS_PHASE1:
-        slots = slots_from_lhs(re.sub(r"\s+", "", m.group(1)))
-        if (slots is not None and _has_free_e(slots)
-                and slot_captures(slots) == set(rule_vars)
-                and not ctx["decls"]
-                and "MatchQ" not in (cond or "")):
-            lines.extend(_slot_backtrack_lines(slots, key, n, rule_vars))
-            lines.extend(_slot_rule_lines(key, n, rule_vars))
-        else:
-            lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
-            lines.append(f"  mm : {pat_name}(f, x),")
-            lines.append("  if mm = false then return(false),")
-            lines.append(_MM_BOOL_GUARD)
-            lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
-            lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$")
-    else:
-        lines.append(f"_mr_rule_{key}_r{n}(f, x) := block([mm, ok],")
-        lines.append(f"  mm : {pat_name}(f, x),")
-        lines.append("  if mm = false then return(false),")
-        lines.append(_MM_BOOL_GUARD)
-        lines.append(f"  ok : _mr_cond_{key}_r{n}(mm, x),")
-        lines.append(f"  if is(ok) = true then _mr_repl_{key}_r{n}(mm, x) else false)$")
-    # The rule's MatchQ marker names (ctx["decls"] — updated only by
-    # _emit_matchq) are returned for the file-level registry line: the
-    # marker test is membership, not name-shape (see %mr_isMQMarker,
-    # maxima_rubi_utils.mac — the name-shape substring scan was FATAL
-    # on the compiled out-of-range probe).
-    return "\n".join(lines), sorted(ctx["decls"])
+    return "\n".join([
+        f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],",
+        f"  {bind_block},",
+        f"  {cond_txt})$",
+        f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals_txt}],",
+        f"  {snap_bind_block},",
+        f"  {repl_txt})$",
+        f'_mr_rule_{key}_r{n} : %mr_defrule("{key}", {n}, "{pattern}", '
+        f"_mr_cond_{key}_r{n}, _mr_repl_{key}_r{n})$",
+    ])
 
 def emit_file(rel_m, runs, key=None):
     # key defaults to the file's own number; the EXTRA_CLASS1 files
@@ -3527,24 +1433,18 @@ def emit_file(rel_m, runs, key=None):
               f" *          {rel_m}\n * Regenerate: {regen} */\n"
               f"{MIT}\n\n")
     body = []
-    rule_fns = []
-    file_markers = set()
+    rule_names = []
     for n, run in enumerate(runs, start=1):
-        # FIX F3: rule_runs yields LISTS OF LINES; the brief's emit_rule
-        # unpacked them as a (lhs, rhs, cond) triple (ValueError on any
-        # single-line rule) and pattern_vars(run[0]) saw only line 1. Join
-        # the run and split it the way the census does.
+        # FIX F3: rule_runs yields LISTS OF LINES; join the run and split it
+        # the way the census does.
         text = "\n".join(run)
         if ":=" not in text:
             raise GenError(f"{key} r{n}: unparseable rule run (no ':='): "
                            f"{text[:60]!r}")
         # 5 class-1 runs glue an inline C-tier utility definition
         # (IntLinearQ/IntBinomialQ/IntQuadraticQ) onto the rule run. The
-        # definition is provenance: its port is Task 7 (%mr_intLinearQ &
-        # co. in maxima_rubi_utils.mac); the rule conds call those %mr_*
-        # names, which are nouns until then, so the affected rules decline
-        # (is(noun) = false) — the same deliberate dead state a C-tier
-        # predicate without its port gives.
+        # definition is provenance: its port is the %mr_* predicate in
+        # maxima_rubi_utils.mac the rule conds call.
         text, util_lines = split_utility_def(text)
         if any("*/" in ln for ln in util_lines):
             raise GenError(f"{key} r{n}: utility definition contains "
@@ -3553,10 +1453,7 @@ def emit_file(rel_m, runs, key=None):
         cond = clean_cond(cond, key, n)
         rule_vars = pattern_vars(lhs)
         try:
-            rule_text, markers = emit_rule((lhs, rhs, cond), key, n,
-                                           rule_vars)
-            body.append(rule_text)
-            file_markers.update(markers)
+            body.append(emit_rule((lhs, rhs, cond), key, n, rule_vars))
         except GenError:
             raise
         except Exception as ex:
@@ -3572,12 +1469,9 @@ def emit_file(rel_m, runs, key=None):
             for ln in util_lines:
                 body.append(f" * {ln.strip()}")
             body.append(" */")
-        rule_fns.append(f"_mr_rule_{key}_r{n}")
+        rule_names.append(f"_mr_rule_{key}_r{n}")
         body.append("")
-    if file_markers:
-        body.append(f"%mr_register_markers([ {', '.join(sorted(file_markers))} ])$")
-        body.append("")
-    body.append(f"mr_rules_{key} : [ {', '.join(rule_fns)} ]$")
+    body.append(f"mr_rules_{key} : [ {', '.join(rule_names)} ]$")
     body.append(f"mr_rules_count_{key} : {len(runs)}$")
     body.append(f"mr_witness_{key}() := true$")
     return header + "\n".join(body) + "\n"
@@ -3624,6 +1518,17 @@ EXTRA_CLASS1 = [
 ]
 EXTRA_TOTAL = 316  # 82 + 122 + 31 + 48 + 33 (measured 2026-08-25)
 
+# The legacy 9.1 integrand simplification rules (spec 3.4): absent from the
+# pinned Rubi.m LoadRules (dropped 2023-12, f7fa0fd), but loaded by the 2018
+# Rubi the Maxima-syntax corpus was generated with, after the 1.x files — so
+# it is generated at the end of the class-1 table (the position of the
+# manual port it replaces). The pinned file's first rule (L4,
+# Int[u_.*(v_+w_)^p_., x_Symbol]) is commented out there, so the generated
+# file carries 28 rules; the manual port carried it as a 29th, dead rule.
+NINE_ONE = ("Rubi/IntegrationRules/9 Miscellaneous/"
+            "9.1 Integrand simplification rules.m")
+NINE_ONE_TOTAL = 28
+
 def configure(class_num):
     """Point the generator at class <class_num> (1, 2 or 3)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
@@ -3634,7 +1539,20 @@ def configure(class_num):
     # catch-all (class-3 deferred campaign C6b; the single-line
     # If[TrueQ[$LoadShowSteps], …] wrapper the census parser never
     # picked up — unwrap_showsteps_line).
-    EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL, 2: 125, 3: 334}[class_num]
+    EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
+                      3: 334}[class_num]
+
+
+def _emit_source(rel_m, key, only, total, load_lines, note=""):
+    text = unwrap_showsteps_lines(strip_comments((RUBI / rel_m).read_text()))
+    runs = rule_runs(text)
+    out = OUT / f"{key}.mac"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(emit_file(rel_m, runs, key))
+    print(f"  {key}: {len(runs)} rules{note}")
+    load_lines.append(f"%mr_load_sibling(\"rules/class{CLASS}/{key}.mac\", "
+                      f"'mr_witness_{key})$")
+    return total + len(runs)
 
 
 def main(class_num=None):
@@ -3645,23 +1563,13 @@ def main(class_num=None):
     only = None
     if "--only" in sys.argv:
         only = sys.argv[sys.argv.index("--only") + 1].replace(".", "_")
-    files = load_class_files(RUBI)
     total = 0
     load_lines, table_terms = [], []
-    for rel_m in files:
+    for rel_m in load_class_files(RUBI):
         key = key_of(rel_m)
         if only and key != only:
             continue
-        text = unwrap_showsteps_lines(strip_comments((RUBI / rel_m).read_text()))
-        runs = rule_runs(text)
-        out = OUT / f"{key}.mac"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(emit_file(rel_m, runs))
-        print(f"  {key}: {len(runs)} rules")
-        total += len(runs)
-        load_lines.append(
-            f"%mr_load_sibling(\"rules/class{CLASS}/{key}.mac\", "
-            f"'mr_witness_{key})$")
+        total = _emit_source(rel_m, key, only, total, load_lines)
         table_terms.append(f"mr_rules_{key}")
     if CLASS == 1:
         # The five corpus-tested dead siblings (EXTRA_CLASS1), `b`-suffixed,
@@ -3673,21 +1581,18 @@ def main(class_num=None):
             key = base + "b"
             if only and key != only:
                 continue
-            text = unwrap_showsteps_lines(
-                strip_comments((RUBI / rel_m).read_text()))
-            runs = rule_runs(text)
-            out = OUT / f"{key}.mac"
-            out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_text(emit_file(rel_m, runs, key))
-            print(f"  {key}: {len(runs)} rules (extra, corpus-matched dead file)")
-            total += len(runs)
-            load_lines.append(
-                f"%mr_load_sibling(\"rules/class{CLASS}/{key}.mac\", "
-                f"'mr_witness_{key})$")
+            total = _emit_source(rel_m, key, only, total, load_lines,
+                                 " (extra, corpus-matched dead file)")
             sib = f"mr_rules_{base}"
             pos = table_terms.index(sib) + 1 if sib in table_terms \
                 else len(table_terms)
             table_terms.insert(pos, f"mr_rules_{key}")
+        if not (RUBI / NINE_ONE).exists():
+            raise GenError(f"9.1 source missing: {NINE_ONE}")
+        if not only or only == "9_1":
+            total = _emit_source(NINE_ONE, "9_1", only, total, load_lines,
+                                 " (legacy 9.1, end of the class-1 table)")
+            table_terms.append("mr_rules_9_1")
     expected = EXPECTED_TOTAL
     note = (f"OK (== {expected})" if (total == expected and not only)
             else ("partial (--only)" if only
@@ -3695,7 +1600,8 @@ def main(class_num=None):
     print(f"TOTAL: {total} rules — {note}")
     if not only and total != expected:
         raise GenError(f"rule total {total} != {expected} "
-                       f"(T1 census + EXTRA_CLASS1 for class 1); aborting")
+                       f"(T1 census + EXTRA_CLASS1 + 9.1 for class 1); "
+                       f"aborting")
     if not only:
         print()
         print("# maxima_rubi.mac load list (Rubi LoadRules order):")

@@ -1,0 +1,26 @@
+=== probes/matcher/03-model-touch  run: 2026-09-12 07:56 UTC
+maxima: disp(build_info())
+maxima: Maxima-version: "branch_5_50_base_84_g4204fb669"
+maxima: Object dir: "/home/serge/.maxima/binary/branch_5_50_base_84_g4204fb669/sbcl/2_6_7"
+settings before the probe: domain:complex$
+entries read: 29747  bad entry shapes/files skipped: 0  results: 29747
+
+SECTION 1 Algebraic functions: compared 25697, stored differently from the Mathematica form 20 (0.08%); failures {}; entries carrying evaluation the reader does not emulate: 78
+  signatures (an entry may carry several): other structure 20
+  head-set change kinds: [same heads, different structure] 20
+
+SECTION 2 Exponentials: compared 965, stored differently from the Mathematica form 13 (1.35%); failures {}; entries carrying evaluation the reader does not emulate: 0
+  signatures (an entry may carry several): other structure 12, trig heads rewritten 1
+  head-set change kinds: [same heads, different structure] 13
+
+SECTION 3 Logarithms: compared 3085, stored differently from the Mathematica form 10 (0.32%); failures {}; entries carrying evaluation the reader does not emulate: 25
+  signatures (an entry may carry several): log of a power expanded 10, trig heads rewritten 1, product base of a non-integer power split 1
+  head-set change kinds: [-Power] 4, [same heads, different structure] 2, [-Log-Times] 1, [-Log] 1, [+Times -Power] 1, [-Log-Power] 1
+
+SECTION ALL: compared 29747, stored differently from the Mathematica form 43 (0.14%); failures {}; entries carrying evaluation the reader does not emulate: 103
+  signatures (an entry may carry several): other structure 32, log of a power expanded 10, trig heads rewritten 2, product base of a non-integer power split 1
+  head-set change kinds: [same heads, different structure] 35, [-Power] 4, [-Log-Times] 1, [-Log] 1, [+Times -Power] 1, [-Log-Power] 1
+  e.g. [other structure] 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.3 (a+b x^2)^p (c+d x^2)^q.mac e300 L335: 1/(sqrt(3+x^2*(-3+sqrt(3)))*sqrt(3-3*sqrt(3)+2*x^2*sqrt(3)))  ->  (Times (Power (Plus 3 (Times (Plus -3 (Power 3 1/2)) (Power x 2))) -1/2) (Power (Plus 3 (Times -1 (Power 3 3/2
+  e.g. [trig heads rewritten] 2 Exponentials/2.3 Exponential functions.mac e684 L791: %e^x*sec(1-%e^x)^3  ->  (Times (Power E x) (Power (Sec (Plus -1 (Power E x))) 3))
+  e.g. [log of a power expanded] 3 Logarithms/3.5 Logarithm functions.mac e153 L192: 1/(x*log(%e^x))  ->  (Power x -2)
+  e.g. [product base of a non-integer power split] 3 Logarithms/3.5 Logarithm functions.mac e296 L367: log(sqrt((1+x)/x))  ->  (Times 1/2 (Log (Times (Power x -1) (Plus 1 x))))

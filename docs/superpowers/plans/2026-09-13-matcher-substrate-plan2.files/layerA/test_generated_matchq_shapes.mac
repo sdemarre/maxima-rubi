@@ -1,0 +1,89 @@
+  /* The generated MatchQ sites' pattern shapes (matcher substrate spec
+     section 3.4: each distinct pattern the MatchQ sites use gets a unit
+     test). The 24 generated sites carry 13 distinct pattern texts;
+     test_matchQ_predicates and test_class2_marker_head pin four of them
+     (x^m_.*u_., (f_+g_.*x^2)^r_., a_+b_.*v_ and the 2.3 r96 head F_[v_]),
+     this section pins the other nine — one positive and one negative each,
+     on the emitted pattern text with generic marker names and the site's
+     cond where it carries one (plan-2 pre-validation, probe_shapes.mac and
+     probe_s10.mac, 2026-09-13). Maxima distributes a power over a product
+     even for a symbolic exponent ((2*x^3)^m stores as 2^m*x^(3*m), (3*x)^n
+     as 3^n*x^n), so a pattern holding a power of a product is pinned on a
+     nested power instead. */
+  test_generated_matchq_shapes() := block([P],
+    print("--- generated MatchQ shapes (spec 3.4) ---"),
+    /* 1.1.1.7 r1, 1.4.1 r16: Qx_.*(c_+d_.*x^m_)^q_ */
+    P : "(Times (Optional (Pattern |_s1_Qx| (Blank))) (Power (Plus (Pattern |_s1_c| (Blank)) (Times (Optional (Pattern |_s1_d| (Blank))) (Power (MRArg 1) (Pattern |_s1_m| (Blank))))) (Pattern |_s1_q| (Blank))))",
+    check_bool("shape Qx*(c+d*x^m)^q on (2+3x^2)^3: Qx = 1, c = 2, d = 3, m = 2, q = 3",
+               binds(%mr_matchQ_bindings((2+3*x^2)^3, P, [x], true),
+                     ['_s1_Qx = 1, '_s1_c = 2, '_s1_d = 3, '_s1_m = 2, '_s1_q = 3])),
+    check_bool("shape Qx*(c+d*x^m)^q on x*(2+3x^2)^3: Qx = x",
+               binds(%mr_matchQ_bindings(x*(2+3*x^2)^3, P, [x], true), ['_s1_Qx = x])),
+    check_not("shape Qx*(c+d*x^m)^q: a bare x term has no x^m_ (m_ is not Optional)",
+              %mr_matchQ((2+3*x)^3, P, [x], true)),
+    /* 1.4.1 r4 / r68: a_.*v_^k, k the computed Expon[Px, x] part */
+    P : "(Times (Optional (Pattern |_s4_a| (Blank))) (Power (Pattern |_s4_v| (Blank)) (MRArg 1)))",
+    check_bool("shape a*v^k, k = 3, on 5*(1+2x)^3: a = 5, v = 1+2x",
+               binds(%mr_matchQ_bindings(5*(1+2*x)^3, P, [3], true), ['_s4_a = 5, '_s4_v = 1+2*x])),
+    check_not("shape a*v^k, k = 3, on 5*(1+2x)^2", %mr_matchQ(5*(1+2*x)^2, P, [3], true)),
+    /* 1.4.2 r17, first site: (d_.+x*e_.)^m*(f_.+x*g_.)^2*(a_.+x*b_.+c_.*x^2)^t_. */
+    P : "(Times (Power (Plus (Optional (Pattern |_s7_d| (Blank))) (Times (MRArg 1) (Optional (Pattern |_s7_e| (Blank))))) (MRArg 2)) (Power (Plus (Optional (Pattern |_s7_f| (Blank))) (Times (MRArg 3) (Optional (Pattern |_s7_g| (Blank))))) 2) (Power (Plus (Optional (Pattern |_s7_a| (Blank))) (Times (MRArg 4) (Optional (Pattern |_s7_b| (Blank)))) (Times (Optional (Pattern |_s7_c| (Blank))) (MRArg 5))) (Optional (Pattern |_s7_t| (Blank)))))",
+    check_bool("shape (d+e x)^m (f+g x)^2 (a+b x+c x^2)^t: d..g, a..c, t = tt",
+               binds(%mr_matchQ_bindings((1+2*x)^mm*(3+4*x)^2*(5+6*x+7*x^2)^tt, P, [x, mm, x, x, x^2], true),
+                     ['_s7_d = 1, '_s7_e = 2, '_s7_f = 3, '_s7_g = 4, '_s7_a = 5, '_s7_b = 6,
+                      '_s7_c = 7, '_s7_t = tt])),
+    check_not("shape (d+e x)^m (f+g x)^2 (…)^t: the literal exponent 2 does not take 3",
+              %mr_matchQ((1+2*x)^mm*(3+4*x)^3*(5+6*x+7*x^2)^tt, P, [x, mm, x, x, x^2], true)),
+    /* 1.4.2 r17, second site: (a_.+c_.*x^2)^t_.*(d_.+x*e_.)^m*(f_.+x*g_.)^2, FreeQ cond */
+    P : "(Times (Power (Plus (Optional (Pattern |_s8_a| (Blank))) (Times (Optional (Pattern |_s8_c| (Blank))) (MRArg 1))) (Optional (Pattern |_s8_t| (Blank)))) (Power (Plus (Optional (Pattern |_s8_d| (Blank))) (Times (MRArg 2) (Optional (Pattern |_s8_e| (Blank))))) (MRArg 3)) (Power (Plus (Optional (Pattern |_s8_f| (Blank))) (Times (MRArg 4) (Optional (Pattern |_s8_g| (Blank))))) 2))",
+    check_bool("shape (a+c x^2)^t (d+e x)^m (f+g x)^2 with FreeQ: a = 5, c = 7, t = tt",
+               binds(%mr_matchQ_bindings((5+7*x^2)^tt*(1+2*x)^mm*(3+4*x)^2, P, [x^2, x, mm, x],
+                                         lambda([%mr_mqb], freeof(x, %mr_mk(_s8_a, %mr_mqb))
+                                                           and freeof(x, %mr_mk(_s8_c, %mr_mqb))
+                                                           and freeof(x, %mr_mk(_s8_t, %mr_mqb)))),
+                     ['_s8_a = 5, '_s8_c = 7, '_s8_t = tt, '_s8_d = 1, '_s8_e = 2, '_s8_f = 3, '_s8_g = 4])),
+    check_not("shape (a+c x^2)^t …: a trinomial base fails the FreeQ cond",
+              %mr_matchQ((5+6*x+7*x^2)^tt*(1+2*x)^mm*(3+4*x)^2, P, [x^2, x, mm, x],
+                         lambda([%mr_mqb], freeof(x, %mr_mk(_s8_a, %mr_mqb))
+                                           and freeof(x, %mr_mk(_s8_c, %mr_mqb))))),
+    check_bool("shape (a+c x^2)^t …: without the cond a_ takes the run 5+6x (Plus is Flat)",
+               %mr_matchQ((5+6*x+7*x^2)^tt*(1+2*x)^mm*(3+4*x)^2, P, [x^2, x, mm, x], true)),
+    /* 9.1 r12: b_*v_ /; FreeQ[b, x] */
+    P : "(Times (Pattern |_s9_b| (Blank)) (Pattern |_s9_v| (Blank)))",
+    check_bool("shape b*v on 3*sin(x): b = 3, v = sin(x)",
+               binds(%mr_matchQ_bindings(3*sin(x), P, [], lambda([%mr_mqb], freeof(x, %mr_mk(_s9_b, %mr_mqb)))),
+                     ['_s9_b = 3, '_s9_v = sin(x)])),
+    check_not("shape b*v on sin(x): no product", %mr_matchQ(sin(x), P, [], true)),
+    check_not("shape b*v /; FreeQ[b, x] on x*sin(x)",
+              %mr_matchQ(x*sin(x), P, [], lambda([%mr_mqb], freeof(x, %mr_mk(_s9_b, %mr_mqb))))),
+    /* 2.3 r96, first site: w_*(a_.*v_^n_)^m_ */
+    P : "(Times (Pattern |_s10_w| (Blank)) (Power (Times (Optional (Pattern |_s10_a| (Blank))) (Power (Pattern |_s10_v| (Blank)) (Pattern |_s10_n| (Blank)))) (Pattern |_s10_m| (Blank))))",
+    check_bool("shape w*(a*v^n)^m on sin(x)*((1+x)^n)^mm: w = sin(x), a = 1, v = 1+x",
+               binds(%mr_matchQ_bindings(sin(x)*((1+x)^n)^mm, P, [], true),
+                     ['_s10_w = sin(x), '_s10_a = 1, '_s10_v = 1+x, '_s10_n = n, '_s10_m = mm])),
+    check_not("shape w*(a*v^n)^m on sin(x)*(2+x^3)^mm: a sum is no a*v^n",
+              %mr_matchQ(sin(x)*(2+x^3)^mm, P, [], true)),
+    /* 3.2.3 r16: u_.*(a+b x)^m_.*(c+d x)^n_. /; IntegersQ[m, n] (outer captures as parts) */
+    P : "(Times (Optional (Pattern |_s12_u| (Blank))) (Power (MRArg 1) (Optional (Pattern |_s12_m| (Blank)))) (Power (MRArg 2) (Optional (Pattern |_s12_n| (Blank)))))",
+    check_bool("shape u*(a+b x)^m*(c+d x)^n on k*(a+b x)^2*(c+d x)^3: u = k, m = 2, n = 3",
+               binds(%mr_matchQ_bindings(k*(a+b*x)^2*(c+d*x)^3, P, [a+b*x, c+d*x],
+                                         lambda([%mr_mqb], %mr_integersQ([%mr_mk(_s12_m, %mr_mqb),
+                                                                          %mr_mk(_s12_n, %mr_mqb)]))),
+                     ['_s12_u = k, '_s12_m = 2, '_s12_n = 3])),
+    check_not("shape u*(a+b x)^m*(c+d x)^n /; IntegersQ: m = 1/2 fails",
+              %mr_matchQ(k*sqrt(a+b*x)*(c+d*x)^3, P, [a+b*x, c+d*x],
+                         lambda([%mr_mqb], %mr_integersQ([%mr_mk(_s12_m, %mr_mqb), %mr_mk(_s12_n, %mr_mqb)])))),
+    /* 3.3 r59: e_.*(f_+x*g_.) /; FreeQ[{e, f, g}, x] */
+    P : "(Times (Optional (Pattern |_s13_e| (Blank))) (Plus (Pattern |_s13_f| (Blank)) (Times (MRArg 1) (Optional (Pattern |_s13_g| (Blank))))))",
+    check_bool("shape e*(f+g x) on 3*(4+5x): e = 3, f = 4, g = 5",
+               binds(%mr_matchQ_bindings(3*(4+5*x), P, [x], true), ['_s13_e = 3, '_s13_f = 4, '_s13_g = 5])),
+    check_not("shape e*(f+g x) on 3*(4+5x^2)", %mr_matchQ(3*(4+5*x^2), P, [x], true)),
+    /* 3.5 r20: (x*g_.)^m_. /; FreeQ[{g, m}, x] */
+    P : "(Power (Times (MRArg 1) (Optional (Pattern |_s14_g| (Blank)))) (Optional (Pattern |_s14_m| (Blank))))",
+    check_bool("shape (g x)^m on 3*x: g = 3, m = 1",
+               binds(%mr_matchQ_bindings(3*x, P, [x], true), ['_s14_g = 3, '_s14_m = 1])),
+    check_bool("shape (g x)^m on x^2: g = 1, m = 2",
+               binds(%mr_matchQ_bindings(x^2, P, [x], true), ['_s14_g = 1, '_s14_m = 2])),
+    check_not("shape (g x)^m on 3*x^2", %mr_matchQ(3*x^2, P, [x], true)),
+    true
+  )$

@@ -1,0 +1,42 @@
+#!/bin/sh
+# probes/matcher/01-mma4max-feasibility.run -- re-run the matcher spike.
+# From anywhere:  sh probes/matcher/01-mma4max-feasibility.run
+# Writes probes/matcher/01-mma4max-feasibility.out and prints its summary.
+set -u
+cd "$(dirname "$0")/../.."
+OUT=probes/matcher/01-mma4max-feasibility.out
+{
+  echo "=== probes/matcher/01-mma4max-feasibility  run: $(date -u '+%Y-%m-%d %H:%M UTC')"
+  echo "reference/fateman/PROVENANCE.txt:"
+  sed 's/^/  /' reference/fateman/PROVENANCE.txt
+  echo "reference/rubi HEAD: $(git -C reference/rubi rev-parse HEAD 2>/dev/null)"
+  echo
+  timeout 1200 maxima --very-quiet -b probes/matcher/01-mma4max-feasibility.mac 2>&1 \
+    | grep -v '^; '
+  echo
+  echo "=== secondary: the other matcher lineages (static)"
+  for f in reference/fateman/lisp/mma4max/newmatch.lisp \
+           reference/fateman/lisp/mma4max/match.lisp \
+           reference/fateman/other/mockmma/match.lisp \
+           reference/fateman/other/mockmma/match16.lisp \
+           reference/fateman/other/mixima/translator/match.lisp; do
+    if [ -f "$f" ]; then
+      printf '%s: lines=%s Optional=%s remopts=%s matchfol=%s Flat=%s\n' "$f" \
+        "$(wc -l < "$f")" "$(grep -c 'Optional' "$f")" "$(grep -c 'remopts' "$f")" \
+        "$(grep -c 'matchfol' "$f")" "$(grep -ci 'flat' "$f")"
+    else
+      echo "$f: MISSING"
+    fi
+  done
+  echo "header comments (version / what the file says it lacks):"
+  grep -n -i -E 'version 1[56]|does not include|not handled by this version|matched only if they have a fixed' \
+    reference/fateman/other/mixima/translator/match.lisp \
+    reference/fateman/other/mockmma/match.lisp \
+    reference/fateman/lisp/mma4max/newmatch.lisp | sed 's/^/  /'
+  for pair in "reference/fateman/lisp/mma4max/match.lisp reference/fateman/other/mockmma/match.lisp" \
+              "reference/fateman/other/mockmma/match.lisp reference/fateman/other/mixima/translator/match.lisp"; do
+    set -- $pair
+    [ -f "$1" ] && [ -f "$2" ] && echo "diff $1 $2: $(diff "$1" "$2" | grep -c '^[<>]') changed lines"
+  done
+} > "$OUT"
+grep -E '^(PATCHED |PCASE )?(GROUP|MODEL|NEG|CTL|TIMING|STATUS|CONVERTER|GATE)|^PCASE |^(PATCHED-)?(SCALE |SMOKE matchtests)' "$OUT"

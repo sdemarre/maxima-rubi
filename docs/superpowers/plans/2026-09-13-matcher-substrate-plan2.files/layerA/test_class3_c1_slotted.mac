@@ -1,0 +1,62 @@
+   /* Task 4C-C1 (class-3 deferred campaign, 2026-09-01) — the slotted
+      inner exponent (d_.+e_.*x_^r_.)^q_. of 3.1.3 / 3.1.4 / 3.1.5, including
+      the sqrt nodes Maxima stores for q = 1/2 or r = 1/2. The defmatch runner
+      0-bound the slot and needed the M1 / C1c single-slot re-emission;
+      MR-MATCH binds the faithful patterns, so the checks read the captures
+      directly (bindings measured in the plan-2 pre-validation,
+      probe_layerA_bind2.mac, 2026-09-13). The 3.1.4 r23 rep has an x^2 head:
+      with 5*x^2 the head item (f_.*x_)^m_. cannot absorb the 5 ((f*x)^2 is
+      not 5*x^2) and the rule declines, as in Mathematica. Answer level: the
+      q=1 bare-binomial row is non-noun and closes the zero-chain. */
+   test_class3_c1_slotted() := block([ans, saved_table, f, z, mm],
+     print("--- c1: slotted inner exponent (3_1_3/3_1_4/3_1_5) ---"),
+     %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
+     %mr_load_sibling("rules/class3/3_1_4.mac", 'mr_witness_3_1_4),
+     %mr_load_sibling("rules/class3/3_1_5.mac", 'mr_witness_3_1_5),
+     saved_table : mr_rule_table,
+     mr_rule_table : flatten([mr_rule_table, mr_rules_3_1_3, mr_rules_3_1_4, mr_rules_3_1_5]),
+     /* 3_1_3 r1: the q=1 bare binomial */
+     mm : %mr_rule_bindings(_mr_rule_3_1_3_r1, (c1d+c1e*x)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_3_r1 binds the q=1 bare binomial", listp(mm)),
+     check_bool("c1 3_1_3_r1 binds d=c1d, e=c1e, r=1, q=1",
+                binds(mm, ['_mr_3_1_3_r1_d = c1d, '_mr_3_1_3_r1_e = c1e,
+                           '_mr_3_1_3_r1_r = 1, '_mr_3_1_3_r1_q = 1])),
+     /* 3_1_3 r1: the sqrt node sqrt(1+x^2) is (1+x^2)^(1/2) */
+     mm : %mr_rule_bindings(_mr_rule_3_1_3_r1, sqrt(1+x^2)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_3_r1 binds sqrt(1+x^2)", listp(mm)),
+     check_bool("c1 3_1_3_r1 sqrt binds d=1, e=1, r=2, q=1/2",
+                binds(mm, ['_mr_3_1_3_r1_d = 1, '_mr_3_1_3_r1_e = 1,
+                           '_mr_3_1_3_r1_r = 2, '_mr_3_1_3_r1_q = 1/2])),
+     /* 3_1_4 r23: sqrt(c1d+c1e*x) under the (f_.*x_)^m_. head */
+     mm : %mr_rule_accept(_mr_rule_3_1_4_r23, x^2*sqrt(c1d+c1e*x)*(c1a+c1b*log(c1c*x^3)), x),
+     check_bool("c1 3_1_4_r23 accepts sqrt(c1d+c1e*x) under the x^2 head", listp(mm)),
+     check_bool("c1 3_1_4_r23 binds f=1, m=2 and d=c1d, e=c1e, r=1, q=1/2",
+                binds(mm, ['_mr_3_1_4_r23_f = 1, '_mr_3_1_4_r23_m = 2,
+                           '_mr_3_1_4_r23_d = c1d, '_mr_3_1_4_r23_e = c1e,
+                           '_mr_3_1_4_r23_r = 1, '_mr_3_1_4_r23_q = 1/2])),
+     check_not("c1 3_1_4_r23 declines the 5*x^2 head",
+               %mr_rule_bindings(_mr_rule_3_1_4_r23, 5*x^2*sqrt(c1d+c1e*x)*(c1a+c1b*log(c1c*x^3)), x)),
+     /* 3_1_5 r46: the sqrt(x) term in the log-arg binomial, inner exponent 1/2 */
+     mm : %mr_rule_bindings(_mr_rule_3_1_5_r46, log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x))^c1po/x, x),
+     check_bool("c1 3_1_5_r46 binds (c1e+c1f*sqrt(x))^c1ro", listp(mm)),
+     check_bool("c1 3_1_5_r46 binds inner exponent 1/2, outer c1ro",
+                binds(mm, ['_mr_3_1_5_r46_m = 1/2, '_mr_3_1_5_r46_r = c1ro,
+                           '_mr_3_1_5_r46_e = c1e, '_mr_3_1_5_r46_f = c1f])),
+     /* 3_1_5 r47: the same under the (g*x)^h head */
+     mm : %mr_rule_bindings(_mr_rule_3_1_5_r47, (c1g*x)^c1h*log(c1d*(c1e+c1f*sqrt(x))^c1ro)*(c1a+c1b*log(c1c*x)), x),
+     check_bool("c1 3_1_5_r47 binds under the (g*x)^h head", listp(mm)),
+     check_bool("c1 3_1_5_r47 binds g=c1g, q=c1h and inner 1/2, outer c1ro",
+                binds(mm, ['_mr_3_1_5_r47_g = c1g, '_mr_3_1_5_r47_q = c1h,
+                           '_mr_3_1_5_r47_m = 1/2, '_mr_3_1_5_r47_r = c1ro])),
+     /* answer level: the q=1 bare-binomial row is non-noun, closes ratsimp */
+     f : (1+x^2)*(1+log(x)),
+     ans : rubi(f, x),
+     check_not("c1 e(q=1) not a noun",
+               is(atom(ans)) or is(op(ans) = 'integrate)
+               or is(string(op(ans)) = "unintegrable")),
+      z : errcatch(ratsimp(diff(ans, x) - f)),
+      check_bool("c1 e(q=1) zero-chain (ratsimp)",
+                 is(z # []) and is(part(z, 1) = 0)),
+      mr_rule_table : saved_table,
+      true
+    )$

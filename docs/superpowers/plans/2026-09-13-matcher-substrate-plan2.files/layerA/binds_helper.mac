@@ -1,0 +1,7 @@
+/* binds(mm, [name = value, ...]): mm is a binding list (not false) and
+   geteqR finds every name bound to its value — the idiom for
+   %mr_rule_bindings / %mr_rule_accept / %mr_matchQ_bindings results
+   (matcher substrate). */
+binds(mm, eqs) := listp(mm)
+  and every(lambda([q], is(geteqR(mm, lhs(q)) = rhs(q))), eqs)$
+
