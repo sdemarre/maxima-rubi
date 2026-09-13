@@ -20,23 +20,6 @@
 %mr_lib_dir : if load_pathname = false then "" else pathname_directory(load_pathname)$
 
 %mr_load_sibling(fname, witness) := block([ok, w],
-  /* Declare the file's matchfix pattern-variable slots BEFORE the
-     load (maxima_rubi_dispatch.lisp — the mechanism, the name
-     mapping, and the measured declaim semantics are documented
-     there). In batch, load() compiles the file, so the decls must
-     precede the compilation; in interactive the per-match units are
-     compiled later, at call time. The call is noun-tolerant on
-     purpose: the FIRST sibling load (maxima_rubi_utils.mac) runs
-     before the dispatch lisp defines the function — an
-     undefined-function call stays a noun, is a no-op, and utils
-     declares no matchdeclare. The dispatch lisp cannot load before
-     utils: its witness calls %mr_binomialQ, which dispatches to the
-     %mr_binomialQ2/3 bodies defined in utils. Every
-     matchdeclare-bearing file (all rule files) loads after the
-     dispatch lisp. A missing file (the by-name fallback's first
-     attempt) is a no-op in the scanner. */
-  %mr_declaim_matchvars(sconcat(%mr_lib_dir, fname)),
-  %mr_declaim_matchvars(fname),
   /* errcatch in THIS build returns [RESULT] on success and [] on error
      (measured — probes/maxima/probe-errcatch-semantics.out). The by-name
      fallback fires when the sibling-dir load FAILED (ok = []); when
@@ -65,47 +48,28 @@
    that queue no answers; vanilla Maxima integrate dies identically
    there, so it is not a package regression. */
 
-/* The Lisp arity dispatchers (maxima_rubi_dispatch.lisp): %mr_binomialQ
- * (2/3) and %mr_intBinomialQ (7/8/10) — the two predicates Rubi
- * overloads by arity (class-1 census 2026-08-23: binomialQ 2/3 =
- * 40/1, intBinomialQ 7/8/10 = 21/10/44; every other predicate is
- * 1-arg or fixed-arity). The witness CALLS the dispatched names: a
- * missed load leaves them nouns and fails loudly here. */
+/* The matcher substrate (spec
+ * docs/superpowers/specs/2026-09-12-matcher-substrate-design.md): the
+ * matcher MR-MATCH and the Maxima <-> tree converter MR-TREE. Neither
+ * defines a Maxima function, so each witness asks Lisp for its package
+ * (?find_package returns the package object or NIL = false). */
+mr_witness_match() := is(?find\-package("MR-MATCH") # false)$
+%mr_load_sibling("maxima_rubi_match.lisp", 'mr_witness_match)$
+mr_witness_tree() := is(?find\-package("MR-TREE") # false)$
+%mr_load_sibling("maxima_rubi_tree.lisp", 'mr_witness_tree)$
+
+/* The rule records, the dispatcher and the MatchQ entries
+ * (maxima_rubi_dispatch.lisp), plus the Lisp arity dispatchers
+ * %mr_binomialQ (2/3) and %mr_intBinomialQ (7/8/10) — the two
+ * predicates Rubi overloads by arity (class-1 census 2026-08-23:
+ * binomialQ 2/3 = 40/1, intBinomialQ 7/8/10 = 21/10/44). The witness
+ * CALLS the defined names: a missed load leaves them nouns and fails
+ * loudly here (the dispatcher on an EMPTY table answers false). */
 mr_witness_dispatch() := is(%mr_binomialQ(1 + x, x) = true)
   and is(%mr_intBinomialQ(1, 1, 1, 1, 1, 1, x) = true)
-  /* %mr_dispatch_rev on an EMPTY table 0-fires: a missed load leaves it a
-   * noun and this fails loudly. */
-  and is(%mr_dispatch_rev(1, x, [], 1) = false)$
+  and is(%mr_dispatch_tree(1, x, [], 1) = false)$
 
 %mr_load_sibling("maxima_rubi_dispatch.lisp", 'mr_witness_dispatch)$
-
-/* The implicit exponent-1 rescan (maxima_rubi_implicit1.lisp): the
- * findfun shadow + %mr_lift1 + %mr_dispatch_i1 for Maxima's stripped
- * exponent-1 storage (see that file's header for the measured gap). */
-mr_witness_implicit1() :=
-  /* %mr_dispatch_i1 on an EMPTY table 0-fires: a missed load leaves it
-   * a noun and this fails loudly. */
-  is(%mr_dispatch_i1(1, x, [], 1) = false)$
-
-%mr_load_sibling("maxima_rubi_implicit1.lisp", 'mr_witness_implicit1)$
-
-/* The pass-4 per-candidate implicit-1 seam (maxima_rubi_pass4.lisp):
- * %mr_p4_setrev / %mr_p4_setwhich / %mr_dispatch_p4 / %mr_p4_diag for
- * the class-3 deferred campaign (plan
- * docs/superpowers/plans/2026-08-30-class3-deferred-campaign.md).
- * Loads after the implicit-1 file (it consumes *mr-implicit1-which*). */
-mr_witness_pass4() := block([r],
-  /* %mr_dispatch_p4 on an EMPTY table 0-fires: a missed load leaves it
-   * a noun and this fails loudly. The setter round-trip catches a
-   * noun setter (string of a noun call would throw in is()). */
-  r : %mr_dispatch_p4(1, x, [], 1),
-  %mr_p4_setwhich(1),
-  %mr_p4_setwhich(false),
-  %mr_p4_setrev(1),
-  %mr_p4_setrev(0),
-  is(r = false))$
-
-%mr_load_sibling("maxima_rubi_pass4.lisp", 'mr_witness_pass4)$
 
 /* Milestone-1 core (eager): the 1.1.1.1 rule file — what the Layer A
  * suite verifies behaviorally; 5 rules, safe on any build. */
@@ -114,23 +78,15 @@ mr_rule_table : mr_rules_1_1_1_1$
 
 /* Full class-1 load — the 73-file list in Rubi LoadRules order (67
  * LoadRules files + the five corpus-matched `b`-suffixed 1.2.1
- * siblings + the manually ported 9.1), generated by the generator for
- * the 72 (do not hand-edit the list; 9_1 is the manual exception).
+ * siblings + the 9.1 legacy file, generated from its .m source at the
+ * end of the class-1 table; matcher substrate spec section 3.4).
+ * The table becomes the 73-term flatten (3,054 rules).
  *
- * MEASURED (probes/load_wall/probe-load-wall.out; RE-PROBED 2026-08-20
- * on 5.50.0, cap UNCHANGED): a plain maxima process cannot hold all
- * the class-1 patterns — the TLS special-variable budget (between
- * 1200 and 1600 plain slots) holds files 1-7 of the load list (294
- * rules) and dies on file 8 (361 cumulative) with SBCL's fatal
- * "Thread local storage exhausted", uncatchable. 5.50's
- * matcher-speed gains do NOT raise the cap. The resolution: run the
- * process with -X "--tls-limit 100000" (two argv tokens) and then
- * call mr_load_class1_all(); the table becomes the full 73-term
- * flatten (3,055 rules). For single files without the flag:
- *     %mr_load_sibling("rules/class1/<key>.mac", 'mr_witness_<key>);
- *     mr_rule_table : mr_rule_table concat mr_rules_<key>$
- * (measured: unload("rules/class1/<key>.mac") releases that file's
- * patterns from the budget, so files can be swapped.) */
+ * TLS: the defmatch/matchdeclare slots that exhausted SBCL's
+ * special-variable pool (probes/load_wall/probe-load-wall.out) are gone
+ * with the matcher substrate; whether the cond/repl block locals alone
+ * fit the default pool is measured in plan 2's P4 task, and the AGENTS.md
+ * -X "--tls-limit 100000" rule stands until that measurement retires it. */
 mr_load_class1_all() := block([],
   %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
   %mr_load_sibling("rules/class1/1_1_1_2.mac", 'mr_witness_1_1_1_2),
@@ -215,10 +171,9 @@ mr_load_class1_all() := block([],
     :211-221 order, verified against the pinned clone 2026-08-29 —
     3.3 and 3.4 load BEFORE the 3.2.x files: that is Rubi's LoadRules
     order, not numeric order). The table is the 3-class load: the
-    87-term flatten (3,514 rules). MR: the driver and the rules core
-    call this; Layer A still loads only the 1.1.1.1 core file above (the
-   defmatch budget of a plain process holds a handful of rules — see
-   the load-wall note above). */
+    87-term flatten (3,513 rules). The driver and the rules core call
+    this; Layer A loads the 1.1.1.1 core file above and the sibling
+    files its sections pin. */
 mr_load_all() := block([],
   mr_load_class1_all(),
   %mr_load_sibling("rules/class2/2_1.mac", 'mr_witness_2_1),
