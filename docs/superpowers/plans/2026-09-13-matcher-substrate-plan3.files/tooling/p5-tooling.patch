@@ -1,0 +1,208 @@
+diff --git a/test/corpus_driver.py b/test/corpus_driver.py
+index 16dc178..c7b33b2 100644
+--- a/test/corpus_driver.py
++++ b/test/corpus_driver.py
+@@ -50,6 +50,7 @@ sets (measured 2026-08-25: the two giant files 1.1.1.2 / 1.1.1.3 are
+ balance them).
+ """
+ 
++import importlib.util
+ import os
+ import re
+ import subprocess
+@@ -236,6 +237,24 @@ def ensure_rules_core():
+         fcntl.flock(lock, fcntl.LOCK_UN)
+ 
+ 
++# The matcher substrate switches (spec section 3.6): the arm this process
++# runs, from MR_SWITCHES (test/run_records.py), assigned at the head of
++# every entry text and stated on the record's filter: line.
++_rr_spec = importlib.util.spec_from_file_location(
++    "run_records", os.path.join(ROOT, "test", "run_records.py"))
++run_records = importlib.util.module_from_spec(_rr_spec)
++_rr_spec.loader.exec_module(run_records)
++try:
++    SWITCH_SETTINGS = run_records.switch_settings(os.environ)
++except ValueError as exc:
++    raise SystemExit(str(exc))
++
++
++def switch_header():
++    """Suffix for the record's `filter:` line: the switch arm."""
++    return "  switches: " + run_records.switches_text(SWITCH_SETTINGS)
++
++
+ def core_header():
+     """Suffix for the record's `filter:` header line: names a pinned core
+     (the shard merge accepts any `filter:` line), empty otherwise."""
+@@ -271,8 +290,16 @@ def maxima_run(mac_text, timeout):
+         else:
+             cmd = ["maxima", "--very-quiet", "-X", "--tls-limit 100000",
+                    "-p", PRELOAD, "-b", fpath]
++        # stdin from /dev/null: a fatal SBCL error (control-stack
++        # exhaustion inside mr-match:match, probes/matcher/07) drops into
++        # the ldb monitor, which reads stdin — an inherited open stdin
++        # holds the process to the cap and the entry reads `timeout`;
++        # with /dev/null ldb exits and the entry reads `error`. The batch
++        # answers its prompts from the batch file
++        # (batch_answers_from_file), never from stdin.
+         r = subprocess.run(
+             cmd,
++            stdin=subprocess.DEVNULL,
+             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+             text=True, timeout=timeout, cwd=ROOT,
+         )
+@@ -531,7 +558,9 @@ def build_text(f_text, var_text, e_text, e_text2=None):
+     # answers verify normally (measured: 1.2.2.7 e1 carries a ∫-term
+     # and its self-diff closes).
+     has_noun = "not is(freeof(unintegrable, mr_r))"
+-    head = (f"mr_f: {f_text}$\n"
++    switches = "".join(f"{name} : {value}$\n"
++                       for name, value in SWITCH_SETTINGS.items())
++    head = (switches + f"mr_f: {f_text}$\n"
+             f"mr_r: {call}$\n"
+             + "pos$\n" * 40 + "no$\n" * 20)
+     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
+@@ -655,6 +684,7 @@ def main():
+     out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
+                      f"timeout: {TIMEOUT}s  files: {len(files)}"
+                      + (f"  shard: {SHARD_FILE}" if SHARD_FILE else "")
++                     + switch_header()
+                      + core_header())
+     out_lines.append("")
+ 
+diff --git a/test/launch_class_shards.py b/test/launch_class_shards.py
+index 63f2bae..2fdc2b5 100644
+--- a/test/launch_class_shards.py
++++ b/test/launch_class_shards.py
+@@ -23,6 +23,13 @@ Usage:
+                          # Popen one process per job
+ Env:
+   MR_N_PROCS    process count (default: os.cpu_count(), here 24)
++  MR_SWITCHES   the matcher-substrate switch arm the shards run
++                (test/run_records.py; unset = the defaults)
++
++A launch first deletes the previous run's shard files
++(test/corpus_<slug>.shard*.{out,log,files} and the pids file) and refuses
++while a pid of that run is alive: a stale shard of a run with more jobs
++reached the merge before (the P0 class-3 run, 2026-09-12).
+ """
+ 
+ import importlib.util
+@@ -269,8 +276,14 @@ plan_lines.append(f"max job cost: {maxc:.0f}s  (balance spread "
+                   f"{maxc / (total_cost / len(jobs)):.2f}x)")
+ 
+ print("\n".join(plan_lines))
++print(f"switches: {driver.run_records.switches_text(driver.SWITCH_SETTINGS)}")
+ 
+ if LAUNCH:
++    try:
++        removed = driver.run_records.clear_stale_shards(os.path.join(ROOT, "test"), SLUG)
++    except RuntimeError as exc:
++        raise SystemExit(f"launch_class_shards: {exc}")
++    print(f"removed {removed} shard files of the previous run")
+     pidfile = os.path.join(ROOT, "test", f"corpus_{SLUG}.shard-pids")
+     shardfile_dir = os.path.join(ROOT, "test")
+     with open(pidfile, "w", encoding="utf-8") as pf:
+diff --git a/test/matcher/test_mr_dispatch.mac b/test/matcher/test_mr_dispatch.mac
+index 322eec8..1de2b9a 100644
+--- a/test/matcher/test_mr_dispatch.mac
++++ b/test/matcher/test_mr_dispatch.mac
+@@ -84,6 +84,8 @@ test_records() := block([h1, h2],
+         []),
+   check("a non-handle is an error", errcatch(%mr_rule_apply(10^9, x^3, x)), []),
+   check("wrong arity is an error", errcatch(%mr_defrule("t", 4, p_xm, t_true)), []),
++  check("switch defaults: mr_flat_wide false, mr_cond_retry true, mr_model_flags true",
++        [mr_flat_wide, mr_cond_retry, mr_model_flags], [false, true, true]),
+   true)$
+ 
+ test_dispatch() := block([h42, h7, hm, hdecl, hmis, hleak, hcf, hce, hcu, hfault],
+diff --git a/test/merge_class_shards.py b/test/merge_class_shards.py
+index 77e02b9..c5be569 100644
+--- a/test/merge_class_shards.py
++++ b/test/merge_class_shards.py
+@@ -93,9 +93,18 @@ for path in inputs:
+ 
+ missing = expected - set(keys)
+ extra = set(keys) - expected
+-if bad or dupes or missing or extra:
++# Every shard states the switch arm it ran (test/run_records.py); a merge
++# of shards from two arms, or of a shard without the statement, is refused.
++try:
++    switches = driver.run_records.common_switches(inputs)
++    switch_error = None
++except ValueError as exc:
++    switches, switch_error = None, str(exc)
++if bad or dupes or missing or extra or switch_error:
+     print(f"INCOMPLETE: unparsed={bad} dupes={dupes} "
+           f"missing={len(missing)} extra={len(extra)}", file=sys.stderr)
++    if switch_error:
++        print(f"  switches: {switch_error}", file=sys.stderr)
+     for k in sorted(missing)[:10]:
+         print("  missing", k, file=sys.stderr)
+     for k in sorted(extra)[:10]:
+@@ -121,7 +130,7 @@ for line in r.stdout.splitlines():
+     if line.startswith(("Maxima", "Lisp ", "Host ")):
+         out_lines.append(f"maxima: {line}")
+ out_lines.append(f"filter: {SECTION + '/'!r}  full run  timeout: 30s  "
+-                 f"({len(inputs)} shards, merged here)")
++                 f"({len(inputs)} shards, merged here)  switches: {switches}")
+ out_lines.append("")
+ 
+ for rel in sorted(counts):
+@@ -145,6 +154,7 @@ out_lines.append(f"Results: {passed} passed, {failed} failed")
+ open(OUT, "w", encoding="utf-8").write("\n".join(out_lines) + "\n")
+ print(f"OK: {total}/{len(expected)} entries, {len(files)} files, "
+       f"no dupes/missing/extra")
++print(f"  switches: {switches}")
+ for k in sorted(cls_counts):
+     print(f"  {k:14s} {cls_counts[k]}")
+ print(f"  {'Results':14s} {passed} passed, {failed} failed")
+diff --git a/test/merge_timeout_rerun.py b/test/merge_timeout_rerun.py
+index 1d6132c..f20068e 100644
+--- a/test/merge_timeout_rerun.py
++++ b/test/merge_timeout_rerun.py
+@@ -29,6 +29,7 @@ record — the completeness set is its `timeout` class).
+ """
+ 
+ import glob
++import importlib.util
+ import os
+ import re
+ import subprocess
+@@ -100,9 +101,24 @@ for path in inputs:
+ 
+ missing = expected - set(seen)
+ extra = set(seen) - expected
+-if dupes or missing or extra:
++# The re-check runs the source record's switch arm (test/run_records.py):
++# the shards must state one arm, and the source's when it states one.
++_rr_spec = importlib.util.spec_from_file_location(
++    "run_records", os.path.join(ROOT, "test", "run_records.py"))
++run_records = importlib.util.module_from_spec(_rr_spec)
++_rr_spec.loader.exec_module(run_records)
++try:
++    switches = run_records.common_switches(inputs)
++    src_switches = run_records.record_switches(ACCEPTED)
++    switch_error = (None if src_switches in (None, switches) else
++                    f"the shards ran {switches}, the source record {src_switches}")
++except ValueError as exc:
++    switches, switch_error = None, str(exc)
++if dupes or missing or extra or switch_error:
+     print(f"INCOMPLETE: dupes={dupes} missing={len(missing)} "
+           f"extra={len(extra)}", file=sys.stderr)
++    if switch_error:
++        print(f"  switches: {switch_error}", file=sys.stderr)
+     for k in sorted(missing)[:10]:
+         print("  missing", k, file=sys.stderr)
+     for k in sorted(extra)[:10]:
+@@ -131,7 +147,8 @@ except ValueError:
+     accepted_rel = ACCEPTED
+ out_lines.append(
+     f"re-check of the {len(expected)} `timeout` entries of {accepted_rel} "
+-    f"(30 s cap) at a {cap} s per-entry cap, same rules core")
++    f"(30 s cap) at a {cap} s per-entry cap, same rules core, "
++    f"switches: {switches}")
+ out_lines.append("")
+ 
+ cls_of = {k: seen[k].group(1) for k in expected}
