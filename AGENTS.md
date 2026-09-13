@@ -186,12 +186,13 @@ Green: `Results: 53 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
 +3 at the final-review fix wave: the last-absorber cost bounds and the
 empty-leftover lock, +2 at Plan 2: the Power-exponent Optional
 default), `Results: 51 passed, 0 failed` (mr-tree; 46, +5 at Plan 2:
-CRE input and the booleans) and `Results: 57 passed, 0 failed`
+CRE input and the booleans) and `Results: 58 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
 MatchQ pattern prepare rejects is an error, +8 at the final review:
-MatchQ part folding and an out-of-range part error).
+MatchQ part folding and an out-of-range part error, +1 at Plan 3: the
+switch defaults).
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
 test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
@@ -272,6 +273,29 @@ The watcher merges the shards to `test/corpus_class2.out`
 class-N mechanics are runbooked in `docs/class-porting.md`
 (Steps 8-9); the measured acceptance is
 `docs/corpus-class2-baseline-uplift.md`.
+
+**Switch arm — matcher substrate P5** (Plan 3,
+`docs/superpowers/plans/2026-09-13-matcher-substrate-plan3.md`). The
+three migration switches (`mr_flat_wide` false, `mr_cond_retry` true,
+`mr_model_flags` true — the defaults in `maxima_rubi_dispatch.lisp`)
+are set per run with `MR_SWITCHES` (space-separated
+`<switch>=true|false`), e.g.
+`MR_SWITCHES="mr_model_flags=false" python3 test/launch_class_shards.py …`.
+The driver assigns them in every entry text and ends its `filter:`
+line with `switches: …`; the mergers refuse shards that state no arm
+or two arms. A launch first deletes the previous run's shard files and
+refuses while one of its pids is alive. Entry subprocesses get stdin
+`/dev/null` (`probes/matcher/09-harness-fault-verdict.out`: an
+inherited open stdin held a fatal SBCL error in `ldb` until the cap).
+The P5 gate and the winner rule:
+
+```sh
+python3 test/p5_gate.py gate <P0-record> <new-record>
+python3 test/p5_gate.py winner <switch> <run-1 c1> <run-1 c2> <run-1 c3> <flip c1> <flip c2> <flip c3>
+```
+
+Guard (no Maxima): `python3 test/test_run_records.py` — green
+`Results: 23 passed, 0 failed`.
 
 **Record A/B** — the entry-level diff of any two merged records (any
 class, shard files and re-check records too); use it for every

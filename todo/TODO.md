@@ -199,7 +199,7 @@ A/B + attribution + 100 s re-check, §6 recovery, §7 acceptance); runs
 `test/corpus_class{1,2,3}.campaign-baseline.out`. Ticket 04
 (`.scratch/class1-ab-remainders/issues/04-…`) partially answered.
 
-## Matcher substrate — in prog (Plan 2 complete 2026-09-13)
+## Matcher substrate — in prog (Plan 3 executing)
 
 Classes 1–3 re-hosted on a Mathematica-semantics matcher in place of
 `defmatch` (spec
@@ -233,23 +233,31 @@ Layer A 898/0; the TLS flag is no longer required
 - Next: Plan 3 = P5 (four full class 1–3 runs, one switch flipped per
   run; gates against the P0 records) – P6 (close), written just in
   time — open
-- Carried into Plan 3: the MODEL-LOST figures (1,166 / 395 measured vs
-  the spec's 1,142 / 312) unexplained; the shard launcher leaves stale
-  shard files; the speed-gate definition; the three switches written
-  into the driver's `filter:` line (plan 2 deviation 8); crash-class
-  counts against P0 (a runaway recursion in a cond is fatal inside
-  `mr-match:match`, probe 07); from the plan-2 final review: take P5
-  run 1 on class 2 first and compare median wall and the timeout class
-  against P0 before the class-1 runs (probe 06: full-table walk cost is
-  exponential in Times arity; the head index of spec 3.5 is the
-  fallback); when attributing the `mr_model_flags` arm, nested
-  integrate fall-throughs (depth cap, seen guard) run under the flags —
-  look at the seen-guard path first; the spec §6 TLS-mechanism wording
-  is inaccurate (interpreted block locals take no TLS slot) — state the
-  corrected mechanism in the P6 acceptance record; carried to P6: stale
-  generator comments (`generate_rules.py` `cap_name` docstring,
-  `CAP_REMAP` rationale, ctx decls) and README.md's `defmatch` TLS text
-  and deleted file list — open
+- Plan 3 (P5–P6,
+  `docs/superpowers/plans/2026-09-13-matcher-substrate-plan3.md`),
+  Task 1: the switch arm written into every record's `filter:` line
+  (`MR_SWITCHES`, `test/run_records.py`); the launcher deletes a
+  previous run's shard files; the speed-gate definition and the
+  crash-class counts (`test/p5_gate.py`); the crash verdict's stdin
+  (`probes/matcher/09-harness-fault-verdict.out`) — done
+- Carried into Plan 3's P5 runs: class 2 first in every run, its
+  median wall and timeout class compared against P0 before class 1
+  (probe 06: the full-table walk is exponential in Times arity); when
+  attributing the `mr_model_flags` arm, nested integrate fall-throughs
+  (depth cap, seen guard) run under the flags — look at the seen-guard
+  path first; the MODEL-LOST figures (1,166 / 395 measured vs the
+  spec's 1,142 / 312) explained only if that arm's attribution needs
+  them; the spec §6 TLS-mechanism wording corrected in the P6
+  acceptance record; P6: stale generator comments (`cap_name`
+  docstring, `CAP_REMAP` rationale, ctx `decls`) and README.md's
+  `defmatch` TLS text and deleted-file list — open
+- Carried (plan-2 final review, parked): numeric folding in MatchQ
+  part substitution (`Times[0,p]` → 0, `Power[1,e]` → 1, a Times/Plus
+  left holding only Optionals → the Optional's default — `a_.*v_^0`
+  currently errors instead of matching; unreachable today, 1_4_1
+  r4/r68 guard `expon > 1`); a parts-keyed compiled-pattern cache for
+  MatchQ calls with parts (hot conds; unmeasured — built only if a P5
+  wall gate asks for it) — open
 - Deferred: the `MX_` plist re-read issue in `mr-tree` (not reachable:
   the dispatcher never prints and re-reads a tree) — open
 - Known cost item: a collapsible claimer (e.g. `(c_.*x_)^m_.` under

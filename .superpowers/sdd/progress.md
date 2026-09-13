@@ -4595,3 +4595,34 @@ Evidence (build branch_5_50_base_84_g4204fb669 / 2026-08-31 13:27:47; 2026-09-13
   fingerprint=6c396cf8be7a1fe5060d4d17bd37cc58`
 - carried (per the first ruling): numeric folding of spliced numeric products, a parts-keyed
   compiled cache, Minor #5 (generator comments) and #6 (README) to P6 — recorded in todo/TODO.md
+
+## Plan: 2026-09-13 matcher substrate plan 3 (P5–P6; branch matcher-substrate)
+
+Spec: docs/superpowers/specs/2026-09-12-matcher-substrate-design.md
+Plan: docs/superpowers/plans/2026-09-13-matcher-substrate-plan3.md (+ .files/ attachments)
+
+### Task 1 — P5 run tooling
+- build: branch_5_50_base_84_g4204fb669 / 2026-08-31 13:27:47 / SBCL 2.6.7
+- red: `FileNotFoundError: [Errno 2] No such file or directory: '/home/serge/src/maxima-rubi/test/run_records.py'`
+- green: `python3 test/test_run_records.py | tail -1` → `Results: 23 passed, 0 failed`;
+  `python3 test/test_merge_classes.py | tail -1` → `Results: 2 passed, 0 failed`;
+  `python3 test/test_driver_core_pin.py | tail -1` → `Results: 5 passed, 0 failed`;
+  `python3 test/test_ab_records.py | tail -1` → `Results: 6 passed, 0 failed`;
+  `python3 test/test_record_medians.py | tail -1` → `Results: 3 passed, 0 failed`;
+  `python3 test/test_driver_parens.py | tail -1` → `Results: 2 passed, 0 failed`;
+  `python3 test/test_mr_sum_concrete.py | tail -1` → `Results: 3 passed, 0 failed`;
+  `python3 test/test_head_rewrites.py | tail -1` → `Results: 20 passed, 0 failed`;
+  `python3 test/test_driver_radcan_fallback.py < /dev/null | tail -1` → `Results: 3 passed, 1 failed`
+  (pre-existing, not this task's gate — brief Step 4);
+  `maxima --very-quiet -b test/matcher/test_mr_dispatch.mac < /dev/null | grep -a '^Results'` →
+  `Results:  58  passed,  0  failed`;
+  `maxima --very-quiet -b test_maxima_rubi.mac < /dev/null | grep -a '^Results'` →
+  `Results:  898  passed,  0  failed`
+- probe 09 (probes/matcher/09-harness-fault-verdict.out, `=== probes/matcher/09-harness-fault-verdict  git HEAD 3f08574  2026-09-13 12:55 UTC`):
+  - `A plain load, stdin /dev/null    rc=1    wall=  0.6s survived=0 fatal-pseudo=1 ldb=1 guard-page=0`
+  - `B plain load, stdin open pipe    rc=137  wall= 40.0s survived=0 fatal-pseudo=1 ldb=1 guard-page=0`
+  - `C rules core, stdin /dev/null    rc=0    wall=  0.1s survived=1 fatal-pseudo=0 ldb=0 guard-page=1`
+  - `D driver, standard load, pipe    error t= 1.8s crash/c.mac e1 L3|verified t= 1.7s crash/c.mac e2 L4|`
+  - `E driver, rules core, pipe       deferred t= 0.1s crash/c.mac e1 L3|verified t= 0.0s crash/c.mac e2 L4|`
+  - all five rows match the brief's expected table exactly (row D reads `error`, not the
+    pre-patch `timeout t=30.0s` cited by deviation 2).
