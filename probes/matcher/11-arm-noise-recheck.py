@@ -120,6 +120,7 @@ import argparse
 import concurrent.futures
 import importlib.util
 import os
+import re
 import subprocess
 import sys
 import time
@@ -215,6 +216,31 @@ def maxima_build_lines():
             if s.strip().startswith(("Maxima", "Lisp ", "Host "))]
 
 
+R_BUILD_VERSION_RE = re.compile(r'^maxima:\s*Maxima-version:\s*"([^"]*)"\s*$')
+R_BUILD_DATE_RE = re.compile(r'^maxima:\s*Maxima build date:\s*"([^"]*)"\s*$')
+
+
+def r_build_line(build_lines):
+    """The repo's single-line build stamp (probes 06-09: `print("R build",
+    build_info()@version, build_info()@timestamp)$`), reused with NO
+    additional Maxima call -- parsed out of the disp(build_info()) dump
+    maxima_build_lines() already fetched (`maxima: Maxima-version: "..."`
+    and `maxima: Maxima build date: "..."`). None if either line is
+    missing or unparseable (a build_info() format change), so the header
+    degrades gracefully instead of crashing the run."""
+    version = timestamp = None
+    for line in build_lines:
+        m = R_BUILD_VERSION_RE.match(line)
+        if m:
+            version = m.group(1)
+        m = R_BUILD_DATE_RE.match(line)
+        if m:
+            timestamp = m.group(1)
+    if version is None or timestamp is None:
+        return None
+    return f"R build {version} {timestamp}"
+
+
 def select_changed(base_path, flip_path, pass_classes):
     """[(key, base_entry, flip_entry, direction), ...] sorted by key, for one
     class's base/flip record pair -- the PASS<->FAIL entries only. key is
@@ -231,7 +257,11 @@ def build_header(args, base_arm_text, flip_arm_text, base_arm, flip_arm, dry):
     lines = [f"=== probes/matcher/11-arm-noise-recheck  git HEAD {git_head()}  "
              f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"]
     if not dry:
-        lines += maxima_build_lines()
+        build_lines = maxima_build_lines()
+        lines += build_lines
+        r_line = r_build_line(build_lines)
+        lines.append(r_line if r_line else
+                     "R build ??? (could not parse the maxima: build lines above)")
     lines.append(f"core stamp: {core_stamp_line()}")
     lines.append(f"switch: {args.switch}")
     lines.append(f"base arm: {base_arm_text}")
