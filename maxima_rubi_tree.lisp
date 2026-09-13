@@ -132,11 +132,19 @@ before the default MX_<operator> head for a Maxima operator the table lacks.")
 (defun convert (e)
   (cond ((integerp e) e)
         ((floatp e) (coerce e 'double-float))
+        ;; Maxima's booleans are the Lisp symbols T and NIL
+        ((eq e t) (sym "True"))
+        ((null e) (sym "False"))
         ((symbolp e) (symbol->tree e))
         ((stringp e) e)
         ((and (consp e) (consp (car e)))
          (let ((op (caar e)) (args (cdr e)))
            (cond ((eq op 'maxima::rat) (/ (first args) (second args)))
+                 ;; CRE (rat()) input: convert its general representation,
+                 ;; re-simplified -- ratdisrep's result is not in simplified
+                 ;; form (1/(2*y) comes back as (2*y)^-1), which would give a
+                 ;; non-canonical tree (plan-2 pre-validation, 2026-09-13)
+                 ((eq op 'maxima::mrat) (convert (maxima::resimplify (maxima::$ratdisrep e))))
                  ((eq op 'maxima::bigfloat) (coerce (maxima::$float e) 'double-float))
                  ((eq op 'maxima::mplus) (flat-node (sym "Plus") (mapcar #'convert args)))
                  ((eq op 'maxima::mtimes) (flat-node (sym "Times") (mapcar #'convert args)))
@@ -162,6 +170,8 @@ before the default MX_<operator> head for a Maxima operator the table lacks.")
     (cond ((string= n "E") 'maxima::$%e)
           ((string= n "Pi") 'maxima::$%pi)
           ((string= n "I") 'maxima::$%i)
+          ((string= n "True") t)
+          ((string= n "False") nil)
           (t (intern (concatenate 'string "$" (invert-case
                                                (if (and (> (length n) 4) (string= "MXS_" n :end2 4))
                                                    (subseq n 4) n)))

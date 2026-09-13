@@ -94,7 +94,12 @@ print its Results line.  -> (values bindings matchedp ms timed-out-p)."
   (flet ((rejects (s) (handler-case (progn (prepare (read-pattern s)) nil) (error () t))))
     (check "rejects Alternatives" (rejects "(Alternatives x_ y_)"))
     (check "rejects a sequence blank under Plus" (rejects "(Plus (Pattern x (BlankSequence)) y)"))
-    (check "rejects an Optional under Sin" (rejects "(Sin x_.)"))))
+    (check "rejects an Optional under Sin" (rejects "(Sin x_.)"))
+    ;; collapsible-p and m-power read a Power exponent Optional as exponent 1
+    (check "rejects a Power exponent Optional with default 2"
+           (rejects "(Power x_ (Optional (Pattern m (Blank)) 2))"))
+    (check "accepts a Power exponent Optional with explicit default 1"
+           (not (rejects "(Power x_ (Optional (Pattern m (Blank)) 1))")))))
 
 (defun test-ordered ()
   (format t "--- ordered core ---~%")

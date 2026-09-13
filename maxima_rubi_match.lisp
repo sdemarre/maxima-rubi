@@ -197,6 +197,11 @@ its parent (Plus 0, Times 1, Power exponent 1), return a compiled-pattern."
                                              (t (fail "Optional without a default under ~a"
                                                       (if (symbolp parent) parent "a compound head")))))
                               (inner (second p)))
+                          ;; collapsible-p and m-power read a Power exponent
+                          ;; Optional as the implicit exponent 1
+                          (when (and (eq parent +power+) (eql pos 2) (not (eql default 1)))
+                            (fail "Power exponent Optional with default ~a (only 1 is supported): ~a"
+                                  (tree-string default) (tree-string p)))
                           (unless (and (consp inner) (eq (car inner) +pattern+)
                                        (consp (third inner)) (eq (car (third inner)) +blank+))
                             (fail "Optional must wrap a named Blank: ~a" (tree-string p)))
@@ -403,8 +408,9 @@ the leftover elements and the bindings."
 leftovers -- a blank takes >= 1 element (G-1), an Optional >= 0 (default).
 The last absorber, if unbound, takes the whole leftover run directly: only
 that size can leave nothing over, so enumerating smaller sub-runs (2^n of
-them) is pure waste.  An absorber's pattern is a named Blank, so matching it
-calls no condition hook -- the pruning changes no result and no hook call."
+them) is pure waste.  An absorber's pattern is a Blank -- named, unnamed or
+headed, possibly under an Optional -- so matching it calls no condition hook:
+the pruning changes no result and no hook call."
   (if (null absorbers)
       (and (null left) (funcall k b))
       (let* ((item (car absorbers))

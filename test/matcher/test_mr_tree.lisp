@@ -60,6 +60,14 @@
     (check "unknown function -> MX_ head" (and (consp got) (search "MX_" (symbol-name (car got))))
            (tree-string got)))
   (check-conv "polylog(2,x)" "(PolyLog 2 x)")
+  ;; the dispatcher converts integrands and bindings, which can be CRE or boolean
+  (check-conv "rat(a+b*x)" "(Plus a (Times b x))")
+  ;; (a CRE numerator is an expanded polynomial)
+  (check-conv "rat((1+x)^2/(2*y))" "(Times 1/2 (Plus 1 (Power x 2) (Times 2 x)) (Power y -1))")
+  (check-conv "true" "True")
+  (check-conv "false" "False")
+  (check "tree->max True/False -> the Maxima booleans"
+         (and (eq (tree->max (sym "True")) t) (null (tree->max (sym "False")))))
   (check "maxima-name restores case" (equal (list (maxima-name 'maxima::$mm_sin) (maxima-name 'maxima::|$a|)
                                                   (maxima-name 'maxima::%sin))
                                             '("mm_sin" "A" "sin")))
