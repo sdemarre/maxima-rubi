@@ -155,7 +155,7 @@ mandatory: the test set loads rule siblings cumulatively per process,
 and the `defmatch` slots of 3_1_3/3_1_4/3_1_5 overran the special-var
 cap.
 
-898 targets (green: `Results: 898 passed, 0 failed`; the
+957 targets (green: `Results: 957 passed, 0 failed`; the
 milestone-3 close figure was 743 — growth 511 → 581 across the
 pilot's clusters, 581 → 620 headvar checks, → 691 cluster A, → 743
 cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1,
@@ -168,7 +168,9 @@ cluster B, → 750/758/763 the campaign's B1/B2/B4, → 780 C2, → 798 C1,
 pattern fix, e134/e139/e258, 23 checks), → 897 matcher substrate P4
 (the matcher-coupled sections rewritten against the substrate entries,
 892 → 875, and the generated MatchQ pattern shapes, 22 checks), → 898
-plan-2 final review (1.4.2 r17 MatchQ exponent part folding)).
+plan-2 final review (1.4.2 r17 MatchQ exponent part folding), → 957 matcher translation fixes
+(docs/superpowers/plans/2026-09-14-matcher-translation-fixes.md: the exact seen entry 5, integer
+comparisons / notequal / juxtaposition 17, the PosAux port and the First/Rest siblings 37 checks)).
 
 **Matcher substrate — unit suites** (the per-change gate for
 `maxima_rubi_match.lisp` / `maxima_rubi_tree.lisp` /
@@ -205,12 +207,15 @@ section 4 P3). No Maxima; `sbcl` must be on the PATH:
 python3 test/check_generated_rules.py
 ```
 
-Green: `Results: 11 passed, 0 failed`. It compares the working tree's
+Green: `Results: 14 passed, 0 failed` (11 + the three translation-fix exception counts, 2026-09-14).
+It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
 `defmatch`, every cond/repl body byte-identical to the base except the
 spec's closed exception list (each exception checked as the exact text
-transformation it claims to be), the reader self-test
+transformation it claims to be; the list includes the matcher translation
+fixes' 1,283 integer comparisons, 10 `notequal` and 1 juxtaposition), the
+reader self-test
 (`python3 generator/mma_reader.py`), and every pattern string preparing
 in `MR-MATCH`. Regeneration is byte-identical:
 `python3 generator/generate_rules.py --class <1|2|3>` leaves

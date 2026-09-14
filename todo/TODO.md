@@ -259,7 +259,12 @@ Layer A 898/0; the TLS flag is no longer required
   and restore the exact seen comparison for the 9.1 collapse family
   (spec §3.5; class 2 2.1 e15, class 1 1.2.1.2 e1734–e1736); then
   re-run the final records and probe 10 and return to the stop.
-  Plan 3 Tasks 5–6 wait. Next: write that fix plan — open
+  Plan 3 Tasks 5–6 wait — done (the fix plan
+  `docs/superpowers/plans/2026-09-14-matcher-translation-fixes.md`)
+- Translation fixes plan (2026-09-14): Tasks 1–5 fixed the four defects and their siblings (probes
+  12/13/15 red→green, probe 14, Layer A 957, static gate 14); Tasks 6–7 re-run P5 as p5b and return to
+  the acceptance stop; the case-fold order shim is ticketed
+  (`.scratch/matcher-translation-fixes/issues/01-case-fold-order-shim.md`) — open
 - Carried into Plan 3's P5 runs: class 2 first in every run, its
   median wall and timeout class compared against P0 before class 1
   (probe 06: the full-table walk is exponential in Times arity); when
