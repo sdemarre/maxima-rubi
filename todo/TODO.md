@@ -246,6 +246,20 @@ Layer A 898/0; the TLS flag is no longer required
   previous run's shard files; the speed-gate definition and the
   crash-class counts (`test/p5_gate.py`); the crash verdict's stdin
   (`probes/matcher/09-harness-fault-verdict.out`) — done
+- Plan 3 Tasks 2–4 (2026-09-13/14): switch winners (noise-filtered,
+  probe 11) = the defaults; final records = P5 run 1; 100 s re-checks;
+  every PASS→FAIL attributed (probe 10, 2,038 entries; acceptance
+  document `probes/matcher/10-p5-attribution.acceptance.md`) — done.
+  **User decision at the acceptance stop (2026-09-14): fix the four
+  pre-existing translation defects first** — IGtQ/ILtQ/ILeQ emitted
+  without the integer test (`generator/generate_rules.py:816-817`,
+  `:1129-1137`), `%mr_negQ` true on unknown-sign symbols
+  (`maxima_rubi_utils.mac:446`), `!=` read as `(k!) = 1` (10 class-1
+  lines), space-as-multiplication (`rules/class1/1_1_4_1.mac:13`) —
+  and restore the exact seen comparison for the 9.1 collapse family
+  (spec §3.5; class 2 2.1 e15, class 1 1.2.1.2 e1734–e1736); then
+  re-run the final records and probe 10 and return to the stop.
+  Plan 3 Tasks 5–6 wait. Next: write that fix plan — open
 - Carried into Plan 3's P5 runs: class 2 first in every run, its
   median wall and timeout class compared against P0 before class 1
   (probe 06: the full-table walk is exponential in Times arity); when

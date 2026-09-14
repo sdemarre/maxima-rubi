@@ -4739,3 +4739,12 @@ uniformly to every switch with a thin raw margin.
   - `1_1_4_1_r1`'s repl uses a space as multiplication: rules/class1/1_1_4_1.mac:13
     `…/(b*(n - j) (p + 1)*x^(n - 1))`. Evidence: ad-hoc `errcatch((n - j) (p + 1))` → `[]`.
     A scan of rule lines for `\)\s+\(` finds 1 line.
+
+### Task 4 — user acceptance (2026-09-14)
+- decision (verbatim option chosen): "Fix defects first (Recommended)" — reject the defect-tagged groups; they are the input of a fix plan for the four translation defects (IGtQ/ILtQ/ILeQ integer test lost; `%mr_negQ` true on unknown-sign symbols; `!=` read as `(k!) = 1`; space-as-multiplication in `1_1_4_1_r1`), with committed probes proving each; then re-run the final records and probe 10 and return to this stop
+- class 1: every group carrying ≥1 defect tag (1,072 of 1,833 entries; tags per group in probes/matcher/10-p5-attribution.acceptance.md §5): rejected → fix plan
+- class 2 g4, g11 (3 entries, IGtQ, from the mechanism text): rejected → fix plan
+- class 3 g3 (the 7 of 11 entries attributed to `%mr_negQ`): rejected → fix plan
+- all other groups (untagged) and the new timeouts: not accepted yet — the fix changes rule routes; they are re-attributed on the fixed tree
+- rubi_hybrid (verbatim option chosen): "Restore exact comparison (Recommended)" — spec §3.5 applied: class 2 g10 (2.1 e15), class 1 g106 (1.2.1.2 e1734, e1735, e1736) and class 1 g1's 1.2.1.4 e810 (by its P0 route): rejected → the exact seen comparison as a translation fix in the fix plan; Task 5 does not delete `rubi_hybrid` / `rubi_hybrid_exact` until that plan decides
+- consequence: Plan 3 stops before Task 5 (plan Task 4 Step 9: "Any rejection → stop: the rejected entries are the input of a fix plan written then; Tasks 5–6 wait for it")
