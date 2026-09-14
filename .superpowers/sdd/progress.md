@@ -4690,3 +4690,52 @@ Plan: docs/superpowers/plans/2026-09-13-matcher-substrate-plan3.md (+ .files/ at
 Plan deviation (one line): the winner rule as executed = the spec rule applied to reproducible
 differences (probe 11), not to raw PASS counts — per the user's 2026-09-13 noise decision, applied
 uniformly to every switch with a thin raw margin.
+
+### Task 4 — P5 gate
+- final arm: "" (FINAL_ARM empty — the defaults `mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`);
+  final records: test/corpus_class1.p5-run1.out test/corpus_class2.p5-run1.out test/corpus_class3.p5-run1.out
+- gates (Step 1: the run-1 gates of Task 2 are the final-record gates; `switches:` = the final arm):
+  - class 2: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 770 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `INFO: PASS->FAIL 24  FAIL->PASS 180` / `INFO: p90 wall P0 8.1 s -> new 2.3 s` / `INFO: timeout P0 6 -> new 20; timeout in new only: 18` / `Results: 4 passed, 0 failed`; error 1 -> 0 (0 new only)
+  - class 3: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 2287 >= P0 2058` / `PASS: wall ceiling: median 1.40 s <= P0 3.90 s` / `INFO: PASS->FAIL 181  FAIL->PASS 410` / `INFO: p90 wall P0 16.2 s -> new 7.5 s` / `INFO: timeout P0 201 -> new 145; timeout in new only: 62` / `Results: 4 passed, 0 failed`; error 4 -> 3 (3 new only)
+  - class 1: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 21202 >= P0 20125` / `PASS: wall ceiling: median 0.40 s <= P0 1.30 s` / `INFO: PASS->FAIL 1833  FAIL->PASS 2910` / `INFO: p90 wall P0 7.0 s -> new 4.5 s` / `INFO: timeout P0 778 -> new 1217; timeout in new only: 941` / `Results: 4 passed, 0 failed`; error 23 -> 63 (60 new only)
+- rubi_hybrid (1.2.1.3 e839 PASS->FAIL count): 0 (1.2.1.3 e839: P0 verified 3.7 s -> run 1 expected 0.9 s).
+  Note: this count does not settle the question. Collapse-family PASS->FAIL entries exist:
+  class 2 g10 = 2.1 e15; class 1 g106 = 1.2.1.2 e1734/e1735/e1736; class 1 g1's 1.2.1.4 e810 by its
+  P0 route. Spec §3.5 says "A PASS→FAIL in the collapse-rule family … brings back the exact
+  comparison as a translation fix, not as a pass", so the collapse-family finding reopens the
+  question for the user. Task 5 does not delete rubi_hybrid / rubi_hybrid_exact before the user answers.
+- 100 s re-checks (Step 3; each record's description line ends `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`):
+  - class 2 (test/corpus_class2.p5-final.timeout-rerun/): `OK: 20/20 re-checked, no dupes/missing/extra`; transitions timeout 17, verified 3, `now-PASS: 3`; `2026-09-13 23:15:15 UTC watcher: merge rc=0`
+  - class 3 (test/corpus_class3.p5-final.timeout-rerun/): `OK: 145/145 re-checked, no dupes/missing/extra`; transitions error 16, timeout 113, unverified 8, verified 8, `now-PASS: 8`; `2026-09-13 23:27:31 UTC watcher: merge rc=0`
+  - class 1 (test/corpus_class1.p5-final.timeout-rerun/): `OK: 1217/1217 re-checked, no dupes/missing/extra`; transitions contains-noun 1, error 56, timeout 1004, unverified 25, verified 131, `now-PASS: 131`; `2026-09-14 00:51:47 UTC watcher: merge rc=0`
+- attribution (Step 4, probe 10; P0 core rebuilt at 0a6664c: `built test/mr_rules.core (172556912 bytes) rules=3514 fingerprint=5ef9b3bc5ee07ffac0e76f1fea54fbac`):
+  - class 2: `PASS->FAIL 24: deterministic 22, slow-correct 2, near-cap 0, noise 0, p0-noise 0, unmeasured 0` / `Results: 24 passed, 0 failed` (12 groups; legs final30 `Results: 0 passed, 24 failed`, p0 `Results: 24 passed, 0 failed`, final120 `Results: 2 passed, 0 failed`); `NEW TIMEOUTS 18: at 100 s timeout 15, verified 3`
+  - class 3: `PASS->FAIL 181: deterministic 180, slow-correct 1, near-cap 0, noise 0, p0-noise 0, unmeasured 0` / `Results: 181 passed, 0 failed` (55 groups; final30 `Results: 0 passed, 181 failed`, p0 `Results: 181 passed, 0 failed`, final120 `Results: 1 passed, 18 failed`, newerror `Results: 0 passed, 3 failed`); `NEW TIMEOUTS 62: at 100 s error 6, timeout 46, unverified 6, verified 4`
+  - class 1: `PASS->FAIL 1833: deterministic 1741, slow-correct 85, near-cap 0, noise 6, p0-noise 1, unmeasured 0` / `Results: 1833 passed, 0 failed` (283 groups; final30 `Results: 6 passed, 1827 failed`, p0 `Results: 1832 passed, 1 failed`, final120 `Results: 91 passed, 617 failed`, newerror `Results: 0 passed, 60 failed`); `NEW TIMEOUTS 941: at 100 s contains-noun 1, error 41, timeout 756, unverified 22, verified 121`
+- mechanisms: Step 5's lines are committed as files, not inlined:
+  - probes/matcher/10-p5-attribution.mechanisms-class2-3.md (class 2 12 + class 3 55 group lines)
+  - probes/matcher/10-p5-attribution.mechanisms-class1-a.md (g1–g17)
+  - probes/matcher/10-p5-attribution.mechanisms-class1-b.md (g18–g80)
+  - probes/matcher/10-p5-attribution.mechanisms-class1-c.md (g81–g283, NEW TIMEOUTS, the 60 new errors, collapse family)
+
+  The per-group presentation for the user is probes/matcher/10-p5-attribution.acceptance.md. Its
+  tallies: primary family by the document's stated rule (§3), given as groups/entries; defect tags
+  by its counting rule (§2). The four defects count as one tag set:
+  - class 2 (12 groups / 24 entries; 3 carry a defect tag): OPT 5/10, EXPAND-NOUN 1/5, RETRY 3/4, DEG 1/3, 9.1-COLLAPSE 1/1, not determined 1/1; IGtQ 2 groups / 3 entries (from the text, not a tag)
+  - class 3 (55 / 181; 7 carry a defect tag): POLY 12/43, CATCH-3.1 7/39, OPT 13/38, AFX 11/32, VERIFY-TIMEOUT 4/15, not determined 6/8, DEG 1/3, EXPAND-NOUN 1/3; negQ 1 group / 7 entries (from the text, not a tag)
+  - class 1 (283 / 1833; 1072 carry a defect tag): EXPAND-NOUN 49/695, RT-SUM/PF-EVEN 46/254, NOFIRE 2/179, VERIFY-TIMEOUT 29/150, RETRY 23/127, OPT 33/117, CATCH-1 32/86, not determined 26/81, MID-CHAIN 6/80, MFLAGS 21/32, DEG 2/12, ZERO 9/11, 9.1-COLLAPSE 1/3, 9.1 1/3, FLAT 2/2, P0-NOISE 1/1; IGtQ 111 groups / 957 entries, negQ 51 / 223 (139 entries both), NE 8 / 29, MUL 2 / 3
+- final tree (Step 6, 02:17:41–02:19:26 UTC): `Results:  898  passed,  0  failed` (Layer A), `Results: 53 passed, 0 failed` (match), `Results: 51 passed, 0 failed` (tree), `Results:  58  passed,  0  failed` (dispatch), `Results: 11 passed, 0 failed` (static gate), `Results: 23 passed, 0 failed` (test_run_records); regression suite `Results: 109 passed, 0 failed` (defaults), `Results: 109 passed, 0 failed` (flags); content diff lines roundtrip.out 0, roundtrip.flags.out 0, controls.out 0, spike01.out 0, gate.out 0, gate.flags.out 0; evidence commit 295effa
+- translation defects found (pre-existing, byte-identical to P0, made reachable by the substrate's
+  binding; not fixed in Task 4; scope and per-class counts in the acceptance document §2):
+  - IGtQ/ILtQ/ILeQ emitted as a bare `>`/`<`/`<=`, so the integer test is lost.
+    Evidence: generator/generate_rules.py:816-817 (`CMP_OPS`) and :1129-1137;
+    rules/class2/2_1.mac:82 `_mr_cond_2_1_r10`.
+    Scope, Rubi-source calls: class 1 1,261 in 74 files, class 2 29 in 3, class 3 145 in 9,
+    9.1 4 in 1. IGeQ is not checked.
+  - `%mr_negQ` reads true for an unknown-sign symbol. Evidence: maxima_rubi_utils.mac:446-448.
+  - Rubi `!=` is emitted verbatim and Maxima reads it as `(k!) = 1`. Evidence: a controller ad-hoc
+    `--batch-string` measurement on build 2026-08-31 13:27:47 (k:1 → `is(k != 1)` true; k:2 → false).
+    Scope: 10 generated lines in 7 class-1 files. It needs a committed probe before a docs claim.
+  - `1_1_4_1_r1`'s repl uses a space as multiplication: rules/class1/1_1_4_1.mac:13
+    `…/(b*(n - j) (p + 1)*x^(n - 1))`. Evidence: ad-hoc `errcatch((n - j) (p + 1))` → `[]`.
+    A scan of rule lines for `\)\s+\(` finds 1 line.
