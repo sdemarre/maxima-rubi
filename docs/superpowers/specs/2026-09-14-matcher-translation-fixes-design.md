@@ -35,6 +35,7 @@ corpus entries. Entries carrying at least one defect tag: class 1 1,072 of 1,833
 | scope beyond the known sites | the four defects plus shape scans; same-mechanism siblings fixed in this plan, others ticketed |
 | approach | named predicate entries; static gate keeps base `0a6664c` with new exceptions, each checked by undoing it |
 | order oracle | Maxima's internal order (`orderlessp`), measured against the corpus answers' Mathematica order |
+| PosQ normalizer (design review) | keep `%mr_togetherSimplify` (ratsimp-based, expands products); the structural difference from Rubi's `TogetherSimplify` is a stated deviation (§3.2), covered by unit checks on factored inputs (§3.6) |
 | sequence | design §5 below (runs 1–4, noise re-check on every switch, final gates, probe 10, acceptance stop) |
 
 ## 1. Scope
@@ -108,6 +109,18 @@ evidence until committed** — the plan's first task commits each as a probe (§
   r6, r21–r25, r27, r28 and `rubi_hybrid` in the others; the generated 9.1 has 25 `mr_int(` calls.
 - Standard load without the core, two runs: `maxima_rubi.mac` 0.39–0.42 s, `mr_load_all`
   1.27–1.32 s, process wall 1.72–1.80 s.
+- `%mr_togetherSimplify` (`maxima_rubi_utils.mac:3870`, ratsimp ∘ together twice) multiplies out
+  products that Rubi's `TogetherSimplify` (`IntegrationUtilityFunctions.m:2178`, Together ∘ Simplify
+  ∘ Together) keeps: `2*(a+b)` → `2*b+2*a`; `(b-a)*(c+d)` → `b*(d+c)+a*(-d-c)`; `(x-1)*(x+2)` →
+  `x^2+x-2`; `-(a-b)^2` → `-b^2+2*a*b-a^2`; `(a-b)^3` fully expanded. `a/c-b/c` → `-((b-a)/c)`;
+  `b^2-4*a*c`, `-b-a`, `a/c` unchanged.
+- Alternatives compared on the same shapes (design review): the `format` share package's
+  `format(u, %ratsimp, %factor)` is `factor` of `ratsimp`'s numerator and denominator
+  (`share/contrib/format/miller-format.lisp:295–309`), identical in output to the plain-Maxima form;
+  it keeps products factored (`(b-a)*(d+c)`, `-(b-a)^2`, `(b*x+a)^8*(d*x+c)^5`) but factors further
+  than `Simplify` (`x^2-1` → `(x-1)*(x+1)`) and costs 1.9–5.5 ms per call on expanded degree-12/13
+  polynomials against 0.2–0.3 ms for `%mr_togetherSimplify` (20-call means). `ratsimp` mapped over a
+  top-level product's factors keeps only that level (`-(a-b)^2` = `(-1)*(a-b)^2` still expands).
 
 ## 3. Design
 
@@ -161,9 +174,20 @@ Regeneration stays deterministic: a second `generate_rules.py --class <1|2|3>` l
   used (they change every stored form of the session). Agreement with Mathematica's order is
   measured by probe 14; frequent disagreeing shapes get an ordering shim, rare ones are recorded as
   a deviation.
-- **Stated deviation.** Maxima's `is()` treats symbols as real and consults the `assume` database;
-  Rubi's `Refine` runs without assumptions. The corpus driver makes no assumptions. The cases where
-  "symbols are real" decides before the structural branches are covered by the unit checks.
+- **Stated deviation (assumptions).** Maxima's `is()` treats symbols as real and consults the
+  `assume` database; Rubi's `Refine` runs without assumptions. The corpus driver makes no
+  assumptions. The cases where "symbols are real" decides before the structural branches are
+  covered by the unit checks.
+- **Stated deviation (normalizer).** `%mr_posQ` keeps `%mr_togetherSimplify`, which multiplies out
+  products Rubi's `TogetherSimplify` keeps factored (§2), so the port often reads a sum where Rubi
+  reads a product or a power. The expected effect on the verdict is none: `PosAux` computes the sign
+  of the first term in the canonical order (products multiply first-factor signs, integer powers
+  follow the base's sign or are positive, other powers and functions are positive), and that sign
+  survives expansion when the order is a term order. This is reasoning, not a measurement; it can
+  fail where Maxima's internal order is not a term order (polynomial parts mixed with `sqrt`,
+  `exp`, `log` kernels; `ratsimp`'s recursive form, e.g. `b*(d+c)+a*(-d-c)`). The unit checks on
+  factored inputs (§3.6) watch it. Fallback, if a check or the attribution finds a disagreement:
+  normalize as `factor` of `ratsimp`'s numerator and denominator (§2), accepting its cost.
 - **Siblings.** Every utils port of a Rubi `First`/`Rest` over a sum or product that reads display
   order (`part(u, 1)`, `first`, `rest` without `inflag:true`) switches to internal order —
   `%mr_rt_negSumBaseQ`, `%mr_rt_allNegTermQ`, `%mr_rt_someNegTermQ`, `%mr_splitSum_aux` and every
@@ -214,7 +238,7 @@ the fix follows; the probe re-runs and the green output is committed beside the 
 
 | probe | kind | content |
 |---|---|---|
-| `probes/matcher/12-translation-defects` | Maxima batch | NE: `k != 1` parse form, `is(k != 1)` for k = 0, 1, 2, `is(3 != 0)`, `notequal` on symbol / numbers / rational vs float, the 10 generated conds on a k ≠ 1 binding (red false → green true). MUL: `(x) (y)`, `(n - j) (p + 1)` on numbers, `] (`, `) x`, `2 (x)`, `x (y)`; `1_1_4_1_r1`'s repl on a binding (red error → green value). IGT: the four `%mr_i*Q` on integer / fraction / float / symbol / integer-valued expression; `2_1_r10`'s cond with fractional `p` (red true → green false). NEGQ: `%mr_posQ` / `%mr_negQ` on the §3.6 cases |
+| `probes/matcher/12-translation-defects` | Maxima batch | NE: `k != 1` parse form, `is(k != 1)` for k = 0, 1, 2, `is(3 != 0)`, `notequal` on symbol / numbers / rational vs float, the 10 generated conds on a k ≠ 1 binding (red false → green true). MUL: `(x) (y)`, `(n - j) (p + 1)` on numbers, `] (`, `) x`, `2 (x)`, `x (y)`; `1_1_4_1_r1`'s repl on a binding (red error → green value). IGT: the four `%mr_i*Q` on integer / fraction / float / symbol / integer-valued expression; `2_1_r10`'s cond with fractional `p` (red true → green false). NEGQ: `%mr_posQ` / `%mr_negQ` on the §3.6 cases; NORM: `%mr_togetherSimplify` on the §2 shapes (form and internal args), and the fallback `factor`-of-num/denom form with per-call means on the two expanded polynomials |
 | `probes/matcher/13-translation-shape-scan` | Python, no Maxima | integer-comparison heads, source count vs emitted count per class; leftover Mathematica operators (`!=`, `===`, `=!=`, prefix `!`, `@`, `/@`, `->`, `:>`); every surviving whitespace gap between two terms; utils First/Rest ports reading display order. Output: the sibling list; `Results:` requires 0 residual sites per shape after the fix, ticketed sites excepted |
 | `probes/matcher/14-mma-order-agreement` | Maxima batch | every expected answer of classes 1–3 parsed with `simp:false` (Mathematica's printed order), simplified, each `Plus` node's term order compared with the internal order; `Times` compared on its leading numeric coefficient only (the printed form splits off the denominator). Output: agreement rate, every disagreeing shape |
 | `probes/matcher/15-collapse-exact` | driver entry text, `rubi_verbose` | 2.1 e15, 1.2.1.2 e1734–e1736, 1.2.1.4 e810, 1.2.1.3 e839 on the fixed core; verdicts and routes against their P0 routes |
@@ -229,6 +253,11 @@ Layer A (`test_maxima_rubi.mac`, 898 → 898 + k, k stated in the plan):
   `NegQ[4 a c e^2]`, `NegQ[2(a+b)]`, `NegQ[b^2-4ac]` false; `NegQ[-a]`, `NegQ[-4 e^2]` true;
   `PosQ[%pi-4]` false; `PosQ[%i]` true; the existing `posQ a (undecidable -> false)` check flips
   to true;
+- the normalizer deviation (§3.2) on factored inputs, expectations derived by hand from `PosAux` on
+  Rubi's factored form: `NegQ[(b-a)(c+d)]`, `NegQ[-(a-b)^2]`, `NegQ[(x-1)(x+2)]` true;
+  `PosQ[(a-b)^3]`, `PosQ[(a-b)^3 c]`, `PosQ[a/c-b/c]`, `PosQ[Sqrt[a-b](c-d)]` true. A check that
+  disagrees is investigated against the Rubi derivation (and the fallback considered), not matched
+  to the port's output;
 - the sibling ports in internal order (e.g. `%mr_rt_negSumBaseQ(b - a)`);
 - `mr_int_exact` vs `mr_int`: a ratsimp-identical rewrite with a different stored form dispatches
   under `mr_int_exact` and is a seen hit under `mr_int`; an exact repeat under `mr_int_exact` takes
@@ -304,6 +333,9 @@ the 100 s re-checks ~2 h, probe 10 ~3 h.
   14 has not seen; `PosAux`'s sum branch reads only the first term, so one disagreement flips a
   sign. Probe 14 bounds it on the corpus answers; integrands in the middle of a chain are not in
   that sample.
+- **The normalizer expands products** (§3.2 deviation). A sign verdict that depends on the
+  factored structure differs from Rubi's; the first-term argument says it should not on term-order
+  shapes, and the factored-input checks and the attribution watch the rest.
 - **`is()` assumes real symbols.** Branch 3 can decide a sign that Rubi's `Refine` leaves open,
   skipping the structural branches Rubi takes. On the shapes reasoned through while designing (not
   measured) — `-(a^2+1)`, `exp(a)`, `-a^2`, `a^2 + 1` — the decided value equals Rubi's structural
