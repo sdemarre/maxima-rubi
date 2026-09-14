@@ -21,13 +21,13 @@ from PosAux of Maxima's first term:
 
 | class | comparable sums | first-term agreement | PosAux flips | removed by a case-fold rename |
 |---|---|---|---|---|
-| 1 | 279,107 | 92.5 % | 10,104 (3.6 %) | 3,265 |
+| 1 | 279,107 | 92.5 % | 10,093 (3.6 %) | 3,265 |
 | 2 | 5,421 | 95.0 % | 138 (2.5 %) | 1 |
 | 3 | 41,899 | 95.8 % | 970 (2.3 %) | 0 |
 
-(Pre-validation figures, 2026-09-14, build `branch_5_50_base_84_g4204fb669`;
-the committed record is the one Task 4 of
-`docs/superpowers/plans/2026-09-14-matcher-translation-fixes.md` writes.)
+(2026-09-14, build `branch_5_50_base_84_g4204fb669`; measured on the Task 4
+review's fix-round-1 commit (`%mr_posAux` branch 2, `float(rectform(u))`),
+`probes/matcher/14-mma-order-agreement.out`.)
 
 Mathematica sorts symbols `a < A < b < B`; Maxima sorts every upper-case
 symbol before every lower-case one. The case-fold rename (each symbol `v` ->
