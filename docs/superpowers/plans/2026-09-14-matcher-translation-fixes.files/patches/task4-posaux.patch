@@ -1,0 +1,342 @@
+diff --git a/maxima_rubi_utils.mac b/maxima_rubi_utils.mac
+--- a/maxima_rubi_utils.mac
++++ b/maxima_rubi_utils.mac
+@@ -400,19 +400,78 @@
+ 
+ /* ---- sign / posQ / negQ -------------------------------------------
+  * Sign (Maxima sign() is bound; it returns the five-valued
+- * pos/neg/zero/pnz/pz — pz = "positive or zero", measured). posQ is the
+- * STRICT reading the unit probe pins: undecidable sign -> false
+- * (Rubi's PosAux falls through to True for a bare symbol; the project
+- * probe deliberately differs — documented deviation). */
++ * pos/neg/zero/pnz/pz — pz = "positive or zero", measured). */
+ %mr_sign(e) := block([s],
+   s : sign(e),
+   if s = 'pos then 1
+   elseif s = 'neg then -1
+   elseif s = 'zero then 0
+   else s)$
+-%mr_posQ(e) := block([s],
+-  s : sign(e),
+-  if s = 'pos then true else false)$
++
++/* Rest[u] and the argument list in Maxima's internal order (inflag :
++   true), the canonical order orderlessp tests: the order the ports of
++   Rubi's First/Rest read (matcher translation fixes design 3.2;
++   probes/matcher/14-mma-order-agreement measures its agreement with
++   Mathematica's stored order). inflag is bound only around the
++   extraction, so it never reaches a callee (the display-order ports read
++   op/part under the default). inpart(u, k) is the k-th internal part. */
++%mr_rest_in(u) := block([inflag : true], rest(u))$
++%mr_args_in(u) := block([inflag : true], args(u))$
++
++/* Rubi :605-:634  PosQ[u] := PosAux[TogetherSimplify[u]] — the port of
++ * PosAux (matcher translation fixes design 3.2; the strict reading
++ * "undecidable sign -> false" is retired). Branches in the .m's order:
++ *   1 NumberQ: a real number -> u > 0; an explicit complex number ->
++ *     PosAux of Im when Re is 0, else of Re;
++ *   2 NumericQ (constantp): Simplify[Re[u]]; a number decides (on the
++ *     simplified Im when it is 0); otherwise w = N[u] (float) must be an
++ *     explicit number and PosAux[w];
++ *   3 Refine[u > 0] decided -> that value;
++ *   4 PowerQ: an integer exponent -> EvenQ[exponent] || PosAux[base];
++ *     otherwise True;
++ *   5 ProductQ: PosAux[First] -> PosAux[Rest], else Not[PosAux[Rest]];
++ *   6 SumQ: PosAux[First];
++ *   7 anything else (a symbol, a function call): True.
++ * First/Rest read the internal order (inpart, %mr_rest_in); a unary minus
++ * and a quotient are products there, sqrt and 1/c are powers.
++ * Stated deviations (design 3.2): (assumptions) is() treats symbols as
++ * real and reads the assume database where Refine assumes nothing; an
++ * expression containing %i is left to the structural branches, where
++ * is() answers false (is(%i*a > 0) = false, probes/matcher/12 NEGQ);
++ * (normalizer) %mr_togetherSimplify expands products Rubi's
++ * TogetherSimplify keeps factored — the first-term sign PosAux reads
++ * survives the expansion on term-order shapes (probe 12 NORM, the Layer A
++ * factored-input checks). */
++%mr_posAux(u) := block([v, w],
++  if numberp(u) then is(u > 0)
++  else if %mr_complexNumberQ(u) then (
++    if is(realpart(u) = 0) then %mr_posAux(imagpart(u))
++    else %mr_posAux(realpart(u)))
++  else if constantp(u) then (
++    v : %mr_simp(realpart(u)),
++    if numberp(v) then (
++      if %mr_eqQ(v, 0) then %mr_posAux(%mr_simp(imagpart(u)))
++      else is(v > 0))
++    else (
++      w : float(u),
++      if numberp(w) or %mr_complexNumberQ(w) then %mr_posAux(w) else false))
++  else (
++    v : if freeof(%i, u) then errcatch(is(u > 0)) else [],
++    if v = [true] then true
++    else if v = [false] then false
++    else if atom(u) then true
++    else if inpart(u, 0) = "^" then (
++      if integerp(inpart(u, 2))
++      then (evenp(inpart(u, 2)) or %mr_posAux(inpart(u, 1)))
++      else true)
++    else if inpart(u, 0) = "*" then (
++      if %mr_posAux(inpart(u, 1)) then %mr_posAux(%mr_rest_in(u))
++      else not %mr_posAux(%mr_rest_in(u)))
++    else if inpart(u, 0) = "+" then %mr_posAux(inpart(u, 1))
++    else true))$
++%mr_posQ(u) := block([t],
++  t : errcatch(%mr_togetherSimplify(u)),
++  %mr_posAux(if t = [] then u else first(t)))$
+ /* Rubi :642  NegQ[u] := Not[PosQ[u]] && NeQ[u, 0] */
+ %mr_negQ(e) := block([v],
+   v : (not %mr_posQ(e)) and %mr_neQ(e, 0),
+@@ -946,10 +1005,12 @@
+      and is(imagpart(u) # 0) = true
+    else false)$
+ 
+-  /* OrderedQ[{u, v}] — u and v in canonical order. Maxima has no
+-     canonical-order predicate; sort() is a total canonical order here
+-     (numbers first, %pi before bare symbols, x before 2*x — measured
+-     2026-08-23). UPSTREAM-BUG NOTE (measured 2026-08-25): OrderedQ is
++  /* OrderedQ[{u, v}] — u and v in canonical order. Maxima's canonical
++     order is the one orderlessp / ordergreatp test (describe("ordergreatp",
++     exact); inpart / inflag : true read it — the matcher translation fixes'
++     First/Rest ports, probes/matcher/14-mma-order-agreement); sort() is a
++     total canonical order here (numbers first, %pi before bare symbols,
++     x before 2*x — measured 2026-08-23). UPSTREAM-BUG NOTE (measured 2026-08-25): OrderedQ is
+      never defined anywhere in the pinned Rubi 4 clone (whole-clone and
+      whole-git-history grep; its only uses are the SimplerQ :710/:716/:727
+      tie-breaks and SimplerSqrtQ :764 of IntegrationUtilityFunctions.m),
+@@ -2275,18 +2336,14 @@
+   ))$
+ 
+ /* RemoveContentAux (:1160-:1180): the shared-base patterns above, then
+-   the sign fallback (the .m NegQ[First[u]] — in Rubi semantics NegQ is
+-   false for any term with an undetermined sign, so the flip fires only
+-   on an EXPLICITLY negative leading term; %mr_sign = 'neg is the
+-   faithful port of that effective behavior). Maxima's term order
+-   differs from Mathematica's, so "leading" is Maxima's first arg. */
+-%mr_removeContentAux(u, x) := block([c, s],
++   the .m's sign fallback If[SumQ[u] && NegQ[First[u]], -u, u], First in
++   Maxima's internal order (matcher translation fixes design 3.2: the
++   PosAux port replaces the strict %mr_sign reading used here before). */
++%mr_removeContentAux(u, x) := block([c],
+   c : %mr_rcAuxCommon(u, x),
+   if is(c # false) then c
+-  else (
+-    s : if not atom(u) and op(u) = "+" then %mr_sign(part(u, 1)) else 'pos,
+-    if s = 'neg then -u else u
+-  ))$
++  else if not atom(u) and op(u) = "+" and %mr_negQ(inpart(u, 1)) then -u
++  else u)$
+ 
+ %mr_removeContent(u, x) := block([v, w],
+   v : %mr_nonfreeFactors(u, x),
+@@ -2409,11 +2466,12 @@
+     L : append(L, [part(e, i)]),
+   L)$
+ 
+-%mr_product_factors(u) := block([L],
+-  if atom(u) then [u]
+-  else if op(u) = "-" then append([-1], %mr_product_factors(part(u, 1)))
+-  else if op(u) = "*" then %mr_parts_list(u)
+-  else [u])$
++/* The factor list of u in Maxima's internal order (Rubi's First/Rest of
++   a product, SplitProduct :7658 and RtAux's RtAux[-First[v],n]; design
++   3.2): a unary minus and a quotient are products there (-a*b ->
++   [-1, a, b], a/b -> [a, 1/b]); anything else is one factor. */
++%mr_product_factors(u) :=
++  if not atom(u) and inpart(u, 0) = "*" then %mr_args_in(u) else [u]$
+ 
+ %mr_product_from_list(L) := block([p, i],
+   p : 1,
+@@ -2583,10 +2641,11 @@
+     and %mr_rt_atomBaseQ(%mr_rt_power_base(u)))
+   else false)$
+ 
+-/* Rubi :7622  NegSumBaseQ[u] */
++/* Rubi :7622  NegSumBaseQ[u] — First in Maxima's internal order (design
++   3.2) */
+ %mr_rt_negSumBaseQ(u) := block([],
+   if not atom(u) and op(u) = "+"
+-  then %mr_negQ(part(u, 1))
++  then %mr_negQ(inpart(u, 1))
+   else if %mr_rt_powerQ(u) then block([e],
+     e : %mr_rt_power_exp(u),
+     integerp(e) and oddp(e)
+@@ -2616,18 +2675,18 @@
+   else %mr_negQ(u))$
+ 
+ /* Rubi :7676  SplitSum[func, u] — the first TERM v of u for which
+-   func[v] is nonatomic, as [func[v], u-v]; false otherwise. rest() of a
+-   Maxima sum is the remaining sum (or the last atom), matching the .m
+-   Rest[u] reading. */
++   func[v] is nonatomic, as [func[v], u-v]; false otherwise. First/Rest in
++   Maxima's internal order (design 3.2); the rest of a sum is the
++   remaining sum (or the last term), matching the .m Rest[u] reading. */
+ %mr_splitSum_aux(func, u) := block([r],
+   if not atom(u) and op(u) = "+" then (
+-    r : apply(func, [part(u, 1)]),
++    r : apply(func, [inpart(u, 1)]),
+     if not atom(r)
+-    then [r, rest(u)]
++    then [r, %mr_rest_in(u)]
+     else (
+-      r : %mr_splitSum_aux(func, rest(u)),
++      r : %mr_splitSum_aux(func, %mr_rest_in(u)),
+       if r # false
+-      then [part(r, 1), part(u, 1) + part(r, 2)]
++      then [part(r, 1), inpart(u, 1) + part(r, 2)]
+       else false
+     )
+   )
+@@ -2891,7 +2950,11 @@
+    The m_*u_ arm absorbs an EXPLICIT rational leading factor into n;
+    IntegerPart is the floor reading (IntPart + FracPart = u). */
+ %mr_intPart_aux(u, n) := block([F, m],
+-  if not atom(u) and (op(u) = "*" or op(u) = "-")
++  /* a Rational is atomic in the .m (no m_*u_ match): RationalQ first —
++     %mr_product_factors reads the internal form, where -3/2 is one number,
++     not the display "-" node (matcher translation fixes design 3.2) */
++  if %mr_rationalQ(u) then floor(n*u)
++  else if not atom(u) and (op(u) = "*" or op(u) = "-")
+   then (
+     F : %mr_product_factors(u),
+     m : part(F, 1),
+@@ -2911,7 +2974,12 @@
+ /* Rubi :2969  FracPart[u, n_ = 1] — the sum of the non-integer terms of
+    u (FractionalPart is the floor complement, so FracPart[-3/2] = 1/2). */
+ %mr_fracPart_aux(u, n) := block([F, m, r],
+-  if not atom(u) and (op(u) = "*" or op(u) = "-")
++  /* RationalQ first, as in %mr_intPart_aux */
++  if %mr_rationalQ(u) then (
++    r : n*u,
++    r - floor(r)
++  )
++  else if not atom(u) and (op(u) = "*" or op(u) = "-")
+   then (
+     F : %mr_product_factors(u),
+     m : part(F, 1),
+@@ -3704,7 +3772,8 @@
+ %mr_contentFactor(u) := block([c, t],
+   if atom(u) then u
+   else if %mr_integerPowerQ(u) then
+-    if %mr_sumQ(part(u, 1)) and is(%mr_numericFactor(part(part(u, 1), 1)) < 0)
++    /* the .m's expn[[1,1]]: the base's first term, internal order (design 3.2) */
++    if %mr_sumQ(part(u, 1)) and is(%mr_numericFactor(inpart(part(u, 1), 1)) < 0)
+     then (-1)^part(u, 2)*%mr_contentFactor(-part(u, 1))^part(u, 2)
+     else %mr_contentFactor(part(u, 1))^part(u, 2)
+   else if not atom(u) and is(op(u) = "*") then
+@@ -3720,16 +3789,17 @@
+    n^2 = 1. Storage adaptation, MEASURED 2026-08-28 (5.50.0/SBCL):
+    the ProductQ branch returns the COMPOSED pair (the .m's
+    Map[SignOfFactor, u] leaves a product of pairs — see the cluster
+-   header). Maxima sum term order is x-terms first (args(-4-6*X) =
+-   [-6*X, -4]), so "first term" is Maxima's stored first part; for
+-   the r60 shapes the lead-term sign is undecidable anyway (symbolic
+-   coefficients, numericFactor of a symbolic monomial is 1). */
++   header). First[u] of a sum is the first term in Maxima's internal order
++   (design 3.2: the inflag order, args_in(-4-6*X) = [-4, -6*X]; the display
++   order read before gave [-6*X, -4]); for the r60 shapes the lead-term
++   sign is undecidable anyway (symbolic coefficients, numericFactor of a
++   symbolic monomial is 1). */
+ %mr_signOfFactor(u) := block([],
+   if (if %mr_rationalQ(u) then is(u < 0) else false)
+-     or (if %mr_sumQ(u) then is(%mr_numericFactor(part(u, 1)) < 0) else false)
++     or (if %mr_sumQ(u) then is(%mr_numericFactor(inpart(u, 1)) < 0) else false)
+   then [-1, -u]
+   else if %mr_integerPowerQ(u) and %mr_sumQ(part(u, 1))
+-        and is(%mr_numericFactor(part(part(u, 1), 1)) < 0)
++        and is(%mr_numericFactor(inpart(part(u, 1), 1)) < 0)
+   then [(-1)^part(u, 2), (-part(u, 1))^part(u, 2)]
+   else if not atom(u) and is(op(u) = "*") then
+     block([ns, vs, p, f],
+@@ -3886,7 +3956,8 @@
+ 
+ /* Rubi :3996  UnifySum */
+ %mr_unifySum(u, x) := block([],
+-  if %mr_sumQ(u) then apply("+", %mr_unifyTerms(args(u), x))
++  /* Apply[List, u]: the term list in Maxima's internal order (design 3.2) */
++  if %mr_sumQ(u) then apply("+", %mr_unifyTerms(%mr_args_in(u), x))
+   else %mr_simplifyTerm(u, x))$
+ 
+ /* Rubi :2168  SimplifyTerm — the .m's ACTIVE definition returns w in
+@@ -4056,8 +4127,8 @@
+  *     stored expon), correcting the brief (which used the NEW expon's
+  *     coefficient). The stored coefficient is what keeps the integrand an
+  *     integer power of the returned F^v. The flip's NegQ is the house
+- *     %mr_negQ port (Rubi :642) — the documented strict-sign deviation
+- *     applies here too.
++ *     %mr_negQ port (Rubi :642) over the PosAux port (matcher translation
++ *     fixes design 3.2).
+  *   * Commensurable bases (fix round 1): the .m's :4328/:4331
+  *     Log[base]/Log[$base$] factor reduces under FullSimplify to a
+  *     rational for commensurable bases (Log[4]/Log[2] -> 2); ratsimp
+diff --git a/test_maxima_rubi.mac b/test_maxima_rubi.mac
+--- a/test_maxima_rubi.mac
++++ b/test_maxima_rubi.mac
+@@ -114,6 +114,7 @@
+   test_rules_1_1_1_1_behavior(),
+   test_translation_fixes_seen(),
+   test_translation_fixes_generator(),
++  test_translation_fixes_posaux(),
+   test_census(),
+   print(""),
+   print("========================================"),
+@@ -273,7 +274,7 @@
+   check("sign pos", %mr_sign(3), 1),
+   check("sign neg", %mr_sign(-3), -1),
+   check("sign zero", %mr_sign(0), 0),
+-  check_bool("posQ a (undecidable -> false)", not %mr_posQ(a)),
++  check_bool("posQ a (PosAux: a symbol is positive)", %mr_posQ(a)),
+   check_bool("posQ 3", %mr_posQ(3)),
+   /* %mr_subst: Rubi's back-substitution (Subst[ans, x, u]) */
+   check("subst", ratsimp(%mr_subst(x^2/2, x, 2*y)), ratsimp(2*y^2)),
+@@ -2993,6 +2994,50 @@
+   true
+ )$
+ 
++test_translation_fixes_posaux() := block([],
++  print("--- matcher translation fixes: the PosAux port and the First/Rest siblings ---"),
++  /* PosQ / NegQ: PosAux branch by branch */
++  check("negQ a/c", %mr_negQ(a/c), false),
++  check("negQ e^2 b^2", %mr_negQ(e^2*b^2), false),
++  check("negQ 4 a c e^2", %mr_negQ(4*a*c*e^2), false),
++  check("negQ 2 (a+b)", %mr_negQ(2*(a + b)), false),
++  check("negQ b^2-4ac", %mr_negQ(b^2 - 4*a*c), false),
++  check("negQ -a", %mr_negQ(-a), true),
++  check("negQ -4 e^2", %mr_negQ(-4*e^2), true),
++  check("negQ 0", %mr_negQ(0), false),
++  check("posQ -2/3 (number)", %mr_posQ(-2/3), false),
++  check("posQ 0.5 (number)", %mr_posQ(0.5), true),
++  check("posQ %pi-4 (numeric constant)", %mr_posQ(%pi - 4), false),
++  check("posQ %pi-3 (numeric constant)", %mr_posQ(%pi - 3), true),
++  /* errcatch: the strict sign() reading these replace errors on %i */
++  check("posQ %i (complex, Re 0 -> Im)", errcatch(%mr_posQ(%i)), [true]),
++  check("posQ -%i (complex, Re 0 -> Im)", errcatch(%mr_posQ(-%i)), [false]),
++  check("posQ 2-3%i (complex, Re)", errcatch(%mr_posQ(2 - 3*%i)), [true]),
++  check("posQ %i a (%i left to the structural branches)", errcatch(%mr_posQ(%i*a)), [true]),
++  check("posQ exp(a) (non-integer power)", %mr_posQ(exp(a)), true),
++  check("posQ -a^2 (decided by is)", %mr_posQ(-a^2), false),
++  check("posQ log(a) (function)", %mr_posQ(log(a)), true),
++  check("posQ 1/c (power -1)", %mr_posQ(1/c), true),
++  /* the normalizer deviation: factored inputs */
++  check("negQ (b-a)(c+d)", %mr_negQ((b - a)*(c + d)), true),
++  check("negQ -(a-b)^2", %mr_negQ(-(a - b)^2), true),
++  check("negQ (x-1)(x+2)", %mr_negQ((x - 1)*(x + 2)), true),
++  check("posQ (a-b)^3", %mr_posQ((a - b)^3), true),
++  check("posQ (a-b)^3 c", %mr_posQ((a - b)^3*c), true),
++  check("posQ a/c-b/c", %mr_posQ(a/c - b/c), true),
++  check("posQ sqrt(a-b)(c-d)", %mr_posQ(sqrt(a - b)*(c - d)), true),
++  /* the First/Rest siblings read the internal order */
++  check("negSumBaseQ a-b (First = a)", %mr_rt_negSumBaseQ(a - b), false),
++  check("negSumBaseQ b-a (First = -a)", %mr_rt_negSumBaseQ(b - a), true),
++  check("someNegTermQ a+b", %mr_rt_someNegTermQ(a + b), false),
++  check("splitSum takes the first term (internal order)", %mr_splitSum(lambda([t], [t]), b - a), [[-a], b]),
++  check("product_factors a/b", %mr_product_factors(a/b), [a, 1/b]),
++  check("product_factors -a*b", %mr_product_factors(-a*b), [-1, a, b]),
++  check("removeContentAux -1+x (NegQ[First] -> -u)", %mr_removeContentAux(x - 1, x), 1 - x),
++  check("removeContentAux a-b (First = a)", %mr_removeContentAux(a - b, x), a - b),
++  true
++)$
++
+ /* $ not ; — the function's value (tests_failed = 0) would otherwise
+    print right under the Results: line, the line the reading protocol
+    exists to be read. */
