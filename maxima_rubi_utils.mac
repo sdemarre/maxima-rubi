@@ -453,7 +453,7 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
       if %mr_eqQ(v, 0) then %mr_posAux(%mr_simp(imagpart(u)))
       else is(v > 0))
     else (
-      w : float(u),
+      w : float(rectform(u)),
       if numberp(w) or %mr_complexNumberQ(w) then %mr_posAux(w) else false))
   else (
     v : if freeof(%i, u) then errcatch(is(u > 0)) else [],
