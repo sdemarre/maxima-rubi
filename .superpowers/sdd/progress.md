@@ -4758,3 +4758,7 @@ Plan: docs/superpowers/plans/2026-09-14-matcher-translation-fixes.md (+ .files/ 
 - build: branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47; unfixed core: built test/mr_rules.core (112775536 bytes) rules=3513 fingerprint=6c396cf8be7a1fe5060d4d17bd37cc58; P0 core: built test/mr_rules.core (172589688 bytes) rules=3514 fingerprint=5ef9b3bc5ee07ffac0e76f1fea54fbac
 - probe 12 red: Results: 16 passed, 43 failed; probe 13 red: Results: 71 passed, 19 failed
 - probe 15: P0 Results: 6 passed, 0 failed; unfixed Results: 1 passed, 5 failed; e810 on the unfixed core: deferred     t=  0.6s 1:1.2.1.4  e810 L1035  nfires=1 top=1_2_1_3_r15 fires=1_2_1_3_r15
+
+### Task 2 — the exact seen entry
+- red: `  FAIL:  mr_int_exact: the same form dispatches `, `  FAIL:  mr_int_exact: an exact repeat takes the fall-through `, `  FAIL:  rubi_hybrid deleted `, `  FAIL:  rubi_hybrid_exact deleted `; `Results:  899  passed,  4  failed`
+- green: `Results:  903  passed,  0  failed` (test_maxima_rubi.mac); `Results:  58  passed,  0  failed` (test/matcher/test_mr_dispatch.mac); probe 12: `Results: 16 passed, 43 failed` (unchanged, as expected)
