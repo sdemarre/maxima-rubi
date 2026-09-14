@@ -112,6 +112,7 @@ run_all_tests() := block([],
   test_class3_cluster_a(),
   test_class3_cluster_b(),
   test_rules_1_1_1_1_behavior(),
+  test_translation_fixes_seen(),
   test_census(),
   print(""),
   print("========================================"),
@@ -2927,6 +2928,34 @@ test_class3_cluster_b() := block([lst, lst2, sl],
              is(%mr_substForFractionalPowerOfLinear(x^2 + x + 1, x) = false)),
   check_bool("sfpol non-linear base decline",
              is(%mr_substForFractionalPowerOfLinear((a + b*log(x^2 + 1))*sqrt(x^2 + 1), x) = false)),
+  true
+)$
+
+/* Matcher translation fixes (design docs/superpowers/specs/2026-09-14-
+   matcher-translation-fixes-design.md 3.6; probes/matcher/12-translation-
+   defects). PosQ/NegQ expectations are Rubi's PosAux
+   (IntegrationUtilityFunctions.m :605-:642) worked by hand on Rubi's form;
+   the factored inputs watch the normalizer deviation (design 3.2). */
+t_disp_77(mm, x) := 77$
+test_translation_fixes_seen() := block([saved_table, saved_seen, h77],
+  print("--- matcher translation fixes: the exact seen entry ---"),
+  /* mr_int_exact: exact member only; mr_int: member, then ratsimp */
+  h77 : %mr_defrule("layerA", 6, "(Int (Pattern |_t_u| (Blank)) (Pattern x (Blank Symbol)))",
+                    t_disp_true, t_disp_77),
+  saved_table : mr_rule_table,
+  saved_seen : %mr_seen,
+  mr_rule_table : [h77],
+  %mr_seen : [x^2 + 2*x + 1],
+  check("mr_int: a ratsimp-equal seen form takes the fall-through",
+        mr_int((x + 1)^2, x), integrate((x + 1)^2, x)),
+  check("mr_int_exact: the same form dispatches", mr_int_exact((x + 1)^2, x), 77),
+  %mr_seen : [(x + 1)^2],
+  check("mr_int_exact: an exact repeat takes the fall-through",
+        mr_int_exact((x + 1)^2, x), integrate((x + 1)^2, x)),
+  %mr_seen : saved_seen,
+  mr_rule_table : saved_table,
+  check_not("rubi_hybrid deleted", member('rubi_hybrid, map(op, functions))),
+  check_not("rubi_hybrid_exact deleted", member('rubi_hybrid_exact, map(op, functions))),
   true
 )$
 
