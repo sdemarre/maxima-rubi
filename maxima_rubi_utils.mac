@@ -613,6 +613,18 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
 %mr_IGtQ(u, n) := %mr_integerQ(u) and is(u > n)$
 %mr_ILtQ(u, n) := %mr_integerQ(u) and is(u < n)$
 
+/* Rubi :379-:395  IGtQ[u_,n_] := IntegerQ[u] && u>n; likewise ILtQ, IGeQ,
+   ILeQ — the generator's translation of the four heads (matcher
+   translation fixes design 3.1; the bare is(u > n) dropped the integer
+   test). IntegerQ is an explicit integer (integerp); u is evaluated once;
+   the result is true or false, never unknown (the hand ports above, used
+   by the IntLinearQ / IntBinomialQ / IntQuadraticQ ports, can answer
+   unknown on a symbolic n). */
+%mr_iGtQ(u, n) := if integerp(u) and is(u > n) = true then true else false$
+%mr_iLtQ(u, n) := if integerp(u) and is(u < n) = true then true else false$
+%mr_iGeQ(u, n) := if integerp(u) and is(u >= n) = true then true else false$
+%mr_iLeQ(u, n) := if integerp(u) and is(u <= n) = true then true else false$
+
 /* the distinct x-exponents of a CONFIRMED polynomial (callers gate on
  * %mr_polynomialQ), ascending — MEASURED 2026-08-23: sort() orders
  * exact rationals, member() on numbers returns a boolean, and op()

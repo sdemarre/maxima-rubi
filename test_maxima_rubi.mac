@@ -113,6 +113,7 @@ run_all_tests() := block([],
   test_class3_cluster_b(),
   test_rules_1_1_1_1_behavior(),
   test_translation_fixes_seen(),
+  test_translation_fixes_generator(),
   test_census(),
   print(""),
   print("========================================"),
@@ -2956,6 +2957,39 @@ test_translation_fixes_seen() := block([saved_table, saved_seen, h77],
   mr_rule_table : saved_table,
   check_not("rubi_hybrid deleted", member('rubi_hybrid, map(op, functions))),
   check_not("rubi_hybrid_exact deleted", member('rubi_hybrid_exact, map(op, functions))),
+  true
+)$
+
+test_translation_fixes_generator() := block([pairs],
+  print("--- matcher translation fixes: integer comparisons, notequal, juxtaposition ---"),
+  /* integer comparisons (Rubi :379-:395): IntegerQ[u] && u op n */
+  check("iGtQ 3 0", %mr_iGtQ(3, 0), true),
+  check("iGtQ 1/2 0 (fraction)", %mr_iGtQ(1/2, 0), false),
+  check("iGtQ 2.0 0 (float)", %mr_iGtQ(2.0, 0), false),
+  check("iGtQ n 0 (symbol)", %mr_iGtQ(n, 0), false),
+  check("iGtQ 0 0", %mr_iGtQ(0, 0), false),
+  check("iLtQ -1 0", %mr_iLtQ(-1, 0), true),
+  check("iLtQ -1/2 0 (fraction)", %mr_iLtQ(-1/2, 0), false),
+  check("iLeQ 0 0", %mr_iLeQ(0, 0), true),
+  check("iLeQ -3/2 0 (fraction)", %mr_iLeQ(-3/2, 0), false),
+  check("iGeQ 0 0", %mr_iGeQ(0, 0), true),
+  check("iGeQ 1/2 0 (fraction)", %mr_iGeQ(1/2, 0), false),
+  /* != -> notequal: numbers by value, a symbol undecided */
+  check("notequal 2 1", is(notequal(2, 1)), true),
+  check("notequal 1 1", is(notequal(1, 1)), false),
+  check("notequal a 1 (symbol)", is(notequal(a, 1)), unknown),
+  %mr_load_sibling("rules/class1/1_1_3_2.mac", 'mr_witness_1_1_3_2),
+  %mr_load_sibling("rules/class1/1_1_4_1.mac", 'mr_witness_1_1_4_1),
+  pairs : lambda([key, n, l], map(lambda([pr], concat('_mr_, key, "_r", n, "_", first(pr)) = second(pr)), l)),
+  check("1_1_3_2 r17 cond: gcd(m+1, n) = 2, k != 1 holds",
+        _mr_cond_1_1_3_2_r17(pairs("1_1_3_2", 17, [[a, a], [b, b], [p, p], [n, 2], [m, 1]]), x), true),
+  check("1_1_3_2 r17 cond: gcd(m+1, n) = 1, k != 1 fails",
+        _mr_cond_1_1_3_2_r17(pairs("1_1_3_2", 17, [[a, a], [b, b], [p, p], [n, 3], [m, 1]]), x), false),
+  /* juxtaposition -> product: (a x^j + b x^n)^(p+1) / (b (n-j) (p+1) x^(n-1)) */
+  /* errcatch: on an unfixed rule file the repl is an evaluation error */
+  check("1_1_4_1 r1 repl on numbers",
+        errcatch(ratsimp(_mr_repl_1_1_4_1_r1(pairs("1_1_4_1", 1, [[a, 1], [b, 2], [j, 1], [n, 3], [p, 2]]), x)
+                         - (x + 2*x^3)^3/(12*x^2))), [0]),
   true
 )$
 
