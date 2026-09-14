@@ -4748,3 +4748,13 @@ uniformly to every switch with a thin raw margin.
 - all other groups (untagged) and the new timeouts: not accepted yet — the fix changes rule routes; they are re-attributed on the fixed tree
 - rubi_hybrid (verbatim option chosen): "Restore exact comparison (Recommended)" — spec §3.5 applied: class 2 g10 (2.1 e15), class 1 g106 (1.2.1.2 e1734, e1735, e1736) and class 1 g1's 1.2.1.4 e810 (by its P0 route): rejected → the exact seen comparison as a translation fix in the fix plan; Task 5 does not delete `rubi_hybrid` / `rubi_hybrid_exact` until that plan decides
 - consequence: Plan 3 stops before Task 5 (plan Task 4 Step 9: "Any rejection → stop: the rejected entries are the input of a fix plan written then; Tasks 5–6 wait for it")
+
+## Plan: 2026-09-14 matcher translation fixes (branch matcher-substrate)
+
+Spec: docs/superpowers/specs/2026-09-14-matcher-translation-fixes-design.md
+Plan: docs/superpowers/plans/2026-09-14-matcher-translation-fixes.md (+ .files/ attachments)
+
+### Task 1 — red records
+- build: branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47; unfixed core: built test/mr_rules.core (112775536 bytes) rules=3513 fingerprint=6c396cf8be7a1fe5060d4d17bd37cc58; P0 core: built test/mr_rules.core (172589688 bytes) rules=3514 fingerprint=5ef9b3bc5ee07ffac0e76f1fea54fbac
+- probe 12 red: Results: 16 passed, 43 failed; probe 13 red: Results: 71 passed, 19 failed
+- probe 15: P0 Results: 6 passed, 0 failed; unfixed Results: 1 passed, 5 failed; e810 on the unfixed core: deferred     t=  0.6s 1:1.2.1.4  e810 L1035  nfires=1 top=1_2_1_3_r15 fires=1_2_1_3_r15
