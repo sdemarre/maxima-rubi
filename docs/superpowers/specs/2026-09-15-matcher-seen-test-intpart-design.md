@@ -81,8 +81,8 @@ Committed evidence:
   source of the floats was not identified.
 - P5b record lines (`test/corpus_class1.p5b-run1.out`): 1.1.1.4 e1, e3, e4, e5, e135 `verified`
   0.1 s; 1.1.1.7 e1 `timeout` 30.0 s.
-- Wall medians (`python3 test/record_medians.py`): P0 (`test/corpus_class{1,2,3}.out`) 1.3 / 4.3 /
-  4.2 s; P5b run 1 0.6 / 0.6 / 1.5 s; P5b run 1 p90 5.7 / 2.1 / 8.4 s.
+- Wall medians (`python3 test/record_medians.py`): P0 (`test/corpus_class{1,2,3}.pre-matcher.out`,
+  commit `0a6664c`) 1.3 / 4.3 / 3.9 s; P5b run 1 0.6 / 0.6 / 1.5 s; P5b run 1 p90 5.7 / 2.1 / 8.4 s.
 - Probe 11 (`probes/matcher/11-arm-noise-recheck.p5b.*.out`): non-reproducing changed entries per
   switch, class 1 15–23, class 2 0, class 3 2–7.
 - Rubi: `IntPart[u_,n_:1] := If[RationalQ[u], IntegerPart[n*u], …]`,
@@ -243,7 +243,7 @@ flipped).
 1. **Preconditions.** Probe 18 green; the changed tree committed; the core built, its fingerprint in
    the ledger and checked before every launch; §3.5's gates green; probe 17 green.
 2. **Run 1 (defaults)**, classes 2 → 3 → 1; `p5_gate.py gate` against the P0 records
-   (`test/corpus_class{1,2,3}.out`) with Plan 3's stop rules. Informational, in the ledger:
+   (`test/corpus_class{1,2,3}.pre-matcher.out`) with Plan 3's stop rules. Informational, in the ledger:
    `ab_records.py test/corpus_class<N>.p5b-run1.out test/corpus_class<N>.p5c-run1.out`.
 3. **Run 4 (`MR_SWITCHES="mr_model_flags=false"`)**, all three classes;
    `p5_gate.py winner mr_model_flags` over runs 1 and 4. Probe 11 on `mr_model_flags` only when the
