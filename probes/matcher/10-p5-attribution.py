@@ -22,6 +22,10 @@ change the class:
     the self-diff zero chain on the answer is appended after the CLASS line
     (`self=1` closes, `self=0` does not, `self=cut` the cap hit first,
     `self=n/a` the answer is a noun).
+  * the answer (cut at 300 characters) is printed after the CLASS line; a
+    row of an `unverified` entry ends `ans=<answer>` (wrong vs unverifiable
+    is read from it), and a row of an `error` entry ends `err=<the Maxima or
+    Lisp error message>` (matcher translation fixes design section 4 step 5).
 
 select:
   passfail    PASS in the P0 record, FAIL in the final record
@@ -74,6 +78,11 @@ NOUN = ("block([], if atom(mr_r) then 0 else "
         "or is(string(op(mr_r)) = \"unintegrable\") "
         "then 1 else 0)")
 FIRE_RX = re.compile(r"rubi: rule\s+(\S+)(?:\s+(r\d+))?\s+fired on")
+# the answer, cut at 300 characters, printed after the CLASS line (it cannot
+# change the class); the row carries it for `unverified` entries
+ANS_STMT = ("block([mr_s, linel : 100000], mr_s : string(mr_r), disp(concat(\"ANS \", "
+            "if slength(mr_s) > 300 then concat(substring(mr_s, 1, 301), \"...\") else mr_s)))$\n")
+ERR_RX = re.compile(r"fatal error|Heap exhausted|Control stack exhausted|Unhandled|RETRIEVE:")
 
 
 def rule_name(m):
@@ -90,7 +99,24 @@ def entry_text(f_text, var_text, e_text, e_text2):
         self_stmt = (f"if is({NOUN} = 1) then disp(concat(\"SELF n/a\")) "
                      f"else disp(concat(\"SELF \", string({zv})))$\n")
         t = t[:-len(FILLER)] + self_stmt + FILLER
+    t = t[:-len(FILLER)] + ANS_STMT + FILLER
     return "rubi_verbose : true$\n" + t
+
+
+def error_text(out):
+    """The Maxima / Lisp error messages of a subprocess's output, joined."""
+    lines = [s.strip() for s in out.splitlines()]
+    found = []
+    for i, s in enumerate(lines):
+        if s.startswith("-- an error"):
+            prev = next((p for p in reversed(lines[:i]) if p and not p.startswith("#")), "")
+            found.append(prev)
+        elif s.startswith("Maxima encountered a Lisp error"):
+            found.append(next((n for n in lines[i + 1:] if n), s))
+        elif ERR_RX.search(s):
+            found.append(s)
+    text = " | ".join(dict.fromkeys(f for f in found if f))
+    return re.sub(r"\s+", " ", text)[:300]
 
 
 def selected_keys():
@@ -120,13 +146,15 @@ def run_one(item):
     ts = time.time()
     out, timed_out = d.maxima_run(entry_text(f_text, var_text, e_text, e_text2), CAP)
     dt = time.time() - ts
-    cls, selfv = None, "-"
+    cls, selfv, ans = None, "-", None
     for s in out.splitlines():
         s = s.strip()
         if cls is None and s.startswith("CLASS "):
             cls = s[6:].strip()
         elif s.startswith("SELF "):
             selfv = s[5:].strip()
+        elif ans is None and s.startswith("ANS "):
+            ans = s[4:].strip()
     if cls is None:
         cls = "timeout" if timed_out else "error"
     if cls not in d.KNOWN_CLASSES:
@@ -139,9 +167,12 @@ def run_one(item):
         if name not in seen:
             seen.append(name)
     top = fires[-1] if fires else "-"
+    err = error_text(out) if cls == "error" else ""
     return (f"{cls:14s} t={dt:6.1f}s {rel} e{e} L{line_nos[e - 1]}"
             f"  self={selfv}  nfires={len(fires)}  top={top}"
-            f"  fires={','.join(seen[:20]) or '-'}" + (",..." if len(seen) > 20 else ""))
+            f"  fires={','.join(seen[:20]) or '-'}" + (",..." if len(seen) > 20 else "")
+            + (f"  ans={ans.replace(' ', '')}" if cls == "unverified" and ans else "")
+            + (f"  err={err}" if err else ""))
 
 
 def main():

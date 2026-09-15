@@ -21,11 +21,15 @@ Disposition of a PASS->FAIL entry (mechanical, first rule that applies):
                  no rule answered at the top level)
 
 New timeouts (timeout in the final record, not in the P0 record) are listed
-with their P0 class and, with --recheck, their class at 100 s.
+with their P0 class and, with --recheck, their class at 100 s. With
+--newerror (the probe's newerror leg), the new `error` entries are listed
+with their re-run class and error message; an `unverified` final30 row's
+answer and an `error` row's message are printed under the entry
+(matcher translation fixes design section 4 step 5).
 
 Usage:
   python3 probes/matcher/10-p5-attribution.summary.py P0_RECORD FINAL_RECORD \\
-      --final30 OUT --p0 OUT [--final120 OUT] [--recheck RECORD]
+      --final30 OUT --p0 OUT [--final120 OUT] [--recheck RECORD] [--newerror OUT]
 Ends with `Results: <attributed> passed, <unmeasured> failed`.
 """
 
@@ -49,9 +53,12 @@ def rows(path):
         for line in open(path, encoding="utf-8"):
             m = ROW.match(line.rstrip("\n"))
             if m:
+                ans = re.search(r"  ans=(\S+)", line)
+                err = re.search(r"  err=(.*)$", line.rstrip("\n"))
                 out[(m.group(3), int(m.group(4)))] = {
                     "cls": m.group(1), "t": float(m.group(2)), "self": m.group(5),
-                    "top": m.group(7), "fires": m.group(8)}
+                    "top": m.group(7), "fires": m.group(8),
+                    "ans": ans.group(1) if ans else "", "err": err.group(1) if err else ""}
     return out
 
 
@@ -63,6 +70,7 @@ def main():
     ap.add_argument("--p0", required=True)
     ap.add_argument("--final120")
     ap.add_argument("--recheck")
+    ap.add_argument("--newerror")
     a = ap.parse_args()
     pc = ab.driver_pass_classes()
     p0, fin = ab.load_record(a.p0_record), ab.load_record(a.final_record)
@@ -108,6 +116,18 @@ def main():
             if k in p0r and k in f30:
                 print(f"      fires P0: {p0r[k]['fires']}")
                 print(f"      fires final: {f30[k]['fires']}  self={f30[k]['self']}")
+            if k in f30 and f30[k]["ans"]:
+                print(f"      answer final: {f30[k]['ans']}")
+            if k in f30 and f30[k]["err"]:
+                print(f"      error final: {f30[k]['err']}")
+    if a.newerror:
+        ne = rows(a.newerror)
+        new_err = sorted(k for k in p0.keys() & fin.keys() if fin[k][0] == "error" and p0[k][0] != "error")
+        print(f"\nNEW ERRORS {len(new_err)}")
+        for k in new_err:
+            r = ne.get(k)
+            print(f"  {k[0]} e{k[1]}  P0 {p0[k][0]} {p0[k][1]:.1f}s  rerun {fmt(r)}"
+                  + (f"  error: {r['err']}" if r and r["err"] else ""))
     new_to = sorted(k for k in p0.keys() & fin.keys() if fin[k][0] == "timeout" and p0[k][0] != "timeout")
     print(f"\nNEW TIMEOUTS {len(new_to)}"
           + (": at 100 s " + ", ".join(f"{c} {n}" for c, n in sorted(Counter(
