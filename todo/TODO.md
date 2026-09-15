@@ -264,7 +264,14 @@ Layer A 898/0; the TLS flag is no longer required
 - Translation fixes plan (2026-09-14): Tasks 1–5 fixed the four defects and their siblings (probes
   12/13/15 red→green, probe 14, Layer A 957, static gate 14); Tasks 6–7 re-run P5 as p5b and return to
   the acceptance stop; the case-fold order shim is ticketed
-  (`.scratch/matcher-translation-fixes/issues/01-case-fold-order-shim.md`) — open
+  (`.scratch/matcher-translation-fixes/issues/01-case-fold-order-shim.md`) — Task 6 done (p5b final
+  records = run 1, defaults; gates 4/0); Task 7 STOPPED at Step 5 (defect clearance, 2026-09-15):
+  probe 16 (`probes/matcher/16-seen-guard-trace{,.class1}.out`) shows the collapse mechanism at
+  non-9.1 sites (`mr_int`'s ratsimp seen test cuts equal-form rewrites; P0 fired those rules in
+  pass 2/3 after `%mr_seen` was popped) in class 2 g1, class 3 g12/g21/g48 and 36 class-1 groups
+  (36 rules, 67 entries reach PASS under an exact-only control), plus a sibling tag
+  (`%mr_intPart_aux`, class 1 g27); tickets 02 (GtQ/GeQ reading) and 03 (EqQ/NeQ zero test) filed;
+  Steps 6–10 wait for the user's fix-plan decision — open
 - Carried into Plan 3's P5 runs: class 2 first in every run, its
   median wall and timeout class compared against P0 before class 1
   (probe 06: the full-table walk is exponential in Times arity); when
