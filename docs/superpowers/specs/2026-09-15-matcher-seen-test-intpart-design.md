@@ -63,6 +63,24 @@ to the depth cap.
 | plan structure | one plan, one p5c re-measurement |
 | p5c arms | two arms: the defaults (rules-only) as the new baseline record, and `mr_nested_fallback=true` as the like-for-like comparison with P0/P5b that the acceptance attributes (§4) |
 
+### 0.4 Third amendment (user, 2026-09-16, plan pre-validation)
+
+| question | decision |
+|---|---|
+| the zero oracle for the §3.5 value checks | **`radcan`** (`ratsimp(radcan(d)) = 0`), not bare `ratsimp` |
+
+Measured on the prototype (2026-09-16, build `branch_5_50_base_84_g4204fb669`): after
+`%mr_expandCleanup` rewrites two conjugate-radical denominators, bare `ratsimp` cannot prove the
+difference zero on three shapes — a nested-radical parameter
+`1/((x-sqrt(1+sqrt(a)))(x+sqrt(1+sqrt(a))))`, its numeric sibling `sqrt(2+sqrt(3))`, and
+`1/((x-sqrt(a))(x+sqrt(a))(x-1))` — reporting a residual whose numerator is
+`(sqrt(a)+1)^2 - a - 2 sqrt(a) - 1`, i.e. 0. `radcan`, `ratsimp(radcan(…))` and a numeric
+substitution (`a=7, x=2`: 2.7e-15, -8.3e-15, 7.1e-17) all close it; the per-stage trace puts the form
+change at the `ratdisrep ∘ %mr_simplifyTerm` map, with each term alone still `ratsimp`-zero. Bare
+`ratsimp` as the probe-18 oracle would therefore have recorded three false defects in a port that is
+value-preserving. The corpus harness's own verification is the 8-stage zero chain, not a single
+`ratsimp`, for the same reason.
+
 ## 1. Scope
 
 In:
@@ -250,10 +268,16 @@ attribution re-measure the corpus figures:
     `maxima_rubi.mac` (the core build and the fingerprint follow the loader).
 - **Stated deviations.** (a) No `MakeAssocList` / `GensymSubst` / `KernelSubst` substitution around
   `partfrac`: measured unnecessary on radical parameters, radical coefficients, a non-rational factor
-  and a symbolic exponent (§2); a unit check on a nested-radical parameter watches it. (b) `partfrac`
-  may order or group terms differently from `Apart`. (c) `format(…, %poly(x))` collects the
-  coefficients of each power of x, where `Expand` leaves like-power terms separate; `ExpandCleanup`'s
-  `UnifySum` collects them anyway.
+  and a symbolic exponent (§2); a unit check on a nested-radical parameter watches it, with `radcan`
+  as its zero oracle (§0.4). (b) `partfrac` may order or group terms differently from `Apart`.
+  (c) `format(…, %poly(x))` collects the coefficients of each power of x, where `Expand` leaves
+  like-power terms separate; `ExpandCleanup`'s `UnifySum` collects them anyway. (d) `ExpandCleanup`
+  applies `ratdisrep` to each `SimplifyTerm` result before re-summing: `%mr_simplifyTerm` returns a
+  CRE (`%mr_together`'s `rat()`, `maxima_rubi_utils.mac:372`; `?caar` = `MRAT`) and Maxima's `+`
+  combines CRE operands into ONE canonical fraction, where Mathematica's `Plus` never recombines.
+  Without it the cascade is a no-op — measured 2026-09-16: mapping `SimplifyTerm` over e4's three
+  partial fractions rebuilt the single quotient `(b x + a)/(cubic)`, `SumQ` false. The CRE is not
+  removed from `%mr_together` itself (200+ call sites depend on its behaviour).
 - Tickets (§1 Out): the remaining `ExpandIntegrand` branches, filed with their generated call counts.
 
 ### 3.5 Evidence
@@ -266,7 +290,7 @@ text with the tree's default switches, so the green records run rules-only.
 | probe | content |
 |---|---|
 | `probes/matcher/17-exact-seen-intpart` | SEEN: probe 16's 78 exact-only-control PASS entries — green: PASS, unless the fire trace attributes a miss to the IntPart change or the entry's P5b PASS came from a nested `integrate` fall-through (the answer then holds `unintegrable` under the rules-only default, which the probe reports as its own category, not a failure). DRIFT: 1.1.1.4 e1, e3, e4, e5, e135 and 1.1.1.7 e1 with the fire trace, the depth-cap hits and whether a float sits on `%mr_seen` at a cap hit — green: no float at a cap hit; the class is recorded. A float-scan of every class 1–3 integrand. INTPART: `truncate` / `floor` on the rationals; `%mr_intPart` / `%mr_fracPart` against Rubi's values; g27 e254, e255, e604, e605 through 1_2_3_2_r34. |
-| `probes/matcher/18-expand-expression` | VALUES: `%mr_expandIntegrand` / `%mr_expandExpression` / `%mr_smartApart` / `%mr_expand_x` on e4's integrand, its expanded-denominator form, a repeated linear factor, a polynomial part, an irreducible quadratic (kept), `1/(a+b x^2)` (kept), a radical parameter, a nested-radical parameter, a non-rational factor (`sqrt(x)` times a rational function), an algebraic function `(u_Plus) v` and `(u_Plus)^n v`, `ExpandCleanup`'s reciprocal pair `e/(a+b x) + f/(a-b x)` — expectations derived by hand from the `.m` definitions, compared with `ratsimp` difference 0 and the expected term count. ENTRIES: 1.1.1.4 e4 and a fixed sample of 60 of the 805 losses cut at an `%mr_expandIntegrand` rule (the pre-validation list, committed with the probe) — red: the P5b class; green: the class and fire trace recorded, `Results:` counting e4 PASS. |
+| `probes/matcher/18-expand-expression` | VALUES: `%mr_expandIntegrand` / `%mr_expandExpression` / `%mr_smartApart` / `%mr_expand_x` on e4's integrand, its expanded-denominator form, a repeated linear factor, a polynomial part, an irreducible quadratic (kept), `1/(a+b x^2)` (kept), a radical parameter, a nested-radical parameter, a non-rational factor (`sqrt(x)` times a rational function), an algebraic function `(u_Plus) v` and `(u_Plus)^n v`, `ExpandCleanup`'s reciprocal pair `e/(a+b x) + f/(a-b x)` — expectations derived by hand from the `.m` definitions, compared with the expected term count and a **`radcan`** difference of 0 (`ratsimp(radcan(d))`, §0.4: bare `ratsimp` is too weak on the radical shapes and reports three false defects). ENTRIES: 1.1.1.4 e4 and a fixed sample of 60 of the 805 losses cut at an `%mr_expandIntegrand` rule (the pre-validation list, committed with the probe) — red: the P5b class; green: the class and fire trace recorded, `Results:` counting e4 PASS. |
 
 ### 3.6 The corpus queue runner (dropped)
 
