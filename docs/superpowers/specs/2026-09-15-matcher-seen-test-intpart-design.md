@@ -362,12 +362,25 @@ the p5c re-measurement (§4).
 - **Scope: `maxima_rubi_match.lisp` only** — `flat-claim`, `collapsible-p` and, if it follows,
   `flat-absorb`. No rule file, generator, dispatcher or utils change; the seen test, the switches and
   the ExpandExpression port are settled by §3.1–§3.4 and are not reopened.
-- **Hard requirement — result-preserving.** A prune is admissible only where it can change no match
-  result and no condition-hook call. The precedent and the standard of proof is `flat-absorb`'s own
-  last-absorber prune (`maxima_rubi_match.lisp:406–413`): only one run size can leave nothing over,
-  so enumerating the smaller sub-runs is waste, and an absorber's pattern is a Blank, so no condition
-  hook is involved. A candidate prune that cannot be argued on those terms is rejected, however much
-  it saves.
+- **Hard requirement — result-preserving.** A prune is admissible only where it can change neither
+  the set of complete bindings nor the condition-hook calls made on them.
+  **The `flat-absorb` precedent does NOT transfer** (measured reading, 2026-09-16). Generated rules
+  carry no `Condition`/`PatternTest` in their patterns at all (0 of 3,513, so `*test-hook*` is dead
+  for them); the conditions are the rule record's separate `cond` field, which the dispatcher passes
+  to `mr-match:match` as the `:cond-hook` (`maxima_rubi_dispatch.lisp:200–222`). `match`
+  (`maxima_rubi_match.lisp:231–243`) calls that hook on EVERY complete binding, and under
+  `*cond-retry*` (true by default, and the measured switch winner in all three classes) a rejected
+  binding returns nil, which makes `m1` backtrack and yield the next one. So `flat-claim`'s sub-run
+  enumeration IS the binding generator the retry loop consumes: every suppressed sub-run is a
+  candidate binding the cond never sees. `flat-absorb` prunes run sizes that structurally cannot
+  leave an empty leftover — an impossibility argument with no analogue here, since no `flat-claim`
+  sub-run is impossible.
+- **Admissible prune shapes**, therefore, are only those that preserve the binding SET: (a)
+  memoising `(item, run, bindings)` attempts that already failed to MATCH — never ones a cond
+  rejected; (b) reordering the enumeration so an acceptable binding is reached sooner, removing
+  none; (c) a cheaper pre-filter that rejects only runs `m1` could never match, in the manner of the
+  existing `head-compatible-p` (`maxima_rubi_match.lisp:352`). A candidate outside these shapes is
+  rejected however much it saves.
 - **Evidence gates** (all on the changed tree): the matcher unit suites 53 / 51 / 58; the matcher
   regression suite `Results: 109 passed, 0 failed` in BOTH simplifier arms (every one of the 7,444
   Rubi LHSs OK in narrow and wide modes, 0 UNSOUND, 0 false mutation matches); the P3 static gate
