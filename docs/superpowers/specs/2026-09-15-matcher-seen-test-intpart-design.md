@@ -81,6 +81,39 @@ change at the `ratdisrep ∘ %mr_simplifyTerm` map, with each term alone still `
 value-preserving. The corpus harness's own verification is the 8-stage zero chain, not a single
 `ratsimp`, for the same reason.
 
+### 0.5 Fourth amendment (user, 2026-09-16, plan pre-validation)
+
+| question | decision |
+|---|---|
+| the expandIntegrand-cut residue the SmartApart port does not recover | **add a dispatch-cost task before p5c** (§3.8) |
+
+§0.3 assumed the `ExpandExpression` / `SmartApart` port would recover the losses the exact seen test
+opened at `%mr_expandIntegrand` rules. Measured on the prototype (2026-09-16, core
+`fbb8fcec78effbbaa3e57976f81f22f6`), it does not:
+
+- **The full cut list** — all 805 class-1 entries that P5b answered `verified` and the first design
+  version (exact seen test + IntPart, no SmartApart) turned into `timeout`
+  (`prototype/outputs/cutlist-805.out`, rules-only, 30 s cap, 12 workers, wall 1,646 s):
+  `verified` 56, `contains-noun` 161, `unverified` 4, `error` 4, **`timeout` 580**. PASS 56/805 (7.0 %).
+  The port is what recovered the 56 (29 of them at `1_2_1_3_r20`); the 161 nouns are entries the
+  fall-through arm would answer (measured on a 60-entry sample: nouns → `verified`, timeouts
+  unchanged 43 → 44).
+- **The residue is concentrated**: 29 cutting rules and 23 files, but 75 % of the 580 sit in five
+  rules (`1_1_1_3_r5` 203, `1_1_1_2_r12` 75, `1_2_1_2_r73` 59, `1_2_1_3_r15` 55, `1_1_1_3_r17` 45)
+  and 79 % in three files (1.2.1.3, 1.1.1.3, 1.2.1.2).
+- **It is not slow-but-correct.** 58 of the 580 re-run at the standing 100 s re-check cap
+  (`prototype/outputs/recheck100.out`): `timeout` 44 (76 %), `contains-noun` 12, `verified` 2 (3 %);
+  the terminating walls are 31 s min / 47 s median / 95 s max. A 3.3× budget recovers ~3 % to PASS,
+  so the 30 s cap is not the binding constraint and raising it is not the route (the standing user
+  decision of 2026-08-27 already says so).
+- **Mechanism**: the matcher's flat matching, not the rules. `flat-claim`
+  (`maxima_rubi_match.lisp:383`) gives each claimer one element and, when the claimer is
+  collapsible, tries **every sub-run of every size** (`loop for size from 2 to (length elems)` over
+  `map-subsets` — 2^n subsets of a product's factors). `ExpandIntegrand` widens these integrands, so
+  the walk cost explodes: probe 06's claim-N cases measure 2.0 / 7.9 / 35.0 / **173.2 s** for `x`
+  times 6 / 8 / 10 / 12 symbols (`probes/matcher/06-dispatch-cost.out`). This is the parent spec's
+  recorded known cost item, which the exact seen test now exposes on the corpus.
+
 ## 1. Scope
 
 In:
@@ -91,6 +124,8 @@ In:
   tooling they need;
 - the `ExpandExpression` / `SmartApart` / `ExpandCleanup` port with its helpers and an `Expand[u, x]`
   port;
+- the dispatch-cost task (§3.8, fourth amendment): a result-preserving prune of the matcher's
+  flat-matching sub-run enumeration, run BEFORE the p5c re-measurement;
 - probes 17 (seen test, drift targets, IntPart) and 18 (ExpandExpression / SmartApart), red/green;
   the unit checks and gate changes that prove each;
 - the p5c re-measurement (two arms) and the acceptance stop, which replaces the translation-fixes
@@ -108,7 +143,8 @@ Out:
   records;
 - the identity re-sends and single-term expansions probe 16 tagged `none` (1_4_1_r18,
   1_1_3_7_r45, 1_4_2_r19/r20, class 1 g9/g30);
-- matcher changes (`maxima_rubi_match.lisp`, `maxima_rubi_tree.lisp`);
+- matcher changes beyond §3.8's flat-matching prune (`maxima_rubi_tree.lisp`, and every part of
+  `maxima_rubi_match.lisp` the prune does not touch);
 - the corpus queue runner (§3.6, ticketed);
 - a top-level "rubi, then integrate" user mode (the endorsed later item; `rubi_fallback` stays as is);
 - Plan 3 Tasks 5–6 (they resume after acceptance).
@@ -317,6 +353,32 @@ Docs: AGENTS.md (Layer A and guard counts, the two run switches and the `.caps` 
 and switch-arm sections); the translation-fixes design §3.3 and the parent spec §3.5 pointers; the
 utils header of cluster I (the ported cascade); `todo/TODO.md`.
 
+### 3.8 The dispatch-cost task (fourth amendment, §0.5)
+
+Cut the product-arity exponential in the matcher's flat matching, so the p5c class-1 record measures
+the seen test and the port rather than a matcher cost mechanism already understood. It runs **before**
+the p5c re-measurement (§4).
+
+- **Scope: `maxima_rubi_match.lisp` only** — `flat-claim`, `collapsible-p` and, if it follows,
+  `flat-absorb`. No rule file, generator, dispatcher or utils change; the seen test, the switches and
+  the ExpandExpression port are settled by §3.1–§3.4 and are not reopened.
+- **Hard requirement — result-preserving.** A prune is admissible only where it can change no match
+  result and no condition-hook call. The precedent and the standard of proof is `flat-absorb`'s own
+  last-absorber prune (`maxima_rubi_match.lisp:406–413`): only one run size can leave nothing over,
+  so enumerating the smaller sub-runs is waste, and an absorber's pattern is a Blank, so no condition
+  hook is involved. A candidate prune that cannot be argued on those terms is rejected, however much
+  it saves.
+- **Evidence gates** (all on the changed tree): the matcher unit suites 53 / 51 / 58; the matcher
+  regression suite `Results: 109 passed, 0 failed` in BOTH simplifier arms (every one of the 7,444
+  Rubi LHSs OK in narrow and wide modes, 0 UNSOUND, 0 false mutation matches); the P3 static gate
+  14 / 0; Layer A at its §3.7 count, unchanged.
+- **Cost gate**: probe 06's claim-N cases re-measured on the changed tree — the `claim12` case must
+  fall materially from 173.2 s, and no `walk` case may regress. Then the §0.5 58-entry sample re-run
+  at the 30 s cap: the task's value is how many of the 580 stop timing out.
+- **Stop rule**: if no result-preserving prune is found, **stop and report** — the residue is carried
+  into p5c as a known cost item and attributed at the acceptance stop, rather than accepting a
+  semantics change to buy speed.
+
 ## 4. Re-measurement and the acceptance stop
 
 Plan 3's procedures with the sharded launchers and the prefix `p5c`. Records:
@@ -326,7 +388,9 @@ flipped on the defaults), `p5c-fallback.out` (`mr_nested_fallback=true` with the
 `probes/matcher/10-p5c-attribution.*`.
 
 1. **Preconditions.** The changed tree committed; the core built, its fingerprint in the ledger and
-   checked before every launch; §3.7's gates green; probes 17 and 18 green.
+   checked before every launch; §3.7's gates green; probes 17 and 18 green; **§3.8's dispatch-cost
+   task complete — its evidence and cost gates green, or its stop rule taken and the residue carried
+   as a known cost item**.
 2. **Run 1 — the rules-only baseline**, classes 2 → 3 → 1. `p5_gate.py gate` against P0
    (`test/corpus_class{1,2,3}.pre-matcher.out`): complete, switches and wall ceiling must PASS; the
    pass-floor line is informational on this arm (P0 ran with the fall-through). Informational in the
@@ -367,6 +431,9 @@ Machine time, estimated from P5b: three full runs ~2 h each (class 1 ~87 min, cl
 2. Layer A, the static gate, `test/test_run_records.py`, the matcher unit suites and the regression
    suite green on the changed tree at their new counts; regeneration byte-identical; probe 08
    flagless.
+2a. §3.8 either met its evidence and cost gates (the regression suite 109/0 in both arms, the unit
+   suites 53/51/58, probe 06's `claim12` materially below 173.2 s with no `walk` regression, and a
+   measured reduction in the 580-entry residue) or took its stop rule, with the outcome recorded.
 3. Run 1 passes the gate's complete, switches and wall-ceiling checks; the fall-through arm passes all
    four against P0.
 4. Every p5c-fallback PASS→FAIL entry attributed; no group explained by a fix-failure mechanism
@@ -400,8 +467,9 @@ Machine time, estimated from P5b: three full runs ~2 h each (class 1 ~87 min, cl
 - this design (committed);
 - plan `docs/superpowers/plans/2026-09-15-matcher-seen-test-intpart.md`, written next (just in
   time): red probes 17 and 18; the run switches and the census (tooling first); the seen test and
-  generator; the IntPart reading; the ExpandExpression / SmartApart port; the changed tree's evidence
-  and docs; p5c runs 1 and 4 and the winner; the fall-through arm; final gates, attribution, clearance,
-  final-tree suites and the acceptance stop;
+  generator; the IntPart reading; the ExpandExpression / SmartApart port; **the §3.8 dispatch-cost
+  task (result-preserving flat-matching prune, with its evidence and cost gates, or its stop rule)**;
+  the changed tree's evidence and docs; p5c runs 1 and 4 and the winner; the fall-through arm; final
+  gates, attribution, clearance, final-tree suites and the acceptance stop;
 - the tickets named in §1 Out;
 - the records, probes and acceptance document named in §3.5 and §4.
