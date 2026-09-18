@@ -411,8 +411,29 @@ the p5c re-measurement (§4).
   pays) must fall materially at k = 12, the `m1` count must fall with it, and **`bindings` must be
   identical at every k** — that is the result-preservation check, and it is the reason this gate
   cannot be gamed. No `walk` case in probe 06 may regress.
-  Then the §0.5 58-entry sample re-run at the 30 s cap: the task's value is how many of the 580 stop
-  timing out.
+  Then the §0.5 sample re-run at the 30 s cap: the task's value is how many of the 580 stop timing
+  out.
+
+- **Outcome, 2026-09-18** (`probes/matcher/19-flat-absorb-cost.out`,
+  `probes/matcher/20-cut580-value.out`). The two gates disagree, and both readings stand.
+  - **Cost gate: MET.** The `flat-absorb` committed-tail prune (commit `9401997`) cuts k = 12 from
+    45,568,395 `m1` calls / 24.462 s to 1,785,285 / 0.885 s — 23.7x — with `bindings` identical at
+    every k (1,670 / 6,228 / 25,434 / 109,448) and every semantic line of both regression-suite
+    roundtrip records unchanged. The exponential base drops from ~3 to ~2.
+  - **Value gate: NOT MET.** All 580 re-run at the 30 s cap give **PASS 4/580 (0.7 %)**; the 575
+    timeouts sit at 30.0-30.1 cpu-seconds. The 5 non-timeouts were then re-run against a core pinned
+    at `dfbff5f`, the commit before the prune: **all 5 have the same class in both arms**, the prune
+    saving 0.1-0.4 s of ~29 s. So the prune's contribution to this gate is **zero** — the 4 PASSes
+    come from what else landed since §0.5 measured the list (the faithful pair) and sit in the
+    cap-boundary band that AGENTS.md documents.
+  - **Conclusion**: §3.8 as specified does not recover the expandIntegrand-cut residue, because the
+    residue is not paid in flat matching. On the same tree the claim12 walk is 147.3 s of Maxima
+    CONDITION evaluation against 0.9 s of matching, the cond count is exponential in product arity
+    and §3.8 forbids reducing it, and probe 06's realistic integrand is 84 % one record — `3_5 r37`,
+    `Int(Log(u_)*v_, x)`, whose cond calls `mr_int` recursively (350.0 s of its 417.8 s `attr`
+    total, against 19.0 s on 2026-09-13). **The route to the residue is the condition side, which is
+    outside §3.8's declared scope and needs its own spec section.** The prune is kept on its own
+    merits: it is a large, result-preserving cut to matcher cost.
 - **Stop rule**: if no result-preserving prune is found, **stop and report** — the residue is carried
   into p5c as a known cost item and attributed at the acceptance stop, rather than accepting a
   semantics change to buy speed.
