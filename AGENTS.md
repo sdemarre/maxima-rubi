@@ -387,10 +387,34 @@ the code: an entry's verdict then depends on what else happened to be running.
 MEASURED — the 2026-09-17 class-1 run put 33 processes on 24 vCPUs, so early
 entries ran contended and late ones ran alone; and 2 Exponentials e527/e528,
 at 26.8/26.9 s against the 30 s wall cap, VERIFY at 12 workers and TIME OUT at
-24 on identical code. Under a CPU cap the same entry gets the same budget
-whatever else runs, so a record is reproducible across machines and worker
-counts, and the record's `t=` is the entry's CPU seconds — the same quantity
-the cap bounds.
+24 on identical code. Under a CPU cap an entry is not charged for time it spent
+waiting rather than computing, and the record's `t=` is the entry's CPU
+seconds — the same quantity the cap bounds.
+
+**What actually delivers reproducibility is the QUEUE, not the cap kind.**
+MEASURED 2026-09-18 on class 2, same code, `ab_records.py` entry for entry:
+two runs at 24 workers agree exactly under BOTH caps (0 transitions, wall and
+cpu alike), because the queue holds concurrency constant; the old sharded runs
+varied load THROUGH the run (33 processes early, a handful late), so an entry's
+verdict depended on when it was scheduled. Neither cap is load-INDEPENDENT:
+changing the worker count moves a few boundary entries either way (wall
+24->12: 3 entries; cpu 24->8: 4), all of them out of `timeout` as contention
+falls.
+
+The reason the cpu cap does not fix that is SMT. The kernel charges scheduled
+time, and a thread sharing a physical core executes fewer instructions per
+CPU-second, so a CPU-second is not a constant unit of work on this 12-core /
+24-thread host. MEASURED over the 748 class-2 entries above 0.5 s that finished
+in both arms: total CPU 1648 s at 24 workers against 1219 s at 8 — a **1.35x
+inflation**, i.e. a 30 CPU-second budget at 24 workers buys about 22
+CPU-seconds' worth of 8-worker work. Running at or below the PHYSICAL core
+count (12 here) is what would make the CPU-second a stable unit; that is
+untested.
+
+The cap kind is kept as cpu because it is still the more principled unit on a
+shared machine — an unrelated process burning CPU penalises a wall-capped entry
+and not a cpu-capped one — but that benefit is unquantified, and the cpu cap
+was NOT what made the records reproducible.
 
 Mechanism (`maxima_run`): `ulimit -S -t <cap>` in a `/bin/sh` wrapper, with
 the hard limit a few seconds above as a backstop. A soft limit kills SBCL with
