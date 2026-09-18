@@ -350,7 +350,7 @@ python3 test/p5_gate.py winner <switch> <run-1 c1> <run-1 c2> <run-1 c3> <flip c
 ```
 
 Guard (no Maxima): `python3 test/test_run_records.py` — green
-`Results: 23 passed, 0 failed`.
+`Results: 41 passed, 0 failed`.
 
 **Record A/B** — the entry-level diff of any two merged records (any
 class, shard files and re-check records too); use it for every
@@ -381,6 +381,36 @@ The pinned core is used as-is (no fingerprint check against this
 tree, no rebuild); a missing core or `.stamp` exits nonzero; the
 record's `filter:` line ends `core: pinned <path>`.
 
+**The per-entry cap is CPU seconds** (`corpus_driver.CAP_KIND`, default
+`cpu`; 2026-09-18 user decision). A WALL cap measures the machine as much as
+the code: an entry's verdict then depends on what else happened to be running.
+MEASURED — the 2026-09-17 class-1 run put 33 processes on 24 vCPUs, so early
+entries ran contended and late ones ran alone; and 2 Exponentials e527/e528,
+at 26.8/26.9 s against the 30 s wall cap, VERIFY at 12 workers and TIME OUT at
+24 on identical code. Under a CPU cap the same entry gets the same budget
+whatever else runs, so a record is reproducible across machines and worker
+counts, and the record's `t=` is the entry's CPU seconds — the same quantity
+the cap bounds.
+
+Mechanism (`maxima_run`): `ulimit -S -t <cap>` in a `/bin/sh` wrapper, with
+the hard limit a few seconds above as a backstop. A soft limit kills SBCL with
+SIGXCPU, which reaches the wrapper as exit 128+SIGXCPU — unambiguous, unlike
+the SIGKILL of a hard limit or the OOM killer. The wrapper does not `exec`, so
+it survives its child and reports the child's CPU with `times`; a wall
+backstop (4x the cap, min 120 s) catches a process blocked rather than
+computing, and kills the process GROUP so the Maxima process is never
+orphaned. `ulimit` rather than `preexec_fn=resource.setrlimit` because
+preexec_fn is unsafe in a threaded process and the queue runner is one.
+
+**Records state the kind** (`timeout: 30s cpu` on the `filter:` line) and the
+mergers refuse shards that disagree. **A cpu record and a wall record are NOT
+comparable**: measured 2026-09-18 over 1.1.1.3, an entry's CPU is 40-60 % of
+its wall in the contended 33-shard record, so 30 CPU-seconds is roughly twice
+the budget 30 contended wall-seconds was, and the cpu baseline has fewer
+timeouts for that reason alone — a cap redefinition, not a code improvement.
+`MR_CAP_KIND=wall` reproduces a pre-2026-09-18 record on its own terms and is
+byte-identical to the old driver.
+
 **Timeout re-check** — the standing answer to "is 30 s at the limit?"
 for any merged record: re-run exactly the record's `timeout` class at
 a larger cap (100 s standing value) and read the transitions:
@@ -392,7 +422,8 @@ setsid sh test/wait_timeout_rerun.sh <run-dir> >> <run-dir>/wait.log 2>&1 &
 
 (the watcher runs `test/merge_timeout_rerun.py`; completeness is
 asserted against the record's timeout class, the cap is read from the
-shard headers). The 30 s per-entry cap STAYS the standard (user
+shard headers). The 30 s per-entry cap STAYS the standard, now in CPU
+seconds (see above; the 30 s figure itself is the user
 decision 2026-08-27); the route for slow-correct entries is matcher
 speed, not budget.
 

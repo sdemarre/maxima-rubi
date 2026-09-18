@@ -129,7 +129,22 @@ for line in r.stdout.splitlines():
     line = line.strip()
     if line.startswith(("Maxima", "Lisp ", "Host ")):
         out_lines.append(f"maxima: {line}")
-out_lines.append(f"filter: {SECTION + '/'!r}  full run  timeout: 30s  "
+# The cap is READ from the shards, never assumed: it is both a number and a
+# KIND (cpu or wall, corpus_driver.CAP_KIND), and a merged record that misstated
+# either would be silently compared against records it is not comparable with.
+caps = set()
+for path in inputs:
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("filter:"):
+                m = re.search(r"timeout: (\d+s(?: \w+)?)", line)
+                if m:
+                    caps.add(m.group(1))
+                break
+if len(caps) != 1:
+    raise SystemExit(f"merge_class_shards: the shards do not state one cap: {sorted(caps)}")
+cap = caps.pop()
+out_lines.append(f"filter: {SECTION + '/'!r}  full run  timeout: {cap}  "
                  f"({len(inputs)} shards, merged here)  switches: {switches}")
 out_lines.append("")
 

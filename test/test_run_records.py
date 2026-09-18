@@ -121,7 +121,9 @@ sys.argv = ["corpus_driver.py", "9 Test/", "999999", "30", suite, "0", "", "0", 
 spec = importlib.util.spec_from_file_location("drv", os.path.join(HERE, "corpus_driver.py"))
 d = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(d)
-def stub(text, timeout):
+def stub(text, timeout, cpu_out=None):
+    if cpu_out is not None:
+        cpu_out.append(None)
     if "mr_f: x$" in text:
         return "CLASS expected\n", False
     if "mr_f: x^2$" in text:
@@ -172,10 +174,10 @@ try:
 except ValueError as exc:
     switches = "ERROR " + str(exc)
 cap_ok = all(any(l.startswith("filter:") and "timeout: 30s" in l for l in open(p)) for p in outs)
-def boom(text, timeout):
+def boom(text, timeout, cpu_out=None):
     if "mr_f: x^4$" in text:
         raise RuntimeError("guard: injected harness failure")
-    return stub(text, timeout)
+    return stub(text, timeout, cpu_out)
 d.maxima_run = boom
 outs2 = [os.path.join(tmp, "fail.shard%02d.out" % k) for k in range(2)]
 _c, failures2, _w = q.run_queue(d, q.build_jobs(d, prev), 2, outs2, title, detail, [],
@@ -364,6 +366,30 @@ def main():
     check("build_units: an untimed entry is its own unit",
           [len(u) for u in qmod.build_units(
               [("f", 0, "t", 0, qmod.UNTIMED)] + jobs, 11.0)] == [1, 2, 2])
+    # The per-entry CPU cap (corpus_driver.CAP_KIND). A WALL cap measures the
+    # machine as much as the code; these pin the mechanism that replaced it.
+    import subprocess as _sp, tempfile as _tf
+    drv = _module("corpus_driver")
+    check("cap kind defaults to cpu", drv.CAP_KIND == "cpu", drv.CAP_KIND)
+    check("an unknown MR_CAP_KIND is refused",
+          _sp.run([sys.executable, os.path.join(HERE, "corpus_driver.py")],
+                  env=dict(os.environ, MR_CAP_KIND="bogus"),
+                  capture_output=True, text=True).returncode != 0)
+    _cpu = os.path.join(_tf.mkdtemp(prefix="mr-cap-"), "t")
+    check("_read_cpu sums the children's user+system line of `times`",
+          (open(_cpu, "w").write("0m0.10s 0m0.02s\n1m2.50s 0m0.50s\n"),
+           drv._read_cpu(_cpu))[1] == 63.0, drv._read_cpu(_cpu))
+    check("_read_cpu on a missing dump is None", drv._read_cpu(_cpu + ".nope") is None)
+    # a real soft-RLIMIT_CPU kill: SIGXCPU reaches the shell as 128+SIGXCPU,
+    # and the shell survives it, so the CPU reading is still written
+    _cpu2 = _cpu + "2"
+    _r = _sp.run(drv._cpu_limited(
+        [sys.executable, "-c", "x=0\nwhile True: x+=1"], 2, _cpu2),
+        capture_output=True, text=True, timeout=60)
+    check("a soft CPU limit stops the child and is detectable as a cap hit",
+          _r.returncode == drv.CPU_CAP_RC, f"rc={_r.returncode} want {drv.CPU_CAP_RC}")
+    check("the cap hit still reports the CPU it consumed",
+          1.0 <= (drv._read_cpu(_cpu2) or 0) <= 4.0, drv._read_cpu(_cpu2))
     check("queue: a harness exception is an error line and a counted failure",
           g is not None and g["failures2"] == 1
           and g["fail_lines"] == ["error t=Ts 9 Test/f.mac e4 L5"],

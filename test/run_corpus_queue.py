@@ -349,7 +349,8 @@ def main(argv):
         _counts, failures, _wall = run_queue(
             driver, jobs, workers, outs,
             lambda k: f"=== maxima-rubi corpus queue worker {k:02d} (filter {driver.FILTER!r}) ===",
-            lambda k: (f"queue worker {k:02d} of {workers}  timeout: {driver.TIMEOUT}s  "
+            lambda k: (f"queue worker {k:02d} of {workers}  "
+                       f"timeout: {driver.TIMEOUT}s {driver.CAP_KIND}  "
                        f"entries: {len(jobs)}" + subset_text),
             driver.build_info_lines(),
             log=lambda msg: print(msg, flush=True),

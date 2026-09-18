@@ -53,6 +53,7 @@ balance them).
 import importlib.util
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -272,7 +273,83 @@ workdir = tempfile.mkdtemp(prefix="maxima-rubi-corpus-")
 mac_file = os.path.join(workdir, "i.mac")
 
 
-def maxima_run(mac_text, timeout):
+# The per-entry cap: CPU seconds (the default) or wall seconds.
+#
+# A WALL cap measures the machine as much as the code. MEASURED 2026-09-17/18:
+# the class-1 run launched 33 processes on 24 vCPUs, so early entries ran
+# contended and late ones ran alone and an entry's verdict depended on WHEN it
+# was scheduled; and 2 Exponentials e527/e528, at 26.8/26.9 s against the 30 s
+# wall cap, verify at 12 workers and time out at 24 on identical code. A CPU
+# cap counts the seconds the entry's process actually consumed, so the same
+# entry gets the same budget whatever else is running, and a record becomes
+# reproducible across machines and worker counts.
+#
+# MR_CAP_KIND=wall restores the old behaviour, which is how a pre-2026-09-18
+# record is reproduced on its own terms. The two are NOT comparable: a
+# contended entry does more work inside 30 CPU-seconds than inside 30 wall-
+# seconds, so records state the kind on their filter: line and any A/B must
+# hold it fixed.
+CAP_KIND = os.environ.get("MR_CAP_KIND", "cpu")
+if CAP_KIND not in ("cpu", "wall"):
+    raise SystemExit(f"corpus_driver: MR_CAP_KIND must be cpu or wall, not {CAP_KIND!r}")
+
+
+# SIGXCPU reaching the shell's child shows up as the shell's own exit status.
+CPU_CAP_RC = 128 + int(signal.SIGXCPU)
+
+
+def _cpu_limited(cmd, cap, cpu_path):
+    """CMD under a soft RLIMIT_CPU of CAP seconds, reporting its CPU time.
+
+    MEASURED 2026-09-18 on this build: a SOFT limit kills SBCL with SIGXCPU,
+    which is unambiguous — distinct from the SIGKILL of a hard limit or the OOM
+    killer, and from a wall-timeout kill. The hard limit sits a few seconds
+    above as a backstop for a process that somehow survives SIGXCPU.
+
+    The shell does NOT exec, so it survives its child and can run `times`,
+    whose second line is the accumulated user/system time of its children
+    (POSIX; /bin/sh is dash here, measured accurate to 0.01 s against a known
+    burn). That is what the record's t= reports under a CPU cap, so the time
+    column is reproducible instead of tracking whatever else was running.
+
+    Not exec'ing means the shell is a parent, so a wall-backstop kill must take
+    the whole process GROUP or it would orphan the Maxima process — maxima_run
+    starts the group with start_new_session and kills with killpg (measured:
+    2 processes in the group, 0 after).
+
+    ulimit in a shell rather than preexec_fn=resource.setrlimit: preexec_fn is
+    documented unsafe in the presence of threads, and the queue runner
+    (test/run_corpus_queue.py) is multithreaded."""
+    return ["/bin/sh", "-c",
+            f'ulimit -H -t {cap + 5}; ulimit -S -t {cap}; '
+            f'"$0" "$@"; rc=$?; times > {cpu_path}; exit $rc'] + cmd
+
+
+def _read_cpu(path):
+    """The children's user+system seconds from a `times` dump, or None."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            fields = fh.read().splitlines()[1].split()
+    except (OSError, IndexError):
+        return None
+    total = 0.0
+    for field in fields:                      # "0m5.01s"
+        try:
+            mins, secs = field.split("m")
+            total += float(mins) * 60 + float(secs.rstrip("s"))
+        except ValueError:
+            return None
+    return total
+
+
+def maxima_run(mac_text, timeout, cpu_out=None):
+    """Run MAC_TEXT in a fresh Maxima at the per-entry cap: (output, hit_cap).
+
+    hit_cap is True when the entry used up its budget, whichever cap kind is in
+    force, so classify_output reads it as `timeout` either way. CPU_OUT, when a
+    list is passed, receives the entry's CPU seconds under a CPU cap (an
+    optional out-parameter so the committed probes that unpack the pair keep
+    working)."""
     # A unique per-call file (mkstemp) so parallel canary workers don't
     # clobber each other's batch; the driver's sequential use is unaffected.
     fd, fpath = tempfile.mkstemp(prefix="mr-", suffix=".mac", dir=workdir)
@@ -302,18 +379,40 @@ def maxima_run(mac_text, timeout):
         # with /dev/null ldb exits and the entry reads `error`. The batch
         # answers its prompts from the batch file
         # (batch_answers_from_file), never from stdin.
-        r = subprocess.run(
+        # Under a CPU cap the wall timeout stays as a BACKSTOP only: a
+        # process blocked on something rather than computing burns no CPU and
+        # would otherwise never hit its limit.
+        cpu_path = fpath + ".times"
+        if CAP_KIND == "cpu":
+            cmd = _cpu_limited(cmd, timeout, cpu_path)
+            wall = max(4 * timeout, 120)
+        else:
+            wall = timeout
+        proc = subprocess.Popen(
             cmd,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, timeout=timeout, cwd=ROOT,
+            text=True, cwd=ROOT, start_new_session=True,
         )
-        return r.stdout, False
-    except subprocess.TimeoutExpired as e:
-        out = e.stdout
-        if isinstance(out, bytes):
-            out = out.decode("utf-8", "replace")
-        return out or "", True
+        try:
+            out, _err = proc.communicate(timeout=wall)
+            hit_cap = proc.returncode in (CPU_CAP_RC, -signal.SIGXCPU)
+        except subprocess.TimeoutExpired:
+            # The wall backstop. Kill the GROUP: under a CPU cap the direct
+            # child is the shell, and killing it alone would orphan Maxima.
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                proc.kill()
+            out, _err = proc.communicate()
+            hit_cap = True
+        if cpu_out is not None:
+            cpu_out.append(_read_cpu(cpu_path) if CAP_KIND == "cpu" else None)
+        try:
+            os.unlink(cpu_path)
+        except OSError:
+            pass
+        return out or "", hit_cap
     finally:
         try:
             os.unlink(fpath)
@@ -706,9 +805,16 @@ def run_entry(rel, idx, entry_text, line_no):
     e_text = normalize_heads(els[3])
     e_text2 = normalize_heads(els[4]) if len(els) == 5 else None
     t_start = time.time()
+    cpu_out = []
     out, timed_out = maxima_run(
-        build_text(f_text, var_text, e_text, e_text2), TIMEOUT)
+        build_text(f_text, var_text, e_text, e_text2), TIMEOUT, cpu_out)
+    # Under a CPU cap the record's t= is the entry's CPU seconds — the same
+    # quantity the cap bounds, and reproducible whatever else was running. It
+    # falls back to wall when the reading is missing (a wall-backstop kill
+    # leaves no `times` dump).
     dt = time.time() - t_start
+    if cpu_out and cpu_out[0] is not None:
+        dt = cpu_out[0]
     cls, caps = classify_output(out, timed_out)
     return cls, f"{cls:14s} t={dt:6.1f}s {label}", caps
 
@@ -749,7 +855,7 @@ def main():
          f"resume at file index {START_INDEX}) ==="
          if APPEND else
          f"=== maxima-rubi corpus driver (filter {FILTER!r}) ==="),
-        f"per-file: {PER_FILE}  timeout: {TIMEOUT}s  files: {len(files)}"
+        f"per-file: {PER_FILE}  timeout: {TIMEOUT}s {CAP_KIND}  files: {len(files)}"
         + (f"  shard: {SHARD_FILE}" if SHARD_FILE else ""),
         [] if APPEND else build_info_lines())
 
