@@ -294,52 +294,33 @@ if CAP_KIND not in ("cpu", "wall"):
     raise SystemExit(f"corpus_driver: MR_CAP_KIND must be cpu or wall, not {CAP_KIND!r}")
 
 
-# SIGXCPU reaching the shell's child shows up as the shell's own exit status.
-CPU_CAP_RC = 128 + int(signal.SIGXCPU)
+# test/mr_cpu_cap.py enforces the per-entry CPU budget and reports the CPU
+# used. Its exit code when it stopped the child for going over:
+CPU_CAP_HELPER = os.path.join(ROOT, "test", "mr_cpu_cap.py")
+CPU_CAP_RC = 200
 
 
 def _cpu_limited(cmd, cap, cpu_path):
-    """CMD under a soft RLIMIT_CPU of CAP seconds, reporting its CPU time.
+    """CMD under a CPU budget of CAP seconds, writing its CPU to CPU_PATH.
 
-    MEASURED 2026-09-18 on this build: a SOFT limit kills SBCL with SIGXCPU,
-    which is unambiguous — distinct from the SIGKILL of a hard limit or the OOM
-    killer, and from a wall-timeout kill. The hard limit sits a few seconds
-    above as a backstop for a process that somehow survives SIGXCPU.
+    The enforcement lives in test/mr_cpu_cap.py — read its docstring for why
+    this is NOT `ulimit -t`: RLIMIT_CPU signals SIGXCPU, whose default action
+    dumps core, and on this host `ulimit -c 0` cannot stop that because
+    core_pattern pipes to systemd-coredump and the kernel ignores RLIMIT_CORE
+    for a piped dump. A cap hit is a normal outcome here, thousands per run.
 
-    The shell does NOT exec, so it survives its child and can run `times`,
-    whose second line is the accumulated user/system time of its children
-    (POSIX; /bin/sh is dash here, measured accurate to 0.01 s against a known
-    burn). That is what the record's t= reports under a CPU cap, so the time
-    column is reproducible instead of tracking whatever else was running.
-
-    Not exec'ing means the shell is a parent, so a wall-backstop kill must take
-    the whole process GROUP or it would orphan the Maxima process — maxima_run
-    starts the group with start_new_session and kills with killpg (measured:
-    2 processes in the group, 0 after).
-
-    ulimit in a shell rather than preexec_fn=resource.setrlimit: preexec_fn is
-    documented unsafe in the presence of threads, and the queue runner
-    (test/run_corpus_queue.py) is multithreaded."""
-    return ["/bin/sh", "-c",
-            f'ulimit -H -t {cap + 5}; ulimit -S -t {cap}; '
-            f'"$0" "$@"; rc=$?; times > {cpu_path}; exit $rc'] + cmd
+    The helper forks, so the group holds two processes; maxima_run starts the
+    group with start_new_session and the wall backstop kills the GROUP."""
+    return [sys.executable, CPU_CAP_HELPER, str(cap), cpu_path] + cmd
 
 
 def _read_cpu(path):
-    """The children's user+system seconds from a `times` dump, or None."""
+    """The CPU seconds test/mr_cpu_cap.py recorded, or None."""
     try:
         with open(path, encoding="utf-8") as fh:
-            fields = fh.read().splitlines()[1].split()
-    except (OSError, IndexError):
+            return float(fh.read().strip())
+    except (OSError, ValueError):
         return None
-    total = 0.0
-    for field in fields:                      # "0m5.01s"
-        try:
-            mins, secs = field.split("m")
-            total += float(mins) * 60 + float(secs.rstrip("s"))
-        except ValueError:
-            return None
-    return total
 
 
 def maxima_run(mac_text, timeout, cpu_out=None):
@@ -396,7 +377,7 @@ def maxima_run(mac_text, timeout, cpu_out=None):
         )
         try:
             out, _err = proc.communicate(timeout=wall)
-            hit_cap = proc.returncode in (CPU_CAP_RC, -signal.SIGXCPU)
+            hit_cap = CAP_KIND == "cpu" and proc.returncode == CPU_CAP_RC
         except subprocess.TimeoutExpired:
             # The wall backstop. Kill the GROUP: under a CPU cap the direct
             # child is the shell, and killing it alone would orphan Maxima.

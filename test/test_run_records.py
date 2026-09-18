@@ -376,9 +376,9 @@ def main():
                   env=dict(os.environ, MR_CAP_KIND="bogus"),
                   capture_output=True, text=True).returncode != 0)
     _cpu = os.path.join(_tf.mkdtemp(prefix="mr-cap-"), "t")
-    check("_read_cpu sums the children's user+system line of `times`",
-          (open(_cpu, "w").write("0m0.10s 0m0.02s\n1m2.50s 0m0.50s\n"),
-           drv._read_cpu(_cpu))[1] == 63.0, drv._read_cpu(_cpu))
+    check("_read_cpu reads the helper's CPU reading",
+          (open(_cpu, "w").write("63.000000\n"), drv._read_cpu(_cpu))[1] == 63.0,
+          drv._read_cpu(_cpu))
     check("_read_cpu on a missing dump is None", drv._read_cpu(_cpu + ".nope") is None)
     # a real soft-RLIMIT_CPU kill: SIGXCPU reaches the shell as 128+SIGXCPU,
     # and the shell survives it, so the CPU reading is still written
@@ -386,8 +386,21 @@ def main():
     _r = _sp.run(drv._cpu_limited(
         [sys.executable, "-c", "x=0\nwhile True: x+=1"], 2, _cpu2),
         capture_output=True, text=True, timeout=60)
-    check("a soft CPU limit stops the child and is detectable as a cap hit",
+    check("the CPU budget stops the child and is detectable as a cap hit",
           _r.returncode == drv.CPU_CAP_RC, f"rc={_r.returncode} want {drv.CPU_CAP_RC}")
+    # SIGXCPU's default action is terminate AND DUMP CORE; a cap hit is a
+    # normal outcome, not a crash, and 111 SBCL cores filled the disk on
+    # 2026-09-18 and killed 14 of 24 worker threads with ENOSPC.
+    check("the CPU cap is enforced by the helper, not by ulimit/SIGXCPU",
+          drv.CPU_CAP_HELPER.endswith("mr_cpu_cap.py")
+          and "ulimit" not in " ".join(drv._cpu_limited(["x"], 30, "/tmp/t")))
+    _n0 = len(_sp.run(["coredumpctl", "list", "--no-pager", "--no-legend"],
+                      capture_output=True, text=True).stdout.splitlines())
+    _sp.run(drv._cpu_limited([sys.executable, "-c", "x=0\nwhile True: x+=1"],
+                             2, _cpu + "3"), capture_output=True, timeout=60)
+    _n1 = len(_sp.run(["coredumpctl", "list", "--no-pager", "--no-legend"],
+                      capture_output=True, text=True).stdout.splitlines())
+    check("a real cap hit writes no core dump", _n1 == _n0, f"{_n0} -> {_n1}")
     check("the cap hit still reports the CPU it consumed",
           1.0 <= (drv._read_cpu(_cpu2) or 0) <= 4.0, drv._read_cpu(_cpu2))
     check("queue: a harness exception is an error line and a counted failure",
