@@ -3,16 +3,23 @@
 shard mergers and the P5 gate (matcher substrate plan 3).
 
 The matcher substrate has three migration switches (spec
-docs/superpowers/specs/2026-09-12-matcher-substrate-design.md section 3.6).
-Every corpus record states the arm it ran: the driver writes
-`switches: mr_flat_wide=<v> mr_cond_retry=<v> mr_model_flags=<v>` on its
-`filter:` header line, and the mergers carry it into the merged record.
+docs/superpowers/specs/2026-09-12-matcher-substrate-design.md section 3.6)
+and two run switches (exact seen test design
+docs/superpowers/specs/2026-09-15-matcher-seen-test-intpart-design.md 3.3):
+mr_nested_fallback, which decides whether a nested Int call with no route
+falls through to Maxima's integrate, and the integer depth cap
+mr_max_depth. Every corpus record states the arm it ran: the driver writes
+`switches: mr_flat_wide=<v> mr_cond_retry=<v> mr_model_flags=<v>
+mr_nested_fallback=<v> mr_max_depth=<n>` on its `filter:` header line, and
+the mergers carry it into the merged record.
 
 - SWITCHES, SWITCH_DEFAULTS: the switches in record order, with the
   dispatcher's defaults (the defmvars of maxima_rubi_dispatch.lisp;
   test/test_run_records.py holds the two in step).
+- INT_SWITCHES, valid_value(name, value): mr_max_depth takes a positive
+  integer, the rest true|false.
 - switch_settings(env): the arm a driver process runs. MR_SWITCHES holds
-  space-separated `<switch>=true|false` overrides; unset switches keep
+  space-separated `<switch>=<value>` overrides; unset switches keep
   their defaults. Anything else is a ValueError (a typo must not run the
   default arm under a flipped label).
 - switches_text(settings): the header text.
@@ -29,22 +36,40 @@ import glob
 import os
 import re
 
-SWITCHES = ("mr_flat_wide", "mr_cond_retry", "mr_model_flags")
+SWITCHES = ("mr_flat_wide", "mr_cond_retry", "mr_model_flags",
+            "mr_nested_fallback", "mr_max_depth")
 SWITCH_DEFAULTS = {"mr_flat_wide": "false",
                    "mr_cond_retry": "true",
-                   "mr_model_flags": "true"}
+                   "mr_model_flags": "true",
+                   "mr_nested_fallback": "false",
+                   "mr_max_depth": "16"}
+# mr_max_depth is the one INTEGER switch (a positive depth cap); the rest
+# are booleans. Both kinds are read from the record's filter: line, so the
+# mergers' one-arm check covers them all.
+INT_SWITCHES = ("mr_max_depth",)
+_VALUE_RE = {s: (r"\d+" if s in INT_SWITCHES else r"(?:true|false)")
+             for s in SWITCHES}
 SWITCHES_RE = re.compile(
-    r"\bswitches: (" + " ".join(rf"{s}=(?:true|false)" for s in SWITCHES) + r")")
-SHARD_FILE_RE = re.compile(r"\.shard(?:\d+\.(?:out|log|files)|-pids)$")
+    r"\bswitches: (" + " ".join(rf"{s}={_VALUE_RE[s]}" for s in SWITCHES) + r")")
+SHARD_FILE_RE = re.compile(r"\.shard(?:\d+\.(?:out|log|files|caps)|-pids)$")
+
+
+def valid_value(name, value):
+    """Is `value` a legal setting for switch `name`?"""
+    if name in INT_SWITCHES:
+        return value.isdigit() and int(value) > 0
+    return value in ("true", "false")
 
 
 def switch_settings(env):
     settings = dict(SWITCH_DEFAULTS)
     for item in env.get("MR_SWITCHES", "").split():
         name, sep, value = item.partition("=")
-        if not sep or name not in SWITCH_DEFAULTS or value not in ("true", "false"):
-            raise ValueError(f"MR_SWITCHES item {item!r}: expected <switch>=true|false "
-                             f"with <switch> one of {', '.join(SWITCHES)}")
+        if not sep or name not in SWITCH_DEFAULTS or not valid_value(name, value):
+            raise ValueError(
+                f"MR_SWITCHES item {item!r}: expected <switch>=<value> with "
+                f"<switch> one of {', '.join(SWITCHES)} — true|false for the "
+                f"booleans, a positive integer for {', '.join(INT_SWITCHES)}")
         settings[name] = value
     return settings
 

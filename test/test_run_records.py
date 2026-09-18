@@ -67,7 +67,11 @@ def raises(exc, fn, *args):
     return False
 
 
-def record(path, rows, switches="mr_flat_wide=false mr_cond_retry=true mr_model_flags=true"):
+DEFAULT_ARM = ("mr_flat_wide=false mr_cond_retry=true mr_model_flags=true "
+               "mr_nested_fallback=false mr_max_depth=16")
+
+
+def record(path, rows, switches=DEFAULT_ARM):
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("=== synthetic ===\n")
         fh.write("filter: '9 Test/'  full run  timeout: 30s"
@@ -98,18 +102,31 @@ def child(switches):
 
 
 def main():
-    # 1. defaults in step with the dispatcher
+    # 1. defaults in step with the dispatcher. Booleans are the Lisp nil/t;
+    #    an integer switch (mr_max_depth) carries its literal (design 3.3).
     lisp = open(os.path.join(ROOT, "maxima_rubi_dispatch.lisp"), encoding="utf-8").read()
-    defs = {m.group(1): ("true" if m.group(2) == "t" else "false")
-            for m in re.finditer(r"^\(defmvar \$(mr_\w+) (nil|t)\b", lisp, re.M)}
+    defs = {m.group(1): {"t": "true", "nil": "false"}.get(m.group(2), m.group(2))
+            for m in re.finditer(r"^\(defmvar \$(mr_\w+) (nil|t|\d+)\b", lisp, re.M)}
     check("driver switch defaults == dispatcher defmvar defaults",
           defs == rr.SWITCH_DEFAULTS, f"{defs} vs {rr.SWITCH_DEFAULTS}")
+    check("mr_max_depth is the integer switch",
+          rr.INT_SWITCHES == ("mr_max_depth",)
+          and rr.valid_value("mr_max_depth", "16")
+          and not rr.valid_value("mr_max_depth", "0")
+          and not rr.valid_value("mr_max_depth", "true")
+          and rr.valid_value("mr_nested_fallback", "false")
+          and not rr.valid_value("mr_nested_fallback", "16"))
+    check("an integer override is accepted, a bad one rejected",
+          rr.switch_settings({"MR_SWITCHES": "mr_max_depth=32"})["mr_max_depth"] == "32"
+          and raises(ValueError, rr.switch_settings, {"MR_SWITCHES": "mr_max_depth=-1"})
+          and raises(ValueError, rr.switch_settings, {"MR_SWITCHES": "mr_max_depth=abc"}))
 
     # 2. switch_settings
     check("no MR_SWITCHES: the defaults", rr.switch_settings({}) == rr.SWITCH_DEFAULTS)
     s = rr.switch_settings({"MR_SWITCHES": "mr_model_flags=false"})
     check("one override", rr.switches_text(s)
-          == "mr_flat_wide=false mr_cond_retry=true mr_model_flags=false", rr.switches_text(s))
+          == DEFAULT_ARM.replace("mr_model_flags=true", "mr_model_flags=false"),
+          rr.switches_text(s))
     check("a malformed item is rejected",
           raises(ValueError, rr.switch_settings, {"MR_SWITCHES": "mr_model_flags=0"})
           and raises(ValueError, rr.switch_settings, {"MR_SWITCHES": "mr_flatwide=true"}))
@@ -121,8 +138,7 @@ def main():
         record(b, [("verified", 1.0, "9 Test/f.mac", 2)], switches=None)
         record(c, [("verified", 1.0, "9 Test/f.mac", 3)],
                switches="mr_flat_wide=true mr_cond_retry=true mr_model_flags=true")
-        check("record_switches reads the arm",
-              rr.record_switches(a) == "mr_flat_wide=false mr_cond_retry=true mr_model_flags=true")
+        check("record_switches reads the arm", rr.record_switches(a) == DEFAULT_ARM)
         check("record_switches: None without the text", rr.record_switches(b) is None)
         check("common_switches: one arm", rr.common_switches([a, a]) == rr.record_switches(a))
         check("common_switches: a shard without switches is an error",
@@ -130,16 +146,18 @@ def main():
         check("common_switches: two arms are an error",
               raises(ValueError, rr.common_switches, [a, c]))
 
-        # 4. clear_stale_shards
+        # 4. clear_stale_shards (the .caps sidecars go with the shard files:
+        #    a stale census would describe a run that never happened)
         names = ["corpus_class9.shard00.out", "corpus_class9.shard00.log",
-                 "corpus_class9.shard01.files", "corpus_class9.shard-pids",
+                 "corpus_class9.shard01.files", "corpus_class9.shard00.caps",
+                 "corpus_class9.shard-pids",
                  "corpus_class9.out", "corpus_class8.shard00.out"]
         for n in names:
             open(os.path.join(tmp, n), "w").close()
         removed = rr.clear_stale_shards(tmp, "class9")
         left = sorted(n for n in os.listdir(tmp) if n.startswith("corpus_"))
         check("clear_stale_shards removes the run's shard files only",
-              removed == 4 and left == ["corpus_class8.shard00.out", "corpus_class9.out"],
+              removed == 5 and left == ["corpus_class8.shard00.out", "corpus_class9.out"],
               f"{removed} {left}")
         with open(os.path.join(tmp, "corpus_class9.shard-pids"), "w") as fh:
             fh.write(f"shard00 {os.getpid()} test/corpus_class9.shard00.out\n")
@@ -183,12 +201,18 @@ def main():
         got = None
     check("driver header states the arm",
           got is not None and got["header"]
-          == "  switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true",
+          == ("  switches: mr_flat_wide=false mr_cond_retry=false "
+              "mr_model_flags=true mr_nested_fallback=false mr_max_depth=16"),
           f"{got} {p.stderr[-400:]}")
     check("entry text assigns the switches before the rubi call",
           got is not None and got["text"].startswith(
-              "mr_flat_wide : false$\nmr_cond_retry : false$\nmr_model_flags : true$\nmr_f: x^2$\n"),
-          f"{got and got['text'][:160]!r}")
+              "mr_flat_wide : false$\nmr_cond_retry : false$\nmr_model_flags : true$\n"
+              "mr_nested_fallback : false$\nmr_max_depth : 16$\n"
+              "mr_depth_cap_hits : 0$\nmr_f: x^2$\n"),
+          f"{got and got['text'][:200]!r}")
+    check("the entry text prints the depth-cap count",
+          got is not None and 'disp(concat("DEPTHCAP ", string(mr_depth_cap_hits)))'
+          in got["text"], f"{got and got['text'][-200:]!r}")
     p = child("mr_cond_retry=off")
     check("a bad MR_SWITCHES exits nonzero naming it",
           p.returncode != 0 and "MR_SWITCHES" in p.stderr, f"{p.returncode} {p.stderr[-300:]!r}")

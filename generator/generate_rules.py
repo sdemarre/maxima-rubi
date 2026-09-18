@@ -1184,12 +1184,9 @@ def emit_head(head, arglist, ctx):
             return f"is({a} {op} {b}) and is({b} {op} {c})"
         raise GenError(f"{key} r{n}: {head} arity {len(arglist)}")
     if head in ("Int", "IntHide"):
-        # 9.1's rewrites are algebraically equal to their integrand, which
-        # mr_int's ratsimp seen comparison reads as a loop; 9.1 re-dispatches
-        # through the exact-member entry (matcher translation fixes design
-        # 3.3).
-        entry = "mr_int_exact" if key == "9_1" else "mr_int"
-        return f"{entry}({arglist[0]}, {arglist[1]})"
+        # mr_int's seen test is exact membership for every source (exact
+        # seen test design 3.1), so 9.1 needs no entry of its own.
+        return f"mr_int({arglist[0]}, {arglist[1]})"
     if head in ("Unintegrable", "CannotIntegrate"):
         return f"mr_unintegrable({arglist[0]}, {arglist[1]})"
     if head == "With" or head == "Module":

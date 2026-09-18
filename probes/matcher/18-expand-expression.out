@@ -1,0 +1,110 @@
+=== probes/matcher/18-expand-expression  2026-09-16 09:21 UTC
+maxima: Maxima-version: "branch_5_50_base_84_g4204fb669"
+maxima: Maxima build date: "2026-08-31 13:27:47"
+maxima: Lisp implementation type: "SBCL"
+maxima: Lisp implementation version: "2.6.7"
+git HEAD: 43eb81baaae8d9274da0e3b299cc2c1d8472ddbb  (runtime sources vs HEAD: DIRTY)
+core: /tmp/claude-1000/-home-serge-src-maxima-rubi/7ac90adc-fe64-4891-9adb-19b016a51232/scratchpad/proto/test/mr_rules.core  fingerprint fbb8fcec78effbbaa3e57976f81f22f6
+ExpandExpression / SmartApart in this tree: PORTED
+switches: {'mr_flat_wide': 'false', 'mr_cond_retry': 'true', 'mr_model_flags': 'true', 'mr_nested_fallback': 'false', 'mr_max_depth': '16'}
+cap 30 s, 8 workers, wall 194 s
+
+=== VALUES (zero oracle: ratsimp(radcan(d)) = 0, design 0.4) ===
+PASS: values e4-nterms
+PASS: values e4-value
+PASS: values e4-expandExpression-nterms
+PASS: values exdenom-nterms
+PASS: values exdenom-value
+PASS: values replinear-nterms
+PASS: values replinear-value
+PASS: values polypart-nterms
+PASS: values polypart-value
+PASS: values irrquad-nterms
+PASS: values abx2-kept
+PASS: values symexp-kept
+PASS: values nestrad-value
+PASS: values radcoef-value
+PASS: values nonrat-nterms
+PASS: values nonrat-value
+PASS: values ratFactors
+PASS: values nonratFactors
+PASS: values expalg-plus
+PASS: values expalg-power
+PASS: values expalg-declines
+PASS: values expand_x-keeps-xfree
+PASS: values collectRecip-pair
+PASS: values collectRecip-nonpair-nterms
+PASS: values cleanup-keeps-sum
+PASS: values smartApart-2arg-eq-3arg
+PASS: values posPowerOfSum
+
+=== ENTRIES: 1.1.1.4 e4 (the entry the port exists for) ===
+FAIL: e4 is PASS (class contains-noun)  class=contains-noun t=4.7s declines=1052
+    class=contains-noun t=4.7s fires=6 declines=1052 first=1_1_1_4_r45,1_4_1_r18,1_1_1_4_r45,1_4_1_r18,1_4_1_r7,1_1_1_4_r7
+    answer=-'unintegrable[1/(-((c*e*h^3*x)/(a*h^2-b*g*h))+(c*f*g*h^2*x)/(a*h^2-b*g*h)+(d*e*g*h^2*x)/(a*h^2-b*g*h)-(d*f*g^2*h*x)/(a*...
+
+=== ENTRIES: the fixed sample (60 entries, recorded not checked) ===
+    1.1.1.2   e133   cut=1_1_1_2_r12    p5b=verified   first-version=timeout    now=timeout       t= 30.1s fires=  0
+    1.1.1.2   e1289  cut=1_1_1_2_r12    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  0
+    1.1.1.2   e1317  cut=1_1_1_2_r12    p5b=verified   first-version=timeout    now=timeout       t= 30.1s fires= 15
+    1.1.1.2   e1362  cut=1_1_1_2_r12    p5b=verified   first-version=timeout    now=timeout       t= 30.1s fires=  0
+    1.1.1.3   e260   cut=1_1_1_3_r17    p5b=verified   first-version=timeout    now=timeout       t= 30.1s fires=  0
+    1.1.1.3   e277   cut=1_1_1_3_r17    p5b=verified   first-version=timeout    now=contains-noun t=  6.3s fires= 11  rules-only-noun
+    1.1.1.3   e1017  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  7
+    1.1.1.3   e1049  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 15
+    1.1.1.3   e1067  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 20
+    1.1.1.3   e1097  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.1s fires=  2
+    1.1.1.3   e1121  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  7
+    1.1.1.3   e1175  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=contains-noun t=  7.3s fires= 28  rules-only-noun
+    1.1.1.3   e1274  cut=1_1_1_3_r17    p5b=verified   first-version=timeout    now=timeout       t= 30.1s fires= 16
+    1.1.1.3   e1372  cut=1_1_1_3_r17    p5b=verified   first-version=timeout    now=timeout       t= 30.2s fires= 18
+    1.1.1.3   e1704  cut=1_1_1_3_r17    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  0
+    1.1.2.2   e207   cut=1_1_1_2_r13    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 10
+    1.1.2.4   e477   cut=1_1_3_6_r18    p5b=verified   first-version=timeout    now=contains-noun t= 10.5s fires= 14  rules-only-noun
+    1.1.2.4   e824   cut=1_1_3_8_r29    p5b=verified   first-version=timeout    now=contains-noun t=  3.0s fires=  3  rules-only-noun
+    1.1.2.4   e843   cut=1_1_3_8_r29    p5b=verified   first-version=timeout    now=contains-noun t=  3.0s fires=  3  rules-only-noun
+    1.1.2.6   e15    cut=1_1_2_6_r3     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 20
+    1.1.2.6   e43    cut=1_1_2_6_r12    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  0
+    1.1.3.4   e869   cut=1_1_3_6_r31    p5b=verified   first-version=timeout    now=contains-noun t=  6.1s fires=  8  rules-only-noun
+    1.1.3.6   e44    cut=1_1_3_6_r31    p5b=verified   first-version=timeout    now=contains-noun t= 21.0s fires=  7  rules-only-noun
+    1.2.1.1   e75    cut=1_1_3_7_r1     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  3
+    1.2.1.2   e254   cut=1_2_1_2_r73    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  6
+    1.2.1.2   e445   cut=1_2_1_3_r20    p5b=verified   first-version=timeout    now=contains-noun t= 18.5s fires= 17  rules-only-noun
+    1.2.1.2   e484   cut=1_1_2_7_r26    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  8
+    1.2.1.2   e1536  cut=1_1_1_2_r13    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  0
+    1.2.1.2   e1597  cut=1_1_1_2_r12    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  9
+    1.2.1.2   e1796  cut=1_2_1_2_r73    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 13
+    1.2.1.2   e1863  cut=1_2_1_2_r73    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 12
+    1.2.1.2   e1897  cut=1_2_1_3_r20    p5b=verified   first-version=timeout    now=verified      t= 22.5s fires=  8
+    1.2.1.2   e2126  cut=1_2_1_2_r73    p5b=verified   first-version=timeout    now=timeout       t= 30.1s fires=  5
+    1.2.1.2   e2149  cut=1_2_1_2_r6     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 25
+    1.2.1.2   e2191  cut=1_2_1_3_r20    p5b=verified   first-version=timeout    now=verified      t=  1.7s fires=  8
+    1.2.1.3   e643   cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 34
+    1.2.1.3   e1112  cut=1_2_1_3_r15    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  7
+    1.2.1.3   e1143  cut=1_2_1_3_r20    p5b=verified   first-version=timeout    now=contains-noun t=  5.2s fires=  6  rules-only-noun
+    1.2.1.3   e1293  cut=1_1_2_9_r14    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 10
+    1.2.1.3   e1320  cut=1_1_2_9_r14    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 15
+    1.2.1.3   e1502  cut=1_2_1_3_r15    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 10
+    1.2.1.3   e1537  cut=1_2_1_3_r20    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  0
+    1.2.1.3   e1673  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 33
+    1.2.1.3   e1694  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  5
+    1.2.1.3   e1728  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  0
+    1.2.1.3   e1747  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  7
+    1.2.1.3   e1773  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  0
+    1.2.1.3   e1923  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=contains-noun t=  4.6s fires=  9  rules-only-noun
+    1.2.1.3   e1952  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  3
+    1.2.1.3   e2000  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  7
+    1.2.1.3   e2031  cut=1_1_1_3_r5     p5b=verified   first-version=timeout    now=contains-noun t= 10.8s fires= 10  rules-only-noun
+    1.2.1.3   e2325  cut=1_2_1_3_r15    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  7
+    1.2.1.3   e2340  cut=1_2_1_3_r15    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 15
+    1.2.1.3   e2363  cut=1_2_1_3_r15    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  2
+    1.2.1.6   e14    cut=1_2_1_5_r16    p5b=verified   first-version=timeout    now=contains-noun t=  3.3s fires=  8  rules-only-noun
+    1.2.1.9   e153   cut=1_2_1_9b_r5    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires=  0
+    1.2.2.4   e87    cut=1_1_2_4_r21    p5b=verified   first-version=timeout    now=contains-noun t= 26.7s fires= 45  rules-only-noun
+    1.2.2.6   e37    cut=1_2_1_9b_r5    p5b=verified   first-version=timeout    now=timeout       t= 30.0s fires= 40
+    1.2.3.3   e70    cut=1_2_3_3_r34    p5b=verified   first-version=timeout    now=contains-noun t=  5.6s fires= 12  rules-only-noun
+    1.3.2     e601   cut=1_2_1_3_r15    p5b=verified   first-version=timeout    now=contains-noun t=  1.0s fires=  7  rules-only-noun
+  sample classes: {'contains-noun': 15, 'timeout': 43, 'verified': 2}
+  sample PASS 2/60; answers holding the unintegrable noun (rules-only): 15
+
+Results: 27 passed, 1 failed

@@ -558,9 +558,13 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # answers verify normally (measured: 1.2.2.7 e1 carries a ∫-term
     # and its self-diff closes).
     has_noun = "not is(freeof(unintegrable, mr_r))"
+    # Every switch is assigned at the head of the entry text, and the
+    # depth-cap counter is reset with them, so the DEPTHCAP line below
+    # counts this entry's cap hits only (exact seen test design 3.3).
     switches = "".join(f"{name} : {value}$\n"
                        for name, value in SWITCH_SETTINGS.items())
-    head = (switches + f"mr_f: {f_text}$\n"
+    head = (switches + "mr_depth_cap_hits : 0$\n"
+            + f"mr_f: {f_text}$\n"
             f"mr_r: {call}$\n"
             + "pos$\n" * 40 + "no$\n" * 20)
     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
@@ -610,7 +614,15 @@ def build_text(f_text, var_text, e_text, e_text2=None):
                     "else (MR_z: (" + ze + "), "
                     "if is(MR_z=1) then disp(concat(\"CLASS expected\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
-    return head + body + "$\n" + "pos$\n" * 40 + "no$\n" * 20
+    # This entry's depth-cap count, printed AFTER the CLASS line (the
+    # driver's CLASS scan takes the first match, so the order is
+    # classification-safe) and before the trailing queued answers. The
+    # entry loop parses it into the shard's .caps sidecar, which
+    # test/merge_caps.py merges into the run's census (exact seen test
+    # design 3.3).
+    depthcap = 'disp(concat("DEPTHCAP ", string(mr_depth_cap_hits)))'
+    return (head + body + "$\n" + depthcap + "$\n"
+            + "pos$\n" * 40 + "no$\n" * 20)
 
 
 def file_list():
@@ -692,7 +704,14 @@ def main():
     t0 = time.time()
     out_path = (OUT_FILE or os.path.join(ROOT, "test",
                                          "corpus_class1_driver.out"))
+    # The depth-cap sidecar sits next to this process's .out and takes one
+    # `<hits> <label>` line per entry that hit the cap; test/merge_caps.py
+    # merges a run's sidecars into its census, and run_records.
+    # clear_stale_shards deletes them with the other shard files (exact
+    # seen test design 3.3).
+    caps_path = os.path.splitext(out_path)[0] + ".caps"
     outf = open(out_path, "a" if APPEND else "w", encoding="utf-8")
+    capsf = open(caps_path, "a" if APPEND else "w", encoding="utf-8")
     outf.write("\n".join(out_lines) + "\n")
     outf.flush()
     for fi, (path, rel) in enumerate(files):
@@ -729,15 +748,25 @@ def main():
                 build_text(f_text, var_text, e_text, e_text2), TIMEOUT)
             dt = time.time() - t_start
             cls = None
+            caps = 0
             for line in out.splitlines():
                 line = line.strip()
-                if line.startswith("CLASS "):
+                if cls is None and line.startswith("CLASS "):
                     cls = line[6:].strip()
-                    break
+                elif line.startswith("DEPTHCAP "):
+                    # A killed entry (timeout) prints no DEPTHCAP line, so
+                    # its cap hits are simply not censused (design 3.3).
+                    try:
+                        caps = int(line[9:].strip())
+                    except ValueError:
+                        caps = 0
             if cls is None:
                 cls = "timeout" if timed_out else "error"
             if cls not in KNOWN_CLASSES:
                 cls = "error"
+            if caps > 0:
+                capsf.write(f"{caps} {label}\n")
+                capsf.flush()
             counts[cls] = counts.get(cls, 0) + 1
             pf = "PASS" if cls in PASS_CLASSES else "FAIL"
             line = f"{cls:14s} t={dt:6.1f}s {label}"
@@ -763,6 +792,7 @@ def main():
 
     outf.write("\n".join(out_lines[out_lines.index("=== summary ==="):]) + "\n")
     outf.close()
+    capsf.close()
     print("\n".join(out_lines[-8:]) + "\n")
 
 

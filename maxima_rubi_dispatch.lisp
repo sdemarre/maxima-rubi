@@ -69,6 +69,24 @@ binding only.")
 and logexpand:false around the dispatch (the G-5 arm); false = Maxima
 defaults.")
 
+;;; The two RUN switches (exact seen test design
+;;; docs/superpowers/specs/2026-09-15-matcher-seen-test-intpart-design.md
+;;; 3.3). Unlike the three migration switches above these are not
+;;; hard-wired by p6_hardwire.py: they stay run parameters.
+
+(defmvar $mr_nested_fallback nil
+  "Run switch: false (default) = a nested Int call that finds no rule,
+hits the seen test or hits the depth cap returns mr_unintegrable, so a
+run answers with Rubi's rules only; true = it falls through to Maxima's
+integrate (the pre-2026-09-15 behaviour). The top-level rubi and
+rubi_fallback entries are unaffected.")
+
+(defmvar $mr_max_depth 16
+  "Run switch: the dispatch depth cap. mr_top counts nested dispatches in
+depth_level and takes the cap branch beyond this many; every cap hit is
+counted in mr_depth_cap_hits (the run's .caps census). Rubi's own step
+counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).")
+
 ;; Maxima variables the utils define before this file loads (declared here
 ;; so their references compile as special).
 (defvar $rubi_verbose nil)

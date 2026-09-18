@@ -47,7 +47,7 @@ P0_BASE = "0a6664c"
 WORKAROUND_RULES = 52
 MOVED_INNER = 227
 MATCHQ_SITES = 23
-ENTRY_CALL = re.compile(r"\b(mr_int|mr_int_exact|mr_top|rubi|rubi_fallback)\(")
+ENTRY_CALL = re.compile(r"\b(mr_int|mr_top|rubi|rubi_fallback)\(")
 # Matcher translation fixes (docs/superpowers/specs/2026-09-14-matcher-
 # translation-fixes-design.md 3.4): three generator fixes join the closed
 # exception list, each checked as an exact text transformation -- undone on

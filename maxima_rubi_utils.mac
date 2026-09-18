@@ -69,8 +69,14 @@ mr_sum(fun, var, lo, hi) := block([a, b, i, s, t],
   else 'mr_sum[fun, var, lo, hi])$
 
 /* Recursion cap (T5 §1 candidate; re-tuned in Task 9). A runaway
- * replacement becomes the fall-through noun, not a stack overflow. */
-%mr_max_depth : 16$
+ * replacement becomes the fall-through noun, not a stack overflow.
+ * The cap itself is now the run switch mr_max_depth (the defmvar of
+ * maxima_rubi_dispatch.lisp; exact seen test design 3.3), so a run can
+ * set it without editing this file. This counter records how often the
+ * cap branch was taken: the driver resets it per entry and writes the
+ * per-entry count to the run's .caps census (test/merge_caps.py), which
+ * is how the default is judged against Rubi's own step counts. */
+mr_depth_cap_hits : 0$
 
 /* Kill-switch for the boolean-leak misfire check (debug). */
 %mr_boolcheck : true$
@@ -188,39 +194,36 @@ depth_level : 0$
    flips, e.g. 1.1.4.3 e119 A/B'd against the bare call). The
    seen-guard branch below is the SAME bare call — the productive
    loop resolution, not a fall-through (see there). */
-/* Normalization-aware loop guard helper. %mr_seen membership alone
-   (exact match) misses the measured float/rat normalization cycle:
-   (104*(3/10*x+17/10)^4)/3 and (104*(0.3*x+1.7)^4)/3 are the same
-   integrand in two forms — member() = false, is(f2 = f1) = false,
-   ratsimp(f2-f1) = 0 (measured 2026-08-25, /tmp/opencode/looptest).
-   The r25/r7 reduction chain 1.1.1.4 e1 walks that cycle: the seen
-   list then grows one drifted copy per lap and the guard never fires
-   (e1 timed out at 500 s, 2.5M-line trace). The per-dispatch cost is
-   O(depth) ratsimps on small polynomials — depth caps at
-   %mr_max_depth = 16. */
-%mr_seenp(f) := block([looped, d, i],
-  looped : false,
-  if member(f, %mr_seen) then return(true),
-  for i : 1 thru length(%mr_seen) do
-    if is(looped) = false then (
-      d : errcatch(ratsimp(part(%mr_seen, i) - f)),
-      /* errcatch in this build returns [value] / []
-         (probe-errcatch-semantics) */
-      if d # [] and is(part(d, 1) = 0) then looped : true
-    ),
-  looped)$
+/* The dispatch body of mr_top (exact seen test design,
+   docs/superpowers/specs/2026-09-15-matcher-seen-test-intpart-design.md
+   3.1). The seen test is exact membership on every call. A rule's rewrite
+   of its integrand to an algebraically EQUAL form in a different stored
+   form (9.1's collapses, the ExpandIntegrand / PolyQuotient / ExpandToSum
+   normalizers, the linear-product and trinomial expansions) is a new
+   dispatch, as in Rubi, which has no seen test of its own; probe 16
+   (probes/matcher/16-seen-guard-trace.out, .class1.out) measured the
+   ratsimp comparison this replaces cutting those rewrites in 40 groups.
+   An exact repeat is still cut; two rules alternating between different
+   equal forms stop at the depth cap (the run switch mr_max_depth) and take
+   the fb branch. The float/rational drift cycle the ratsimp comparison
+   guarded (891240b) was measured on the defmatch runner; probe 17
+   (probes/matcher/17-exact-seen-intpart.out) re-runs its targets on the
+   substrate.
 
-/* The shared dispatch body of mr_top and mr_int_exact (matcher translation
-   fixes design 3.3). exact = false: the seen test is %mr_seenp (exact
-   member, then the ratsimp comparison); exact = true: exact member only. */
-%mr_top_body(f, x, fb, exact) := block([ans],
+   fb is the caller's fall-through: false = return the unintegrable noun
+   (rubi, and mr_int under the rules-only default), true = hand the
+   integrand to Maxima's integrate (mr_int under mr_nested_fallback,
+   rubi_fallback). Every cap hit is counted in mr_depth_cap_hits for the
+   run's .caps census (exact seen test design 3.3). */
+%mr_top_body(f, x, fb) := block([ans],
   depth_level : depth_level + 1,
-  if depth_level > %mr_max_depth then (
+  if depth_level > mr_max_depth then (
     depth_level : depth_level - 1,
+    mr_depth_cap_hits : mr_depth_cap_hits + 1,
     if fb then return(integrate(f, x))
     else return(mr_unintegrable(f, x))
   ),
-  if (if exact then member(f, %mr_seen) else %mr_seenp(f)) then (
+  if member(f, %mr_seen) then (
     depth_level : depth_level - 1,
     /* A re-dispatch of an integrand already on the dispatch path is
        a pure rule loop (static table, deterministic matcher -> the
@@ -261,12 +264,20 @@ depth_level : 0$
     else mr_unintegrable(f, x)
   ) else ans)$
 
-mr_top(f, x, fb) := %mr_top_body(f, x, fb, false)$
+mr_top(f, x, fb) := %mr_top_body(f, x, fb)$
 
-/* Nested sub-integral entry (generated replacements call mr_int by
- * name): the status-quo integrate fall-through, exactly what mr_int
- * did before the fallback gate. */
-mr_int(f, x) := mr_top(f, x, true)$
+/* Nested sub-integral entry: every generated replacement calls mr_int by
+ * name. What a nested call with no route (no rule, the seen test, the
+ * depth cap) returns is the run switch mr_nested_fallback (exact seen
+ * test design 3.3): false (the default) returns the unintegrable noun, so
+ * the run answers with Rubi's rules only and the driver classes such an
+ * answer contains-noun; true restores the integrate fall-through this
+ * entry had before. The pre-validation measured ~1,300 class-1 PASS
+ * entries that were answered by integrate on a nested call the old
+ * ratsimp seen comparison had declared a loop — the rules-only arm is
+ * the new baseline, the fall-through arm is the like-for-like comparison
+ * with P0/P5b. */
+mr_int(f, x) := mr_top(f, x, mr_nested_fallback)$
 
 /* Two-arg rubi is the rules-only entry (fast no-answer noun on a
  * 0-firing). The integrate fall-through is the separate explicit entry
@@ -278,23 +289,6 @@ mr_int(f, x) := mr_top(f, x, true)$
  * entries), so the two modes must have distinct names. */
 rubi(f, x) := mr_top(f, x, false)$
 rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
-
-/* The exact-seen entry (matcher translation fixes design 3.3): every Int
- * call of the generated rules/class1/9_1.mac. Each 9.1 rule rewrites its
- * integrand to an algebraically EQUAL form in a different stored form (the
- * perfect-discriminant quadratic collapse, the proportional-linear monic
- * rewrite, the like-term combine), which mr_int's ratsimp seen comparison
- * reads as a loop by construction and answers with the integrate
- * fall-through (measured 2026-08-27: 1.2.1.3 e839 — x^m(A+B x)/(a+b x)^2
- * stored expanded, the collapse hands the factored form on; the P5
- * acceptance stop: 2.1 e15, 1.2.1.2 e1734-e1736, 1.2.1.4 e810). The exact
- * member test still cuts an exact repeat; two 9.1 rules rewriting back and
- * forth between different equal forms stop at the depth cap
- * (%mr_max_depth) and fall through to integrate. The float/rational drift
- * guard (891240b) stays on mr_int, which every other rule calls. This is
- * P0's rubi_hybrid_exact without the pass gates it once lifted;
- * rubi_hybrid / rubi_hybrid_exact / %mr_hybrid_body are deleted. */
-mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
 
 /* ===================== predicate cluster 1 (T5) =====================
  * Ports of Rubi IntegrationUtilityFunctions.m (pinned clone, read-only)
@@ -2615,12 +2609,35 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
     s : s + part(L, i),
   s)$
 
-%mr_rt_power_parts(u) := block([],
-  if not atom(u) and op(u) = "^"
+%mr_rt_power_parts(u) := block([q],
+  if atom(u) then false
+  else if op(u) = "^"
   then [part(u, 1), part(u, 2)]
-  else if not atom(u) and op(u) = 'sqrt
+  else if op(u) = 'sqrt
   /* the collapsed 1/2 power node (see the %mr_binomial_parts note) */
   then [part(u, 1), 1/2]
+  /* A RECIPROCAL IS A POWER. MEASURED 2026-09-16 (this build): op(1/a)
+     is "/", NOT "^" -- this build keeps a quotient as its own node, so
+     reading only "^" and sqrt made PowerQ FALSE for every 1/q, where
+     Mathematica stores 1/q as Power[q, -1] and PowerQ is true.
+     The cost was NON-TERMINATION: with PowerQ false, RtAux(1/D, n) fell
+     past its power branch to `oddp(n) and NegQ(u) and PosQ(-u)` and
+     returned -RtAux(-(1/D), n), whose product branch (F = [-1, 1/D])
+     called RtAux(1/D, n) again -- the measured cycle
+     -(1/D) -> -1 -> 1 -> 1/D -> -(1/D), 2,189 calls before the control
+     stack went, on D = 10 a^4 f - 7 a^3 b e + 4 a^2 b^2 d - a b^3 c.
+     It killed 1.1.3.8 e264/e285 and reproduces on the pre-port tree, so
+     it is a latent defect the ExpandExpression port merely REACHED, not
+     a port regression. Only a bare reciprocal qualifies: Mathematica's
+     p/q with p # 1 is Times[p, Power[q, -1]], a product, PowerQ false.
+     MEASURED consequence: %mr_rt(1/a^2, 2) is now Rubi's 1/a, where the
+     fall-through gave Maxima's 1/abs(a). */
+  else if op(u) = "/" and is(part(u, 1) = 1) then (
+    q : part(u, 2),
+    if atom(q) then [q, -1]
+    else if op(q) = "^" then [part(q, 1), -part(q, 2)]
+    else if op(q) = 'sqrt then [part(q, 1), -1/2]
+    else [q, -1])
   else false)$
 
 %mr_rt_powerQ(u) := not atom(%mr_rt_power_parts(u))$
@@ -2629,8 +2646,18 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
 
 %mr_rt_power_exp(u) := part(%mr_rt_power_parts(u), 2)$
 
-/* the .m's LtQ[#,0] — strict, unknown -> false (NOT Rubi's NegQ) */
-%mr_rt_ltQ(u) := is(u < 0) = true$
+/* the .m's LtQ[#,0] — strict, unknown -> false (NOT Rubi's NegQ).
+   The outer is() is LOAD-BEARING, not decoration. MEASURED 2026-09-16
+   (this build): the inner `is(u < 0) = true` alone builds an EQUATION
+   (`true = true`, `unknown = true`), not a boolean, and BOTH call sites
+   misread it -- %mr_splitProduct compares %mr_split_call(...) = true,
+   which an equation never equals, so RtAux's LtQ split (:2734) was dead
+   code; and dropping the `= true` instead (leaving a bare is(u < 0))
+   returns `unknown` for an undecidable u, which at `if oddp(n) and
+   LtQ(u)` (:2820) leaves the WHOLE conditional unevaluated (measured:
+   `if unknown then "THEN" else "ELSE"` comes back as itself and would
+   flow into RtAux's answer). is(is(u < 0) = true) is true/false/false. */
+%mr_rt_ltQ(u) := is(is(u < 0) = true)$
 
 /* Rubi :7612  AtomBaseQ[u] */
 %mr_rt_atomBaseQ(u) := block([],
@@ -2947,13 +2974,15 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
   else expand(a*%mr_expandToSum2(b, part(c, 1))))$
 
 /* Rubi :2952  IntPart[u, n_ = 1] — the sum of the integer terms of u.
-   The m_*u_ arm absorbs an EXPLICIT rational leading factor into n;
-   IntegerPart is the floor reading (IntPart + FracPart = u). */
+   The m_*u_ arm absorbs an EXPLICIT rational leading factor into n.
+   IntegerPart truncates toward zero (IntegerPart[-3/2] = -1): the rational
+   branch is truncate, not floor (exact seen test design 3.2; class 1 g27,
+   1_2_3_2_r34 on p = -1/2 and -3/2). IntPart + FracPart = u. */
 %mr_intPart_aux(u, n) := block([F, m],
   /* a Rational is atomic in the .m (no m_*u_ match): RationalQ first —
      %mr_product_factors reads the internal form, where -3/2 is one number,
      not the display "-" node (matcher translation fixes design 3.2) */
-  if %mr_rationalQ(u) then floor(n*u)
+  if %mr_rationalQ(u) then truncate(n*u)
   else if not atom(u) and (op(u) = "*" or op(u) = "-")
   then (
     F : %mr_product_factors(u),
@@ -2962,7 +2991,6 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
     then %mr_intPart_aux(%mr_product_from_list(rest(F)), m*n)
     else 0
   )
-  else if %mr_rationalQ(u) then floor(n*u)
   else if not atom(u) and op(u) = "+"
   then apply("+", map(
     lambda([z], %mr_intPart_aux(z, n)), %mr_parts_list(u)))
@@ -2972,12 +3000,14 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
   %mr_intPart_aux(u, if length(n) = 0 then 1 else part(n, 1)))$
 
 /* Rubi :2969  FracPart[u, n_ = 1] — the sum of the non-integer terms of
-   u (FractionalPart is the floor complement, so FracPart[-3/2] = 1/2). */
+   u. FractionalPart carries the sign of its argument
+   (FractionalPart[-3/2] = -1/2): r - truncate(r) (exact seen test design
+   3.2). */
 %mr_fracPart_aux(u, n) := block([F, m, r],
   /* RationalQ first, as in %mr_intPart_aux */
   if %mr_rationalQ(u) then (
     r : n*u,
-    r - floor(r)
+    r - truncate(r)
   )
   else if not atom(u) and (op(u) = "*" or op(u) = "-")
   then (
@@ -2986,10 +3016,6 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
     if length(F) > 1 and %mr_rationalQ(m)
     then %mr_fracPart_aux(%mr_product_from_list(rest(F)), m*n)
     else n*u
-  )
-  else if %mr_rationalQ(u) then (
-    r : n*u,
-    r - floor(r)
   )
   else if not atom(u) and op(u) = "+"
   then apply("+", map(
@@ -3079,9 +3105,12 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
  *     ExpandLinearProduct (the .m's u_*(a+b*x)^m rule),
  *   - the 3-arg form distributes over the expanded v without expanding
  *     the power factors (the DistributeOverTerms / MergeMonomials
- *     surface). The remaining .m branches (CollectRecipTerms,
- *     ExpandExpression / SmartApart, the F^u and Log rules) are NOT
- *     ported here; the fallback is plain expand(). */
+ *     surface).
+ * The catch-all ExpandExpression / SmartApart branch (.m :3762/:3780) IS
+ * ported, in cluster I(b) below (exact seen test design 3.4): it is what
+ * the 2-arg form falls back to instead of a plain expand(). The remaining
+ * .m branches (CollectRecipTerms, ExpandBinomial, the F^u and Log rules,
+ * :3379-:3757) are still unported and are ticketed. */
 
 %mr_coefficientList(u, x) := block([d, i, L],
   if %mr_polynomialQ(u, x) then (
@@ -3219,7 +3248,7 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
   then apply("+", map(lambda([z], u*z), %mr_parts_list(v)))
   else u*v)$
 
-%mr_expandIntegrand2(u, x) := block([L],
+%mr_expandIntegrand2(u, x) := block([L, v],
   if %mr_ei_pos_power_sum(u, x)
   then expand(u)
   else (
@@ -3227,7 +3256,19 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
     if L # false
     then %mr_expandLinearProduct(
       part(L, 1), part(L, 4), part(L, 2), part(L, 3), x)
-    else expand(u)
+    else (
+      /* Rubi :3762, the catch-all:
+           ExpandIntegrand[u_,x_Symbol] :=
+             With[{v=ExpandExpression[u,x]}, v /; SumQ[v]]
+         The rule applies only when the expansion is a sum; where it does
+         not, ExpandIntegrand has no rule and the integrand is handed on
+         unchanged. This replaces the plain expand(u) fallback (exact seen
+         test design 3.4) — expand() multiplied the denominator out, which
+         under the exact seen test dispatches instead of falling through
+         to integrate (1.1.1.4 e4). */
+      v : %mr_expandExpression(u, x),
+      if %mr_sumQ(v) then v else u
+    )
   ))$
 
 %mr_expandIntegrand3(u, v, x) :=
@@ -3237,6 +3278,228 @@ mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
   if length(c) = 0
   then %mr_expandIntegrand2(a, b)
   else %mr_expandIntegrand3(a, b, part(c, 1)))$
+
+/* ---- cluster I(b): ExpandExpression / SmartApart --------------------
+ * The catch-all ExpandIntegrand (Rubi :3762,
+ * ExpandIntegrand[u_,x_Symbol] := With[{v=ExpandExpression[u,x]}, v /; SumQ[v]])
+ * and the cascade it calls. Ported for the exact seen test design 3.4:
+ * with the exact seen test a rule that rewrites its integrand to an
+ * algebraically equal form re-dispatches instead of falling through to
+ * integrate, so ExpandIntegrand's PARTIAL-FRACTION split (which this port
+ * previously lacked — the fallback was a plain expand()) decides whether
+ * such a rewrite terminates. Measured: 1.1.1.4 e4 dispatched >= 794
+ * declines in 60 s on the expanded-denominator form the old fallback
+ * produced. 291 generated lines call %mr_expandIntegrand.
+ * The .m's remaining ExpandIntegrand branches (the log, exponential,
+ * binomial and trinomial rules at :3379-:3757, CollectRecipTerms,
+ * ExpandBinomial) stay unported and are ticketed. */
+
+/* L without its i-th element (the .m's Drop/Delete on a factor list). */
+%mr_list_without(L, i) := block([R, k],
+  R : [],
+  for k : 1 thru length(L) do
+    if k # i then R : append(R, [part(L, k)]),
+  R)$
+
+/* Rubi :1593  RationalFunctionFactors[u, x] — the product of the factors
+   of u that are rational functions of x (1 when none is). */
+%mr_rationalFunctionFactors(u, x) := block([F],
+  if not atom(u) and inpart(u, 0) = "*" then (
+    F : %mr_product_factors(u),
+    %mr_product_from_list(map(lambda([z],
+      if %mr_rationalFunctionQ(z, x) then z else 1), F))
+  )
+  else if %mr_rationalFunctionQ(u, x) then u
+  else 1)$
+
+/* Rubi :1606  NonrationalFunctionFactors[u, x] — the complement. */
+%mr_nonrationalFunctionFactors(u, x) := block([F],
+  if not atom(u) and inpart(u, 0) = "*" then (
+    F : %mr_product_factors(u),
+    %mr_product_from_list(map(lambda([z],
+      if %mr_rationalFunctionQ(z, x) then 1 else z), F))
+  )
+  else if %mr_rationalFunctionQ(u, x) then 1
+  else u)$
+
+/* Rubi :3897/:3902  SmartApart[u, x] and SmartApart[u, v, x] — Apart with
+   the x-free kernels gensym-substituted, because Mathematica's Apart
+   RATIONALIZES denominators holding fractional powers.
+   Maxima's partfrac needs no substitution (MEASURED 2026-09-16, this
+   build): it splits over a radical parameter 1/((x-sqrt(a))(x+sqrt(a))),
+   a radical coefficient, a nested radical and a non-rational factor
+   (sqrt(x)/((x+1)(x+2)) -> sqrt(x)/(x+1) - sqrt(x)/(x+2)); it keeps an
+   irreducible quadratic and a symbolic exponent; and when it cannot split
+   (a log, sqrt, exp or trig denominator, or an x-free one) it returns its
+   ARGUMENT unchanged — a non-sum, which is exactly what the cascade's
+   SumQ test reads as "this branch did not apply". It raises no error and
+   has no Indeterminate value, so the .m's MakeAssocList / GensymSubst /
+   KernelSubst round trip and its Indeterminate guard have no counterpart
+   here (stated deviation; a nested-radical parameter is watched by a unit
+   check). Both .m arities take the partial fraction in x — the 3-argument
+   call site (ExpandExpression) passes the variable twice.
+   Stated deviation: partfrac may order or group the terms differently
+   from Apart. */
+%mr_smartApart(u, x, [v]) := block([],
+  if length(v) > 1
+  then error("%mr_smartApart: expected 2 or 3 args"),
+  partfrac(u, x))$
+
+/* [e, a, b] when the term t is e/(a+b x) with e free of x, else false —
+   the shape CollectReciprocals pairs up. */
+%mr_cr_part(t, x) := block([n, d, L],
+  d : denom(t),
+  n : num(t),
+  if freeof(x, n) and %mr_linearQ(d, x) then (
+    L : %mr_binomial_parts(d, x),
+    if not atom(L) and is(part(L, 3) = 1) and %mr_neQ(part(L, 2), 0)
+    then [n, part(L, 1), part(L, 2)]
+    else false
+  )
+  else false)$
+
+/* Rubi :3824-:3832  CollectReciprocals[u, x] — with b c + a d = 0 the pair
+   e/(a+b x) + f/(c+d x) collapses: to (c e + a f)/(a c + b d x^2) when
+   d e + b f = 0, and to (d e + b f) x/(a c + b d x^2) when c e + a f = 0.
+   The .m recurses until no pair matches; the port scans the term list for
+   the first matching pair, rebuilds the sum and recurses. */
+%mr_collectReciprocals(u, x) := block(
+  [T, P, i, j, n, hit, e, f, a, b, c, d, rest, k],
+  if not %mr_sumQ(u) then return(u),
+  T : %mr_parts_list(u),
+  n : length(T),
+  P : map(lambda([z], %mr_cr_part(z, x)), T),
+  hit : false,
+  for i : 1 thru n do
+    if hit = false then
+      for j : i + 1 thru n do
+        if hit = false and part(P, i) # false and part(P, j) # false then (
+          e : part(part(P, i), 1), a : part(part(P, i), 2), b : part(part(P, i), 3),
+          f : part(part(P, j), 1), c : part(part(P, j), 2), d : part(part(P, j), 3),
+          if %mr_eqQ(b*c + a*d, 0) then (
+            if %mr_eqQ(d*e + b*f, 0)
+            then hit : [i, j, (c*e + a*f)/(a*c + b*d*x^2)]
+            else if %mr_eqQ(c*e + a*f, 0)
+            then hit : [i, j, (d*e + b*f)*x/(a*c + b*d*x^2)]
+          )
+        ),
+  if hit = false then u
+  else (
+    rest : 0,
+    for k : 1 thru n do
+      if k # part(hit, 1) and k # part(hit, 2) then rest : rest + part(T, k),
+    %mr_collectReciprocals(rest + part(hit, 3), x)
+  ))$
+
+/* Rubi :3805/:3810  ExpandCleanup[u, x] — CollectReciprocals, then
+   SimplifyTerm on every term, then UnifySum.
+   The .m's first clause (:3805) collapses one reciprocal pair directly
+   before the general branch; its pattern and conditions are a special
+   case of the CollectReciprocals scan the general branch runs, so the
+   port runs the general branch only (stated deviation: same result, one
+   pass fewer). */
+%mr_expandCleanup(u, x) := block([v],
+  v : %mr_collectReciprocals(u, x),
+  if %mr_sumQ(v) then (
+    /* ratdisrep is LOAD-BEARING, not tidying. MEASURED 2026-09-16 (this
+       build): %mr_simplifyTerm returns a CRE — it calls %mr_together,
+       whose rat() (line 372) makes the term an MRAT object, and
+       num(r)/denom(r) of a CRE is still a CRE (?caar = MRAT, where the
+       term itself is MTIMES). Maxima's "+" on CRE operands COMBINES them
+       into one canonical fraction, so mapping SimplifyTerm over the three
+       partial fractions of 1.1.1.4 e4 and adding them back rebuilt the
+       single quotient (b x + a)/(cubic) — SumQ false, the whole cascade a
+       no-op, the expanded-denominator form the port exists to avoid.
+       Mathematica's Plus never recombines, which is why the .m can map
+       SimplifyTerm directly. ratdisrep returns each term to a general
+       expression, and the sum stays a 3-term sum (ratsimp difference 0).
+       The CRE is not removed from %mr_together itself: 200+ call sites
+       depend on its current behaviour. */
+    v : apply("+", map(lambda([z], ratdisrep(%mr_simplifyTerm(z, x))),
+                       %mr_parts_list(v))),
+    if %mr_sumQ(v) then %mr_unifySum(v, x) else v
+  )
+  else v)$
+
+/* Mathematica Expand[u, x] — expand the x-dependent structure, KEEPING the
+   x-free factors unmultiplied (Maxima's expand and ratexpand multiply
+   those out too). The share package `format` has exactly this reading.
+   MEASURED 2026-09-16 (this build): format((a+b)^2*(x+1)^2, %poly(x)) ->
+   (b+a)^2*x^2 + 2*(b+a)^2*x + (b+a)^2; sqrt(x)*(x+1)^2 -> x^(5/2) +
+   2*x^(3/2) + sqrt(x); (a+b)*(c+d) unchanged.
+   Stated deviation: format COLLECTS the coefficient of each power of x
+   ((a d + b c) x) where Expand keeps the like-power terms separate
+   (a d x + b c x); ExpandCleanup's UnifySum collects them anyway.
+   The package must be loaded: without it format(u, %poly(x)) stays a NOUN
+   (measured — op = format) and would flow silently into an integrand, so
+   maxima_rubi.mac loads it and checks a witness. */
+%mr_expand_x(u, x) := format(u, %poly(x))$
+
+/* Rubi :3980/:3984  ExpandAlgebraicFunction[u, x]:
+     u_Plus * v_      -> Map[#*v, u]              when u is not free of x;
+     u_Plus^n_ * v_.  -> Map[#*v, Expand[u^n, x]] when n is a positive
+                         integer, u is not free of x and the expansion is
+                         a sum.
+   No .m rule applies otherwise; the port answers false there, which the
+   cascade reads as "this branch did not apply" (the .m's v = 0). */
+%mr_expandAlgebraicFunction(u, x) := block([F, i, z, hit, w, rest],
+  if atom(u) then false
+  else (
+    F : %mr_product_factors(u),
+    hit : false,
+    for i : 1 thru length(F) do
+      if hit = false then (
+        z : part(F, i),
+        if %mr_sumQ(z) and not freeof(x, z) then hit : [i, z]
+      ),
+    if hit # false then (
+      rest : %mr_product_from_list(%mr_list_without(F, part(hit, 1))),
+      apply("+", map(lambda([t], t*rest), %mr_parts_list(part(hit, 2))))
+    )
+    else (
+      for i : 1 thru length(F) do
+        if hit = false then (
+          z : part(F, i),
+          if not atom(z) and op(z) = "^" and %mr_sumQ(part(z, 1))
+             and integerp(part(z, 2)) and is(part(z, 2) > 0)
+             and not freeof(x, part(z, 1))
+          then hit : [i, z]
+        ),
+      if hit = false then false
+      else (
+        w : %mr_expand_x(part(hit, 2), x),
+        if not %mr_sumQ(w) then false
+        else (
+          rest : %mr_product_from_list(%mr_list_without(F, part(hit, 1))),
+          apply("+", map(lambda([t], t*rest), %mr_parts_list(w)))
+        )
+      )
+    )
+  ))$
+
+/* Rubi :3780  ExpandExpression[u, x] — the cascade, in the .m's order:
+   ExpandAlgebraicFunction (algebraic but not rational), SmartApart,
+   SmartApart of the rational factors times the non-rational ones,
+   Expand[u, x], Expand[u]; every sum result through ExpandCleanup, and
+   SimplifyTerm as the last resort. */
+%mr_expandExpression(u, x) := block([v, w],
+  v : if %mr_algebraicFunctionQ(u, x) and not %mr_rationalFunctionQ(u, x)
+      then %mr_expandAlgebraicFunction(u, x)
+      else 0,
+  if v # false and %mr_sumQ(v) then return(%mr_expandCleanup(v, x)),
+  v : %mr_smartApart(u, x),
+  if %mr_sumQ(v) then return(%mr_expandCleanup(v, x)),
+  v : %mr_smartApart(%mr_rationalFunctionFactors(u, x), x, x),
+  if %mr_sumQ(v) then (
+    w : %mr_nonrationalFunctionFactors(u, x),
+    return(%mr_expandCleanup(
+      apply("+", map(lambda([z], z*w), %mr_parts_list(v))), x))
+  ),
+  v : %mr_expand_x(u, x),
+  if %mr_sumQ(v) then return(%mr_expandCleanup(v, x)),
+  v : expand(u),
+  if %mr_sumQ(v) then return(%mr_expandCleanup(v, x)),
+  %mr_simplifyTerm(u, x))$
 
 /* ---- cluster J: the remaining high-usage B-tier shims ---------------
  * SubstFor / SubstPower are the ALGEBRAIC surface: x^n and linear-v
@@ -3938,6 +4201,38 @@ mr_use_gamma_flag : false$
          and %mr_sumQ(f1) then true
     else false))$
 
+/* ---- the cleanup cascade's Simplify: %mr_simp WITHOUT factor -------
+ * STATED DEVIATION (2026-09-16), forced by a MEASURED defect.
+ * %mr_simp's third stage is Maxima's multivariate factor(), and the
+ * ExpandExpression cleanup cascade (SimplifyTerm on every term,
+ * UnifyTerm on every pair) reaches it with the dense coefficient
+ * polynomials a wide product of binomial powers expands into.
+ * MEASURED (this build, one process per call, the marker flushed BEFORE
+ * the call): for x^2 (a+b x)^3 (c+d x)^4 (e+f x)^5 (g+h x)^6 log(x),
+ * factor() of the x^6 coefficient (9 kernels, 521 leaves, nterms 34)
+ * exhausts SBCL's 1 GiB dynamic space -- "Heap exhausted, game over".
+ * That is a FATAL runtime error: errcatch never runs and the entry's
+ * subprocess DIES (1.2.3.2 e637/e660, both verified pre-port, died on
+ * it; %mr_unifySum over the same expansion dies from k = 10 terms, the
+ * ladder being 0.002 s at k=3, 0.045 at k=5, 0.402 at k=8).
+ * The stage is DROPPED, not guarded, because no cheap metric predicts
+ * the blow-up: measured on this build, nterms 34 / 8 kernels is fatal
+ * while nterms 231 / 8 variables factors in 6 ms and nterms 1451 / 10
+ * variables in 26 ms -- the cliff is the polynomial's reducibility
+ * (the survivors come back as 2-4 factors), which is exactly what
+ * factor() has to run to find out.
+ * Value is preserved: the dropped stage is a SHAPE operation, ratsimp
+ * having already done every cancellation. The cascade's terms therefore
+ * come back expanded rather than factored -- which is the form
+ * ExpandIntegrand exists to produce. MEASURED: the integrand above
+ * expands to its 19 terms in 7.8 s with ratsimp(radcan(sum - u)) = 0.
+ * The .m's own Simplify is bounded the same way in spirit (Mathematica
+ * Simplify carries a TimeConstraint); Maxima has no catchable bound,
+ * and a heap death cannot be caught at all. */
+%mr_simpCleanup(e, x) := block([a],
+  a : ratsimp(e),
+  ratsimp(expand(a)))$
+
 /* Rubi :4009  UnifyTerm — the .m's Prepend[lst, x] puts x FIRST;
    Maxima has no Prepend (it is a NOUN in this build) — MEASURED
    2026-08-28 (5.50.0/SBCL): cons(x, lst) is the equivalent
@@ -3945,7 +4240,7 @@ mr_use_gamma_flag : false$
 %mr_unifyTerm(term, lst, x) := block([tmp],
   if length(lst) = 0 then [term]
   else (
-    tmp : %mr_simp(part(lst, 1)/term, [x]),
+    tmp : %mr_simpCleanup(part(lst, 1)/term, x),
     if freeof(x, tmp) then cons((1 + tmp)*term, rest(lst))
     else cons(part(lst, 1), %mr_unifyTerm(term, rest(lst), x))))$
 
@@ -3966,7 +4261,7 @@ mr_use_gamma_flag : false$
    Simplify — %mr_simp (the value-preserving zero-chain, this file's
    line 498) stands in. */
 %mr_simplifyTerm(u, x) := block([v, w],
-  v : %mr_simp(u, [x]),
+  v : %mr_simpCleanup(u, x),
   w : %mr_together(v),
   %mr_normalizeIntegrand(w, x))$
 

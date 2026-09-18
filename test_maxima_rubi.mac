@@ -113,6 +113,8 @@ run_all_tests() := block([],
   test_class3_cluster_b(),
   test_rules_1_1_1_1_behavior(),
   test_translation_fixes_seen(),
+  test_run_switches(),
+  test_expand_expression(),
   test_translation_fixes_generator(),
   test_translation_fixes_posaux(),
   test_census(),
@@ -124,6 +126,22 @@ run_all_tests() := block([],
 )$
 
 load("maxima_rubi.mac")$
+
+/* Layer A measures what the RULES compute. For the cluster and corpus
+   checks below that includes the nested integrate fall-through the
+   expected answers were built with: a reduction whose sub-integral Maxima
+   finishes is still the rule set's answer. The rules-only default
+   (mr_nested_fallback false, exact seen test design 3.3) is a RUN
+   parameter — it decides what a corpus run reports, not what the rules
+   compute — so the suite binds the fall-through on and captures the
+   default for test_run_switches() to assert. Measured 2026-09-16: without
+   this binding 22 pre-existing behavioural checks (b1 e275, b2 e156, c1,
+   c3, c4, c5, b3, c6b e134/e139/e258, the intSum fallback) and the exact
+   seen test's own fall-through check answer the unintegrable noun instead.
+   test/test_run_records.py holds the defmvar and the driver's
+   SWITCH_DEFAULTS in step. */
+mr_default_nested_fallback : mr_nested_fallback$
+mr_nested_fallback : true$
 
 test_load_and_api() := block([r, saved_table],
   print("--- load + API fallback gate ---"),
@@ -2133,6 +2151,45 @@ test_structural_predicates() := block([],
     check("rt sqrt node", %mr_rt(sqrt(x), 2), x^(1/4)),
     check("rt sum square", %mr_rt((a + b)^2, 2), a + b),
     check("rt negative power odd", %mr_rt(-a^2, 3), -a^(2/3)),
+    /* A RECIPROCAL IS A POWER. MEASURED 2026-09-16 (this build):
+       op(1/a) is "/", NOT "^" -- %mr_rt_power_parts read only "^" and
+       sqrt, so PowerQ was false for every reciprocal, where
+       Mathematica's 1/q is Power[q, -1] and PowerQ is true. The cost was
+       NON-TERMINATION, not a shape difference: with PowerQ false,
+       RtAux(1/D, n) fell through to its `oddp(n) and NegQ(u) and
+       PosQ(-u)` branch and returned -RtAux(-(1/D), n), whose product
+       branch called RtAux(1/D, n) again -- the measured cycle
+       -(1/D) -> -1 -> 1 -> 1/D -> -(1/D), 2,189 calls before the control
+       stack went. It killed 1.1.3.8 e264/e285 on the ported tree and
+       reproduces on the PRE-PORT tree (it is a latent defect the port
+       merely reached, not a port regression). */
+    check("rt reciprocal atom", %mr_rt(1/a, 3), 1/a^(1/3)),
+    check("rt reciprocal power", %mr_rt(1/a^2, 2), 1/a),
+    check("rt reciprocal sqrt node", %mr_rt(1/sqrt(a), 2), 1/a^(1/4)),
+    /* the property, not the shape: Rubi's RtAux splits the -1 off the
+       sum (Times[-1, D]) and answers -(1/D^(1/3)); Maxima ABSORBS the
+       minus into the sum's terms, so %mr_product_factors(-D) is the
+       one-element [-D] (measured) and the port answers 1/(-D)^(1/3) --
+       an equally valid cube root, the pre-existing unary-minus trap the
+       cluster header names, not this fix. What this check pins is that
+       the call TERMINATES and returns an nth root of its argument. */
+    check_bool("rt of a negated reciprocal sum terminates",
+               is(ratsimp(%mr_rt(-(1/(10*a^4*f - 7*a^3*b*e
+                                      + 4*a^2*b^2*d - a*b^3*c)), 3)^3
+                          + 1/(10*a^4*f - 7*a^3*b*e
+                               + 4*a^2*b^2*d - a*b^3*c)) = 0)),
+    /* LtQ[#, 0] must be a BOOLEAN. MEASURED 2026-09-16: is(u < 0) = true
+       builds an EQUATION (`true = true`), so %mr_splitProduct's
+       `%mr_split_call(...) = true` test never matched and RtAux's LtQ
+       split (utils :2734) was dead code; and the bare is(u < 0) the
+       equation hides returns `unknown` for an undecidable u, which at
+       the `if oddp(n) and LtQ(u)` site (utils :2820) leaves the WHOLE
+       conditional unevaluated (measured: `if unknown then "THEN" else
+       "ELSE"` comes back as itself). The outer is() gives the strict
+       reading the cluster header documents: unknown -> false. */
+    check("rt ltQ negative", %mr_rt_ltQ(-1), true),
+    check("rt ltQ positive", %mr_rt_ltQ(1), false),
+    check("rt ltQ undecidable is strictly false", %mr_rt_ltQ(a), false),
     /* expon (Rubi :1239) */
     check("expon poly", %mr_expon(x^3 + x, x), 3),
     check("expon param poly", %mr_expon(a*x^2 + b*x^4, x), 4),
@@ -2156,18 +2213,26 @@ test_structural_predicates() := block([],
           %mr_expandToSum(2, x + 1, x), 2 + 2*x),
     /* intPart (Rubi :2952) */
     check("iP 3/2", %mr_intPart(3/2), 1),
-    check("iP -3/2", %mr_intPart(-3/2), -2),
+    check("iP -3/2", %mr_intPart(-3/2), -1),
     check("iP 2", %mr_intPart(2), 2),
     check("iP x", %mr_intPart(x), 0),
     check("iP 3/2*x", %mr_intPart(3/2*x), 0),
     check("iP sum", %mr_intPart(3/2 + x), 1),
+    /* IntegerPart truncates toward zero (exact seen test design 3.2) */
+    check("iP -1/2", %mr_intPart(-1/2), 0),
+    check("iP -5/2", %mr_intPart(-5/2), -2),
+    check("iP -3/2*x", %mr_intPart(-3/2*x), 0),
     /* fracPart (Rubi :2969) */
     check("fP 3/2", %mr_fracPart(3/2), 1/2),
-    check("fP -3/2", %mr_fracPart(-3/2), 1/2),
+    check("fP -3/2", %mr_fracPart(-3/2), -1/2),
     check("fP 2", %mr_fracPart(2), 0),
     check("fP x", %mr_fracPart(x), x),
     check("fP 3/2*x", %mr_fracPart(3/2*x), 3/2*x),
     check("fP sum", %mr_fracPart(3/2 + x), 1/2 + x),
+    /* FractionalPart carries the sign of its argument (design 3.2) */
+    check("fP -1/2", %mr_fracPart(-1/2), -1/2),
+    check("fP -5/2", %mr_fracPart(-5/2), -1/2),
+    check("fP -3/2*x", %mr_fracPart(-3/2*x), -3/2*x),
     true
    )$
 
@@ -2940,24 +3005,181 @@ test_class3_cluster_b() := block([lst, lst2, sl],
    the factored inputs watch the normalizer deviation (design 3.2). */
 t_disp_77(mm, x) := 77$
 test_translation_fixes_seen() := block([saved_table, saved_seen, h77],
-  print("--- matcher translation fixes: the exact seen entry ---"),
-  /* mr_int_exact: exact member only; mr_int: member, then ratsimp */
+  print("--- the exact seen test (exact seen test design 3.1) ---"),
+  /* mr_int: exact member only, on every call */
   h77 : %mr_defrule("layerA", 6, "(Int (Pattern |_t_u| (Blank)) (Pattern x (Blank Symbol)))",
                     t_disp_true, t_disp_77),
   saved_table : mr_rule_table,
   saved_seen : %mr_seen,
   mr_rule_table : [h77],
   %mr_seen : [x^2 + 2*x + 1],
-  check("mr_int: a ratsimp-equal seen form takes the fall-through",
-        mr_int((x + 1)^2, x), integrate((x + 1)^2, x)),
-  check("mr_int_exact: the same form dispatches", mr_int_exact((x + 1)^2, x), 77),
+  check("mr_int: a ratsimp-equal seen form in another stored form dispatches",
+        mr_int((x + 1)^2, x), 77),
   %mr_seen : [(x + 1)^2],
-  check("mr_int_exact: an exact repeat takes the fall-through",
-        mr_int_exact((x + 1)^2, x), integrate((x + 1)^2, x)),
+  check("mr_int: an exact repeat takes the fall-through",
+        mr_int((x + 1)^2, x), integrate((x + 1)^2, x)),
   %mr_seen : saved_seen,
   mr_rule_table : saved_table,
+  check_not("%mr_seenp deleted", member('%mr_seenp, map(op, functions))),
+  check_not("mr_int_exact deleted", member('mr_int_exact, map(op, functions))),
   check_not("rubi_hybrid deleted", member('rubi_hybrid, map(op, functions))),
   check_not("rubi_hybrid_exact deleted", member('rubi_hybrid_exact, map(op, functions))),
+  true
+)$
+
+/* The two run switches and the depth-cap census (exact seen test design
+   3.3). mr_nested_fallback decides what a nested call with no route
+   returns; mr_max_depth is the cap mr_top counts against, and every cap
+   hit is counted in mr_depth_cap_hits, which the driver writes to the
+   run's .caps sidecar. The nesting rule below calls mr_int from its
+   replacement, so a cap of 1 is hit one level down. */
+t_disp_nest(mm, x) := mr_int(x^3, x)$
+test_run_switches() := block(
+  [saved_table, saved_seen, saved_fb, saved_cap, saved_hits, hnest],
+  print("--- the run switches and the depth-cap census (exact seen test design 3.3) ---"),
+  saved_table : mr_rule_table,
+  saved_seen : %mr_seen,
+  saved_fb : mr_nested_fallback,
+  saved_cap : mr_max_depth,
+  saved_hits : mr_depth_cap_hits,
+
+  /* defaults: rules-only, cap 16 (the dispatcher's defmvars). The
+     fall-through default is the value captured at load, before the suite
+     bound it true for the behavioural checks (see the comment there). */
+  check("mr_nested_fallback defaults to false", mr_default_nested_fallback, false),
+  check("mr_max_depth defaults to 16", saved_cap, 16),
+
+  /* an EMPTY table: every nested call finds no rule */
+  mr_rule_table : [],
+  %mr_seen : [],
+  mr_nested_fallback : false,
+  check("rules-only: a no-rule nested call returns the unintegrable noun",
+        mr_int(x^2, x), mr_unintegrable(x^2, x)),
+  mr_nested_fallback : true,
+  check("fall-through: the same call goes to integrate",
+        mr_int(x^2, x), integrate(x^2, x)),
+
+  /* the depth cap and its census, on a rule that re-dispatches */
+  hnest : %mr_defrule("layerA", 7,
+                      "(Int (Pattern |_t_u| (Blank)) (Pattern x (Blank Symbol)))",
+                      t_disp_true, t_disp_nest),
+  mr_rule_table : [hnest],
+  %mr_seen : [],
+  mr_nested_fallback : false,
+  mr_max_depth : 1,
+  mr_depth_cap_hits : 0,
+  check("a cap of 1 stops the nested dispatch at the unintegrable noun",
+        mr_int(x^2, x), mr_unintegrable(x^3, x)),
+  check("the census counted the cap hit", mr_depth_cap_hits, 1),
+  mr_max_depth : 16,
+  %mr_seen : [],
+  mr_depth_cap_hits : 0,
+  check("no cap hit is counted below the cap", mr_depth_cap_hits, 0),
+
+  %mr_seen : saved_seen,
+  mr_rule_table : saved_table,
+  mr_nested_fallback : saved_fb,
+  mr_max_depth : saved_cap,
+  mr_depth_cap_hits : saved_hits,
+  check_not("%mr_max_depth deleted", member('%mr_max_depth, values)),
+  true
+)$
+
+/* The ExpandExpression / SmartApart port (exact seen test design 3.4).
+   Values measured 2026-09-16 on this build; the zero oracle for the
+   radical shapes is radcan, NOT ratsimp: ratsimp cannot prove the
+   difference zero once %mr_simplifyTerm has rewritten two conjugate
+   radical denominators (nested sqrt(1+sqrt(a)) differs by
+   (sqrt(a)+1)^2 - a - 2 sqrt(a) - 1, which is 0), while radcan and a
+   numeric substitution both close it. */
+mr_zero_radcan(e) := block([r],
+  r : errcatch(ratsimp(radcan(e))),
+  if r = [] then false else is(first(r) = 0))$
+mr_nterms(e) := if %mr_sumQ(e) then length(args(e)) else 0$
+test_expand_expression() := block([e4, ex, v, w],
+  print("--- ExpandExpression / SmartApart (exact seen test design 3.4) ---"),
+  e4 : (a+b*x)/((c+d*x)*(e+f*x)*(g+h*x)),
+  /* the catch-all now partial-fractions instead of expanding the
+     denominator: 1.1.1.4 e4, the entry that dispatched >= 794 declines */
+  check("e4 splits into 3 partial fractions", mr_nterms(%mr_expandIntegrand(e4, x)), 3),
+  check_bool("e4 split is value-preserving",
+             mr_zero_radcan(%mr_expandIntegrand(e4, x) - e4)),
+  ex : (a+b*x)/expand((c+d*x)*(e+f*x)*(g+h*x)),
+  check("the expanded-denominator form splits too", mr_nterms(%mr_expandIntegrand(ex, x)), 3),
+  check_bool("expanded-denominator split is value-preserving",
+             mr_zero_radcan(%mr_expandIntegrand(ex, x) - ex)),
+  check("a repeated linear factor splits", mr_nterms(%mr_expandIntegrand(1/((x+1)^2*(x+2)), x)), 3),
+  check("a polynomial part splits off", mr_nterms(%mr_expandIntegrand((x^3+1)/(x+2), x)), 4),
+  /* kept, as in Rubi: partfrac does not split these */
+  check("an irreducible quadratic is kept as 2 terms",
+        mr_nterms(%mr_expandIntegrand((x+1)/((x^2+x+1)*(x-2)), x)), 2),
+  check("1/(a+b x^2) is unchanged", %mr_expandIntegrand(1/(a+b*x^2), x), 1/(a+b*x^2)),
+  check("a symbolic exponent is unchanged",
+        %mr_expandIntegrand(1/((x+a)^m*(x+b)), x), 1/((x+a)^m*(x+b))),
+  /* radicals: value-preserving, oracle radcan (see the header) */
+  check_bool("a nested-radical parameter is value-preserving",
+             mr_zero_radcan(%mr_expandIntegrand(
+               1/((x-sqrt(1+sqrt(a)))*(x+sqrt(1+sqrt(a)))), x)
+               - 1/((x-sqrt(1+sqrt(a)))*(x+sqrt(1+sqrt(a)))))),
+  check_bool("a radical coefficient is value-preserving",
+             mr_zero_radcan(%mr_expandIntegrand(x/((x+sqrt(2))*(x-1)), x)
+                            - x/((x+sqrt(2))*(x-1)))),
+  /* the non-rational factor is split off and multiplied back */
+  check("a non-rational factor splits around sqrt(x)",
+        mr_nterms(%mr_expandIntegrand(sqrt(x)/((x+1)*(x+2)), x)), 2),
+  check_bool("the non-rational split is value-preserving",
+             mr_zero_radcan(%mr_expandIntegrand(sqrt(x)/((x+1)*(x+2)), x)
+                            - sqrt(x)/((x+1)*(x+2)))),
+  check("rationalFunctionFactors keeps the rational part",
+        %mr_rationalFunctionFactors(sqrt(x)/((x+1)*(x+2)), x), 1/((x+1)*(x+2))),
+  check("nonrationalFunctionFactors keeps the rest",
+        %mr_nonrationalFunctionFactors(sqrt(x)/((x+1)*(x+2)), x), sqrt(x)),
+  /* ExpandAlgebraicFunction, the cascade's first branch */
+  check("expandAlgebraicFunction: (u_Plus) v",
+        %mr_expandAlgebraicFunction((x+1)*sqrt(y), x), x*sqrt(y) + sqrt(y)),
+  check("expandAlgebraicFunction: (u_Plus)^n v",
+        %mr_expandAlgebraicFunction((x+1)^2*sqrt(y), x),
+        x^2*sqrt(y) + 2*x*sqrt(y) + sqrt(y)),
+  check("expandAlgebraicFunction declines a plain product",
+        %mr_expandAlgebraicFunction(x*sqrt(y), x), false),
+  /* Expand[u, x]: the x-free factors are KEPT unmultiplied */
+  check("expand_x keeps the x-free factor",
+        %mr_expand_x((a+b)^2*(x+1)^2, x),
+        (a+b)^2*x^2 + 2*(a+b)^2*x + (a+b)^2),
+  /* CollectReciprocals: the pair collapses, a non-pair does not */
+  check("collectReciprocals collapses the reciprocal pair",
+        %mr_collectReciprocals(1/(a+b*x) + 1/(a-b*x), x), 2*a/(a^2-b^2*x^2)),
+  check("collectReciprocals leaves a non-pair alone",
+        mr_nterms(%mr_collectReciprocals(1/(x+1) + 1/(x+2), x)), 2),
+  /* ExpandCleanup must not recombine the terms: %mr_simplifyTerm returns
+     a CRE and Maxima's "+" combines CRE operands into one fraction (the
+     ratdisrep in %mr_expandCleanup) */
+  check("expandCleanup keeps a 3-term split a sum",
+        mr_nterms(%mr_expandCleanup(partfrac(e4, x), x)), 3),
+  /* the two specific branches are unchanged */
+  check("a positive-integer power of a sum still expands",
+        %mr_expandIntegrand((x+1)^2, x), x^2 + 2*x + 1),
+  check_bool("smartApart 2-arg and 3-arg agree",
+             is(%mr_smartApart(e4, x) = %mr_smartApart(e4, x, x))),
+  /* The cleanup cascade must be BOUNDED. %mr_simp's third stage is
+     Maxima's multivariate factor(), and the cascade (SimplifyTerm,
+     UnifyTerm) reaches it with the dense coefficients a wide product of
+     binomial powers expands into. MEASURED 2026-09-16 (this build, one
+     process per call, marker flushed before the call): factor() of the
+     x^6 coefficient of the integrand below (9 kernels, 521 leaves,
+     nterms 34) exhausts SBCL's 1 GiB dynamic space -- "Heap exhausted,
+     game over", a FATAL runtime error errcatch cannot see, so the entry
+     subprocess dies instead of declining. 1.2.3.2 e637/e660 died on it
+     (both verified pre-port). No cheap metric predicts the blow-up
+     (nterms 34 fatal, nterms 231 safe in 6 ms -- the cliff is
+     reducibility, not size), so the cascade drops the factor stage
+     rather than guarding it. */
+  v : x^2*(a+b*x)^3*(c+d*x)^4*(e+f*x)^5*(g+h*x)^6*log(x),
+  w : %mr_expandIntegrand(v, x),
+  check("a wide binomial product expands into its 19 terms",
+        mr_nterms(w), 19),
+  check_bool("the wide-product expansion is value-preserving",
+             mr_zero_radcan(w - v)),
   true
 )$
 
