@@ -279,6 +279,56 @@ class-N mechanics are runbooked in `docs/class-porting.md`
 (Steps 8-9); the measured acceptance is
 `docs/corpus-class2-baseline-uplift.md`.
 
+**Layer B — the queue runner** (`test/run_corpus_queue.py`), the preferred
+launcher for any class. One manager process runs N worker threads that pull
+from a single queue; worker k writes `corpus_<slug>.shard<kk>.out` in the
+driver's format, so the mergers and `wait_and_merge.sh` read it unchanged.
+Both paths call `corpus_driver.run_entry`, so they cannot drift.
+
+```sh
+python3 test/run_corpus_queue.py "2 Exponentials" --prev test/corpus_class2.out \
+    --workers 24 --launch
+```
+
+Without `--launch` it prints the plan and exits. `--prev RECORD` orders the
+queue longest-estimate-first (entries the record does not time go first);
+`--entries-from/--class/--out-dir` is the subset mode for the timeout
+re-check.
+
+**Keep `--workers` at or below the core count.** Over-subscription is a
+FIDELITY problem, not only a speed one: every entry then runs contended, its
+wall depends on how many others happen to be running, and the 30 s cap is a
+WALL cap, so it decides verdicts. The planner warns when asked for more. The
+sharded launchers remain for reproducing an old record on its own path.
+
+`--job-seconds N` sizes the dispatch unit in estimated seconds; the default,
+0, is one entry per unit and is the measured best. Makespan >= (core-seconds
+/ workers) + the largest unit, so the unit size IS the tail bound, and every
+entry is already its own Maxima subprocess, so a larger unit amortises
+nothing. MEASURED 2026-09-17 on the 25,697 per-entry walls of the
+faithful-pair class-1 run (24 workers, floor 116 min): per-entry 116 min
+whether ordered by corpus order, stale estimates or perfect foresight;
+~10-minute units 120 min; ~30-minute units 126 min. Sized from the PREVIOUS
+record, a 10-minute target produced a 35-minute actual unit and a 30-minute
+target a 91-minute one — at one entry per unit the tail bound is the 30 s
+cap however wrong the estimates are.
+
+MEASURED 2026-09-18, class 2 (965 entries), same code, merger-clean at
+965/965 in every arm:
+
+| arm | wall | PASS | vs sharded |
+|---|---|---|---|
+| sharded, 22 shards | 350 s | 710 | — |
+| queue, 24 workers | 112 s (3.1x) | 707 | 3 PASS->FAIL |
+| queue, 12 workers | 180 s (1.9x) | 708 | 2 PASS->FAIL |
+
+The differing entries are all `verified -> timeout` at 23-27 s against the
+30 s cap; 2.3 e527/e528 (26.8/26.9 s) flip in both queue arms and were the
+same pair the 2026-09-15 measurement found, i.e. borderline entries rather
+than a queue defect. The 24-worker arm loses one extra such entry (the machine
+is 12 physical cores + SMT), which is the speed/fidelity trade to settle per
+class. Compare arms with `test/ab_records.py`, never on wall clock.
+
 **Switch arm — matcher substrate P5** (Plan 3,
 `docs/superpowers/plans/2026-09-13-matcher-substrate-plan3.md`). The
 three migration switches (`mr_flat_wide` false, `mr_cond_retry` true,

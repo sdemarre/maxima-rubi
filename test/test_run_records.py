@@ -17,7 +17,12 @@ No Maxima. Checks:
   6. winning_value: every-class win, tie, split; the mr_model_flags tie
      takes Maxima's defaults;
   7. gate on synthetic records: green, then a PASS-floor and a
-     wall-ceiling failure.
+     wall-ceiling failure;
+  8. the driver's run_entry and the queue runner (test/run_corpus_queue.py),
+     in a child on a synthetic suite with a stubbed maxima_run: main()'s
+     result lines, run_entry's line, the queue order and subset, shards the
+     merger reads (every entry once, one arm, the cap on the filter: line),
+     a harness exception written as `error` and counted.
 
 Re-runnable:  python3 test/test_run_records.py
 """
@@ -101,6 +106,95 @@ def child(switches):
     code = CHILD.replace("DRIVER", repr(os.path.join(HERE, "corpus_driver.py")))
     return subprocess.run([sys.executable, "-c", code], env=env, cwd=ROOT,
                           capture_output=True, text=True, timeout=60)
+
+
+QUEUE_CHILD = r"""
+import importlib.util, json, os, re, sys, tempfile
+HERE = os.path.join(ROOTDIR, "test")
+tmp = tempfile.mkdtemp(prefix="mr-queue-guard-")
+suite = os.path.join(tmp, "suite")
+os.makedirs(os.path.join(suite, "9 Test"))
+with open(os.path.join(suite, "9 Test", "f.mac"), "w") as fh:
+    fh.write("test9:[\n[x,x,1,x^2/2],\n[x^2,x,1,x^3/3],\n[x^3,x,1],\n[x^4,x,1,x^5/5]]$\n")
+main_out = os.path.join(tmp, "main.out")
+sys.argv = ["corpus_driver.py", "9 Test/", "999999", "30", suite, "0", "", "0", main_out]
+spec = importlib.util.spec_from_file_location("drv", os.path.join(HERE, "corpus_driver.py"))
+d = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(d)
+def stub(text, timeout):
+    if "mr_f: x$" in text:
+        return "CLASS expected\n", False
+    if "mr_f: x^2$" in text:
+        return "CLASS verified\n", False
+    return "", True
+d.maxima_run = stub
+d.build_info_lines = lambda: ["maxima: stub"]
+d.main()
+T = re.compile(r"t=\s*[\d.]+s")
+RESULT = re.compile(r"^(\S+)\s+t=\s*([\d.]+)s\s+(.*) e(\d+) L(\d+)")
+def norm(line):
+    return " ".join(T.sub("t=Ts", line).split())
+main_lines = [norm(l) for l in open(main_out, encoding="utf-8") if RESULT.match(l)]
+entries, line_nos = d.extract_entries(os.path.join(suite, "9 Test", "f.mac"))
+entry_line = norm(d.run_entry("9 Test/f.mac", 1, entries[1], line_nos[1])[1])
+qspec = importlib.util.spec_from_file_location("rcq", os.path.join(HERE, "run_corpus_queue.py"))
+q = importlib.util.module_from_spec(qspec)
+qspec.loader.exec_module(q)
+rel = "9 Test/f.mac"
+prev = {(rel, 4): ("timeout", 30.0), (rel, 1): ("expected", 0.1)}
+order = [j[1] for j in q.build_jobs(d, prev)]
+subset = [j[1] for j in q.build_jobs(d, None, {(rel, 2)})]
+try:
+    q.build_jobs(d, None, {(rel, 9)})
+    missing_exits = False
+except SystemExit:
+    missing_exits = True
+outs = [os.path.join(tmp, "corpus_class9.shard%02d.out" % k) for k in range(2)]
+title = lambda k: "=== guard queue worker %02d ===" % k
+detail = lambda k: "queue worker %02d of 2  timeout: 30s  entries: 4" % k
+counts, failures, _w = q.run_queue(d, q.build_jobs(d, prev), 2, outs, title, detail,
+                                   ["maxima: stub"], log=lambda m: None)
+ALLOWED = ("=", "date:", "merge date:", "filter:", "head rewrites:", "maxima:", "total",
+           "wall", "Results:", "SKIP")
+queue_lines, unparsed = [], []
+for p in outs:
+    for l in open(p, encoding="utf-8"):
+        l = l.rstrip("\n")
+        if RESULT.match(l):
+            queue_lines.append(norm(l))
+        elif l.strip() and not re.match(r"^\S+\s+\d+$", l) and not l.startswith(ALLOWED):
+            unparsed.append(l)
+rspec = importlib.util.spec_from_file_location("rr", os.path.join(HERE, "run_records.py"))
+rr = importlib.util.module_from_spec(rspec)
+rspec.loader.exec_module(rr)
+try:
+    switches = rr.common_switches(outs)
+except ValueError as exc:
+    switches = "ERROR " + str(exc)
+cap_ok = all(any(l.startswith("filter:") and "timeout: 30s" in l for l in open(p)) for p in outs)
+def boom(text, timeout):
+    if "mr_f: x^4$" in text:
+        raise RuntimeError("guard: injected harness failure")
+    return stub(text, timeout)
+d.maxima_run = boom
+outs2 = [os.path.join(tmp, "fail.shard%02d.out" % k) for k in range(2)]
+_c, failures2, _w = q.run_queue(d, q.build_jobs(d, prev), 2, outs2, title, detail, [],
+                                log=lambda m: None)
+fail_lines = [norm(l) for p in outs2 for l in open(p) if RESULT.match(l) and " e4 " in l]
+print(json.dumps({"main_lines": main_lines, "entry_line": entry_line, "order": order,
+                  "subset": subset, "missing_exits": missing_exits,
+                  "queue_lines": sorted(queue_lines), "unparsed": unparsed,
+                  "switches": switches, "cap_ok": cap_ok, "counts": counts,
+                  "failures": failures, "failures2": failures2, "fail_lines": fail_lines}))
+"""
+
+
+def queue_child():
+    env = {k: v for k, v in os.environ.items() if k not in ("MR_SWITCHES", "MR_RULES_CORE_PATH")}
+    env["MR_RULES_CORE"] = "0"
+    code = QUEUE_CHILD.replace("ROOTDIR", repr(ROOT))
+    return subprocess.run([sys.executable, "-c", code], env=env, cwd=ROOT,
+                          capture_output=True, text=True, timeout=120)
 
 
 def main():
@@ -234,6 +328,46 @@ def main():
           wv("mr_flat_wide", "false", "true", [10, 5, 7], [11, 4, 8])[0] == "false")
     check("mr_model_flags on a split takes Maxima's defaults",
           wv("mr_model_flags", "true", "false", [11, 5, 7], [10, 6, 8])[0] == "false")
+
+    # 8. run_entry and the queue runner
+    p = queue_child()
+    try:
+        g = json.loads(p.stdout.strip().splitlines()[-1])
+    except (IndexError, ValueError):
+        g = None
+    err = p.stderr[-600:]
+    want = ["expected t=Ts 9 Test/f.mac e1 L2", "verified t=Ts 9 Test/f.mac e2 L3",
+            "error t=Ts 9 Test/f.mac e3 L4 bad-entry-shape(3)", "timeout t=Ts 9 Test/f.mac e4 L5"]
+    check("driver main() writes its result lines through run_entry",
+          g is not None and g["main_lines"] == want, f"{g and g['main_lines']} {err}")
+    check("run_entry returns main's line", g is not None and g["entry_line"] == want[1],
+          f"{g and g['entry_line']}")
+    check("queue order: untimed entries first, then the longest previous time",
+          g is not None and g["order"] == [1, 2, 3, 0], f"{g and g['order']}")
+    check("queue subset: only the given keys; a key not in the section exits",
+          g is not None and g["subset"] == [1] and g["missing_exits"],
+          f"{g and (g['subset'], g['missing_exits'])}")
+    check("queue shards: every entry once with main's line, merger-readable, one arm, the cap",
+          g is not None and g["queue_lines"] == sorted(want) and not g["unparsed"]
+          and g["switches"] == rr.switches_text(rr.SWITCH_DEFAULTS)
+          and g["cap_ok"] and g["failures"] == 0, f"{g}")
+    # build_units: the dispatch-unit size IS the tail bound (makespan >=
+    # core-seconds/workers + largest unit), so the default must stay one
+    # entry per unit — see build_units' docstring for the measurement.
+    qmod = _module("run_corpus_queue")
+    jobs = [("f", i, "t", i, c) for i, c in enumerate([10.0, 6.0, 5.0, 1.0])]
+    check("build_units: job-seconds 0 is one entry per unit",
+          [len(u) for u in qmod.build_units(jobs, 0)] == [1, 1, 1, 1])
+    check("build_units: a unit closes once the estimate reaches the target",
+          [[j[4] for j in u] for u in qmod.build_units(jobs, 11.0)]
+          == [[10.0, 6.0], [5.0, 1.0]])
+    check("build_units: an untimed entry is its own unit",
+          [len(u) for u in qmod.build_units(
+              [("f", 0, "t", 0, qmod.UNTIMED)] + jobs, 11.0)] == [1, 2, 2])
+    check("queue: a harness exception is an error line and a counted failure",
+          g is not None and g["failures2"] == 1
+          and g["fail_lines"] == ["error t=Ts 9 Test/f.mac e4 L5"],
+          f"{g and (g['failures2'], g['fail_lines'])}")
 
     print(f"Results: {passed} passed, {failed} failed")
     return 1 if failed else 0

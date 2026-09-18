@@ -56,6 +56,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -102,13 +103,17 @@ HEAD_REWRITES = [
     (re.compile(r"(?<![A-Za-z0-9_])Li\("), "expintegral_li("),
 ]
 REWRITE_STATS = {}
+# The queue runner (test/run_corpus_queue.py) calls normalize_heads from its
+# worker threads; the counter update takes the lock.
+REWRITE_LOCK = threading.Lock()
 
 
 def normalize_heads(text):
     for rx, rep in HEAD_REWRITES:
         text, n = rx.subn(rep, text)
         if n:
-            REWRITE_STATS[rep] = REWRITE_STATS.get(rep, 0) + n
+            with REWRITE_LOCK:
+                REWRITE_STATS[rep] = REWRITE_STATS.get(rep, 0) + n
     return text
 
 
@@ -645,6 +650,69 @@ def file_list():
     return files
 
 
+def build_info_lines():
+    """The record header's `maxima:` lines (build_info of the installed maxima)."""
+    r = subprocess.run(
+        ["maxima", "--very-quiet", "--batch-string", "disp(build_info());"],
+        capture_output=True, text=True, timeout=120, cwd=ROOT,
+        stdin=subprocess.DEVNULL,
+    )
+    return [f"maxima: {line.strip()}" for line in r.stdout.splitlines()
+            if line.strip().startswith(("Maxima", "Lisp ", "Host "))]
+
+
+def header_lines(title, detail, build_lines):
+    """A record's header: TITLE, the date, BUILD_LINES, the filter: line
+    (DETAIL, the switch arm, a pinned core) and a blank line."""
+    return ([title,
+             f"date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"]
+            + list(build_lines)
+            + [f"filter: {FILTER!r}  {detail}" + switch_header() + core_header(), ""])
+
+
+def classify_output(out, timed_out):
+    """(class, depth-cap hits) an entry run's output states; timeout / error
+    without a CLASS line. A killed entry (timeout) prints no DEPTHCAP line, so
+    its cap hits are simply not censused (exact seen test design 3.3)."""
+    cls = None
+    caps = 0
+    for line in out.splitlines():
+        line = line.strip()
+        if cls is None and line.startswith("CLASS "):
+            cls = line[6:].strip()
+        elif line.startswith("DEPTHCAP "):
+            try:
+                caps = int(line[9:].strip())
+            except ValueError:
+                caps = 0
+    if cls is None:
+        cls = "timeout" if timed_out else "error"
+    if cls not in KNOWN_CLASSES:
+        cls = "error"
+    return cls, caps
+
+
+def run_entry(rel, idx, entry_text, line_no):
+    """One corpus entry (ENTRY_TEXT as extract_entries returns it, IDX
+    0-based) through a fresh Maxima subprocess at the TIMEOUT cap:
+    (class, result line, depth-cap hits). main() and test/run_corpus_queue.py
+    both call it, so the two paths cannot drift."""
+    els = split_elements(entry_text[1:-1])
+    label = f"{rel} e{idx + 1} L{line_no}"
+    if len(els) not in (4, 5):
+        return "error", f"{'error':14s} t=0.0s {label} bad-entry-shape({len(els)})", 0
+    f_text = normalize_heads(els[0])
+    var_text = els[1]
+    e_text = normalize_heads(els[3])
+    e_text2 = normalize_heads(els[4]) if len(els) == 5 else None
+    t_start = time.time()
+    out, timed_out = maxima_run(
+        build_text(f_text, var_text, e_text, e_text2), TIMEOUT)
+    dt = time.time() - t_start
+    cls, caps = classify_output(out, timed_out)
+    return cls, f"{cls:14s} t={dt:6.1f}s {label}", caps
+
+
 def main():
     all_files = file_list()
     bounds = None
@@ -676,29 +744,14 @@ def main():
     else:
         files = all_files[START_INDEX:STOP_INDEX]
 
-    out_lines = [
+    out_lines = header_lines(
         (f"=== maxima-rubi corpus driver (filter {FILTER!r}, "
          f"resume at file index {START_INDEX}) ==="
          if APPEND else
          f"=== maxima-rubi corpus driver (filter {FILTER!r}) ==="),
-        f"date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
-    ]
-    if not APPEND:
-        r = subprocess.run(
-            ["maxima", "--very-quiet", "--batch-string",
-             "disp(build_info());"],
-            capture_output=True, text=True, timeout=120, cwd=ROOT,
-        )
-        for line in r.stdout.splitlines():
-            line = line.strip()
-            if line.startswith(("Maxima", "Lisp ", "Host ")):
-                out_lines.append(f"maxima: {line}")
-    out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
-                     f"timeout: {TIMEOUT}s  files: {len(files)}"
-                     + (f"  shard: {SHARD_FILE}" if SHARD_FILE else "")
-                     + switch_header()
-                     + core_header())
-    out_lines.append("")
+        f"per-file: {PER_FILE}  timeout: {TIMEOUT}s  files: {len(files)}"
+        + (f"  shard: {SHARD_FILE}" if SHARD_FILE else ""),
+        [] if APPEND else build_info_lines())
 
     counts = {}
     t0 = time.time()
@@ -727,53 +780,15 @@ def main():
             lo = SKIP_FIRST if fi == 0 else 0
             hi = min(lo + PER_FILE, len(entries))
         for idx in range(lo, hi):
-            els = split_elements(entries[idx][1:-1])
-            label = f"{rel} e{idx + 1} L{line_nos[idx]}"
-            if len(els) not in (4, 5):
-                cls = "error"
-                counts[cls] = counts.get(cls, 0) + 1
-                line = f"{'error':14s} t=0.0s {label} bad-entry-shape({len(els)})"
-                out_lines.append(line)
-                outf.write(line + "\n")
-                outf.flush()
-                print(f"FAIL: {line}")
-                continue
-            f_text = normalize_heads(els[0])
-            var_text = els[1]
-            _steps = els[2]
-            e_text = normalize_heads(els[3])
-            e_text2 = normalize_heads(els[4]) if len(els) == 5 else None
-            t_start = time.time()
-            out, timed_out = maxima_run(
-                build_text(f_text, var_text, e_text, e_text2), TIMEOUT)
-            dt = time.time() - t_start
-            cls = None
-            caps = 0
-            for line in out.splitlines():
-                line = line.strip()
-                if cls is None and line.startswith("CLASS "):
-                    cls = line[6:].strip()
-                elif line.startswith("DEPTHCAP "):
-                    # A killed entry (timeout) prints no DEPTHCAP line, so
-                    # its cap hits are simply not censused (design 3.3).
-                    try:
-                        caps = int(line[9:].strip())
-                    except ValueError:
-                        caps = 0
-            if cls is None:
-                cls = "timeout" if timed_out else "error"
-            if cls not in KNOWN_CLASSES:
-                cls = "error"
+            cls, line, caps = run_entry(rel, idx, entries[idx], line_nos[idx])
             if caps > 0:
-                capsf.write(f"{caps} {label}\n")
+                capsf.write(f"{caps} {rel} e{idx + 1} L{line_nos[idx]}\n")
                 capsf.flush()
             counts[cls] = counts.get(cls, 0) + 1
-            pf = "PASS" if cls in PASS_CLASSES else "FAIL"
-            line = f"{cls:14s} t={dt:6.1f}s {label}"
             out_lines.append(line)
             outf.write(line + "\n")
             outf.flush()
-            print(f"{pf}: {line}")
+            print(f"{'PASS' if cls in PASS_CLASSES else 'FAIL'}: {line}")
     total = sum(counts.values())
     passed = sum(v for k, v in counts.items() if k in PASS_CLASSES)
     failed = total - passed
