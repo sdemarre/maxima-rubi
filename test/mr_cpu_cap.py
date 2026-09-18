@@ -35,7 +35,16 @@ import sys
 import time
 
 CAPPED_RC = 200
-POLL = 0.02
+# The poll interval is the DETERMINISM BAND: the child can overrun the budget
+# by up to one interval before the kill lands, and where in that band it dies
+# depends on poll phase, so a wide interval reintroduces the run-to-run
+# nondeterminism a CPU cap exists to remove. MEASURED 2026-09-18, helper CPU
+# against 10 s of child CPU: 20 ms 0.080 s (0.80 %), 100 ms 0.010 s (0.10 %),
+# 250 ms and 1 s also 0.010 s. 100 ms is already at the floor — what is left is
+# fork/exec/wait4, not polling — so a coarser interval buys nothing and only
+# widens the band. Finer than ~20 ms is pointless: /proc CPU accounting is in
+# clock ticks, 10 ms on this host.
+POLL = 0.1
 TICKS = os.sysconf("SC_CLK_TCK")
 
 
