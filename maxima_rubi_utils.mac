@@ -244,7 +244,36 @@ depth_level : 0$
        vanilla Maxima integrate dies identically — and is not
        regressed or fixed here. */
     if fb then return(integrate(f, x))
-    else return(mr_unintegrable(f, x))
+    /* fb = false (the rules-only default): DECLINE THE RULE instead of
+       answering the noun -- the seen-cut fall-through, half of the pair
+       with mr_giveup_last (maxima_rubi_dispatch.lisp).
+
+       The seen test is a PORT artifact: Rubi has no seen test of its own,
+       so a rule whose rewrite reproduces its own integrand simply is not a
+       result in Rubi, and answering mr_unintegrable here ends the whole
+       dispatch on what is really one rule's dead end. MEASURED 2026-09-17,
+       2*x/(b^(3/4) x^2 + sqrt(2) a^(1/4) sqrt(b) sqrt(d) x + sqrt(a)
+       b^(1/4) d): 1_2_1_9b r5 wins (cond PolyQ(Pq,x) and IGtQ(p,-2), with
+       Pq = 2 a degree-0 polynomial), its replacement is
+       mr_int(%mr_expandIntegrand(...), x), and %mr_expandIntegrand is a
+       NO-OP on that integrand -- so it recurses on the SAME integrand, the
+       seen test catches the repeat, and the noun ends the run. Deleting
+       that one handle from mr_rule_table makes the integrand ANSWER, which
+       is the proof it is a dispatch artifact and not missing coverage.
+
+       Raising instead makes mr-apply-rule's errcatch read it as a repl
+       misfire, decline that rule and continue down the table. The error is
+       always caught: a frame can only reach this branch at depth >= 2, and
+       every frame beyond the first was entered from a replacement running
+       under mr-call's errcatch, so it never escapes to the top level (at
+       depth 1 %mr_seen is empty and member() is false). %mr_seen stays
+       balanced too -- this branch raises BEFORE the cons below, and each
+       unwound frame has already decremented depth_level.
+
+       This is NOT the 2026-08-25 measurement above: that one made the
+       fb = TRUE branch an error and lost the productive integrate results
+       the seen guard returns. That branch is untouched. */
+    else error("mr_seen_cut")
   ),
   %mr_seen : cons(f, %mr_seen),
   /* One dispatch on MR-MATCH (maxima_rubi_dispatch.lisp

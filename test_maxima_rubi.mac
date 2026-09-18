@@ -114,6 +114,7 @@ run_all_tests() := block([],
   test_rules_1_1_1_1_behavior(),
   test_translation_fixes_seen(),
   test_run_switches(),
+  test_seen_cut_fallthrough(),
   test_expand_expression(),
   test_translation_fixes_generator(),
   test_translation_fixes_posaux(),
@@ -142,6 +143,8 @@ load("maxima_rubi.mac")$
    SWITCH_DEFAULTS in step. */
 mr_default_nested_fallback : mr_nested_fallback$
 mr_nested_fallback : true$
+/* Captured for the same reason, before any section flips it. */
+mr_default_giveup_last : mr_giveup_last$
 
 test_load_and_api() := block([r, saved_table],
   print("--- load + API fallback gate ---"),
@@ -3034,6 +3037,11 @@ test_translation_fixes_seen() := block([saved_table, saved_seen, h77],
    run's .caps sidecar. The nesting rule below calls mr_int from its
    replacement, so a cap of 1 is hit one level down. */
 t_disp_nest(mm, x) := mr_int(x^3, x)$
+/* Re-dispatches its OWN integrand, so the nested call hits the seen test:
+   the shape of a rule whose rewrite reproduces its integrand (the measured
+   case is 1_2_1_9b r5, whose repl is mr_int(%mr_expandIntegrand(...), x)
+   with %mr_expandIntegrand a no-op on that integrand). */
+t_disp_self(mm, x) := mr_int(geteqR(mm, '_t_u), x)$
 test_run_switches() := block(
   [saved_table, saved_seen, saved_fb, saved_cap, saved_hits, hnest],
   print("--- the run switches and the depth-cap census (exact seen test design 3.3) ---"),
@@ -3048,6 +3056,9 @@ test_run_switches() := block(
      bound it true for the behavioural checks (see the comment there). */
   check("mr_nested_fallback defaults to false", mr_default_nested_fallback, false),
   check("mr_max_depth defaults to 16", saved_cap, 16),
+  /* the give-up reordering: on by default, the other half of the pair with
+     the seen-cut fall-through (test_seen_cut_fallthrough below) */
+  check("mr_giveup_last defaults to true", mr_default_giveup_last, true),
 
   /* an EMPTY table: every nested call finds no rule */
   mr_rule_table : [],
@@ -3082,6 +3093,54 @@ test_run_switches() := block(
   mr_max_depth : saved_cap,
   mr_depth_cap_hits : saved_hits,
   check_not("%mr_max_depth deleted", member('%mr_max_depth, values)),
+  true
+)$
+
+/* The seen-cut fall-through (%mr_top_body). A nested re-dispatch of an
+   integrand already on the dispatch path is a PORT artifact -- Rubi has no
+   seen test -- so with fb = false it declines the rule (raises, which
+   mr-apply-rule's errcatch reads as a repl misfire) and the dispatcher
+   carries on down the table, instead of ending the whole dispatch on one
+   rule's dead end. The fb = TRUE branch is untouched: its integrate
+   fall-through is load-bearing (the 2026-08-25 measurement recorded there).
+   Half of the faithful pair with mr_giveup_last. */
+test_seen_cut_fallthrough() := block(
+  [saved_table, saved_seen, saved_fb, hself, h42, pu2],
+  print("--- the seen-cut fall-through (%mr_top_body) ---"),
+  saved_table : mr_rule_table,
+  saved_seen : %mr_seen,
+  saved_fb : mr_nested_fallback,
+  pu2 : "(Int (Pattern |_t_u| (Blank)) (Pattern x (Blank Symbol)))",
+  hself : %mr_defrule("layerA", 8, pu2, t_disp_true, t_disp_self),
+  h42 : %mr_defrule("layerA", 9, pu2, t_disp_true, t_disp_42),
+
+  /* rules-only: the self-recursive rule declines and the NEXT rule answers.
+     Before the fall-through this returned the unintegrable noun. */
+  mr_rule_table : [hself, h42],
+  %mr_seen : [],
+  mr_nested_fallback : false,
+  check("rules-only: a seen cut declines the rule and the dispatch continues",
+        mr_int(x^2, x), 42),
+  check("the seen list is balanced after the decline", %mr_seen, []),
+
+  /* with no rule after it, the dispatch still ends on the noun -- the cut
+     declines ONE rule, it does not invent an answer */
+  mr_rule_table : [hself],
+  %mr_seen : [],
+  check("a seen cut with no rule below still answers the noun",
+        mr_int(x^2, x), mr_unintegrable(x^2, x)),
+
+  /* fb = true: unchanged -- the seen guard returns the integrate result,
+     so the self-recursive rule ANSWERS and the rule below never runs */
+  mr_rule_table : [hself, h42],
+  %mr_seen : [],
+  mr_nested_fallback : true,
+  check("fall-through: the seen guard still returns the integrate result",
+        mr_int(x^2, x), integrate(x^2, x)),
+
+  %mr_seen : saved_seen,
+  mr_rule_table : saved_table,
+  mr_nested_fallback : saved_fb,
   true
 )$
 

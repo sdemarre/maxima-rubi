@@ -5,10 +5,33 @@
 # full loaded rule table (class 1 + class 2 + class 3, 3513 rules) +
 # batch_answers_from_file, so the driver's per-integral subprocess starts
 # from the image instead of re-running load("maxima_rubi.mac") +
-# mr_load_all() (class-1 load alone: ~6.2 s warm / ~9.4 s cold, measured
-# probes/image/probe-rule-image.out). See that probe for the
-# mechanism (the installed maxima.core is itself built the same way,
+# mr_load_all(). See probes/image/probe-rule-image.out for the mechanism
+# (the installed maxima.core is itself built the same way,
 # src/maxima-build.lisp:24).
+#
+# WHY IT STILL EXISTS, on the matcher substrate. The original rationale was
+# BUILD cost: under defmatch, generating the rules took ~6.2 s warm / ~9.4 s
+# cold for class 1 alone (probes/image/probe-rule-image.out). That figure is
+# DEAD — with %mr_defrule the whole 3-class load is 1.32 s in-Maxima
+# (probes/matcher/08-runtime-load.out: 0.32 s load + 1.00 s mr_load_all) and
+# THIS SCRIPT RUNS IN 2.9 s (same probe). Rebuilding the core is free; never
+# skip a rebuild to save time.
+#
+# The core earns its keep on PER-ENTRY STARTUP instead, which is where the
+# volume is. MEASURED 2026-09-17 (this build, proto worktree, same batch,
+# both answering x^3/3), process wall over 5 runs each:
+#
+#     sbcl --core test/mr_rules.core   0.02 s   (0.02 x5)
+#     maxima -p test/mr_preload.mac    1.39 s   (1.42/1.40/1.39/1.36/1.39)
+#
+# ~1.37 s x 25,697 class-1 entries = ~9.8 process-hours, ~24 min of added
+# wall over a 24-shard run. And the 30 s per-entry cap covers the WHOLE
+# subprocess, load included, so the load path is part of every entry's
+# compute budget: switching it moves borderline entries across the cap and
+# makes a verified->timeout line un-attributable in an ab_records.py gate
+# against a record measured on the other path. Keep the two arms of any A/B
+# on the same load path. The driver's MR_RULES_CORE=0 forces the source path
+# when you want that arm deliberately.
 #
 # NOTE: the file list below (loader + utils + dispatch lisp + matcher lisp
 # + converter lisp + every class-1, class-2 AND class-3 rule file)

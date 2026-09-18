@@ -67,8 +67,10 @@ def raises(exc, fn, *args):
     return False
 
 
-DEFAULT_ARM = ("mr_flat_wide=false mr_cond_retry=true mr_model_flags=true "
-               "mr_nested_fallback=false mr_max_depth=16")
+# Derived, not spelled out: adding a switch must not silently leave these
+# fixtures describing an arm the driver no longer writes. The literal text
+# is pinned once, by the "driver header states the arm" check below.
+DEFAULT_ARM = rr.switches_text(rr.SWITCH_DEFAULTS)
 
 
 def record(path, rows, switches=DEFAULT_ARM):
@@ -137,7 +139,8 @@ def main():
         record(a, [("verified", 1.0, "9 Test/f.mac", 1)])
         record(b, [("verified", 1.0, "9 Test/f.mac", 2)], switches=None)
         record(c, [("verified", 1.0, "9 Test/f.mac", 3)],
-               switches="mr_flat_wide=true mr_cond_retry=true mr_model_flags=true")
+               switches=rr.switches_text(
+                   dict(rr.SWITCH_DEFAULTS, mr_flat_wide="true")))
         check("record_switches reads the arm", rr.record_switches(a) == DEFAULT_ARM)
         check("record_switches: None without the text", rr.record_switches(b) is None)
         check("common_switches: one arm", rr.common_switches([a, a]) == rr.record_switches(a))
@@ -202,12 +205,14 @@ def main():
     check("driver header states the arm",
           got is not None and got["header"]
           == ("  switches: mr_flat_wide=false mr_cond_retry=false "
-              "mr_model_flags=true mr_nested_fallback=false mr_max_depth=16"),
+              "mr_model_flags=true mr_nested_fallback=false "
+              "mr_giveup_last=true mr_max_depth=16"),
           f"{got} {p.stderr[-400:]}")
     check("entry text assigns the switches before the rubi call",
           got is not None and got["text"].startswith(
               "mr_flat_wide : false$\nmr_cond_retry : false$\nmr_model_flags : true$\n"
-              "mr_nested_fallback : false$\nmr_max_depth : 16$\n"
+              "mr_nested_fallback : false$\nmr_giveup_last : true$\n"
+              "mr_max_depth : 16$\n"
               "mr_depth_cap_hits : 0$\nmr_f: x^2$\n"),
           f"{got and got['text'][:200]!r}")
     check("the entry text prints the depth-cap count",

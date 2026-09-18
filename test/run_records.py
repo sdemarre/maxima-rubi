@@ -4,14 +4,19 @@ shard mergers and the P5 gate (matcher substrate plan 3).
 
 The matcher substrate has three migration switches (spec
 docs/superpowers/specs/2026-09-12-matcher-substrate-design.md section 3.6)
-and two run switches (exact seen test design
-docs/superpowers/specs/2026-09-15-matcher-seen-test-intpart-design.md 3.3):
-mr_nested_fallback, which decides whether a nested Int call with no route
-falls through to Maxima's integrate, and the integer depth cap
-mr_max_depth. Every corpus record states the arm it ran: the driver writes
-`switches: mr_flat_wide=<v> mr_cond_retry=<v> mr_model_flags=<v>
-mr_nested_fallback=<v> mr_max_depth=<n>` on its `filter:` header line, and
-the mergers carry it into the merged record.
+and three run switches: mr_nested_fallback, which decides whether a nested
+Int call with no route falls through to Maxima's integrate, and the integer
+depth cap mr_max_depth (both exact seen test design
+docs/superpowers/specs/2026-09-15-matcher-seen-test-intpart-design.md 3.3),
+and mr_giveup_last, which defers the give-up rules (those answering Rubi's
+Unintegrable marker) to a second dispatch pass — half of the faithful pair
+with the seen-cut fall-through in %mr_top_body. Every corpus record states
+the arm it ran: the driver writes `switches: mr_flat_wide=<v>
+mr_cond_retry=<v> mr_model_flags=<v> mr_nested_fallback=<v>
+mr_giveup_last=<v> mr_max_depth=<n>` on its `filter:` header line, and the
+mergers carry it into the merged record. Records written before a switch
+was added state a shorter set and so read as None here; the mergers and the
+P5 gate read the arm from the NEW record and tolerate that.
 
 - SWITCHES, SWITCH_DEFAULTS: the switches in record order, with the
   dispatcher's defaults (the defmvars of maxima_rubi_dispatch.lisp;
@@ -36,12 +41,15 @@ import glob
 import os
 import re
 
+# Record order matches the defmvar order of maxima_rubi_dispatch.lisp;
+# test/test_run_records.py holds the names and defaults in step with it.
 SWITCHES = ("mr_flat_wide", "mr_cond_retry", "mr_model_flags",
-            "mr_nested_fallback", "mr_max_depth")
+            "mr_nested_fallback", "mr_giveup_last", "mr_max_depth")
 SWITCH_DEFAULTS = {"mr_flat_wide": "false",
                    "mr_cond_retry": "true",
                    "mr_model_flags": "true",
                    "mr_nested_fallback": "false",
+                   "mr_giveup_last": "true",
                    "mr_max_depth": "16"}
 # mr_max_depth is the one INTEGER switch (a positive depth cap); the rest
 # are booleans. Both kinds are read from the record's filter: line, so the
