@@ -187,17 +187,24 @@ maxima --very-quiet -b test/matcher/test_mr_tree.mac
 maxima --very-quiet -b test/matcher/test_mr_dispatch.mac < /dev/null
 ```
 
-Green: `Results: 53 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
+Green: `Results: 57 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
 +3 at the final-review fix wave: the last-absorber cost bounds and the
 empty-leftover lock, +2 at Plan 2: the Power-exponent Optional
-default), `Results: 51 passed, 0 failed` (mr-tree; 46, +5 at Plan 2:
-CRE input and the booleans) and `Results: 58 passed, 0 failed`
+default, +4 at spec §3.8: the flat-absorb committed-tail prune — two
+committed-tail locks, one lock that an uncommitted tail still
+enumerates, one cost test), `Results: 51 passed, 0 failed` (mr-tree;
+46, +5 at Plan 2: CRE input and the booleans) and
+`Results: 66 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
 MatchQ pattern prepare rejects is an error, +8 at the final review:
 MatchQ part folding and an out-of-range part error, +1 at Plan 3: the
-switch defaults).
+switch defaults; +8 more by 2026-09-18, not attributed here).
+
+All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
+`Results: 1010 passed, 0 failed` (the 957 figure below is the
+2026-09-14 count and is superseded).
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
 test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
