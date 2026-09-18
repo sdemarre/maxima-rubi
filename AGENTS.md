@@ -404,10 +404,22 @@ preexec_fn is unsafe in a threaded process and the queue runner is one.
 
 **Records state the kind** (`timeout: 30s cpu` on the `filter:` line) and the
 mergers refuse shards that disagree. **A cpu record and a wall record are NOT
-comparable**: measured 2026-09-18 over 1.1.1.3, an entry's CPU is 40-60 % of
-its wall in the contended 33-shard record, so 30 CPU-seconds is roughly twice
-the budget 30 contended wall-seconds was, and the cpu baseline has fewer
-timeouts for that reason alone — a cap redefinition, not a code improvement.
+comparable**, but the shift is SMALL. Measured 2026-09-18 over the 4,414
+entries that finished in both the 33-shard wall record and the 24-worker cpu
+run, cpu/wall by old-wall band: 0-0.3 s 2.00, 0.3-1 s 1.25, 1-3 s 1.24,
+3-10 s 1.00, 10-31 s 0.84. The small bands are dominated by the records' 0.1 s
+resolution (0.10 vs 0.20 is one tick against two); the bands near the cap, where
+it actually acts, give 0.84-1.00. So an entry using 12.2 s wall then uses
+10.3 s cpu now: the old 30 s wall cap was worth about 25 s of cpu work and the
+new cap is roughly 19 % more generous, flat to slightly tighter in the mid
+bands — call it within +-25 %, not a doubling. (An earlier note here claimed
+"roughly twice", generalised from 12 entries of 1.1.1.3 all under 1.8 s, i.e.
+from the band where the ratio is resolution noise. It was wrong.) The 33-shard
+run averaged 12 concurrent entries on 24 vCPUs — about 50 % utilisation,
+because of the tail — so most of its entries were NOT heavily contended and
+their wall was close to their cpu. Expect some timeout entries to flip, not a
+wave; a higher PASS count is still partly a cap redefinition rather than a code
+improvement, and the two kinds must never be A/B'd.
 `MR_CAP_KIND=wall` reproduces a pre-2026-09-18 record on its own terms and is
 byte-identical to the old driver.
 
