@@ -114,6 +114,17 @@ opened at `%mr_expandIntegrand` rules. Measured on the prototype (2026-09-16, co
   times 6 / 8 / 10 / 12 symbols (`probes/matcher/06-dispatch-cost.out`). This is the parent spec's
   recorded known cost item, which the exact seen test now exposes on the corpus.
 
+  **Corrected 2026-09-18** (`probes/matcher/19-flat-absorb-cost.out`, and see the amended cost gate
+  in §3.8). The mechanism above named the wrong function and the wrong exponent. Measured at k = 12
+  over all 3,513 patterns, `flat-claim`'s collapsible branch accounts for 281,393 `m1` calls against
+  `flat-absorb`'s **21,905,907** — 78x more — and the growth is **3^n, not 2^n**. The shape is
+  `1_4_2 r6` = `Int(Times(u_^p_., (c_.*x_)^m_.), x)`: `flat-claim` does offer the collapsible
+  `(c_.*x_)^m_.` every sub-run (2^n), but inside each one `match-flat` on `(Times c_. x_)` finds two
+  absorbers — `c_.` unbound and `x_` bound to the integration variable — and since `c_.` is not last
+  it enumerates every subset of that run (2^s). Sum over runs of 2^|S| = 3^n. The fix is therefore in
+  `flat-absorb`, not `flat-claim`: when every absorber AFTER the current one is committed, they
+  consume a fixed set and the current one must take exactly the leftovers minus it.
+
 ## 1. Scope
 
 In:
@@ -385,9 +396,23 @@ the p5c re-measurement (§4).
   regression suite `Results: 109 passed, 0 failed` in BOTH simplifier arms (every one of the 7,444
   Rubi LHSs OK in narrow and wide modes, 0 UNSOUND, 0 false mutation matches); the P3 static gate
   14 / 0; Layer A at its §3.7 count, unchanged.
-- **Cost gate**: probe 06's claim-N cases re-measured on the changed tree — the `claim12` case must
-  fall materially from 173.2 s, and no `walk` case may regress. Then the §0.5 58-entry sample re-run
-  at the 30 s cap: the task's value is how many of the 580 stop timing out.
+- **Cost gate** (amended 2026-09-18, user decision, on the measurement below). The original gate was
+  "probe 06's `claim12` must fall materially from 173.2 s, and no `walk` case may regress". **Probe
+  06 cannot serve as a matcher cost gate**: measured (`probes/matcher/19-flat-absorb-cost.out`), its
+  `claim12` wall of 171.9 s is 147.3 s of MAXIMA CONDITION EVALUATION, not matching. The walk calls
+  `%mr_rule_accept`, which runs each rule's cond under `mr_cond_retry` on **every** complete binding,
+  and the number of complete bindings is itself exponential in product arity — 1,670 / 6,228 /
+  25,434 / **109,448** at k = 6 / 8 / 10 / 12. §3.8's own hard requirement forbids changing that set,
+  so no admissible change can move the number the old gate reads. The same walk with
+  `mr_cond_retry` false takes **0.17 s**, and integrand re-conversion — the cost probe 06's header
+  warns about — is 0.039 s for 3,513 calls, i.e. negligible.
+  The gate is therefore **probe 19's SBCL leg**, which measures the matcher and nothing else:
+  the `enum-s` wall (matcher time to enumerate ALL complete bindings, which is what the retry loop
+  pays) must fall materially at k = 12, the `m1` count must fall with it, and **`bindings` must be
+  identical at every k** — that is the result-preservation check, and it is the reason this gate
+  cannot be gamed. No `walk` case in probe 06 may regress.
+  Then the §0.5 58-entry sample re-run at the 30 s cap: the task's value is how many of the 580 stop
+  timing out.
 - **Stop rule**: if no result-preserving prune is found, **stop and report** — the residue is carried
   into p5c as a known cost item and attributed at the acceptance stop, rather than accepting a
   semantics change to buy speed.

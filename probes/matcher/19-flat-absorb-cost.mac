@@ -1,0 +1,43 @@
+/* probes/matcher/19-flat-absorb-cost.mac -- the Maxima leg of probe 19
+   (spec 3.8).  Splits probe 06's "claim12" wall into the part the matcher
+   spends searching and the part the rules' conditions spend being evaluated.
+
+   Three walks over the whole rule table on the same integrand
+   x*y1*...*y12, which is probe 06's claim12 case:
+
+     accept cond_retry=true   %mr_rule_accept -- pattern AND cond, on every
+                              complete binding until one is accepted.  This is
+                              exactly probe 06's claim12 walk.
+     accept cond_retry=false  the cond runs on the first complete binding only.
+     bindings (no cond)       %mr_rule_bindings -- pattern only.
+
+   Plus the cost of 3513 calls of ONE rule, which bounds the per-call
+   integrand re-conversion that probe 06's header warns about. */
+display2d : false$
+linel : 10000$
+print("R build", build_info()@version, build_info()@timestamp)$
+load("maxima_rubi.mac")$
+mr_load_all()$
+print("R rules", length(mr_rule_table))$
+
+ig : x * y1*y2*y3*y4*y5*y6*y7*y8*y9*y10*y11*y12$
+
+walk(name, f) := block([t0],
+  t0 : elapsed_real_time(),
+  for h in mr_rule_table do f(h),
+  print("R walk", name, "s", elapsed_real_time() - t0))$
+
+/* the re-conversion bound: the same rule 3513 times */
+block([one : first(mr_rule_table)],
+  walk("one-rule-x3513 (integrand re-conversion)", lambda([h], %mr_rule_accept(one, ig, x))))$
+
+mr_cond_retry : true$
+walk("accept cond_retry=true (= probe 06 claim12)", lambda([h], %mr_rule_accept(h, ig, x)))$
+
+mr_cond_retry : false$
+walk("accept cond_retry=false", lambda([h], %mr_rule_accept(h, ig, x)))$
+
+mr_cond_retry : true$
+walk("bindings only (no cond)", lambda([h], %mr_rule_bindings(h, ig, x)))$
+
+print("R DONE")$

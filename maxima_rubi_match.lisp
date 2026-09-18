@@ -403,6 +403,29 @@ the leftover elements and the bindings."
         ((null (cdr run)) (car run))
         (t (cons h run))))
 
+(defun absorber-parts (item b h)
+  "The elements ITEM is already committed to consuming from the leftovers, or
+:indeterminate when it still has a choice -- its name is unbound (it may take
+any sub-run), or it is an Optional bound to its own default (it may take that
+default instead of the value's parts)."
+  (let* ((opt (optional-p item))
+         (q (if opt (second item) item))
+         (name (and (eq (car q) +pattern+) (second q)))
+         (cell (and name (assoc name b :test #'eq))))
+    (cond ((null cell) :indeterminate)
+          ((and opt (equal (cdr cell) (third item))) :indeterminate)
+          (t (let ((v (cdr cell)))
+               (if (and (consp v) (eq (car v) h)) (cdr v) (list v)))))))
+
+(defun committed-parts (absorbers b h)
+  "Every element ABSORBERS are already committed to consuming, or
+:indeterminate when any one of them still has a choice."
+  (let ((parts '()))
+    (dolist (a absorbers (nreverse parts))
+      (let ((p (absorber-parts a b h)))
+        (when (eq p :indeterminate) (return :indeterminate))
+        (dolist (x p) (push x parts))))))
+
 (defun flat-absorb (absorbers left h b k)
   "Bound absorbers consume their value's parts; unbound ones share the
 leftovers -- a blank takes >= 1 element (G-1), an Optional >= 0 (default).
@@ -410,7 +433,17 @@ The last absorber, if unbound, takes the whole leftover run directly: only
 that size can leave nothing over, so enumerating smaller sub-runs (2^n of
 them) is pure waste.  An absorber's pattern is a Blank -- named, unnamed or
 headed, possibly under an Optional -- so matching it calls no condition hook:
-the pruning changes no result and no hook call."
+the pruning changes no result and no hook call.
+
+The same argument reaches one step earlier (spec 3.8).  When every absorber
+AFTER this one is committed -- see ABSORBER-PARTS -- they consume a fixed set
+of elements, so this one has to take exactly the leftovers minus that set:
+every other sub-run leaves the tail unable to empty LEFT, and REMOVE-PARTS
+keeps LEFT's order, so the surviving run is the one MAP-SUBSETS would have
+produced.  The binding set and its order are unchanged; only runs that could
+never complete are skipped.  This is what collapses the 3^n on a product:
+in (Times c_. x_) with x the bound integration variable, c_. stops enumerating
+every subset of the run and takes run minus x directly."
   (if (null absorbers)
       (and (null left) (funcall k b))
       (let* ((item (car absorbers))
@@ -433,8 +466,19 @@ the pruning changes no result and no hook call."
                 (and (or opt left)
                      (m1 q (flat-value left h default) b
                          (lambda (b2) (flat-absorb nil nil h b2 k))))
-                (loop for size from (if opt 0 1) to (length left)
-                      thereis (map-subsets size left
-                                           (lambda (run rest)
-                                             (m1 q (flat-value run h default) b
-                                                 (lambda (b2) (flat-absorb (cdr absorbers) rest h b2 k)))))))))))
+                (let ((tail (committed-parts (cdr absorbers) b h)))
+                  (if (eq tail :indeterminate)
+                      (loop for size from (if opt 0 1) to (length left)
+                            thereis (map-subsets size left
+                                                 (lambda (run rest)
+                                                   (m1 q (flat-value run h default) b
+                                                       (lambda (b2) (flat-absorb (cdr absorbers) rest h b2 k))))))
+                      ;; the tail is committed: only LEFT minus its parts can leave
+                      ;; it exactly what it consumes
+                      (let ((run (remove-parts tail left)))
+                        (and (not (eq run :fail))
+                             (or opt run)
+                             (m1 q (flat-value run h default) b
+                                 (lambda (b2)
+                                   (flat-absorb (cdr absorbers) (remove-parts run left)
+                                                h b2 k))))))))))))
