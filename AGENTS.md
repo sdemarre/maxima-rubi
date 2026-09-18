@@ -297,8 +297,10 @@ re-check.
 
 **Keep `--workers` at or below the core count.** Over-subscription is a
 FIDELITY problem, not only a speed one: every entry then runs contended, its
-wall depends on how many others happen to be running, and the 30 s cap is a
-WALL cap, so it decides verdicts. The planner warns when asked for more. The
+wall depends on how many others happen to be running. Since 2026-09-18 the cap
+is CPU seconds (below), which removes the scheduling-wait part of that but NOT
+the SMT part — a CPU-second is not a constant unit of work above the physical
+core count. The planner warns when asked for more workers than cores. The
 sharded launchers remain for reproducing an old record on its own path.
 
 `--job-seconds N` sizes the dispatch unit in estimated seconds; the default,
@@ -350,7 +352,7 @@ python3 test/p5_gate.py winner <switch> <run-1 c1> <run-1 c2> <run-1 c3> <flip c
 ```
 
 Guard (no Maxima): `python3 test/test_run_records.py` — green
-`Results: 41 passed, 0 failed`.
+`Results: 43 passed, 0 failed`.
 
 **Record A/B** — the entry-level diff of any two merged records (any
 class, shard files and re-check records too); use it for every
@@ -416,15 +418,30 @@ shared machine — an unrelated process burning CPU penalises a wall-capped entr
 and not a cpu-capped one — but that benefit is unquantified, and the cpu cap
 was NOT what made the records reproducible.
 
-Mechanism (`maxima_run`): `ulimit -S -t <cap>` in a `/bin/sh` wrapper, with
-the hard limit a few seconds above as a backstop. A soft limit kills SBCL with
-SIGXCPU, which reaches the wrapper as exit 128+SIGXCPU — unambiguous, unlike
-the SIGKILL of a hard limit or the OOM killer. The wrapper does not `exec`, so
-it survives its child and reports the child's CPU with `times`; a wall
-backstop (4x the cap, min 120 s) catches a process blocked rather than
-computing, and kills the process GROUP so the Maxima process is never
-orphaned. `ulimit` rather than `preexec_fn=resource.setrlimit` because
-preexec_fn is unsafe in a threaded process and the queue runner is one.
+Mechanism (`maxima_run`): `test/mr_cpu_cap.py` forks, polls the child's
+utime+stime in `/proc/PID/stat` every 100 ms and SIGKILLs it when it is over
+budget, then reports the child's EXACT CPU from `wait4`. It exits 200 on a cap
+hit. A wall backstop (4x the cap, min 120 s) catches a process blocked rather
+than computing, and kills the process GROUP, since the helper forks.
+
+**NOT `ulimit -t` / RLIMIT_CPU**, which was the first implementation and is
+unusable here: RLIMIT_CPU signals SIGXCPU at the soft limit, and SIGXCPU's
+default action is terminate AND DUMP CORE (signal(7)). A cap hit is a NORMAL
+outcome for this corpus, thousands per run. MEASURED 2026-09-18: the first
+CPU-capped class-1 run wrote 111 SBCL cores of 26-82 MB in 35 minutes (4.0 GB
+into /var/lib/systemd/coredump), filled the disk, and the resulting ENOSPC
+killed 14 of the 24 queue worker threads inside `maxima_run`'s mkstemp — and
+the run CARRIED ON at 10 workers and 57 % idle rather than failing.
+`ulimit -c 0` does NOT help: measured, the limit is applied
+(`/proc/PID/limits` shows 0) and the dump still happens, because `core_pattern`
+here pipes to systemd-coredump and the kernel ignores RLIMIT_CORE for a piped
+dump. SIGKILL never dumps, whatever `core_pattern` says.
+
+The polling interval is the DETERMINISM BAND — the child can overrun by up to
+one interval before the kill lands. MEASURED helper CPU against 10 s of child
+CPU: 20 ms 0.080 s (0.80 %), 100 ms 0.010 s (0.10 %), 250 ms and 1 s also
+0.010 s. 100 ms is already at the floor (the rest is fork/exec/wait4), so a
+coarser interval buys nothing and only widens the band.
 
 **Records state the kind** (`timeout: 30s cpu` on the `filter:` line) and the
 mergers refuse shards that disagree. **A cpu record and a wall record are NOT
