@@ -14,6 +14,9 @@ Working state: `todo/TODO.md`.
 - The remote is `origin` (`git@github.com:sdemarre/maxima-rubi.git`).
   Push only when the user asks; `master` is the integration branch.
 - Do not add `Co-Authored-By` trailers to commit messages.
+- **No `Claude-Session:` trailer either** (user decision, 2026-09-18). Commits up to
+  2026-09-17 carry one and older handoffs list it as a convention; that is historical.
+  Do not add it and do not "restore" it to commits that lack it.
 
 ## Handoffs
 
