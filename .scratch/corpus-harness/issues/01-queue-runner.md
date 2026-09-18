@@ -1,6 +1,6 @@
 # Corpus runs through one work queue instead of fixed shards
 
-Status: needs-triage
+Status: done (2026-09-18, 95e86bf)
 Type: task (decide the worker count, then build)
 Filed: 2026-09-15 (exact seen test brainstorm; dropped from that plan by user decision the same day —
 design `docs/superpowers/specs/2026-09-15-matcher-seen-test-intpart-design.md` §3.3)
@@ -157,4 +157,34 @@ capped at the core count, chunk size ~32 entries, dynamic pull, no cost model. S
 on class 1 by running one class-1 arm at 16 and one at 24 and comparing `ab_records.py` PASS->FAIL
 against a known record — the count is a FIDELITY decision, so it must be gated on verdicts, not wall
 clock.
+
+### 2026-09-18 — built and landed (95e86bf)
+
+`test/run_corpus_queue.py` is in, built from `01-queue-runner.patch` (which no
+longer applied after the switch/caps work; the driver refactor was re-done
+against current code and `run_entry` now carries the depth-cap count).
+
+Two decisions differ from the prototype:
+
+- **Dispatch stays per-entry.** The user asked for cost-sized jobs of ~10-30
+  min. Simulated on the 25,697 per-entry walls of the 2026-09-17 run, that
+  loses: per-entry 116 min, ~10-min units 120 min, ~30-min units 126 min at 24
+  workers (floor 116). Makespan >= core-seconds/workers + largest unit, so the
+  unit size is the tail bound, and every entry is already its own Maxima
+  subprocess — a bigger unit amortises nothing. Sized from the previous record,
+  a 10-min target produced a 35-min actual unit and a 30-min target a 91-min
+  one. Kept as `--job-seconds` (default 0) so the trade can be re-measured.
+- **`--workers` defaults to the core count and the planner warns above it**,
+  per the user's call.
+
+Class-2 acceptance, same code, merger-clean 965/965 in every arm: sharded 350 s
+/ 710 PASS; queue 24 workers 112 s / 707 (3.1x, 3 PASS->FAIL); queue 12 workers
+180 s / 708 (1.9x, 2 PASS->FAIL). All differing entries are verified->timeout
+at 23-27 s against the 30 s cap, and 2.3 e527/e528 are the pair this ticket
+already found in September — borderline, not a queue defect.
+
+**Left open:** the worker count per class. 24 costs one extra borderline entry
+over 12 on class 2 and is 1.7x faster; the machine is 12 physical cores + SMT.
+Settle it on class 1 with `ab_records.py`, not wall clock, since it is a
+fidelity decision. Also unmeasured: class 1 and class 3 through the queue.
 
