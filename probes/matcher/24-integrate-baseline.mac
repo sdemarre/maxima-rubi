@@ -1,0 +1,67 @@
+/* probes/matcher/24-integrate-baseline.mac -- what does the rule walk cost
+   against Maxima's own integrate on the same integrand, and where does the
+   walk's time actually go?  (2026-09-19, the r37 thread's closing
+   measurement.)  Two questions the 3_5 r37 investigation raised and probes
+   21-23 did not answer:
+
+     1. probe 06's integrand is not hard for Maxima.  integrate does it, and
+        every symbolic zero-check closes in milliseconds -- so the port's
+        wall is a property of the DISPATCH, not of the problem.
+     2. a discrimination tree over the rule table (user design direction,
+        2026-09-19) prunes MATCHING.  The match/cond split decides where
+        that pays, and it is not uniform: it is measured here over four
+        integrand shapes and differs by two orders of magnitude.
+
+   Answers are recomputed here rather than read from probe 22's work files,
+   so the probe is self-contained (~7 min: rubi(big) on HEAD is the cost). */
+display2d : false$
+linel : 10000$
+print("R build", build_info()@version, build_info()@timestamp)$
+load("maxima_rubi.mac")$
+mr_load_all()$
+big : x^2*(a+b*x)^3*(c+d*x)^4*(e+f*x)^5*(g+h*x)^6*log(x)$
+
+t : elapsed_real_time()$
+MI : integrate(big, x)$
+ti : elapsed_real_time() - t$
+print("R integrate s", ti, "chars", slength(string(MI)),
+      "nterms", if op(MI) = "+" then length(args(MI)) else 1)$
+
+t : elapsed_real_time()$
+A2 : rubi(big, x)$
+tr : elapsed_real_time() - t$
+print("R rubi s", tr, "chars", slength(string(A2)),
+      "nterms", if op(A2) = "+" then length(args(A2)) else 1)$
+print("R ratio rubi/integrate", float(tr/ti))$
+
+/* the symbolic zero-checks -- probe 22 closed these on the zero chain's
+   NUMERIC stage; ratsimp closes them outright */
+zt(name, d) := block([t0, r],
+  t0 : elapsed_real_time(), r : ratsimp(d),
+  print("R", name, "s", elapsed_real_time() - t0, "=", string(r)))$
+zt("ratsimp(diff(integrate)-big)", diff(MI, x) - big)$
+zt("ratsimp(diff(rubi)-big)", diff(A2, x) - big)$
+zt("ratsimp(integrate-rubi)", MI - A2)$
+
+/* Match cost (first complete binding per rule, no cond) against the full
+   accept (match + cond under the binding retry).  A discrimination tree
+   prunes the first column only.  NOTE the per-handle errcatch is harness
+   overhead inside the match column -- these are indicative, not a record;
+   sin(x)^x shows it (its "match" exceeds its accept). */
+split(name, ig) := block([t0, tm, ta, nb, na],
+  t0 : elapsed_real_time(), nb : 0,
+  for h in mr_rule_table do block([b],
+    b : errcatch(%mr_rule_bindings(h, ig, x)),
+    if b # [] and first(b) # false then nb : nb + 1),
+  tm : elapsed_real_time() - t0,
+  t0 : elapsed_real_time(), na : 0,
+  for h in mr_rule_table do if %mr_rule_accept(h, ig, x) # false then na : na + 1,
+  ta : elapsed_real_time() - t0,
+  print("R split", name, "match_s", tm, "accept_s", ta,
+        "cond_share", float(1 - tm/ta), "binding_rules", nb, "accepting", na))$
+split("x^20*log(x)", x^20*log(x))$
+split("x^3*log(x)", x^3*log(x))$
+split("(a+b*x)^3*log(x)", (a+b*x)^3*log(x))$
+split("(a+b*x)^2*(c+d*x)^3*sin(x)", (a+b*x)^2*(c+d*x)^3*sin(x))$
+split("sin(x)^x", sin(x)^x)$
+print("R DONE")$
