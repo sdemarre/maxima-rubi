@@ -184,6 +184,56 @@ no-answer 284. Note the yardstick's mechanics (probe: 4-stage symbolic
 zero-chain, no head rewrites, noun-on-answer-expected = PASS
 `no-answer`) — the A/B margin note in §4 carries it.
 
+> ### AMENDMENT 2026-09-20 — the baseline figure above is SUPERSEDED
+>
+> **The 593/965 (61.5 %) is inflated, and the §4 headline deficit is an
+> artifact of it.** The note above is right that
+> `noun-on-answer-expected = PASS no-answer` is a yardstick mechanic; what
+> was not known is that the probe applied it in the WRONG BRANCH TOO.
+> `probes/corpus/probe-integrate-sample.py` scored an entry `no-answer`
+> whenever `integrate` returned its own noun — including when the corpus
+> expects a REAL ANSWER, i.e. when `integrate` had simply failed.
+> `test/corpus_driver.py` splits that case out as `deferred` (FAIL) and has
+> done since 2026-08-25; the split was never back-ported to the probe, so
+> this baseline was scored on a looser ruler than the package record it was
+> compared against.
+>
+> Re-measured 2026-09-20 under the fixed probe, build
+> `branch_5_50_base_84_g4204fb669`, 30 s cpu cap, one shard per corpus
+> file through a pool of 12 (`test/corpus_class2.baseline.out`, merged
+> 965/965):
+>
+> | class | as recorded above | re-measured |
+> |---|---:|---:|
+> | `verified` | 186 | 186 |
+> | `expected` | 123 | 123 |
+> | `no-answer` | 284 | **54** |
+> | `deferred` | — | **230** |
+> | `unverified` | 357 | 357 |
+> | `unexpected` | 14 | 14 |
+> | `timeout` | 1 | 1 |
+> | **PASS** | **593 (61.5 %)** | **363 (37.6 %)** |
+>
+> Every other class is unchanged: the old `no-answer` 284 splits into 54
+> honest noun-matches and 230 entries `integrate` failed to integrate. The
+> entry-level A/B of the two baselines is 230 `no-answer -> deferred` and
+> **nothing else at all** — 0 FAIL->PASS, so the correction only ever takes
+> credit away.
+>
+> **Consequence for §4.** Against the corrected baseline the pilot package
+> record (500/965) is **+137 (+14.2 pts) AHEAD**, not −93 (−9.6 pts)
+> behind. Per file: 2.1 31/98 vs 29/98 (+2); 2.2 33/93 vs 33/93 (0);
+> 2.3 436/774 vs 301/774 (+135). Today's committed package record
+> (707/965, post-P5) is **+344 (+35.6 pts)** ahead.
+>
+> So class 2 DID beat its baseline at the pilot. The −9.6 pt deficit this
+> document reports, and the "package came out BELOW the baseline" reading
+> carried forward into the class-3 record's §5, never happened.
+>
+> Evidence: `probes/corpus/13-baseline-noanswer-conflation` (a standing
+> guard — it now reports 0 over-credited entries for classes 2, 3 and 6);
+> commits `f5ab334` (the probe fix) and `1024f15` (the re-runs).
+
 ## 4. Package run (3,180 rules) and A/B
 
 Task 10: the generalized launcher/driver/merger over the
