@@ -183,7 +183,9 @@ def _core_fingerprint():
                   [os.path.relpath(p, ROOT) for p in
                    glob.glob(os.path.join(ROOT, "rules", "class2", "*.mac"))] +
                   [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class3", "*.mac"))])
+                   glob.glob(os.path.join(ROOT, "rules", "class3", "*.mac"))] +
+                  [os.path.relpath(p, ROOT) for p in
+                   glob.glob(os.path.join(ROOT, "rules", "class6", "*.mac"))])
     h = hashlib.md5()
     for rel in rels:
         with open(os.path.join(ROOT, rel), "rb") as fh:

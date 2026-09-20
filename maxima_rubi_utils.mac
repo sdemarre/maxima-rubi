@@ -3880,10 +3880,202 @@ mr_use_gamma_flag : false$
    All six are native in this build (5.50.0). MEASURED 2026-08-28: an
    ordinary function application's op IS the function symbol
    (is(op(sinh(x)) = sinh) true — unlike the noun heads above), so
-   member() over the symbol list matches directly. */
+   member() over the symbol list matches directly.
+
+   ATOM BRANCH ADDED 2026-09-20 (class-6 Step 4, cluster A). The .m is
+     HyperbolicQ[u_] := MemberQ[$HyperbolicFunctions,
+                                If[AtomQ[u], u, Head[u]]]
+   (IntegrationUtilityFunctions.m L255-256) — for an ATOM the test is on
+   the symbol ITSELF, not on its head. This port read `atom(u) -> false`,
+   which was invisible for class 2 (its only two call sites, the
+   %mr_foE_ ones below, always hold an application) and WRONG for class 6,
+   whose 6.7.7 / 6.7.9 rules call HyperbolicQ[F] on a head symbol bound by
+   a head-position capture — 11 rules, where F is the atom sinh, not
+   sinh(...). Found by the cluster-A red test, not by inspection.
+   MEASURED 2026-09-20 (branch_5_50_base_84_g4204fb669 / SBCL 2.6.7):
+   atom(sinh) = true, atom(sinh(x)) = false,
+   is(member(sinh, [sinh, cosh]) = true) = true. */
 %mr_hyperbolicQ(u) := block([],
-  if atom(u) then false
-  else is(member(op(u), [sinh, cosh, tanh, coth, sech, csch]) = true))$
+  is(member(if atom(u) then u else op(u),
+            [sinh, cosh, tanh, coth, sech, csch]) = true))$
+
+/* Rubi IndependentQ[u,x] := FreeQ[u,x] (IntegrationUtilityFunctions.m
+   L149-150) — a one-line alias upstream, and the same here: the
+   argument order flips, as it does for every FreeQ port in this file
+   (freeof takes the variable first). Class 6 group D, 6 rules. */
+%mr_independentQ(u, x) := block([], is(freeof(x, u) = true))$
+
+/* Rubi QuotientOfLinearsP / QuotientOfLinearsParts / QuotientOfLinearsQ
+   (IntegrationUtilityFunctions.m L1729-1795). Class 6 group D/E: 6.7.9
+   r53/r54, Int[Sinh[u]^n]/Int[Cosh[u]^n] with u a quotient of linears.
+
+   Parts[u,x] returns [a, b, c, d] with u == (a + b x)/(c + d x); the
+   generated call sites read it exactly that way (rules/class6/6_7_9.mac
+   L429). The clause ORDER is the .m's and is load-bearing: the free
+   multiplicative factor and the free additive term are peeled BEFORE the
+   linear / quotient tests, so 7*(2+3x)/(4+5x) and 2+(1+x)/(3+4x) reduce
+   to the inner quotient and then scale/fold.
+
+   Q is strictly NARROWER than "has the shape": the .m ends
+   ... && NeQ[parts[[2]],0] && NeQ[parts[[4]],0], so a bare linear
+   (d = 0) and a bare reciprocal (b = 0) both HAVE Parts and are NOT
+   quotients of linears.
+
+   Maxima notes (measured 2026-09-20, branch_5_50_base_84_g4204fb669):
+   %mr_freeFactors returns 1 when no factor is free, %mr_freeTerms 0 when
+   no term is; `return` inside a `for` exits the LOOP, not the block, so
+   the ListQ branch carries a flag instead. */
+%mr_quotientOfLinearsP(u, x) := block([n, d],
+  if %mr_productQ(u) and not is(%mr_freeFactors(u, x) = 1)
+    then return(%mr_quotientOfLinearsP(%mr_nonfreeFactors(u, x), x)),
+  if not %mr_nonsumQ(u) and not is(%mr_freeTerms(u, x) = 0)
+    then return(%mr_quotientOfLinearsP(%mr_nonfreeTerms(u, x), x)),
+  /* the .m's 1/u_ clause. MEASURED 2026-09-20
+     (branch_5_50_base_84_g4204fb669): Maxima stores 1/(4+5*x) with
+     op "/" and args [1, 5*x+4] — NOT a power with exponent -1 and not a
+     product, so a powerQ/part(u,2)=-1 test never fires. num/denom is
+     the representation-independent read and also covers a (..)^-1 form.
+     The clause must stay AHEAD of the u_/v_ one: %mr_linearQ(1, x) is
+     false (faithfully — Rubi's LinearQ[1,x] is False too), so a bare
+     reciprocal would otherwise fall all the way through to the final
+     clause and report the wrong shape. */
+  n : num(u), d : denom(u),
+  if not is(d = 1) and is(n = 1)
+    then return(%mr_quotientOfLinearsP(d, x)),
+  if %mr_linearQ(u, x) then return(true),
+  if not is(d = 1) and %mr_linearQ(n, x) and %mr_linearQ(d, x)
+    then return(true),
+  is(u = x) or is(freeof(x, u) = true))$
+
+%mr_quotientOfLinearsParts(u, x) := block([a, p, n, d],
+  if %mr_productQ(u) then (
+    a : %mr_freeFactors(u, x),
+    if not is(a = 1) then (
+      p : %mr_quotientOfLinearsParts(%mr_nonfreeFactors(u, x), x),
+      return([a*part(p, 1), a*part(p, 2), part(p, 3), part(p, 4)]))),
+  if not %mr_nonsumQ(u) then (
+    a : %mr_freeTerms(u, x),
+    if not is(a = 0) then (
+      p : %mr_quotientOfLinearsParts(%mr_nonfreeTerms(u, x), x),
+      return([part(p, 1) + a*part(p, 3), part(p, 2) + a*part(p, 4),
+              part(p, 3), part(p, 4)]))),
+  /* the .m's 1/u_ clause — swaps the pairs. See the note in
+     %mr_quotientOfLinearsP on why this reads num/denom and why it must
+     precede the linear and u_/v_ clauses. */
+  n : num(u), d : denom(u),
+  if not is(d = 1) and is(n = 1) then (
+    p : %mr_quotientOfLinearsParts(d, x),
+    return([part(p, 3), part(p, 4), part(p, 1), part(p, 2)])),
+  if %mr_linearQ(u, x)
+    then return([%mr_coeff(u, x, 0), %mr_coeff(u, x, 1), 1, 0]),
+  if not is(d = 1) and %mr_linearQ(n, x) and %mr_linearQ(d, x)
+    then return([%mr_coeff(n, x, 0), %mr_coeff(n, x, 1),
+                 %mr_coeff(d, x, 0), %mr_coeff(d, x, 1)]),
+  /* the .m's last clause: x -> {0,1,1,0}; free of x -> {u,0,1,0}; and
+     the unexpected form takes the SAME value after a Message, which
+     this port does not emit (nothing reads it). */
+  if is(u = x) then [0, 1, 1, 0] else [u, 0, 1, 0])$
+
+%mr_quotientOfLinearsQ(u, x) := block([p, r, e],
+  if listp(u) then (
+    r : true,
+    for e in u do (if not %mr_quotientOfLinearsQ(e, x) then r : false),
+    return(r)),
+  if not %mr_quotientOfLinearsP(u, x) then return(false),
+  p : %mr_quotientOfLinearsParts(u, x),
+  is(%mr_neQ(part(p, 2), 0) and %mr_neQ(part(p, 4), 0)))$
+
+/* ---- class 6 cluster C: the ExpandTrig family -----------------------
+ * Rubi IntegrationUtilityFunctions.m L4030-4092. The class's biggest
+ * porting item: ExpandTrigReduce 26 rules, ExpandTrigToExp 4,
+ * ExpandTrigExpand 1.
+ *
+ * Substrate map, MEASURED 2026-09-20 (branch_5_50_base_84_g4204fb669):
+ *   TrigReduce  -> trigreduce      (handles the hyperbolics:
+ *                  trigreduce(sinh(x)*cosh(x)) = sinh(2*x)/2)
+ *   TrigExpand  -> trigexpand      (trigexpand(cosh(2*x)) =
+ *                  sinh(x)^2+cosh(x)^2)
+ *   TrigToExp   -> exponentialize
+ *   ReplaceAll[.., x->v] -> subst(v, x, ..)   (subst is new, old, expr)
+ *
+ * TWO DOCUMENTED DEVIATIONS from the .m, both forced by the substrate:
+ *
+ * 1. The .m carries a THIRD ExpandTrigReduce clause,
+ *      u_.*F_[n_+v_.]^m_. /; MemberQ[{Sinh,Cosh},F] && IntegerQ[m]
+ *                          && RationalQ[n]
+ *    whose own comment says it exists "because TrigReduce expands
+ *    Sinh[n+v] and Cosh[n+v] to exponential form if n is a number"; it
+ *    substitutes a fresh symbol for n and puts it back afterwards.
+ *    Maxima's trigreduce has NO such behaviour — measured,
+ *    trigreduce(sinh(2+v)) = sinh(v+2) and trigreduce(sinh(2+v)^2) =
+ *    (cosh(2*(v+2))-1)/2, both staying hyperbolic — so the clause is a
+ *    workaround for a problem this build does not have and is NOT
+ *    ported. If trigreduce ever starts exponentializing, this is the
+ *    note to come back to.
+ *
+ * 2. exponentialize(sinh(x)) = (%e^x-%e^-x)/2, whose op is "/" — NOT a
+ *    sum — while Mathematica's TrigToExp returns the distributed
+ *    -E^-x/2 + E^x/2. The .m's SumQ branch therefore fires upstream and
+ *    would not here, changing whether SimplifyIntegrand is mapped per
+ *    term. expand() restores the upstream shape (measured:
+ *    expand(exponentialize(sinh(x))) = %e^x/2-%e^-x/2, op "+").
+ */
+
+/* NormalizeTrigReduce[a_.*F_[u_]^n_.,x] := a*F[ExpandToSum[u,x]]^n
+   /; FreeQ[{F,a,n},x] && PolynomialQ[u,x] && Exponent[u,x]>0 — the
+   trig/hyperbolic argument comes back as a SUM rather than a factored
+   product, so trigreduce's cosh(2*(a+b*x)) reads cosh(2*a+2*b*x). */
+%mr_ntrHeads : [sinh, cosh, tanh, coth, sech, csch,
+                sin, cos, tan, cot, sec, csc]$
+
+%mr_normalizeTrigReduceFactor(f, x) := block([b, e, h, u],
+  b : f, e : 1,
+  if %mr_powerQ(f) then (b : part(f, 1), e : part(f, 2)),
+  if atom(b) then return(f),
+  h : op(b),
+  if not is(member(h, %mr_ntrHeads) = true) then return(f),
+  if not is(length(args(b)) = 1) then return(f),
+  u : part(b, 1),
+  /* PolynomialQ[u,x] && Exponent[u,x] > 0 */
+  if freeof(x, u) or not %mr_polyQ(u, x) then return(f),
+  apply(h, [%mr_expandToSum(u, x)])^e)$
+
+%mr_normalizeTrigReduce(t, x) := block([L, r, f],
+  L : if %mr_productQ(t) then args(t) else [t],
+  r : 1,
+  for f in L do r : r * %mr_normalizeTrigReduceFactor(f, x),
+  r)$
+
+%mr_expandTrigReduceAux(u, x) := block([v],
+  v : expand(trigreduce(u)),
+  if %mr_nonsumQ(v) then %mr_normalizeTrigReduce(v, x)
+  else map(lambda([t], %mr_normalizeTrigReduce(t, x)), v))$
+
+%mr_expandTrigReduce3(u, v, x) := block([w],
+  w : %mr_expandTrigReduceAux(v, x),
+  if %mr_nonsumQ(w) then u*w else map(lambda([t], u*t), w))$
+
+/* arity dispatch, the %mr_expandToSum idiom: (u,x) and (u,v,x) */
+%mr_expandTrigReduce : lambda([a, b, [c]],
+  if length(c) = 0
+  then %mr_expandTrigReduceAux(a, b)
+  else %mr_expandTrigReduce3(a, b, part(c, 1)))$
+
+%mr_expandTrigToExp3(u, v, x) := block([w],
+  w : expand(exponentialize(v)),   /* deviation 2 above */
+  w : if %mr_nonsumQ(w) then %mr_simp(u*w, x)
+      else map(lambda([t], %mr_simp(u*t, x)), w),
+  %mr_expandIntegrand(%mr_freeFactors(w, x), %mr_nonfreeFactors(w, x), x))$
+
+/* the .m's ExpandTrigToExp[u,x] := ExpandTrigToExp[1,u,x] */
+%mr_expandTrigToExp : lambda([a, b, [c]],
+  if length(c) = 0
+  then %mr_expandTrigToExp3(1, a, b)
+  else %mr_expandTrigToExp3(a, b, part(c, 1)))$
+
+%mr_expandTrigExpand(u, F, v, m, n, x) := block([w],
+  w : subst(v, x, expand(trigexpand(apply(F, [n*x]))^m)),
+  if %mr_nonsumQ(w) then u*w else map(lambda([t], u*t), w))$
 
 /* Rubi EveryQ — func over every element, true iff all true.
    MEASURED 2026-08-28 (5.50.0/SBCL): list iteration is `for e in
@@ -4582,7 +4774,14 @@ mr_use_gamma_flag : false$
     r : %mr_foE_testAux(base, exn, x, [true, part(st, 2), part(st, 3)]),
     if atom(r) then false else r
   )
-  else if %mr_hyperbolicQ(u) and %mr_linearQ(part(u, 1), x) then (
+  /* not atom(u): part(u, 1) below errors on an atom ("part: argument
+     must be a non-atomic expression", measured 2026-09-20), and Maxima's
+     `and` evaluates its right side once the left is true. Until
+     2026-09-20 %mr_hyperbolicQ answered false for EVERY atom, which
+     shielded this site by accident; the atom branch is now faithful to
+     the .m, so the assumption this site always had is stated. */
+  else if not atom(u) and %mr_hyperbolicQ(u)
+        and %mr_linearQ(part(u, 1), x) then (
     /* :4315-4316 — hyperbolic of a linear form: base %e, flag
        UNCHANGED (no explicit power). */
     r : %mr_foE_testAux(%e, part(u, 1), x, st),
@@ -4694,7 +4893,14 @@ mr_use_gamma_flag : false$
       x^%mr_fullSimplify(log(part(u, 1))*%mr_coeff(part(u, 2), x, 1)
                          /(log(F)*%mr_coeff(v, x, 1)))
   )
-  else if %mr_hyperbolicQ(u) and %mr_linearQ(part(u, 1), x) then (
+  /* not atom(u): part(u, 1) below errors on an atom ("part: argument
+     must be a non-atomic expression", measured 2026-09-20), and Maxima's
+     `and` evaluates its right side once the left is true. Until
+     2026-09-20 %mr_hyperbolicQ answered false for EVERY atom, which
+     shielded this site by accident; the atom branch is now faithful to
+     the .m, so the assumption this site always had is stated. */
+  else if not atom(u) and %mr_hyperbolicQ(u)
+        and %mr_linearQ(part(u, 1), x) then (
     /* :4291-4300 — the .m's Switch on Head[u]: sinh/cosh/tanh/coth/sech/
        csch of the tmp = X^(coeff ratio) form. */
     tmp : x^%mr_fullSimplify(%mr_coeff(part(u, 1), x, 1)

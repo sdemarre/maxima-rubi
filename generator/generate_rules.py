@@ -39,6 +39,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # table lookup would NameError/TypeError. Import under an alias.
 from translation_table import translate as table_translate
 from translation_table import RENAME, RESTRUCTURE
+
+# Values in the translation table that name an EMITTER CASE rather than a
+# Maxima function. Reaching the generic `name(args)` emission with one of
+# these means a table row exists whose handler nobody implemented — the
+# class-6 `Integral -> "noun"` row did exactly that on 2026-09-20 and
+# produced `noun(expr, x)` in 8 rules. Guarded at the head boundary below.
+HANDLER_ONLY = frozenset({"noun", "block", "cmp", "if",
+                          "loggamma", "power", "plus", "times"})
 import mma_reader as rd  # the evaluated-FullForm reader (spec 3.4)
 from fractions import Fraction
 
@@ -1187,7 +1195,19 @@ def emit_head(head, arglist, ctx):
         # mr_int's seen test is exact membership for every source (exact
         # seen test design 3.1), so 9.1 needs no entry of its own.
         return f"mr_int({arglist[0]}, {arglist[1]})"
-    if head in ("Unintegrable", "CannotIntegrate"):
+    if RESTRUCTURE.get(head) == "noun" or RENAME.get(head) == "noun":
+        # Rubi's inert-integral heads. Keyed on the TABLE's handler value,
+        # not on a hardcoded token tuple: class 6 added a third one
+        # (Integral, 8 rules — 6.3.11/6.3.12/6.1.12) whose table row the
+        # tuple did not know about, so translate() succeeded and the head
+        # fell through to the generic call emission as `noun(expr, x)` — a
+        # call to a function that does not exist, i.e. a silently wrong
+        # answer at runtime. Caught 2026-09-20 by the Step-5 static greps
+        # (mr_unintegrable came out 18, not the census's 18 + 8); see also
+        # the HANDLER_ONLY guard below, which now makes this class of
+        # mistake a generation error rather than a bad rule file.
+        if len(arglist) != 2:
+            raise GenError(f"{key} r{n}: {head} arity {len(arglist)}")
         return f"mr_unintegrable({arglist[0]}, {arglist[1]})"
     if head == "With" or head == "Module":
         if len(arglist) != 2:
@@ -1331,6 +1351,13 @@ def emit_head(head, arglist, ctx):
         raise GenError(f"{key} r{n}: unlisted head {head!r} — extend the "
                        f"translation table (T4 §2) before generating")
     name = translate_token(head, ctx)
+    if name in HANDLER_ONLY:
+        raise GenError(
+            f"{key} r{n}: {head!r} maps to {name!r}, which is an EMITTER "
+            f"HANDLER NAME, not a Maxima function — the translation table "
+            f"has a row for it but no emitter case claims it, so this would "
+            f"emit a call to a function that does not exist. Add the "
+            f"emitter case (or map the token to a real name).")
     # FIX F2: Maxima function calls use parentheses; the brief emitted the
     # Mathematica bracket form name[args], which is a parse error / noun
     # form in Maxima.
@@ -1580,7 +1607,7 @@ NINE_ONE = ("Rubi/IntegrationRules/9 Miscellaneous/"
 NINE_ONE_TOTAL = 28
 
 def configure(class_num):
-    """Point the generator at class <class_num> (1, 2 or 3)."""
+    """Point the generator at class <class_num> (1, 2, 3 or 6)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
@@ -1589,8 +1616,14 @@ def configure(class_num):
     # catch-all (class-3 deferred campaign C6b; the single-line
     # If[TrueQ[$LoadShowSteps], …] wrapper the census parser never
     # picked up — unwrap_showsteps_line).
+    # class 6: 390 — the census count with no adjustment. Unlike class 3
+    # this section has NO If[TrueQ[$LoadShowSteps], …] wrapper at all
+    # (measured 2026-09-20: 0 LoadShowSteps lines over the 13 .m files),
+    # so unwrap_showsteps_line finds nothing to recover and the census
+    # and the emitter agree exactly
+    # (probes/translation/05-class6-syntax-census.out).
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
-                      3: 334}[class_num]
+                      3: 334, 6: 390}[class_num]
 
 
 def _emit_source(rel_m, key, only, total, load_lines, note=""):

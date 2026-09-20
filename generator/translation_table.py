@@ -125,6 +125,20 @@ RENAME = {
     "Si": "expintegral_si",
     "Ci": "expintegral_ci",
     "LogIntegral": "expintegral_li",
+    # class 6 (2026-09-20): the RULE-side spellings of the same two
+    # functions. Mathematica's CoshIntegral[z] IS Chi(z) and
+    # SinhIntegral[z] IS Shi(z), so these map onto the same natives the
+    # Chi/Shi rows above give the answer side. Unlike Chi/Shi these are
+    # NOT inert: class 6 emits them from replacements (6.1.12 Sinh[d
+    # x^n]/x and its Cosh sibling, 1 rule each —
+    # probes/translation/05-class6-syntax-census.out). Re-measured on the
+    # rule side, build branch_5_50_base_84_g4204fb669
+    # (probes/answer-side/03-class6-answer-side-identities.out R1-R4):
+    # d/dz expintegral_chi(z) = cosh(z)/z and d/dz expintegral_shi(z) =
+    # sinh(z)/z, both residuals closing through the harness zero chain,
+    # both float-evaluable.
+    "CoshIntegral": "expintegral_chi",
+    "SinhIntegral": "expintegral_shi",
     # 1:1 rename to the native spelling: the active class-3 corpus
     # expected texts are natively spelled (2,793 polylog( occurrences —
     # probes/corpus/03-class3-answer-heads.out). The build's
@@ -151,6 +165,20 @@ RENAME = {
     # Complex[Identity[0], a] (9.1.m L14/L15). Maxima's identity(x)
     # returns x (describe("identity", exact), 2026-09-12).
     "Identity": "identity",
+    # class-6 utility ports (Step 4): the %mr_ names do not exist yet —
+    # the table is static closure, the ports land at Step 4 (the class-2
+    # and class-3 port rows above are the precedent for this state). The
+    # census's token closure
+    # (.scratch/class-ports/issues/03-class6-hyperbolic-functions.md,
+    # 2026-09-20) adjudicates these as the class's WHOLE porting surface:
+    # 8 functions over 53 rule-uses.
+    "HyperbolicQ": "%mr_hyperbolicQ",
+    "IndependentQ": "%mr_independentQ",
+    "QuotientOfLinearsQ": "%mr_quotientOfLinearsQ",
+    "QuotientOfLinearsParts": "%mr_quotientOfLinearsParts",
+    "ExpandTrigReduce": "%mr_expandTrigReduce",
+    "ExpandTrigToExp": "%mr_expandTrigToExp",
+    "ExpandTrigExpand": "%mr_expandTrigExpand",
     # Rubi's undocumented $UseGamma control global (absent from Rubi.m;
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):
@@ -163,6 +191,17 @@ RESTRUCTURE = {
     "IGtQ": "cmp", "ILtQ": "cmp", "ILeQ": "cmp",
     "Int": "mr_int",              # Int[smaller, x] -> mr_int(smaller, x)
     "Unintegrable": "noun", "CannotIntegrate": "noun",   # -> mr_unintegrable
+    # class 6 (2026-09-20): Rubi's third inert-integral head, same 2-arg
+    # shape (Int[Tanh[a+b x+c x^2]^n, x] := Integral[Tanh[a+b x+c x^2]^n,
+    # x], 6.3.12 and siblings; 8 rules — the census's group F). It is the
+    # deliberate "leave it unevaluated" answer, so it takes the same noun
+    # handler and the same mr_unintegrable(f, x) emission, which also
+    # makes those 8 rules give-up rules for the mr_giveup_last switch.
+    # NOTE: no class-6 corpus answer spells Integral( — the discovery
+    # pass finds only Unintegrable( 364 and CannotIntegrate( 47
+    # (probes/corpus/12-class6-answer-heads.out) — so whether these 8
+    # rules' entries close is a Step-9 A/B question, not a table one.
+    "Integral": "noun",
     "IntHide": "mr_int",
     # Sum is emitter-dispatched (Task 6 E5): mr_sum(fun, var, lo, hi) is
     # 4-arg; Rubi's iterator {var, lo, hi} must be split, not renamed 1:1.
@@ -203,6 +242,19 @@ RESTRUCTURE = {
     "Integrate": "integrate",
     "Abs": "abs",
     "Sinh": "sinh", "Tanh": "tanh", "Csc": "csc", "Sec": "sec",
+    # class 6 (2026-09-20): the four hyperbolic heads Sinh/Tanh above did
+    # not already cover — Cosh 172 rules, Csch 41, Sech 38, Coth 34
+    # (probes/translation/05-class6-syntax-census.out), the census's
+    # group A and the bulk of its unlistied token mass. All four are
+    # native, and keeping the native spelling is what lets `diff`
+    # differentiate the answer and cancel against the corpus's own native
+    # texts (sinh( 9,101 / cosh( 7,660 / tanh( 4,556 / sech( 3,000 /
+    # coth( 2,859 / csch( 2,007 occurrences —
+    # probes/corpus/12-class6-answer-heads.out). Measured bound,
+    # differentiable through the harness zero chain and float-evaluable
+    # on branch_5_50_base_84_g4204fb669:
+    # probes/answer-side/03-class6-answer-side-identities.out H1-H6/E1-E6.
+    "Cosh": "cosh", "Coth": "coth", "Sech": "sech", "Csch": "csch",
     "Piecewise": "mr_piecewise", "Min": "min", "Max": "max",
     "CoefficientList": "%mr_coefficientList",
     "Power": "power", "Plus": "plus", "Times": "times",

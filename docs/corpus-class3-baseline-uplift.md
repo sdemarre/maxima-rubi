@@ -350,6 +350,65 @@ reviewer-recomputed with zero mismatches):
 | 3.5 `Logarithm functions` | 314 | 158/314 (50.3 %) | 197/314 (62.7 %) | +39 (+12.4 pt) |
 | **TOTAL** | **3085** | **1441/3085 (46.7 %)** | **1736/3085 (56.3 %)** | **+295 (+9.6 pt)** |
 
+> ### AMENDMENT 2026-09-20 — the baseline column above is SUPERSEDED
+>
+> **The 1441/3085 (46.7 %) is inflated.** The native-`integrate` baseline
+> probe scored an entry `no-answer` whenever `integrate` returned its own
+> noun — including when the corpus expects a REAL ANSWER, i.e. when
+> `integrate` had simply failed. `test/corpus_driver.py` splits that case
+> out as `deferred` (FAIL) and has done since 2026-08-25; the split was
+> never back-ported to `probes/corpus/probe-integrate-sample.py`, so every
+> baseline was scored on a looser ruler than the package record it was
+> compared against. Fixed 2026-09-20 (commit `f5ab334`).
+>
+> Re-measured under the fixed probe, build
+> `branch_5_50_base_84_g4204fb669`, 30 s cpu cap, one shard per corpus
+> file through a pool of 12 (`test/corpus_class3.baseline.out`, merged
+> 3085/3085): the baseline's `no-answer` 397 splits into **147** honest
+> noun-matches and **250** `deferred`.
+>
+> | | as recorded above | re-measured |
+> |---|---:|---:|
+> | baseline PASS | **1441 (46.7 %)** | **1190 (38.6 %)** |
+>
+> The entry-level A/B of the two baselines is 250 `no-answer -> deferred`
+> plus 5 entries drifting into `timeout` (4 `unverified`, 1 `verified`);
+> 0 FAIL->PASS. The drift is NOT the fix — the re-run used a wider pool
+> (12 over 38 shards, against 3 shards in 2026-08-30), so a few near-cap
+> entries were charged more cpu. Exactly one of them crossed the PASS
+> boundary, which is why the measured 1190 is one below the 1191 predicted
+> analytically.
+>
+> **Corrected per-file A/B** (baseline re-measured, package = today's
+> committed `test/corpus_class3.out`, 1657/3085):
+>
+> | corpus file | N | baseline | package | delta |
+> |---|---:|---|---|---|
+> | 3.1.2 | 193 | 87 (45.1 %) | 193 (100.0 %) | +106 (+54.9 pt) |
+> | 3.1.4 | 456 | 206 (45.2 %) | 260 (57.0 %) | +54 (+11.8 pt) |
+> | 3.1.5 | 249 | 23 (9.2 %) | 56 (22.5 %) | +33 (+13.3 pt) |
+> | 3.2.1 | 314 | 162 (51.6 %) | 219 (69.7 %) | +57 (+18.2 pt) |
+> | 3.2.2 | 263 | 121 (46.0 %) | 177 (67.3 %) | +56 (+21.3 pt) |
+> | 3.2.3 | 108 | 51 (47.2 %) | 38 (35.2 %) | −13 (−12.0 pt) |
+> | 3.3 | 547 | 161 (29.4 %) | 255 (46.6 %) | +94 (+17.2 pt) |
+> | 3.4 | 641 | 246 (38.4 %) | 303 (47.3 %) | +57 (+8.9 pt) |
+> | 3.5 | 314 | 133 (42.4 %) | 156 (49.7 %) | +23 (+7.3 pt) |
+> | **TOTAL** | **3085** | **1190 (38.6 %)** | **1657 (53.7 %)** | **+467 (+15.1 pt)** |
+>
+> Against the 1736 figure this document records, the corrected margin is
+> **+546 (+17.7 pt)** rather than +295 (+9.6 pt).
+>
+> **The claim immediately below is WITHDRAWN.** Class 3 is not "the first
+> RUNBOOK-PORTED class to beat the baseline", and M2 did not come out
+> below its baseline: class 2's pilot record was **+137 (+14.2 pts)**
+> ahead of its corrected baseline (see the amendment in
+> `docs/corpus-class2-baseline-uplift.md` §3). Class 3's result stands on
+> its own numbers — it is simply not the first.
+>
+> Evidence: `probes/corpus/13-baseline-noanswer-conflation` (a standing
+> guard — now 0 over-credited entries for classes 2, 3 and 6); commits
+> `f5ab334` (fix) and `1024f15` (re-runs).
+
 Unlike M2 (where the package PASS total came out BELOW the baseline,
 −9.6 pt at the pilot), class 3 is net **positive: +295 entries /
 +9.6 points — the first RUNBOOK-PORTED class to beat the baseline**

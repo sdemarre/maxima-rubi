@@ -61,6 +61,16 @@ SWITCHES_RE = re.compile(
     r"\bswitches: (" + " ".join(rf"{s}={_VALUE_RE[s]}" for s in SWITCHES) + r")")
 SHARD_FILE_RE = re.compile(r"\.shard(?:\d+\.(?:out|log|files|caps)|-pids)$")
 
+# A native-`integrate` baseline (probes/corpus/probe-integrate-sample.py)
+# runs no package code, so it has no switch arm to report — but a record
+# that states NOTHING is exactly the pre-P5 shape common_switches() exists
+# to reject, and a class-6 baseline merge hit that on 2026-09-20. It
+# therefore states its arm EXPLICITLY, as a value distinct from every
+# package arm: baseline shards agree with each other, and a baseline shard
+# can never be merged with a package shard (the guard reports two arms).
+BASELINE_ARM = "none (native integrate baseline)"
+BASELINE_RE = re.compile(r"\bswitches: (none \(native integrate baseline\))")
+
 
 def valid_value(name, value):
     """Is `value` a legal setting for switch `name`?"""
@@ -91,6 +101,9 @@ def record_switches(path):
         for line in fh:
             if line.startswith("filter:"):
                 m = SWITCHES_RE.search(line)
+                if m:
+                    return m.group(1)
+                m = BASELINE_RE.search(line)
                 return m.group(1) if m else None
     return None
 

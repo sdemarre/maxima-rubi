@@ -59,7 +59,8 @@ trap 'rm -rf "$TMP"' EXIT
 # different order would make every freshly built core look stale.
 FP=$( { printf '%s\n' maxima_rubi.mac maxima_rubi_utils.mac maxima_rubi_dispatch.lisp \
         maxima_rubi_match.lisp maxima_rubi_tree.lisp
-        ls rules/class1/*.mac rules/class2/*.mac rules/class3/*.mac
+        ls rules/class1/*.mac rules/class2/*.mac rules/class3/*.mac \
+           rules/class6/*.mac
       } | LC_ALL=C sort | xargs -d '\n' cat | md5sum | cut -d' ' -f1 )
 
 # The image is saved from a session that has ALREADY run a top-level, so

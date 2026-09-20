@@ -1,0 +1,191 @@
+# class-6 rule syntax census, 2026-09-20
+=== class-6 rule syntax census (only Rubi.m-loaded files) ===
+loaded rule files: 13   rules: 390   with /; condition: 390
+optional-capture histogram (rules by # distinct a_. names):
+  1 optional names: 18 rules
+  2 optional names: 16 rules
+  3 optional names: 48 rules
+  4 optional names: 55 rules
+  5 optional names: 70 rules
+  6 optional names: 89 rules
+  7 optional names: 54 rules
+  8 optional names: 30 rules
+  9 optional names: 5 rules
+  10 optional names: 1 rules
+  11 optional names: 2 rules
+  13 optional names: 2 rules
+
+rule classification: AUTO (tokens all BUILTIN/B_TIER): 103 ( 26.4%)
+                      MANUAL (>=1 C-tier token/exotic pattern): 287 ( 73.6%)
+
+== condition tokens: tier | rules | uses | token (U = unlistied) ==
+  B   rules= 377  uses=  377  FreeQ
+  B   rules= 148  uses=  212  IGtQ
+  b   rules= 106  uses=  129  NeQ
+  B   rules=  81  uses=   93  IntegerQ
+  b   rules=  69  uses=   86  EqQ
+  B   rules=  49  uses=   49  Not
+  B   rules=  37  uses=   39  GtQ
+  B   rules=  28  uses=   30  LtQ
+  C   rules=  25  uses=   28  LinearQ
+  B   rules=  23  uses=   27  ILtQ
+  C   rules=  18  uses=   18  BinomialQ
+  b   rules=  16  uses=   16  IntegersQ
+  B   rules=  14  uses=   14  Log
+  C   rules=  12  uses=   12  BinomialMatchQ
+  b   rules=  12  uses=   14  Simplify
+  U   rules=  11  uses=   17  HyperbolicQ
+  b   rules=  11  uses=   11  RationalQ
+  b   rules=  10  uses=   10  FractionQ
+  C   rules=  10  uses=   10  LinearMatchQ
+  B   rules=   6  uses=    6  Cancel
+  U   rules=   6  uses=    6  IndependentQ
+  C   rules=   6  uses=   12  PolynomialQ
+  B   rules=   4  uses=    4  GeQ
+  C   rules=   4  uses=    4  QuadraticMatchQ
+  C   rules=   4  uses=    4  QuadraticQ
+  C   rules=   3  uses=    6  PolyQ
+  U   rules=   2  uses=    2  QuotientOfLinearsQ
+  C   rules=   2  uses=    2  SumSimplerQ
+  U   rules=   1  uses=    2  MemberQ
+
+== replacement tokens: tier | rules | uses | token (U = unlistied) ==
+  b   rules= 346  uses=  434  Int
+  U   rules= 172  uses=  235  Cosh
+  B   rules= 163  uses=  224  Sinh
+  B   rules=  60  uses=  112  Log
+  b   rules=  52  uses=   52  Subst
+  U   rules=  41  uses=   65  Csch
+  U   rules=  38  uses=   60  Sech
+  B   rules=  35  uses=   50  Tanh
+  U   rules=  34  uses=   49  Coth
+  U   rules=  26  uses=   26  ExpandTrigReduce
+  b   rules=  24  uses=   35  ExpandToSum
+  b   rules=  18  uses=   18  ExpandIntegrand
+  b   rules=  18  uses=   18  Unintegrable
+  b   rules=  10  uses=   20  FracPart
+  b   rules=  10  uses=   10  IntPart
+  U   rules=   9  uses=    9  F
+  b   rules=   9  uses=    9  With
+  B   rules=   8  uses=   10  Coefficient
+  B   rules=   8  uses=    8  Denominator
+  U   rules=   8  uses=    8  G
+  U   rules=   8  uses=    8  Integral
+  b   rules=   8  uses=    8  Simplify
+  b   rules=   6  uses=    6  Module
+  b   rules=   5  uses=    5  Dist
+  b   rules=   5  uses=    5  IntHide
+  U   rules=   4  uses=    4  ExpandTrigToExp
+  B   rules=   2  uses=    2  Hypergeometric2F1
+  U   rules=   2  uses=    2  QuotientOfLinearsParts
+  b   rules=   2  uses=    4  Rt
+  b   rules=   2  uses=    2  SimplifyIntegrand
+  U   rules=   1  uses=    1  CoshIntegral
+  U   rules=   1  uses=    1  ExpandTrigExpand
+  U   rules=   1  uses=    1  H
+  U   rules=   1  uses=    1  SinhIntegral
+
+== pattern features ==
+    159  head in pattern: Cosh
+     41  head in pattern: Coth
+     46  head in pattern: Csch
+     54  head in pattern: Log
+     46  head in pattern: Sech
+    157  head in pattern: Sinh
+     41  head in pattern: Tanh
+    390  optional captures
+    178  power of capture/x in pattern
+    390  x_Symbol
+
+== C-tier tokens in conditions/rules (rules containing) ==
+    25  LinearQ
+    18  BinomialQ
+    12  BinomialMatchQ
+    11  HyperbolicQ
+    10  LinearMatchQ
+     6  IndependentQ
+     6  PolynomialQ
+     4  QuadraticMatchQ
+     4  QuadraticQ
+     3  PolyQ
+     2  QuotientOfLinearsQ
+     2  SumSimplerQ
+     1  MemberQ
+== C-tier tokens in replacements ==
+   172  Cosh
+    41  Csch
+    38  Sech
+    34  Coth
+    26  ExpandTrigReduce
+     9  F
+     8  G
+     8  Integral
+     4  ExpandTrigToExp
+     2  QuotientOfLinearsParts
+     1  CoshIntegral
+     1  ExpandTrigExpand
+     1  H
+     1  SinhIntegral
+== UNLISTIED tokens (not in any tier — need triage) ==
+   172  Cosh
+    41  Csch
+    38  Sech
+    34  Coth
+    26  ExpandTrigReduce
+    11  HyperbolicQ
+     9  F
+     8  G
+     8  Integral
+     6  IndependentQ
+     4  ExpandTrigToExp
+     2  QuotientOfLinearsParts
+     2  QuotientOfLinearsQ
+     1  CoshIntegral
+     1  ExpandTrigExpand
+     1  H
+     1  MemberQ
+     1  SinhIntegral
+
+== manual bucket by file (rules / distinct token-sets) ==
+  rules= 71  distinct-sets=20  6 Hyperbolic functions/6.7 Miscellaneous/6.7.9 Active hyperbolic functions.m
+  rules= 53  distinct-sets=9  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.12 (e x)^m (a+b sinh(c+d x^n))^p.m
+  rules= 35  distinct-sets=11  6 Hyperbolic functions/6.7 Miscellaneous/6.7.7 F^(c (a+b x)) hyper(d+e x)^n.m
+  rules= 26  distinct-sets=4  6 Hyperbolic functions/6.7 Miscellaneous/6.7.8 u hyper(a+b log(c x^n))^p.m
+  rules= 23  distinct-sets=11  6 Hyperbolic functions/6.7 Miscellaneous/6.7.6 (c+d x)^m hyper(a+b x)^n hyper(a+b x)^p.m
+  rules= 19  distinct-sets=7  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.13 (d+e x)^m sinh(a+b x+c x^2)^n.m
+  rules= 18  distinct-sets=6  6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.11 (e x)^m (a+b sech(c+d x^n))^p.m
+  rules= 16  distinct-sets=9  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.11 (e x)^m (a+b tanh(c+d x^n))^p.m
+  rules= 14  distinct-sets=1  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.11 (e x)^m (a+b x^n)^p sinh.m
+  rules=  6  distinct-sets=4  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.12 (d+e x)^m tanh(a+b x+c x^2)^n.m
+  rules=  2  distinct-sets=2  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.10 (c+d x)^m (a+b sinh)^n.m
+  rules=  2  distinct-sets=2  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.10 (c+d x)^m (a+b tanh)^n.m
+  rules=  2  distinct-sets=2  6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.10 (c+d x)^m (a+b sech)^n.m
+
+== C-tier token examples (first 2 rules each) ==
+  [BinomialMatchQ] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.12 (e x)^m (a+b sinh(c+d x^n))^p.m :: Int[(a_. + b_.*Cosh[u_])^p_., x_Symbol]   | cond: FreeQ[{a, b, p}, x] && BinomialQ[u, x] && Not[BinomialMatchQ[u, x]]
+  [BinomialQ] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.12 (e x)^m (a+b sinh(c+d x^n))^p.m :: Int[(a_. + b_.*Cosh[u_])^p_., x_Symbol]   | cond: FreeQ[{a, b, p}, x] && BinomialQ[u, x] && Not[BinomialMatchQ[u, x]]
+  [Cosh] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.11 (e x)^m (a+b x^n)^p sinh.m :: Int[(a_ + b_.*x_^n_)^p_.*Cosh[c_. + d_.*x_], x_Symbol]   | cond: FreeQ[{a, b, c, d, n}, x] && IGtQ[p, 0]
+  [CoshIntegral] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.12 (e x)^m (a+b sinh(c+d x^n))^p.m :: Int[Cosh[d_.*x_^n_]/x_, x_Symbol]   | cond: FreeQ[{d, n}, x]
+  [Coth] 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.11 (e x)^m (a+b tanh(c+d x^n))^p.m :: Int[(a_. + b_.*Coth[c_. + d_.*x_^n_])^p_., x_Symbol]   | cond: FreeQ[{a, b, c, d, p}, x] && IGtQ[1/n, 0] && IntegerQ[p]
+  [Csch] 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.10 (c+d x)^m (a+b sech)^n.m :: Int[u_^m_.*Csch[v_]^n_., x_Symbol]   | cond: FreeQ[{m, n}, x] && LinearQ[{u, v}, x] && Not[LinearMatchQ[{u, v}, x]]
+  [ExpandTrigExpand] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.6 (c+d x)^m hyper(a+b x)^n hyper(a+b x)^p.m :: Int[(e_. + f_.*x_)^m_.*F_[a_. + b_.*x_]^p_.*G_[c_. + d_.*x_]^q_., x_Sy   | cond: FreeQ[{a, b, c, d, e, f, m}, x] && MemberQ[{Sinh, Cosh}, F] && MemberQ[{Sech, Cs
+  [ExpandTrigReduce] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.12 (e x)^m (a+b sinh(c+d x^n))^p.m :: Int[(a_. + b_.*Cosh[c_. + d_.*x_^n_])^p_, x_Symbol]   | cond: FreeQ[{a, b, c, d}, x] && IGtQ[n, 1] && IGtQ[p, 1]
+  [ExpandTrigToExp] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.7 F^(c (a+b x)) hyper(d+e x)^n.m :: Int[F_^u_*Sinh[v_]^n_., x_Symbol]   | cond: FreeQ[F, x] && (LinearQ[u, x] || PolyQ[u, x, 2]) && (LinearQ[v, x] || PolyQ[v, x
+  [F] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.9 Active hyperbolic functions.m :: Int[(e_. + f_.*x_)^m_.* F_[c_. + d_.*x_]^n_./(a_ + b_.*Sinh[c_. + d_.*   | cond: FreeQ[{a, b, c, d, e, f, m, n}, x] && HyperbolicQ[F]
+  [G] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.6 (c+d x)^m hyper(a+b x)^n hyper(a+b x)^p.m :: Int[(e_. + f_.*x_)^m_.*F_[a_. + b_.*x_]^p_.*G_[c_. + d_.*x_]^q_., x_Sy   | cond: FreeQ[{a, b, c, d, e, f, m}, x] && MemberQ[{Sinh, Cosh}, F] && MemberQ[{Sech, Cs
+  [H] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.7 F^(c (a+b x)) hyper(d+e x)^n.m :: Int[F_^(c_.*(a_. + b_.*x_))*G_[d_. + e_.*x_]^m_.*H_[d_. + e_.*x_]^n_.,   | cond: FreeQ[{F, a, b, c, d, e}, x] && IGtQ[m, 0] && IGtQ[n, 0] && HyperbolicQ[G] && Hy
+  [HyperbolicQ] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.7 F^(c (a+b x)) hyper(d+e x)^n.m :: Int[F_^(c_.*u_)*G_[v_]^n_., x_Symbol]   | cond: FreeQ[{F, c, n}, x] && HyperbolicQ[G] && LinearQ[{u, v}, x] && Not[LinearMatchQ[
+  [IndependentQ] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.9 Active hyperbolic functions.m :: Int[Cosh[v_]^p_.*Cosh[w_]^q_., x_Symbol]   | cond: IGtQ[p, 0] && IGtQ[q, 0] && (PolynomialQ[v, x] && PolynomialQ[w, x] || BinomialQ
+  [Integral] 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.11 (e x)^m (a+b tanh(c+d x^n))^p.m :: Int[(a_. + b_.*Coth[c_. + d_.*x_^n_])^p_., x_Symbol]   | cond: FreeQ[{a, b, c, d, n, p}, x]
+  [LinearMatchQ] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.10 (c+d x)^m (a+b sinh)^n.m :: Int[u_^m_.*(a_. + b_.*Cosh[v_])^n_., x_Symbol]   | cond: FreeQ[{a, b, m, n}, x] && LinearQ[{u, v}, x] && Not[LinearMatchQ[{u, v}, x]]
+  [LinearQ] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.10 (c+d x)^m (a+b sinh)^n.m :: Int[u_^m_.*(a_. + b_.*Cosh[v_])^n_., x_Symbol]   | cond: FreeQ[{a, b, m, n}, x] && LinearQ[{u, v}, x] && Not[LinearMatchQ[{u, v}, x]]
+  [MemberQ] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.6 (c+d x)^m hyper(a+b x)^n hyper(a+b x)^p.m :: Int[(e_. + f_.*x_)^m_.*F_[a_. + b_.*x_]^p_.*G_[c_. + d_.*x_]^q_., x_Sy   | cond: FreeQ[{a, b, c, d, e, f, m}, x] && MemberQ[{Sinh, Cosh}, F] && MemberQ[{Sech, Cs
+  [PolyQ] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.7 F^(c (a+b x)) hyper(d+e x)^n.m :: Int[F_^u_*Cosh[v_]^n_., x_Symbol]   | cond: FreeQ[F, x] && (LinearQ[u, x] || PolyQ[u, x, 2]) && (LinearQ[v, x] || PolyQ[v, x
+  [PolynomialQ] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.9 Active hyperbolic functions.m :: Int[Cosh[v_]^p_.*Cosh[w_]^q_., x_Symbol]   | cond: IGtQ[p, 0] && IGtQ[q, 0] && (PolynomialQ[v, x] && PolynomialQ[w, x] || BinomialQ
+  [QuadraticMatchQ] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.13 (d+e x)^m sinh(a+b x+c x^2)^n.m :: Int[Cosh[v_]^n_., x_Symbol]   | cond: IGtQ[n, 0] && QuadraticQ[v, x] && Not[QuadraticMatchQ[v, x]]
+  [QuadraticQ] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.13 (d+e x)^m sinh(a+b x+c x^2)^n.m :: Int[Cosh[v_]^n_., x_Symbol]   | cond: IGtQ[n, 0] && QuadraticQ[v, x] && Not[QuadraticMatchQ[v, x]]
+  [QuotientOfLinearsParts] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.9 Active hyperbolic functions.m :: Int[Cosh[u_]^n_., x_Symbol]   | cond: IGtQ[n, 0] && QuotientOfLinearsQ[u, x]
+  [QuotientOfLinearsQ] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.9 Active hyperbolic functions.m :: Int[Cosh[u_]^n_., x_Symbol]   | cond: IGtQ[n, 0] && QuotientOfLinearsQ[u, x]
+  [Sech] 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.10 (c+d x)^m (a+b sech)^n.m :: Int[u_^m_.*Sech[v_]^n_., x_Symbol]   | cond: FreeQ[{m, n}, x] && LinearQ[{u, v}, x] && Not[LinearMatchQ[{u, v}, x]]
+  [SinhIntegral] 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.12 (e x)^m (a+b sinh(c+d x^n))^p.m :: Int[Sinh[d_.*x_^n_]/x_, x_Symbol]   | cond: FreeQ[{d, n}, x]
+  [SumSimplerQ] 6 Hyperbolic functions/6.7 Miscellaneous/6.7.7 F^(c (a+b x)) hyper(d+e x)^n.m :: Int[(f_.*x_)^m_*F_^(c_.*(a_. + b_.*x_))*Cosh[d_. + e_.*x_], x_Symbol]   | cond: FreeQ[{F, a, b, c, d, e, f, m}, x] && (LtQ[m, -1] || SumSimplerQ[m, 1])

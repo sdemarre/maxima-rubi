@@ -1,0 +1,26 @@
+/* rules/class6/6_3_10.mac — GENERATED; do not edit.
+ * Source: Rubi 4 61e9c18ea248061cd83c67882f7c91a73cef912d
+ *          Rubi/IntegrationRules/6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.10 (c+d x)^m (a+b tanh)^n.m
+ * Regenerate: python3 generator/generate_rules.py --class 6 --only 6_3_10 */
+/* Ported from Rule-Based Integration (Rubi), https://github.com/RuleBasedIntegration/Rubi
+ * Copyright (c) 2018 Rule-Based-Integration Organization (MIT). */
+
+_mr_cond_6_3_10_r1(mm, x) := block([_mr_6_3_10_r1_a, _mr_6_3_10_r1_b, _mr_6_3_10_r1_m, _mr_6_3_10_r1_n, _mr_6_3_10_r1_u, _mr_6_3_10_r1_v],
+  _mr_6_3_10_r1_a : geteqR(mm, '_mr_6_3_10_r1_a), _mr_6_3_10_r1_b : geteqR(mm, '_mr_6_3_10_r1_b), _mr_6_3_10_r1_m : geteqR(mm, '_mr_6_3_10_r1_m), _mr_6_3_10_r1_n : geteqR(mm, '_mr_6_3_10_r1_n), _mr_6_3_10_r1_u : geteqR(mm, '_mr_6_3_10_r1_u), _mr_6_3_10_r1_v : geteqR(mm, '_mr_6_3_10_r1_v),
+  freeof(x, _mr_6_3_10_r1_a) and freeof(x, _mr_6_3_10_r1_b) and freeof(x, _mr_6_3_10_r1_m) and freeof(x, _mr_6_3_10_r1_n)  and  %mr_linearQ([_mr_6_3_10_r1_u, _mr_6_3_10_r1_v], x)  and  not(%mr_linearMatchQ([_mr_6_3_10_r1_u, _mr_6_3_10_r1_v], x)))$
+_mr_repl_6_3_10_r1(mm, x) := block([_mr_6_3_10_r1_a__s, _mr_6_3_10_r1_b__s, _mr_6_3_10_r1_m__s, _mr_6_3_10_r1_n__s, _mr_6_3_10_r1_u__s, _mr_6_3_10_r1_v__s],
+  _mr_6_3_10_r1_a__s : geteqR(mm, '_mr_6_3_10_r1_a), _mr_6_3_10_r1_b__s : geteqR(mm, '_mr_6_3_10_r1_b), _mr_6_3_10_r1_m__s : geteqR(mm, '_mr_6_3_10_r1_m), _mr_6_3_10_r1_n__s : geteqR(mm, '_mr_6_3_10_r1_n), _mr_6_3_10_r1_u__s : geteqR(mm, '_mr_6_3_10_r1_u), _mr_6_3_10_r1_v__s : geteqR(mm, '_mr_6_3_10_r1_v),
+  mr_int(%mr_expandToSum(_mr_6_3_10_r1_u__s, x)^_mr_6_3_10_r1_m__s*(_mr_6_3_10_r1_a__s + _mr_6_3_10_r1_b__s*tanh(%mr_expandToSum(_mr_6_3_10_r1_v__s, x)))^_mr_6_3_10_r1_n__s, x))$
+_mr_rule_6_3_10_r1 : %mr_defrule("6_3_10", 1, "(Int (Times (Power (Pattern |_mr_6_3_10_r1_u| (Blank)) (Optional (Pattern |_mr_6_3_10_r1_m| (Blank)))) (Power (Plus (Optional (Pattern |_mr_6_3_10_r1_a| (Blank))) (Times (Optional (Pattern |_mr_6_3_10_r1_b| (Blank))) (Tanh (Pattern |_mr_6_3_10_r1_v| (Blank))))) (Optional (Pattern |_mr_6_3_10_r1_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_6_3_10_r1, _mr_repl_6_3_10_r1)$
+
+_mr_cond_6_3_10_r2(mm, x) := block([_mr_6_3_10_r2_a, _mr_6_3_10_r2_b, _mr_6_3_10_r2_m, _mr_6_3_10_r2_n, _mr_6_3_10_r2_u, _mr_6_3_10_r2_v],
+  _mr_6_3_10_r2_a : geteqR(mm, '_mr_6_3_10_r2_a), _mr_6_3_10_r2_b : geteqR(mm, '_mr_6_3_10_r2_b), _mr_6_3_10_r2_m : geteqR(mm, '_mr_6_3_10_r2_m), _mr_6_3_10_r2_n : geteqR(mm, '_mr_6_3_10_r2_n), _mr_6_3_10_r2_u : geteqR(mm, '_mr_6_3_10_r2_u), _mr_6_3_10_r2_v : geteqR(mm, '_mr_6_3_10_r2_v),
+  freeof(x, _mr_6_3_10_r2_a) and freeof(x, _mr_6_3_10_r2_b) and freeof(x, _mr_6_3_10_r2_m) and freeof(x, _mr_6_3_10_r2_n)  and  %mr_linearQ([_mr_6_3_10_r2_u, _mr_6_3_10_r2_v], x)  and  not(%mr_linearMatchQ([_mr_6_3_10_r2_u, _mr_6_3_10_r2_v], x)))$
+_mr_repl_6_3_10_r2(mm, x) := block([_mr_6_3_10_r2_a__s, _mr_6_3_10_r2_b__s, _mr_6_3_10_r2_m__s, _mr_6_3_10_r2_n__s, _mr_6_3_10_r2_u__s, _mr_6_3_10_r2_v__s],
+  _mr_6_3_10_r2_a__s : geteqR(mm, '_mr_6_3_10_r2_a), _mr_6_3_10_r2_b__s : geteqR(mm, '_mr_6_3_10_r2_b), _mr_6_3_10_r2_m__s : geteqR(mm, '_mr_6_3_10_r2_m), _mr_6_3_10_r2_n__s : geteqR(mm, '_mr_6_3_10_r2_n), _mr_6_3_10_r2_u__s : geteqR(mm, '_mr_6_3_10_r2_u), _mr_6_3_10_r2_v__s : geteqR(mm, '_mr_6_3_10_r2_v),
+  mr_int(%mr_expandToSum(_mr_6_3_10_r2_u__s, x)^_mr_6_3_10_r2_m__s*(_mr_6_3_10_r2_a__s + _mr_6_3_10_r2_b__s*coth(%mr_expandToSum(_mr_6_3_10_r2_v__s, x)))^_mr_6_3_10_r2_n__s, x))$
+_mr_rule_6_3_10_r2 : %mr_defrule("6_3_10", 2, "(Int (Times (Power (Pattern |_mr_6_3_10_r2_u| (Blank)) (Optional (Pattern |_mr_6_3_10_r2_m| (Blank)))) (Power (Plus (Optional (Pattern |_mr_6_3_10_r2_a| (Blank))) (Times (Coth (Pattern |_mr_6_3_10_r2_v| (Blank))) (Optional (Pattern |_mr_6_3_10_r2_b| (Blank))))) (Optional (Pattern |_mr_6_3_10_r2_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_6_3_10_r2, _mr_repl_6_3_10_r2)$
+
+mr_rules_6_3_10 : [ _mr_rule_6_3_10_r1, _mr_rule_6_3_10_r2 ]$
+mr_rules_count_6_3_10 : 2$
+mr_witness_6_3_10() := true$
