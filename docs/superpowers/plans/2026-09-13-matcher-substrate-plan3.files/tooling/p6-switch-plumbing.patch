@@ -1,0 +1,468 @@
+diff --git a/probes/matcher/10-p5-attribution.py b/probes/matcher/10-p5-attribution.py
+index 6ee79ea..5b2c179 100644
+--- a/probes/matcher/10-p5-attribution.py
++++ b/probes/matcher/10-p5-attribution.py
+@@ -7,10 +7,10 @@ docs/corpus-class3-deferred-uplift.md section 5.3).
+ 
+ Selects entries from the two merged records and runs each through the
+ driver's EXACT per-entry text (test/corpus_driver.py build_text: the same
+-switch assignments from MR_SWITCHES, zero chain, classification and
+-answers filler) on the core the driver resolves (MR_RULES_CORE_PATH pins
+-one; otherwise the tree's current core), with two additions that cannot
+-change the class:
++zero chain, classification and answers filler; during P5 also the switch
++assignments from MR_SWITCHES, hard-wired and deleted at P6) on the core the
++driver resolves (MR_RULES_CORE_PATH pins one; otherwise the tree's current
++core), with two additions that cannot change the class:
+ 
+   * `rubi_verbose : true$` prepended: every dispatch that answers prints
+     `rubi: rule <key> r<n> fired on ...` (the substrate) or
+@@ -34,7 +34,7 @@ Walls are measured under WORKERS concurrent subprocesses (the corpus runs'
+ own condition is 24 shards); they are attribution evidence, not gates.
+ 
+ Usage (repo root):
+-  [MR_RULES_CORE_PATH=<core>] [MR_SWITCHES=...] python3 probes/matcher/10-p5-attribution.py \\
++  [MR_RULES_CORE_PATH=<core>] python3 probes/matcher/10-p5-attribution.py \\
+       <section> <P0-record> <final-record> <select> <out-file> [cap-seconds] [workers]
+ cap defaults to 30 (the record cap), workers to 8.
+ """
+@@ -156,7 +156,6 @@ def main():
+     head += [f"maxima: {s.strip()}" for s in r.stdout.splitlines()
+              if s.strip().startswith(("Maxima", "Lisp ", "Host "))]
+     head += [f"core: {d.RULES_CORE}  fingerprint {fp}",
+-             f"switches: {d.run_records.switches_text(d.SWITCH_SETTINGS)}",
+              f"P0 record: {os.path.relpath(P0_REC, ROOT)}  final record: {os.path.relpath(FINAL_REC, ROOT)}",
+              f"entries: {len(keys)}  cap: {CAP}s  workers: {WORKERS}", ""]
+     t0 = time.time()
+diff --git a/test/corpus_driver.py b/test/corpus_driver.py
+index c7b33b2..bbfe06e 100644
+--- a/test/corpus_driver.py
++++ b/test/corpus_driver.py
+@@ -50,7 +50,6 @@ sets (measured 2026-08-25: the two giant files 1.1.1.2 / 1.1.1.3 are
+ balance them).
+ """
+ 
+-import importlib.util
+ import os
+ import re
+ import subprocess
+@@ -237,24 +236,6 @@ def ensure_rules_core():
+         fcntl.flock(lock, fcntl.LOCK_UN)
+ 
+ 
+-# The matcher substrate switches (spec section 3.6): the arm this process
+-# runs, from MR_SWITCHES (test/run_records.py), assigned at the head of
+-# every entry text and stated on the record's filter: line.
+-_rr_spec = importlib.util.spec_from_file_location(
+-    "run_records", os.path.join(ROOT, "test", "run_records.py"))
+-run_records = importlib.util.module_from_spec(_rr_spec)
+-_rr_spec.loader.exec_module(run_records)
+-try:
+-    SWITCH_SETTINGS = run_records.switch_settings(os.environ)
+-except ValueError as exc:
+-    raise SystemExit(str(exc))
+-
+-
+-def switch_header():
+-    """Suffix for the record's `filter:` line: the switch arm."""
+-    return "  switches: " + run_records.switches_text(SWITCH_SETTINGS)
+-
+-
+ def core_header():
+     """Suffix for the record's `filter:` header line: names a pinned core
+     (the shard merge accepts any `filter:` line), empty otherwise."""
+@@ -558,9 +539,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
+     # answers verify normally (measured: 1.2.2.7 e1 carries a ∫-term
+     # and its self-diff closes).
+     has_noun = "not is(freeof(unintegrable, mr_r))"
+-    switches = "".join(f"{name} : {value}$\n"
+-                       for name, value in SWITCH_SETTINGS.items())
+-    head = (switches + f"mr_f: {f_text}$\n"
++    head = (f"mr_f: {f_text}$\n"
+             f"mr_r: {call}$\n"
+             + "pos$\n" * 40 + "no$\n" * 20)
+     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
+@@ -684,7 +663,6 @@ def main():
+     out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
+                      f"timeout: {TIMEOUT}s  files: {len(files)}"
+                      + (f"  shard: {SHARD_FILE}" if SHARD_FILE else "")
+-                     + switch_header()
+                      + core_header())
+     out_lines.append("")
+ 
+diff --git a/test/launch_class_shards.py b/test/launch_class_shards.py
+index 2fdc2b5..faee8a0 100644
+--- a/test/launch_class_shards.py
++++ b/test/launch_class_shards.py
+@@ -23,8 +23,6 @@ Usage:
+                          # Popen one process per job
+ Env:
+   MR_N_PROCS    process count (default: os.cpu_count(), here 24)
+-  MR_SWITCHES   the matcher-substrate switch arm the shards run
+-                (test/run_records.py; unset = the defaults)
+ 
+ A launch first deletes the previous run's shard files
+ (test/corpus_<slug>.shard*.{out,log,files} and the pids file) and refuses
+@@ -276,11 +274,14 @@ plan_lines.append(f"max job cost: {maxc:.0f}s  (balance spread "
+                   f"{maxc / (total_cost / len(jobs)):.2f}x)")
+ 
+ print("\n".join(plan_lines))
+-print(f"switches: {driver.run_records.switches_text(driver.SWITCH_SETTINGS)}")
+ 
+ if LAUNCH:
++    _rr_spec = importlib.util.spec_from_file_location(
++        "run_records", os.path.join(ROOT, "test", "run_records.py"))
++    run_records = importlib.util.module_from_spec(_rr_spec)
++    _rr_spec.loader.exec_module(run_records)
+     try:
+-        removed = driver.run_records.clear_stale_shards(os.path.join(ROOT, "test"), SLUG)
++        removed = run_records.clear_stale_shards(os.path.join(ROOT, "test"), SLUG)
+     except RuntimeError as exc:
+         raise SystemExit(f"launch_class_shards: {exc}")
+     print(f"removed {removed} shard files of the previous run")
+diff --git a/test/merge_class_shards.py b/test/merge_class_shards.py
+index c5be569..77e02b9 100644
+--- a/test/merge_class_shards.py
++++ b/test/merge_class_shards.py
+@@ -93,18 +93,9 @@ for path in inputs:
+ 
+ missing = expected - set(keys)
+ extra = set(keys) - expected
+-# Every shard states the switch arm it ran (test/run_records.py); a merge
+-# of shards from two arms, or of a shard without the statement, is refused.
+-try:
+-    switches = driver.run_records.common_switches(inputs)
+-    switch_error = None
+-except ValueError as exc:
+-    switches, switch_error = None, str(exc)
+-if bad or dupes or missing or extra or switch_error:
++if bad or dupes or missing or extra:
+     print(f"INCOMPLETE: unparsed={bad} dupes={dupes} "
+           f"missing={len(missing)} extra={len(extra)}", file=sys.stderr)
+-    if switch_error:
+-        print(f"  switches: {switch_error}", file=sys.stderr)
+     for k in sorted(missing)[:10]:
+         print("  missing", k, file=sys.stderr)
+     for k in sorted(extra)[:10]:
+@@ -130,7 +121,7 @@ for line in r.stdout.splitlines():
+     if line.startswith(("Maxima", "Lisp ", "Host ")):
+         out_lines.append(f"maxima: {line}")
+ out_lines.append(f"filter: {SECTION + '/'!r}  full run  timeout: 30s  "
+-                 f"({len(inputs)} shards, merged here)  switches: {switches}")
++                 f"({len(inputs)} shards, merged here)")
+ out_lines.append("")
+ 
+ for rel in sorted(counts):
+@@ -154,7 +145,6 @@ out_lines.append(f"Results: {passed} passed, {failed} failed")
+ open(OUT, "w", encoding="utf-8").write("\n".join(out_lines) + "\n")
+ print(f"OK: {total}/{len(expected)} entries, {len(files)} files, "
+       f"no dupes/missing/extra")
+-print(f"  switches: {switches}")
+ for k in sorted(cls_counts):
+     print(f"  {k:14s} {cls_counts[k]}")
+ print(f"  {'Results':14s} {passed} passed, {failed} failed")
+diff --git a/test/merge_timeout_rerun.py b/test/merge_timeout_rerun.py
+index f20068e..1d6132c 100644
+--- a/test/merge_timeout_rerun.py
++++ b/test/merge_timeout_rerun.py
+@@ -29,7 +29,6 @@ record — the completeness set is its `timeout` class).
+ """
+ 
+ import glob
+-import importlib.util
+ import os
+ import re
+ import subprocess
+@@ -101,24 +100,9 @@ for path in inputs:
+ 
+ missing = expected - set(seen)
+ extra = set(seen) - expected
+-# The re-check runs the source record's switch arm (test/run_records.py):
+-# the shards must state one arm, and the source's when it states one.
+-_rr_spec = importlib.util.spec_from_file_location(
+-    "run_records", os.path.join(ROOT, "test", "run_records.py"))
+-run_records = importlib.util.module_from_spec(_rr_spec)
+-_rr_spec.loader.exec_module(run_records)
+-try:
+-    switches = run_records.common_switches(inputs)
+-    src_switches = run_records.record_switches(ACCEPTED)
+-    switch_error = (None if src_switches in (None, switches) else
+-                    f"the shards ran {switches}, the source record {src_switches}")
+-except ValueError as exc:
+-    switches, switch_error = None, str(exc)
+-if dupes or missing or extra or switch_error:
++if dupes or missing or extra:
+     print(f"INCOMPLETE: dupes={dupes} missing={len(missing)} "
+           f"extra={len(extra)}", file=sys.stderr)
+-    if switch_error:
+-        print(f"  switches: {switch_error}", file=sys.stderr)
+     for k in sorted(missing)[:10]:
+         print("  missing", k, file=sys.stderr)
+     for k in sorted(extra)[:10]:
+@@ -147,8 +131,7 @@ except ValueError:
+     accepted_rel = ACCEPTED
+ out_lines.append(
+     f"re-check of the {len(expected)} `timeout` entries of {accepted_rel} "
+-    f"(30 s cap) at a {cap} s per-entry cap, same rules core, "
+-    f"switches: {switches}")
++    f"(30 s cap) at a {cap} s per-entry cap, same rules core")
+ out_lines.append("")
+ 
+ cls_of = {k: seen[k].group(1) for k in expected}
+diff --git a/test/run_records.py b/test/run_records.py
+index 7344947..8482ff9 100644
+--- a/test/run_records.py
++++ b/test/run_records.py
+@@ -1,24 +1,15 @@
+ #!/usr/bin/env python3
+-"""Run-record helpers shared by the corpus driver, the shard launcher, the
+-shard mergers and the P5 gate (matcher substrate plan 3).
+-
+-The matcher substrate has three migration switches (spec
+-docs/superpowers/specs/2026-09-12-matcher-substrate-design.md section 3.6).
+-Every corpus record states the arm it ran: the driver writes
+-`switches: mr_flat_wide=<v> mr_cond_retry=<v> mr_model_flags=<v>` on its
+-`filter:` header line, and the mergers carry it into the merged record.
+-
+-- SWITCHES, SWITCH_DEFAULTS: the switches in record order, with the
+-  dispatcher's defaults (the defmvars of maxima_rubi_dispatch.lisp;
+-  test/test_run_records.py holds the two in step).
+-- switch_settings(env): the arm a driver process runs. MR_SWITCHES holds
+-  space-separated `<switch>=true|false` overrides; unset switches keep
+-  their defaults. Anything else is a ValueError (a typo must not run the
+-  default arm under a flipped label).
+-- switches_text(settings): the header text.
+-- record_switches(path): the switches text of a record or shard, or None.
+-- common_switches(paths): the one switches text every shard carries;
+-  ValueError when a shard has none or two shards differ.
++"""Run-record helpers shared by the shard launcher and the P5 tools
++(matcher substrate plan 3).
++
++- SWITCHES, record_switches(path): during P5 every corpus record stated
++  the migration switch arm it ran on its `filter:` line
++  (`switches: mr_flat_wide=<v> mr_cond_retry=<v> mr_model_flags=<v>`).
++  The switches were hard-wired and deleted at P6 (spec
++  docs/superpowers/specs/2026-09-12-matcher-substrate-design.md section
++  3.6), so only the committed P5 records
++  (test/corpus_class<N>.p5-run<K>.out) carry the text; test/p5_gate.py
++  reads it.
+ - clear_stale_shards(test_dir, slug): delete a finished run's shard files
+   before a launch (a stale shard from a run with more jobs used to reach
+   the merge: the P0 class-3 shard23 of 2026-09-04); RuntimeError while a
+@@ -30,29 +21,11 @@ import os
+ import re
+ 
+ SWITCHES = ("mr_flat_wide", "mr_cond_retry", "mr_model_flags")
+-SWITCH_DEFAULTS = {"mr_flat_wide": "false",
+-                   "mr_cond_retry": "true",
+-                   "mr_model_flags": "true"}
+ SWITCHES_RE = re.compile(
+     r"\bswitches: (" + " ".join(rf"{s}=(?:true|false)" for s in SWITCHES) + r")")
+ SHARD_FILE_RE = re.compile(r"\.shard(?:\d+\.(?:out|log|files)|-pids)$")
+ 
+ 
+-def switch_settings(env):
+-    settings = dict(SWITCH_DEFAULTS)
+-    for item in env.get("MR_SWITCHES", "").split():
+-        name, sep, value = item.partition("=")
+-        if not sep or name not in SWITCH_DEFAULTS or value not in ("true", "false"):
+-            raise ValueError(f"MR_SWITCHES item {item!r}: expected <switch>=true|false "
+-                             f"with <switch> one of {', '.join(SWITCHES)}")
+-        settings[name] = value
+-    return settings
+-
+-
+-def switches_text(settings):
+-    return " ".join(f"{s}={settings[s]}" for s in SWITCHES)
+-
+-
+ def record_switches(path):
+     with open(path, encoding="utf-8") as fh:
+         for line in fh:
+@@ -62,21 +35,6 @@ def record_switches(path):
+     return None
+ 
+ 
+-def common_switches(paths):
+-    if not paths:
+-        raise ValueError("no shard files")
+-    seen = {}
+-    for p in paths:
+-        seen.setdefault(record_switches(p), []).append(os.path.basename(p))
+-    if None in seen:
+-        raise ValueError("no switches on the filter: line of "
+-                         + ", ".join(seen[None][:5]))
+-    if len(seen) != 1:
+-        raise ValueError("shards ran different switch arms: " + "; ".join(
+-            f"{k} ({len(v)} shards: {', '.join(v[:3])})" for k, v in sorted(seen.items())))
+-    return next(iter(seen))
+-
+-
+ def _alive(pid):
+     try:
+         os.kill(pid, 0)
+diff --git a/test/test_run_records.py b/test/test_run_records.py
+index cc06b44..a93771c 100644
+--- a/test/test_run_records.py
++++ b/test/test_run_records.py
+@@ -1,23 +1,18 @@
+ #!/usr/bin/env python3
+-"""Regression guard for the P5 run tooling (matcher substrate plan 3):
+-test/run_records.py, test/p5_gate.py and the driver's switch plumbing.
++"""Regression guard for the run tooling (matcher substrate plan 3):
++test/run_records.py, test/p5_gate.py and the driver after P6.
+ 
+ No Maxima. Checks:
+-  1. the driver-side switch defaults equal the dispatcher's defmvar
+-     defaults (maxima_rubi_dispatch.lisp);
+-  2. switch_settings: defaults, one override, a malformed item rejected;
+-  3. record_switches / common_switches: one arm, a shard without the
+-     switches text, two arms;
+-  4. clear_stale_shards: removes the run's shard files only, and refuses
++  1. record_switches: reads a P5 record's arm; None without the text;
++  2. clear_stale_shards: removes the run's shard files only, and refuses
+      while a pid of the previous run is alive;
+-  5. the driver (imported in a child with MR_RULES_CORE=0, so no core is
+-     built) states MR_SWITCHES on its header and assigns the switches
+-     ahead of the rubi call in every entry text; a bad MR_SWITCHES exits
+-     nonzero;
+-  6. winning_value: every-class win, tie, split; the mr_model_flags tie
+-     takes Maxima's defaults;
+-  7. gate on synthetic records: green, then a PASS-floor and a
+-     wall-ceiling failure.
++  3. gate on synthetic records: green, a wall-ceiling and a PASS-floor
++     failure, the crash listing;
++  4. the driver (imported in a child with MR_RULES_CORE=0, so no core is
++     built) carries no switch plumbing: the entry text starts with the
++     integrand assignment and there is no switch header;
++  5. winning_value: every-class win, tie, split; the mr_model_flags tie
++     takes Maxima's defaults.
+ 
+ Re-runnable:  python3 test/test_run_records.py
+ """
+@@ -26,7 +21,6 @@ import importlib.util
+ import io
+ import json
+ import os
+-import re
+ import subprocess
+ import sys
+ import tempfile
+@@ -82,55 +76,22 @@ sys.argv = ["corpus_driver.py", "1 Algebraic functions/", "1", "30"]
+ spec = importlib.util.spec_from_file_location("drv", DRIVER)
+ d = importlib.util.module_from_spec(spec)
+ spec.loader.exec_module(d)
+-print(json.dumps({"header": d.switch_header(),
++print(json.dumps({"has_header": hasattr(d, "switch_header"),
+                   "text": d.build_text("x^2", "x", "x^3/3")}))
+ """
+ 
+ 
+-def child(switches):
+-    env = {k: v for k, v in os.environ.items() if k not in ("MR_SWITCHES", "MR_RULES_CORE_PATH")}
+-    env["MR_RULES_CORE"] = "0"
+-    if switches is not None:
+-        env["MR_SWITCHES"] = switches
+-    code = CHILD.replace("DRIVER", repr(os.path.join(HERE, "corpus_driver.py")))
+-    return subprocess.run([sys.executable, "-c", code], env=env, cwd=ROOT,
+-                          capture_output=True, text=True, timeout=60)
+-
+-
+ def main():
+-    # 1. defaults in step with the dispatcher
+-    lisp = open(os.path.join(ROOT, "maxima_rubi_dispatch.lisp"), encoding="utf-8").read()
+-    defs = {m.group(1): ("true" if m.group(2) == "t" else "false")
+-            for m in re.finditer(r"^\(defmvar \$(mr_\w+) (nil|t)\b", lisp, re.M)}
+-    check("driver switch defaults == dispatcher defmvar defaults",
+-          defs == rr.SWITCH_DEFAULTS, f"{defs} vs {rr.SWITCH_DEFAULTS}")
+-
+-    # 2. switch_settings
+-    check("no MR_SWITCHES: the defaults", rr.switch_settings({}) == rr.SWITCH_DEFAULTS)
+-    s = rr.switch_settings({"MR_SWITCHES": "mr_model_flags=false"})
+-    check("one override", rr.switches_text(s)
+-          == "mr_flat_wide=false mr_cond_retry=true mr_model_flags=false", rr.switches_text(s))
+-    check("a malformed item is rejected",
+-          raises(ValueError, rr.switch_settings, {"MR_SWITCHES": "mr_model_flags=0"})
+-          and raises(ValueError, rr.switch_settings, {"MR_SWITCHES": "mr_flatwide=true"}))
+-
+     with tempfile.TemporaryDirectory() as tmp:
+-        # 3. record_switches / common_switches
+-        a, b, c = (os.path.join(tmp, n) for n in ("a.out", "b.out", "c.out"))
++        # 1. record_switches
++        a, b = os.path.join(tmp, "a.out"), os.path.join(tmp, "b.out")
+         record(a, [("verified", 1.0, "9 Test/f.mac", 1)])
+         record(b, [("verified", 1.0, "9 Test/f.mac", 2)], switches=None)
+-        record(c, [("verified", 1.0, "9 Test/f.mac", 3)],
+-               switches="mr_flat_wide=true mr_cond_retry=true mr_model_flags=true")
+-        check("record_switches reads the arm",
++        check("record_switches reads a P5 record's arm",
+               rr.record_switches(a) == "mr_flat_wide=false mr_cond_retry=true mr_model_flags=true")
+         check("record_switches: None without the text", rr.record_switches(b) is None)
+-        check("common_switches: one arm", rr.common_switches([a, a]) == rr.record_switches(a))
+-        check("common_switches: a shard without switches is an error",
+-              raises(ValueError, rr.common_switches, [a, b]))
+-        check("common_switches: two arms are an error",
+-              raises(ValueError, rr.common_switches, [a, c]))
+ 
+-        # 4. clear_stale_shards
++        # 2. clear_stale_shards
+         names = ["corpus_class9.shard00.out", "corpus_class9.shard00.log",
+                  "corpus_class9.shard01.files", "corpus_class9.shard-pids",
+                  "corpus_class9.out", "corpus_class8.shard00.out"]
+@@ -146,7 +107,7 @@ def main():
+         check("clear_stale_shards refuses while a pid is alive",
+               raises(RuntimeError, rr.clear_stale_shards, tmp, "class9"))
+ 
+-        # 7. gate on synthetic records
++        # 3. gate on synthetic records
+         rel = "9 Test/f.mac"
+         p0 = os.path.join(tmp, "p0.out")
+         record(p0, [("verified", 2.0, rel, 1), ("timeout", 30.0, rel, 2),
+@@ -165,8 +126,7 @@ def main():
+             buf = io.StringIO()
+             with redirect_stdout(buf):
+                 rc = gate_mod.gate(p0, path)
+-            out = buf.getvalue()
+-            check(label, rc == want, out)
++            check(label, rc == want, buf.getvalue())
+         buf = io.StringIO()
+         with redirect_stdout(buf):
+             gate_mod.gate(p0, good)
+@@ -175,25 +135,23 @@ def main():
+               and "deferred      t=1.0s -> error t=0.5s 9 Test/f.mac e3" in buf.getvalue(),
+               buf.getvalue())
+ 
+-    # 5. the driver's switch plumbing
+-    p = child("mr_cond_retry=false")
++    # 4. the driver after P6
++    env = {k: v for k, v in os.environ.items() if k not in ("MR_RULES_CORE_PATH",)}
++    env["MR_RULES_CORE"] = "0"
++    code = CHILD.replace("DRIVER", repr(os.path.join(HERE, "corpus_driver.py")))
++    p = subprocess.run([sys.executable, "-c", code], env=env, cwd=ROOT,
++                       capture_output=True, text=True, timeout=60)
+     try:
+         got = json.loads(p.stdout.strip().splitlines()[-1])
+     except (IndexError, ValueError):
+         got = None
+-    check("driver header states the arm",
+-          got is not None and got["header"]
+-          == "  switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true",
++    check("driver: no switch header", got is not None and got["has_header"] is False,
+           f"{got} {p.stderr[-400:]}")
+-    check("entry text assigns the switches before the rubi call",
+-          got is not None and got["text"].startswith(
+-              "mr_flat_wide : false$\nmr_cond_retry : false$\nmr_model_flags : true$\nmr_f: x^2$\n"),
+-          f"{got and got['text'][:160]!r}")
+-    p = child("mr_cond_retry=off")
+-    check("a bad MR_SWITCHES exits nonzero naming it",
+-          p.returncode != 0 and "MR_SWITCHES" in p.stderr, f"{p.returncode} {p.stderr[-300:]!r}")
+-
+-    # 6. winning_value
++    check("driver: the entry text starts with the integrand assignment",
++          got is not None and got["text"].startswith("mr_f: x^2$\n"),
++          f"{got and got['text'][:120]!r}")
++
++    # 5. winning_value
+     wv = gate_mod.winning_value
+     check("flip wins with more PASS in every class",
+           wv("mr_flat_wide", "false", "true", [10, 5, 7], [11, 6, 8])[0] == "true")

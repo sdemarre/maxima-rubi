@@ -1,0 +1,79 @@
+/* probes/matcher/21-r37-attribution.mac -- what the 3_5 r37 cost regression
+   (19.0 s -> 350.0 s between probe 06's 46dffa2 and dfbff5f records) is made
+   of, and whether it is on a real dispatch path at all.  Loaded by
+   probes/matcher/21-r37-attribution.sh through a driver that sets
+   mr_r37_case first (Maxima has no getenv):
+     "nested"    wall of the ONE nested integration r37's cond performs:
+                 mr_int(v, x) with v = probe 06's integrand minus the log
+     "nested_gl0"  the same with mr_giveup_last false (isolates the give-up
+                 reordering half of the faithful pair; the switch does not
+                 exist before 29d237a, so this case runs on HEAD only)
+     "accept37"  %mr_rule_accept on r37's handle alone -- reproduces probe
+                 06's attr line, and shows how much of it is NOT the nested
+                 integration
+     "rubi"      end-to-end rubi(big) wall + an answer signature
+     "rubi_no37" the same with r37's handle DELETED from mr_rule_table.  If
+                 the wall and the signature are unchanged, the real dispatch
+                 never reaches r37 and probe 06's walk cost is not on any
+                 path (the walk evaluates every rule's cond; a dispatch stops
+                 at the first rule that answers, and class 3 loads last).
+   Cases are one per process: mr_int and rubi both mutate %mr_seen /
+   depth_level and the rule table, and a shared process would measure a
+   warmed second call. */
+display2d : false$
+linel : 10000$
+print("R build", build_info()@version, build_info()@timestamp)$
+load("maxima_rubi.mac")$
+t0 : elapsed_real_time()$
+mr_load_all()$
+print("R load_all s", elapsed_real_time() - t0, "rules", length(mr_rule_table))$
+
+big : x^2*(a+b*x)^3*(c+d*x)^4*(e+f*x)^5*(g+h*x)^6*log(x)$
+/* v is exactly what r37's pattern binds to v_ on big: the whole product
+   except the log factor.  r37's cond is mr_int(v, x) + inverseFunctionFreeQ,
+   and its repl calls mr_int(v, x) a SECOND time (the port splits
+   Mathematica's With, which shares w). */
+vv : x^2*(a+b*x)^3*(c+d*x)^4*(e+f*x)^5*(g+h*x)^6$
+
+/* An answer signature that survives printing: the head and the string
+   length.  Two dispatches that took the same route give the same pair. */
+sig(u) := block([s], s : errcatch(sconcat(string(op(u)), "/", slength(string(u)))),
+  if s = [] then "ERROR" else first(s))$
+
+handle37() := block([hs],
+  hs : sublist(mr_rule_table,
+         lambda([h], is(sequal(?mr\-rule\-key(?mr\-rule\-of(h)), "3_5")
+                        and ?mr\-rule\-n(?mr\-rule\-of(h)) = 37))),
+  if length(hs) # 1 then error("R FAIL handle37 found", length(hs)),
+  first(hs))$
+
+/* f is a LAMBDA, not the expression: Maxima evaluates a function's
+   arguments at the call site, so timed(name, mr_int(vv, x)) would run the
+   integration before the clock starts and report 0.0 s (measured). */
+timed(name, f) := block([t0, r, dt],
+  t0 : elapsed_real_time(),
+  r : errcatch(f()),
+  dt : elapsed_real_time() - t0,
+  print("R", name, "s", dt, "sig", if r = [] then "ERROR" else sig(first(r))),
+  r)$
+
+cc : mr_r37_case$
+if cc = "nested" then timed("nested", lambda([], mr_int(vv, x)))
+else if cc = "nested_gl0" then (mr_giveup_last : false,
+  print("R switch mr_giveup_last", mr_giveup_last),
+  timed("nested_gl0", lambda([], mr_int(vv, x))))
+else if cc = "accept37" then block([h, t0, r, dt],
+  h : handle37(),
+  t0 : elapsed_real_time(),
+  r : errcatch(%mr_rule_accept(h, big, x)),
+  dt : elapsed_real_time() - t0,
+  print("R accept37 s", dt, "accepted",
+        if r = [] then "ERROR" else is(first(r) # false)))
+else if cc = "rubi" then timed("rubi", lambda([], rubi(big, x)))
+else if cc = "rubi_no37" then block([h, n0],
+  h : handle37(),
+  n0 : length(mr_rule_table),
+  mr_rule_table : delete(h, mr_rule_table),
+  print("R table", n0, "->", length(mr_rule_table)),
+  timed("rubi_no37", lambda([], rubi(big, x))))$
+print("R DONE")$

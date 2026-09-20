@@ -19,6 +19,10 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
          "(if is(C) = true then X else false)" guard and the cond gains
          "  and  block([L], A, is(C) = true)"
        - MatchQ sites: each %mr_matchQ(...) call is compared masked
+       - the matcher translation fixes (design 2026-09-14 section 3.4):
+         %mr_iGtQ/%mr_iLtQ/%mr_iLeQ/%mr_iGeQ(A, B) undone to is(A op B),
+         notequal(A, B) undone to A != B, a base `) (` redone to `)*(`,
+         each count pinned
        - the 29 manual 9.1 rules and the 52 rules that had a workaround
          emitter (no defmatch in the base) are exempt;
   4. the generator's reader self-test is green;
@@ -43,7 +47,18 @@ P0_BASE = "0a6664c"
 WORKAROUND_RULES = 52
 MOVED_INNER = 227
 MATCHQ_SITES = 23
-ENTRY_CALL = re.compile(r"\b(mr_int|mr_top|rubi|rubi_fallback|rubi_hybrid|rubi_hybrid_exact)\(")
+ENTRY_CALL = re.compile(r"\b(mr_int|mr_top|rubi|rubi_fallback)\(")
+# Matcher translation fixes (docs/superpowers/specs/2026-09-14-matcher-
+# translation-fixes-design.md 3.4): three generator fixes join the closed
+# exception list, each checked as an exact text transformation -- undone on
+# the new body (integer comparisons, notequal) or redone on the base body
+# (juxtaposition) before the comparison. The counts are the sites in the
+# compared (non-exempt) rules; probes/matcher/13-translation-shape-scan
+# counts every emitted site.
+INT_CMP_UNDO = {"%mr_iGtQ": ">", "%mr_iLtQ": "<", "%mr_iLeQ": "<=", "%mr_iGeQ": ">="}
+INT_CMP_SITES = 1283
+NOTEQUAL_SITES = 10
+JUXTA_SITES = 1
 # user decision 2026-09-12 (Plan 2 writing session): move all 227 inner
 # conditions, including those whose locals integrate (IntHide -> mr_int);
 # their extra cost is watched by the P5 median-wall gate.
@@ -114,6 +129,58 @@ def unsnap(s):
     return re.sub(r"(_mr_[0-9A-Za-z_]+?)__s\b", r"\1", s)
 
 
+def call_args(s, open_idx):
+    """(index after the matching ')', [argument texts]) of the call whose '('
+    is at open_idx; commas split at depth 1 only."""
+    depth, start, args, in_str = 0, open_idx + 1, [], False
+    for k in range(open_idx, len(s)):
+        ch = s[k]
+        if ch == '"':
+            in_str = not in_str
+        elif not in_str:
+            if ch in "([":
+                depth += 1
+            elif ch in ")]":
+                depth -= 1
+                if depth == 0:
+                    args.append(s[start:k])
+                    return k + 1, args
+            elif ch == "," and depth == 1:
+                args.append(s[start:k])
+                start = k + 1
+    raise ValueError("unbalanced call at %d" % open_idx)
+
+
+def undo_fixes(s, stats):
+    """The new body line in its base spelling: %mr_iGtQ(A, B) -> is(A > B)
+    (likewise %mr_iLtQ <, %mr_iLeQ <=, %mr_iGeQ >=) and notequal(A, B) ->
+    A != B; the generator emits both calls as NAME(A, B). Counts the sites."""
+    names = list(INT_CMP_UNDO) + ["notequal"]
+    pat = re.compile(r"(?<![A-Za-z0-9_%])(" + "|".join(re.escape(n) for n in names) + r")\(")
+    while True:
+        m = pat.search(s)
+        if not m:
+            return s
+        end, args = call_args(s, m.end() - 1)
+        if len(args) != 2 or not args[1].startswith(" "):
+            raise ValueError("%s with %d arguments" % (m.group(1), len(args)))
+        a, b = args[0], args[1][1:]
+        if m.group(1) == "notequal":
+            rep, key = "%s != %s" % (a, b), "notequal"
+        else:
+            rep, key = "is(%s %s %s)" % (a, INT_CMP_UNDO[m.group(1)], b), "int_cmp"
+        s = s[:m.start()] + rep + s[end:]
+        stats[key] += 1
+
+
+def redo_juxtaposition(s, stats):
+    """The base body line with the generator's juxtaposition fix applied: a
+    `)`/`]` followed by a spaced `(` becomes `)*(`. Counts the sites."""
+    s, n = re.subn(r"([)\]]) \(", r"\1*(", s)
+    stats["juxta"] += n
+    return s
+
+
 def moved_inner(old_repl, new_repl, old_cond_base, new_cond):
     """None if (old, new) is not a moved inner condition; else the inner
     block text (for the entry-call listing) when the transformation is exact,
@@ -144,7 +211,7 @@ def main(argv):
     files = rule_files(a.base)
     counts_ok, lists_ok = [], []
     stats = dict(identical=0, guard=0, moved=0, matchq_old=0, workaround=0, nine=0,
-                 no_defmatch=0, exempt_inner=0, exempt_matchq=0)
+                 no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, notequal=0, juxta=0)
     unexplained, entry_locals, bad_moves = [], [], []
     for rel in files:
         old = git_show(a.base, rel)
@@ -196,10 +263,16 @@ def main(argv):
                     or parts[1][:2] != parts[3][:2]:
                 unexplained.append("%s: locals/binds lines differ" % rid)
                 continue
-            oc_m, qo1 = mask_matchq(parts[0][2])
-            or_m, qo2 = mask_matchq(parts[1][2])
-            nc_m, _ = mask_matchq(parts[2][2])
-            nr_m, _ = mask_matchq(parts[3][2])
+            try:
+                lines = [redo_juxtaposition(parts[0][2], stats), redo_juxtaposition(parts[1][2], stats),
+                         undo_fixes(parts[2][2], stats), undo_fixes(parts[3][2], stats)]
+            except ValueError as e:
+                unexplained.append("%s: translation-fix undo: %s" % (rid, e))
+                continue
+            oc_m, qo1 = mask_matchq(lines[0])
+            or_m, qo2 = mask_matchq(lines[1])
+            nc_m, _ = mask_matchq(lines[2])
+            nr_m, _ = mask_matchq(lines[3])
             stats["matchq_old"] += qo1 + qo2
             base = oc_m
             if oc_m.startswith("("):
@@ -243,6 +316,12 @@ def main(argv):
     g.check("MatchQ sites: compared + in exempt rules = %d" % MATCHQ_SITES,
             stats["matchq_old"] + stats["exempt_matchq"] == MATCHQ_SITES,
             "%d + %d" % (stats["matchq_old"], stats["exempt_matchq"]))
+    g.check("integer comparisons %%mr_i*Q(A, B) undone to is(A op B): %d sites" % INT_CMP_SITES,
+            stats["int_cmp"] == INT_CMP_SITES, str(stats["int_cmp"]))
+    g.check("notequal(A, B) undone to A != B: %d sites" % NOTEQUAL_SITES,
+            stats["notequal"] == NOTEQUAL_SITES, str(stats["notequal"]))
+    g.check("juxtaposition ) ( redone to )*( in the base: %d sites" % JUXTA_SITES,
+            stats["juxta"] == JUXTA_SITES, str(stats["juxta"]))
     for rid in entry_locals:
         print("INFO: moved inner condition with a package entry in its locals: %s%s" % (
             rid, " (resolved)" if rid in RESOLVED_ENTRY_LOCALS else " (UNRESOLVED)"))

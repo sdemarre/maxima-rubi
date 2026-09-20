@@ -1,0 +1,135 @@
+=== probes/matcher/11-arm-noise-recheck  git HEAD 59094a563df25eb36406dcb5926bcba5aa282309  2026-09-14 22:00 UTC
+maxima: Maxima-version: "branch_5_50_base_84_g4204fb669"
+maxima: Maxima build date: "2026-08-31 13:27:47"
+maxima: Host type: "x86_64-pc-linux-gnu"
+maxima: Lisp implementation type: "SBCL"
+maxima: Lisp implementation version: "2.6.7"
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47
+core stamp: fingerprint b98e4748784738cb78f0163a97d4cf5f
+switch: mr_flat_wide
+base arm: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true
+flip arm: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true
+reps: 3  cap: 30s  workers: 24
+records:
+  class1  base: test/corpus_class1.p5b-run1.out  flip: test/corpus_class1.p5b-run2.out
+  class2  base: test/corpus_class2.p5b-run1.out  flip: test/corpus_class2.p5b-run2.out
+  class3  base: test/corpus_class3.p5b-run1.out  flip: test/corpus_class3.p5b-run2.out
+
+base arm switch head (as build_text prepends to every entry text):
+  mr_flat_wide : false$
+  mr_cond_retry : true$
+  mr_model_flags : true$
+flip arm switch head:
+  mr_flat_wide : true$
+  mr_cond_retry : true$
+  mr_model_flags : true$
+
+=== class1 entries ===
+  FAIL->PASS timeout       t=30.0s -> expected      t=23.7s  1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e3119
+    base: timeout/30.1s,timeout/30.1s,timeout/30.0s
+    flip: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    verdict: noise
+  PASS->FAIL verified      t=24.3s -> timeout       t=30.0s  1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.7 P(x) (a+b x)^m (c+d x)^n (e+f x)^p (g+h x)^q.mac e24
+    base: verified/20.6s,verified/21.2s,verified/21.2s
+    flip: timeout/30.0s,timeout/30.1s,timeout/30.0s
+    verdict: repro-base-better
+  FAIL->PASS timeout       t=30.1s -> verified      t=29.7s  1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.7 P(x) (a+b x)^m (c+d x)^n (e+f x)^p (g+h x)^q.mac e27
+    base: verified/28.6s,verified/28.9s,verified/28.1s
+    flip: verified/29.9s,timeout/30.0s,verified/29.1s
+    verdict: noise
+  FAIL->PASS timeout       t=30.1s -> verified      t=29.9s  1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.3 (a+b x^n)^p (c+d x^n)^q.mac e166
+    base: timeout/30.1s,timeout/30.1s,timeout/30.1s
+    flip: timeout/30.1s,timeout/30.1s,timeout/30.1s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> expected      t=24.3s  1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e667
+    base: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    flip: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> verified      t=26.6s  1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.8 P(x) (c x)^m (a+b x^n)^p.mac e262
+    base: verified/27.7s,verified/27.5s,verified/27.0s
+    flip: verified/27.8s,verified/27.5s,verified/27.2s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> verified      t=26.3s  1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.3 (e x)^m (a x^j+b x^k)^p (c+d x^n)^q.mac e145
+    base: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    flip: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> verified      t=27.7s  1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.3 (e x)^m (a x^j+b x^k)^p (c+d x^n)^q.mac e146
+    base: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    flip: timeout/30.1s,timeout/30.1s,timeout/30.0s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> verified      t=26.9s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e414
+    base: verified/25.2s,verified/24.7s,verified/26.0s
+    flip: verified/26.8s,verified/26.2s,verified/27.3s
+    verdict: noise
+  FAIL->PASS timeout       t=30.1s -> verified      t=29.0s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e808
+    base: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    flip: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> verified      t=29.5s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e836
+    base: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    flip: timeout/30.1s,timeout/30.1s,timeout/30.0s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> verified      t=25.9s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e847
+    base: timeout/30.1s,timeout/30.0s,timeout/30.0s
+    flip: timeout/30.1s,timeout/30.0s,verified/29.5s
+    verdict: noise
+  PASS->FAIL verified      t=2.7s -> unverified    t=2.2s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2235
+    base: verified/3.6s,verified/3.6s,verified/3.8s
+    flip: unverified/3.1s,unverified/3.2s,unverified/3.4s
+    verdict: repro-base-better
+  PASS->FAIL verified      t=29.8s -> timeout       t=30.0s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2454
+    base: verified/29.9s,verified/29.2s,verified/28.1s
+    flip: timeout/30.0s,timeout/30.0s,verified/29.2s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> verified      t=27.3s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1282
+    base: timeout/30.0s,timeout/30.0s,verified/28.8s
+    flip: timeout/30.0s,timeout/30.0s,verified/29.4s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> verified      t=27.7s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e901
+    base: timeout/30.0s,timeout/30.0s,timeout/30.0s
+    flip: timeout/30.0s,timeout/30.0s,timeout/30.0s
+    verdict: noise
+  FAIL->PASS timeout       t=30.0s -> verified      t=29.0s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e909
+    base: timeout/30.0s,timeout/30.0s,timeout/30.0s
+    flip: timeout/30.0s,timeout/30.1s,timeout/30.0s
+    verdict: noise
+  PASS->FAIL verified      t=5.7s -> contains-noun t=6.2s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.5 (a+b x+c x^2)^p (d+e x+f x^2)^q.mac e14
+    base: verified/7.3s,verified/7.5s,verified/7.5s
+    flip: contains-noun/7.9s,contains-noun/8.3s,contains-noun/7.9s
+    verdict: repro-base-better
+  PASS->FAIL verified      t=4.7s -> contains-noun t=5.2s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.6 (g+h x)^m (a+b x+c x^2)^p (d+e x+f x^2)^q.mac e38
+    base: verified/7.0s,verified/6.5s,verified/6.5s
+    flip: contains-noun/7.3s,contains-noun/7.1s,contains-noun/7.0s
+    verdict: repro-base-better
+  PASS->FAIL verified      t=8.4s -> contains-noun t=8.9s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.6 (g+h x)^m (a+b x+c x^2)^p (d+e x+f x^2)^q.mac e128
+    base: verified/11.5s,verified/11.4s,verified/10.7s
+    flip: contains-noun/12.4s,contains-noun/12.0s,contains-noun/11.7s
+    verdict: repro-base-better
+  PASS->FAIL verified      t=2.7s -> contains-noun t=3.1s  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.6 (g+h x)^m (a+b x+c x^2)^p (d+e x+f x^2)^q.mac e130
+    base: verified/4.0s,verified/3.7s,verified/3.7s
+    flip: contains-noun/4.4s,contains-noun/4.4s,contains-noun/4.2s
+    verdict: repro-base-better
+=== class2 entries ===
+=== class3 entries ===
+  FAIL->PASS timeout       t=30.0s -> verified      t=27.4s  3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e132
+    base: verified/27.4s,verified/26.3s,verified/18.7s
+    flip: verified/27.6s,verified/27.1s,verified/20.9s
+    verdict: noise
+  FAIL->PASS timeout       t=30.1s -> verified      t=29.5s  3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e106
+    base: timeout/30.1s,timeout/30.1s,verified/28.4s
+    flip: timeout/30.1s,timeout/30.1s,verified/29.2s
+    verdict: noise
+
+=== per-class summary ===
+class1  selected=21  repro-flip-better=0  repro-base-better=6  noise=15
+class2  selected=0  repro-flip-better=0  repro-base-better=0  noise=0
+class3  selected=2  repro-flip-better=0  repro-base-better=0  noise=2
+
+=== re-applied winner (noise-filtered) ===
+class1  base_pass=6 (mr_flat_wide=false)  |  flip_pass=0 (mr_flat_wide=true)
+class2  base_pass=0 (mr_flat_wide=false)  |  flip_pass=0 (mr_flat_wide=true)
+class3  base_pass=0 (mr_flat_wide=false)  |  flip_pass=0 (mr_flat_wide=true)
+WINNER (noise-filtered) mr_flat_wide=false (tie or split across classes)
+
+wall time: 154.5s
+Results: 138 passed, 0 failed

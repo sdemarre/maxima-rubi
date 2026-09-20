@@ -62,6 +62,11 @@ t_p(mm, x) := geteqR(mm, '_t_p)$
 t_inv(mm, x) := %mr_memberQ([asin, acos], geteqR(mm, '_t_F))$
 t_app(mm, x) := apply(geteqR(mm, '_t_F), [2])$
 t_flags(mm, x) := sconcat(radexpand, " ", logexpand)$
+/* give-up replacements: they answer Rubi's Unintegrable marker, which is
+   what mr-giveup-repl-p detects in the body at %mr_defrule time */
+t_unint(mm, x) := mr_unintegrable(geteqR(mm, '_t_m), x)$
+t_unint1(mm, x) := mr_unintegrable(1, x)$
+t_unint2(mm, x) := mr_unintegrable(2, x)$
 
 /* Int[x^m_., x] */
 p_xm : "(Int (Power (Pattern x (Blank)) (Optional (Pattern |_t_m| (Blank)))) (Pattern x (Blank Symbol)))"$
@@ -84,6 +89,8 @@ test_records() := block([h1, h2],
         []),
   check("a non-handle is an error", errcatch(%mr_rule_apply(10^9, x^3, x)), []),
   check("wrong arity is an error", errcatch(%mr_defrule("t", 4, p_xm, t_true)), []),
+  check("switch defaults: mr_flat_wide false, mr_cond_retry true, mr_model_flags true",
+        [mr_flat_wide, mr_cond_retry, mr_model_flags], [false, true, true]),
   true)$
 
 test_dispatch() := block([h42, h7, hm, hdecl, hmis, hleak, hcf, hce, hcu, hfault],
@@ -178,6 +185,42 @@ test_entries() := block([hm, hcf],
   check("%mr_rule_bindings on no match", %mr_rule_bindings(hm, sin(x), x), false),
   true)$
 
+/* The give-up rules and the two-pass walk (the mr_giveup_last switch).
+   The port's table is LOAD order where Mathematica's is SPECIFICITY order,
+   so a general give-up catch-all that loads early can pre-empt a specific
+   rule that loads late; deferring the give-up rules to a second pass stops
+   that without changing what Unintegrable MEANS — it still answers when
+   nothing else does. */
+test_giveup() := block([hg, h42, hd, hg1, hg2, saved],
+  print("--- give-up rules and the two-pass walk (mr_giveup_last) ---"),
+  saved : mr_giveup_last,
+  hg  : %mr_defrule("t", 40, p_xm, t_true, t_unint),
+  h42 : %mr_defrule("t", 41, p_xm, t_true, t_42),
+  hd  : %mr_defrule("t", 42, p_xm, t_false, t_42),
+  hg1 : %mr_defrule("t", 43, p_xm, t_true, t_unint1),
+  hg2 : %mr_defrule("t", 44, p_xm, t_true, t_unint2),
+  check("%mr_giveup_handles finds the mr_unintegrable repl",
+        %mr_giveup_handles([hg, h42]), [hg]),
+  check("an ordinary repl is not a give-up rule",
+        %mr_giveup_handles([h42, hd]), []),
+  mr_giveup_last : true,
+  check("mr_giveup_last: an earlier give-up rule does not pre-empt a later ordinary one",
+        %mr_dispatch_tree(x^3, x, [hg, h42], 1), 42),
+  mr_giveup_last : false,
+  check("mr_giveup_last false: the give-up rule wins in load order",
+        %mr_dispatch_tree(x^3, x, [hg, h42], 1), mr_unintegrable(3, x)),
+  mr_giveup_last : true,
+  check("a give-up rule still answers when every ordinary rule declines",
+        %mr_dispatch_tree(x^3, x, [hg, hd], 1), mr_unintegrable(3, x)),
+  check("deferred give-up rules keep their relative order",
+        %mr_dispatch_tree(x^3, x, [hg1, hg2], 1), mr_unintegrable(1, x)),
+  check("%mr_giveup_handles wrong arity is an error",
+        errcatch(%mr_giveup_handles()), []),
+  check("%mr_giveup_handles on a non-list is an error",
+        errcatch(%mr_giveup_handles(7)), []),
+  mr_giveup_last : saved,
+  true)$
+
 t_fault1(b) := ?error('?storage\-condition)$
 
 test_matchq() := block([B],
@@ -244,6 +287,7 @@ test_records()$
 test_dispatch()$
 test_bindings()$
 test_entries()$
+test_giveup()$
 test_matchq()$
 print("")$
 print("========================================")$

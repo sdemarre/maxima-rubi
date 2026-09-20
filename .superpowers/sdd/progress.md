@@ -4595,3 +4595,238 @@ Evidence (build branch_5_50_base_84_g4204fb669 / 2026-08-31 13:27:47; 2026-09-13
   fingerprint=6c396cf8be7a1fe5060d4d17bd37cc58`
 - carried (per the first ruling): numeric folding of spliced numeric products, a parts-keyed
   compiled cache, Minor #5 (generator comments) and #6 (README) to P6 — recorded in todo/TODO.md
+
+## Plan: 2026-09-13 matcher substrate plan 3 (P5–P6; branch matcher-substrate)
+
+Spec: docs/superpowers/specs/2026-09-12-matcher-substrate-design.md
+Plan: docs/superpowers/plans/2026-09-13-matcher-substrate-plan3.md (+ .files/ attachments)
+
+### Task 1 — P5 run tooling
+- build: branch_5_50_base_84_g4204fb669 / 2026-08-31 13:27:47 / SBCL 2.6.7
+- red: `FileNotFoundError: [Errno 2] No such file or directory: '/home/serge/src/maxima-rubi/test/run_records.py'`
+- green: `python3 test/test_run_records.py | tail -1` → `Results: 23 passed, 0 failed`;
+  `python3 test/test_merge_classes.py | tail -1` → `Results: 2 passed, 0 failed`;
+  `python3 test/test_driver_core_pin.py | tail -1` → `Results: 5 passed, 0 failed`;
+  `python3 test/test_ab_records.py | tail -1` → `Results: 6 passed, 0 failed`;
+  `python3 test/test_record_medians.py | tail -1` → `Results: 3 passed, 0 failed`;
+  `python3 test/test_driver_parens.py | tail -1` → `Results: 2 passed, 0 failed`;
+  `python3 test/test_mr_sum_concrete.py | tail -1` → `Results: 3 passed, 0 failed`;
+  `python3 test/test_head_rewrites.py | tail -1` → `Results: 20 passed, 0 failed`;
+  `python3 test/test_driver_radcan_fallback.py < /dev/null | tail -1` → `Results: 3 passed, 1 failed`
+  (pre-existing, not this task's gate — brief Step 4);
+  `maxima --very-quiet -b test/matcher/test_mr_dispatch.mac < /dev/null | grep -a '^Results'` →
+  `Results:  58  passed,  0  failed`;
+  `maxima --very-quiet -b test_maxima_rubi.mac < /dev/null | grep -a '^Results'` →
+  `Results:  898  passed,  0  failed`
+- probe 09 (probes/matcher/09-harness-fault-verdict.out, `=== probes/matcher/09-harness-fault-verdict  git HEAD 3f08574  2026-09-13 12:55 UTC`):
+  - `A plain load, stdin /dev/null    rc=1    wall=  0.6s survived=0 fatal-pseudo=1 ldb=1 guard-page=0`
+  - `B plain load, stdin open pipe    rc=137  wall= 40.0s survived=0 fatal-pseudo=1 ldb=1 guard-page=0`
+  - `C rules core, stdin /dev/null    rc=0    wall=  0.1s survived=1 fatal-pseudo=0 ldb=0 guard-page=1`
+  - `D driver, standard load, pipe    error t= 1.8s crash/c.mac e1 L3|verified t= 1.7s crash/c.mac e2 L4|`
+  - `E driver, rules core, pipe       deferred t= 0.1s crash/c.mac e1 L3|verified t= 0.0s crash/c.mac e2 L4|`
+  - all five rows match the brief's expected table exactly (row D reads `error`, not the
+    pre-patch `timeout t=30.0s` cited by deviation 2).
+
+### Task 2 — P5 run 1 (defaults)
+- core: `built test/mr_rules.core (112775536 bytes) rules=3513 fingerprint=6c396cf8be7a1fe5060d4d17bd37cc58`
+- class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 13:10:45 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 770 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `INFO: PASS->FAIL 24  FAIL->PASS 180` / `INFO: p90 wall P0 8.1 s -> new 2.3 s` / `INFO: timeout P0 6 -> new 20; timeout in new only: 18` / `Results: 4 passed, 0 failed`
+- class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 13:35:18 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 2287 >= P0 2058` / `PASS: wall ceiling: median 1.40 s <= P0 3.90 s` / `INFO: PASS->FAIL 181  FAIL->PASS 410` / `INFO: p90 wall P0 16.2 s -> new 7.5 s` / `INFO: timeout P0 201 -> new 145; timeout in new only: 62` / `Results: 4 passed, 0 failed`
+- class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 15:01:58 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 21202 >= P0 20125` / `PASS: wall ceiling: median 0.40 s <= P0 1.30 s` / `INFO: PASS->FAIL 1833  FAIL->PASS 2910` / `INFO: p90 wall P0 7.0 s -> new 4.5 s` / `INFO: timeout P0 778 -> new 1217; timeout in new only: 941` / `Results: 4 passed, 0 failed`
+
+### Task 3 — P5 runs 2–4 (+5)
+- run 2 (mr_flat_wide=true):
+  - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 15:09:07 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 773 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `Results: 4 passed, 0 failed`
+  - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 15:31:42 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 2288 >= P0 2058` / `PASS: wall ceiling: median 1.30 s <= P0 3.90 s` / `Results: 4 passed, 0 failed`
+  - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true`; merge rc=0 (2026-09-13 16:58:28 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 21211 >= P0 20125` / `PASS: wall ceiling: median 0.40 s <= P0 1.30 s` / `Results: 4 passed, 0 failed`
+- run 3 (mr_cond_retry=false):
+  - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true`; merge rc=0 (2026-09-13 17:03:19 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true` / `PASS: pass floor: PASS 775 >= P0 614` / `PASS: wall ceiling: median 0.20 s <= P0 4.30 s` / `Results: 4 passed, 0 failed`
+  - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true`; merge rc=0 (2026-09-13 19:11:53 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true` / `PASS: pass floor: PASS 2187 >= P0 2058` / `PASS: wall ceiling: median 0.40 s <= P0 3.90 s` / `Results: 4 passed, 0 failed`
+  - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true`; merge rc=0 (2026-09-13 21:00:40 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true` / `FAIL: pass floor: PASS 19374 >= P0 20125` / `PASS: wall ceiling: median 0.20 s <= P0 1.30 s` / `Results: 3 passed, 1 failed` (a flip-arm pass-floor FAIL is recorded, not a stop — per Step 1, only the final records are judged)
+- run 4 (mr_model_flags=false):
+  - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false`; merge rc=0 (2026-09-13 21:07:51 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false` / `PASS: pass floor: PASS 771 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `Results: 4 passed, 0 failed`
+  - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false`; merge rc=0 (2026-09-13 21:30:07 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false` / `PASS: pass floor: PASS 2270 >= P0 2058` / `PASS: wall ceiling: median 1.20 s <= P0 3.90 s` / `Results: 4 passed, 0 failed`
+  - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false`; merge rc=0 (2026-09-13 22:54:53 UTC); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false` / `PASS: pass floor: PASS 21032 >= P0 20125` / `PASS: wall ceiling: median 0.40 s <= P0 1.30 s` / `Results: 4 passed, 0 failed`
+- winners:
+  - `WINNER mr_flat_wide=true (more PASS in every class); differs from run 1 (mr_flat_wide=false)`
+  - `WINNER mr_cond_retry=true (tie or split across classes); same as run 1 (mr_cond_retry=true)`
+  - `WINNER mr_model_flags=false (tie or split across classes); differs from run 1 (mr_model_flags=true)`
+
+  The user's 2026-09-13 decision (made after mr_flat_wide read wide by +9/+3/+1 PASS with 16 of
+  19 changed entries at the 30 s cap, no noise tolerance in the raw rule): "Re-run changed
+  entries" — between corpus runs, re-run the changed entries under both arms, several reps each,
+  at 30 s; results that don't reproduce count as noise; the winner rule is re-applied to what
+  reproduces. Probe 11 (`probes/matcher/11-arm-noise-recheck.py`, commits ad83326 + 7871a45)
+  implements it. The controller's ruling applied the same method to mr_model_flags, whose raw
+  rule read false on a +1 class-2 margin whose three entries were all noise; mr_cond_retry needed
+  no re-check (a large-margin split: −1,828 / +5 / −100 PASS, class 1/2/3).
+
+  Noise-filtered re-checks (probes/matcher/11-arm-noise-recheck.mr_flat_wide.out,
+  probes/matcher/11-arm-noise-recheck.mr_model_flags.out):
+  - mr_flat_wide: per class repro-flip-better/repro-base-better/noise — c1 4/3/8 (of 15
+    selected), c2 0/0/3 (of 3), c3 0/0/1 (of 1); `WINNER (noise-filtered) mr_flat_wide=false (tie
+    or split across classes)`
+  - mr_model_flags: per class repro-flip-better/repro-base-better/noise — c1 92/273/13 (of 378
+    selected), c2 0/2/3 (of 5), c3 2/21/2 (of 25); `WINNER (noise-filtered) mr_model_flags=true
+    (more PASS in every class)`
+
+  Resulting winners (noise-filtered): mr_flat_wide=false, mr_cond_retry=true,
+  mr_model_flags=true — all three are the run-1 defaults.
+- FINAL_ARM: ""; final records: test/corpus_class{1,2,3}.p5-run1.out
+- run 5: not taken (FINAL_ARM empty)
+- arm A/B (run 1 -> run k):
+  - k=2, class 2: PASS->PASS 770, PASS->FAIL 0, FAIL->PASS 3, FAIL->FAIL 192
+  - k=2, class 3: PASS->PASS 2287, PASS->FAIL 0, FAIL->PASS 1, FAIL->FAIL 797
+  - k=2, class 1: PASS->PASS 21199, PASS->FAIL 3, FAIL->PASS 12, FAIL->FAIL 4483
+  - k=3, class 2: PASS->PASS 759, PASS->FAIL 11, FAIL->PASS 16, FAIL->FAIL 179
+  - k=3, class 3: PASS->PASS 2124, PASS->FAIL 163, FAIL->PASS 63, FAIL->FAIL 735
+  - k=3, class 1: PASS->PASS 19000, PASS->FAIL 2202, FAIL->PASS 374, FAIL->FAIL 4121
+  - k=4, class 2: PASS->PASS 768, PASS->FAIL 2, FAIL->PASS 3, FAIL->FAIL 192
+  - k=4, class 3: PASS->PASS 2266, PASS->FAIL 21, FAIL->PASS 4, FAIL->FAIL 794
+  - k=4, class 1: PASS->PASS 20928, PASS->FAIL 274, FAIL->PASS 104, FAIL->FAIL 4391
+- mr_model_flags reading: mr_model_flags=true won (noise-filtered); no MODEL-LOST investigation
+  needed (Step 8 turns only on a raw PASS->FAIL list when the raw rule's loser stands, and here
+  the noise-filtered winner keeps run 1's arm)
+
+Plan deviation (one line): the winner rule as executed = the spec rule applied to reproducible
+differences (probe 11), not to raw PASS counts — per the user's 2026-09-13 noise decision, applied
+uniformly to every switch with a thin raw margin.
+
+### Task 4 — P5 gate
+- final arm: "" (FINAL_ARM empty — the defaults `mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`);
+  final records: test/corpus_class1.p5-run1.out test/corpus_class2.p5-run1.out test/corpus_class3.p5-run1.out
+- gates (Step 1: the run-1 gates of Task 2 are the final-record gates; `switches:` = the final arm):
+  - class 2: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 770 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `INFO: PASS->FAIL 24  FAIL->PASS 180` / `INFO: p90 wall P0 8.1 s -> new 2.3 s` / `INFO: timeout P0 6 -> new 20; timeout in new only: 18` / `Results: 4 passed, 0 failed`; error 1 -> 0 (0 new only)
+  - class 3: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 2287 >= P0 2058` / `PASS: wall ceiling: median 1.40 s <= P0 3.90 s` / `INFO: PASS->FAIL 181  FAIL->PASS 410` / `INFO: p90 wall P0 16.2 s -> new 7.5 s` / `INFO: timeout P0 201 -> new 145; timeout in new only: 62` / `Results: 4 passed, 0 failed`; error 4 -> 3 (3 new only)
+  - class 1: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 21202 >= P0 20125` / `PASS: wall ceiling: median 0.40 s <= P0 1.30 s` / `INFO: PASS->FAIL 1833  FAIL->PASS 2910` / `INFO: p90 wall P0 7.0 s -> new 4.5 s` / `INFO: timeout P0 778 -> new 1217; timeout in new only: 941` / `Results: 4 passed, 0 failed`; error 23 -> 63 (60 new only)
+- rubi_hybrid (1.2.1.3 e839 PASS->FAIL count): 0 (1.2.1.3 e839: P0 verified 3.7 s -> run 1 expected 0.9 s).
+  Note: this count does not settle the question. Collapse-family PASS->FAIL entries exist:
+  class 2 g10 = 2.1 e15; class 1 g106 = 1.2.1.2 e1734/e1735/e1736; class 1 g1's 1.2.1.4 e810 by its
+  P0 route. Spec §3.5 says "A PASS→FAIL in the collapse-rule family … brings back the exact
+  comparison as a translation fix, not as a pass", so the collapse-family finding reopens the
+  question for the user. Task 5 does not delete rubi_hybrid / rubi_hybrid_exact before the user answers.
+- 100 s re-checks (Step 3; each record's description line ends `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`):
+  - class 2 (test/corpus_class2.p5-final.timeout-rerun/): `OK: 20/20 re-checked, no dupes/missing/extra`; transitions timeout 17, verified 3, `now-PASS: 3`; `2026-09-13 23:15:15 UTC watcher: merge rc=0`
+  - class 3 (test/corpus_class3.p5-final.timeout-rerun/): `OK: 145/145 re-checked, no dupes/missing/extra`; transitions error 16, timeout 113, unverified 8, verified 8, `now-PASS: 8`; `2026-09-13 23:27:31 UTC watcher: merge rc=0`
+  - class 1 (test/corpus_class1.p5-final.timeout-rerun/): `OK: 1217/1217 re-checked, no dupes/missing/extra`; transitions contains-noun 1, error 56, timeout 1004, unverified 25, verified 131, `now-PASS: 131`; `2026-09-14 00:51:47 UTC watcher: merge rc=0`
+- attribution (Step 4, probe 10; P0 core rebuilt at 0a6664c: `built test/mr_rules.core (172556912 bytes) rules=3514 fingerprint=5ef9b3bc5ee07ffac0e76f1fea54fbac`):
+  - class 2: `PASS->FAIL 24: deterministic 22, slow-correct 2, near-cap 0, noise 0, p0-noise 0, unmeasured 0` / `Results: 24 passed, 0 failed` (12 groups; legs final30 `Results: 0 passed, 24 failed`, p0 `Results: 24 passed, 0 failed`, final120 `Results: 2 passed, 0 failed`); `NEW TIMEOUTS 18: at 100 s timeout 15, verified 3`
+  - class 3: `PASS->FAIL 181: deterministic 180, slow-correct 1, near-cap 0, noise 0, p0-noise 0, unmeasured 0` / `Results: 181 passed, 0 failed` (55 groups; final30 `Results: 0 passed, 181 failed`, p0 `Results: 181 passed, 0 failed`, final120 `Results: 1 passed, 18 failed`, newerror `Results: 0 passed, 3 failed`); `NEW TIMEOUTS 62: at 100 s error 6, timeout 46, unverified 6, verified 4`
+  - class 1: `PASS->FAIL 1833: deterministic 1741, slow-correct 85, near-cap 0, noise 6, p0-noise 1, unmeasured 0` / `Results: 1833 passed, 0 failed` (283 groups; final30 `Results: 6 passed, 1827 failed`, p0 `Results: 1832 passed, 1 failed`, final120 `Results: 91 passed, 617 failed`, newerror `Results: 0 passed, 60 failed`); `NEW TIMEOUTS 941: at 100 s contains-noun 1, error 41, timeout 756, unverified 22, verified 121`
+- mechanisms: Step 5's lines are committed as files, not inlined:
+  - probes/matcher/10-p5-attribution.mechanisms-class2-3.md (class 2 12 + class 3 55 group lines)
+  - probes/matcher/10-p5-attribution.mechanisms-class1-a.md (g1–g17)
+  - probes/matcher/10-p5-attribution.mechanisms-class1-b.md (g18–g80)
+  - probes/matcher/10-p5-attribution.mechanisms-class1-c.md (g81–g283, NEW TIMEOUTS, the 60 new errors, collapse family)
+
+  The per-group presentation for the user is probes/matcher/10-p5-attribution.acceptance.md. Its
+  tallies: primary family by the document's stated rule (§3), given as groups/entries; defect tags
+  by its counting rule (§2). The four defects count as one tag set:
+  - class 2 (12 groups / 24 entries; 3 carry a defect tag): OPT 5/10, EXPAND-NOUN 1/5, RETRY 3/4, DEG 1/3, 9.1-COLLAPSE 1/1, not determined 1/1; IGtQ 2 groups / 3 entries (from the text, not a tag)
+  - class 3 (55 / 181; 7 carry a defect tag): POLY 12/43, CATCH-3.1 7/39, OPT 13/38, AFX 11/32, VERIFY-TIMEOUT 4/15, not determined 6/8, DEG 1/3, EXPAND-NOUN 1/3; negQ 1 group / 7 entries (from the text, not a tag)
+  - class 1 (283 / 1833; 1072 carry a defect tag): EXPAND-NOUN 49/695, RT-SUM/PF-EVEN 46/254, NOFIRE 2/179, VERIFY-TIMEOUT 29/150, RETRY 23/127, OPT 33/117, CATCH-1 32/86, not determined 26/81, MID-CHAIN 6/80, MFLAGS 21/32, DEG 2/12, ZERO 9/11, 9.1-COLLAPSE 1/3, 9.1 1/3, FLAT 2/2, P0-NOISE 1/1; IGtQ 111 groups / 957 entries, negQ 51 / 223 (139 entries both), NE 8 / 29, MUL 2 / 3
+- final tree (Step 6, 02:17:41–02:19:26 UTC): `Results:  898  passed,  0  failed` (Layer A), `Results: 53 passed, 0 failed` (match), `Results: 51 passed, 0 failed` (tree), `Results:  58  passed,  0  failed` (dispatch), `Results: 11 passed, 0 failed` (static gate), `Results: 23 passed, 0 failed` (test_run_records); regression suite `Results: 109 passed, 0 failed` (defaults), `Results: 109 passed, 0 failed` (flags); content diff lines roundtrip.out 0, roundtrip.flags.out 0, controls.out 0, spike01.out 0, gate.out 0, gate.flags.out 0; evidence commit 295effa
+- translation defects found (pre-existing, byte-identical to P0, made reachable by the substrate's
+  binding; not fixed in Task 4; scope and per-class counts in the acceptance document §2):
+  - IGtQ/ILtQ/ILeQ emitted as a bare `>`/`<`/`<=`, so the integer test is lost.
+    Evidence: generator/generate_rules.py:816-817 (`CMP_OPS`) and :1129-1137;
+    rules/class2/2_1.mac:82 `_mr_cond_2_1_r10`.
+    Scope, Rubi-source calls: class 1 1,261 in 74 files, class 2 29 in 3, class 3 145 in 9,
+    9.1 4 in 1. IGeQ is not checked.
+  - `%mr_negQ` reads true for an unknown-sign symbol. Evidence: maxima_rubi_utils.mac:446-448.
+  - Rubi `!=` is emitted verbatim and Maxima reads it as `(k!) = 1`. Evidence: a controller ad-hoc
+    `--batch-string` measurement on build 2026-08-31 13:27:47 (k:1 → `is(k != 1)` true; k:2 → false).
+    Scope: 10 generated lines in 7 class-1 files. It needs a committed probe before a docs claim.
+  - `1_1_4_1_r1`'s repl uses a space as multiplication: rules/class1/1_1_4_1.mac:13
+    `…/(b*(n - j) (p + 1)*x^(n - 1))`. Evidence: ad-hoc `errcatch((n - j) (p + 1))` → `[]`.
+    A scan of rule lines for `\)\s+\(` finds 1 line.
+
+### Task 4 — user acceptance (2026-09-14)
+- decision (verbatim option chosen): "Fix defects first (Recommended)" — reject the defect-tagged groups; they are the input of a fix plan for the four translation defects (IGtQ/ILtQ/ILeQ integer test lost; `%mr_negQ` true on unknown-sign symbols; `!=` read as `(k!) = 1`; space-as-multiplication in `1_1_4_1_r1`), with committed probes proving each; then re-run the final records and probe 10 and return to this stop
+- class 1: every group carrying ≥1 defect tag (1,072 of 1,833 entries; tags per group in probes/matcher/10-p5-attribution.acceptance.md §5): rejected → fix plan
+- class 2 g4, g11 (3 entries, IGtQ, from the mechanism text): rejected → fix plan
+- class 3 g3 (the 7 of 11 entries attributed to `%mr_negQ`): rejected → fix plan
+- all other groups (untagged) and the new timeouts: not accepted yet — the fix changes rule routes; they are re-attributed on the fixed tree
+- rubi_hybrid (verbatim option chosen): "Restore exact comparison (Recommended)" — spec §3.5 applied: class 2 g10 (2.1 e15), class 1 g106 (1.2.1.2 e1734, e1735, e1736) and class 1 g1's 1.2.1.4 e810 (by its P0 route): rejected → the exact seen comparison as a translation fix in the fix plan; Task 5 does not delete `rubi_hybrid` / `rubi_hybrid_exact` until that plan decides
+- consequence: Plan 3 stops before Task 5 (plan Task 4 Step 9: "Any rejection → stop: the rejected entries are the input of a fix plan written then; Tasks 5–6 wait for it")
+
+## Plan: 2026-09-14 matcher translation fixes (branch matcher-substrate)
+
+Spec: docs/superpowers/specs/2026-09-14-matcher-translation-fixes-design.md
+Plan: docs/superpowers/plans/2026-09-14-matcher-translation-fixes.md (+ .files/ attachments)
+
+### Task 1 — red records
+- build: branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47; unfixed core: built test/mr_rules.core (112775536 bytes) rules=3513 fingerprint=6c396cf8be7a1fe5060d4d17bd37cc58; P0 core: built test/mr_rules.core (172589688 bytes) rules=3514 fingerprint=5ef9b3bc5ee07ffac0e76f1fea54fbac
+- probe 12 red: Results: 16 passed, 43 failed; probe 13 red: Results: 71 passed, 19 failed
+- probe 15: P0 Results: 6 passed, 0 failed; unfixed Results: 1 passed, 5 failed; e810 on the unfixed core: deferred     t=  0.6s 1:1.2.1.4  e810 L1035  nfires=1 top=1_2_1_3_r15 fires=1_2_1_3_r15
+
+### Task 2 — the exact seen entry
+- red: `  FAIL:  mr_int_exact: the same form dispatches `, `  FAIL:  mr_int_exact: an exact repeat takes the fall-through `, `  FAIL:  rubi_hybrid deleted `, `  FAIL:  rubi_hybrid_exact deleted `; `Results:  899  passed,  4  failed`
+- green: `Results:  903  passed,  0  failed` (test_maxima_rubi.mac); `Results:  58  passed,  0  failed` (test/matcher/test_mr_dispatch.mac); probe 12: `Results: 16 passed, 43 failed` (unchanged, as expected)
+
+### Task 3 — generator translation fixes
+- red: `  FAIL:  iGtQ 3 0 `, `  FAIL:  iGtQ 1/2 0 (fraction) `, `  FAIL:  iGtQ 2.0 0 (float) `, `  FAIL:  iGtQ n 0 (symbol) `, `  FAIL:  iGtQ 0 0 `, `  FAIL:  iLtQ -1 0 `, `  FAIL:  iLtQ -1/2 0 (fraction) `, `  FAIL:  iLeQ 0 0 `, `  FAIL:  iLeQ -3/2 0 (fraction) `, `  FAIL:  iGeQ 0 0 `, `  FAIL:  iGeQ 1/2 0 (fraction) `, `  FAIL:  1_1_3_2 r17 cond: gcd(m+1, n) = 2, k != 1 holds `, `  FAIL:  1_1_3_2 r17 cond: gcd(m+1, n) = 1, k != 1 fails `, `  FAIL:  1_1_4_1 r1 repl on numbers `; `Results:  906  passed,  14  failed`; static gate before regeneration: `FAIL: no defmatch/matchdeclare; one %mr_defrule per rule; every cond/repl explained`, `FAIL: integer comparisons %mr_i*Q(A, B) undone to is(A op B): 1283 sites`, `FAIL: notequal(A, B) undone to A != B: 10 sites`, `Results: 11 passed, 3 failed`
+- regeneration: `79`; ` 79 files changed, 1030 insertions(+), 1030 deletions(-)`; `regeneration byte-identical`
+- green: static gate `Results: 14 passed, 0 failed`; probe 13 `Results: 80 passed, 10 failed` (only the ten FIRST lines — Task 4); Layer A `Results:  920  passed,  0  failed`; probe 12 `Results: 42 passed, 17 failed` (only the seventeen NEGQ lines of Task 1 Step 3 — Task 4)
+
+### Task 4 — the PosAux port and siblings
+- red: `  FAIL:  posQ a (PosAux: a symbol is positive) `, `  FAIL:  negQ a/c `, `  FAIL:  negQ e^2 b^2 `, `  FAIL:  negQ 4 a c e^2 `, `  FAIL:  negQ 2 (a+b) `, `  FAIL:  negQ b^2-4ac `, `  FAIL:  posQ %i (complex, Re 0 -> Im) `, `  FAIL:  posQ -%i (complex, Re 0 -> Im) `, `  FAIL:  posQ 2-3%i (complex, Re) `, `  FAIL:  posQ %i a (%i left to the structural branches) `, `  FAIL:  posQ log(a) (function) `, `  FAIL:  posQ 1/c (power -1) `, `  FAIL:  posQ (a-b)^3 `, `  FAIL:  posQ (a-b)^3 c `, `  FAIL:  posQ a/c-b/c `, `  FAIL:  posQ sqrt(a-b)(c-d) `, `  FAIL:  negSumBaseQ a-b (First = a) `, `  FAIL:  someNegTermQ a+b `, `  FAIL:  splitSum takes the first term (internal order) `, `  FAIL:  product_factors a/b `, `  FAIL:  removeContentAux -1+x (NegQ[First] -> -u) `; `Results:  934  passed,  21  failed`; green: `Results:  955  passed,  0  failed` (test_maxima_rubi.mac); `Results: 59 passed, 0 failed` (probe 12); `Results: 90 passed, 0 failed` (probe 13); `Results: 53 passed, 0 failed` (test_mr_match); `Results: 51 passed, 0 failed` (test_mr_tree); `Results:  58  passed,  0  failed` (test_mr_dispatch); `Results: 14 passed, 0 failed` (check_generated_rules)
+- probe 14: `CLASS 1 answers 25697 done 25697 parse-errors 0 answer-errors 22 missing 0 (chunk timeouts 0)`, `CLASS 1 Plus comparable 279107: agree 248655, first-only 9635, first-dis 20817 (PosAux flip 10104); noncomp 15`, `CLASS 1 first-term agreement 0.9254, whole-order agreement 0.8909, PosAux flip rate 0.0362`, `CLASS 1 PosAux flips removed by the case-fold rename 3265, remaining 6839`, `CLASS 2 answers 965 done 965 parse-errors 0 answer-errors 0 missing 0 (chunk timeouts 0)`, `CLASS 2 Plus comparable 5421: agree 5083, first-only 64, first-dis 274 (PosAux flip 138); noncomp 0`, `CLASS 2 first-term agreement 0.9495, whole-order agreement 0.9376, PosAux flip rate 0.0255`, `CLASS 2 PosAux flips removed by the case-fold rename 1, remaining 137`, `CLASS 3 answers 3085 done 3085 parse-errors 0 answer-errors 11 missing 0 (chunk timeouts 0)`, `CLASS 3 Plus comparable 41899: agree 39776, first-only 380, first-dis 1743 (PosAux flip 970); noncomp 26`, `CLASS 3 first-term agreement 0.9584, whole-order agreement 0.9493, PosAux flip rate 0.0232`, `CLASS 3 PosAux flips removed by the case-fold rename 0, remaining 970` — all twelve lines match the brief's pre-validation figures exactly; the ticket's table was left unchanged
+- ticket: .scratch/matcher-translation-fixes/issues/01-case-fold-order-shim.md
+- fix round 1 (review): branch 2 `w : float(rectform(u))` (a complex numeric constant, e.g. `(-1)^(1/4)`, now reads as an explicit complex number under PosAux); `w : rectform(float(u))` (the reviewer finding's literal text, tried first) was rejected — `float` leaves `(-1)^(1/4)` symbolic (`1.0*(-1)^(1/4)`), so a following `rectform` still has an unfloated `sqrt(2)` and neither `numberp` nor `%mr_complexNumberQ` hold, leaving the branch at `false`; `rectform` first resolves the exact algebraic form (`%i/sqrt(2) + 1/sqrt(2)`), which `float` then evaluates cleanly; red: `  FAIL:  posQ (-1)^(1/4) (PosAux branch 2: N gives 0.707+0.707 I) `, `Results:  956  passed,  1  failed`; green Layer A `Results:  957  passed,  0  failed`, probe 12 `Results: 59 passed, 0 failed`, probe 13 `Results: 90 passed, 0 failed`, dispatch `Results:  58  passed,  0  failed`; focused check `%mr_posQ((-1)^(1/4))=true, %mr_posQ((1+%i)/sqrt(2))=true, %mr_posQ(%e^%i)=true, %mr_posAux((1+%i)/sqrt(2))=true, %mr_posQ(-(1+%i)/sqrt(2))=false, %mr_posQ(%pi-3)=true, %mr_posQ(%pi-4)=false`; probe 14 re-run: class 1 changed (`PosAux flip 10104 -> 10093`, `remaining 6839 -> 6828`; first-term/whole-order agreement rates and the case-fold-removed count 3265 unchanged), classes 2 and 3 unchanged — ticket table's class-1 PosAux-flips figure updated 10,104 -> 10,093 and the pre-validation wording dropped
+
+### Task 5 — fixed-tree evidence
+- p6 check: `anchors ok: 8 combinations`; probe 08 (build `branch_5_50_base_84_g4204fb669` 2026-08-31 13:27:47): `LOAD flagless wall 1.4 s; TLS lines 0`, `R load maxima_rubi.mac s 0.315004 mr_load_all s 0.9970129999999999 rules 3513`, `LAYER-A flagless wall 1.3 s; TLS lines 0: Results:  957  passed,  0  failed`, `LOAD flag wall 1.4 s; TLS lines 0`, `LAYER-A flag wall 1.3 s; TLS lines 0: Results:  957  passed,  0  failed`, `DISPATCH-SUITE flagless wall 0.4 s: Results:  58  passed,  0  failed`, `CORE-BUILD wall 2.9 s exit 0: built test/mr_rules.core (112677200 bytes) rules=3513 fingerprint=b98e4748784738cb78f0163a97d4cf5f`; fixed core: `fingerprint=b98e4748784738cb78f0163a97d4cf5f`
+- green: probe 12 `Results: 59 passed, 0 failed`; probe 13 `Results: 90 passed, 0 failed`; probe 15 `Results: 5 passed, 1 failed` and its six rows (core fingerprint `b98e4748784738cb78f0163a97d4cf5f`): `verified     t=  1.0s 2:2.1 u (F e15 L26  nfires=3 top=9_1_r27 fires=2_1_r3,2_1_r2,9_1_r27`, `expected     t=  1.0s 1:1.2.1.2  e1734 L1967  nfires=2 top=9_1_r27 fires=1_1_1_2_r37,9_1_r27`, `expected     t=  1.0s 1:1.2.1.2  e1735 L1968  nfires=2 top=9_1_r27 fires=1_1_1_2_r37,9_1_r27`, `expected     t=  1.0s 1:1.2.1.2  e1736 L1969  nfires=2 top=9_1_r27 fires=1_1_1_2_r37,9_1_r27`, `deferred     t=  0.5s 1:1.2.1.4  e810 L1035  nfires=1 top=1_2_1_3_r15 fires=1_2_1_3_r15`, `expected     t=  0.5s 1:1.2.1.3  e839 L932  nfires=3 top=1_2_1_3_r4 fires=1_1_1_2_r33,1_1_1_3_r6,1_2_1_3_r4` — all six rows match the brief exactly
+- docs: AGENTS.md Layer A 898->957 targets and closing text (→ 957 matcher translation fixes, 37 checks), static gate 11->14/0 and the exception-list sentence (1,283 integer comparisons, 10 notequal, 1 juxtaposition); parent spec §3.4 (byte-identity exceptions amendment; the 9.1 repl `Int` -> `mr_int_exact` amendment) and §3.5 (`rubi_hybrid` paragraph amendment: `mr_int_exact` restores the exact comparison, `rubi_hybrid` / `rubi_hybrid_exact` / `%mr_hybrid_body` deleted); TODO § Matcher substrate (Plan 3 Tasks 5–6 wait — done; new bullet: Translation fixes plan Tasks 1–5 done, Tasks 6–7 open, case-fold order-shim ticketed)
+- commit: `bd8e8f9` "record: translation fixes — green probes 12/13/15, probe 08 on the fixed tree; P6 script, AGENTS.md, spec amendments" (8 files: p6_hardwire.py, probes/matcher/08-runtime-load.out, probes/matcher/12-translation-defects.out, probes/matcher/13-translation-shape-scan.out, probes/matcher/15-collapse-exact.out, AGENTS.md, the parent spec, todo/TODO.md)
+- concerns: none — every figure in probe 08 / probe 12 / probe 13 / probe 15 matched the brief-as-amended (addendum Ruling 6: Layer A 957, 37 checks) exactly; no adjustment made to code, tests or probes
+
+### Task 6 — P5b runs
+- core: `built test/mr_rules.core (112677200 bytes) rules=3513 fingerprint=b98e4748784738cb78f0163a97d4cf5f` (Task 5 fixed core; stamp git_rev 0611bd4)
+- run 1 (defaults `mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`):
+  - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`; merge rc=0 (15:56:42 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 774 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `INFO: PASS->FAIL 20  FAIL->PASS 180` / `INFO: p90 wall P0 8.1 s -> new 2.1 s` / `INFO: timeout P0 6 -> new 14; timeout in new only: 14` / error P0 1 -> new 3 (3 new only: 2.3 e45, e56, e57) / `Results: 4 passed, 0 failed`; defective p5-run1 -> p5b-run1 (informational): PASS->PASS 765, PASS->FAIL 5, FAIL->PASS 9, FAIL->FAIL 186 (5 verified->expected, 4 timeout->verified, 3 unexpected->no-answer, 3 timeout->error, 2 verified->timeout, 2 verified->deferred, 1 deferred->verified, 1 unverified->expected, 1 timeout->unverified, 1 verified->unverified)
+  - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`; merge rc=0 (16:21:10 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 2269 >= P0 2058` / `PASS: wall ceiling: median 1.50 s <= P0 3.90 s` / `INFO: PASS->FAIL 192  FAIL->PASS 403` / `INFO: p90 wall P0 16.2 s -> new 8.4 s` / `INFO: timeout P0 201 -> new 160; timeout in new only: 70` / error P0 4 -> new 3 (3 new only: 3.1.5 e120, 3.4 e356, 3.5 e172) / `Results: 4 passed, 0 failed`; defective p5-run1 -> p5b-run1 (informational): PASS->PASS 2241, PASS->FAIL 46, FAIL->PASS 28, FAIL->FAIL 770 (18 verified->unverified, 15 verified->expected, 14 unverified->timeout, 13 verified->timeout, 10 timeout->verified, 8 verified->contains-noun, 7 verified->deferred, 7 unexpected->no-answer, 6 unverified->verified, …)
+  - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true`; merge rc=0 (18:01:35 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 22513 >= P0 20125` / `PASS: wall ceiling: median 0.60 s <= P0 1.30 s` / `INFO: PASS->FAIL 1297  FAIL->PASS 3685` / `INFO: p90 wall P0 7.0 s -> new 5.7 s` / `INFO: timeout P0 778 -> new 1294; timeout in new only: 1044` / `INFO: crash (error) P0 23 -> new 38; error in new only: 35` / `Results: 4 passed, 0 failed`; defective p5-run1 -> p5b-run1 (informational): PASS->PASS 20539, PASS->FAIL 663, FAIL->PASS 1974, FAIL->FAIL 2521 (1179 deferred->verified, 547 timeout->verified, 402 verified->timeout, 261 deferred->timeout, 109 unverified->verified, 99 deferred->unverified, 83 verified->unverified, 74 verified->deferred, 72 verified->contains-noun, …)
+  - Step 2 commit: `95f0774` "record: P5b run 1 (switch defaults, fixed tree) — classes 1-3"
+- runs 2-4 (`test/class{2,3,1}_merge.p5b-run{2,3,4}.log`, chained via scratchpad `p5b-chain.sh`, one detached waiter, log copied to workspace `p5b-chain.log`; chain done 2026-09-15 00:00:03 CEST, rc 0):
+  - run 2 (`mr_flat_wide=true`):
+    - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true`; merge rc=0 (18:09:00 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 774 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `INFO: PASS->FAIL 20  FAIL->PASS 180` / `INFO: p90 wall P0 8.1 s -> new 2.3 s` / `INFO: timeout P0 6 -> new 15; timeout in new only: 14` / `INFO: crash (error) P0 1 -> new 2; error in new only: 2` / `Results: 4 passed, 0 failed`
+    - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true`; merge rc=0 (18:32:00 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 2271 >= P0 2058` / `PASS: wall ceiling: median 1.40 s <= P0 3.90 s` / `INFO: PASS->FAIL 192  FAIL->PASS 405` / `INFO: p90 wall P0 16.2 s -> new 8.2 s` / `INFO: timeout P0 201 -> new 149; timeout in new only: 65` / `INFO: crash (error) P0 4 -> new 6; error in new only: 6` / `Results: 4 passed, 0 failed`
+    - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true`; merge rc=0 (20:08:01 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=true mr_cond_retry=true mr_model_flags=true` / `PASS: pass floor: PASS 22520 >= P0 20125` / `PASS: wall ceiling: median 0.50 s <= P0 1.30 s` / `INFO: PASS->FAIL 1291  FAIL->PASS 3686` / `INFO: p90 wall P0 7.0 s -> new 5.5 s` / `INFO: timeout P0 778 -> new 1264; timeout in new only: 1011` / `INFO: crash (error) P0 23 -> new 53; error in new only: 50` / `Results: 4 passed, 0 failed`
+  - run 3 (`mr_cond_retry=false`):
+    - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true`; merge rc=0 (20:13:01 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true` / `PASS: pass floor: PASS 773 >= P0 614` / `PASS: wall ceiling: median 0.20 s <= P0 4.30 s` / `INFO: PASS->FAIL 17  FAIL->PASS 176` / `INFO: p90 wall P0 8.1 s -> new 0.7 s` / `INFO: timeout P0 6 -> new 8; timeout in new only: 8` / `INFO: crash (error) P0 1 -> new 4; error in new only: 3` / `Results: 4 passed, 0 failed`
+    - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true`; merge rc=0 (20:36:01 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true` / `PASS: pass floor: PASS 2182 >= P0 2058` / `PASS: wall ceiling: median 0.40 s <= P0 3.90 s` / `INFO: PASS->FAIL 275  FAIL->PASS 399` / `INFO: p90 wall P0 16.2 s -> new 2.3 s` / `INFO: timeout P0 201 -> new 179; timeout in new only: 97` / `INFO: crash (error) P0 4 -> new 5; error in new only: 5` / `Results: 4 passed, 0 failed`
+    - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true`; merge rc=0 (22:02:02 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=false mr_model_flags=true` / `PASS: pass floor: PASS 20338 >= P0 20125` / `PASS: wall ceiling: median 0.30 s <= P0 1.30 s` / `INFO: PASS->FAIL 2730  FAIL->PASS 2943` / `INFO: p90 wall P0 7.0 s -> new 1.8 s` / `INFO: timeout P0 778 -> new 1469; timeout in new only: 1173` / `INFO: crash (error) P0 23 -> new 47; error in new only: 44` / `Results: 4 passed, 0 failed` (flip-arm pass floor still PASS: 20338 >= 20125)
+  - run 4 (`mr_model_flags=false`):
+    - class 2: `OK: 965/965 entries, 3 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false`; merge rc=0 (22:09:02 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false` / `PASS: pass floor: PASS 773 >= P0 614` / `PASS: wall ceiling: median 0.60 s <= P0 4.30 s` / `INFO: PASS->FAIL 20  FAIL->PASS 179` / `INFO: p90 wall P0 8.1 s -> new 2.1 s` / `INFO: timeout P0 6 -> new 15; timeout in new only: 14` / `INFO: crash (error) P0 1 -> new 2; error in new only: 2` / `Results: 4 passed, 0 failed`
+    - class 3: `OK: 3085/3085 entries, 9 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false`; merge rc=0 (22:32:02 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false` / `PASS: pass floor: PASS 2247 >= P0 2058` / `PASS: wall ceiling: median 1.30 s <= P0 3.90 s` / `INFO: PASS->FAIL 206  FAIL->PASS 395` / `INFO: p90 wall P0 16.2 s -> new 7.7 s` / `INFO: timeout P0 201 -> new 165; timeout in new only: 85` / `INFO: crash (error) P0 4 -> new 13; error in new only: 13` / `Results: 4 passed, 0 failed`
+    - class 1: `OK: 25697/25697 entries, 40 files, no dupes/missing/extra` / `switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false`; merge rc=0 (2026-09-15 00:00:03 CEST); gate: `PASS: complete: same entries (missing 0, extra 0)` / `PASS: switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=false` / `PASS: pass floor: PASS 22201 >= P0 20125` / `PASS: wall ceiling: median 0.50 s <= P0 1.30 s` / `INFO: PASS->FAIL 1533  FAIL->PASS 3609` / `INFO: p90 wall P0 7.0 s -> new 5.6 s` / `INFO: timeout P0 778 -> new 1178; timeout in new only: 920` / `INFO: crash (error) P0 23 -> new 32; error in new only: 28` / `Results: 4 passed, 0 failed`
+  - Step 3 commit: `59094a5` "record: P5b runs 2-4 (mr_flat_wide, mr_cond_retry, mr_model_flags flipped) — classes 1-3" (9 files)
+- raw winners (Step 4): `WINNER mr_flat_wide=false (tie or split across classes); same as run 1 (mr_flat_wide=false)` (PASS c1 22513 vs 22520, c2 774 vs 774, c3 2269 vs 2271); `WINNER mr_cond_retry=true (more PASS in every class); same as run 1 (mr_cond_retry=true)` (c1 22513 vs 20338, c2 774 vs 773, c3 2269 vs 2182); `WINNER mr_model_flags=true (more PASS in every class); same as run 1 (mr_model_flags=true)` (c1 22513 vs 22201, c2 774 vs 773, c3 2269 vs 2247)
+- probe 11 (`probes/matcher/11-arm-noise-recheck.p5b.{mr_flat_wide,mr_cond_retry,mr_model_flags}.out`; `--base` p5b-run1, `--flip` the flip run, `--reps 3 --cap 30 --workers 24`):
+  - mr_flat_wide: `class1  selected=21  repro-flip-better=0  repro-base-better=6  noise=15` / `class2  selected=0  repro-flip-better=0  repro-base-better=0  noise=0` / `class3  selected=2  repro-flip-better=0  repro-base-better=0  noise=2`; `WINNER (noise-filtered) mr_flat_wide=false (tie or split across classes)`; `Results: 138 passed, 0 failed`
+  - mr_cond_retry: `class1  selected=3065  repro-flip-better=432  repro-base-better=2610  noise=23` / `class2  selected=19  repro-flip-better=9  repro-base-better=10  noise=0` / `class3  selected=207  repro-flip-better=58  repro-base-better=142  noise=7`; `WINNER (noise-filtered) mr_cond_retry=true (more PASS in every class)`; `Results: 19746 passed, 0 failed`
+  - mr_model_flags: `class1  selected=650  repro-flip-better=154  repro-base-better=480  noise=16` / `class2  selected=1  repro-flip-better=0  repro-base-better=1  noise=0` / `class3  selected=32  repro-flip-better=2  repro-base-better=26  noise=4`; `WINNER (noise-filtered) mr_model_flags=true (more PASS in every class)`; `Results: 4098 passed, 0 failed`
+- FINAL_ARM: ""; final records: test/corpus_class1.p5b-run1.out test/corpus_class2.p5b-run1.out test/corpus_class3.p5b-run1.out; run 5: not taken (FINAL_ARM empty)
+- Step 6 commit: `5c26cc5` "probe: matcher 11 — P5b arm noise re-checks, three switches" (FINAL_ARM empty, no run 5)
+- arm A/B (run 1 -> run k):
+  - k=2, class 2: PASS->PASS 774, PASS->FAIL 0, FAIL->PASS 0, FAIL->FAIL 191
+  - k=2, class 3: PASS->PASS 2269, PASS->FAIL 0, FAIL->PASS 2, FAIL->FAIL 814
+  - k=2, class 1: PASS->PASS 22506, PASS->FAIL 7, FAIL->PASS 14, FAIL->FAIL 3170
+  - k=3, class 2: PASS->PASS 764, PASS->FAIL 10, FAIL->PASS 9, FAIL->FAIL 182
+  - k=3, class 3: PASS->PASS 2122, PASS->FAIL 147, FAIL->PASS 60, FAIL->FAIL 756
+  - k=3, class 1: PASS->PASS 19893, PASS->FAIL 2620, FAIL->PASS 445, FAIL->FAIL 2739
+  - k=4, class 2: PASS->PASS 773, PASS->FAIL 1, FAIL->PASS 0, FAIL->FAIL 191
+  - k=4, class 3: PASS->PASS 2242, PASS->FAIL 27, FAIL->PASS 5, FAIL->FAIL 811
+  - k=4, class 1: PASS->PASS 22032, PASS->FAIL 481, FAIL->PASS 169, FAIL->FAIL 3015
+- incident: the probe 11 chain for `mr_cond_retry`/`mr_model_flags` stalled 00:03 CEST → 08:34 CEST (its `pgrep -f` wait self-matched the run_in_background wrapper's own command line, so neither the chain nor its waiter ever notified); the controller relaunched `mr_cond_retry` at 08:35 CEST with a `pgrep -f` pattern that cannot self-match; no measurement was affected, only wall time was lost (~8.5 h idle)
+
+### Task 7 — P5b gate (STOPPED at Step 5, 2026-09-15)
+- final arm / records: FINAL_ARM "" (defaults); F1 test/corpus_class1.p5b-run1.out F2 test/corpus_class2.p5b-run1.out F3 test/corpus_class3.p5b-run1.out
+- gates (Step 1): class 2 `Results: 4 passed, 0 failed` (PASS 774 >= 614; median 0.60 s <= 4.30 s); class 3 `Results: 4 passed, 0 failed` (2269 >= 2058; 1.50 s <= 3.90 s); class 1 `Results: 4 passed, 0 failed` (22513 >= 20125; 0.60 s <= 1.30 s)
+- 100 s re-checks (Step 2): class 2 `OK: 14/14 re-checked, no dupes/missing/extra`, now-PASS 2; class 3 `OK: 160/160 …`, now-PASS 8; class 1 `OK: 1294/1294 …`, now-PASS 172; all merge rc=0, arm = defaults
+- attribution (Step 3, probe 10 extended; P0 core rebuilt at 0a6664c, fingerprint 5ef9b3bc5ee07ffac0e76f1fea54fbac): class 2 `PASS->FAIL 20: deterministic 18, slow-correct 2, …` `Results: 20 passed, 0 failed` (9 groups, NEW ERRORS 3, NEW TIMEOUTS 14); class 3 `PASS->FAIL 192: deterministic 191, slow-correct 1, …` `Results: 192 passed, 0 failed` (65 groups, NEW ERRORS 3, NEW TIMEOUTS 70); class 1 `PASS->FAIL 1297: deterministic 1183, slow-correct 111, near-cap 1, noise 1, p0-noise 1, unmeasured 0` `Results: 1297 passed, 0 failed` (262 groups, NEW ERRORS 35, NEW TIMEOUTS 1044)
+- mechanisms (Step 4): probes/matcher/10-p5b-attribution.mechanisms-{class2-3,class1-a,class1-b,class1-c}.md; EQ-REWRITE groups resolved by diagnostic probe 16 (probes/matcher/16-seen-guard-trace.py; `.out` `Results: 32 passed, 1 failed`; `.class1.out` `Results: 179 passed, 7 failed` — failures are controls that did not return in 30 s)
+- defect clearance (Step 5): FAILED — collapse(non-9.1 site): class 2 g1 (2_3_r34); class 3 g12 (1_4_1_r3), g21 (3_1_4_r26), g48 (1_4_1_r26); class 1 36 of 47 checked groups at 36 distinct rules (incl. g76 / 1.2.1.4 e810 at 1_2_1_3_r15); 67 class-1 + 11 class-2/3 entries reach PASS under the probe-local exact-only control; P0 fired these rules in pass 2/3 after %mr_seen was popped. Also sibling:%mr_intPart_aux class 1 g27 (floor vs IntegerPart for negative p). Stop reported to the user; evidence commit 5b79111.
+- tickets filed (outside the four defects): .scratch/matcher-translation-fixes/issues/02-gtq-geq-real-number-reading.md, 03-eqq-neq-zero-test-no-expansion.md
+- Steps 6–10 not run (final-tree suites, acceptance document, acceptance): they wait for the user's decision

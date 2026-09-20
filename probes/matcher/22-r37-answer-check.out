@@ -1,0 +1,17 @@
+=== probes/matcher/22-r37-answer-check  git HEAD c28edfd  2026-09-19 09:56 UTC
+=== A0 = rubi(big, x) on T0 (46dffa2)
+CASE answer-t0 (tree /tmp/claude-1000/-home-serge-src-maxima-rubi/c0b27dac-ca95-43b2-b3a5-9a23dc6923e8/scratchpad/t0) wall 40.4 s
+R answer s 39.042536999999996 chars 44862 
+R DONE 
+=== A2 = rubi(big, x) on HEAD
+CASE answer-head (tree /home/serge/src/maxima-rubi) wall 403.9 s
+R answer s 402.495116 chars 22636 
+R DONE 
+=== zero-tests (test/corpus_driver.zero_chain)
+CASE check (tree /home/serge/src/maxima-rubi) wall 0.4 s
+R chars A0 44862 A2 22636 
+R V0 diff(A0,x)-big zero 1 s 0.04300100000000001 
+R V2 diff(A2,x)-big zero 1 s 0.0020000000000000018 
+R EQ diff(A0-A2,x) zero 1 s 0.04999999999999999 
+R DONE 
+=== done

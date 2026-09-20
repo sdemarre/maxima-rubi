@@ -50,11 +50,14 @@ sets (measured 2026-08-25: the two giant files 1.1.1.2 / 1.1.1.3 are
 balance them).
 """
 
+import importlib.util
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -101,13 +104,17 @@ HEAD_REWRITES = [
     (re.compile(r"(?<![A-Za-z0-9_])Li\("), "expintegral_li("),
 ]
 REWRITE_STATS = {}
+# The queue runner (test/run_corpus_queue.py) calls normalize_heads from its
+# worker threads; the counter update takes the lock.
+REWRITE_LOCK = threading.Lock()
 
 
 def normalize_heads(text):
     for rx, rep in HEAD_REWRITES:
         text, n = rx.subn(rep, text)
         if n:
-            REWRITE_STATS[rep] = REWRITE_STATS.get(rep, 0) + n
+            with REWRITE_LOCK:
+                REWRITE_STATS[rep] = REWRITE_STATS.get(rep, 0) + n
     return text
 
 
@@ -236,6 +243,24 @@ def ensure_rules_core():
         fcntl.flock(lock, fcntl.LOCK_UN)
 
 
+# The matcher substrate switches (spec section 3.6): the arm this process
+# runs, from MR_SWITCHES (test/run_records.py), assigned at the head of
+# every entry text and stated on the record's filter: line.
+_rr_spec = importlib.util.spec_from_file_location(
+    "run_records", os.path.join(ROOT, "test", "run_records.py"))
+run_records = importlib.util.module_from_spec(_rr_spec)
+_rr_spec.loader.exec_module(run_records)
+try:
+    SWITCH_SETTINGS = run_records.switch_settings(os.environ)
+except ValueError as exc:
+    raise SystemExit(str(exc))
+
+
+def switch_header():
+    """Suffix for the record's `filter:` line: the switch arm."""
+    return "  switches: " + run_records.switches_text(SWITCH_SETTINGS)
+
+
 def core_header():
     """Suffix for the record's `filter:` header line: names a pinned core
     (the shard merge accepts any `filter:` line), empty otherwise."""
@@ -248,7 +273,64 @@ workdir = tempfile.mkdtemp(prefix="maxima-rubi-corpus-")
 mac_file = os.path.join(workdir, "i.mac")
 
 
-def maxima_run(mac_text, timeout):
+# The per-entry cap: CPU seconds (the default) or wall seconds.
+#
+# A WALL cap measures the machine as much as the code. MEASURED 2026-09-17/18:
+# the class-1 run launched 33 processes on 24 vCPUs, so early entries ran
+# contended and late ones ran alone and an entry's verdict depended on WHEN it
+# was scheduled; and 2 Exponentials e527/e528, at 26.8/26.9 s against the 30 s
+# wall cap, verify at 12 workers and time out at 24 on identical code. A CPU
+# cap counts the seconds the entry's process actually consumed, so the same
+# entry gets the same budget whatever else is running, and a record becomes
+# reproducible across machines and worker counts.
+#
+# MR_CAP_KIND=wall restores the old behaviour, which is how a pre-2026-09-18
+# record is reproduced on its own terms. The two are NOT comparable: a
+# contended entry does more work inside 30 CPU-seconds than inside 30 wall-
+# seconds, so records state the kind on their filter: line and any A/B must
+# hold it fixed.
+CAP_KIND = os.environ.get("MR_CAP_KIND", "cpu")
+if CAP_KIND not in ("cpu", "wall"):
+    raise SystemExit(f"corpus_driver: MR_CAP_KIND must be cpu or wall, not {CAP_KIND!r}")
+
+
+# test/mr_cpu_cap.py enforces the per-entry CPU budget and reports the CPU
+# used. Its exit code when it stopped the child for going over:
+CPU_CAP_HELPER = os.path.join(ROOT, "test", "mr_cpu_cap.py")
+CPU_CAP_RC = 200
+
+
+def _cpu_limited(cmd, cap, cpu_path):
+    """CMD under a CPU budget of CAP seconds, writing its CPU to CPU_PATH.
+
+    The enforcement lives in test/mr_cpu_cap.py — read its docstring for why
+    this is NOT `ulimit -t`: RLIMIT_CPU signals SIGXCPU, whose default action
+    dumps core, and on this host `ulimit -c 0` cannot stop that because
+    core_pattern pipes to systemd-coredump and the kernel ignores RLIMIT_CORE
+    for a piped dump. A cap hit is a normal outcome here, thousands per run.
+
+    The helper forks, so the group holds two processes; maxima_run starts the
+    group with start_new_session and the wall backstop kills the GROUP."""
+    return [sys.executable, CPU_CAP_HELPER, str(cap), cpu_path] + cmd
+
+
+def _read_cpu(path):
+    """The CPU seconds test/mr_cpu_cap.py recorded, or None."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return float(fh.read().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def maxima_run(mac_text, timeout, cpu_out=None):
+    """Run MAC_TEXT in a fresh Maxima at the per-entry cap: (output, hit_cap).
+
+    hit_cap is True when the entry used up its budget, whichever cap kind is in
+    force, so classify_output reads it as `timeout` either way. CPU_OUT, when a
+    list is passed, receives the entry's CPU seconds under a CPU cap (an
+    optional out-parameter so the committed probes that unpack the pair keep
+    working)."""
     # A unique per-call file (mkstemp) so parallel canary workers don't
     # clobber each other's batch; the driver's sequential use is unaffected.
     fd, fpath = tempfile.mkstemp(prefix="mr-", suffix=".mac", dir=workdir)
@@ -271,17 +353,47 @@ def maxima_run(mac_text, timeout):
         else:
             cmd = ["maxima", "--very-quiet", "-X", "--tls-limit 100000",
                    "-p", PRELOAD, "-b", fpath]
-        r = subprocess.run(
+        # stdin from /dev/null: a fatal SBCL error (control-stack
+        # exhaustion inside mr-match:match, probes/matcher/07) drops into
+        # the ldb monitor, which reads stdin — an inherited open stdin
+        # holds the process to the cap and the entry reads `timeout`;
+        # with /dev/null ldb exits and the entry reads `error`. The batch
+        # answers its prompts from the batch file
+        # (batch_answers_from_file), never from stdin.
+        # Under a CPU cap the wall timeout stays as a BACKSTOP only: a
+        # process blocked on something rather than computing burns no CPU and
+        # would otherwise never hit its limit.
+        cpu_path = fpath + ".times"
+        if CAP_KIND == "cpu":
+            cmd = _cpu_limited(cmd, timeout, cpu_path)
+            wall = max(4 * timeout, 120)
+        else:
+            wall = timeout
+        proc = subprocess.Popen(
             cmd,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, timeout=timeout, cwd=ROOT,
+            text=True, cwd=ROOT, start_new_session=True,
         )
-        return r.stdout, False
-    except subprocess.TimeoutExpired as e:
-        out = e.stdout
-        if isinstance(out, bytes):
-            out = out.decode("utf-8", "replace")
-        return out or "", True
+        try:
+            out, _err = proc.communicate(timeout=wall)
+            hit_cap = CAP_KIND == "cpu" and proc.returncode == CPU_CAP_RC
+        except subprocess.TimeoutExpired:
+            # The wall backstop. Kill the GROUP: under a CPU cap the direct
+            # child is the shell, and killing it alone would orphan Maxima.
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                proc.kill()
+            out, _err = proc.communicate()
+            hit_cap = True
+        if cpu_out is not None:
+            cpu_out.append(_read_cpu(cpu_path) if CAP_KIND == "cpu" else None)
+        try:
+            os.unlink(cpu_path)
+        except OSError:
+            pass
+        return out or "", hit_cap
     finally:
         try:
             os.unlink(fpath)
@@ -531,7 +643,13 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # answers verify normally (measured: 1.2.2.7 e1 carries a ∫-term
     # and its self-diff closes).
     has_noun = "not is(freeof(unintegrable, mr_r))"
-    head = (f"mr_f: {f_text}$\n"
+    # Every switch is assigned at the head of the entry text, and the
+    # depth-cap counter is reset with them, so the DEPTHCAP line below
+    # counts this entry's cap hits only (exact seen test design 3.3).
+    switches = "".join(f"{name} : {value}$\n"
+                       for name, value in SWITCH_SETTINGS.items())
+    head = (switches + "mr_depth_cap_hits : 0$\n"
+            + f"mr_f: {f_text}$\n"
             f"mr_r: {call}$\n"
             + "pos$\n" * 40 + "no$\n" * 20)
     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
@@ -581,7 +699,15 @@ def build_text(f_text, var_text, e_text, e_text2=None):
                     "else (MR_z: (" + ze + "), "
                     "if is(MR_z=1) then disp(concat(\"CLASS expected\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
-    return head + body + "$\n" + "pos$\n" * 40 + "no$\n" * 20
+    # This entry's depth-cap count, printed AFTER the CLASS line (the
+    # driver's CLASS scan takes the first match, so the order is
+    # classification-safe) and before the trailing queued answers. The
+    # entry loop parses it into the shard's .caps sidecar, which
+    # test/merge_caps.py merges into the run's census (exact seen test
+    # design 3.3).
+    depthcap = 'disp(concat("DEPTHCAP ", string(mr_depth_cap_hits)))'
+    return (head + body + "$\n" + depthcap + "$\n"
+            + "pos$\n" * 40 + "no$\n" * 20)
 
 
 def file_list():
@@ -602,6 +728,76 @@ def file_list():
                     files.append((p, rel))
     files.sort(key=lambda t: t[1])
     return files
+
+
+def build_info_lines():
+    """The record header's `maxima:` lines (build_info of the installed maxima)."""
+    r = subprocess.run(
+        ["maxima", "--very-quiet", "--batch-string", "disp(build_info());"],
+        capture_output=True, text=True, timeout=120, cwd=ROOT,
+        stdin=subprocess.DEVNULL,
+    )
+    return [f"maxima: {line.strip()}" for line in r.stdout.splitlines()
+            if line.strip().startswith(("Maxima", "Lisp ", "Host "))]
+
+
+def header_lines(title, detail, build_lines):
+    """A record's header: TITLE, the date, BUILD_LINES, the filter: line
+    (DETAIL, the switch arm, a pinned core) and a blank line."""
+    return ([title,
+             f"date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"]
+            + list(build_lines)
+            + [f"filter: {FILTER!r}  {detail}" + switch_header() + core_header(), ""])
+
+
+def classify_output(out, timed_out):
+    """(class, depth-cap hits) an entry run's output states; timeout / error
+    without a CLASS line. A killed entry (timeout) prints no DEPTHCAP line, so
+    its cap hits are simply not censused (exact seen test design 3.3)."""
+    cls = None
+    caps = 0
+    for line in out.splitlines():
+        line = line.strip()
+        if cls is None and line.startswith("CLASS "):
+            cls = line[6:].strip()
+        elif line.startswith("DEPTHCAP "):
+            try:
+                caps = int(line[9:].strip())
+            except ValueError:
+                caps = 0
+    if cls is None:
+        cls = "timeout" if timed_out else "error"
+    if cls not in KNOWN_CLASSES:
+        cls = "error"
+    return cls, caps
+
+
+def run_entry(rel, idx, entry_text, line_no):
+    """One corpus entry (ENTRY_TEXT as extract_entries returns it, IDX
+    0-based) through a fresh Maxima subprocess at the TIMEOUT cap:
+    (class, result line, depth-cap hits). main() and test/run_corpus_queue.py
+    both call it, so the two paths cannot drift."""
+    els = split_elements(entry_text[1:-1])
+    label = f"{rel} e{idx + 1} L{line_no}"
+    if len(els) not in (4, 5):
+        return "error", f"{'error':14s} t=0.0s {label} bad-entry-shape({len(els)})", 0
+    f_text = normalize_heads(els[0])
+    var_text = els[1]
+    e_text = normalize_heads(els[3])
+    e_text2 = normalize_heads(els[4]) if len(els) == 5 else None
+    t_start = time.time()
+    cpu_out = []
+    out, timed_out = maxima_run(
+        build_text(f_text, var_text, e_text, e_text2), TIMEOUT, cpu_out)
+    # Under a CPU cap the record's t= is the entry's CPU seconds — the same
+    # quantity the cap bounds, and reproducible whatever else was running. It
+    # falls back to wall when the reading is missing (a wall-backstop kill
+    # leaves no `times` dump).
+    dt = time.time() - t_start
+    if cpu_out and cpu_out[0] is not None:
+        dt = cpu_out[0]
+    cls, caps = classify_output(out, timed_out)
+    return cls, f"{cls:14s} t={dt:6.1f}s {label}", caps
 
 
 def main():
@@ -635,34 +831,27 @@ def main():
     else:
         files = all_files[START_INDEX:STOP_INDEX]
 
-    out_lines = [
+    out_lines = header_lines(
         (f"=== maxima-rubi corpus driver (filter {FILTER!r}, "
          f"resume at file index {START_INDEX}) ==="
          if APPEND else
          f"=== maxima-rubi corpus driver (filter {FILTER!r}) ==="),
-        f"date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
-    ]
-    if not APPEND:
-        r = subprocess.run(
-            ["maxima", "--very-quiet", "--batch-string",
-             "disp(build_info());"],
-            capture_output=True, text=True, timeout=120, cwd=ROOT,
-        )
-        for line in r.stdout.splitlines():
-            line = line.strip()
-            if line.startswith(("Maxima", "Lisp ", "Host ")):
-                out_lines.append(f"maxima: {line}")
-    out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
-                     f"timeout: {TIMEOUT}s  files: {len(files)}"
-                     + (f"  shard: {SHARD_FILE}" if SHARD_FILE else "")
-                     + core_header())
-    out_lines.append("")
+        f"per-file: {PER_FILE}  timeout: {TIMEOUT}s {CAP_KIND}  files: {len(files)}"
+        + (f"  shard: {SHARD_FILE}" if SHARD_FILE else ""),
+        [] if APPEND else build_info_lines())
 
     counts = {}
     t0 = time.time()
     out_path = (OUT_FILE or os.path.join(ROOT, "test",
                                          "corpus_class1_driver.out"))
+    # The depth-cap sidecar sits next to this process's .out and takes one
+    # `<hits> <label>` line per entry that hit the cap; test/merge_caps.py
+    # merges a run's sidecars into its census, and run_records.
+    # clear_stale_shards deletes them with the other shard files (exact
+    # seen test design 3.3).
+    caps_path = os.path.splitext(out_path)[0] + ".caps"
     outf = open(out_path, "a" if APPEND else "w", encoding="utf-8")
+    capsf = open(caps_path, "a" if APPEND else "w", encoding="utf-8")
     outf.write("\n".join(out_lines) + "\n")
     outf.flush()
     for fi, (path, rel) in enumerate(files):
@@ -678,43 +867,15 @@ def main():
             lo = SKIP_FIRST if fi == 0 else 0
             hi = min(lo + PER_FILE, len(entries))
         for idx in range(lo, hi):
-            els = split_elements(entries[idx][1:-1])
-            label = f"{rel} e{idx + 1} L{line_nos[idx]}"
-            if len(els) not in (4, 5):
-                cls = "error"
-                counts[cls] = counts.get(cls, 0) + 1
-                line = f"{'error':14s} t=0.0s {label} bad-entry-shape({len(els)})"
-                out_lines.append(line)
-                outf.write(line + "\n")
-                outf.flush()
-                print(f"FAIL: {line}")
-                continue
-            f_text = normalize_heads(els[0])
-            var_text = els[1]
-            _steps = els[2]
-            e_text = normalize_heads(els[3])
-            e_text2 = normalize_heads(els[4]) if len(els) == 5 else None
-            t_start = time.time()
-            out, timed_out = maxima_run(
-                build_text(f_text, var_text, e_text, e_text2), TIMEOUT)
-            dt = time.time() - t_start
-            cls = None
-            for line in out.splitlines():
-                line = line.strip()
-                if line.startswith("CLASS "):
-                    cls = line[6:].strip()
-                    break
-            if cls is None:
-                cls = "timeout" if timed_out else "error"
-            if cls not in KNOWN_CLASSES:
-                cls = "error"
+            cls, line, caps = run_entry(rel, idx, entries[idx], line_nos[idx])
+            if caps > 0:
+                capsf.write(f"{caps} {rel} e{idx + 1} L{line_nos[idx]}\n")
+                capsf.flush()
             counts[cls] = counts.get(cls, 0) + 1
-            pf = "PASS" if cls in PASS_CLASSES else "FAIL"
-            line = f"{cls:14s} t={dt:6.1f}s {label}"
             out_lines.append(line)
             outf.write(line + "\n")
             outf.flush()
-            print(f"{pf}: {line}")
+            print(f"{'PASS' if cls in PASS_CLASSES else 'FAIL'}: {line}")
     total = sum(counts.values())
     passed = sum(v for k, v in counts.items() if k in PASS_CLASSES)
     failed = total - passed
@@ -733,6 +894,7 @@ def main():
 
     outf.write("\n".join(out_lines[out_lines.index("=== summary ==="):]) + "\n")
     outf.close()
+    capsf.close()
     print("\n".join(out_lines[-8:]) + "\n")
 
 

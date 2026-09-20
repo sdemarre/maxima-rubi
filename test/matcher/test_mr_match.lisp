@@ -175,6 +175,28 @@ print its Results line.  -> (values bindings matchedp ms timed-out-p)."
                            (sym "x")))
                     "a" (format nil "(Plus 1 ~{(Power x ~a)~^ ~})" (loop for i from 2 to 29 collect i))
                     "b" "1" "m" "1" "x" "x")
+  ;; spec 3.8: an unbound absorber whose TAIL is committed takes the leftovers
+  ;; minus the tail's parts directly.  (Times c_. x_) with x bound is the shape
+  ;; that made a product cost 3^n; the enumeration must still happen when the
+  ;; tail is not committed.
+  (check "committed tail: c_. takes run minus x, same bindings as the enumeration"
+         (= 1 (count-bindings "(Times (Optional c_) x_)" "(Times a b x)" :pre '("x")))
+         (count-bindings "(Times (Optional c_) x_)" "(Times a b x)" :pre '("x")))
+  (check-match "committed tail: c_. gets exactly the non-x factors"
+               ("(Times (Optional c_) x_)" "(Times a b x)" :pre '("x")) "c" "(Times a b)" "x" "x")
+  (check "uncommitted tail still enumerates: u_ v_ split three factors beside x"
+         (= 6 (count-bindings "(Times u_ v_ x_)" "(Times a b c x)" :pre '("x")))
+         (count-bindings "(Times u_ v_ x_)" "(Times a b c x)" :pre '("x")))
+  (check-fast-match "cost: (c_.*x_)^m_. over a 12-factor product (<= 50 ms)" 50
+                    ("(Int (Times (Power u_ p_.) (Power (Times c_. x_) m_.)) x_Symbol)"
+                     (list (sym "Int")
+                           (cons (sym "Times")
+                                 (cons (sym "x")
+                                       (loop for i from 1 to 12 collect (sym (format nil "y~d" i)))))
+                           (sym "x"))
+                     :pre '("x"))
+                    "u" "y1" "p" "1" "m" "1"
+                    "c" (format nil "(Times ~{y~d~^ ~})" (loop for i from 2 to 12 collect i)))
   (check-fast-match "cost: last blank u_ takes a 4999-factor leftover run (<= 50 ms)" 50
                     ("(Times u_ (Power x_ 2))"
                      (cons (sym "Times")

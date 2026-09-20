@@ -1,73 +1,68 @@
-=== probes/matcher/06-dispatch-cost  git HEAD 6d467c5  2026-09-13 08:29 UTC
-CASE walk (tree /home/serge/src/maxima-rubi) wall 88.6 s
+=== probes/matcher/06-dispatch-cost  git HEAD dfbff5f  2026-09-18 19:19 UTC
+CASE walk (tree /home/serge/src/maxima-rubi) wall 451.5 s
 R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
-R load_all s 1.0510140000000001 rules 3513 
+R load_all s 1.049015 rules 3513 
 R walk sin(x)^x s 0.043000999999999845 ms/rule 0.012240535155138016 accepting 0 
-R walk (a+b*x)^2*(c+d*x)^3*sin(x) s 1.079015 ms/rule 0.30714916026188444 accepting 0 
-R walk x^2*(a+b*x)^3*(c+d*x)^4*(e+f*x)^5*(g+h*x)^6*log(x) s 79.89306599999999 ms/rule 22.742119555935094 accepting 7 
-R walk (a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q s 5.520075000000006 ms/rule 1.5713279248505565 accepting 3 
-R walk x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2 s 0.4620049999999907 ms/rule 0.13151295189296633 accepting 4 
-R dispatch sin(x)^x s 0.026001000000007934 answered false 
-R dispatch (a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q s 0.1430029999999931 answered true 
+R walk (a+b*x)^2*(c+d*x)^3*sin(x) s 1.0360140000000002 ms/rule 0.2949086251067464 accepting 0 
+R walk x^2*(a+b*x)^3*(c+d*x)^4*(e+f*x)^5*(g+h*x)^6*log(x) s 421.998641 ms/rule 120.12486222601765 accepting 7 
+R walk (a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q s 5.382071999999994 ms/rule 1.5320444064901775 accepting 3 
+R walk x^2*(a+b*log(c*(d+e*sqrt(x))^n))^2 s 0.4550050000000283 ms/rule 0.1295203529746736 accepting 4 
+R dispatch sin(x)^x s 0.024999999999977263 answered false 
+R dispatch (a+b*x)^m*(c+d*x)^n*(e+f*x)^p*(g+h*x)^q s 21.03528 answered true 
 R DONE 
 CASE claim6 (tree /home/serge/src/maxima-rubi) wall 3.4 s
 R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
-R load_all s 1.0230139999999999 rules 3513 
-R walk x * 6 symbols s 2.0300270000000005 ms/rule 0.5778613720466839 accepting 7 
+R load_all s 0.9950129999999999 rules 3513 
+R walk x * 6 symbols s 2.0030270000000003 ms/rule 0.5701756333617991 accepting 7 
 R DONE 
-CASE claim8 (tree /home/serge/src/maxima-rubi) wall 9.3 s
+CASE claim8 (tree /home/serge/src/maxima-rubi) wall 9.1 s
 R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
-R load_all s 1.020014 rules 3513 
-R walk x * 8 symbols s 7.872106 ms/rule 2.2408499857671504 accepting 7 
+R load_all s 0.998013 rules 3513 
+R walk x * 8 symbols s 7.6771020000000005 ms/rule 2.18534073441503 accepting 7 
 R DONE 
-CASE claim10 (tree /home/serge/src/maxima-rubi) wall 36.4 s
+CASE claim10 (tree /home/serge/src/maxima-rubi) wall 34.2 s
 R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
-R load_all s 1.0360140000000002 rules 3513 
-R walk x * 10 symbols s 34.975469 ms/rule 9.95601167093652 accepting 7 
+R load_all s 0.9870129999999999 rules 3513 
+R walk x * 10 symbols s 32.771435 ms/rule 9.328617990321662 accepting 7 
 R DONE 
-CASE claim12 (tree /home/serge/src/maxima-rubi) wall 174.6 s
+CASE claim12 (tree /home/serge/src/maxima-rubi) wall 150.2 s
 R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
-R load_all s 1.013014 rules 3513 
-R walk x * 12 symbols s 173.186334 ms/rule 49.29870025619128 accepting 7 
+R load_all s 0.983013 rules 3513 
+R walk x * 12 symbols s 148.75996999999998 ms/rule 42.34556504412183 accepting 7 
 R DONE 
-CASE attr (tree /home/serge/src/maxima-rubi) wall 78.9 s
+CASE attr (tree /home/serge/src/maxima-rubi) wall 418.1 s
 R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
-R load_all s 1.000014 rules 3513 
-R attr total s 77.484049 records over 50 ms 71 their sum s 76.66803399999999 
-R attr [19.029257,"3_5 r37",true] 
-R attr [9.158123000000003,"3_1_5 r28",true] 
-R attr [9.137124,"3_5 r11",true] 
-R attr [7.6891039999999995,"1_4_1 r4",false] 
-R attr [2.4200330000000037,"1_3_3 r3",false] 
-R attr [2.4130309999999984,"1_4_1 r68",false] 
-R attr [2.404032000000001,"1_1_1_7 r9",false] 
-R attr [2.388033,"1_4_2 r24",false] 
-R attr [2.3530320000000007,"1_4_1 r22",false] 
-R attr [1.425018999999999,"3_5 r1",false] 
-R attr [0.8650120000000001,"1_1_1_7 r10",false] 
-R attr [0.8500109999999985,"1_4_2 r28",false] 
-R attr [0.8500109999999985,"1_4_1 r23",false] 
-R attr [0.8320110000000014,"1_4_2 r29",false] 
-R attr [0.7160089999999997,"1_3_4 r21",false] 
-R attr [0.7160089999999997,"1_3_3 r4",false] 
-R attr [0.7140099999999947,"1_3_3 r2",false] 
-R attr [0.7130100000000006,"1_4_1 r20",false] 
-R attr [0.7110099999999981,"1_1_1_7 r7",false] 
+R load_all s 0.984013 rules 3513 
+R attr total s 416.727504 records over 50 ms 73 their sum s 415.96949399999994 
+R attr [348.73160499999994,"3_5 r37",true] 
+R attr [9.293122999999994,"3_5 r11",true] 
+R attr [9.281123000000001,"3_1_5 r28",true] 
+R attr [7.758103,"1_4_1 r4",false] 
+R attr [4.512059000000001,"3_1_5 r29",true] 
+R attr [4.511059000000003,"3_5 r12",true] 
+R attr [2.4400320000000004,"1_4_1 r68",false] 
+R attr [2.4290319999999994,"1_1_1_7 r9",false] 
+R attr [2.4180320000000037,"1_3_3 r3",false] 
+R attr [2.407031,"1_4_2 r24",false] 
+R attr [2.394031,"1_4_1 r22",false] 
+R attr [1.448018999999995,"3_5 r1",false] 
+R attr [0.8640120000000007,"1_4_1 r23",false] 
+R attr [0.8600110000000001,"1_1_1_7 r10",false] 
+R attr [0.8530119999999997,"1_4_2 r28",false] 
+R attr [0.8410110000000017,"1_4_2 r29",false] 
+R attr [0.7310090000000002,"1_3_3 r4",false] 
+R attr [0.7160100000000043,"1_3_4 r21",false] 
+R attr [0.7160099999999971,"1_3_3 r2",false] 
+R attr [0.7150099999999995,"1_4_1 r20",false] 
+R attr [0.7130100000000006,"1_1_1_7 r7",false] 
 R attr [0.4010059999999953,"1_3_3 r5",false] 
-R attr [0.39900599999999997,"1_1_1_7 r25",false] 
+R attr [0.3980049999999977,"1_1_1_7 r25",false] 
 R attr [0.39700500000000005,"1_3_3 r1",false] 
-R attr [0.39700500000000005,"1_1_1_7 r26",false] 
-R attr [0.39600400000000135,"1_1_1_7 r27",false] 
-R attr [0.3510050000000007,"1_4_2 r25",false] 
+R attr [0.39600599999999986,"1_1_1_7 r26",false] 
 R DONE 
-CASE rubi (tree /home/serge/src/maxima-rubi) wall 40.4 s
+CASE rubi (tree /home/serge/src/maxima-rubi) wall 337.1 s
 R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
-R load_all s 0.991014 rules 3513 
-R rubi s 39.005528 answered [true] 
-R DONE 
-CASE rubi-p0 (tree /tmp/mr-p0-tree) wall 54.5 s
-R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
-R load_all s 6.989095 rules 3514 
-R rubi s 47.387644 answered [true] 
+R load_all s 1.016013 rules 3513 
+R rubi s 335.640422 answered [true] 
 R DONE 
 === done

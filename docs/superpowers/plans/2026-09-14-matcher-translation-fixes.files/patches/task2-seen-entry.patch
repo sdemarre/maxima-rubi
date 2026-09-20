@@ -1,0 +1,151 @@
+diff --git a/maxima_rubi_utils.mac b/maxima_rubi_utils.mac
+--- a/maxima_rubi_utils.mac
++++ b/maxima_rubi_utils.mac
+@@ -210,14 +210,17 @@
+     ),
+   looped)$
+ 
+-mr_top(f, x, fb) := block([ans],
++/* The shared dispatch body of mr_top and mr_int_exact (matcher translation
++   fixes design 3.3). exact = false: the seen test is %mr_seenp (exact
++   member, then the ratsimp comparison); exact = true: exact member only. */
++%mr_top_body(f, x, fb, exact) := block([ans],
+   depth_level : depth_level + 1,
+   if depth_level > %mr_max_depth then (
+     depth_level : depth_level - 1,
+     if fb then return(integrate(f, x))
+     else return(mr_unintegrable(f, x))
+   ),
+-  if %mr_seenp(f) then (
++  if (if exact then member(f, %mr_seen) else %mr_seenp(f)) then (
+     depth_level : depth_level - 1,
+     /* A re-dispatch of an integrand already on the dispatch path is
+        a pure rule loop (static table, deterministic matcher -> the
+@@ -258,6 +261,8 @@
+     else mr_unintegrable(f, x)
+   ) else ans)$
+ 
++mr_top(f, x, fb) := %mr_top_body(f, x, fb, false)$
++
+ /* Nested sub-integral entry (generated replacements call mr_int by
+  * name): the status-quo integrate fall-through, exactly what mr_int
+  * did before the fallback gate. */
+@@ -274,56 +279,22 @@
+ rubi(f, x) := mr_top(f, x, false)$
+ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
+ 
+-/* The legacy 9.1 re-dispatch entry. The manual 9.1 port called it from
+- * every re-dispatching replacement; the generated rules/class1/9_1.mac
+- * calls mr_int instead, as its .m source calls Int (matcher substrate
+- * spec section 3.4), so no rule file calls it now. It stays until the P5
+- * A/B shows whether the exact seen-guard mode below is still needed (spec
+- * section 3.5; deleted in P6 otherwise). Its origin (2026-08-27, 1.1.2.6
+- * e20 / 1.4.3 r19): under the defmatch runner mr_int ran passes 2-3 off
+- * and rubi kept them but yielded the no-answer noun, so this entry lifted
+- * the pass gates AND kept the integrate fall-through on both the seen-guard
+- * hit and the 0-firing. The passes are gone with the matcher substrate. */
+-/* mode = "alg": the full %mr_seenp (exact member + the ratsimp
+- * algebraic comparison — the float/rat normalization-drift guard,
+- * 891240b, load-bearing). mode = "exact": the exact member check
+- * only. The exact mode is for the 9.1 COLLAPSE re-dispatches
+- * (rules/class1/9_1.mac r7, r22-r26, r28, r29) whose replacement
+- * is algebraically EQUAL to the calling integrand in a different
+- * stored form (the perfect-discriminant quadratic collapse, the
+- * proportional-linear monic rewrite, the like-term combine) — the
+- * algebraic comparison false-positives as a loop (measured
+- * 2026-08-27: 1.2.1.3 e839 — x^m(A+B x)/(a+b x)^2 stored expanded;
+- * r28 collapses it factored; the seen guard ratsimps the difference
+- * to 0 and bails to the native noun, while the .m's cascade would
+- * hand the factored form to the 1.1.1.3 family). The collapse rules
+- * are one-shot on their own output (the collapsed form cannot
+- * re-trigger their pattern), so the exact mode cannot self-cycle;
+- * the depth cap bounds any foreign cycle, and the drift-cycle guard
+- * stays intact on every non-collapse entry (the measured drift
+- * chain runs family rules on mr_int, never through these). */
+-%mr_hybrid_body(f, x, mode) := block([ans, sp],
+-  sp : if mode = "exact" then is(member(f, %mr_seen) # false)
+-       else %mr_seenp(f),
+-  depth_level : depth_level + 1,
+-  if depth_level > %mr_max_depth then (
+-    depth_level : depth_level - 1,
+-    return(integrate(f, x))
+-  ),
+-  if is(sp) then (
+-    depth_level : depth_level - 1,
+-    return(integrate(f, x))
+-  ),
+-  %mr_seen : cons(f, %mr_seen),
+-  ans : if mr_model_flags
+-        then block([radexpand : false, logexpand : false],
+-                   %mr_dispatch_tree(f, x, mr_rule_table, depth_level))
+-        else %mr_dispatch_tree(f, x, mr_rule_table, depth_level),
+-  %mr_seen : rest(%mr_seen),
+-  depth_level : depth_level - 1,
+-  if ans = false then integrate(f, x) else ans)$
+-rubi_hybrid(f, x) := %mr_hybrid_body(f, x, "alg")$
+-rubi_hybrid_exact(f, x) := %mr_hybrid_body(f, x, "exact")$
++/* The exact-seen entry (matcher translation fixes design 3.3): every Int
++ * call of the generated rules/class1/9_1.mac. Each 9.1 rule rewrites its
++ * integrand to an algebraically EQUAL form in a different stored form (the
++ * perfect-discriminant quadratic collapse, the proportional-linear monic
++ * rewrite, the like-term combine), which mr_int's ratsimp seen comparison
++ * reads as a loop by construction and answers with the integrate
++ * fall-through (measured 2026-08-27: 1.2.1.3 e839 — x^m(A+B x)/(a+b x)^2
++ * stored expanded, the collapse hands the factored form on; the P5
++ * acceptance stop: 2.1 e15, 1.2.1.2 e1734-e1736, 1.2.1.4 e810). The exact
++ * member test still cuts an exact repeat; two 9.1 rules rewriting back and
++ * forth between different equal forms stop at the depth cap
++ * (%mr_max_depth) and fall through to integrate. The float/rational drift
++ * guard (891240b) stays on mr_int, which every other rule calls. This is
++ * P0's rubi_hybrid_exact without the pass gates it once lifted;
++ * rubi_hybrid / rubi_hybrid_exact / %mr_hybrid_body are deleted. */
++mr_int_exact(f, x) := %mr_top_body(f, x, true, true)$
+ 
+ /* ===================== predicate cluster 1 (T5) =====================
+  * Ports of Rubi IntegrationUtilityFunctions.m (pinned clone, read-only)
+diff --git a/test_maxima_rubi.mac b/test_maxima_rubi.mac
+--- a/test_maxima_rubi.mac
++++ b/test_maxima_rubi.mac
+@@ -112,6 +112,7 @@
+   test_class3_cluster_a(),
+   test_class3_cluster_b(),
+   test_rules_1_1_1_1_behavior(),
++  test_translation_fixes_seen(),
+   test_census(),
+   print(""),
+   print("========================================"),
+@@ -2930,6 +2931,34 @@
+   true
+ )$
+ 
++/* Matcher translation fixes (design docs/superpowers/specs/2026-09-14-
++   matcher-translation-fixes-design.md 3.6; probes/matcher/12-translation-
++   defects). PosQ/NegQ expectations are Rubi's PosAux
++   (IntegrationUtilityFunctions.m :605-:642) worked by hand on Rubi's form;
++   the factored inputs watch the normalizer deviation (design 3.2). */
++t_disp_77(mm, x) := 77$
++test_translation_fixes_seen() := block([saved_table, saved_seen, h77],
++  print("--- matcher translation fixes: the exact seen entry ---"),
++  /* mr_int_exact: exact member only; mr_int: member, then ratsimp */
++  h77 : %mr_defrule("layerA", 6, "(Int (Pattern |_t_u| (Blank)) (Pattern x (Blank Symbol)))",
++                    t_disp_true, t_disp_77),
++  saved_table : mr_rule_table,
++  saved_seen : %mr_seen,
++  mr_rule_table : [h77],
++  %mr_seen : [x^2 + 2*x + 1],
++  check("mr_int: a ratsimp-equal seen form takes the fall-through",
++        mr_int((x + 1)^2, x), integrate((x + 1)^2, x)),
++  check("mr_int_exact: the same form dispatches", mr_int_exact((x + 1)^2, x), 77),
++  %mr_seen : [(x + 1)^2],
++  check("mr_int_exact: an exact repeat takes the fall-through",
++        mr_int_exact((x + 1)^2, x), integrate((x + 1)^2, x)),
++  %mr_seen : saved_seen,
++  mr_rule_table : saved_table,
++  check_not("rubi_hybrid deleted", member('rubi_hybrid, map(op, functions))),
++  check_not("rubi_hybrid_exact deleted", member('rubi_hybrid_exact, map(op, functions))),
++  true
++)$
++
+ /* $ not ; — the function's value (tests_failed = 0) would otherwise
+    print right under the Results: line, the line the reading protocol
+    exists to be read. */

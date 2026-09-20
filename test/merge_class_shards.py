@@ -93,9 +93,18 @@ for path in inputs:
 
 missing = expected - set(keys)
 extra = set(keys) - expected
-if bad or dupes or missing or extra:
+# Every shard states the switch arm it ran (test/run_records.py); a merge
+# of shards from two arms, or of a shard without the statement, is refused.
+try:
+    switches = driver.run_records.common_switches(inputs)
+    switch_error = None
+except ValueError as exc:
+    switches, switch_error = None, str(exc)
+if bad or dupes or missing or extra or switch_error:
     print(f"INCOMPLETE: unparsed={bad} dupes={dupes} "
           f"missing={len(missing)} extra={len(extra)}", file=sys.stderr)
+    if switch_error:
+        print(f"  switches: {switch_error}", file=sys.stderr)
     for k in sorted(missing)[:10]:
         print("  missing", k, file=sys.stderr)
     for k in sorted(extra)[:10]:
@@ -120,8 +129,23 @@ for line in r.stdout.splitlines():
     line = line.strip()
     if line.startswith(("Maxima", "Lisp ", "Host ")):
         out_lines.append(f"maxima: {line}")
-out_lines.append(f"filter: {SECTION + '/'!r}  full run  timeout: 30s  "
-                 f"({len(inputs)} shards, merged here)")
+# The cap is READ from the shards, never assumed: it is both a number and a
+# KIND (cpu or wall, corpus_driver.CAP_KIND), and a merged record that misstated
+# either would be silently compared against records it is not comparable with.
+caps = set()
+for path in inputs:
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("filter:"):
+                m = re.search(r"timeout: (\d+s(?: \w+)?)", line)
+                if m:
+                    caps.add(m.group(1))
+                break
+if len(caps) != 1:
+    raise SystemExit(f"merge_class_shards: the shards do not state one cap: {sorted(caps)}")
+cap = caps.pop()
+out_lines.append(f"filter: {SECTION + '/'!r}  full run  timeout: {cap}  "
+                 f"({len(inputs)} shards, merged here)  switches: {switches}")
 out_lines.append("")
 
 for rel in sorted(counts):
@@ -145,6 +169,7 @@ out_lines.append(f"Results: {passed} passed, {failed} failed")
 open(OUT, "w", encoding="utf-8").write("\n".join(out_lines) + "\n")
 print(f"OK: {total}/{len(expected)} entries, {len(files)} files, "
       f"no dupes/missing/extra")
+print(f"  switches: {switches}")
 for k in sorted(cls_counts):
     print(f"  {k:14s} {cls_counts[k]}")
 print(f"  {'Results':14s} {passed} passed, {failed} failed")

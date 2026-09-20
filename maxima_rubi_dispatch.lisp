@@ -69,6 +69,51 @@ binding only.")
 and logexpand:false around the dispatch (the G-5 arm); false = Maxima
 defaults.")
 
+;;; The two RUN switches (exact seen test design
+;;; docs/superpowers/specs/2026-09-15-matcher-seen-test-intpart-design.md
+;;; 3.3). Unlike the three migration switches above these are not
+;;; hard-wired by p6_hardwire.py: they stay run parameters.
+
+(defmvar $mr_nested_fallback nil
+  "Run switch: false (default) = a nested Int call that finds no rule,
+hits the seen test or hits the depth cap returns mr_unintegrable, so a
+run answers with Rubi's rules only; true = it falls through to Maxima's
+integrate (the pre-2026-09-15 behaviour). The top-level rubi and
+rubi_fallback entries are unaffected.")
+
+(defmvar $mr_giveup_last t
+  "Run switch: true (default) = %mr_dispatch_tree walks the table in two
+passes, trying every ordinary rule before any GIVE-UP rule (one whose
+replacement answers with Rubi's Unintegrable marker, mr_unintegrable);
+false = the single walk in load order.
+
+WHY. The port's table is LOAD order; Mathematica's is SPECIFICITY order, so
+a general give-up catch-all that loads early can pre-empt a specific rule
+that loads late. MEASURED 2026-09-17 on b^(3/4)/(b^(3/4) x^2 + sqrt(2)
+a^(1/4) sqrt(b) sqrt(d) x + sqrt(a) b^(1/4) d): 1_2_3_5 r24 (a general
+trinomial bound with n = 1, n2 = 2) fires and answers the marker, where
+9_1 r12 -- Rubi's linearity pull-out Int[a_*u_,x] -> a*Int[u,x], table
+position 3038 of 3513 -- binds and its cond ACCEPTS, and would pull b^(3/4)
+out and leave 1/den, which integrates. Deferring the 33 class-1 markers
+lets it get its turn.
+
+This changes no Rubi SEMANTICS: a give-up rule still answers the marker
+when nothing else does, which is what Unintegrable means. It only stops it
+winning a race Mathematica would not have run.
+
+NOT load-bearing on its own -- reordering ALONE recovers nothing, because
+the seen-cut self-recursion of 1_2_3_5 r12 blocks the same path first. It
+is half of a PAIR with the seen-cut fall-through (maxima_rubi_utils.mac,
+%mr_top_body). Measured together over the 341-entry class-1 loss list at
+the record's 30 s cap: 318 verified, with 300/300 control entries
+unchanged.")
+
+(defmvar $mr_max_depth 16
+  "Run switch: the dispatch depth cap. mr_top counts nested dispatches in
+depth_level and takes the cap branch beyond this many; every cap hit is
+counted in mr_depth_cap_hits (the run's .caps census). Rubi's own step
+counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).")
+
 ;; Maxima variables the utils define before this file loads (declared here
 ;; so their references compile as special).
 (defvar $rubi_verbose nil)
@@ -84,8 +129,32 @@ defaults.")
 ;;; 1-based index in *mr-rules*); mr_rules_<key> and mr_rule_table are
 ;;; Maxima lists of handles.
 
-(defstruct (mr-rule (:constructor make-mr-rule (key n pattern cond repl)))
-  key n pattern cond repl)
+(defstruct (mr-rule (:constructor make-mr-rule (key n pattern cond repl giveup)))
+  key n pattern cond repl giveup)
+
+(defun mr-form-has-symbol-p (sym form)
+  "True when SYM occurs anywhere in the cons tree FORM."
+  (cond ((eq form sym) t)
+        ((consp form) (or (mr-form-has-symbol-p sym (car form))
+                          (mr-form-has-symbol-p sym (cdr form))))
+        (t nil)))
+
+(defun mr-giveup-repl-p (repl)
+  "True when the rule replacement REPL answers with Rubi's Unintegrable
+marker, i.e. its body calls mr_unintegrable.
+
+Detected from the body rather than a hand-kept list, so it cannot drift when
+a rule file is regenerated with a different rule count. Exact on the pinned
+rules: mr_unintegrable occurs 72 times across rules/class{1,2,3}, EVERY one
+of them the tail expression of a repl body and nowhere else (census
+2026-09-17) -- 33 in class 1 (the set the give-up reordering was measured
+on), 8 in class 2, 31 in class 3.
+
+The generated rule files define _mr_repl_<key>_r<n> BEFORE the %mr_defrule
+call that registers it, so the mexpr is always in place by the time this
+runs at load."
+  (let ((body (and (symbolp repl) (mget repl 'mexpr))))
+    (and body (mr-form-has-symbol-p '$mr_unintegrable body) t)))
 
 (defvar *mr-rules* (make-array 4096 :adjustable t :fill-pointer 0)
   "Every rule record %mr_defrule registered, in load order.")
@@ -98,7 +167,9 @@ defaults.")
                       (error (e)
                         (merror (intl:gettext "%mr_defrule: ~A r~A: ~A") key n
                                 (princ-to-string e))))))
-      (vector-push-extend (make-mr-rule key n compiled cond repl) *mr-rules*)
+      (vector-push-extend (make-mr-rule key n compiled cond repl
+                                        (mr-giveup-repl-p repl))
+                          *mr-rules*)
       (fill-pointer *mr-rules*))))
 
 (defun mr-rule-of (handle)
@@ -255,7 +326,20 @@ decline or misfire)."
 (defmfun |$%MR_DISPATCH_TREE| (&rest args)
   "%mr_dispatch_tree(f, x, table, depth): walk the rule handles of TABLE in
 order; the first rule whose pattern binds, whose cond accepts and whose repl
-answers wins. false when no rule answers."
+answers wins. false when no rule answers.
+
+Under mr_giveup_last (the default) the walk is TWO passes: pass 1 skips the
+give-up rules (mr-rule-giveup: the replacement answers Rubi's Unintegrable
+marker) and pass 2 tries them, so a give-up catch-all can only win once
+every ordinary rule has declined. See the $mr_giveup_last docstring for what
+that buys and why it changes no Rubi semantics.
+
+The reordering is done HERE, over the table the caller hands in, rather than
+by baking a second reordered table at load: test_maxima_rubi.mac swaps its
+own cumulative table into mr_rule_table in ~20 sections, and a table built
+once at load would be stale at every one of those sites. Pass 1 costs one
+extra slot read per handle; pass 2 allocates at most the handful of give-up
+handles (33 of 3,513 in class 1) and only runs when pass 1 found nothing."
   (unless (= (length args) 4)
     (merror (intl:gettext "%mr_dispatch_tree: expected 4 args, found ~A") (length args)))
   ;; (the fourth argument, the recursion depth, is informational: DEPTH is
@@ -267,9 +351,32 @@ answers wins. false when no rule answers."
     (multiple-value-bind (expr pre) (mr-integrand f x)
       (when expr
         (with-mr-switches
-          (dolist (h (cdr table) nil)
-            (let ((r (mr-apply-rule (mr-rule-of h) expr pre f x)))
-              (when r (return r)))))))))
+          (if (null $mr_giveup_last)
+              (dolist (h (cdr table) nil)
+                (let ((r (mr-apply-rule (mr-rule-of h) expr pre f x)))
+                  (when r (return r))))
+              (let ((deferred nil))
+                (or (dolist (h (cdr table) nil)
+                      (let ((rule (mr-rule-of h)))
+                        (if (mr-rule-giveup rule)
+                            (push rule deferred)
+                            (let ((r (mr-apply-rule rule expr pre f x)))
+                              (when r (return r))))))
+                    (dolist (rule (nreverse deferred) nil)
+                      (let ((r (mr-apply-rule rule expr pre f x)))
+                        (when r (return r))))))))))))
+
+(defmfun |$%MR_GIVEUP_HANDLES| (&rest args)
+  "%mr_giveup_handles(table): the handles of TABLE whose rule is a give-up
+rule (its replacement answers Rubi's Unintegrable marker), in table order —
+the census entry behind the mr_giveup_last switch, for tests and probes."
+  (unless (= (length args) 1)
+    (merror (intl:gettext "%mr_giveup_handles: expected 1 arg, found ~A") (length args)))
+  (let ((table (first args)))
+    (unless ($listp table)
+      (merror (intl:gettext "%mr_giveup_handles: the table is not a list: ~M") table))
+    (cons '(mlist)
+          (remove-if-not (lambda (h) (mr-rule-giveup (mr-rule-of h))) (cdr table)))))
 
 (defmfun |$%MR_RULE_BINDINGS| (&rest args)
   "%mr_rule_bindings(handle, f, x): the mm list of the rule's first complete

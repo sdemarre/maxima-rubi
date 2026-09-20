@@ -136,6 +136,12 @@ build + 3,513-rule core, zero diffs (record §6).
 
 Open follow-ups (tickets against the runbook):
 
+- Section 9.2 + 9.3 port (Rubi's always-loaded core rules alongside
+  class 1: `Rubi.m` loads them outside the elementary-function block;
+  our table has neither; 19 + 76 rule lines, pre-census; candidate
+  cause of `deferred` entries such as 2.3 e733) — open, needs-triage,
+  first in the queue: before class 4+, after the matcher substrate's
+  P6, `.scratch/class-ports/issues/06-section9-core-rules-9_2-9_3.md`
 - Class 8 (special functions, 1,949 entries — shares class 2's head
   table) — open, `.scratch/class-ports/issues/01-class8-special-functions.md`
 - Class 5 (inverse trig, 4,585 entries) — open,
@@ -199,7 +205,7 @@ A/B + attribution + 100 s re-check, §6 recovery, §7 acceptance); runs
 `test/corpus_class{1,2,3}.campaign-baseline.out`. Ticket 04
 (`.scratch/class1-ab-remainders/issues/04-…`) partially answered.
 
-## Matcher substrate — in prog (Plan 2 complete 2026-09-13)
+## Matcher substrate — in prog (Plan 3 executing)
 
 Classes 1–3 re-hosted on a Mathematica-semantics matcher in place of
 `defmatch` (spec
@@ -233,23 +239,57 @@ Layer A 898/0; the TLS flag is no longer required
 - Next: Plan 3 = P5 (four full class 1–3 runs, one switch flipped per
   run; gates against the P0 records) – P6 (close), written just in
   time — open
-- Carried into Plan 3: the MODEL-LOST figures (1,166 / 395 measured vs
-  the spec's 1,142 / 312) unexplained; the shard launcher leaves stale
-  shard files; the speed-gate definition; the three switches written
-  into the driver's `filter:` line (plan 2 deviation 8); crash-class
-  counts against P0 (a runaway recursion in a cond is fatal inside
-  `mr-match:match`, probe 07); from the plan-2 final review: take P5
-  run 1 on class 2 first and compare median wall and the timeout class
-  against P0 before the class-1 runs (probe 06: full-table walk cost is
-  exponential in Times arity; the head index of spec 3.5 is the
-  fallback); when attributing the `mr_model_flags` arm, nested
-  integrate fall-throughs (depth cap, seen guard) run under the flags —
-  look at the seen-guard path first; the spec §6 TLS-mechanism wording
-  is inaccurate (interpreted block locals take no TLS slot) — state the
-  corrected mechanism in the P6 acceptance record; carried to P6: stale
-  generator comments (`generate_rules.py` `cap_name` docstring,
-  `CAP_REMAP` rationale, ctx decls) and README.md's `defmatch` TLS text
-  and deleted file list — open
+- Plan 3 (P5–P6,
+  `docs/superpowers/plans/2026-09-13-matcher-substrate-plan3.md`),
+  Task 1: the switch arm written into every record's `filter:` line
+  (`MR_SWITCHES`, `test/run_records.py`); the launcher deletes a
+  previous run's shard files; the speed-gate definition and the
+  crash-class counts (`test/p5_gate.py`); the crash verdict's stdin
+  (`probes/matcher/09-harness-fault-verdict.out`) — done
+- Plan 3 Tasks 2–4 (2026-09-13/14): switch winners (noise-filtered,
+  probe 11) = the defaults; final records = P5 run 1; 100 s re-checks;
+  every PASS→FAIL attributed (probe 10, 2,038 entries; acceptance
+  document `probes/matcher/10-p5-attribution.acceptance.md`) — done.
+  **User decision at the acceptance stop (2026-09-14): fix the four
+  pre-existing translation defects first** — IGtQ/ILtQ/ILeQ emitted
+  without the integer test (`generator/generate_rules.py:816-817`,
+  `:1129-1137`), `%mr_negQ` true on unknown-sign symbols
+  (`maxima_rubi_utils.mac:446`), `!=` read as `(k!) = 1` (10 class-1
+  lines), space-as-multiplication (`rules/class1/1_1_4_1.mac:13`) —
+  and restore the exact seen comparison for the 9.1 collapse family
+  (spec §3.5; class 2 2.1 e15, class 1 1.2.1.2 e1734–e1736); then
+  re-run the final records and probe 10 and return to the stop.
+  Plan 3 Tasks 5–6 wait — done (the fix plan
+  `docs/superpowers/plans/2026-09-14-matcher-translation-fixes.md`)
+- Translation fixes plan (2026-09-14): Tasks 1–5 fixed the four defects and their siblings (probes
+  12/13/15 red→green, probe 14, Layer A 957, static gate 14); Tasks 6–7 re-run P5 as p5b and return to
+  the acceptance stop; the case-fold order shim is ticketed
+  (`.scratch/matcher-translation-fixes/issues/01-case-fold-order-shim.md`) — Task 6 done (p5b final
+  records = run 1, defaults; gates 4/0); Task 7 STOPPED at Step 5 (defect clearance, 2026-09-15):
+  probe 16 (`probes/matcher/16-seen-guard-trace{,.class1}.out`) shows the collapse mechanism at
+  non-9.1 sites (`mr_int`'s ratsimp seen test cuts equal-form rewrites; P0 fired those rules in
+  pass 2/3 after `%mr_seen` was popped) in class 2 g1, class 3 g12/g21/g48 and 36 class-1 groups
+  (36 rules, 67 entries reach PASS under an exact-only control), plus a sibling tag
+  (`%mr_intPart_aux`, class 1 g27); tickets 02 (GtQ/GeQ reading) and 03 (EqQ/NeQ zero test) filed;
+  Steps 6–10 wait for the user's fix-plan decision — open
+- Carried into Plan 3's P5 runs: class 2 first in every run, its
+  median wall and timeout class compared against P0 before class 1
+  (probe 06: the full-table walk is exponential in Times arity); when
+  attributing the `mr_model_flags` arm, nested integrate fall-throughs
+  (depth cap, seen guard) run under the flags — look at the seen-guard
+  path first; the MODEL-LOST figures (1,166 / 395 measured vs the
+  spec's 1,142 / 312) explained only if that arm's attribution needs
+  them; the spec §6 TLS-mechanism wording corrected in the P6
+  acceptance record; P6: stale generator comments (`cap_name`
+  docstring, `CAP_REMAP` rationale, ctx `decls`) and README.md's
+  `defmatch` TLS text and deleted-file list — open
+- Carried (plan-2 final review, parked): numeric folding in MatchQ
+  part substitution (`Times[0,p]` → 0, `Power[1,e]` → 1, a Times/Plus
+  left holding only Optionals → the Optional's default — `a_.*v_^0`
+  currently errors instead of matching; unreachable today, 1_4_1
+  r4/r68 guard `expon > 1`); a parts-keyed compiled-pattern cache for
+  MatchQ calls with parts (hot conds; unmeasured — built only if a P5
+  wall gate asks for it) — open
 - Deferred: the `MX_` plist re-read issue in `mr-tree` (not reachable:
   the dispatcher never prints and re-reads a tree) — open
 - Known cost item: a collapsible claimer (e.g. `(c_.*x_)^m_.` under

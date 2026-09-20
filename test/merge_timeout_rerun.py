@@ -29,6 +29,7 @@ record — the completeness set is its `timeout` class).
 """
 
 import glob
+import importlib.util
 import os
 import re
 import subprocess
@@ -100,9 +101,24 @@ for path in inputs:
 
 missing = expected - set(seen)
 extra = set(seen) - expected
-if dupes or missing or extra:
+# The re-check runs the source record's switch arm (test/run_records.py):
+# the shards must state one arm, and the source's when it states one.
+_rr_spec = importlib.util.spec_from_file_location(
+    "run_records", os.path.join(ROOT, "test", "run_records.py"))
+run_records = importlib.util.module_from_spec(_rr_spec)
+_rr_spec.loader.exec_module(run_records)
+try:
+    switches = run_records.common_switches(inputs)
+    src_switches = run_records.record_switches(ACCEPTED)
+    switch_error = (None if src_switches in (None, switches) else
+                    f"the shards ran {switches}, the source record {src_switches}")
+except ValueError as exc:
+    switches, switch_error = None, str(exc)
+if dupes or missing or extra or switch_error:
     print(f"INCOMPLETE: dupes={dupes} missing={len(missing)} "
           f"extra={len(extra)}", file=sys.stderr)
+    if switch_error:
+        print(f"  switches: {switch_error}", file=sys.stderr)
     for k in sorted(missing)[:10]:
         print("  missing", k, file=sys.stderr)
     for k in sorted(extra)[:10]:
@@ -131,7 +147,8 @@ except ValueError:
     accepted_rel = ACCEPTED
 out_lines.append(
     f"re-check of the {len(expected)} `timeout` entries of {accepted_rel} "
-    f"(30 s cap) at a {cap} s per-entry cap, same rules core")
+    f"(30 s cap) at a {cap} s per-entry cap, same rules core, "
+    f"switches: {switches}")
 out_lines.append("")
 
 cls_of = {k: seen[k].group(1) for k in expected}

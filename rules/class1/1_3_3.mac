@@ -47,7 +47,7 @@ _mr_rule_1_3_3_r5 : %mr_defrule("1_3_3", 5, "(Int (Times (Pattern |_mr_1_3_3_r5_
 
 _mr_cond_1_3_3_r6(mm, x) := block([_mr_1_3_3_r6_Px, _mr_1_3_3_r6_Qx, _mr_1_3_3_r6_p, _mr_1_3_3_r6_q, _mr_1_3_3_r6_u],
   _mr_1_3_3_r6_Px : geteqR(mm, '_mr_1_3_3_r6_Px), _mr_1_3_3_r6_Qx : geteqR(mm, '_mr_1_3_3_r6_Qx), _mr_1_3_3_r6_p : geteqR(mm, '_mr_1_3_3_r6_p), _mr_1_3_3_r6_q : geteqR(mm, '_mr_1_3_3_r6_q), _mr_1_3_3_r6_u : geteqR(mm, '_mr_1_3_3_r6_u),
-  (is(_mr_1_3_3_r6_p > 0)  and  is(_mr_1_3_3_r6_q < 0)  and  %mr_polyQ(_mr_1_3_3_r6_Px, x)  and  %mr_polyQ(_mr_1_3_3_r6_Qx, x))  and  block([Rx], Rx : %mr_polyGCD(_mr_1_3_3_r6_Px, _mr_1_3_3_r6_Qx, x), is(%mr_neQ(Rx, 1)) = true))$
+  (%mr_iGtQ(_mr_1_3_3_r6_p, 0)  and  %mr_iLtQ(_mr_1_3_3_r6_q, 0)  and  %mr_polyQ(_mr_1_3_3_r6_Px, x)  and  %mr_polyQ(_mr_1_3_3_r6_Qx, x))  and  block([Rx], Rx : %mr_polyGCD(_mr_1_3_3_r6_Px, _mr_1_3_3_r6_Qx, x), is(%mr_neQ(Rx, 1)) = true))$
 _mr_repl_1_3_3_r6(mm, x) := block([_mr_1_3_3_r6_Px__s, _mr_1_3_3_r6_Qx__s, _mr_1_3_3_r6_p__s, _mr_1_3_3_r6_q__s, _mr_1_3_3_r6_u__s],
   _mr_1_3_3_r6_Px__s : geteqR(mm, '_mr_1_3_3_r6_Px), _mr_1_3_3_r6_Qx__s : geteqR(mm, '_mr_1_3_3_r6_Qx), _mr_1_3_3_r6_p__s : geteqR(mm, '_mr_1_3_3_r6_p), _mr_1_3_3_r6_q__s : geteqR(mm, '_mr_1_3_3_r6_q), _mr_1_3_3_r6_u__s : geteqR(mm, '_mr_1_3_3_r6_u),
   block([Rx], Rx : %mr_polyGCD(_mr_1_3_3_r6_Px__s, _mr_1_3_3_r6_Qx__s, x), mr_int(_mr_1_3_3_r6_u__s*Rx^(_mr_1_3_3_r6_p__s+_mr_1_3_3_r6_q__s)*%mr_polyQuotient(_mr_1_3_3_r6_Px__s, Rx, x)^_mr_1_3_3_r6_p__s*%mr_polyQuotient(_mr_1_3_3_r6_Qx__s, Rx, x)^_mr_1_3_3_r6_q__s, x)))$
@@ -55,7 +55,7 @@ _mr_rule_1_3_3_r6 : %mr_defrule("1_3_3", 6, "(Int (Times (Optional (Pattern |_mr
 
 _mr_cond_1_3_3_r7(mm, x) := block([_mr_1_3_3_r7_Px, _mr_1_3_3_r7_Qx, _mr_1_3_3_r7_q, _mr_1_3_3_r7_u],
   _mr_1_3_3_r7_Px : geteqR(mm, '_mr_1_3_3_r7_Px), _mr_1_3_3_r7_Qx : geteqR(mm, '_mr_1_3_3_r7_Qx), _mr_1_3_3_r7_q : geteqR(mm, '_mr_1_3_3_r7_q), _mr_1_3_3_r7_u : geteqR(mm, '_mr_1_3_3_r7_u),
-  (is(_mr_1_3_3_r7_q < 0)  and  %mr_polyQ(_mr_1_3_3_r7_Px, x)  and  %mr_polyQ(_mr_1_3_3_r7_Qx, x))  and  block([Rx], Rx : %mr_polyGCD(_mr_1_3_3_r7_Px, _mr_1_3_3_r7_Qx, x), is(%mr_neQ(Rx, 1)) = true))$
+  (%mr_iLtQ(_mr_1_3_3_r7_q, 0)  and  %mr_polyQ(_mr_1_3_3_r7_Px, x)  and  %mr_polyQ(_mr_1_3_3_r7_Qx, x))  and  block([Rx], Rx : %mr_polyGCD(_mr_1_3_3_r7_Px, _mr_1_3_3_r7_Qx, x), is(%mr_neQ(Rx, 1)) = true))$
 _mr_repl_1_3_3_r7(mm, x) := block([_mr_1_3_3_r7_Px__s, _mr_1_3_3_r7_Qx__s, _mr_1_3_3_r7_q__s, _mr_1_3_3_r7_u__s],
   _mr_1_3_3_r7_Px__s : geteqR(mm, '_mr_1_3_3_r7_Px), _mr_1_3_3_r7_Qx__s : geteqR(mm, '_mr_1_3_3_r7_Qx), _mr_1_3_3_r7_q__s : geteqR(mm, '_mr_1_3_3_r7_q), _mr_1_3_3_r7_u__s : geteqR(mm, '_mr_1_3_3_r7_u),
   block([Rx], Rx : %mr_polyGCD(_mr_1_3_3_r7_Px__s, _mr_1_3_3_r7_Qx__s, x), mr_int(_mr_1_3_3_r7_u__s*Rx^(_mr_1_3_3_r7_q__s+1)*%mr_polyQuotient(_mr_1_3_3_r7_Px__s, Rx, x)*%mr_polyQuotient(_mr_1_3_3_r7_Qx__s, Rx, x)^_mr_1_3_3_r7_q__s, x)))$
@@ -71,7 +71,7 @@ _mr_rule_1_3_3_r8 : %mr_defrule("1_3_3", 8, "(Int (Power (Pattern |_mr_1_3_3_r8_
 
 _mr_cond_1_3_3_r9(mm, x) := block([_mr_1_3_3_r9_Pn, _mr_1_3_3_r9_Qx, _mr_1_3_3_r9_p],
   _mr_1_3_3_r9_Pn : geteqR(mm, '_mr_1_3_3_r9_Pn), _mr_1_3_3_r9_Qx : geteqR(mm, '_mr_1_3_3_r9_Qx), _mr_1_3_3_r9_p : geteqR(mm, '_mr_1_3_3_r9_p),
-  (freeof(x, _mr_1_3_3_r9_p)  and  %mr_polyQ(_mr_1_3_3_r9_Pn, x)  and  is(%mr_expon(_mr_1_3_3_r9_Pn, x) > 2)  and  %mr_neQ(%mr_coeff(_mr_1_3_3_r9_Pn, x, %mr_expon(_mr_1_3_3_r9_Pn, x)-1), 0)  and  %mr_polyQ(_mr_1_3_3_r9_Qx, x)  and  not(%mr_monomialQ(_mr_1_3_3_r9_Qx, x)  and  is(_mr_1_3_3_r9_p > 0)))  and  block([S], S : %mr_coeff(_mr_1_3_3_r9_Pn, x, %mr_expon(_mr_1_3_3_r9_Pn, x)-1)/(%mr_expon(_mr_1_3_3_r9_Pn, x)*%mr_coeff(_mr_1_3_3_r9_Pn, x, %mr_expon(_mr_1_3_3_r9_Pn, x))), is(%mr_binomialQ(subst(x-S, x, _mr_1_3_3_r9_Pn), x)  or  integerp(%mr_expon(_mr_1_3_3_r9_Pn, x)/2)  and  %mr_trinomialQ(subst(x-S, x, _mr_1_3_3_r9_Pn), x)) = true))$
+  (freeof(x, _mr_1_3_3_r9_p)  and  %mr_polyQ(_mr_1_3_3_r9_Pn, x)  and  is(%mr_expon(_mr_1_3_3_r9_Pn, x) > 2)  and  %mr_neQ(%mr_coeff(_mr_1_3_3_r9_Pn, x, %mr_expon(_mr_1_3_3_r9_Pn, x)-1), 0)  and  %mr_polyQ(_mr_1_3_3_r9_Qx, x)  and  not(%mr_monomialQ(_mr_1_3_3_r9_Qx, x)  and  %mr_iGtQ(_mr_1_3_3_r9_p, 0)))  and  block([S], S : %mr_coeff(_mr_1_3_3_r9_Pn, x, %mr_expon(_mr_1_3_3_r9_Pn, x)-1)/(%mr_expon(_mr_1_3_3_r9_Pn, x)*%mr_coeff(_mr_1_3_3_r9_Pn, x, %mr_expon(_mr_1_3_3_r9_Pn, x))), is(%mr_binomialQ(subst(x-S, x, _mr_1_3_3_r9_Pn), x)  or  integerp(%mr_expon(_mr_1_3_3_r9_Pn, x)/2)  and  %mr_trinomialQ(subst(x-S, x, _mr_1_3_3_r9_Pn), x)) = true))$
 _mr_repl_1_3_3_r9(mm, x) := block([_mr_1_3_3_r9_Pn__s, _mr_1_3_3_r9_Qx__s, _mr_1_3_3_r9_p__s],
   _mr_1_3_3_r9_Pn__s : geteqR(mm, '_mr_1_3_3_r9_Pn), _mr_1_3_3_r9_Qx__s : geteqR(mm, '_mr_1_3_3_r9_Qx), _mr_1_3_3_r9_p__s : geteqR(mm, '_mr_1_3_3_r9_p),
   block([S], S : %mr_coeff(_mr_1_3_3_r9_Pn__s, x, %mr_expon(_mr_1_3_3_r9_Pn__s, x)-1)/(%mr_expon(_mr_1_3_3_r9_Pn__s, x)*%mr_coeff(_mr_1_3_3_r9_Pn__s, x, %mr_expon(_mr_1_3_3_r9_Pn__s, x))), %mr_subst(mr_int(%mr_expandToSum(subst(x-S, x, _mr_1_3_3_r9_Pn__s), x)^_mr_1_3_3_r9_p__s*%mr_expandToSum(subst(x-S, x, _mr_1_3_3_r9_Qx__s), x), x), x, x+S)))$
@@ -79,7 +79,7 @@ _mr_rule_1_3_3_r9 : %mr_defrule("1_3_3", 9, "(Int (Times (Pattern |_mr_1_3_3_r9_
 
 _mr_cond_1_3_3_r10(mm, x) := block([_mr_1_3_3_r10_Px, _mr_1_3_3_r10_p, _mr_1_3_3_r10_u],
   _mr_1_3_3_r10_Px : geteqR(mm, '_mr_1_3_3_r10_Px), _mr_1_3_3_r10_p : geteqR(mm, '_mr_1_3_3_r10_p), _mr_1_3_3_r10_u : geteqR(mm, '_mr_1_3_3_r10_u),
-  (%mr_polyPowerQ(_mr_1_3_3_r10_Px, x, 2)  and  is(%mr_expon(_mr_1_3_3_r10_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r10_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r10_Px, x))  and  is(_mr_1_3_3_r10_p < 0)  and  %mr_rationalFunctionQ(_mr_1_3_3_r10_u, x))  and  block([Qx], Qx : factor(subst(sqrt(x), x, _mr_1_3_3_r10_Px)), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
+  (%mr_polyPowerQ(_mr_1_3_3_r10_Px, x, 2)  and  is(%mr_expon(_mr_1_3_3_r10_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r10_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r10_Px, x))  and  %mr_iLtQ(_mr_1_3_3_r10_p, 0)  and  %mr_rationalFunctionQ(_mr_1_3_3_r10_u, x))  and  block([Qx], Qx : factor(subst(sqrt(x), x, _mr_1_3_3_r10_Px)), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
 _mr_repl_1_3_3_r10(mm, x) := block([_mr_1_3_3_r10_Px__s, _mr_1_3_3_r10_p__s, _mr_1_3_3_r10_u__s],
   _mr_1_3_3_r10_Px__s : geteqR(mm, '_mr_1_3_3_r10_Px), _mr_1_3_3_r10_p__s : geteqR(mm, '_mr_1_3_3_r10_p), _mr_1_3_3_r10_u__s : geteqR(mm, '_mr_1_3_3_r10_u),
   block([Qx], Qx : factor(subst(sqrt(x), x, _mr_1_3_3_r10_Px__s)), mr_int(%mr_expandIntegrand(_mr_1_3_3_r10_u__s*subst(x^2, x, Qx)^_mr_1_3_3_r10_p__s, x), x)))$
@@ -87,7 +87,7 @@ _mr_rule_1_3_3_r10 : %mr_defrule("1_3_3", 10, "(Int (Times (Optional (Pattern |_
 
 _mr_cond_1_3_3_r11(mm, x) := block([_mr_1_3_3_r11_Px, _mr_1_3_3_r11_p, _mr_1_3_3_r11_u],
   _mr_1_3_3_r11_Px : geteqR(mm, '_mr_1_3_3_r11_Px), _mr_1_3_3_r11_p : geteqR(mm, '_mr_1_3_3_r11_p), _mr_1_3_3_r11_u : geteqR(mm, '_mr_1_3_3_r11_u),
-  (%mr_polyPowerQ(_mr_1_3_3_r11_Px, x, 2)  and  is(%mr_expon(_mr_1_3_3_r11_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r11_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r11_Px, x))  and  is(_mr_1_3_3_r11_p < 0))  and  block([Qx], Qx : factor(subst(sqrt(x), x, _mr_1_3_3_r11_Px)), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
+  (%mr_polyPowerQ(_mr_1_3_3_r11_Px, x, 2)  and  is(%mr_expon(_mr_1_3_3_r11_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r11_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r11_Px, x))  and  %mr_iLtQ(_mr_1_3_3_r11_p, 0))  and  block([Qx], Qx : factor(subst(sqrt(x), x, _mr_1_3_3_r11_Px)), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
 _mr_repl_1_3_3_r11(mm, x) := block([_mr_1_3_3_r11_Px__s, _mr_1_3_3_r11_p__s, _mr_1_3_3_r11_u__s],
   _mr_1_3_3_r11_Px__s : geteqR(mm, '_mr_1_3_3_r11_Px), _mr_1_3_3_r11_p__s : geteqR(mm, '_mr_1_3_3_r11_p), _mr_1_3_3_r11_u__s : geteqR(mm, '_mr_1_3_3_r11_u),
   block([Qx], Qx : factor(subst(sqrt(x), x, _mr_1_3_3_r11_Px__s)), mr_int(%mr_expandIntegrand(_mr_1_3_3_r11_u__s, subst(x^2, x, Qx)^_mr_1_3_3_r11_p__s, x), x)))$
@@ -95,7 +95,7 @@ _mr_rule_1_3_3_r11 : %mr_defrule("1_3_3", 11, "(Int (Times (Optional (Pattern |_
 
 _mr_cond_1_3_3_r12(mm, x) := block([_mr_1_3_3_r12_Px, _mr_1_3_3_r12_p, _mr_1_3_3_r12_u],
   _mr_1_3_3_r12_Px : geteqR(mm, '_mr_1_3_3_r12_Px), _mr_1_3_3_r12_p : geteqR(mm, '_mr_1_3_3_r12_p), _mr_1_3_3_r12_u : geteqR(mm, '_mr_1_3_3_r12_u),
-  (%mr_polyQ(_mr_1_3_3_r12_Px, x)  and  is(%mr_expon(_mr_1_3_3_r12_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r12_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r12_Px, x))  and  is(_mr_1_3_3_r12_p < 0)  and  %mr_rationalFunctionQ(_mr_1_3_3_r12_u, x))  and  block([Qx], Qx : factor(_mr_1_3_3_r12_Px), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
+  (%mr_polyQ(_mr_1_3_3_r12_Px, x)  and  is(%mr_expon(_mr_1_3_3_r12_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r12_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r12_Px, x))  and  %mr_iLtQ(_mr_1_3_3_r12_p, 0)  and  %mr_rationalFunctionQ(_mr_1_3_3_r12_u, x))  and  block([Qx], Qx : factor(_mr_1_3_3_r12_Px), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
 _mr_repl_1_3_3_r12(mm, x) := block([_mr_1_3_3_r12_Px__s, _mr_1_3_3_r12_p__s, _mr_1_3_3_r12_u__s],
   _mr_1_3_3_r12_Px__s : geteqR(mm, '_mr_1_3_3_r12_Px), _mr_1_3_3_r12_p__s : geteqR(mm, '_mr_1_3_3_r12_p), _mr_1_3_3_r12_u__s : geteqR(mm, '_mr_1_3_3_r12_u),
   block([Qx], Qx : factor(_mr_1_3_3_r12_Px__s), mr_int(%mr_expandIntegrand(_mr_1_3_3_r12_u__s*Qx^_mr_1_3_3_r12_p__s, x), x)))$
@@ -103,7 +103,7 @@ _mr_rule_1_3_3_r12 : %mr_defrule("1_3_3", 12, "(Int (Times (Optional (Pattern |_
 
 _mr_cond_1_3_3_r13(mm, x) := block([_mr_1_3_3_r13_Px, _mr_1_3_3_r13_p, _mr_1_3_3_r13_u],
   _mr_1_3_3_r13_Px : geteqR(mm, '_mr_1_3_3_r13_Px), _mr_1_3_3_r13_p : geteqR(mm, '_mr_1_3_3_r13_p), _mr_1_3_3_r13_u : geteqR(mm, '_mr_1_3_3_r13_u),
-  (%mr_polyQ(_mr_1_3_3_r13_Px, x)  and  is(%mr_expon(_mr_1_3_3_r13_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r13_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r13_Px, x))  and  is(_mr_1_3_3_r13_p < 0))  and  block([Qx], Qx : factor(_mr_1_3_3_r13_Px), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
+  (%mr_polyQ(_mr_1_3_3_r13_Px, x)  and  is(%mr_expon(_mr_1_3_3_r13_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r13_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r13_Px, x))  and  %mr_iLtQ(_mr_1_3_3_r13_p, 0))  and  block([Qx], Qx : factor(_mr_1_3_3_r13_Px), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
 _mr_repl_1_3_3_r13(mm, x) := block([_mr_1_3_3_r13_Px__s, _mr_1_3_3_r13_p__s, _mr_1_3_3_r13_u__s],
   _mr_1_3_3_r13_Px__s : geteqR(mm, '_mr_1_3_3_r13_Px), _mr_1_3_3_r13_p__s : geteqR(mm, '_mr_1_3_3_r13_p), _mr_1_3_3_r13_u__s : geteqR(mm, '_mr_1_3_3_r13_u),
   block([Qx], Qx : factor(_mr_1_3_3_r13_Px__s), mr_int(%mr_expandIntegrand(_mr_1_3_3_r13_u__s, Qx^_mr_1_3_3_r13_p__s, x), x)))$
@@ -111,7 +111,7 @@ _mr_rule_1_3_3_r13 : %mr_defrule("1_3_3", 13, "(Int (Times (Optional (Pattern |_
 
 _mr_cond_1_3_3_r14(mm, x) := block([_mr_1_3_3_r14_Px, _mr_1_3_3_r14_p, _mr_1_3_3_r14_u],
   _mr_1_3_3_r14_Px : geteqR(mm, '_mr_1_3_3_r14_Px), _mr_1_3_3_r14_p : geteqR(mm, '_mr_1_3_3_r14_p), _mr_1_3_3_r14_u : geteqR(mm, '_mr_1_3_3_r14_u),
-  (%mr_polyQ(_mr_1_3_3_r14_Px, x)  and  is(%mr_expon(_mr_1_3_3_r14_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r14_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r14_Px, x))  and  is(_mr_1_3_3_r14_p > 1))  and  block([Qx], Qx : factor(_mr_1_3_3_r14_Px), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
+  (%mr_polyQ(_mr_1_3_3_r14_Px, x)  and  is(%mr_expon(_mr_1_3_3_r14_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r14_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r14_Px, x))  and  %mr_iGtQ(_mr_1_3_3_r14_p, 1))  and  block([Qx], Qx : factor(_mr_1_3_3_r14_Px), is(not(%mr_sumQ(%mr_nonfreeFactors(Qx, x)))) = true))$
 _mr_repl_1_3_3_r14(mm, x) := block([_mr_1_3_3_r14_Px__s, _mr_1_3_3_r14_p__s, _mr_1_3_3_r14_u__s],
   _mr_1_3_3_r14_Px__s : geteqR(mm, '_mr_1_3_3_r14_Px), _mr_1_3_3_r14_p__s : geteqR(mm, '_mr_1_3_3_r14_p), _mr_1_3_3_r14_u__s : geteqR(mm, '_mr_1_3_3_r14_u),
   block([Qx], Qx : factor(_mr_1_3_3_r14_Px__s), mr_int(_mr_1_3_3_r14_u__s*Qx^_mr_1_3_3_r14_p__s, x)))$
@@ -119,7 +119,7 @@ _mr_rule_1_3_3_r14 : %mr_defrule("1_3_3", 14, "(Int (Times (Optional (Pattern |_
 
 _mr_cond_1_3_3_r15(mm, x) := block([_mr_1_3_3_r15_Px, _mr_1_3_3_r15_p, _mr_1_3_3_r15_u],
   _mr_1_3_3_r15_Px : geteqR(mm, '_mr_1_3_3_r15_Px), _mr_1_3_3_r15_p : geteqR(mm, '_mr_1_3_3_r15_p), _mr_1_3_3_r15_u : geteqR(mm, '_mr_1_3_3_r15_u),
-  %mr_polyQ(_mr_1_3_3_r15_Px, x)  and  is(%mr_expon(_mr_1_3_3_r15_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r15_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r15_Px, x))  and  is(_mr_1_3_3_r15_p > 0))$
+  %mr_polyQ(_mr_1_3_3_r15_Px, x)  and  is(%mr_expon(_mr_1_3_3_r15_Px, x) > 2)  and  not(%mr_binomialQ(_mr_1_3_3_r15_Px, x))  and  not(%mr_trinomialQ(_mr_1_3_3_r15_Px, x))  and  %mr_iGtQ(_mr_1_3_3_r15_p, 0))$
 _mr_repl_1_3_3_r15(mm, x) := block([_mr_1_3_3_r15_Px__s, _mr_1_3_3_r15_p__s, _mr_1_3_3_r15_u__s],
   _mr_1_3_3_r15_Px__s : geteqR(mm, '_mr_1_3_3_r15_Px), _mr_1_3_3_r15_p__s : geteqR(mm, '_mr_1_3_3_r15_p), _mr_1_3_3_r15_u__s : geteqR(mm, '_mr_1_3_3_r15_u),
   mr_int(%mr_expandToSum(_mr_1_3_3_r15_u__s, _mr_1_3_3_r15_Px__s^_mr_1_3_3_r15_p__s, x), x))$
@@ -127,7 +127,7 @@ _mr_rule_1_3_3_r15 : %mr_defrule("1_3_3", 15, "(Int (Times (Optional (Pattern |_
 
 _mr_cond_1_3_3_r16(mm, x) := block([_mr_1_3_3_r16_Q6, _mr_1_3_3_r16_p, _mr_1_3_3_r16_u],
   _mr_1_3_3_r16_Q6 : geteqR(mm, '_mr_1_3_3_r16_Q6), _mr_1_3_3_r16_p : geteqR(mm, '_mr_1_3_3_r16_p), _mr_1_3_3_r16_u : geteqR(mm, '_mr_1_3_3_r16_u),
-  (is(_mr_1_3_3_r16_p < 0)  and  %mr_polyDegQ(_mr_1_3_3_r16_Q6, x, 6)  and  %mr_eqQ(%mr_coeff(_mr_1_3_3_r16_Q6, x, 1), 0)  and  %mr_eqQ(%mr_coeff(_mr_1_3_3_r16_Q6, x, 5), 0)  and  %mr_rationalFunctionQ(_mr_1_3_3_r16_u, x))  and  block([a, b, c, d, e], a : %mr_coeff(_mr_1_3_3_r16_Q6, x, 0), b : %mr_coeff(_mr_1_3_3_r16_Q6, x, 2), c : %mr_coeff(_mr_1_3_3_r16_Q6, x, 3), d : %mr_coeff(_mr_1_3_3_r16_Q6, x, 4), e : %mr_coeff(_mr_1_3_3_r16_Q6, x, 6), is(%mr_eqQ(b^2-3*a*d, 0)  and  %mr_eqQ(b^3-27*a^2*e, 0)) = true))$
+  (%mr_iLtQ(_mr_1_3_3_r16_p, 0)  and  %mr_polyDegQ(_mr_1_3_3_r16_Q6, x, 6)  and  %mr_eqQ(%mr_coeff(_mr_1_3_3_r16_Q6, x, 1), 0)  and  %mr_eqQ(%mr_coeff(_mr_1_3_3_r16_Q6, x, 5), 0)  and  %mr_rationalFunctionQ(_mr_1_3_3_r16_u, x))  and  block([a, b, c, d, e], a : %mr_coeff(_mr_1_3_3_r16_Q6, x, 0), b : %mr_coeff(_mr_1_3_3_r16_Q6, x, 2), c : %mr_coeff(_mr_1_3_3_r16_Q6, x, 3), d : %mr_coeff(_mr_1_3_3_r16_Q6, x, 4), e : %mr_coeff(_mr_1_3_3_r16_Q6, x, 6), is(%mr_eqQ(b^2-3*a*d, 0)  and  %mr_eqQ(b^3-27*a^2*e, 0)) = true))$
 _mr_repl_1_3_3_r16(mm, x) := block([_mr_1_3_3_r16_Q6__s, _mr_1_3_3_r16_p__s, _mr_1_3_3_r16_u__s],
   _mr_1_3_3_r16_Q6__s : geteqR(mm, '_mr_1_3_3_r16_Q6), _mr_1_3_3_r16_p__s : geteqR(mm, '_mr_1_3_3_r16_p), _mr_1_3_3_r16_u__s : geteqR(mm, '_mr_1_3_3_r16_u),
   block([a, b, c, d, e], a : %mr_coeff(_mr_1_3_3_r16_Q6__s, x, 0), b : %mr_coeff(_mr_1_3_3_r16_Q6__s, x, 2), c : %mr_coeff(_mr_1_3_3_r16_Q6__s, x, 3), d : %mr_coeff(_mr_1_3_3_r16_Q6__s, x, 4), e : %mr_coeff(_mr_1_3_3_r16_Q6__s, x, 6), 1/(3^(3*_mr_1_3_3_r16_p__s)*a^(2*_mr_1_3_3_r16_p__s)) * mr_int(%mr_expandIntegrand(_mr_1_3_3_r16_u__s*
@@ -138,7 +138,7 @@ _mr_rule_1_3_3_r16 : %mr_defrule("1_3_3", 16, "(Int (Times (Optional (Pattern |_
 
 _mr_cond_1_3_3_r17(mm, x) := block([_mr_1_3_3_r17_Fx, _mr_1_3_3_r17_Px, _mr_1_3_3_r17_p],
   _mr_1_3_3_r17_Fx : geteqR(mm, '_mr_1_3_3_r17_Fx), _mr_1_3_3_r17_Px : geteqR(mm, '_mr_1_3_3_r17_Px), _mr_1_3_3_r17_p : geteqR(mm, '_mr_1_3_3_r17_p),
-  (freeof(x, _mr_1_3_3_r17_p)  and  %mr_polyQ(_mr_1_3_3_r17_Px, x)  and  not(integerp(_mr_1_3_3_r17_p))  and  not(%mr_monomialQ(_mr_1_3_3_r17_Px, x))  and  not(%mr_polyQ(_mr_1_3_3_r17_Fx, x)))  and  block([r], r : %mr_exponMin(_mr_1_3_3_r17_Px, x), is(is(r > 0)) = true))$
+  (freeof(x, _mr_1_3_3_r17_p)  and  %mr_polyQ(_mr_1_3_3_r17_Px, x)  and  not(integerp(_mr_1_3_3_r17_p))  and  not(%mr_monomialQ(_mr_1_3_3_r17_Px, x))  and  not(%mr_polyQ(_mr_1_3_3_r17_Fx, x)))  and  block([r], r : %mr_exponMin(_mr_1_3_3_r17_Px, x), is(%mr_iGtQ(r, 0)) = true))$
 _mr_repl_1_3_3_r17(mm, x) := block([_mr_1_3_3_r17_Fx__s, _mr_1_3_3_r17_Px__s, _mr_1_3_3_r17_p__s],
   _mr_1_3_3_r17_Fx__s : geteqR(mm, '_mr_1_3_3_r17_Fx), _mr_1_3_3_r17_Px__s : geteqR(mm, '_mr_1_3_3_r17_Px), _mr_1_3_3_r17_p__s : geteqR(mm, '_mr_1_3_3_r17_p),
   block([r], r : %mr_exponMin(_mr_1_3_3_r17_Px__s, x), _mr_1_3_3_r17_Px__s^%mr_fracPart(_mr_1_3_3_r17_p__s)/(x^(r*%mr_fracPart(_mr_1_3_3_r17_p__s))*%mr_expandToSum(_mr_1_3_3_r17_Px__s/x^r, x)^%mr_fracPart(_mr_1_3_3_r17_p__s)) * mr_int(x^(_mr_1_3_3_r17_p__s*r)*%mr_expandToSum(_mr_1_3_3_r17_Px__s/x^r, x)^_mr_1_3_3_r17_p__s*_mr_1_3_3_r17_Fx__s, x)))$

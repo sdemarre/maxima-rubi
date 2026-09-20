@@ -36,6 +36,26 @@
 
 %mr_load_sibling("maxima_rubi_utils.mac", 'mr_witness_utils)$
 
+/* Mathematica's Expand[u, x] — the ExpandExpression cascade's
+ * %mr_expand_x (exact seen test design 3.4) is format(u, %poly(x)) from
+ * the SHARE package `format`, so it is loaded by name (not a sibling of
+ * this library) right after the utils that call it.
+ *
+ * The witness is not optional bookkeeping: MEASURED 2026-09-16 (this
+ * build), without the load format(u, %poly(x)) evaluates to the
+ * unevaluated NOUN format((x+1)^2*sin(x), %poly(x)) (op = format) — no
+ * error, no warning — and that noun would flow into an integrand and out
+ * into an answer. A witness whose result must be a real sum turns the
+ * silent failure into a loud one, as for every sibling above. */
+mr_witness_format() := block([mr_fx, r],
+  r : format((mr_fx + 1)^2, %poly(mr_fx)),
+  is(not atom(r) and is(op(r) = "+")))$
+load("format")$
+if mr_witness_format() = false then
+  error("maxima_rubi: the share package `format` did not load, so ",
+        "format(u, %poly(x)) stays a noun (see %mr_expand_x in ",
+        "maxima_rubi_utils.mac). Install Maxima's share/contrib/format.")$
+
 /* Native-integrate prompt design (measured 2026-08-25): integrate's
    sign prompts are answered from the batch input stream — the test
    harness pre-queues pos/no answer lines (see the mr_top comment in

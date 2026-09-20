@@ -1,0 +1,135 @@
+/* probes/matcher/12-translation-defects.mac -- the four translation defects
+   of the P5 acceptance stop (design docs/superpowers/specs/2026-09-14-
+   matcher-translation-fixes-design.md section 3.5), measured on the tree it
+   runs on. The PASS/FAIL expectations are the FIXED behaviour: on the
+   unfixed tree the defect checks FAIL (the red record), on the fixed tree
+   every check passes (the green record).
+   Sections: NE (`!=`), MUL (juxtaposition), IGT (integer comparisons),
+   NEGQ (PosQ/NegQ against Rubi's PosAux, IntegrationUtilityFunctions.m
+   :605-642; expectations derived by hand from PosAux on Rubi's form),
+   NORM (the %mr_togetherSimplify normalizer, design 3.2 deviation --
+   informational R lines, no checks).
+   Run (repo root):  sh probes/matcher/12-translation-defects.sh */
+display2d : false$
+linel : 10000$
+print("R build", build_info()@version, build_info()@timestamp)$
+load("maxima_rubi.mac")$
+mr_load_all()$
+
+mr12_pass : 0$
+mr12_fail : 0$
+mr12_chk(lbl, actual, expected) := (
+  if actual = expected
+  then (mr12_pass : mr12_pass + 1, print("PASS:", lbl, "=>", actual))
+  else (mr12_fail : mr12_fail + 1,
+        print("FAIL:", lbl, "=>", actual, "expected", expected)))$
+/* binding list for a rule's cond/repl: [name = value, ...] with the
+   generated _mr_<key>_r<n>_<var> names */
+mr12_mm(key, n, pairs) := map(lambda([pr],
+  concat('_mr_, key, "_r", n, "_", first(pr)) = second(pr)), pairs)$
+
+/* ---- NE: `!=` -------------------------------------------------------- */
+print("SECTION NE")$
+block([e : block([simp : false], parse_string("k != 1"))],
+  print("R parse k != 1: op", op(e), "lhs", block([simp : false], part(e, 1)),
+        "lhs op", block([simp : false], op(part(e, 1)))))$
+for kv in [0, 1, 2] do block([k : kv],
+  print("R is(k != 1) with k =", kv, "=>", is(k != 1)))$
+print("R is(3 != 0) =>", is(3 != 0))$
+print("R is(notequal(a, 1)) =>", is(notequal(a, 1)),
+      " is(notequal(2, 1)) =>", is(notequal(2, 1)),
+      " is(notequal(1, 1)) =>", is(notequal(1, 1)),
+      " is(notequal(1/2, 0.5)) =>", is(notequal(1/2, 0.5)))$
+/* the ten generated conditions on a binding where the Rubi condition holds
+   (every `!=` operand distinct): true once `!=` is notequal */
+mr12_ne : [
+  ["1_1_3_2", 17, [[a, a], [b, b], [p, p], [n, 2], [m, 1]]],
+  ["1_1_3_2", 18, [[a1, 1], [b1, 1], [a2, 1], [b2, -1], [p, p], [n, 1], [m, 1]]],
+  ["1_1_3_4", 30, [[a, 1], [b, 2], [c, 3], [d, 4], [p, p], [q, q], [n, 2], [m, 1]]],
+  ["1_1_3_6", 9, [[a, a], [b, b], [c, c], [d, d], [e, e], [f, f], [p, p], [q, q], [r, r], [n, 2], [m, 1]]],
+  ["1_1_3_8", 15, [[Pq, x^2 + 1], [a, a], [b, b], [p, p], [n, 2], [m, 1]]],
+  ["1_2_2_4", 29, [[a, 1], [b, 3], [c, 1], [d, d], [e, e], [f, f], [p, 1], [m, -2]]],
+  ["1_2_2_4", 30, [[a, a], [c, c], [d, d], [e, e], [f, f], [p, 1], [m, -2]]],
+  ["1_2_3_2", 8, [[a, 1], [b, 3], [c, 1], [p, p], [n, 2], [n2, 4], [m, 1]]],
+  ["1_2_3_4", 29, [[a, 1], [b, 3], [c, 1], [d, d], [e, e], [p, p], [q, q], [n, 2], [n2, 4], [m, 1]]],
+  ["1_2_3_4", 30, [[a, a], [c, c], [d, d], [e, e], [p, p], [q, q], [n, 2], [n2, 4], [m, 1]]]]$
+for s in mr12_ne do block([f : concat('_mr_cond_, s[1], "_r", s[2]), r],
+  r : errcatch(apply(f, [mr12_mm(s[1], s[2], s[3]), x])),
+  mr12_chk(concat("NE cond ", s[1], " r", s[2]), r, [true]))$
+
+/* ---- MUL: juxtaposition ---------------------------------------------- */
+print("SECTION MUL")$
+for str in ["(x) (y)", "(n - j) (p + 1)", "[1] (2)", "(x) y", "2 (x)", "x (y)"] do
+  block([e : errcatch(block([simp : false], parse_string(str)))],
+    print("R parse", str, "=>", if e = [] then "PARSE-ERROR"
+          else block([simp : false], [op(first(e)), args(first(e))])))$
+block([n : 5, j : 2, p : 3],
+  print("R eval (n - j) (p + 1) with n:5 j:2 p:3 =>", errcatch(ev(parse_string("(n - j) (p + 1)")))))$
+/* 1_1_4_1 r1: Int[(a x^j + b x^n)^p, x] -> (a x^j + b x^n)^(p+1) / (b (n-j) (p+1) x^(n-1)) */
+block([mm : mr12_mm("1_1_4_1", 1, [[a, 1], [b, 2], [j, 1], [n, 3], [p, 2]]), r],
+  r : errcatch(_mr_repl_1_1_4_1_r1(mm, x)),
+  mr12_chk("MUL repl 1_1_4_1 r1 is (x+2x^3)^3/(12 x^2)",
+           if r = [] then "ERROR" else ratsimp(first(r) - (x + 2*x^3)^3/(12*x^2)), 0))$
+
+/* ---- IGT: integer comparisons ---------------------------------------- */
+print("SECTION IGT")$
+mr12_igt : [
+  ["%mr_iGtQ(3, 0)", '%mr_iGtQ(3, 0), true], ["%mr_iGtQ(1/2, 0)", '%mr_iGtQ(1/2, 0), false],
+  ["%mr_iGtQ(2.0, 0)", '%mr_iGtQ(2.0, 0), false], ["%mr_iGtQ(n, 0)", '%mr_iGtQ(n, 0), false],
+  ["%mr_iGtQ(2+1, 0)", '%mr_iGtQ(2 + 1, 0), true], ["%mr_iGtQ(0, 0)", '%mr_iGtQ(0, 0), false],
+  ["%mr_iLtQ(-1, 0)", '%mr_iLtQ(-1, 0), true], ["%mr_iLtQ(-1/2, 0)", '%mr_iLtQ(-1/2, 0), false],
+  ["%mr_iLtQ(n, 0)", '%mr_iLtQ(n, 0), false],
+  ["%mr_iLeQ(0, 0)", '%mr_iLeQ(0, 0), true], ["%mr_iLeQ(-3/2, 0)", '%mr_iLeQ(-3/2, 0), false],
+  ["%mr_iGeQ(0, 0)", '%mr_iGeQ(0, 0), true], ["%mr_iGeQ(1/2, 0)", '%mr_iGeQ(1/2, 0), false],
+  ["%mr_iGeQ(-1, 0)", '%mr_iGeQ(-1, 0), false]]$
+/* the calls are quoted nouns until evaluated: ev(..., nouns) makes the call */
+for s in mr12_igt do mr12_chk(concat("IGT ", s[1]), errcatch(ev(s[2], nouns)), [s[3]])$
+/* 2_1 r10: Rubi ILtQ[p, 0] && IGtQ[m, 0] -- fractional p must fail */
+block([base : [[F, %e], [a, a], [b, b], [c, c], [d, d], [e, e], [f, f], [g, g], [n, n], [m, 1]]],
+  mr12_chk("IGT cond 2_1 r10 p = -1/2", errcatch(_mr_cond_2_1_r10(mr12_mm("2_1", 10, cons([p, -1/2], base)), x)), [false]),
+  mr12_chk("IGT cond 2_1 r10 p = -1", errcatch(_mr_cond_2_1_r10(mr12_mm("2_1", 10, cons([p, -1], base)), x)), [true]))$
+
+/* ---- NEGQ: PosQ / NegQ against Rubi's PosAux ------------------------- */
+print("SECTION NEGQ")$
+mr12_sign : [
+  /* acceptance document mechanism files: Rubi reads these NegQ as False */
+  ["NegQ a/c", 'neg, a/c, false], ["NegQ b^2 e^2", 'neg, e^2*b^2, false],
+  ["NegQ 4 a c e^2", 'neg, 4*a*c*e^2, false], ["NegQ 2 (a+b)", 'neg, 2*(a + b), false],
+  ["NegQ b^2-4ac", 'neg, b^2 - 4*a*c, false],
+  ["NegQ -a", 'neg, -a, true], ["NegQ -4 e^2", 'neg, -4*e^2, true],
+  ["NegQ 0", 'neg, 0, false], ["PosQ 0", 'pos, 0, false],
+  ["PosQ a", 'pos, a, true], ["PosQ -2/3", 'pos, -2/3, false], ["PosQ 0.5", 'pos, 0.5, true],
+  ["PosQ %pi-4", 'pos, %pi - 4, false], ["PosQ %pi-3", 'pos, %pi - 3, true],
+  ["PosQ %i", 'pos, %i, true], ["PosQ -%i", 'pos, -%i, false], ["PosQ 2-3%i", 'pos, 2 - 3*%i, true],
+  ["PosQ %i a", 'pos, %i*a, true],
+  ["PosQ exp(a)", 'pos, exp(a), true], ["PosQ -a^2", 'pos, -a^2, false], ["PosQ log(a)", 'pos, log(a), true],
+  /* normalizer deviation (design 3.2): factored inputs */
+  ["NegQ (b-a)(c+d)", 'neg, (b - a)*(c + d), true], ["NegQ -(a-b)^2", 'neg, -(a - b)^2, true],
+  ["NegQ (x-1)(x+2)", 'neg, (x - 1)*(x + 2), true],
+  ["PosQ (a-b)^3", 'pos, (a - b)^3, true], ["PosQ (a-b)^3 c", 'pos, (a - b)^3*c, true],
+  ["PosQ a/c-b/c", 'pos, a/c - b/c, true], ["PosQ sqrt(a-b)(c-d)", 'pos, sqrt(a - b)*(c - d), true]]$
+for s in mr12_sign do
+  mr12_chk(concat("NEGQ ", s[1]),
+           errcatch(if s[2] = 'neg then %mr_negQ(s[3]) else %mr_posQ(s[3])), [s[4]])$
+/* sibling ports reading Rubi's First (design 3.2 siblings) */
+mr12_chk("NEGQ NegSumBaseQ a-b (First = a)", errcatch(%mr_rt_negSumBaseQ(a - b)), [false])$
+mr12_chk("NEGQ NegSumBaseQ b-a (First = -a)", errcatch(%mr_rt_negSumBaseQ(b - a)), [true])$
+mr12_chk("NEGQ SomeNegTermQ a+b", errcatch(%mr_rt_someNegTermQ(a + b)), [false])$
+mr12_chk("NEGQ AllNegTermQ -a-b", errcatch(%mr_rt_allNegTermQ(-a - b)), [true])$
+
+/* ---- NORM: the normalizer (informational) ---------------------------- */
+print("SECTION NORM")$
+mr12_factor_nd(u) := block([r : ratsimp(u)], factor(num(r))/factor(denom(r)))$
+for u in [2*(a + b), (b - a)*(c + d), (x - 1)*(x + 2), -(a - b)^2, (a - b)^3, a/c - b/c,
+          b^2 - 4*a*c, -b - a, a/c, x^2 - 1] do
+  block([t : %mr_togetherSimplify(u), w : mr12_factor_nd(u)],
+    print("R norm", u, "togetherSimplify", t, "args", if atom(t) then [] else block([inflag : true], args(t)),
+          "factor-num/denom", w))$
+for u in [expand((a + b*x)^8*(c + d*x)^5), expand((a*x^2 + b*x + c)^6) - 1] do
+  block([t0, t1, reps : 20],
+    t0 : elapsed_real_time(), for i thru reps do %mr_togetherSimplify(u),
+    t1 : elapsed_real_time(), for i thru reps do mr12_factor_nd(u),
+    print("R norm cost", slength(string(u)), "chars: togetherSimplify ms/call",
+          1000.0*(t1 - t0)/reps, "factor-num/denom ms/call", 1000.0*(elapsed_real_time() - t1)/reps))$
+
+print("Results:", mr12_pass, "passed,", mr12_fail, "failed")$

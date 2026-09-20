@@ -102,10 +102,15 @@ def _gap_join(out, t):
     per form):
       `2 n` `f1 g1` `x 2` `%pi 2` `2 (x+1)` `(x) 2` `(x) z`  -> parse error
       `n (2*n+1)` `x (y)`  -> noun call: n(2 n + 1) / x(y)
-      `(x) (y)`            -> the only legal spaced form (a product)
+    and `(x) (y)`, `(n - j) (p + 1)`, `[1] (2)` parse as an application
+    of the left term to the right one, not a product: `(x) (y)` is the
+    noun call x(y), and `(n - j) (p + 1)` on numbers is an evaluation
+    error (probes/matcher/12-translation-defects MUL, 2026-09-14; the
+    2026-08-22 note that `(x) (y)` is a product was wrong -- 1_1_4_1 r1's
+    repl errored at runtime).
     So a gap whose both sides are expression terminals becomes an
-    explicit `*`; the single exception, `)`/`]` followed by `(`, keeps
-    its space. A Maxima word on either side of the gap (and/or/...)
+    explicit `*`, `)`/`]` followed by `(` included. A Maxima word on
+    either side of the gap (and/or/...)
     keeps the space — the walk emits ` and ` / ` or ` as one token with
     embedded spaces, and True/False translate to true/false. The walk
     keeps source spacing as tokens, so this sees every gap at every
@@ -135,7 +140,7 @@ def _gap_join(out, t):
         if R in _IDSTART or R.isdigit() or R == "(" or R == "%":
             return "*" + right
         return t
-    if L in ")]" and (R in _IDSTART or R.isdigit() or R == "%"):
+    if L in ")]" and (R in _IDSTART or R.isdigit() or R == "%" or R == "("):
         return "*" + right
     return t
 
@@ -675,6 +680,59 @@ def translate_atom(s, ctx):
         out.append(ch); i += 1
     return _expand_chains(_join_tokens(out))
 
+def _relation_items(s):
+    """Partition the depth-0 text of s into a complete item sequence
+    [start, end, kind]: relational ops ("op": = <= >= < > == #= !=), chain
+    terminators ("stop": ';', ',', ' and ', ' or '), and the term runs
+    between them ("term")."""
+    items = []
+    i = 0
+    n = len(s)
+    depth = 0
+    cur = None
+    while i < n:
+        ch = s[i]
+        if ch in "([{":
+            depth += 1
+            if cur is None:
+                cur = i
+            i += 1
+            continue
+        if ch in ")]}":
+            depth -= 1
+            if cur is None:
+                cur = i
+            i += 1
+            continue
+        if depth == 0:
+            two = s[i:i+2]
+            hit = None
+            if two in ("==", "#=", "<=", ">=", "!="):
+                hit = (i, i + 2, "op")
+            elif ch in "<>=" and s[i-1:i] != ":":
+                hit = (i, i + 1, "op")
+            elif ch in ";,":
+                hit = (i, i + 1, "stop")
+            elif ch == "a" and i > 0 and s[i-1] == " " and s[i:i+3] == "and" \
+                    and s[i+3:i+4] == " ":
+                hit = (i - 1, i + 4, "stop")
+            elif ch == "o" and i > 0 and s[i-1] == " " and s[i:i+2] == "or" \
+                    and s[i+2:i+3] == " ":
+                hit = (i - 1, i + 3, "stop")
+            if hit is not None:
+                if cur is not None:
+                    items.append([cur, hit[0], "term"])
+                    cur = None
+                items.append([hit[0], hit[1], hit[2]])
+                i = hit[1]
+                continue
+        if cur is None:
+            cur = i
+        i += 1
+    if cur is not None:
+        items.append([cur, n, "term"])
+    return items
+
 def _expand_chains(s):
     """FIX P3: expand raw relational chains (`3 <= d <= 4`) — Maxima has
     no chained comparison (measured 2026-08-22: "Found LOGICAL expression
@@ -708,57 +766,36 @@ def _expand_chains(s):
         out.append(ch)
         i += 1
     s = "".join(out)
-    # Partition the depth-0 text into a complete item sequence: relational
-    # ops, chain terminators (';', ',', ' and ', ' or '), and the term runs
-    # between them. A chain is a run  TERM OP TERM OP ... OP TERM  with
-    # 2+ ops (k ops -> k+1 terms); spans never overlap, so forward
-    # rewriting is position-stable within the scan.
-    items = []
-    i = 0
-    n = len(s)
-    depth = 0
-    cur = None
-    while i < n:
-        ch = s[i]
-        if ch in "([{":
-            depth += 1
-            if cur is None:
-                cur = i
-            i += 1
+    # FIX (matcher translation fixes design 3.1): Mathematica's `!=`
+    # (Unequal) passed through the walk as the characters `!` `=`, which
+    # Maxima reads as a factorial and an equation -- `k != 1` is `k! = 1`
+    # (probes/matcher/12-translation-defects NE). A relation whose operator
+    # is `!=` becomes notequal(L, R): numbers compare by value, a symbolic
+    # operand gives unknown, which the dispatcher rejects (it accepts only
+    # is(r) = true). A lone relation is left untouched by the chain pass
+    # below, so this pass runs first, right to left (a rewrite shifts only
+    # the items already done). `!=` inside a chain has no class 1-3 site
+    # (Mathematica's chained Unequal means all-distinct, not the
+    # conjunction) and fails loudly. The spacing outside the relation is
+    # kept.
+    items = _relation_items(s)
+    for i in range(len(items) - 1, -1, -1):
+        if items[i][2] != "op" or s[items[i][0]:items[i][1]] != "!=":
             continue
-        if ch in ")]}":
-            depth -= 1
-            if cur is None:
-                cur = i
-            i += 1
-            continue
-        if depth == 0:
-            two = s[i:i+2]
-            hit = None
-            if two in ("==", "#=", "<=", ">="):
-                hit = (i, i + 2, "op")
-            elif ch in "<>=" and s[i-1:i] != ":":
-                hit = (i, i + 1, "op")
-            elif ch in ";,":
-                hit = (i, i + 1, "stop")
-            elif ch == "a" and i > 0 and s[i-1] == " " and s[i:i+3] == "and" \
-                    and s[i+3:i+4] == " ":
-                hit = (i - 1, i + 4, "stop")
-            elif ch == "o" and i > 0 and s[i-1] == " " and s[i:i+2] == "or" \
-                    and s[i+2:i+3] == " ":
-                hit = (i - 1, i + 3, "stop")
-            if hit is not None:
-                if cur is not None:
-                    items.append([cur, hit[0], "term"])
-                    cur = None
-                items.append([hit[0], hit[1], hit[2]])
-                i = hit[1]
-                continue
-        if cur is None:
-            cur = i
-        i += 1
-    if cur is not None:
-        items.append([cur, n, "term"])
+        if not (0 < i < len(items) - 1 and items[i-1][2] == "term"
+                and items[i+1][2] == "term") \
+                or (i >= 2 and items[i-2][2] == "op") \
+                or (i + 2 < len(items) and items[i+2][2] == "op"):
+            raise GenError(f"`!=` outside a lone relation: {s!r}")
+        lt = s[items[i-1][0]:items[i-1][1]]
+        rt = s[items[i+1][0]:items[i+1][1]]
+        s = (s[:items[i-1][0]] + lt[:len(lt) - len(lt.lstrip())]
+             + "notequal(" + lt.strip() + ", " + rt.strip() + ")"
+             + rt[len(rt.rstrip()):] + s[items[i+1][1]:])
+    # A chain is a run  TERM OP TERM OP ... OP TERM  with 2+ ops (k ops ->
+    # k+1 terms); spans never overlap, so forward rewriting is
+    # position-stable within the scan.
+    items = _relation_items(s)
     i = 0
     while i + 3 < len(items):
         if items[i][2] == "term" and items[i+1][2] == "op":
@@ -813,8 +850,15 @@ def _maxima_stmts(body):
         segs.append(seg)
     return ", ".join(segs)
 
-CMP_OPS = {"GtQ": ">", "LtQ": "<", "LeQ": "<=", "GeQ": ">=",
-           "IGtQ": ">", "ILtQ": "<", "ILeQ": "<="}
+CMP_OPS = {"GtQ": ">", "LtQ": "<", "LeQ": "<=", "GeQ": ">="}
+
+# Rubi :379-:395  IGtQ[u_,n_] := IntegerQ[u] && u>n, likewise ILtQ, IGeQ,
+# ILeQ: the integer test is part of the predicate. The heads translate to
+# named utils entries (maxima_rubi_utils.mac %mr_iGtQ ...), never to a bare
+# is(u > n), which dropped the test (matcher translation fixes design 3.1;
+# probes/matcher/12-translation-defects IGT). IGeQ has no class 1-3 site.
+INT_CMP = {"IGtQ": "%mr_iGtQ", "ILtQ": "%mr_iLtQ", "ILeQ": "%mr_iLeQ",
+           "IGeQ": "%mr_iGeQ"}
 
 def _emit_polyq(arglist, key, n):
     """PolyQ overload dispatch (Task 6 Step 0, the F2 blocker):
@@ -1126,6 +1170,10 @@ def emit_head(head, arglist, ctx):
             e = e[1:-1]
         parts = [f"freeof({xv}, {p.strip()})" for p in split_top(e, ",")]
         return " and ".join(parts)
+    if head in INT_CMP:
+        if len(arglist) != 2:
+            raise GenError(f"{key} r{n}: {head} arity {len(arglist)}")
+        return f"{INT_CMP[head]}({arglist[0]}, {arglist[1]})"
     if head in CMP_OPS:
         op = CMP_OPS[head]
         if len(arglist) == 2:
@@ -1136,6 +1184,8 @@ def emit_head(head, arglist, ctx):
             return f"is({a} {op} {b}) and is({b} {op} {c})"
         raise GenError(f"{key} r{n}: {head} arity {len(arglist)}")
     if head in ("Int", "IntHide"):
+        # mr_int's seen test is exact membership for every source (exact
+        # seen test design 3.1), so 9.1 needs no entry of its own.
         return f"mr_int({arglist[0]}, {arglist[1]})"
     if head in ("Unintegrable", "CannotIntegrate"):
         return f"mr_unintegrable({arglist[0]}, {arglist[1]})"

@@ -391,11 +391,15 @@ legacy file (`Rubi/IntegrationRules/9 Miscellaneous/9.1 Integrand
 simplification rules.m`, absent from the pinned `Rubi.m` LoadRules,
 needed by the 2018 corpus), which becomes a generated source at the
 end of the class-1 table instead of a manual port. Its repl `Int` calls
-translate to `mr_int` as everywhere else.
+translate to `mr_int` as everywhere else. (Amended 2026-09-14: to
+`mr_int_exact`, the exact seen entry — translation fixes design §3.3.)
 
 **Byte-identity exceptions (closed list)**: the 227 moved inner
 conditions; the removed nonzero guards; the 23 MatchQ sites; the 29 9.1
-rules; the 52 rules that had a workaround emitter.
+rules; the 52 rules that had a workaround emitter. Amended 2026-09-14
+(docs/superpowers/specs/2026-09-14-matcher-translation-fixes-design.md §3.4):
+the 1,283 integer comparisons `%mr_i*Q(A, B)` (undone to `is(A op B)`), the 10
+`notequal(A, B)` (undone to `A != B`) and the juxtaposition `)*(` (1 site).
 
 ### 3.5 Dispatch and runtime
 
@@ -451,7 +455,11 @@ mandatory until a measurement retires it.
 them unneeded: the regenerated 9.1 calls `mr_int`, as its `.m` source
 calls `Int`. A PASS→FAIL in the collapse-rule family (the exact-mode
 seen comparison exists for 1.2.1.3 e839) brings back the exact
-comparison as a translation fix, not as a pass.
+comparison as a translation fix, not as a pass. **Amended 2026-09-14:**
+the P5 acceptance stop found the collapse family regressed (2.1 e15,
+1.2.1.2 e1734–e1736); `mr_int_exact` restores the exact comparison as
+a translation fix and `rubi_hybrid` / `rubi_hybrid_exact` /
+`%mr_hybrid_body` are deleted (translation fixes design §3.3).
 
 ### 3.6 Migration switches
 
