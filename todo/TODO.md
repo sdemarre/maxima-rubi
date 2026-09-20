@@ -205,6 +205,63 @@ A/B + attribution + 100 s re-check, §6 recovery, §7 acceptance); runs
 `test/corpus_class{1,2,3}.campaign-baseline.out`. Ticket 04
 (`.scratch/class1-ab-remainders/issues/04-…`) partially answered.
 
+## Class 6 (hyperbolic functions) — closed 2026-09-20
+
+The first class ported after the matcher substrate, and the first from
+the post-M2 queue. Branch `class6-port`; runbook
+`docs/class-porting.md` Steps 1–10; ticket
+`.scratch/class-ports/issues/03-class6-hyperbolic-functions.md`; record
+`docs/corpus-class6-baseline-uplift.md`.
+
+13 rule files / **390 rules** (AUTO 103 / MANUAL 287); core **rules=3903**
+= 3,513 + 390, fingerprint `d624cefbd491c0a111ed481442042e40`. Zero new
+`HEAD_REWRITES` rows — the class-2/3 rows already cover the section. The
+Step-4 surface was 8 functions over 53 rule-uses (cluster A small
+predicates, B QuotientOfLinears, C the ExpandTrig family); Layer A
+1,010 → **1,066/0**.
+
+Measured close (30 s cpu cap, build 2026-08-31 13:27:47, core
+`d624cefb`): **package 739/5,080 (14.5 %) against a like-for-like
+`integrate` baseline of 301/5,080 (5.9 %)** — net +438 (+8.6 pts). All
+197 PASS→FAIL attributed (§4 of the record), 82 % of them in the six
+catch-all `… functions.mac` files. 100 s re-check: now-PASS 2 of 5, so
+the cap binds on 0.04 % of the section.
+
+**Three findings, each with its own follow-up:**
+
+- **The Step-8 baseline probe was scoring itself PASS for failing to
+  integrate** — `no-answer` was assigned even when the corpus expects a
+  real answer, which `test/corpus_driver.py` has called `deferred`
+  (FAIL) since 2026-08-25. Every baseline since was on a looser ruler
+  than its package counterpart. Fixed (`f5ab334`), all three baselines
+  re-run (`1024f15`), guard
+  `probes/corpus/13-baseline-noanswer-conflation`. Class 6 is where it
+  changed a verdict: uncorrected, the port appeared to LOSE 14.5 % to
+  25.9 %. The class-2 and class-3 acceptance records are amended — and
+  two of their conclusions changed (class 2's pilot did NOT come out
+  below its baseline; class 3 is not "the first runbook-ported class to
+  beat the baseline").
+- **A generator hole:** a translation-table row whose emitter handler
+  nobody implemented emitted the HANDLER NAME as a function
+  (`noun(expr, x)`, 8 rules). Fixed and guarded by `HANDLER_ONLY`
+  (`d3c9438`) — this would have bitten classes 4/5/7/8/9.
+- **`%mr_hyperbolicQ` had been wrong since class 2** (`atom(u) -> false`,
+  against Rubi's `If[AtomQ[u],u,Head[u]]`). Found by a red test, not by
+  reading. Classes 1–3 provably unaffected (`a975465`).
+
+**Open:** `.scratch/class6-residue/issues/01-hyper-power-in-binomial-family.md`
+— the `.7` family (1,173 entries, 23 % of the section, 37 % of its
+`deferred`) reaches no rule at all. Not an unloaded file; likely a
+cross-section dependency, and if it is a dependency on class 4 (trig),
+the porting ORDER should be reconsidered — the same would hold for
+class 7 against class 5.
+
+The polylog/AppellF1 structural ceiling **stands and is re-armed**: 476
+polylog-carrying expectations, 473 FAIL, but almost all `deferred`/
+`contains-noun` rather than `unverified` (14 in the whole section), so a
+derivative shim would move ~0 entries today. Re-test its go condition
+against the `unverified` mass if the `.7` gap closes.
+
 ## Matcher substrate — in prog (Plan 3 executing)
 
 Classes 1–3 re-hosted on a Mathematica-semantics matcher in place of

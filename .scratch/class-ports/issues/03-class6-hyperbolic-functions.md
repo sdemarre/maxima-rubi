@@ -1,6 +1,6 @@
 # Class 6 (hyperbolic functions) port — 5,080 entries
 
-Status: ready (Step 1 complete 2026-09-20)
+Status: closed (2026-09-20)
 Type: task (port, runbook-driven)
 Filed: 2026-08-30 (milestone-3 close; the M2 TODO's class-6 item, now
 against the instantiated runbook)
@@ -178,3 +178,25 @@ failure mode at issue is entries sitting just under the cap crossing it
 for this dispatch path, so it is "no detectable cost", not "a speedup".
 The gate remains a full 25,697-entry A/B via `test/ab_records.py`, which
 belongs to Step 9.
+
+### 2026-09-20 — CLOSED. Steps 1-10 complete.
+
+Record: `docs/corpus-class6-baseline-uplift.md`. Branch `class6-port`.
+
+**Package 739/5,080 (14.5 %) against a like-for-like baseline of
+301/5,080 (5.9 %)** — net +438 (+8.6 pts). All 197 PASS->FAIL attributed;
+100 s re-check now-PASS 2 of 5.
+
+Final gates: Layer A 1066/0, P3 static 15/0, head rewrites 20/0,
+run-records 43/0, byte-identity EMPTY for classes 1/2/3/6.
+
+The acceptance figure is NOT the interesting output of this port. Three
+defects found on the way are:
+
+1. the Step-8 baseline probe scored itself PASS for failing to integrate
+   (every class affected; two earlier conclusions changed);
+2. the generator emitted a handler NAME as a function for any table row
+   whose handler was unimplemented (would have hit classes 4/5/7/8/9);
+3. `%mr_hyperbolicQ` had been wrong since class 2.
+
+Open follow-up: `.scratch/class6-residue/issues/01-hyper-power-in-binomial-family.md`.
