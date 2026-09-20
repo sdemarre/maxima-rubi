@@ -1580,7 +1580,7 @@ NINE_ONE = ("Rubi/IntegrationRules/9 Miscellaneous/"
 NINE_ONE_TOTAL = 28
 
 def configure(class_num):
-    """Point the generator at class <class_num> (1, 2 or 3)."""
+    """Point the generator at class <class_num> (1, 2, 3 or 6)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
@@ -1589,8 +1589,14 @@ def configure(class_num):
     # catch-all (class-3 deferred campaign C6b; the single-line
     # If[TrueQ[$LoadShowSteps], …] wrapper the census parser never
     # picked up — unwrap_showsteps_line).
+    # class 6: 390 — the census count with no adjustment. Unlike class 3
+    # this section has NO If[TrueQ[$LoadShowSteps], …] wrapper at all
+    # (measured 2026-09-20: 0 LoadShowSteps lines over the 13 .m files),
+    # so unwrap_showsteps_line finds nothing to recover and the census
+    # and the emitter agree exactly
+    # (probes/translation/05-class6-syntax-census.out).
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
-                      3: 334}[class_num]
+                      3: 334, 6: 390}[class_num]
 
 
 def _emit_source(rel_m, key, only, total, load_lines, note=""):

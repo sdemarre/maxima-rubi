@@ -29,7 +29,21 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
   5. every moved inner condition whose With/Module locals call a package
      entry (mr_int, rubi, ...) is listed and must be in RESOLVED;
   6. every %mr_defrule and %mr_matchQ pattern string prepares in MR-MATCH
-     (plain SBCL, test/matcher/prepare_patterns.lisp).
+     (plain SBCL, test/matcher/prepare_patterns.lisp) -- over EVERY class
+     in the working tree, post-P0 classes included;
+  7. every POST-P0 class (class 6 onward: ported after the P0 baseline, so
+     it has no base text to diff against) carries exactly the rule total
+     its generator configure() declares.
+
+Scope note (2026-09-20). Checks 1-5 are a REGRESSION gate against P0 and
+therefore run over the classes P0 had -- 1, 2 and 3 -- plus any class-1/2/3
+file the working tree adds. They cannot run over a class ported after P0:
+there is no base text, so "unchanged" and the pinned 3,513 total are not
+meaningful. Before this split, rule_files() globbed rules/class*/*.mac and
+the first post-P0 class turned the gate 14/0 -> 11/3 (measured with class 6:
+counts-unchanged compared 13 files against an empty base, and the total
+check saw 3,903 against its pinned 3,513). Check 7 is what covers those
+classes instead; check 6 always covered them.
 
 Usage:  python3 test/check_generated_rules.py [--base <commit>]
 Ends with "Results: <n> passed, <m> failed".
@@ -88,12 +102,37 @@ def git_show(base, rel):
     return r.stdout if r.returncode == 0 else None
 
 
+# The classes the P0 baseline commit contains. A class ported later has no
+# base text, so it belongs to check 7, not to the P0 diff (see the scope
+# note in the module docstring).
+BASE_CLASSES = ("class1", "class2", "class3")
+
+
 def rule_files(base):
-    r = subprocess.run(["git", "ls-tree", "--name-only", base, "rules/class1/",
-                        "rules/class2/", "rules/class3/"], cwd=ROOT,
+    """The P0-comparison set: the base commit's rule files, plus any file
+    the working tree ADDS inside those same classes (so a newly added
+    class-1 file is still caught). Post-P0 classes are deliberately not
+    globbed in here -- see new_class_dirs()."""
+    r = subprocess.run(["git", "ls-tree", "--name-only", base]
+                       + ["rules/%s/" % c for c in BASE_CLASSES], cwd=ROOT,
                        capture_output=True, text=True, check=True)
     return sorted(set(r.stdout.split()) |
-                  {p.relative_to(ROOT).as_posix() for p in ROOT.glob("rules/class*/*.mac")})
+                  {p.relative_to(ROOT).as_posix()
+                   for c in BASE_CLASSES
+                   for p in ROOT.glob("rules/%s/*.mac" % c)})
+
+
+def new_class_dirs():
+    """The working tree's rule classes that the P0 baseline did not have,
+    as {class_num: [paths]}, in class order."""
+    out = {}
+    for d in sorted(ROOT.glob("rules/class*")):
+        if not d.is_dir() or d.name in BASE_CLASSES:
+            continue
+        m = re.fullmatch(r"class(\d+)", d.name)
+        if m:
+            out[int(m.group(1))] = sorted(d.glob("*.mac"))
+    return out
 
 
 def bodies(text):
@@ -301,6 +340,27 @@ def main(argv):
     total = sum(int(m) for rel in files if (ROOT / rel).exists()
                 for m in re.findall(r"^mr_rules_count_\w+ : (\d+)\$", (ROOT / rel).read_text(), re.M))
     g.check("total rules 3,513 (3,514 - the dead 9.1 L4 rule)", total == 3513, "total %d" % total)
+    # Check 7: the post-P0 classes. They have no base text to diff, so the
+    # standing claim is the one the generator itself declares -- each
+    # class's committed rule total equals its configure() EXPECTED_TOTAL.
+    # That is what catches a silently dropped or duplicated rule file in a
+    # class the P0 checks above cannot see.
+    for cls, paths in new_class_dirs().items():
+        got = sum(int(m) for q in paths
+                  for m in re.findall(r"^mr_rules_count_\w+ : (\d+)\$",
+                                      q.read_text(), re.M))
+        try:
+            sys.path.insert(0, str(ROOT / "generator"))
+            import generate_rules as _gen
+            _gen.configure(cls)
+            want = _gen.EXPECTED_TOTAL
+        except (ImportError, KeyError) as exc:
+            g.check("post-P0 class %d total readable from the generator" % cls,
+                    False, "%s" % exc)
+            continue
+        g.check("post-P0 class %d: %d rules over %d files (generator "
+                "EXPECTED_TOTAL %d)" % (cls, got, len(paths), want),
+                got == want, "got %d, want %d" % (got, want))
     g.check("no defmatch/matchdeclare; one %mr_defrule per rule; every cond/repl explained",
             not unexplained, "\n    ".join(unexplained[:40]))
     g.check("moved inner conditions are exact transformations", not bad_moves, "\n    ".join(bad_moves[:40]))
