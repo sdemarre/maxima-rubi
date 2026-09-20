@@ -1,6 +1,6 @@
 # corpus_driver.py overwrites a tracked record when run without an out-file
 
-Status: needs-triage
+Status: open (three hits; default should change)
 Type: task (small)
 Filed: 2026-09-18 (hit twice in one session)
 
@@ -37,3 +37,26 @@ The second is the smallest change that removes the hazard; the third also remove
 reflex that triggers it.
 
 ## Comments
+
+## Comment — 2026-09-20: hit a third time
+
+Hit again during the class-6 port, Step 7. An exploratory slice
+(`python3 test/corpus_driver.py "6.2.2 " 8 30 reference/maxima-syntax-test-suite`,
+run to prove the positive polarity of the head rewrites) has no out-file
+positional, so it silently overwrote the committed 2026-08-25 record —
+this time replacing a class-1 record with class-6 content, which is at
+least visible in a diff.
+
+Caught only by a `git status` sweep at the Step-10 close, several hours
+and fifteen commits after the fact. Restored with `git checkout --`; no
+commit carried the damage, but nothing in the workflow would have
+stopped one that did.
+
+Three hits now (2026-09-18 x2, 2026-09-20), all from exploratory runs
+where an out-file was not the thing on the author's mind. That is the
+argument for the fix being a DEFAULT change rather than a discipline
+reminder: make the no-out-file default a scratch path (or refuse to
+write a path that `git ls-files --error-unmatch` resolves), so the
+committed record can only be written deliberately.
+
+Raising Status accordingly.
