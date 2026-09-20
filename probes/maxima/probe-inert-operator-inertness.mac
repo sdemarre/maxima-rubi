@@ -1,0 +1,71 @@
+/* probes/maxima/probe-inert-operator-inertness.mac — is an undefined
+ * %mr_i<fn> operator genuinely inert under Maxima's simplifier?
+ *
+ * The inert-trig substrate design
+ * (docs/superpowers/specs/2026-09-20-inert-trig-substrate-design.md §3.1)
+ * rests on representing Rubi's six inert trig heads as six undefined
+ * Maxima operators %mr_isin … %mr_icsc. The whole design is cheap only if
+ * Maxima leaves them alone: an inert subexpression has to survive every
+ * ratsimp / expand / trigsimp the rules perform on it, and it has to
+ * coexist with the ACTIVE head in one expression without either
+ * collapsing into the other.
+ *
+ * Six checks. Each prints the input and the result so the .out is
+ * readable as evidence, and a PASS/FAIL line so the probe is a gate.
+ */
+
+print("=== probe: %mr_i<fn> operator inertness ===")$
+print(build_info())$
+
+tests_passed : 0$
+tests_failed : 0$
+
+check(label, got, want) := block([],
+  if got = want then (
+    tests_passed : tests_passed + 1,
+    print("PASS:", label, " => ", got))
+  else (
+    tests_failed : tests_failed + 1,
+    print("FAIL:", label, " got ", got, " want ", want)))$
+
+/* 1. It parses at all, and op() reports the operator. A %-prefixed name
+ *    is not swallowed by Maxima's %-conventions (%e, %pi, %i, %o labels):
+ *    the package already relies on this for %mr_linearQ and friends. */
+check("op(%mr_isin(%pi/2))", op(%mr_isin(%pi/2)), %mr_isin)$
+
+/* 2-4. The simplifiers leave it alone. */
+check("ratsimp keeps it",
+      ratsimp(%mr_isin(%pi/2)), %mr_isin(%pi/2))$
+check("expand keeps it",
+      expand(%mr_isin(x)^2), %mr_isin(x)^2)$
+
+/* 5. The discriminating one: trigsimp collapses sin^2+cos^2 to 1 for the
+ *    ACTIVE heads and must NOT do so for the inert ones. If this fails the
+ *    representation is not inert and the design's §3.1 choice is wrong. */
+check("trigsimp does NOT close the inert Pythagorean identity",
+      trigsimp(%mr_isin(x)^2 + %mr_icos(x)^2),
+      %mr_isin(x)^2 + %mr_icos(x)^2)$
+check("trigsimp DOES close the active one (control)",
+      trigsimp(sin(x)^2 + cos(x)^2), 1)$
+
+/* 6. Inert and active coexist in one expression, each treated on its own
+ *    terms: sin(%pi/2) simplifies to 1, %mr_isin(%pi/2) does not. This is
+ *    what lets a half-deactivated expression exist during DeactivateTrig. */
+check("inert and active coexist",
+      sin(%pi/2) + %mr_isin(%pi/2), %mr_isin(%pi/2) + 1)$
+
+/* Recorded, not asserted: diff leaves an unevaluated derivative. That is
+ * harmless — an inert head never reaches the verification zero chain
+ * (design §3.1 invariant, §3.4 leak guard) — but it is the reason the
+ * guard exists, so it goes on the record. */
+print("NOTE diff(%mr_isin(x), x) =", diff(%mr_isin(x), x))$
+
+/* All six inert heads, so a later rename cannot quietly pick a name that
+ * Maxima does know. */
+for f in ['%mr_isin, '%mr_icos, '%mr_itan, '%mr_icot, '%mr_isec, '%mr_icsc]
+  do check(concat("ratsimp keeps ", f),
+           ratsimp(apply(f, [x])), apply(f, [x]))$
+
+print("========================================")$
+print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$
+print("========================================")$

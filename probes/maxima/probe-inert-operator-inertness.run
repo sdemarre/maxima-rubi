@@ -1,0 +1,11 @@
+#!/bin/sh
+# probes/maxima/probe-inert-operator-inertness.run — is an undefined
+# %mr_i<fn> operator genuinely inert under Maxima's simplifier?
+# Evidence for the inert-trig substrate design §3.1. No rule files loaded.
+#
+#   sh probes/maxima/probe-inert-operator-inertness.run
+cd "$(dirname "$0")/../.." || exit 1
+maxima --very-quiet -b probes/maxima/probe-inert-operator-inertness.mac \
+    > probes/maxima/probe-inert-operator-inertness.out 2>&1
+echo "wrote probes/maxima/probe-inert-operator-inertness.out"
+tail -3 probes/maxima/probe-inert-operator-inertness.out

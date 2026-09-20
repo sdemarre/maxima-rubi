@@ -1,0 +1,61 @@
+batch("probes/maxima/probe-inert-operator-inertness.mac")
+print("=== probe: %mr_i<fn> operator inertness ===")
+=== probe: %mr_i<fn> operator inertness === 
+print(build_info())
+Maxima-version: "branch_5_50_base_84_g4204fb669"
+Maxima build date: "2026-08-31 13:27:47"
+Host type: "x86_64-pc-linux-gnu"
+Lisp implementation type: "SBCL"
+Lisp implementation version: "2.6.7"
+User dir: "/home/serge/.maxima"
+Temp dir: "/tmp"
+Object dir: "/home/serge/.maxima/binary/branch_5_50_base_84_g4204fb669/sbcl/2_6_7"
+Frontend: false
+ 
+tests_passed:0
+tests_failed:0
+check(label,got,want):=block([],
+      if got = want
+          then (tests_passed:tests_passed+1,print("PASS:",label," => ",got))
+          else (tests_failed:tests_failed+1,
+                print("FAIL:",label," got ",got," want ",want)))
+check("op(%mr_isin(%pi/2))",op(%mr_isin(%pi/2)),%mr_isin)
+PASS: op(%mr_isin(%pi/2))  =>  %mr_isin 
+check("ratsimp keeps it",ratsimp(%mr_isin(%pi/2)),%mr_isin(%pi/2))
+                                     %pi
+PASS: ratsimp keeps it  =>  %mr_isin(───) 
+                                      2
+check("expand keeps it",expand(%mr_isin(x)^2),%mr_isin(x)^2)
+                                   2
+PASS: expand keeps it  =>  %mr_isin (x) 
+check("trigsimp does NOT close the inert Pythagorean identity",
+      trigsimp(%mr_isin(x)^2+%mr_icos(x)^2),%mr_isin(x)^2+%mr_icos(x)^2)
+PASS: trigsimp does NOT close the inert Pythagorean identity  =>  
+                                                           2              2
+                                                   %mr_isin (x) + %mr_icos (x) 
+check("trigsimp DOES close the active one (control)",
+      trigsimp(sin(x)^2+cos(x)^2),1)
+PASS: trigsimp DOES close the active one (control)  =>  1 
+check("inert and active coexist",sin(%pi/2)+%mr_isin(%pi/2),%mr_isin(%pi/2)+1)
+                                             %pi
+PASS: inert and active coexist  =>  %mr_isin(───) + 1 
+                                              2
+print("NOTE diff(%mr_isin(x), x) =",diff(%mr_isin(x),x))
+                            d
+NOTE diff(%mr_isin(x), x) = ── (%mr_isin(x)) 
+                            dx
+for f in ['%mr_isin,'%mr_icos,'%mr_itan,'%mr_icot,'%mr_isec,'%mr_icsc] do
+    check(concat("ratsimp keeps ",f),ratsimp(apply(f,[x])),apply(f,[x]))
+PASS: ratsimp keeps %mr_isin  =>  %mr_isin(x) 
+PASS: ratsimp keeps %mr_icos  =>  %mr_icos(x) 
+PASS: ratsimp keeps %mr_itan  =>  %mr_itan(x) 
+PASS: ratsimp keeps %mr_icot  =>  %mr_icot(x) 
+PASS: ratsimp keeps %mr_isec  =>  %mr_isec(x) 
+PASS: ratsimp keeps %mr_icsc  =>  %mr_icsc(x) 
+print("========================================")
+======================================== 
+print("Results: ",tests_passed," passed, ",tests_failed," failed")
+Results:  12  passed,  0  failed 
+print("========================================")
+======================================== 
+ /home/serge/src/maxima-rubi/probes/maxima/probe-inert-operator-inertness.mac
