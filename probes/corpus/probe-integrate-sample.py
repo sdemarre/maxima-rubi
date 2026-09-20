@@ -64,6 +64,10 @@ import tempfile
 import time
 from datetime import datetime, timezone
 
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "test"))
+from run_records import BASELINE_ARM
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))))
 SUITE = os.path.join(ROOT, "reference", "maxima-syntax-test-suite")
@@ -253,8 +257,12 @@ def main():
             line = line.strip()
             if line.startswith(("Maxima", "Lisp ", "Host ")):
                 out_lines.append(f"maxima: {line}")
+    # The arm statement the mergers require (test/run_records.py). This
+    # probe runs native `integrate`, not the package, so it has no package
+    # switches; it says so explicitly rather than saying nothing, because
+    # a record stating nothing is the shape common_switches() rejects.
     out_lines.append(f"filter: {FILTER!r}  per-file: {PER_FILE}  "
-                     f"timeout: {TIMEOUT}s")
+                     f"timeout: {TIMEOUT}s  switches: {BASELINE_ARM}")
     out_lines.append("")
 
     counts = {}
