@@ -147,6 +147,27 @@ SBCL = os.environ.get("MR_SBCL") or subprocess.run(
     ["sh", "-c", "command -v sbcl"], capture_output=True, text=True
 ).stdout.strip() or None
 
+USAGE = """usage: corpus_driver.py [FILTER [PER_FILE [TIMEOUT [SUITE_DIR
+                        [START_INDEX [APPEND [SKIP_FIRST [OUT_FILE
+                        [STOP_INDEX [SHARD_FILE]]]]]]]]]]
+
+Ten positionals, no options. FILTER is a path substring selecting suite
+files (default the whole class-1 section); SUITE_DIR is REQUIRED for any
+non-class-1 section, or file_list() bounds the walk to class 1 and
+silently resolves 0 files; APPEND is the literal word `append`.
+
+Without OUT_FILE the record goes to test/corpus_driver.scratch.out (and
+its .caps sidecar), which is gitignored: a committed record can only be
+written by naming it. See .scratch/corpus-harness/issues/02.
+"""
+
+# A dash-led first argument is never a FILTER. Before this guard the
+# reflex `corpus_driver.py --help` ran a 0-file corpus run and wrote its
+# stub over a committed record (.scratch/corpus-harness/issues/02, hit 1).
+if len(sys.argv) > 1 and sys.argv[1].startswith("-"):
+    sys.stderr.write(USAGE)
+    sys.exit(2)
+
 FILTER = sys.argv[1] if len(sys.argv) > 1 else SECTION + "/"
 PER_FILE = int(sys.argv[2]) if len(sys.argv) > 2 else 5
 TIMEOUT = int(sys.argv[3]) if len(sys.argv) > 3 else 30
@@ -155,6 +176,12 @@ START_INDEX = int(sys.argv[5]) if len(sys.argv) > 5 else 0
 APPEND = len(sys.argv) > 6 and sys.argv[6] == "append"
 SKIP_FIRST = int(sys.argv[7]) if len(sys.argv) > 7 else 0
 OUT_FILE = sys.argv[8] if len(sys.argv) > 8 else None
+# Where a run with no OUT_FILE writes. Gitignored and untracked, so an
+# exploratory slice cannot destroy a committed record — it used to default
+# to test/corpus_class1_driver.out, which it destroyed three times
+# (.scratch/corpus-harness/issues/02). Guarded by
+# test/test_driver_out_default.py.
+DEFAULT_OUT_FILE = os.path.join(ROOT, "test", "corpus_driver.scratch.out")
 STOP_INDEX = int(sys.argv[9]) if len(sys.argv) > 9 else None
 SHARD_FILE = sys.argv[10] if len(sys.argv) > 10 else None
 
@@ -844,8 +871,7 @@ def main():
 
     counts = {}
     t0 = time.time()
-    out_path = (OUT_FILE or os.path.join(ROOT, "test",
-                                         "corpus_class1_driver.out"))
+    out_path = OUT_FILE or DEFAULT_OUT_FILE
     # The depth-cap sidecar sits next to this process's .out and takes one
     # `<hits> <label>` line per entry that hit the cap; test/merge_caps.py
     # merges a run's sidecars into its census, and run_records.

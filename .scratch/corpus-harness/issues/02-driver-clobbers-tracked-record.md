@@ -1,6 +1,6 @@
 # corpus_driver.py overwrites a tracked record when run without an out-file
 
-Status: open (three hits; default should change)
+Status: resolved 2026-09-20 (the default changed)
 Type: task (small)
 Filed: 2026-09-18 (hit twice in one session)
 
@@ -60,3 +60,28 @@ write a path that `git ls-files --error-unmatch` resolves), so the
 committed record can only be written deliberately.
 
 Raising Status accordingly.
+
+## Resolution — 2026-09-20
+
+Fixed as a DEFAULT change, per this ticket's third-hit comment (option 2 plus
+the part of option 3 that kills the reflex):
+
+- `corpus_driver.py` no longer resolves a missing `OUT_FILE` to
+  `test/corpus_class1_driver.out`. The default is now
+  `DEFAULT_OUT_FILE = test/corpus_driver.scratch.out`, gitignored along with
+  its `.caps` sidecar, so a committed record can only be written by naming it.
+- A first argument starting with `-` is no longer taken as a FILTER: the
+  driver writes `USAGE` (the ten positionals, the SUITE_DIR requirement and
+  the out-file default) to stderr and exits 2. That is the exact reflex behind
+  hit 1.
+
+Guard: `test/test_driver_out_default.py`, four checks, `Results: 4 passed, 0
+failed`. Written first and watched fail: the RED run **reproduced hit 1 live**
+— its `--help` check overwrote `test/corpus_class1_driver.out` (sha256
+8e25f76… -> 6ae0177…), restored with `git checkout --`. The guard's `[usage]`
+and `[usage-writes-nothing]` checks are that reproduction, now inverted.
+
+Also removed the orphan 0-byte `test/corpus_class1_driver.caps` (the sidecar
+left behind by a clobbering run) and gitignored the ~40 untracked working
+files under `test/` that made the `git status` sweep — the only thing that
+caught hit 3 — unreadable.

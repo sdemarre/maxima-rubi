@@ -71,3 +71,20 @@ __pycache__/
 /test/wait_and_merge.log
 /test/timeout_rerun_wait.log
 /test/full_run3_merge.out
+
+# The corpus driver's no-OUT_FILE default (.scratch/corpus-harness/issues/02):
+# an exploratory slice writes here instead of over a committed record.
+/test/corpus_driver.scratch.*
+
+# Numbered timeout re-check run directories (…timeout-rerun2/, -rerun3/):
+# the pattern above only covers the unsuffixed name, so these showed as ~40
+# untracked files and made the `git status` sweep — the thing that caught the
+# third record clobber — unreadable. Their contents are working files; the
+# 2026-09-15 handoff's standing instruction is never to commit them.
+/test/corpus_class*.timeout-rerun[0-9]*/
+
+# One-off campaign working files (class-3 deferred campaign / matcher plan 1).
+/test/class3_35_c6bpre.log
+/test/class3_campaign_wait.log
+/test/class3_premerge.out
+/test/corpus_class3_35_c6bpre.out
