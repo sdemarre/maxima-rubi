@@ -3905,6 +3905,86 @@ mr_use_gamma_flag : false$
    (freeof takes the variable first). Class 6 group D, 6 rules. */
 %mr_independentQ(u, x) := block([], is(freeof(x, u) = true))$
 
+/* Rubi QuotientOfLinearsP / QuotientOfLinearsParts / QuotientOfLinearsQ
+   (IntegrationUtilityFunctions.m L1729-1795). Class 6 group D/E: 6.7.9
+   r53/r54, Int[Sinh[u]^n]/Int[Cosh[u]^n] with u a quotient of linears.
+
+   Parts[u,x] returns [a, b, c, d] with u == (a + b x)/(c + d x); the
+   generated call sites read it exactly that way (rules/class6/6_7_9.mac
+   L429). The clause ORDER is the .m's and is load-bearing: the free
+   multiplicative factor and the free additive term are peeled BEFORE the
+   linear / quotient tests, so 7*(2+3x)/(4+5x) and 2+(1+x)/(3+4x) reduce
+   to the inner quotient and then scale/fold.
+
+   Q is strictly NARROWER than "has the shape": the .m ends
+   ... && NeQ[parts[[2]],0] && NeQ[parts[[4]],0], so a bare linear
+   (d = 0) and a bare reciprocal (b = 0) both HAVE Parts and are NOT
+   quotients of linears.
+
+   Maxima notes (measured 2026-09-20, branch_5_50_base_84_g4204fb669):
+   %mr_freeFactors returns 1 when no factor is free, %mr_freeTerms 0 when
+   no term is; `return` inside a `for` exits the LOOP, not the block, so
+   the ListQ branch carries a flag instead. */
+%mr_quotientOfLinearsP(u, x) := block([n, d],
+  if %mr_productQ(u) and not is(%mr_freeFactors(u, x) = 1)
+    then return(%mr_quotientOfLinearsP(%mr_nonfreeFactors(u, x), x)),
+  if not %mr_nonsumQ(u) and not is(%mr_freeTerms(u, x) = 0)
+    then return(%mr_quotientOfLinearsP(%mr_nonfreeTerms(u, x), x)),
+  /* the .m's 1/u_ clause. MEASURED 2026-09-20
+     (branch_5_50_base_84_g4204fb669): Maxima stores 1/(4+5*x) with
+     op "/" and args [1, 5*x+4] — NOT a power with exponent -1 and not a
+     product, so a powerQ/part(u,2)=-1 test never fires. num/denom is
+     the representation-independent read and also covers a (..)^-1 form.
+     The clause must stay AHEAD of the u_/v_ one: %mr_linearQ(1, x) is
+     false (faithfully — Rubi's LinearQ[1,x] is False too), so a bare
+     reciprocal would otherwise fall all the way through to the final
+     clause and report the wrong shape. */
+  n : num(u), d : denom(u),
+  if not is(d = 1) and is(n = 1)
+    then return(%mr_quotientOfLinearsP(d, x)),
+  if %mr_linearQ(u, x) then return(true),
+  if not is(d = 1) and %mr_linearQ(n, x) and %mr_linearQ(d, x)
+    then return(true),
+  is(u = x) or is(freeof(x, u) = true))$
+
+%mr_quotientOfLinearsParts(u, x) := block([a, p, n, d],
+  if %mr_productQ(u) then (
+    a : %mr_freeFactors(u, x),
+    if not is(a = 1) then (
+      p : %mr_quotientOfLinearsParts(%mr_nonfreeFactors(u, x), x),
+      return([a*part(p, 1), a*part(p, 2), part(p, 3), part(p, 4)]))),
+  if not %mr_nonsumQ(u) then (
+    a : %mr_freeTerms(u, x),
+    if not is(a = 0) then (
+      p : %mr_quotientOfLinearsParts(%mr_nonfreeTerms(u, x), x),
+      return([part(p, 1) + a*part(p, 3), part(p, 2) + a*part(p, 4),
+              part(p, 3), part(p, 4)]))),
+  /* the .m's 1/u_ clause — swaps the pairs. See the note in
+     %mr_quotientOfLinearsP on why this reads num/denom and why it must
+     precede the linear and u_/v_ clauses. */
+  n : num(u), d : denom(u),
+  if not is(d = 1) and is(n = 1) then (
+    p : %mr_quotientOfLinearsParts(d, x),
+    return([part(p, 3), part(p, 4), part(p, 1), part(p, 2)])),
+  if %mr_linearQ(u, x)
+    then return([%mr_coeff(u, x, 0), %mr_coeff(u, x, 1), 1, 0]),
+  if not is(d = 1) and %mr_linearQ(n, x) and %mr_linearQ(d, x)
+    then return([%mr_coeff(n, x, 0), %mr_coeff(n, x, 1),
+                 %mr_coeff(d, x, 0), %mr_coeff(d, x, 1)]),
+  /* the .m's last clause: x -> {0,1,1,0}; free of x -> {u,0,1,0}; and
+     the unexpected form takes the SAME value after a Message, which
+     this port does not emit (nothing reads it). */
+  if is(u = x) then [0, 1, 1, 0] else [u, 0, 1, 0])$
+
+%mr_quotientOfLinearsQ(u, x) := block([p, r, e],
+  if listp(u) then (
+    r : true,
+    for e in u do (if not %mr_quotientOfLinearsQ(e, x) then r : false),
+    return(r)),
+  if not %mr_quotientOfLinearsP(u, x) then return(false),
+  p : %mr_quotientOfLinearsParts(u, x),
+  is(%mr_neQ(part(p, 2), 0) and %mr_neQ(part(p, 4), 0)))$
+
 /* Rubi EveryQ — func over every element, true iff all true.
    MEASURED 2026-08-28 (5.50.0/SBCL): list iteration is `for e in
    lst` — `for e : lst` parses as `for e from lst` (the definition

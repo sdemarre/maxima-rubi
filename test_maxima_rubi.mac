@@ -112,6 +112,7 @@ run_all_tests() := block([],
   test_class3_cluster_a(),
   test_class3_cluster_b(),
   test_class6_cluster_a(),
+  test_class6_cluster_b(),
   test_rules_1_1_1_1_behavior(),
   test_translation_fixes_seen(),
   test_run_switches(),
@@ -3378,6 +3379,67 @@ test_class6_cluster_a() := block([],
   check("memberQ head list [sinh,cosh] has cosh", %mr_memberQ([sinh, cosh], cosh), true),
   check("memberQ head list [sech,csch] lacks sinh", %mr_memberQ([sech, csch], sinh), false),
   check("memberQ head list lacks a circular head", %mr_memberQ([sinh, cosh], sin), false),
+  true
+)$
+
+/* ---- class 6 cluster B: the QuotientOfLinears family ----
+   docs/class-porting.md Step 4. Census group D/E: QuotientOfLinearsQ 2
+   rules, QuotientOfLinearsParts 2 rules (6.7.9 r53/r54, Int[Sinh[u]^n]
+   and Int[Cosh[u]^n] where u is a quotient of linears).
+
+   Rubi (IntegrationUtilityFunctions.m L1729-1795):
+     QuotientOfLinearsParts[u,x] returns {a,b,c,d} with u == (a+b x)/(c+d x)
+       a_*u_ /; FreeQ[a,x] -> {a #1, a #2, #3, #4}
+       a_+u_ /; FreeQ[a,x] -> {#1+a #3, #2+a #4, #3, #4}
+       1/u_                -> {#3, #4, #1, #2}
+       u_ /; LinearQ       -> {Coefficient[u,x,0], Coefficient[u,x,1], 1, 0}
+       u_/v_ /; both linear-> {u0, u1, v0, v1}
+       else  u===x -> {0,1,1,0};  FreeQ -> {u,0,1,0}
+     QuotientOfLinearsQ[u,x] := QuotientOfLinearsP[u,x]
+                                && NeQ[parts[[2]],0] && NeQ[parts[[4]],0]
+     (and a ListQ branch: every element must satisfy it)
+
+   The b!=0 && d!=0 clause is what makes Q strictly NARROWER than "has
+   the shape": a bare linear (d = 0) and a bare reciprocal (b = 0) both
+   have Parts but are NOT quotients of linears.
+
+   The generated call sites pin the contract — rules/class6/6_7_9.mac
+   L429 reads the result as (lst[1] + lst[2]*x)/(lst[3] + lst[4]*x). */
+test_class6_cluster_b() := block([],
+  print("--- class 6 cluster B: quotientOfLinears Q / Parts ---"),
+  /* Parts: the LinearQ clause */
+  check("qolParts linear 2+3x", %mr_quotientOfLinearsParts(2 + 3*x, x), [2, 3, 1, 0]),
+  /* Parts: the u/v clause */
+  check("qolParts (2+3x)/(4+5x)",
+        %mr_quotientOfLinearsParts((2 + 3*x)/(4 + 5*x), x), [2, 3, 4, 5]),
+  /* Parts: the 1/u clause swaps the pairs */
+  check("qolParts 1/(4+5x)", %mr_quotientOfLinearsParts(1/(4 + 5*x), x), [1, 0, 4, 5]),
+  /* Parts: x itself, and an expression free of x */
+  check("qolParts x", %mr_quotientOfLinearsParts(x, x), [0, 1, 1, 0]),
+  check("qolParts a (free of x)", %mr_quotientOfLinearsParts(a, x), [a, 0, 1, 0]),
+  /* Parts: a free multiplicative factor scales the numerator pair */
+  check("qolParts 7*(2+3x)/(4+5x)",
+        %mr_quotientOfLinearsParts(7*(2 + 3*x)/(4 + 5*x), x), [14, 21, 4, 5]),
+  /* Parts: a free additive term folds into the numerator */
+  check("qolParts 2 + (1+x)/(3+4x)",
+        %mr_quotientOfLinearsParts(2 + (1 + x)/(3 + 4*x), x), [7, 9, 3, 4]),
+  /* Q: the b!=0 && d!=0 gate */
+  check("qolQ (2+3x)/(4+5x)", %mr_quotientOfLinearsQ((2 + 3*x)/(4 + 5*x), x), true),
+  check("qolQ x/(1+x)", %mr_quotientOfLinearsQ(x/(1 + x), x), true),
+  check("qolQ bare linear declines (d = 0)",
+        %mr_quotientOfLinearsQ(2 + 3*x, x), false),
+  check("qolQ bare reciprocal declines (b = 0)",
+        %mr_quotientOfLinearsQ(1/(4 + 5*x), x), false),
+  check("qolQ free of x declines", %mr_quotientOfLinearsQ(a, x), false),
+  check("qolQ x alone declines (d = 0)", %mr_quotientOfLinearsQ(x, x), false),
+  /* Q: a non-shape declines */
+  check("qolQ x^2/(1+x) declines", %mr_quotientOfLinearsQ(x^2/(1 + x), x), false),
+  check("qolQ sinh(x)/(1+x) declines", %mr_quotientOfLinearsQ(sinh(x)/(1 + x), x), false),
+  /* Q: the ListQ branch — every element must satisfy it */
+  check("qolQ list all good",
+        %mr_quotientOfLinearsQ([(2 + 3*x)/(4 + 5*x), x/(1 + x)], x), true),
+  check("qolQ list with one bad member",
+        %mr_quotientOfLinearsQ([(2 + 3*x)/(4 + 5*x), x^2], x), false),
   true
 )$
 
