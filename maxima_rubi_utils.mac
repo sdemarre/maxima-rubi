@@ -3985,6 +3985,98 @@ mr_use_gamma_flag : false$
   p : %mr_quotientOfLinearsParts(u, x),
   is(%mr_neQ(part(p, 2), 0) and %mr_neQ(part(p, 4), 0)))$
 
+/* ---- class 6 cluster C: the ExpandTrig family -----------------------
+ * Rubi IntegrationUtilityFunctions.m L4030-4092. The class's biggest
+ * porting item: ExpandTrigReduce 26 rules, ExpandTrigToExp 4,
+ * ExpandTrigExpand 1.
+ *
+ * Substrate map, MEASURED 2026-09-20 (branch_5_50_base_84_g4204fb669):
+ *   TrigReduce  -> trigreduce      (handles the hyperbolics:
+ *                  trigreduce(sinh(x)*cosh(x)) = sinh(2*x)/2)
+ *   TrigExpand  -> trigexpand      (trigexpand(cosh(2*x)) =
+ *                  sinh(x)^2+cosh(x)^2)
+ *   TrigToExp   -> exponentialize
+ *   ReplaceAll[.., x->v] -> subst(v, x, ..)   (subst is new, old, expr)
+ *
+ * TWO DOCUMENTED DEVIATIONS from the .m, both forced by the substrate:
+ *
+ * 1. The .m carries a THIRD ExpandTrigReduce clause,
+ *      u_.*F_[n_+v_.]^m_. /; MemberQ[{Sinh,Cosh},F] && IntegerQ[m]
+ *                          && RationalQ[n]
+ *    whose own comment says it exists "because TrigReduce expands
+ *    Sinh[n+v] and Cosh[n+v] to exponential form if n is a number"; it
+ *    substitutes a fresh symbol for n and puts it back afterwards.
+ *    Maxima's trigreduce has NO such behaviour — measured,
+ *    trigreduce(sinh(2+v)) = sinh(v+2) and trigreduce(sinh(2+v)^2) =
+ *    (cosh(2*(v+2))-1)/2, both staying hyperbolic — so the clause is a
+ *    workaround for a problem this build does not have and is NOT
+ *    ported. If trigreduce ever starts exponentializing, this is the
+ *    note to come back to.
+ *
+ * 2. exponentialize(sinh(x)) = (%e^x-%e^-x)/2, whose op is "/" — NOT a
+ *    sum — while Mathematica's TrigToExp returns the distributed
+ *    -E^-x/2 + E^x/2. The .m's SumQ branch therefore fires upstream and
+ *    would not here, changing whether SimplifyIntegrand is mapped per
+ *    term. expand() restores the upstream shape (measured:
+ *    expand(exponentialize(sinh(x))) = %e^x/2-%e^-x/2, op "+").
+ */
+
+/* NormalizeTrigReduce[a_.*F_[u_]^n_.,x] := a*F[ExpandToSum[u,x]]^n
+   /; FreeQ[{F,a,n},x] && PolynomialQ[u,x] && Exponent[u,x]>0 — the
+   trig/hyperbolic argument comes back as a SUM rather than a factored
+   product, so trigreduce's cosh(2*(a+b*x)) reads cosh(2*a+2*b*x). */
+%mr_ntrHeads : [sinh, cosh, tanh, coth, sech, csch,
+                sin, cos, tan, cot, sec, csc]$
+
+%mr_normalizeTrigReduceFactor(f, x) := block([b, e, h, u],
+  b : f, e : 1,
+  if %mr_powerQ(f) then (b : part(f, 1), e : part(f, 2)),
+  if atom(b) then return(f),
+  h : op(b),
+  if not is(member(h, %mr_ntrHeads) = true) then return(f),
+  if not is(length(args(b)) = 1) then return(f),
+  u : part(b, 1),
+  /* PolynomialQ[u,x] && Exponent[u,x] > 0 */
+  if freeof(x, u) or not %mr_polyQ(u, x) then return(f),
+  apply(h, [%mr_expandToSum(u, x)])^e)$
+
+%mr_normalizeTrigReduce(t, x) := block([L, r, f],
+  L : if %mr_productQ(t) then args(t) else [t],
+  r : 1,
+  for f in L do r : r * %mr_normalizeTrigReduceFactor(f, x),
+  r)$
+
+%mr_expandTrigReduceAux(u, x) := block([v],
+  v : expand(trigreduce(u)),
+  if %mr_nonsumQ(v) then %mr_normalizeTrigReduce(v, x)
+  else map(lambda([t], %mr_normalizeTrigReduce(t, x)), v))$
+
+%mr_expandTrigReduce3(u, v, x) := block([w],
+  w : %mr_expandTrigReduceAux(v, x),
+  if %mr_nonsumQ(w) then u*w else map(lambda([t], u*t), w))$
+
+/* arity dispatch, the %mr_expandToSum idiom: (u,x) and (u,v,x) */
+%mr_expandTrigReduce : lambda([a, b, [c]],
+  if length(c) = 0
+  then %mr_expandTrigReduceAux(a, b)
+  else %mr_expandTrigReduce3(a, b, part(c, 1)))$
+
+%mr_expandTrigToExp3(u, v, x) := block([w],
+  w : expand(exponentialize(v)),   /* deviation 2 above */
+  w : if %mr_nonsumQ(w) then %mr_simp(u*w, x)
+      else map(lambda([t], %mr_simp(u*t, x)), w),
+  %mr_expandIntegrand(%mr_freeFactors(w, x), %mr_nonfreeFactors(w, x), x))$
+
+/* the .m's ExpandTrigToExp[u,x] := ExpandTrigToExp[1,u,x] */
+%mr_expandTrigToExp : lambda([a, b, [c]],
+  if length(c) = 0
+  then %mr_expandTrigToExp3(1, a, b)
+  else %mr_expandTrigToExp3(a, b, part(c, 1)))$
+
+%mr_expandTrigExpand(u, F, v, m, n, x) := block([w],
+  w : subst(v, x, expand(trigexpand(apply(F, [n*x]))^m)),
+  if %mr_nonsumQ(w) then u*w else map(lambda([t], u*t), w))$
+
 /* Rubi EveryQ — func over every element, true iff all true.
    MEASURED 2026-08-28 (5.50.0/SBCL): list iteration is `for e in
    lst` — `for e : lst` parses as `for e from lst` (the definition

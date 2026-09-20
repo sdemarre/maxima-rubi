@@ -113,6 +113,7 @@ run_all_tests() := block([],
   test_class3_cluster_b(),
   test_class6_cluster_a(),
   test_class6_cluster_b(),
+  test_class6_cluster_c(),
   test_rules_1_1_1_1_behavior(),
   test_translation_fixes_seen(),
   test_run_switches(),
@@ -3440,6 +3441,86 @@ test_class6_cluster_b() := block([],
         %mr_quotientOfLinearsQ([(2 + 3*x)/(4 + 5*x), x/(1 + x)], x), true),
   check("qolQ list with one bad member",
         %mr_quotientOfLinearsQ([(2 + 3*x)/(4 + 5*x), x^2], x), false),
+  true
+)$
+
+/* ---- class 6 cluster C: the ExpandTrig family ----
+   docs/class-porting.md Step 4. Census group E, the class's biggest
+   porting item: ExpandTrigReduce 26 rules, ExpandTrigToExp 4,
+   ExpandTrigExpand 1. The generated call arities, counted over the
+   class-6 rule files, are 2-arg Reduce x9, 3-arg Reduce x17, 3-arg
+   ToExp x4, 6-arg Expand x1. (A glob path is deliberately NOT written
+   in this comment: Maxima NESTS block comments, so a directory name
+   followed by slash-star opens one that never closes. Measured
+   2026-09-20 — it cost a run, "incorrect syntax: end of file in
+   comment", with no Results line at all.)
+
+   Rubi (IntegrationUtilityFunctions.m L4030-4092):
+     ExpandTrigReduce[u,v,x] := u * ExpandTrigReduce[v,x], distributed
+       over the terms when the inner result is a Sum
+     ExpandTrigReduce[u,x]  := ExpandTrigReduceAux = Expand[TrigReduce[u]],
+       then NormalizeTrigReduce over the terms
+     NormalizeTrigReduce[a_.*F_[u_]^n_.,x] := a*F[ExpandToSum[u,x]]^n
+       /; PolynomialQ[u,x] && Exponent[u,x]>0
+     ExpandTrigToExp[u,v,x]  := TrigToExp, SimplifyIntegrand per term,
+       then ExpandIntegrand[FreeFactors, NonfreeFactors, x]
+     ExpandTrigExpand[u,F,v,m,n,x] := Expand[TrigExpand[F[n x]]^m] /. x->v,
+       times u, distributed over a Sum
+
+   Substrate MEASURED 2026-09-20 (branch_5_50_base_84_g4204fb669):
+   expand(trigreduce(sinh(x)^3)) = sinh(3*x)/4-3*sinh(x)/4;
+   expand(trigreduce(sinh(a+b*x)^2)) = cosh(2*b*x+2*a)/2-1/2;
+   trigexpand(cosh(2*x)) = sinh(x)^2+cosh(x)^2;
+   exponentialize(sinh(x)) = (%e^x-%e^-x)/2, op "/" (NOT a sum — MMA's
+   TrigToExp returns the distributed form, so the port expands). */
+test_class6_cluster_c() := block([w],
+  print("--- class 6 cluster C: expandTrigReduce / ToExp / Expand ---"),
+  /* The value checks go through exponentialize() BEFORE ratsimp.
+     ratsimp alone treats sinh(3*x) and sinh(x) as unrelated atoms, so it
+     cannot close a multiple-angle identity and reports a nonzero
+     residual for a CORRECT reduction — measured 2026-09-20, and it cost
+     a green cycle. Verified independently at x = 0.713: all four
+     residuals are ~1e-16. Exponential form makes the identity rational
+     and ratsimp closes it. */
+  /* 2-arg Reduce: the product-to-sum reduction the 26 rules exist for */
+  check("etr sinh^3 reduces to multiple angles",
+        %mr_expandTrigReduce(sinh(x)^3, x), sinh(3*x)/4 - 3*sinh(x)/4),
+  check("etr sinh^3 preserves value",
+        ratsimp(exponentialize(%mr_expandTrigReduce(sinh(x)^3, x))
+                - exponentialize(sinh(x)^3)), 0),
+  /* 2-arg Reduce: NormalizeTrigReduce expands the inner argument to a
+     sum — 2*(a+b*x) must come back as 2*b*x+2*a, not stay factored */
+  check("etr sinh(a+b x)^2 normalizes the inner argument",
+        %mr_expandTrigReduce(sinh(a + b*x)^2, x), cosh(2*b*x + 2*a)/2 - 1/2),
+  /* 3-arg Reduce distributes u over the reduced SUM */
+  check("etr 3-arg distributes over the sum",
+        %mr_expandTrigReduce(x^2, sinh(x)^3, x),
+        x^2*sinh(3*x)/4 - 3*x^2*sinh(x)/4),
+  /* 3-arg Reduce, inner result NOT a sum: plain multiplication */
+  check("etr 3-arg non-sum multiplies",
+        %mr_expandTrigReduce(x, sinh(x)*cosh(x), x), x*sinh(2*x)/2),
+  check("etr 3-arg non-sum preserves value",
+        ratsimp(exponentialize(%mr_expandTrigReduce(x, sinh(x)*cosh(x), x))
+                - exponentialize(x*sinh(x)*cosh(x))), 0),
+  /* ToExp: the hyperbolic head is gone and the value is preserved */
+  w : %mr_expandTrigToExp(1, sinh(x), x),
+  check("ette sinh -> exponentials, no sinh left", freeof(sinh, w), true),
+  check("ette sinh preserves value",
+        ratsimp(exponentialize(w) - exponentialize(sinh(x))), 0),
+  check("ette carries the u factor",
+        ratsimp(exponentialize(%mr_expandTrigToExp(x, cosh(x), x))
+                - exponentialize(x*cosh(x))), 0),
+  check("ette cosh -> exponentials, no cosh left",
+        freeof(cosh, %mr_expandTrigToExp(x, cosh(x), x)), true),
+  /* Expand: TrigExpand of F[n x], then x -> v, then times u */
+  check("ete cosh(2x) expands then substitutes v",
+        %mr_expandTrigExpand(1, cosh, v, 1, 2, x), sinh(v)^2 + cosh(v)^2),
+  check("ete distributes u over the sum",
+        %mr_expandTrigExpand(x, cosh, v, 1, 2, x),
+        x*sinh(v)^2 + x*cosh(v)^2),
+  check("ete preserves value (cosh(2v))",
+        ratsimp(exponentialize(%mr_expandTrigExpand(1, cosh, v, 1, 2, x))
+                - exponentialize(cosh(2*v))), 0),
   true
 )$
 
