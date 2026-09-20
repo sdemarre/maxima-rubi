@@ -30,6 +30,12 @@ recorded and corrected figures beside the package's.
 
 It reads committed records only: no Maxima, no re-run.
 
+SINCE THE FIX AND THE 2026-09-20 BASELINE RE-RUNS THIS IS A GUARD, not a
+finding: all three sections now report 0 over-credited entries and the
+recorded and corrected columns agree. A nonzero count means a baseline
+record was produced by a probe without the `deferred` split — i.e. the
+regression came back, or an old record was resurrected.
+
 Run:  sh probes/corpus/13-baseline-noanswer-conflation.run
 """
 import importlib.util
