@@ -1,0 +1,11 @@
+#!/bin/sh
+# probes/translation/06-class4-syntax-census.run — class-4 census driver
+# (docs/class-porting.md Step 1(a)).
+#
+#   sh probes/translation/06-class4-syntax-census.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# class-4 rule syntax census, $(date -u +%F)"
+  python3 probes/translation/01-class1-syntax-census.py reference/rubi "4 "
+} > probes/translation/06-class4-syntax-census.out
+echo "wrote probes/translation/06-class4-syntax-census.out"

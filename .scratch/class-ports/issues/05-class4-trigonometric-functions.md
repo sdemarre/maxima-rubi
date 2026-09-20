@@ -140,3 +140,88 @@ at the first rule that answers, so the ported record must sit at the **end of
 the whole table**, after every class — not at the head of class 4 where its
 source file sits. Cf. the class-6 close's conclusion 2 (load order is priority)
 and probe 21's unreachable `3_5 r37`.
+
+## Step 1 — census, 2026-09-20 (supersedes the 2026-08-30 recon numbers)
+
+Probes: `probes/translation/06-class4-syntax-census.{run,out}` (Step 1a),
+`probes/corpus/14-class4-answer-heads.{run,out}` (Step 1b — reuses the class-6
+script, which takes the section as argv[1]).
+
+### 1a — rule side
+
+| | |
+|---|---|
+| Rubi.m-loaded rule files | **56** (of 57 `.m` in the tree — 1 unloaded, as the recon suspected) |
+| rules, census count | **2,073**, every one with a `/;` condition |
+| AUTO (all tokens BUILTIN/B-tier) | **1,106 (53.4 %)** |
+| MANUAL (>=1 C-tier / exotic pattern) | **967 (46.6 %)** |
+| unlistied token rows to adjudicate | **56** |
+
+Easier per rule than class 6 (26.4 % AUTO) and ~5.3x the volume.
+
+**`EXPECTED_TOTAL[4]` is 2,080, not 2,073.** Section 4 carries **7**
+`If[TrueQ[$LoadShowSteps], …]` wrappers, which the census parser does not count
+and `unwrap_showsteps_lines` does recover — the class-3 precedent (census 333,
+emitter 334). Measured per class: class 1 → 1 wrapper, class 2 → 0, class 3 → 1,
+class 6 → 0, **class 4 → 7**.
+
+All 7 are in the inert-trig machinery, and all have a bare `u_` LHS:
+
+- `4.1.0.1` ×1 — the bridge: `Int[u_,x] := Int[DeactivateTrig[u,x],x] /; FunctionOfTrigOfLinearQ[u,x]`
+- `4.7.5 Inert trig functions` ×6 — the substitution catch-alls:
+  `∫F[Tan[a+b x]]dx → 1/b Subst[∫F[x]/(1+x²)dx, x, Tan[a+b x]]` (and the `Cot`
+  mirror), the two derivative-divides forms
+  `∫F[Sin[a+b x]]Cos[a+b x]dx → Subst[∫F[x]dx,x,Sin[a+b x]]/b` (and `Cos`), a
+  second `Tan` form, and the **half-angle Weierstrass substitution**
+  (`Tan[FunctionOfTrig[u,x]/2]`, wrapped in `Block[{$ShowSteps=False,…}]`).
+
+So the census-invisible rules are exactly the general trig machinery — the part
+that answers everything the shape-specific files do not. They need
+`FunctionOfTrig`, `FreeFactors`, `SubstFor`, `Block`, `TryPureTanSubst`, and
+end-of-table dispatcher position (see the substrate section above).
+
+### 1b — answer side
+
+77 files, **22,472 entries** (both recon figures confirmed). 22 answer heads are
+native to the installed build; 12 are not. Measured on
+`branch_5_50_base_84_g4204fb669`:
+
+| head | entries | arity | Maxima | verdict |
+|---|---:|---|---|---|
+| `AppellF1` | **823** | 6 | `appell_f1` exists as a NOUN | **`diff` does not evaluate** — a verification ceiling |
+| `Si` | 742 | 1 | `expintegral_si` | HEAD_REWRITES row exists |
+| `Ci` | 738 | 1 | `expintegral_ci` | row exists |
+| `Unintegrable` | 657 | 2 | — | Rubi's own non-answer marker, not a rewrite |
+| `GAMMA` | 462 | 2 | `gamma_incomplete` | row exists |
+| `FresnelC` | 333 | 1 | `fresnel_c` | **differentiable**: `d/dx = cos(%pi x²/2)` — new row |
+| `FresnelS` | 322 | 1 | `fresnel_s` | **differentiable**: `d/dx = sin(%pi x²/2)` — new row |
+| `CannotIntegrate` | 57 | 2 | — | non-answer marker |
+| `F` | 8 | 5 | — | free function in the expected text |
+| `Ei` | 6 | 1 | `expintegral_ei` | row exists |
+| `Hypergeometric2F1` | 3 | 4 | `hypergeometric([a,b],[c],z)` | **differentiable** — new row, arity reshape |
+| `HurwitzLerchPhi` | 2 | 3 | `lerch_phi` exists | `diff` does not evaluate |
+
+Native mass worth noting: `polylog(` 2,325, `elliptic_f(` 3,798, `elliptic_e(`
+3,781, `%e^` 4,600.
+
+**Three new HEAD_REWRITES rows to add at Step 7** (`fresnel_c`, `fresnel_s`,
+`hypergeometric` with the arity reshape), covering 658 entries.
+
+**The ceiling is `AppellF1`, 823 entries (3.7 % of the section).** `appell_f1`
+is a bound noun with no derivative, so those expectations cannot close the zero
+chain — the class-3 polylog-ceiling situation exactly
+(`.scratch/class3-polylog-ceiling/issues/01`). Expect them as `unverified` /
+`contains-noun` rather than PASS, and do NOT read them as a rule-side miss.
+
+### Still to do before generating
+
+- **Adjudicate the 56 unlistied token rows on this ticket** (Step 1c), taking
+  the closure transitively through `IntegrationUtilityFunctions.m` — see the
+  CENSUS TRAP table above, which is how `ReduceInertTrig` (39 clauses),
+  `FixInertTrigFunction` (98) and `UnifyInertTrigFunction` (79) enter the
+  closure despite 0 rule-side occurrences.
+- Decide the **inert-head representation**: the six inert heads must be Maxima
+  operators the simplifier leaves alone (not `sin`/`cos`/…, or Maxima evaluates
+  them), matchable by `MR-MATCH`, and mapped back by `ActivateTrig`. This is
+  the one genuinely new substrate question in the port and it is a design
+  decision, not a runbook step.

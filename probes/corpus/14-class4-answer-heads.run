@@ -1,0 +1,13 @@
+#!/bin/sh
+# probes/corpus/14-class4-answer-heads.run — class-4 answer-head census
+# driver (docs/class-porting.md Step 1(b)).
+#
+# Reuses the class-6 script, which takes the section as argv[1] and already
+# walks subdirectories with a discovery pass — the same reuse the translation
+# census does (06-class4-syntax-census.run calls 01-class1-syntax-census.py).
+#
+#   sh probes/corpus/14-class4-answer-heads.run
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/corpus/12-class6-answer-heads.py "4 Trig functions" \
+    > probes/corpus/14-class4-answer-heads.out
+echo "wrote probes/corpus/14-class4-answer-heads.out"
