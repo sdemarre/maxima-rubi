@@ -139,3 +139,42 @@ in `ExpandTrigReduce` (26 rules).
 **Not yet done (Step 1 has no opinion on these):** the 6.7.x manual bucket
 is the fat one — `6.7.9 Active hyperbolic functions` alone is 71 rules /
 20 distinct token-sets.
+
+### 2026-09-20 — Steps 2-6 complete; the table-growth probe
+
+Steps 2 (table), 3 (generate), 4 (utils, 3 clusters), 5 (statics),
+6 (loader + core) are committed on branch `class6-port`. Core rebuilt:
+**rules=3903 = 3,513 + 390**, fingerprint `d624cefbd491c0a111ed481442042e40`.
+Layer A 1010 -> **1066/0**; P3 static **15/0** (check 7 added);
+byte-identity green for classes 1-3 throughout.
+
+**TABLE-GROWTH PROBE (directional, NOT the gate).** The standing worry
+before this port was that the dispatcher is a bare `dolist` over every
+handle, so a bigger table taxes every FAILED dispatch and every nested
+sub-integral — and class 1 already loses 13.0 % of its entries to the
+cap. Class 6 is the smallest available test of that: +390 rules, +11 %.
+
+Measured 2026-09-20, build `branch_5_50_base_84_g4204fb669`, cpu cap 30 s,
+80 class-1 entries (2 per file x 40 files) run with class 6 LOADED,
+compared entry-for-entry against the committed `test/corpus_class1.out`
+(2026-09-18, 24-worker queue, same cap kind):
+
+| | |
+|---|---|
+| common entries | 80 |
+| PASS | 64 -> **64** |
+| class transitions | **NONE — identical verdict on every entry** |
+| PASS->FAIL | 0 |
+| cpu over the common entries | 451.5 s -> 426.4 s (**0.94x**) |
+
+So a +11 % table cost nothing measurable here, and the 7 entries that
+time out did so in both records.
+
+**Read it as weak-but-real evidence, not an all-clear.** 80 of 25,697 is
+a 0.3 % sample, biased to the first two entries of each file, and the
+failure mode at issue is entries sitting just under the cap crossing it
+— exactly what a small sample of mostly-fast entries cannot see. The
+0.94x is also inside the +-13 % noise band the 2026-09-19 probe measured
+for this dispatch path, so it is "no detectable cost", not "a speedup".
+The gate remains a full 25,697-entry A/B via `test/ab_records.py`, which
+belongs to Step 9.
