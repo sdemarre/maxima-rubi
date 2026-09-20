@@ -46,3 +46,45 @@ If the answer is "hyperbolic integrands are reached through the trig
 rules", the same will hold for class 7 (inverse hyperbolic, 6,552
 entries) against class 5 (inverse trig), and the porting ORDER should
 be reconsidered on that basis.
+
+## ANSWERED — 2026-09-20: the inert-trig bridge, section 4
+
+Probe `probes/rubi/02-hyperbolic-inert-trig-bridge.{py,run,out}` (static
+analysis over the pinned clones + `test/corpus_class6.out`; no Maxima). The
+guess in this ticket — "likely a cross-section dependency ... presumably
+through the algebraic or trig sections" — is **confirmed as trig**, and the
+mechanism is exact:
+
+1. Rubi has **six inert function heads and they are all trig** (measured:
+   `sin[` 1518, `csc[` 940, `tan[` 640, `cos[` 551, `sec[` 225, `cot[` 133;
+   `sinh[`/`cosh[`/`tanh[`/`coth[`/`sech[`/`csch[` **0**). The `.7` rules are
+   written against those inert heads.
+2. `DeactivateTrigAux`'s `HyperbolicQ[u]` branch
+   (`IntegrationUtilityFunctions.m:6210-6218`) carries all six hyperbolic
+   heads onto the inert TRIG heads by the imaginary-argument identities:
+   `Sinh -> -I sin[I z]`, `Cosh -> cos[I z]`, `Tanh -> -I tan[I z]`,
+   `Coth -> I cot[I z]`, `Sech -> sec[I z]`, `Csch -> I csc[I z]`.
+3. The conversion is invoked by **exactly one rule**, at the head of
+   `4.1.0.1 (a sin)^m (b trg)^n.m`:
+   `Int[u_, x_Symbol] := Int[DeactivateTrig[u, x], x] /; FunctionOfTrigOfLinearQ[u, x]`
+4. Rubi has **no** `(a + b Sinh[..]^n)^p` rule anywhere (measured: zero
+   matches across all 221 rule files), and no section-6 rule file for the `.7`
+   shape. The only `.7` files with inert heads are `4.1.7` (73 rules),
+   `4.3.7` (25) and `4.5.7` (32) — all in section 4.
+
+So the 1,173 entries are not an unloaded file and not a missing hyperbolic
+rule: **the rules that answer them are section 4's**, and the hyperbolic side
+reaches them through the bridge.
+
+Size, re-measured from the record: `.7` is **1,173 entries, 1,166 deferred =
+36.7 % of class 6's 3,173 deferred, with not one PASS** (7 `contains-noun`).
+
+**The unlock is real but not free.** Porting class 4's rule files alone does
+not deliver it — the bridge substrate has to come too. See
+`.scratch/class-ports/issues/05` for the list and the census trap.
+
+Separate, still open: the seven `Hyperbolic <fn> functions` / `6.7.1`
+miscellany files are a **further 1,480 deferred entries** and also have no
+section-6 rule file. Whether they ride the same bridge is not answered here.
+Together with `.7` that is 83 % of class 6's deferred mass, which is why the
+question is worth its own probe.

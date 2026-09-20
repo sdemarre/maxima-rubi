@@ -70,3 +70,73 @@ committed, the byte-identity gates for classes 1–3 (and 8/5/6/7 if
 accepted earlier) green, Layer A green.
 
 ## Comments
+
+## The inert-trig substrate is the load-bearing part (measured 2026-09-20)
+
+Probe `probes/rubi/02-hyperbolic-inert-trig-bridge.{py,run,out}`. Rubi's
+section-4 rules are **not** written against `Sin`/`Cos`/…; they are written
+against six **inert** lowercase heads, `sin[…]` … `csc[…]` (measured
+occurrences in the rule files: sin 1518, csc 940, tan 640, cos 551, sec 225,
+cot 133). An active integrand enters that representation through ONE catch-all
+rule at the head of `4.1.0.1`, the first section-4 file Rubi.m loads:
+
+```
+Int[u_, x_Symbol] := Int[DeactivateTrig[u, x], x] /; FunctionOfTrigOfLinearQ[u, x]
+```
+
+Two consequences for this port:
+
+**1. It gates class 4 itself.** Without the inert representation, the
+normalization files (`4.7.1` Sine / `4.7.2` Tangent / `4.7.3` Secant, `4.7.5`
+Inert trig functions) and every `sin[…]`-patterned rule are unreachable. This
+is not a tail item to defer to a later cluster — it is Step 4's first cluster.
+
+**2. It unlocks 1,166 already-paid-for class-6 entries.**
+`DeactivateTrigAux`'s `HyperbolicQ` branch maps the six hyperbolic heads onto
+the same inert trig heads (`Sinh -> -I sin[I z]`, …), which is how Rubi answers
+the class-6 `.7` family — 36.7 % of class 6's deferred mass, currently zero
+PASS. See `.scratch/class6-residue/issues/01` (ANSWERED section). This is the
+reason class 4 was chosen ahead of 5/7/8.
+
+### CENSUS TRAP — a rule-side token scan will miss the substrate
+
+Measured token counts, section-4 rule files vs `IntegrationUtilityFunctions.m`:
+
+| token | in rules | in utils |
+|---|---:|---:|
+| `ActivateTrig` | 129 | 11 |
+| `KnownSineIntegrandQ` | 22 | 1 |
+| `KnownSecantIntegrandQ` | 22 | 1 |
+| `InertTrigFreeQ` | 10 | 3 |
+| `InertTrigQ` | 7 | 6 |
+| `DeactivateTrig` | 2 | 8 |
+| `FunctionOfTrigOfLinearQ` | 2 | 3 |
+| **`ReduceInertTrig`** | **0** | 39 |
+| **`FixInertTrigFunction`** | **0** | 98 |
+| **`UnifyInertTrigFunction`** | **0** | 79 |
+
+The last three appear **nowhere in the rules** — they are reachable only
+*through* `DeactivateTrig` — yet they carry 39 / 98 / 79 clauses. The Step-1
+census must therefore take its **transitive closure through the utility
+functions**, not stop at the tokens the rule files mention, or the port will be
+generated against a substrate that silently is not there. (The 2026-09-20 recon
+listed 48 unlisted tokens from a rule-side scan; these three are not among
+them and `DeactivateTrig`/`FunctionOfTrigOfLinearQ` sit in its tail at 2
+occurrences each.)
+
+### Adjudication order this implies
+
+Cluster the Step-4 utility work as: (a) the inert representation + `InertTrigQ`
+/ `InertTrigFreeQ` / `ActivateTrig` / `DeactivateTrig` / `DeactivateTrigAux` /
+`ReduceInertTrig` / `FixInertTrigFunction` / `UnifyInertTrigFunction` /
+`FunctionOfTrigOfLinearQ`; then (b) the volume tokens (`Tan` 387, `Cot` 318,
+`FreeFactors` 156, `ExpandTrig` 50, `FunctionOfQ` 42, …); then (c) the
+already-ported ones (`ExpandTrigReduce`, `ExpandTrigToExp`, `IndependentQ`,
+`MemberQ`, `Coth`, `Cosh`).
+
+**Dispatcher position:** the bridge rule has a bare `u_` LHS. Mathematica sorts
+it last by specificity; our dispatcher walks the table in LOAD ORDER and stops
+at the first rule that answers, so the ported record must sit at the **end of
+the whole table**, after every class — not at the head of class 4 where its
+source file sits. Cf. the class-6 close's conclusion 2 (load order is priority)
+and probe 21's unreachable `3_5 r37`.
