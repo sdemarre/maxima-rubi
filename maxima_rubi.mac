@@ -218,7 +218,29 @@ mr_load_all() := block([],
                            mr_rules_3_1_2, mr_rules_3_1_3, mr_rules_3_1_4,
                            mr_rules_3_1_5, mr_rules_3_3, mr_rules_3_4,
                            mr_rules_3_2_1, mr_rules_3_2_2, mr_rules_3_2_3,
-                           mr_rules_3_5])
+                           mr_rules_3_5]),
+  /* class 6 (hyperbolic), 390 rules over 13 files — Rubi.m LoadRules
+     order, which is rule PRIORITY: it loads after all of classes 1-3,
+     exactly as class 2 loads after class 1. Classes 4 and 5 are not
+     ported, so section 6 follows section 3 directly. */
+  %mr_load_sibling("rules/class6/6_1_10.mac", 'mr_witness_6_1_10),
+  %mr_load_sibling("rules/class6/6_1_11.mac", 'mr_witness_6_1_11),
+  %mr_load_sibling("rules/class6/6_1_12.mac", 'mr_witness_6_1_12),
+  %mr_load_sibling("rules/class6/6_1_13.mac", 'mr_witness_6_1_13),
+  %mr_load_sibling("rules/class6/6_3_10.mac", 'mr_witness_6_3_10),
+  %mr_load_sibling("rules/class6/6_3_11.mac", 'mr_witness_6_3_11),
+  %mr_load_sibling("rules/class6/6_3_12.mac", 'mr_witness_6_3_12),
+  %mr_load_sibling("rules/class6/6_5_10.mac", 'mr_witness_6_5_10),
+  %mr_load_sibling("rules/class6/6_5_11.mac", 'mr_witness_6_5_11),
+  %mr_load_sibling("rules/class6/6_7_6.mac", 'mr_witness_6_7_6),
+  %mr_load_sibling("rules/class6/6_7_7.mac", 'mr_witness_6_7_7),
+  %mr_load_sibling("rules/class6/6_7_8.mac", 'mr_witness_6_7_8),
+  %mr_load_sibling("rules/class6/6_7_9.mac", 'mr_witness_6_7_9),
+  mr_rule_table : flatten([mr_rule_table, mr_rules_6_1_10,
+                           mr_rules_6_1_11, mr_rules_6_1_12, mr_rules_6_1_13,
+                           mr_rules_6_3_10, mr_rules_6_3_11, mr_rules_6_3_12,
+                           mr_rules_6_5_10, mr_rules_6_5_11, mr_rules_6_7_6,
+                           mr_rules_6_7_7, mr_rules_6_7_8, mr_rules_6_7_9])
 )$
 
 mr_witness_maxima_rubi() := true$
