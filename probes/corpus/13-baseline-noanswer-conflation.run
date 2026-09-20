@@ -1,0 +1,9 @@
+#!/bin/sh
+# probes/corpus/13-baseline-noanswer-conflation.run — re-score every
+# committed native-integrate baseline under the DRIVER's class scheme.
+# Reads committed records only; no Maxima.
+#
+#   sh probes/corpus/13-baseline-noanswer-conflation.run
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/corpus/13-baseline-noanswer-conflation.py > probes/corpus/13-baseline-noanswer-conflation.out
+echo "wrote probes/corpus/13-baseline-noanswer-conflation.out"

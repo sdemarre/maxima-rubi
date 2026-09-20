@@ -16,6 +16,20 @@ Per-integral classification (one CLASS line per integral on stdout):
                but candidate does not match the corpus expectation
   unverified   answer; neither zero-test closed within the chain
   no-answer    integrate returned its noun form; corpus also expects a noun
+  deferred     integrate returned its noun form but the corpus expects an
+               ANSWER -- `integrate` simply failed. Split out of no-answer
+               2026-09-20 to match test/corpus_driver.py, whose class table
+               has drawn this distinction since 2026-08-25. Until then BOTH
+               cases scored no-answer = PASS, so every Step-8 baseline
+               credited itself for entries it had not integrated, while its
+               Step-9 package counterpart was scored on the stricter
+               scheme: the runbook's A/B compared two different rulers, in
+               the baseline's favour. Measured over the committed records
+               (probes/corpus/13-baseline-noanswer-conflation.out): the
+               over-credit is 230 entries for class 2, 250 for class 3 and
+               1013 for class 6 -- which flips the class-6 verdict from
+               "package 14.5 % LOSES to baseline 25.9 %" to "package
+               14.5 % BEATS baseline 5.9 %".
   unexpected   integrate returned an answer; corpus expects a noun
   error        subprocess died (Lisp error, timeout-induced kill, or a
                parse-time fatality of the integrand/expectation text)
@@ -85,7 +99,7 @@ STOP_INDEX = int(sys.argv[9]) if len(sys.argv) > 9 else None
 
 KNOWN_CLASSES = {
     "expected", "verified", "unverified",
-    "no-answer", "unexpected", "error", "timeout",
+    "no-answer", "deferred", "unexpected", "error", "timeout",
 }
 
 workdir = tempfile.mkdtemp(prefix="maxima-rubi-smp-")
@@ -203,7 +217,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
         zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f")
         if e_text2 is not None:
             ze2 = zero_chain(f"diff(mr_r - {e_text2}, {var_text})")
-            body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
+            body = (f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
                     "else block([MR_z, MR_z2, MR_w], MR_z: (" + ze + "), "
                     "MR_z2: (" + ze2 + "), "
                     "if is(MR_z=1) or is(MR_z2=1) "
@@ -212,7 +226,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
                     "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
         else:
-            body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
+            body = (f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
                     "else block([MR_z, MR_w], MR_z: (" + ze + "), "
                     "if is(MR_z=1) then disp(concat(\"CLASS expected\")) "
                     "else (MR_w: (" + zv + "), "
