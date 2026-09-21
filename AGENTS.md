@@ -412,7 +412,15 @@ python3 test/test_driver_radcan_fallback.py # Results: 4 passed, 0 failed
 python3 test/test_ab_records.py             # Results: 6 passed, 0 failed
 python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
 python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
+python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
 ```
+
+`test_driver_inert_leak` guards the inert-head leak classification: an answer
+carrying any of the six inert trig heads (`%mr_isin` … `%mr_icsc`, the bridge
+rule's deactivated form) is classified `error` — not a new class — and the
+driver names the heads on stderr (`inert-leak <entry>: the answer carries …`).
+Its witnesses are synthetic answers injected in place of the `rubi` call, so
+it depends on neither the rule set nor the corpus.
 
 `test_driver_radcan_fallback` guards the `zero_chain` radcan(rat()) fallback —
 part of the VERIFICATION path, which decides `verified` vs `unverified` for
