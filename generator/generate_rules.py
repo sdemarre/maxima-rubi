@@ -515,6 +515,30 @@ def translate(s, ctx):
                 return f"part({translate(s[:p].strip(), ctx)}, {m.group(1)})"
     head, args = head_args(s)
     if head is not None:
+        if head == "Block":
+            # Block[{$ShowSteps = False, $StepCounter = Null}, body] — the
+            # one Block shape in the emitted rules (4_7_5 r71, the
+            # Weierstrass record, inert-trig substrate Task 10), and
+            # verbatim the body of Rubi's IntHide (IntegrationUtilityFunctions.m
+            # L16-17), which the table already maps to plain mr_int. The two
+            # globals belong to the ShowSteps machinery ($ShowSteps displays
+            # steps, $StepCounter counts applied rules; ShowStepRoutines.m
+            # L4, L225-239): the port has neither steps nor a counter (the
+            # generator takes the non-ShowSteps branch of every
+            # If[TrueQ[$LoadShowSteps], ...] wrapper), so binding them
+            # changes nothing a rule can observe, and the port emits the
+            # BODY alone — the IntHide precedent, not a silent drop. Any
+            # other Block (other globals, other values) is a GenError: its
+            # bindings might be observable.
+            parts = split_top(args, ",") if args.strip() else []
+            if len(parts) < 2:
+                raise GenError(f"{ctx['key']} r{ctx['n']}: Block arity "
+                               f"{len(parts)}")
+            if re.sub(r"\s+", "", parts[0]) != \
+                    "{$ShowSteps=False,$StepCounter=Null}":
+                raise GenError(f"{ctx['key']} r{ctx['n']}: unlisted Block "
+                               f"bindings {parts[0].strip()!r}")
+            return translate(",".join(parts[1:]), ctx)
         if head == "MatchQ":
             # The pattern arg must be translated in the FRESH MatchQ
             # marker scope (_emit_matchq mints the names), not the outer
@@ -1071,13 +1095,16 @@ BARE_U_BODY_EXCEPTIONS = {
 #   4_7_5 r21/r22  the Cot/Tan Subst forms (4.7.5.m L24/L25).
 #   4_7_5 r47/r48  the Sin/Cos derivative-divides forms (L50/L51).
 #   4_7_5 r58   the Tan Subst form under InverseFunctionFreeQ (L61).
-# The seventh wrapped record, 4_7_5 r71 (L74, the half-angle Weierstrass
-# substitution), is Task 10's. 4_7_5 r66/r70/r72 (L69/L73/L76 -- TrigSimplify,
+#   4_7_5 r71   the half-angle Weierstrass substitution (L74; Task 10) --
+#               its trial Int sits in a Block[{$ShowSteps = False,
+#               $StepCounter = Null}, ...], which translate() emits as the
+#               body alone (the IntHide precedent; see the "Block" case).
+# 4_7_5 r66/r70/r72 (L69/L73/L76 -- TrigSimplify,
 # ExpandTrig, CannotIntegrate) are bare-u_ too but NOT wrapped; they are
 # class-4 port work, outside this subset.
 CLASS4_SUBSET = {
     "4_1_0_1": (1,),
-    "4_7_5": (21, 22, 47, 48, 58),
+    "4_7_5": (21, 22, 47, 48, 58, 71),
 }
 
 
@@ -1814,9 +1841,9 @@ def configure(class_num):
     # so unwrap_showsteps_line finds nothing to recover and the census
     # and the emitter agree exactly
     # (probes/translation/05-class6-syntax-census.out).
-    # class 4: 6 — NOT the section's 2,080 (spec 0.3): only the
-    # CLASS4_SUBSET records, the bridge and five of 4.7.5's substitution
-    # catch-alls (inert-trig substrate plan, Task 9). It grows with the
+    # class 4: 7 — NOT the section's 2,080 (spec 0.3): only the
+    # CLASS4_SUBSET records, the bridge and six of 4.7.5's substitution
+    # catch-alls (inert-trig substrate plan, Task 9; r71, Task 10). It grows with the
     # subset until the class-4 port replaces it with the full total.
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
                       3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),

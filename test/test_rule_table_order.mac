@@ -85,18 +85,19 @@ check_bool("mr_rule_table = body handles followed by tail handles, nothing lost"
 /* Task 9 (ledger R19/R21): the tail is no longer empty -- class 4's
    inert-trig bridge subset put the first real _tail lists in it, so the
    ordering check below is no longer vacuous. These two pin WHAT the tail
-   holds: non-empty, and exactly the six bridge records in Rubi LoadRules
-   order (4.1.0.1's DeactivateTrig bridge first, then 4.7.5's five Subst
-   catch-alls in source order) -- a _tail list mr_load_all forgot to name
+   holds: non-empty, and exactly the seven bridge records in Rubi LoadRules
+   order (4.1.0.1's DeactivateTrig bridge first, then 4.7.5's six Subst
+   catch-alls in source order; the seventh record, r71 -- the half-angle
+   Weierstrass substitution -- is Task 10's, and closes the tail) -- a _tail list mr_load_all forgot to name
    in its tail flatten, or named in the wrong order, fails here. */
 check_bool("the tail is non-empty",
   is(length(mr_rule_table_tail_handles) > 0))$
 
-check_bool("the tail is exactly the six bridge records, the 4.1.0.1 bridge first",
+check_bool("the tail is exactly the seven bridge records, the 4.1.0.1 bridge first",
   is(mr_rule_table_tail_handles =
      [_mr_rule_4_1_0_1_r1,
       _mr_rule_4_7_5_r21, _mr_rule_4_7_5_r22, _mr_rule_4_7_5_r47,
-      _mr_rule_4_7_5_r48, _mr_rule_4_7_5_r58]))$
+      _mr_rule_4_7_5_r48, _mr_rule_4_7_5_r58, _mr_rule_4_7_5_r71]))$
 
 /* The converse of the universal cross-check below: nothing but a bare-u_
    record may sit in the tail (a specific record there would be tried after
@@ -105,14 +106,15 @@ check_bool("every tail handle's pattern is a bare-u_ Int pattern",
   every(lambda([mr_h], mr_bare_u_pattern_p(%mr_rule_pattern_text(mr_h))),
         mr_rule_table_tail_handles))$
 
-/* Vacuous until Task 9 (the tail was []); now a real check over the six
+/* Vacuous until Task 9 (the tail was []); now a real check over the seven
    bridge records. */
 check_bool("every tail handle is registered after every body handle",
   every(lambda([mr_h], is(mr_h > lmax(mr_rule_table_body_handles))),
         mr_rule_table_tail_handles))$
 
 /* The universal cross-check, over EVERY handle mr_load_all() actually
-   registered (3,903 at Task 8; 3,909 with Task 9's six): a bare-u_ record must be in the
+   registered (3,903 at Task 8; 3,909 with Task 9's six; 3,910 with Task
+   10's r71): a bare-u_ record must be in the
    tail or be one of the six named exceptions -- anywhere else fails it. */
 mr_bad_bare : sublist(mr_rule_table,
   lambda([mr_h],

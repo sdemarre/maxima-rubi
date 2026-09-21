@@ -3603,7 +3603,46 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   )
   else subst(x, v, u))$
 
-%mr_substFor4(w, v, u, x) := w*%mr_substFor3(v, u, x)$
+/* Rubi :5976  SubstFor[w,v,u,x] := SimplifyIntegrand[w*SubstFor[v,u,x],x].
+   Task 10 (inert-trig substrate) restores the SimplifyIntegrand the old
+   port omitted (it read w*SubstFor[v,u,x] bare). Only class 4's 4.7.5
+   records call the 4-argument form (grep of rules/, 2026-09-21: every
+   class-1 call site passes 3). The Weierstrass record (r71) needs it:
+   without it the half-angle integrand reached its trial Int as
+   1/((x^2+1)*(3+2*(1/(x^2+1)-x^2/(x^2+1)))) -- an unnormalized rational no
+   rule matches -- instead of Rubi's 1/(x^2+5).
+
+   SimplifyIntegrand (L2148-2155) is NormalizeLeadTermSigns[
+   NormalizeIntegrandAux[Simplify[u],x]], and what matters here is its
+   Simplify. DEVIATION (stamped; a SHAPE approximation, value-preserving,
+   so it can neither accept nor decline a record -- it changes which rules
+   the nested Int meets): Mathematica's Simplify returns the smallest form
+   (by its LeafCount-based complexity) among the transformations it tries,
+   never one larger than its input. The port takes the smallest by
+   %mr_leafCount of three candidates -- u itself, ratsimp(u) and
+   factor(ratsimp(u)) -- preferring them in that order on a tie. The
+   house %mr_simp (the table's SimplifyIntegrand) is NOT used: it ends in
+   ratsimp, which re-expands a factored denominator -- MEASURED 2026-09-21,
+   6.1.5 e6 sinh(a+b*x)^6: 4.7.5 r58's integrand x^6/(x^2+1)^4 became
+   x^6/(x^8+4*x^6+6*x^4+4*x^2+1), the nested Int left an unintegrable
+   piece, and a verified entry fell to contains-noun. With u a candidate a
+   form that is already simplest (that one, and the Task-9 records'
+   integrands) reaches Int unchanged. */
+%mr_sf4_simplify(%mr_sf4_u) := block([%mr_sf4_best, %mr_sf4_r, %mr_sf4_f],
+  %mr_sf4_best : %mr_sf4_u,
+  %mr_sf4_r : errcatch(ratsimp(%mr_sf4_u)),
+  if %mr_sf4_r # [] then (
+    %mr_sf4_r : first(%mr_sf4_r),
+    if %mr_leafCount(%mr_sf4_r) < %mr_leafCount(%mr_sf4_best)
+    then %mr_sf4_best : %mr_sf4_r,
+    %mr_sf4_f : errcatch(factor(%mr_sf4_r)),
+    if %mr_sf4_f # [] then (
+      %mr_sf4_f : first(%mr_sf4_f),
+      if %mr_leafCount(%mr_sf4_f) < %mr_leafCount(%mr_sf4_best)
+      then %mr_sf4_best : %mr_sf4_f)),
+  %mr_sf4_best)$
+
+%mr_substFor4(w, v, u, x) := %mr_sf4_simplify(w*%mr_substFor3(v, u, x))$
 
 %mr_substFor : lambda([a, b, c, [d]],
   if length(d) = 0
@@ -6326,5 +6365,105 @@ mr_use_gamma_flag : false$
                         1/sqrt(1 + %mr_sfh_y^2), %mr_sfh_a)
   else %mr_substForTrig(%mr_sfh_u, 1/sqrt(1 + %mr_sfh_y^2),
                         %mr_sfh_y/sqrt(1 + %mr_sfh_y^2), %mr_sfh_a))$
+
+/* ---- Task 10 (inert-trig substrate): CalculusFreeQ and TryPureTanSubst
+ * -- the two utilities 4.7.5's last three bridge records call and nothing
+ * in the port defined:
+ *   TryPureTanSubst: the conditions of r21/r22 (the Cot/Tan substitution
+ *     records, 4.7.5.m L24/L25), which declined on the unbound call from
+ *     Task 9 until this port -- porting it makes them LIVE;
+ *   CalculusFreeQ: the inner condition of r71 (L74, the half-angle
+ *     Weierstrass substitution), CalculusFreeQ[w, x] on the trial
+ *     integral w.
+ * SubstFor needs nothing new for r71: its v is Tan[v/2]/d, served by the
+ * Tan arm Task 9 ported (%mr_substForTrigHead).
+ *
+ * r71 also carries Block[{$ShowSteps = False, $StepCounter = Null}, Int[..]]
+ * around that trial integral -- verbatim Rubi's IntHide body (L16-17). The
+ * two globals drive the ShowSteps machinery (display of applied rules, and
+ * a count of them; ShowStepRoutines.m L4, L225-239), which the port does
+ * not have: the generator takes every rule's non-ShowSteps branch. Binding
+ * them could change nothing a rule observes, so the generator emits the
+ * Block's BODY alone, exactly as it maps IntHide to plain mr_int
+ * (generate_rules.py translate(), "Block"; any other Block shape is a
+ * generation error). There is no mr_ variable for them to bind, unlike
+ * SimplifyFlag (mr_simplify_flag, line 11) and $UseGamma
+ * (mr_use_gamma_flag), whose values rules do read.
+ *
+ * Every bound name is %mr_-prefixed (the capture trap). */
+
+/* Rubi CalculusFreeQ[u,x] (IntegrationUtilityFunctions.m L338-344): u has
+   no calculus function whose variable (part 2) is x. The CalculusQ list is
+   %mr_calculusQ's (the package nouns, 'unintegrable[f, x] included -- the
+   answer a failed nested mr_int gives -- and the integrate noun of the
+   fall-through). HeldFormQ (Hold, HoldForm, Defer, Pattern) has no port
+   analogue: the port builds no held values (%mr_hold is the identity), so
+   that disjunct reads false. A Power is scanned base and exponent, as the
+   .m's Scan over u. */
+%mr_calculusFreeQ(%mr_cfq_u, %mr_cfq_x) :=
+  block([inflag : true, %mr_cfq_k, %mr_cfq_r],
+  if atom(%mr_cfq_u) then true
+  elseif %mr_calculusQ(%mr_cfq_u) and is(length(%mr_cfq_u) >= 2)
+         and is(part(%mr_cfq_u, 2) = %mr_cfq_x) then false
+  else (
+    %mr_cfq_r : true,
+    for %mr_cfq_k in args(%mr_cfq_u) do
+      if %mr_cfq_r and not %mr_calculusFreeQ(%mr_cfq_k, %mr_cfq_x)
+      then %mr_cfq_r : false,
+    %mr_cfq_r))$
+
+/* Rubi TryPureTanSubst[u,x] (L6099-6108; the commented-out conjuncts of
+   the .m are not live and are not ported):
+     Not[MatchQ[u, F_[c_.*(a_.+b_.*G_[v_])] /; FreeQ[{a,b,c},x] &&
+       MemberQ[{ArcTan,ArcCot,ArcTanh,ArcCoth},F] &&
+       MemberQ[{Tan,Cot,Tanh,Coth},G] && LinearQ[v,x]]]
+   The MatchQ is decided structurally rather than through MR-MATCH, with
+   the pattern's Mathematica semantics spelled out: Times and Plus are
+   flat, so c_. absorbs EVERY x-free factor of the argument and a_. every
+   x-free term; the defaults are c = 1, a = 0, b = 1. The argument
+   therefore matches iff it is (x-free factors) * S, where S is either
+   b*G[v] (b x-free) or a sum whose terms are all x-free except exactly one
+   b*G[v] -- or S is that sum itself / that term itself (c = 1). Any other
+   x-dependent factor or term would have to go into a, b or c and fail
+   FreeQ, so Mathematica's match fails too. No deviation. */
+%mr_tpt_gq(%mr_tpt_g, %mr_tpt_x) := block([inflag : true],
+  not atom(%mr_tpt_g)
+  and is(member(op(%mr_tpt_g), [tan, cot, tanh, coth]) = true)
+  and is(length(%mr_tpt_g) = 1)
+  and %mr_linearQ(part(%mr_tpt_g, 1), %mr_tpt_x))$
+
+/* The x-dependent factors of a product (a non-product is its own one
+   factor). */
+%mr_tpt_nonfree(%mr_tpt_t, %mr_tpt_x) := block([inflag : true],
+  sublist(if not atom(%mr_tpt_t) and op(%mr_tpt_t) = "*"
+          then args(%mr_tpt_t) else [%mr_tpt_t],
+          lambda([%mr_tpt_f], not freeof(%mr_tpt_x, %mr_tpt_f))))$
+
+/* b_.*G_[v_]: exactly one x-dependent factor, and it is G[v]. */
+%mr_tpt_bg(%mr_tpt_t, %mr_tpt_x) := block([%mr_tpt_nf],
+  %mr_tpt_nf : %mr_tpt_nonfree(%mr_tpt_t, %mr_tpt_x),
+  is(length(%mr_tpt_nf) = 1) and %mr_tpt_gq(first(%mr_tpt_nf), %mr_tpt_x))$
+
+/* a_.+b_.*G_[v_]: b*G[v] itself, or a sum with exactly one x-dependent
+   term, that term b*G[v]. */
+%mr_tpt_abg(%mr_tpt_s, %mr_tpt_x) := block([inflag : true, %mr_tpt_nt],
+  if not atom(%mr_tpt_s) and op(%mr_tpt_s) = "+" then (
+    %mr_tpt_nt : sublist(args(%mr_tpt_s),
+                         lambda([%mr_tpt_q], not freeof(%mr_tpt_x, %mr_tpt_q))),
+    is(length(%mr_tpt_nt) = 1) and %mr_tpt_bg(first(%mr_tpt_nt), %mr_tpt_x))
+  else %mr_tpt_bg(%mr_tpt_s, %mr_tpt_x))$
+
+/* c_.*(a_.+b_.*G_[v_]). */
+%mr_tpt_arg(%mr_tpt_w, %mr_tpt_x) := block([%mr_tpt_nf],
+  if %mr_tpt_abg(%mr_tpt_w, %mr_tpt_x) then true
+  else (
+    %mr_tpt_nf : %mr_tpt_nonfree(%mr_tpt_w, %mr_tpt_x),
+    is(length(%mr_tpt_nf) = 1) and %mr_tpt_abg(first(%mr_tpt_nf), %mr_tpt_x)))$
+
+%mr_tryPureTanSubst(%mr_tpt_u, %mr_tpt_x) := block([inflag : true],
+  not (not atom(%mr_tpt_u)
+       and is(member(op(%mr_tpt_u), [atan, acot, atanh, acoth]) = true)
+       and is(length(%mr_tpt_u) = 1)
+       and %mr_tpt_arg(part(%mr_tpt_u, 1), %mr_tpt_x)))$
 
 mr_witness_utils() := true$

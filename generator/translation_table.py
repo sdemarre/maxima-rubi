@@ -212,10 +212,9 @@ RENAME = {
     # bare-u_ records (4.1.0.1 r1, 4.7.5 r21/r22/r47/r48/r58). The ACTIVE
     # circular heads Tan/Cot join Sin/Cos/Sec/Csc above (natives); the
     # substrate utilities map to their maxima_rubi_utils.mac ports.
-    # %mr_tryPureTanSubst is NOT ported by Task 9 (the plan gives it to
-    # Task 10): until then the 4.7.5 r21/r22 conds end in an unbound call,
-    # which their is(... = true) wrapper reads as false -- the two records
-    # decline (the class-2/3/6 "static closure" precedent above).
+    # %mr_tryPureTanSubst: unported at Task 9 (4.7.5 r21/r22 declined on
+    # the unbound call); ported at Task 10 with %mr_calculusFreeQ, the
+    # Weierstrass record's (4_7_5 r71) inner condition.
     "Tan": "tan", "Cot": "cot",
     "FunctionOfTrigOfLinearQ": "%mr_functionOfTrigOfLinearQ",
     "DeactivateTrig": "%mr_deactivateTrig",
@@ -224,6 +223,7 @@ RENAME = {
     "FreeFactors": "%mr_freeFactors",
     "FunctionOfQ": "%mr_functionOfQ",
     "TryPureTanSubst": "%mr_tryPureTanSubst",
+    "CalculusFreeQ": "%mr_calculusFreeQ",
     # Rubi's undocumented $UseGamma control global (absent from Rubi.m;
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):

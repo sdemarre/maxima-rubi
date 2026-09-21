@@ -194,8 +194,9 @@ plan's Task 9, when class 4's bridge subset put the first real `_tail`
 lists in the table) — both handle lists are defined
 lists and the body list is non-empty; `mr_rule_table` equals the body
 handles followed by the tail handles with nothing lost; the tail is
-non-empty; the tail is exactly the six bridge records in LoadRules order
-(`4_1_0_1` r1 first, then `4_7_5` r21/r22/r47/r48/r58); every tail
+non-empty; the tail is exactly the seven bridge records in LoadRules order
+(`4_1_0_1` r1 first, then `4_7_5` r21/r22/r47/r48/r58/r71 — r71, the
+Weierstrass record, since Task 10; the count of checks is unchanged); every tail
 handle's pattern is bare-`u_`; every tail handle is registered after
 every body handle; and every bare-`u_` Int record anywhere in the loaded table
 (read via the debug entry `%mr_rule_pattern_text(handle)`,
@@ -234,7 +235,10 @@ switch defaults; +8 more by 2026-09-18, not attributed here).
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the
 2026-09-14 count and is superseded). Layer A re-measured 2026-09-21 at
-the inert-trig plan's Task 9: `Results: 1146 passed, 0 failed`.
+the inert-trig plan's Task 9: `Results: 1146 passed, 0 failed`; at its
+Task 10 (TryPureTanSubst / CalculusFreeQ / SubstFor[w,v,u,x] units, the
+Weierstrass record end to end, the two inert-leak targets):
+`Results: 1163 passed, 0 failed`.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
 test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
@@ -251,7 +255,7 @@ Green: `Results: 14 passed, 0 failed` (11 + the three translation-fix exception 
 Superseded: `Results: 21 passed, 0 failed` measured 2026-09-21 at the
 inert-trig plan's Task 9 (20 before it; class 4's bridge subset adds one
 check-7 line, the post-P0 class total `post-P0 class 4: 6 rules over 2
-files`).
+files`; Task 10 keeps 21 and moves that line to `7 rules over 2 files`).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
