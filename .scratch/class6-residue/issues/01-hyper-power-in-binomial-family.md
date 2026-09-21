@@ -88,3 +88,52 @@ miscellany files are a **further 1,480 deferred entries** and also have no
 section-6 rule file. Whether they ride the same bridge is not answered here.
 Together with `.7` that is 83 % of class 6's deferred mass, which is why the
 question is worth its own probe.
+
+## ANSWERED — 2026-09-21: the miscellany files ride the SAME bridge (91.4 %)
+
+The paragraph above left one question open: "whether they ride the same bridge
+is not answered here". Probe
+`probes/rubi/03-hyperbolic-miscellany-bridge.{py,run,out}` answers it.
+
+**Method.** The bridge's admission condition is not a guess — it is
+`FunctionOfTrigOfLinearQ[u,x]` (`IntegrationUtilityFunctions.m:4358-4361`).
+The probe ports its **branch 2** (`FunctionOfTrig` 4365-4392 +
+`AlgebraicTrigFunctionQ` 4396-4407, `LinearQ = PolyQ[u,x,1]` 1373-1376) to
+Maxima clause for clause and runs it over all 5,080 class-6 corpus integrands,
+joined entry-for-entry to `test/corpus_class6.out` (5,080/5,080 joined). Maxima
+is the parser and expression walker only: no rule files, no integration.
+Branch 1 is a Mathematica `MatchQ` with four `Optional` defaults and is NOT
+ported, so every "admitted" count here is a **lower bound**.
+
+**Controls — both hold**, which is what makes the rest readable:
+
+| control | expectation | measured |
+|---|---|---|
+| `.7` family (probe 02: rides the bridge) | high | **1166 / 1166 = 100.0 %** |
+| `(e x)^m (a+b hyper(c+d x^n))^p` (bare x, nonlinear arg) | low | **0 / 12 = 0.0 %** |
+
+**The answer.** The seven miscellany files carry **1,480 deferred** entries;
+**1,352 (91.4 %) are admitted by the bridge**, so after `DeactivateTrig` they
+are section-4 problems on the same route as `.7`. The 128 rejects are
+`non-algebraic` 57 (log / exp / non-trig factors) and `bare-x-or-angle` 71.
+
+**A third family falls out of the same table.** `6.x.1 (c+d x)^m (a+b hyper)^n`
+is 461 deferred, of which 60 are branch-2 admitted and **394 more carry branch
+1's exact shape** — branch 1 being the one branch that admits a polynomial
+factor. 454 of 461.
+
+**Total: 2,972 of class 6's 3,173 deferred entries — 93.7 % — turn on the one
+bridge rule** at the head of `4.1.0.1`.
+
+**What this does NOT say.** That the bridge ADMITS an entry is not that section
+4 ANSWERS it; that depends on section 4's rule files covering the shape, which
+is what the class-4 port measures. Do not conflate the two in a planning
+number.
+
+Three defects were found and fixed while porting the condition, each of which
+had produced plausible-but-wrong numbers; they are recorded in the probe's
+`SELFTEST` (23 cases, run first, a single miss aborts the probe): a Maxima
+`for` variable named `a` **captured the corpus's own `a`**; `op` reports the
+DISPLAY form so `2/(...)` has head `/` (fixed with `inflag:true`); and
+`is(equal(b,0))` is `unknown` for a free symbol, so `mr_linq` returned neither
+true nor false and every downstream `if` silently took its else arm.

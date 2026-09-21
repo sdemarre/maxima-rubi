@@ -1,0 +1,15 @@
+#!/bin/sh
+# probes/rubi/03-hyperbolic-miscellany-bridge.run — settle the question probe
+# 02 left open: do the seven `Hyperbolic <fn> functions` / `6.7.1` miscellany
+# corpus files (1,480 deferred entries) ride the same inert-trig bridge as the
+# `.7` family?
+#
+# Static over the pinned reference clones + the committed class-6 record, plus
+# ONE Maxima process used only as a parser and expression walker: no rule
+# files are loaded and nothing is integrated. ~3 min.
+#
+#   sh probes/rubi/03-hyperbolic-miscellany-bridge.run
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/rubi/03-hyperbolic-miscellany-bridge.py \
+    > probes/rubi/03-hyperbolic-miscellany-bridge.out
+echo "wrote probes/rubi/03-hyperbolic-miscellany-bridge.out"
