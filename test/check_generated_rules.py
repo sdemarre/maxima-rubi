@@ -23,6 +23,10 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
          %mr_iGtQ/%mr_iLtQ/%mr_iLeQ/%mr_iGeQ(A, B) undone to is(A op B),
          notequal(A, B) undone to A != B, a base `) (` redone to `)*(`,
          each count pinned
+       - the With/Module local prefixing (ticket 08, the capture trap): a
+         name declared in an expression-line block([...]) as
+         _mr_<key>_r<n>_<name> is renamed back to <name> (the local Rubi
+         calls D back to its old spelling diff), count pinned
        - the 29 manual 9.1 rules and the 52 rules that had a workaround
          emitter (no defmatch in the base) are exempt;
   4. the generator's reader self-test is green;
@@ -81,6 +85,14 @@ INT_CMP_UNDO = {"%mr_iGtQ": ">", "%mr_iLtQ": "<", "%mr_iLeQ": "<=", "%mr_iGeQ": 
 INT_CMP_SITES = 1283
 NOTEQUAL_SITES = 10
 JUXTA_SITES = 1
+# The With/Module local prefixing (.scratch/class-ports/issues/08): the
+# generator names every With/Module local _mr_<key>_r<n>_<name>, since Maxima
+# binds block locals dynamically and an unprefixed local captured the
+# integrand's own symbol during a nested integration. Undone on the new body
+# before the comparison; the count is the prefixed declarations in the
+# compared rules. The unprefixed emission translated the local D to diff.
+LOCAL_PREFIX_SITES = 1602
+LOCAL_BASE_SPELLING = {"D": "diff"}
 # user decision 2026-09-12 (Plan 2 writing session): move all 227 inner
 # conditions, including those whose locals integrate (IntHide -> mr_int);
 # their extra cost is watched by the P5 median-wall gate.
@@ -218,6 +230,26 @@ def undo_fixes(s, stats):
             rep, key = "is(%s %s %s)" % (a, INT_CMP_UNDO[m.group(1)], b), "int_cmp"
         s = s[:m.start()] + rep + s[end:]
         stats[key] += 1
+
+
+def undo_local_prefix(s, key, n, stats):
+    """The new expression line with its With/Module locals unprefixed: each
+    name a block([...]) list in the line declares as _mr_<key>_r<n>_<name>
+    becomes <name> (LOCAL_BASE_SPELLING for D) wherever it occurs as a whole
+    symbol. Only declared names are renamed, so a capture of the same shape
+    is untouched and the comparison with the base stays exact. Counts the
+    declarations."""
+    pre = "_mr_%s_r%d_" % (key, n)
+    names = set()
+    for m in re.finditer(r"block\(\[([^\]]*)\]", s):
+        names.update(nm for nm in (x.strip() for x in m.group(1).split(","))
+                     if nm.startswith(pre))
+    for nm in sorted(names, key=len, reverse=True):
+        base = nm[len(pre):]
+        s = re.sub(r"(?<![A-Za-z0-9_%])" + re.escape(nm) + r"(?![A-Za-z0-9_])",
+                   LOCAL_BASE_SPELLING.get(base, base), s)
+    stats["local_prefix"] += len(names)
+    return s
 
 
 def redo_juxtaposition(s, stats):
@@ -385,7 +417,8 @@ def main(argv):
     files = rule_files(a.base)
     counts_ok, lists_ok = [], []
     stats = dict(identical=0, guard=0, moved=0, matchq_old=0, workaround=0, nine=0,
-                 no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, notequal=0, juxta=0)
+                 no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, notequal=0, juxta=0,
+                 local_prefix=0)
     unexplained, entry_locals, bad_moves = [], [], []
     for rel in files:
         old = git_show(a.base, rel)
@@ -439,7 +472,8 @@ def main(argv):
                 continue
             try:
                 lines = [redo_juxtaposition(parts[0][2], stats), redo_juxtaposition(parts[1][2], stats),
-                         undo_fixes(parts[2][2], stats), undo_fixes(parts[3][2], stats)]
+                         undo_fixes(undo_local_prefix(parts[2][2], key, n, stats), stats),
+                         undo_fixes(undo_local_prefix(parts[3][2], key, n, stats), stats)]
             except ValueError as e:
                 unexplained.append("%s: translation-fix undo: %s" % (rid, e))
                 continue
@@ -519,6 +553,9 @@ def main(argv):
             stats["notequal"] == NOTEQUAL_SITES, str(stats["notequal"]))
     g.check("juxtaposition ) ( redone to )*( in the base: %d sites" % JUXTA_SITES,
             stats["juxta"] == JUXTA_SITES, str(stats["juxta"]))
+    g.check("With/Module locals _mr_<key>_r<n>_<name> undone to <name>: %d declarations"
+            % LOCAL_PREFIX_SITES,
+            stats["local_prefix"] == LOCAL_PREFIX_SITES, str(stats["local_prefix"]))
     for rid in entry_locals:
         print("INFO: moved inner condition with a package entry in its locals: %s%s" % (
             rid, " (resolved)" if rid in RESOLVED_ENTRY_LOCALS else " (UNRESOLVED)"))

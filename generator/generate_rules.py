@@ -518,8 +518,8 @@ def translate(s, ctx):
     head, args = head_args(s)
     if head is not None:
         if head in ("With", "Module") and ctx.get("prefix_locals"):
-            # Class 4 (final fix wave I2, ruling R28): the With/Module
-            # locals are renamed _mr_<key>_r<n>_<name> throughout the
+            # Every class (class 4 from final fix wave I2, ruling R28; all
+            # classes from ticket 08): the With/Module locals are renamed _mr_<key>_r<n>_<name> throughout the
             # scope (decls and body) -- a pure alpha-renaming of the
             # emitted block. See _push_scope_locals.
             parts = split_top(args, ",") if args.strip() else []
@@ -1569,7 +1569,8 @@ def _scope_locals(head, decls_txt, key, n):
 
 
 def _push_scope_locals(head, decls_raw, ctx):
-    """Class-4 With/Module local prefixing (final fix wave I2, ruling R28).
+    """With/Module local prefixing (final fix wave I2, ruling R28; every
+    class since ticket .scratch/class-ports/issues/08).
 
     A generated repl binds its With/Module locals in a Maxima block and
     may run a nested mr_int inside it. Maxima binds block locals
@@ -1586,9 +1587,10 @@ def _push_scope_locals(head, decls_raw, ctx):
     emitted text is exactly the unprefixed emission with the locals
     alpha-renamed (a value naming a same-named local reads it the same
     way). Returns the previous map, which the caller restores. Emitted for
-    CLASS 4 only (emit_rule sets ctx["prefix_locals"]): classes 1/2/3/6
-    stay byte-identical under the P3 gate; the all-class fix is ticket
-    .scratch/class-ports/issues/08."""
+    every Int rule (emit_rule sets ctx["prefix_locals"]); never for a
+    rewrite-table clause. The P3 gate undoes it as a closed exception
+    (test/check_generated_rules.py undo_local_prefix). The unprefixed
+    emission translated the local D to diff; prefixed it is ..._D."""
     d = decls_raw.strip()
     if not (d.startswith("{") and d.endswith("}")):
         raise GenError(f"{ctx['key']} r{ctx['n']}: {head} locals not a "
@@ -1650,11 +1652,11 @@ def emit_rule(run, key, n, rule_vars, fname=None):
     if fname is None:
         if not re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL):
             raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
-    # prefix_locals: class 4 renames its With/Module locals (final fix
-    # wave I2; see _push_scope_locals). Never for a rewrite-table clause
+    # prefix_locals: every class renames its With/Module locals (ticket
+    # 08; see _push_scope_locals). Never for a rewrite-table clause
     # (fname) -- those tables stay byte-identical.
     ctx = {"key": key, "n": n, "vars": rule_vars, "markers": None, "mq": 0,
-           "locals": {}, "prefix_locals": fname is None and CLASS == 4}
+           "locals": {}, "prefix_locals": fname is None}
     if fname is None:
         pattern = pattern_sexp(lhs, key, n, rule_vars)
     else:
@@ -1688,7 +1690,7 @@ def emit_rule(run, key, n, rule_vars, fname=None):
         repl_txt = translate(drop_optionals(f"{head}[{decls},{body}]",
                                             rule_vars), ctx)
         # the cond's copy of the scope takes the same local names as the
-        # repl's (class 4: prefixed; see _push_scope_locals)
+        # repl's (prefixed; see _push_scope_locals)
         saved = (_push_scope_locals(head, drop_optionals(decls, rule_vars),
                                     ctx)
                  if ctx["prefix_locals"] else None)
