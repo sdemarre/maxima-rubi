@@ -3582,6 +3582,16 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
 %mr_substFor3(v, u, x) := block([L],
   if %mr_atomQ(v)
   then subst(x, v, u)
+  /* Task 9 (inert-trig substrate): the .m's InertTrigFreeQ arm and its
+     circular-trig Switch arms (Sin/Cos/Tan/Cot only -- %mr_substForTrigHead,
+     defined with FunctionOfQ at the end of this file, which states the
+     deviations). No class-1 call site reaches either: class-1 u carries no
+     inert head and class-1 v no trig factor. */
+  else if not %mr_inertTrigFreeQ(u)
+  then %mr_substFor3(v, %mr_activateTrig(u), x)
+  else if not atom(%mr_nonfreeFactors(v, x))
+    and is(member(op(%mr_nonfreeFactors(v, x)), [sin, cos, tan, cot]) = true)
+  then %mr_substForTrigHead(v, u, x)
   else if not atom(v) and op(v) = "^"
     and is(part(v, 1) = x) and freeof(x, part(v, 2))
   then %mr_substPower(u, x, 1/part(v, 2))
@@ -6017,5 +6027,304 @@ mr_use_gamma_flag : false$
   %mr_fot2_v : %mr_functionOfTrig3(%mr_activateTrig(%mr_fot2_u),
                                     '%mr_fot_null, %mr_fot2_x),
   if is(%mr_fot2_v = '%mr_fot_null) then false else %mr_fot2_v)$
+
+/* ---- Task 9: FunctionOfQ (circular-trig branches) and SubstFor's trig
+ * branch -- the utilities the bridge's 4.7.5 substitution records CALL.
+ * IntegrationUtilityFunctions.m L4443-4700 (FunctionOfQ and its trig
+ * predicates), L4895-4924 (FindTrigFactor and the quotient tests),
+ * L5980-6038 (SubstFor, SubstForTrig). The plan's Task 9 interface list
+ * named only DeactivateTrig/FunctionOfTrig/FreeFactors/Subst; the five
+ * emitted 4.7.5 records' conds also call FunctionOfQ and their repls
+ * SubstFor[.., Trig[v]/d, ..] -- without these two the records can never
+ * accept and the bridge's deactivated integrand has nowhere to go
+ * (measured: rubi returned -%i*'unintegrable[%mr_isin(..)*..] for the
+ * 6.1.7 acceptance integrand). Ported under the plan's own rule: the
+ * records' callees come with the records.
+ *
+ * DEVIATIONS (stamped; each is the decline direction):
+ *  (a) FunctionOfQ's HYPERBOLIC head branches (Sinh..Csch ->
+ *      FunctionOfSinhQ.. / PureFunctionOfSinhQ..) and its default branch
+ *      (FunctionOfExpnQ) are NOT ported: FunctionOfQ answers false there,
+ *      so the calling record declines. The 4.7.5 records only ever pass
+ *      NonfreeFactors[Trig[v],x] with a circular head -- EXCEPT where
+ *      Maxima's own simplifier turns the head hyperbolic: cos(%i*z) ->
+ *      cosh(z), sin(%i*z) -> %i*sinh(z) (an argument that is a single
+ *      %i*product, i.e. a hyperbolic integrand with NO constant term, c=0).
+ *      Those integrands decline here; Mathematica takes the same turn and
+ *      Rubi answers them through the hyperbolic branches.
+ *  (b) SubstFor's trig branch covers Sin/Cos/Tan/Cot -- the four heads
+ *      the six bridge records pass. Sec/Csc and the six hyperbolic heads
+ *      fall through to the pre-existing algebraic port below.
+ *  (c) FunctionOfSinQ's and SubstForTrig's "u[[1]] is Cos[v/2], u[[2]] is
+ *      Sin[v/2]" test reads the FIRST TWO factors of Mathematica's
+ *      canonical product order; Maxima orders factors differently, so the
+ *      port looks for the pair ANYWHERE among the product's factors.
+ *
+ * Every bound name is %mr_-prefixed (the capture trap: a block local
+ * named like a corpus symbol -- the acceptance integrand's own a, b, c, d
+ * -- captures it). inflag:true is bound where op/args/part walk the
+ * expression, so a quotient reads as Times[.., Power[.., -1]] as in the
+ * .m (the Task-7 note above). */
+
+/* Rubi IntegerQuotientQ / OddQuotientQ / EvenQuotientQ (L4911-4922):
+   IntegerQ/OddQ/EvenQ of Simplify[u/v]; ratsimp is the house Simplify
+   for a quotient of two linear forms. */
+%mr_integerQuotientQ(%mr_iqq_u, %mr_iqq_v) :=
+  integerp(ratsimp(%mr_iqq_u/%mr_iqq_v))$
+%mr_oddQuotientQ(%mr_iqq_u, %mr_iqq_v) := block([%mr_iqq_q],
+  %mr_iqq_q : ratsimp(%mr_iqq_u/%mr_iqq_v),
+  integerp(%mr_iqq_q) and oddp(%mr_iqq_q))$
+%mr_evenQuotientQ(%mr_iqq_u, %mr_iqq_v) := block([%mr_iqq_q],
+  %mr_iqq_q : ratsimp(%mr_iqq_u/%mr_iqq_v),
+  integerp(%mr_iqq_q) and evenp(%mr_iqq_q))$
+
+/* Rubi FindTrigFactor[func1,func2,u,v,flag] (L4896-4906): the first
+   factor func[w]^m of u (m odd, w an integer multiple of v, and w # v
+   unless flag) as [w, u/func[w]^m]; false if none. The .m walks
+   LeadFactor/RemainingFactors, i.e. the product's factors in order; a
+   non-product u is its own single factor (RemainingFactors -> 1 ->
+   False). */
+%mr_findTrigFactor(%mr_ftf_f1, %mr_ftf_f2, %mr_ftf_u, %mr_ftf_v, %mr_ftf_flag) :=
+  block([inflag : true, %mr_ftf_k, %mr_ftf_b, %mr_ftf_e, %mr_ftf_r],
+  %mr_ftf_r : false,
+  for %mr_ftf_k in (if not atom(%mr_ftf_u) and op(%mr_ftf_u) = "*"
+                    then args(%mr_ftf_u) else [%mr_ftf_u]) do (
+    if %mr_ftf_r = false then (
+      if not atom(%mr_ftf_k) and op(%mr_ftf_k) = "^"
+      then (%mr_ftf_b : part(%mr_ftf_k, 1), %mr_ftf_e : part(%mr_ftf_k, 2))
+      else (%mr_ftf_b : %mr_ftf_k, %mr_ftf_e : 1),
+      if not atom(%mr_ftf_b)
+         and (op(%mr_ftf_b) = %mr_ftf_f1 or op(%mr_ftf_b) = %mr_ftf_f2)
+         and integerp(%mr_ftf_e) and oddp(%mr_ftf_e)
+         and %mr_integerQuotientQ(part(%mr_ftf_b, 1), %mr_ftf_v)
+         and (%mr_ftf_flag or %mr_neQ(part(%mr_ftf_b, 1), %mr_ftf_v))
+      then %mr_ftf_r : [part(%mr_ftf_b, 1), %mr_ftf_u/%mr_ftf_k])),
+  %mr_ftf_r)$
+
+/* Rubi's Catch[Scan[If[Not[P[#,v,x]], Throw[False]]], u]; True] -- P over
+   every level-1 part of u (a Power's base AND exponent included). */
+%mr_foq_all(%mr_foq_p, %mr_foq_u, %mr_foq_v, %mr_foq_x) :=
+  block([inflag : true, %mr_foq_k, %mr_foq_r],
+  %mr_foq_r : true,
+  for %mr_foq_k in args(%mr_foq_u) do
+    if %mr_foq_r and not %mr_foq_p(%mr_foq_k, %mr_foq_v, %mr_foq_x)
+    then %mr_foq_r : false,
+  %mr_foq_r)$
+
+/* The (Cos[v/2], Sin[v/2]) factor pair of FunctionOfSinQ / SubstForTrig:
+   u with the pair removed, or false (deviation (c) above). */
+%mr_foq_halfPair(%mr_hp_u, %mr_hp_v) := block([inflag : true, %mr_hp_c, %mr_hp_s, %mr_hp_k],
+  %mr_hp_c : false, %mr_hp_s : false,
+  if atom(%mr_hp_u) or op(%mr_hp_u) # "*" then false
+  else (
+    for %mr_hp_k in args(%mr_hp_u) do (
+      if not atom(%mr_hp_k) and op(%mr_hp_k) = cos and %mr_hp_c = false
+         and %mr_eqQ(part(%mr_hp_k, 1), %mr_hp_v/2) then %mr_hp_c : %mr_hp_k,
+      if not atom(%mr_hp_k) and op(%mr_hp_k) = sin and %mr_hp_s = false
+         and %mr_eqQ(part(%mr_hp_k, 1), %mr_hp_v/2) then %mr_hp_s : %mr_hp_k),
+    if %mr_hp_c = false or %mr_hp_s = false then false
+    else %mr_hp_u/(%mr_hp_c*%mr_hp_s)))$
+
+/* Rubi PureFunctionOfSinQ/CosQ/TanQ/CotQ (L4524-4565): u built only from
+   Trig[v] with the named heads (EqQ on the argument, not a multiple). */
+%mr_pureFunctionOfTrigQ(%mr_pft_heads, %mr_pft_u, %mr_pft_v, %mr_pft_x) :=
+  block([inflag : true, %mr_pft_k, %mr_pft_r],
+  if atom(%mr_pft_u) then is(not(%mr_pft_u = %mr_pft_x))
+  elseif %mr_calculusQ(%mr_pft_u) then false
+  elseif %mr_trigQ(%mr_pft_u) and %mr_eqQ(part(%mr_pft_u, 1), %mr_pft_v)
+  then is(member(op(%mr_pft_u), %mr_pft_heads) = true)
+  else (
+    %mr_pft_r : true,
+    for %mr_pft_k in args(%mr_pft_u) do
+      if %mr_pft_r and not %mr_pureFunctionOfTrigQ(%mr_pft_heads, %mr_pft_k,
+                                                   %mr_pft_v, %mr_pft_x)
+      then %mr_pft_r : false,
+    %mr_pft_r))$
+
+/* Rubi FunctionOfSinQ[u,v,x] (L4572-4606). */
+%mr_functionOfSinQ(%mr_fsq_u, %mr_fsq_v, %mr_fsq_x) :=
+  block([inflag : true, %mr_fsq_l, %mr_fsq_h],
+  if atom(%mr_fsq_u) then is(not(%mr_fsq_u = %mr_fsq_x))
+  elseif %mr_calculusQ(%mr_fsq_u) then false
+  elseif %mr_trigQ(%mr_fsq_u) and %mr_integerQuotientQ(part(%mr_fsq_u, 1), %mr_fsq_v) then (
+    if %mr_oddQuotientQ(part(%mr_fsq_u, 1), %mr_fsq_v)
+    then is(member(op(%mr_fsq_u), [sin, csc]) = true)
+    else is(member(op(%mr_fsq_u), [cos, sec]) = true))
+  elseif %mr_integerPowerQ(%mr_fsq_u) and %mr_trigQ(part(%mr_fsq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fsq_u, 1, 1), %mr_fsq_v) then (
+    if evenp(part(%mr_fsq_u, 2)) then true
+    else %mr_functionOfSinQ(part(%mr_fsq_u, 1), %mr_fsq_v, %mr_fsq_x))
+  elseif %mr_productQ(%mr_fsq_u) then (
+    %mr_fsq_h : %mr_foq_halfPair(%mr_fsq_u, %mr_fsq_v),
+    if %mr_fsq_h # false then %mr_functionOfSinQ(%mr_fsq_h, %mr_fsq_v, %mr_fsq_x)
+    else (
+      %mr_fsq_l : %mr_findTrigFactor(sin, csc, %mr_fsq_u, %mr_fsq_v, false),
+      if listp(%mr_fsq_l) and %mr_evenQuotientQ(first(%mr_fsq_l), %mr_fsq_v)
+      then %mr_functionOfSinQ(cos(%mr_fsq_v)*second(%mr_fsq_l), %mr_fsq_v, %mr_fsq_x)
+      else (
+        %mr_fsq_l : %mr_findTrigFactor(cos, sec, %mr_fsq_u, %mr_fsq_v, false),
+        if listp(%mr_fsq_l) and %mr_oddQuotientQ(first(%mr_fsq_l), %mr_fsq_v)
+        then %mr_functionOfSinQ(cos(%mr_fsq_v)*second(%mr_fsq_l), %mr_fsq_v, %mr_fsq_x)
+        else (
+          %mr_fsq_l : %mr_findTrigFactor(tan, cot, %mr_fsq_u, %mr_fsq_v, true),
+          if listp(%mr_fsq_l)
+          then %mr_functionOfSinQ(cos(%mr_fsq_v)*second(%mr_fsq_l), %mr_fsq_v, %mr_fsq_x)
+          else %mr_foq_all(%mr_functionOfSinQ, %mr_fsq_u, %mr_fsq_v, %mr_fsq_x)))))
+  else %mr_foq_all(%mr_functionOfSinQ, %mr_fsq_u, %mr_fsq_v, %mr_fsq_x))$
+
+/* Rubi FunctionOfCosQ[u,v,x] (L4609-4634). */
+%mr_functionOfCosQ(%mr_fcq_u, %mr_fcq_v, %mr_fcq_x) :=
+  block([inflag : true, %mr_fcq_l],
+  if atom(%mr_fcq_u) then is(not(%mr_fcq_u = %mr_fcq_x))
+  elseif %mr_calculusQ(%mr_fcq_u) then false
+  elseif %mr_trigQ(%mr_fcq_u) and %mr_integerQuotientQ(part(%mr_fcq_u, 1), %mr_fcq_v)
+  then is(member(op(%mr_fcq_u), [cos, sec]) = true)
+  elseif %mr_integerPowerQ(%mr_fcq_u) and %mr_trigQ(part(%mr_fcq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fcq_u, 1, 1), %mr_fcq_v) then (
+    if evenp(part(%mr_fcq_u, 2)) then true
+    else %mr_functionOfCosQ(part(%mr_fcq_u, 1), %mr_fcq_v, %mr_fcq_x))
+  elseif %mr_productQ(%mr_fcq_u) then (
+    %mr_fcq_l : %mr_findTrigFactor(sin, csc, %mr_fcq_u, %mr_fcq_v, false),
+    if listp(%mr_fcq_l)
+    then %mr_functionOfCosQ(sin(%mr_fcq_v)*second(%mr_fcq_l), %mr_fcq_v, %mr_fcq_x)
+    else (
+      %mr_fcq_l : %mr_findTrigFactor(tan, cot, %mr_fcq_u, %mr_fcq_v, true),
+      if listp(%mr_fcq_l)
+      then %mr_functionOfCosQ(sin(%mr_fcq_v)*second(%mr_fcq_l), %mr_fcq_v, %mr_fcq_x)
+      else %mr_foq_all(%mr_functionOfCosQ, %mr_fcq_u, %mr_fcq_v, %mr_fcq_x)))
+  else %mr_foq_all(%mr_functionOfCosQ, %mr_fcq_u, %mr_fcq_v, %mr_fcq_x))$
+
+/* Rubi FunctionOfTanQ[u,v,x] (L4637-4652). */
+%mr_functionOfTanQ(%mr_ftq_u, %mr_ftq_v, %mr_ftq_x) :=
+  block([inflag : true, %mr_ftq_l, %mr_ftq_k],
+  if atom(%mr_ftq_u) then is(not(%mr_ftq_u = %mr_ftq_x))
+  elseif %mr_calculusQ(%mr_ftq_u) then false
+  elseif %mr_trigQ(%mr_ftq_u) and %mr_integerQuotientQ(part(%mr_ftq_u, 1), %mr_ftq_v)
+  then is(member(op(%mr_ftq_u), [tan, cot]) = true)
+       or %mr_evenQuotientQ(part(%mr_ftq_u, 1), %mr_ftq_v)
+  elseif %mr_powerQ(%mr_ftq_u) and evenp(part(%mr_ftq_u, 2))
+         and %mr_trigQ(part(%mr_ftq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_ftq_u, 1, 1), %mr_ftq_v) then true
+  elseif %mr_powerQ(%mr_ftq_u) and evenp(part(%mr_ftq_u, 2))
+         and %mr_sumQ(part(%mr_ftq_u, 1))
+  then %mr_functionOfTanQ(expand(part(%mr_ftq_u, 1)^2), %mr_ftq_v, %mr_ftq_x)
+  elseif %mr_productQ(%mr_ftq_u) then (
+    %mr_ftq_l : sublist(args(%mr_ftq_u),
+                        lambda([%mr_ftq_k],
+                               not %mr_functionOfTanQ(%mr_ftq_k, %mr_ftq_v, %mr_ftq_x))),
+    if %mr_ftq_l = [] then true
+    else is(length(%mr_ftq_l) = 2)
+         and %mr_oddTrigPowerQ(first(%mr_ftq_l), %mr_ftq_v, %mr_ftq_x)
+         and %mr_oddTrigPowerQ(second(%mr_ftq_l), %mr_ftq_v, %mr_ftq_x))
+  else %mr_foq_all(%mr_functionOfTanQ, %mr_ftq_u, %mr_ftq_v, %mr_ftq_x))$
+
+/* Rubi OddTrigPowerQ[u,v,x] (L4655-4669). */
+%mr_oddTrigPowerQ(%mr_otp_u, %mr_otp_v, %mr_otp_x) :=
+  block([inflag : true, %mr_otp_l, %mr_otp_k],
+  if atom(%mr_otp_u) then false
+  elseif is(member(op(%mr_otp_u), [sin, cos, sec, csc]) = true)
+  then %mr_oddQuotientQ(part(%mr_otp_u, 1), %mr_otp_v)
+  elseif %mr_powerQ(%mr_otp_u)
+  then integerp(part(%mr_otp_u, 2)) and oddp(part(%mr_otp_u, 2))
+       and %mr_oddTrigPowerQ(part(%mr_otp_u, 1), %mr_otp_v, %mr_otp_x)
+  elseif %mr_productQ(%mr_otp_u) then (
+    if %mr_neQ(%mr_freeFactors(%mr_otp_u, %mr_otp_x), 1)
+    then %mr_oddTrigPowerQ(%mr_nonfreeFactors(%mr_otp_u, %mr_otp_x), %mr_otp_v, %mr_otp_x)
+    else (
+      %mr_otp_l : sublist(args(%mr_otp_u),
+                          lambda([%mr_otp_k],
+                                 not %mr_functionOfTanQ(%mr_otp_k, %mr_otp_v, %mr_otp_x))),
+      if %mr_otp_l = [] then true
+      else is(length(%mr_otp_l) = 1)
+           and %mr_oddTrigPowerQ(first(%mr_otp_l), %mr_otp_v, %mr_otp_x)))
+  elseif %mr_sumQ(%mr_otp_u)
+  then %mr_foq_all(%mr_oddTrigPowerQ, %mr_otp_u, %mr_otp_v, %mr_otp_x)
+  else false)$
+
+/* Rubi FunctionOfQ[v,u,x,PureFlag:False] (L4443-4481): is u a function
+   of v? The optional 4th argument is PureFlag. Circular-trig heads only
+   (deviation (a) above). */
+%mr_functionOfQ(%mr_foq_v, %mr_foq_u, %mr_foq_x, [%mr_foq_opt]) :=
+  block([inflag : true, %mr_foq_pure, %mr_foq_h, %mr_foq_w],
+  %mr_foq_pure : is(length(%mr_foq_opt) > 0 and first(%mr_foq_opt) = true),
+  if freeof(%mr_foq_x, %mr_foq_u) then false
+  elseif atom(%mr_foq_v) then true
+  elseif not %mr_inertTrigFreeQ(%mr_foq_u)
+  then %mr_functionOfQ(%mr_foq_v, %mr_activateTrig(%mr_foq_u), %mr_foq_x, %mr_foq_pure)
+  elseif %mr_productQ(%mr_foq_v) and %mr_neQ(%mr_freeFactors(%mr_foq_v, %mr_foq_x), 1)
+  then %mr_functionOfQ(%mr_nonfreeFactors(%mr_foq_v, %mr_foq_x), %mr_foq_u, %mr_foq_x,
+                       %mr_foq_pure)
+  elseif not %mr_trigQ(%mr_foq_v) then false
+  else (
+    %mr_foq_h : op(%mr_foq_v),
+    %mr_foq_w : part(%mr_foq_v, 1),
+    if %mr_foq_pure then (
+      if %mr_foq_h = sin or %mr_foq_h = csc
+      then %mr_pureFunctionOfTrigQ([sin, csc], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cos or %mr_foq_h = sec
+      then %mr_pureFunctionOfTrigQ([cos, sec], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = tan
+      then %mr_pureFunctionOfTrigQ([tan, cot], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_pureFunctionOfTrigQ([cot], %mr_foq_u, %mr_foq_w, %mr_foq_x))
+    else (
+      if %mr_foq_h = sin or %mr_foq_h = csc
+      then %mr_functionOfSinQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cos or %mr_foq_h = sec
+      then %mr_functionOfCosQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_functionOfTanQ(%mr_foq_u, %mr_foq_w, %mr_foq_x))))$
+
+/* Rubi SubstForTrig[u,sin,cos,v,x] (L6019-6029): u, a function of
+   Trig[v], with Sin[v] -> sin, Cos[v] -> cos. A multiple angle
+   Trig[k v] is TrigExpand'ed first (%mr_sft_y is the expansion's dummy
+   variable, the .m's x). */
+%mr_substForTrig(%mr_sft_u, %mr_sft_s, %mr_sft_c, %mr_sft_v) :=
+  block([inflag : true, %mr_sft_h, %mr_sft_t, %mr_sft_p],
+  if atom(%mr_sft_u) then %mr_sft_u
+  elseif %mr_trigQ(%mr_sft_u) and %mr_integerQuotientQ(part(%mr_sft_u, 1), %mr_sft_v) then (
+    %mr_sft_h : op(%mr_sft_u),
+    if %mr_eqQ(part(%mr_sft_u, 1), %mr_sft_v) then (
+      if %mr_sft_h = sin then %mr_sft_s
+      elseif %mr_sft_h = cos then %mr_sft_c
+      elseif %mr_sft_h = tan then %mr_sft_s/%mr_sft_c
+      elseif %mr_sft_h = cot then %mr_sft_c/%mr_sft_s
+      elseif %mr_sft_h = sec then 1/%mr_sft_c
+      else 1/%mr_sft_s)
+    else (
+      %mr_sft_t : subst(%mr_sft_v, '%mr_sft_y,
+                        trigexpand(apply(%mr_sft_h,
+                          [ratsimp(part(%mr_sft_u, 1)/%mr_sft_v)*'%mr_sft_y]))),
+      if atom(%mr_sft_t) then %mr_sft_t
+      else apply(op(%mr_sft_t),
+                 map(lambda([%mr_sft_p],
+                            %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
+                     args(%mr_sft_t)))))
+  else (
+    %mr_sft_t : %mr_foq_halfPair(%mr_sft_u, %mr_sft_v),
+    if %mr_sft_t # false
+    then %mr_sft_s/2*%mr_substForTrig(%mr_sft_t, %mr_sft_s, %mr_sft_c, %mr_sft_v)
+    else apply(op(%mr_sft_u),
+               map(lambda([%mr_sft_p],
+                          %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
+                   args(%mr_sft_u)))))$
+
+/* Rubi SubstFor[v,u,x]'s FreeFactors + Switch[Head[v], Sin|Cos|Tan|Cot]
+   arms (L5980-5998), for v whose non-free part is one of those four heads
+   (deviation (b)): SubstFor[NonfreeFactors[v,x], u, x/FreeFactors[v,x]]
+   with the head's (sin, cos) pair in that scaled variable. */
+%mr_substForTrigHead(%mr_sfh_v, %mr_sfh_u, %mr_sfh_x) :=
+  block([inflag : true, %mr_sfh_w, %mr_sfh_y, %mr_sfh_h, %mr_sfh_a],
+  %mr_sfh_w : %mr_nonfreeFactors(%mr_sfh_v, %mr_sfh_x),
+  %mr_sfh_y : %mr_sfh_x/%mr_freeFactors(%mr_sfh_v, %mr_sfh_x),
+  %mr_sfh_h : op(%mr_sfh_w),
+  %mr_sfh_a : part(%mr_sfh_w, 1),
+  if %mr_sfh_h = sin
+  then %mr_substForTrig(%mr_sfh_u, %mr_sfh_y, sqrt(1 - %mr_sfh_y^2), %mr_sfh_a)
+  elseif %mr_sfh_h = cos
+  then %mr_substForTrig(%mr_sfh_u, sqrt(1 - %mr_sfh_y^2), %mr_sfh_y, %mr_sfh_a)
+  elseif %mr_sfh_h = tan
+  then %mr_substForTrig(%mr_sfh_u, %mr_sfh_y/sqrt(1 + %mr_sfh_y^2),
+                        1/sqrt(1 + %mr_sfh_y^2), %mr_sfh_a)
+  else %mr_substForTrig(%mr_sfh_u, 1/sqrt(1 + %mr_sfh_y^2),
+                        %mr_sfh_y/sqrt(1 + %mr_sfh_y^2), %mr_sfh_a))$
 
 mr_witness_utils() := true$

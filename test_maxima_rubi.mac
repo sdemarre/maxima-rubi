@@ -125,6 +125,7 @@ run_all_tests() := block([],
   test_inert_trig_reduce_powersum(),
   test_deactivate_trig(),
   test_function_of_trig_of_linear(),
+  test_function_of_q(),
   test_census(),
   print(""),
   print("========================================"),
@@ -3823,6 +3824,48 @@ test_function_of_trig_of_linear() := block([],
         %mr_functionOfTrig(sin(2*x+1), x), 2*x+1),
   check("fot: false when there is none",
         %mr_functionOfTrig((1+x)^3, x), false),
+  true
+)$
+
+/* FunctionOfQ (circular-trig branches) and SubstFor's trig branch (inert-
+ * trig substrate plan, Task 9): the utilities the bridge's 4.7.5
+ * substitution records call (maxima_rubi_utils.mac, which states the three
+ * deviations). The cos pair below is the 6.1.7 acceptance chain's own
+ * step: after deactivation 4.7.5 r48 asks whether u/Sin[v] is a function
+ * of Cos[v], and substitutes Cos[v] -> x. */
+test_function_of_q() := block([],
+  print("--- FunctionOfQ / SubstFor (trig) ---"),
+  check_bool("foq: an even sin power is a function of cos",
+             %mr_functionOfQ(cos(x), a - b*sin(x)^2, x)),
+  check_not("foq: an odd sin power is not a function of cos",
+            %mr_functionOfQ(cos(x), sin(x)*(a - b*sin(x)^2), x)),
+  check_not("foq: a 1/cos factor is not a function of sin",
+            %mr_functionOfQ(sin(x), sin(x)*(a - b*sin(x)^2)/cos(x), x)),
+  check_bool("foq: an inert u is activated first",
+             %mr_functionOfQ(cos(x), a - b*%mr_isin(x)^2, x)),
+  check_bool("foq: a free factor of v is dropped",
+             %mr_functionOfQ(2*cos(x), sin(x)^2, x)),
+  check_not("foq: u free of x", %mr_functionOfQ(cos(x), a, x)),
+  check_bool("foq: tan (not pure) accepts sec^2",
+             %mr_functionOfQ(tan(x), sec(x)^2, x)),
+  check_bool("foq: pure tan accepts a polynomial in tan",
+             %mr_functionOfQ(tan(x), 1 + tan(x)^2, x, true)),
+  check_not("foq: pure tan rejects sec^2",
+            %mr_functionOfQ(tan(x), sec(x)^2, x, true)),
+  check_not("foq: a hyperbolic v declines (deviation (a), not ported)",
+            %mr_functionOfQ(cosh(x), sinh(x)^2, x)),
+  /* SubstFor[v,u,x]: x is BOTH the integration variable v is a function
+     of and the symbol v is replaced by (Rubi's own convention). */
+  check("sft: cos(x) -> x takes sin^2 to 1-x^2",
+        ratsimp(%mr_substFor(cos(x), a - b*sin(x)^2, x) - (a - b*(1 - x^2))), 0),
+  check("sft: an inert u is activated first",
+        ratsimp(%mr_substFor(cos(x), a - b*%mr_isin(x)^2, x) - (a - b*(1 - x^2))), 0),
+  check("sft: a multiple angle is expanded first",
+        ratsimp(%mr_substFor(sin(x), cos(2*x), x) - (1 - 2*x^2)), 0),
+  check("sft: a free factor of v scales the variable",
+        ratsimp(%mr_substFor(2*sin(x), sin(x)^2, x) - x^2/4), 0),
+  check("sft: tan(x) -> x takes sin^2/cos^2 to x^2",
+        ratsimp(%mr_substFor(tan(x), sin(x)^2/cos(x)^2, x) - x^2), 0),
   true
 )$
 
