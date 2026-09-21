@@ -508,3 +508,75 @@ phase. No `Co-Authored-By` and no `Claude-Session:` trailer; `git add -A`
 banned. Push only when the user asks.
 
 The implementation plan follows this spec via the writing-plans skill.
+
+## Amendments (2026-09-21, execution)
+
+Recorded after the plan's ten tasks and the final review's fix wave, on
+branch `class4-inert-substrate`. Each entry names the commit that made the
+change; the sections above are left as designed.
+
+1. **The tail is EIGHT records, not seven (§0.3, §3.3).** 4.7.5 r72,
+   `Int[u_,x_Symbol] := With[{v=ActivateTrig[u]}, CannotIntegrate[v,x]] /;
+   Not[InertTrigFreeQ[u]]` (4.7.5.m L76), is Rubi's own last record: an
+   integrand the bridge deactivated and nothing finished is given up
+   RE-ACTIVATED, so the unintegrable noun carries no inert head. The design's
+   seven omitted it. Added in `23855a8`; the tail is 4.1.0.1 r1, then 4.7.5
+   r21/r22/r47/r48/r58/r71/r72, r72 last, gated by
+   `test/test_rule_table_order.mac`.
+2. **Six legacy bare-`u_` records stay in their body lists (§3.3).** §3.3
+   says a bare-`u_` record cannot be left in the body. Classes 1/2/3 already
+   carry six (`1_4_1` r7/r8, `9_1` r8/r13, `2_3` r96, `3_5` r42); the tail
+   convention applies to NEW (class-4) records only, so classes 1/2/3/6 stay
+   byte-identical, and the six are a CLOSED, NAMED exception list
+   (`BARE_U_BODY_EXCEPTIONS`, generator/generate_rules.py; a seventh fails
+   the gate). Commit `4087926`; the faithfulness question is
+   `.scratch/class-ports/issues/07-bare-u-records-mid-table.md`.
+3. **The rules-core fingerprint hashes `rules/*/*.mac`** (both
+   `test/build_rules_core.sh` and the driver's `_core_fingerprint`, one
+   sorted order), so a regenerated rewrite table or class-4 file can never
+   leave a stale core looking fresh. Commit `49140a9`, guarded by
+   `test/test_driver_core_pin.py`.
+4. **The real-table ordering gate** `test/test_rule_table_order.mac`
+   (outside Layer A, which never calls `mr_load_all`): body handles, then
+   the tail, the tail exactly the eight records, r72 its only give-up, every
+   bare-`u_` record in the tail or on the exception list. Commit `a05c43d`
+   (4 checks), grown to 8 by `34814f4` and `23855a8`.
+5. **Utility ports the plan did not list** — each a callee of a ported
+   record or clause, brought in with it: the 3-argument `ReduceInertTrig`
+   and `PowerOfInertTrigSumQ` (`826e134`); `InertReciprocalQ` (`7b3d58a`);
+   `FunctionOfQ`'s circular-trig branches and `SubstFor`'s trig arms /
+   `SubstForTrig` (`8c1807a`); `TryPureTanSubst` and `CalculusFreeQ`
+   (`978f65b`). Their stamped deviations are in maxima_rubi_utils.mac (the
+   Task-9 "DEVIATIONS" header, relabelled in `2b24471`).
+6. **Task 7's mixed trig/hyperbolic target was corrected** (plan commit
+   `d20d4ac`): `FunctionOfTrigOfLinearQ` of an integrand mixing a trig and
+   a hyperbolic head is FALSE in Rubi (a hyperbolic argument is carried as
+   `I*u`, and `b/d = -I` fails `RationalQ`) — the reason `DeactivateTrig`
+   exists. Measured with `probes/rubi/03-hyperbolic-miscellany-bridge.py`.
+7. **Class 4's With/Module locals are prefixed** `_mr_<key>_r<n>_<name>`
+   (`de51845`). The 4.7.5 repls ran a nested `mr_int` inside an unprefixed
+   `block([d])`, and Maxima's dynamic binding let the local replace the
+   integrand's own `d` during the nested integration: `rubi(cos(x)/(d
+   sin(x)^7+1), x)` answered with residual 1.08e-3, `sin(x)/(c+d cos(x)^5)`
+   2.0e-2 — silently wrong where the port had answered the noun before
+   (`probes/maxima/probe-class4-with-capture.out`, sections A and E). The
+   renaming is a pure alpha-renaming of the emitted text, class 4 only;
+   classes 1/2/3/6 carry the same exposure and are ticketed
+   (`.scratch/class-ports/issues/08-generator-unprefixed-with-locals.md`,
+   with the class-free mechanism in `mr_sum`, probe sections C and D).
+8. **Corpus outcome** (queue runner, 12 workers, 30 s cpu cap, rules core
+   `3d08a28a…`, 2026-09-21, build `branch_5_50_base_84_g4204fb669`; A/B by
+   `python3 test/ab_records.py <accepted> <new>`):
+
+   | class | accepted PASS | branch PASS | PASS→FAIL | FAIL→PASS | record |
+   |---|---|---|---|---|---|
+   | 2 | 707 | 708 | 0 | 1 | `test/corpus_class2.inert-substrate.out` |
+   | 3 | 1,657 | 1,673 | 0 | 16 | `test/corpus_class3.inert-substrate.out` |
+   | 6 | 739 | **1,636** | 23 | 920 | `test/corpus_class6.inert-substrate.out` |
+
+   Class 6's 23 PASS→FAIL: 22 `no-answer → contains-noun`, the
+   `c*'unintegrable[g,x]` form the driver does not read as a no-answer
+   (`.scratch/corpus-harness/issues/04-noun-times-constant-no-answer.md`),
+   and 6.5.3 e151 `verified → timeout` at the cap (29.8 s → 30.0 s). The
+   named records do not replace the accepted `test/corpus_class{2,3,6}.out`;
+   that is the acceptance decision.
