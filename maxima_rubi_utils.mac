@@ -5802,4 +5802,51 @@ mr_use_gamma_flag : false$
   mr_r : subst(sec, %mr_isec, mr_r), mr_r : subst(csc, %mr_icsc, mr_r),
   mr_r)$
 
+/* Rubi DeactivateTrigAux[u,x] (IntegrationUtilityFunctions.m L6198-6218).
+   Both branches. The hyperbolic branch is the cross-section bridge: it maps
+   the six hyperbolic heads onto the six INERT TRIG heads by the
+   imaginary-argument identities, with the argument multiplied by %i. This is
+   how Rubi answers the class-6 shapes that have no section-6 rule file
+   (probes/rubi/02-hyperbolic-inert-trig-bridge). op(u) on a function
+   application (sin(x), sinh(x), ...) returns the bare symbol (sin, sinh,
+   ...), not a string (measured this task; contrast the "+"/"*"/"^" string
+   ops of the else branch's rebuild, trap (b)). The block local is
+   %mr_dta_-prefixed and the else-branch lambda parameter is %mr_dta_t: a
+   local or lambda parameter named like a corpus symbol (v, t, u, x, ...)
+   can capture that symbol inside the walked expression (trap (a)). */
+%mr_deactivateTrigAux(u, x) := block([%mr_dta_v],
+  if atom(u) then u
+  elseif %mr_trigQ(u) and %mr_linearQ([part(u, 1)], x) then (
+    %mr_dta_v : %mr_expandToSum(part(u, 1), x),
+    if op(u) = sin then %mr_reduceInertTrig(%mr_isin, %mr_dta_v)
+    elseif op(u) = cos then %mr_reduceInertTrig(%mr_icos, %mr_dta_v)
+    elseif op(u) = tan then %mr_reduceInertTrig(%mr_itan, %mr_dta_v)
+    elseif op(u) = cot then %mr_reduceInertTrig(%mr_icot, %mr_dta_v)
+    elseif op(u) = sec then %mr_reduceInertTrig(%mr_isec, %mr_dta_v)
+    else %mr_reduceInertTrig(%mr_icsc, %mr_dta_v))
+  elseif %mr_hyperbolicQ(u) and %mr_linearQ([part(u, 1)], x) then (
+    %mr_dta_v : %mr_expandToSum(%i * part(u, 1), x),
+    if op(u) = sinh then -%i * %mr_reduceInertTrig(%mr_isin, %mr_dta_v)
+    elseif op(u) = cosh then %mr_reduceInertTrig(%mr_icos, %mr_dta_v)
+    elseif op(u) = tanh then -%i * %mr_reduceInertTrig(%mr_itan, %mr_dta_v)
+    elseif op(u) = coth then %i * %mr_reduceInertTrig(%mr_icot, %mr_dta_v)
+    elseif op(u) = sech then %mr_reduceInertTrig(%mr_isec, %mr_dta_v)
+    else %i * %mr_reduceInertTrig(%mr_icsc, %mr_dta_v))
+  else apply(op(u),
+             map(lambda([%mr_dta_t], %mr_deactivateTrigAux(%mr_dta_t, x)),
+                 args(u))))$
+
+/* Rubi DeactivateTrig[u,x] (L6189-6195): UnifyInertTrigFunction o
+   FixInertTrigFunction o DeactivateTrigAux. The upstream file also carries
+   a fast-path clause ahead of this one, for (c+d x)^m (a+b trig[e+f x])^n,
+   that recurses DeactivateTrig into the trig factor alone rather than
+   walking the whole product through DeactivateTrigAux. It is NOT ported
+   here: no Layer A target distinguishes it from the general clause below,
+   which subsumes it (map/apply already walks into a product's trig factor
+   the same way), so it would be an optimisation this plan does not need
+   (brief resolution 3). */
+%mr_deactivateTrig(u, x) := block([],
+  %mr_unifyInertTrigFunction(%mr_fixInertTrigFunction(
+    %mr_deactivateTrigAux(u, x), x), x))$
+
 mr_witness_utils() := true$

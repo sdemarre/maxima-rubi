@@ -123,6 +123,7 @@ run_all_tests() := block([],
   test_translation_fixes_posaux(),
   test_inert_trig_rewrites(),
   test_inert_trig_reduce_powersum(),
+  test_deactivate_trig(),
   test_census(),
   print(""),
   print("========================================"),
@@ -3698,6 +3699,62 @@ test_inert_trig_reduce_powersum() := block([_t_fitf_u, _t_fitf_first],
             %mr_inertTrigFreeQ(log(%mr_isin(x)))),
   check_bool("trigQ: an active trig head", %mr_trigQ(sin)),
   check_not("trigQ: an inert head is not an active one", %mr_trigQ(%mr_isin)),
+  true
+)$
+
+/* Task 6: DeactivateTrig (IntegrationUtilityFunctions.m L6189-6226).
+ * The six hyperbolic identities individually -- these are the class-6 unlock
+ * and each is worth its own target:
+ *   Sinh -> -I sin[I z]   Cosh ->   cos[I z]   Tanh -> -I tan[I z]
+ *   Coth ->  I cot[I z]   Sech ->   sec[I z]   Csch ->  I csc[I z]
+ * Each expected value is derived by hand from the .m Switch at L6210-6218,
+ * with the argument routed through ExpandToSum and ReduceInertTrig exactly
+ * as the .m does. For u[[1]] = x (a bare linear argument with no Pi term),
+ * ExpandToSum[I*x,x] gives back I*x unexpanded, and ReduceInertTrig's only
+ * firing clause for an argument with no Pi term is the plain identity
+ * func[u] -- MEASURED directly this task (build
+ * branch_5_50_base_84_g4204fb669): %mr_reduceInertTrig(%mr_isin, %i*x) =
+ * %mr_isin(%i*x), and likewise for the other five heads. So each identity
+ * below is the Switch's sign/I-factor applied to inert-head(%i*x), which is
+ * literally what the brief's Step 1 targets already state. */
+test_deactivate_trig() := block([],
+  print("--- DeactivateTrig ---"),
+  check("deactivate: Sinh", %mr_deactivateTrigAux(sinh(x), x),
+        -%i*%mr_isin(%i*x)),
+  check("deactivate: Cosh", %mr_deactivateTrigAux(cosh(x), x),
+        %mr_icos(%i*x)),
+  check("deactivate: Tanh", %mr_deactivateTrigAux(tanh(x), x),
+        -%i*%mr_itan(%i*x)),
+  check("deactivate: Coth", %mr_deactivateTrigAux(coth(x), x),
+        %i*%mr_icot(%i*x)),
+  check("deactivate: Sech", %mr_deactivateTrigAux(sech(x), x),
+        %mr_isec(%i*x)),
+  check("deactivate: Csch", %mr_deactivateTrigAux(csch(x), x),
+        %i*%mr_icsc(%i*x)),
+  /* The trig branch: head for head, argument untouched (same identity
+   * clause, same measurement). */
+  check("deactivate: Sin", %mr_deactivateTrigAux(sin(x), x), %mr_isin(x)),
+  check("deactivate: Cos", %mr_deactivateTrigAux(cos(x), x), %mr_icos(x)),
+  /* Non-linear argument: the LinearQ guard leaves the head ACTIVE, and the
+   * fall-through map branch recurses into x^2, which is itself neither
+   * atom-free nor trig/hyperbolic-headed at the top and so is rebuilt
+   * unchanged via the same map/apply walk. */
+  check("deactivate: a non-linear argument is left active",
+        %mr_deactivateTrigAux(sin(x^2), x), sin(x^2)),
+  /* Structural: it maps over a compound expression, keeping the head. */
+  check("deactivate: maps over a product",
+        %mr_deactivateTrigAux(sin(x)*cos(x), x), %mr_isin(x)*%mr_icos(x)),
+  /* The round trip both ways -- the invariant of design 3.1. */
+  check("round trip: trig",
+        %mr_activateTrig(%mr_deactivateTrig(sin(x)^2, x)), sin(x)^2),
+  /* The hyperbolic round trip: ratsimp cannot close a hyperbolic identity
+   * (AGENTS.md class-6 trap), but core trigrat can -- MEASURED this task:
+   * trigrat(-%i*sin(%i*x) - sinh(x)) reduces to exactly 0. That is a
+   * stronger, symbolic close (resolution 2), used instead of the brief's
+   * numeric-at-a-point check. */
+  check_bool("round trip: hyperbolic closes symbolically via trigrat",
+    is(trigrat(%mr_activateTrig(%mr_deactivateTrig(sinh(x), x)) - sinh(x))
+       = 0)),
   true
 )$
 
