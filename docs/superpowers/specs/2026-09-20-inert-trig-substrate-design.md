@@ -580,3 +580,7 @@ change; the sections above are left as designed.
    and 6.5.3 e151 `verified → timeout` at the cap (29.8 s → 30.0 s). The
    named records do not replace the accepted `test/corpus_class{2,3,6}.out`;
    that is the acceptance decision.
+   **Accepted 2026-09-21 (user decision):** the three named records were
+   promoted byte-for-byte to `test/corpus_class{2,3,6}.out` (classes 2/3/6
+   now 708 / 1,673 / 1,636); the named copies are kept as the citations
+   above.
