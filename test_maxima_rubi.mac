@@ -3618,6 +3618,31 @@ test_inert_trig_reduce_powersum() := block([_t_fitf_u, _t_fitf_first],
    * unevaluated -- the noun form. */
   check("rit 3-arg: non-rational m stays unevaluated",
         _t_rit([%mr_isin, k, x]), '%mr_reduceInertTrig(%mr_isin, k, x)),
+  /* clause 2 (L6500), the hyperbolic side: an IMAGINARY multiple of Pi.
+   * i*(x + i*Pi/2): mr-tree gives (Times #C(0 1) (Plus x (Times #C(0 1/2)
+   * Pi))), so Complex[0,mz] binds mz = 1, m = 1, Complex[0,nz] binds
+   * nz = 1/2, n = 1, u = x, v = 0. RIT[sin, -m*mz*n*nz = -1/2,
+   * m*mz*I*u+v = i*x]; 3-arg m = -1/2: sin arm -> -RIT[sin, 1/2, -i*x]
+   * -> -RIT[cos, 0, -i*x] = -cos(-i*x). (Check: sin(i*x - Pi/2) =
+   * -cos(i*x).) */
+  check("rit r2: sin(i*(x+i*pi/2)) = -cos(-i*x)",
+        _t_rit([%mr_isin, %i*(x + %i*%pi/2)]), -%mr_icos(-%i*x)),
+  check("rit r2 alone gives it",
+        %mr_rewrite("ReduceInertTrig", [_mr_rw_rit_r2], %mr_isin,
+                    %i*(x + %i*%pi/2)),
+        -%mr_icos(-%i*x)),
+  /* ... and r1 declines it (n would bind the complex 1/2*i, which fails
+   * RationalQ), so r2 is the first clause that fires. %mr_rewrite returns
+   * its first argument when no clause fires. */
+  check("rit r1 declines the imaginary multiple",
+        %mr_rewrite("ReduceInertTrig", [_mr_rw_rit_r1], %mr_isin,
+                    %i*(x + %i*%pi/2)),
+        %mr_isin),
+  /* 2*i*(x + i*Pi): -m*mz*n*nz = -2, u -> 2*i*x. 3-arg m = -2: sin arm
+   * -> -RIT[sin, 2, -2*i*x] -> Mod[2,2] = 0 -> -sin(-2*i*x).
+   * (Check: sin(2*i*x - 2*Pi) = sin(2*i*x).) */
+  check("rit r2: sin(2*i*(x+i*pi)) = -sin(-2*i*x)",
+        _t_rit([%mr_isin, 2*%i*(x + %i*%pi)]), -%mr_isin(-2*%i*x)),
   /* PowerOfInertTrigSumQ[u, func, x], L6487. */
   check_bool("powersumQ: a+b*sin(x) (first MatchQ, a /= 0)",
              is(%mr_powerOfInertTrigSumQ(a + b*%mr_isin(x), %mr_isin, x) = true)),

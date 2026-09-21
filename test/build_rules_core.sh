@@ -53,15 +53,20 @@ trap 'rm -rf "$TMP"' EXIT
 
 # Fingerprint over exactly the files the image is built from: the loader,
 # the utils, the dispatch lisp, the matcher lisp, the converter lisp, and
-# every generated class-1, class-2 AND class-3 rule file. The file list
-# is sorted (C locale) so the byte order matches the driver's
+# every rules/*/*.mac — all rule classes AND rules/utils (the inert-trig
+# rewrite tables mr_load_all loads). One general glob, not a per-class
+# list, so a new rules/ subdirectory is covered the day it appears. The
+# file list is sorted (C locale) so the byte order matches the driver's
 # _core_fingerprint() (test/corpus_driver.py) exactly — a
 # different order would make every freshly built core look stale.
+# `sh test/build_rules_core.sh --fingerprint` prints the fingerprint and
+# exits without building (test/test_driver_core_pin.py checks it equals the
+# driver's).
 FP=$( { printf '%s\n' maxima_rubi.mac maxima_rubi_utils.mac maxima_rubi_dispatch.lisp \
         maxima_rubi_match.lisp maxima_rubi_tree.lisp
-        ls rules/class1/*.mac rules/class2/*.mac rules/class3/*.mac \
-           rules/class6/*.mac
+        ls rules/*/*.mac
       } | LC_ALL=C sort | xargs -d '\n' cat | md5sum | cut -d' ' -f1 )
+if [ "${1:-}" = "--fingerprint" ]; then echo "$FP"; exit 0; fi
 
 # The image is saved from a session that has ALREADY run a top-level, so
 # *maxima-started* is T; unless reset, every restored launch prints a

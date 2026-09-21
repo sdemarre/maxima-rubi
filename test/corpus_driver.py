@@ -192,27 +192,31 @@ KNOWN_CLASSES = {
 PASS_CLASSES = {"expected", "verified", "no-answer"}
 
 
-def _core_fingerprint():
-    """md5 over exactly the files test/build_rules_core.sh bakes into the
-    image (loader + utils + dispatch lisp + matcher lisp + converter
-    lisp + every class-1, class-2 AND class-3 rule file)."""
+def _core_fingerprint_files():
+    """The files test/build_rules_core.sh bakes into the image, as sorted
+    RELATIVE paths: loader + utils + dispatch lisp + matcher lisp +
+    converter lisp + every rules/*/*.mac (all rule classes AND rules/utils,
+    whose inert-trig rewrite tables mr_load_all also loads). One general
+    glob, not a per-class list: a new rules/ subdirectory is covered the
+    day it appears, and a superset can only make a core look stale (a
+    rebuild), never a stale core look fresh."""
     import glob
-    import hashlib
     # Canonical order: sorted RELATIVE paths (must match
-    # test/build_rules_core.sh exactly — an order difference makes every
-    # freshly built core look stale, measured 2026-08-26).
-    rels = sorted(["maxima_rubi.mac", "maxima_rubi_utils.mac",
+    # test/build_rules_core.sh's C-locale sort exactly — an order difference
+    # makes every freshly built core look stale, measured 2026-08-26).
+    # Guarded by test/test_driver_core_pin.py (the two fingerprints agree).
+    return sorted(["maxima_rubi.mac", "maxima_rubi_utils.mac",
                    "maxima_rubi_dispatch.lisp",
                    "maxima_rubi_match.lisp",
                    "maxima_rubi_tree.lisp"] +
                   [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class1", "*.mac"))] +
-                  [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class2", "*.mac"))] +
-                  [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class3", "*.mac"))] +
-                  [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class6", "*.mac"))])
+                   glob.glob(os.path.join(ROOT, "rules", "*", "*.mac"))])
+
+
+def _core_fingerprint():
+    """md5 over _core_fingerprint_files(), concatenated in that order."""
+    import hashlib
+    rels = _core_fingerprint_files()
     h = hashlib.md5()
     for rel in rels:
         with open(os.path.join(ROOT, rel), "rb") as fh:

@@ -372,7 +372,7 @@ the same commit.
 
 ```sh
 python3 test/test_driver_parens.py          # Results: 2 passed, 0 failed
-python3 test/test_driver_core_pin.py        # Results: 5 passed, 0 failed
+python3 test/test_driver_core_pin.py        # Results: 7 passed, 0 failed
 python3 test/test_driver_out_default.py     # Results: 4 passed, 0 failed
 python3 test/test_driver_radcan_fallback.py # Results: 4 passed, 0 failed
 python3 test/test_ab_records.py             # Results: 6 passed, 0 failed

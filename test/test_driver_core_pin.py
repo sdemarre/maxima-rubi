@@ -21,6 +21,14 @@ because the driver resolves its core at module level):
   4. the record header names a pinned core (appended to the `filter:`
      line — the prefix the shard merge accepts), and is empty when
      unpinned (the standing record format is unchanged).
+  5. the fingerprint covers rules/utils: rules/utils/inert_trig_rewrites.mac
+     (which mr_load_all bakes into the core) is in the driver's file list.
+     Before 2026-09-21 the list was per rule class and missed it, so a
+     regenerated rewrite table ran inside a stale core called fresh.
+  6. the driver's _core_fingerprint() equals
+     `sh test/build_rules_core.sh --fingerprint` byte for byte — a
+     disagreement makes every freshly built core look stale (or, worse,
+     a list the builder hashes and the driver does not).
 
 Re-runnable:  python3 test/test_driver_core_pin.py
 Exits nonzero if any check fails.
@@ -45,6 +53,11 @@ spec.loader.exec_module(d)
 print(json.dumps({"core": d.RULES_CORE, "stamp": d.RULES_CORE_STAMP,
                   "use": d.USE_RULES_CORE, "state": d.rules_core_state(),
                   "header": d.core_header()}))
+"""
+
+FP_CHILD = CHILD.split("print(json.dumps(")[0] + r"""
+print(json.dumps({"files": d._core_fingerprint_files(),
+                  "fp": d._core_fingerprint()}))
 """
 
 
@@ -109,9 +122,37 @@ def main():
     else:
         print("PASS [default] test/mr_rules.core(.stamp), empty header")
 
+    # 5 + 6. fingerprint coverage and builder/driver agreement
+    p = subprocess.run(
+        [sys.executable, "-c", FP_CHILD],
+        env={**{k: v for k, v in os.environ.items()
+                if k not in ("MR_RULES_CORE", "MR_RULES_CORE_PATH")},
+             "MR_RULES_CORE": "0"},
+        cwd=ROOT, capture_output=True, text=True, timeout=60)
+    try:
+        got = json.loads(p.stdout.strip().splitlines()[-1])
+    except (IndexError, ValueError):
+        got = None
+    want = "rules/utils/inert_trig_rewrites.mac"
+    if got is None or want not in got["files"]:
+        failures.append(f"[utils] {want} not in the fingerprint "
+                        f"{p.stderr[-400:]}")
+    else:
+        print(f"PASS [utils] {want} is in the fingerprint "
+              f"({len(got['files'])} files)")
+    sh = subprocess.run(["sh", os.path.join(HERE, "build_rules_core.sh"),
+                         "--fingerprint"], cwd=ROOT, capture_output=True,
+                        text=True, timeout=60)
+    sh_fp = sh.stdout.strip()
+    if got is None or sh.returncode != 0 or sh_fp != got["fp"]:
+        failures.append(f"[agree] builder {sh_fp!r} (exit {sh.returncode}) "
+                        f"vs driver {got and got['fp']!r}")
+    else:
+        print(f"PASS [agree] builder and driver fingerprint {sh_fp}")
+
     for f in failures:
         print(f"FAIL {f}")
-    print(f"Results: {5 - len(failures)} passed, {len(failures)} failed")
+    print(f"Results: {7 - len(failures)} passed, {len(failures)} failed")
     return 1 if failures else 0
 
 
