@@ -197,6 +197,11 @@ mr_load_class1_all() := block([],
     this; Layer A loads the 1.1.1.1 core file above and the sibling
     files its sections pin. */
 mr_load_all() := block([],
+  /* The inert-trig rewrite tables (inert-trig substrate design 3.2) load
+     FIRST: nothing in the file is an Int rule, and the utilities it backs
+     must exist before a rule body calls them. */
+  %mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                   'mr_witness_inert_trig_rewrites),
   mr_load_class1_all(),
   %mr_load_sibling("rules/class2/2_1.mac", 'mr_witness_2_1),
   %mr_load_sibling("rules/class2/2_2.mac", 'mr_witness_2_2),

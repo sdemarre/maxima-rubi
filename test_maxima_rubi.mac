@@ -121,6 +121,7 @@ run_all_tests() := block([],
   test_expand_expression(),
   test_translation_fixes_generator(),
   test_translation_fixes_posaux(),
+  test_inert_trig_rewrites(),
   test_census(),
   print(""),
   print("========================================"),
@@ -3521,6 +3522,53 @@ test_class6_cluster_c() := block([w],
   check("ete preserves value (cosh(2v))",
         ratsimp(exponentialize(%mr_expandTrigExpand(1, cosh, v, 1, 2, x))
                 - exponentialize(cosh(2*v))), 0),
+  true
+)$
+
+/* Inert-trig rewrite tables (inert-trig substrate design 3.2). One fired
+ * clause and one non-matching input per table, so a table that loads empty
+ * or matches everything both fail. The table file is loaded under errcatch
+ * and the length checks test listp first, so a missing table is a counted
+ * FAIL, never a run that dies without its Results line.
+ *
+ * FixInertTrigFunction[csc[v_]^m_.*(c_.*sin[w_])^n_., x] :=
+ *     sin[v]^(-m)*(c*sin[w])^n /; FreeQ[{c,n},x] && IntegerQ[m]
+ * (IntegrationUtilityFunctions.m L6237, clause 3) so csc(x)^2*sin(x) ->
+ * sin(x)^(-2)*(1*sin(x))^1, with INERT heads throughout. It is the FIRST
+ * clause that accepts: clause 1 (a_*u_ /; FreeQ[a,x]) binds but every split
+ * of the two factors leaves x in a, and clause 2 (u_.*(a_*(b_+v_))^n_) needs
+ * a power whose base is a product with a sum — neither factor is one. Both
+ * sides of check simplify, so the expected value is the clause's replacement
+ * as Maxima writes it back: %mr_isin(x)^(-2)*%mr_isin(x) = 1/%mr_isin(x). */
+test_inert_trig_rewrites() := block([],
+  print("--- inert-trig rewrite tables ---"),
+  errcatch(%mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                            'mr_witness_inert_trig_rewrites)),
+  check("fitf: csc^m (c sin)^n clause fires",
+        %mr_fixInertTrigFunction(%mr_icsc(x)^2 * %mr_isin(x), x),
+        %mr_isin(x)^(-2) * %mr_isin(x)),
+  /* FixInertTrigFunction[a_*u_, x] := a*FixInertTrigFunction[u,x] /; FreeQ[a,x]
+   * (L6228, clause 1) is the self-recursive clause and the first one that
+   * accepts 3*csc(x)^2*sin(x): a = 3, u = csc(x)^2*sin(x). The constant
+   * comes out and the walk re-enters, where clause 3 fires as above. */
+  check("fitf: free factor comes out, recursion re-enters",
+        %mr_fixInertTrigFunction(3 * %mr_icsc(x)^2 * %mr_isin(x), x),
+        3 * %mr_isin(x)^(-2) * %mr_isin(x)),
+  /* log(x): no structured clause binds, so the answer comes from the
+   * unconditioned catch-all u_ (fitf clause 61, uitf clause 68, both
+   * registered with the literal cond true). A walk that found no clause
+   * would also return log(x), so these two checks do not by themselves
+   * tell the catch-all from table exhaustion. */
+  check("fitf: an expression no clause matches is returned unchanged",
+        %mr_fixInertTrigFunction(log(x), x), log(x)),
+  check("uitf: an expression no clause matches is returned unchanged",
+        %mr_unifyInertTrigFunction(log(x), x), log(x)),
+  check_bool("uitf table is not empty",
+             is(listp(mr_rw_uitf) and length(mr_rw_uitf) = 75)),
+  check_bool("fitf table is not empty",
+             is(listp(mr_rw_fitf) and length(mr_rw_fitf) = 61)),
+  check_bool("rit table is not empty",
+             is(listp(mr_rw_rit) and length(mr_rw_rit) = 4)),
   true
 )$
 

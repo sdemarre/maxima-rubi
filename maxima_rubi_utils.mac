@@ -5588,4 +5588,42 @@ mr_use_gamma_flag : false$
    else if is(op(u) = "[") then [res, v, n]
    else [apply(op(u), res), v, n])$
 
+/* Rubi's inert-trig rewrite functions, ported as generated rewrite tables
+   (inert-trig substrate design 3.2): 136 of their 142 clauses are
+   Name[pattern] := rhs /; cond, so they compile through the same emitter as
+   an Int rule instead of being hand-written. The tables live in
+   rules/utils/inert_trig_rewrites.mac. Recursion is Rubi's own — a clause
+   that calls itself re-enters through these wrappers, and there is no depth
+   guard by design decision (spec 3.2). */
+%mr_unifyInertTrigFunction(u, x) :=
+  %mr_rewrite("UnifyInertTrigFunction", mr_rw_uitf, u, x)$
+%mr_fixInertTrigFunction(u, x) :=
+  %mr_rewrite("FixInertTrigFunction", mr_rw_fitf, u, x)$
+/* f is a BARE inert head (Rubi's ReduceInertTrig[sin, v]), passed as the
+   operator symbol %mr_isin, not as an application. mr-tree converts that
+   symbol to a plain tree atom (it is not an applied head, so +functions+ is
+   not consulted), every rit clause captures it with a plain func_ Blank,
+   and the generated repl gets back the same Maxima symbol: func[u] is
+   apply(func, [u]) = %mr_isin(u), and a Switch form `sin` is emitted as the
+   symbol %mr_isin and compared with `=`. No tree head is involved.
+   Rubi's ReduceInertTrig is also a 3-ARGUMENT function (its clause 4,
+   ReduceInertTrig[func_, m_, u_]), which clause 1's and 2's replacements
+   call. %mr_rewrite matches (head u x) only, so that clause is emitted into
+   mr_rw_rit but can never bind, and a 3-argument call of this 2-argument
+   wrapper is a Maxima error that %mr_rewrite's errcatch turns into a
+   declined clause. */
+%mr_reduceInertTrig(f, v) :=
+  %mr_rewrite("ReduceInertTrig", mr_rw_rit, f, v)$
+
+/* Rubi IntegrationUtilityFunctions.m L6170:
+     InertReciprocalQ[f_,g_] := f===sin && g===csc || f===cos && g===sec ||
+                                f===tan && g===cot
+   f and g are head captures, which the dispatcher binds to the %mr_i*
+   operator SYMBOL (maxima_rubi_dispatch.lisp mr-binding-value), so SameQ on
+   the inert head is `=` on that symbol. Called from the conds of
+   FixInertTrigFunction's four f_[v_]^m_ clauses. */
+%mr_inertReciprocalQ(f, g) :=
+  is((f = '%mr_isin and g = '%mr_icsc) or (f = '%mr_icos and g = '%mr_isec)
+     or (f = '%mr_itan and g = '%mr_icot))$
+
 mr_witness_utils() := true$

@@ -33,7 +33,15 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
      in the working tree, post-P0 classes included;
   7. every POST-P0 class (class 6 onward: ported after the P0 baseline, so
      it has no base text to diff against) carries exactly the rule total
-     its generator configure() declares.
+     its generator configure() declares;
+  8. the generated rewrite tables (rules/utils/inert_trig_rewrites.mac,
+     inert-trig substrate design 3.2) are checked like a rule file: each
+     mr_rw_<key> line present with the count the generator asserts (its
+     REWRITE_FUNCTIONS), equal to mr_rw_count_<key> and to the number of
+     %mr_defrewrite records; no defmatch; every bare-Blank catch-all at its
+     table's end (a bare record mid-table would swallow the clauses after
+     it); the file byte-identical to a fresh generation; and (check 6) every
+     %mr_defrewrite pattern string prepares in MR-MATCH.
 
 Scope note (2026-09-20). Checks 1-5 are a REGRESSION gate against P0 and
 therefore run over the classes P0 had -- 1, 2 and 3 -- plus any class-1/2/3
@@ -242,6 +250,51 @@ def moved_inner(old_repl, new_repl, old_cond_base, new_cond):
     return None
 
 
+REWRITE_FILE = ROOT / "rules" / "utils" / "inert_trig_rewrites.mac"
+BARE_PATTERN = re.compile(r"\(\w+( \(Pattern (\|[^|]*\||\w+) \(Blank\)\))+\)")
+
+
+def check_rewrites(g):
+    """Check 8: the generated rewrite tables (see the module docstring)."""
+    sys.path.insert(0, str(ROOT / "generator"))
+    import generate_rules as gen
+    text = REWRITE_FILE.read_text() if REWRITE_FILE.exists() else ""
+    records = {(k, int(n)): pat for k, n, pat in re.findall(
+        r'^_mr_rw_\w+ : %mr_defrewrite\("([0-9a-z_]+)", (\d+), "([^"]*)"', text, re.M)}
+    bad, bare_bad, want = [], [], []
+    for key, fname, expected in gen.REWRITE_FUNCTIONS:
+        want.append("%s %d" % (key, expected))
+        lm = re.search(r"^mr_rw_%s : \[ (.*) \]\$$" % key, text, re.M)
+        cm = re.search(r"^mr_rw_count_%s : (\d+)\$$" % key, text, re.M)
+        names = lm.group(1).split(", ") if lm else []
+        nrec = sum(1 for (k, _) in records if k == key)
+        if not (lm and cm and int(cm.group(1)) == expected == len(names) == nrec
+                and sorted(names) == sorted("_mr_rw_%s_r%d" % (key, n)
+                                            for n in range(1, expected + 1))):
+            bad.append("%s: list %s, count %s, records %d, expected %d" % (
+                key, len(names) if lm else "missing", cm.group(1) if cm else "missing",
+                nrec, expected))
+            continue
+        bare = [bool(BARE_PATTERN.fullmatch(records[(key, int(nm.rsplit("_r", 1)[1]))]))
+                for nm in names]
+        if True in bare and False in bare[bare.index(True):]:
+            bare_bad.append("%s: %s" % (key, [nm for nm, b in zip(names, bare) if b]))
+    if re.search(r"^(defmatch|matchdeclare)\(", text, re.M):
+        bad.append("defmatch/matchdeclare present")
+    g.check("rewrite tables: mr_rw_<key> lines and counts = mr_rw_count_<key> = records "
+            "= generator (%s), no defmatch" % ", ".join(want), not bad, "; ".join(bad))
+    g.check("rewrite tables: every bare-Blank catch-all at its table's end",
+            bool(records) and not bare_bad, "; ".join(bare_bad) or "no records")
+    try:
+        fresh, _ = gen.emit_rewrites_file()
+        same = fresh == text
+        detail = "" if same else "the committed file differs from a fresh generation"
+    except SystemExit as exc:
+        same, detail = False, "generation failed (%s)" % exc
+    g.check("rewrite tables: %s byte-identical to a fresh generation"
+            % REWRITE_FILE.relative_to(ROOT), same, detail)
+
+
 def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=P0_BASE)
@@ -361,6 +414,7 @@ def main(argv):
         g.check("post-P0 class %d: %d rules over %d files (generator "
                 "EXPECTED_TOTAL %d)" % (cls, got, len(paths), want),
                 got == want, "got %d, want %d" % (got, want))
+    check_rewrites(g)
     g.check("no defmatch/matchdeclare; one %mr_defrule per rule; every cond/repl explained",
             not unexplained, "\n    ".join(unexplained[:40]))
     g.check("moved inner conditions are exact transformations", not bad_moves, "\n    ".join(bad_moves[:40]))
@@ -394,9 +448,13 @@ def main(argv):
     g.check("reader self-test green (%s)" % last, re.fullmatch(r"Results: \d+ passed, 0 failed", last) is not None)
     with tempfile.NamedTemporaryFile("w", suffix=".tsv", delete=False) as tsv:
         n_pat = 0
-        for p in sorted(ROOT.glob("rules/class*/*.mac")):
+        for p in sorted(ROOT.glob("rules/class*/*.mac")) + sorted(ROOT.glob("rules/utils/*.mac")):
             text = p.read_text()
             for key, n, pat in re.findall(r'^_mr_rule_\w+ : %mr_defrule\("([0-9a-z_]+)", (\d+), "([^"]*)"',
+                                          text, re.M):
+                tsv.write("%s r%s\t%s\n" % (key, n, pat))
+                n_pat += 1
+            for key, n, pat in re.findall(r'^_mr_rw_\w+ : %mr_defrewrite\("([0-9a-z_]+)", (\d+), "([^"]*)"',
                                           text, re.M):
                 tsv.write("%s r%s\t%s\n" % (key, n, pat))
                 n_pat += 1

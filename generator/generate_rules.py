@@ -45,7 +45,7 @@ from translation_table import RENAME, RESTRUCTURE
 # these means a table row exists whose handler nobody implemented — the
 # class-6 `Integral -> "noun"` row did exactly that on 2026-09-20 and
 # produced `noun(expr, x)` in 8 rules. Guarded at the head boundary below.
-HANDLER_ONLY = frozenset({"noun", "block", "cmp", "if",
+HANDLER_ONLY = frozenset({"noun", "block", "cmp", "if", "switch",
                           "loggamma", "power", "plus", "times"})
 import mma_reader as rd  # the evaluated-FullForm reader (spec 3.4)
 from fractions import Fraction
@@ -967,6 +967,17 @@ _PATTERN_OBJECTS = {"Pattern", "Blank", "BlankSequence", "BlankNullSequence",
 # G-3). 9.1 is outside the probe-02 census (not in LoadRules).
 ACCEPTED_RISKS = {
     ("9_1", 11, "risk:numeric-or-negated-arg:Complex"),   # 9.1.m L15
+    # ReduceInertTrig's first two clauses (IntegrationUtilityFunctions.m
+    # L6496/L6500; inert-trig substrate, Task 4). The Pi-arg flag guards a
+    # BUILT-IN head whose evaluation rewrites a Pi-shifted argument
+    # (Sin[x+Pi] -> -Sin[x]). ReduceInertTrig is a user function, and
+    # SetDelayed never applies the function's own definitions to its LHS —
+    # only the argument's Plus/Times/Power evaluation happens, which the
+    # reader emulates. The Complex[0, mz_] / Complex[0, nz_] flag is the 9.1
+    # L15 case above: a pattern argument keeps Complex unevaluated.
+    ("rit", 1, "risk:Pi-arg:ReduceInertTrig"),
+    ("rit", 2, "risk:Pi-arg:ReduceInertTrig"),
+    ("rit", 2, "risk:numeric-or-negated-arg:Complex"),
 }
 
 
@@ -1013,6 +1024,30 @@ def pattern_sexp(lhs, key, n, rule_vars):
             and ev[2] == ("Pattern", "x", ("Blank", "Symbol"))):
         raise GenError(f"{key} r{n}: LHS is not Int[<pattern>, x_Symbol]: "
                        f"{rd.fullform(ev)[:60]!r}")
+    return _sexp(_rename_captures(ev, key, n, rule_vars), key, n)
+
+
+def rewrite_pattern_sexp(lhs, key, n, rule_vars, fname):
+    """A utility clause's Name[<args>] LHS as the evaluated FullForm
+    s-expression %mr_defrewrite prepares (inert-trig substrate design 3.2).
+    The outermost head is the function name; %mr_rewrite matches the pattern
+    against (Name u x), so the clause must be of arity 2 to be reachable —
+    ReduceInertTrig's 3-argument clause is emitted all the same (it is one
+    of the source's clauses) and simply never binds a 2-argument call. The
+    captures are renamed exactly as an Int rule's (_rename_captures); an
+    `x_` argument keeps the name x, and is the walker's x."""
+    ev = _evaluated(lhs, key, n, "LHS")
+    if not (isinstance(ev, tuple) and ev[0] == fname and len(ev) >= 2):
+        raise GenError(f"{key} r{n}: LHS is not {fname}[...]: "
+                       f"{rd.fullform(ev)[:60]!r}")
+    return _sexp(_rename_captures(ev, key, n, rule_vars), key, n)
+
+
+def _rename_captures(ev, key, n, rule_vars):
+    """Each capture's Pattern name -> its Maxima capture name cap_name(key,
+    n, v), so the dispatcher's binding list is the mm list the cond and repl
+    read with geteqR; x keeps its name (the dispatcher pre-binds it to the
+    integration variable). Every capture must survive evaluation."""
     seen = set()
 
     def rename(e):
@@ -1032,7 +1067,7 @@ def pattern_sexp(lhs, key, n, rule_vars):
         raise GenError(f"{key} r{n}: captures "
                        f"{sorted(set(rule_vars) - seen)} vanish from the "
                        f"evaluated LHS")
-    return _sexp(out, key, n)
+    return out
 
 
 # Mathematica inverse-trig heads -> the NATIVE Maxima function names, for a
@@ -1228,6 +1263,40 @@ def emit_head(head, arglist, ctx):
         # parenthesized: an If inside a && / || cond chain must bind as one
         # operand
         return f"(if {arglist[0]} then {arglist[1]} else {arglist[2]})"
+    if head == "Switch":
+        # Rubi's Switch[e, form1, value1, form2, value2, …] — 3 sites, all
+        # of them in ReduceInertTrig's 3-argument clause (inert-trig
+        # substrate, Task 4). Maxima has no switch, so it becomes a nested
+        # if/elseif over EQUALITY with each form.
+        #
+        # Mathematica matches a Switch form as a PATTERN; at all three
+        # sites every form is a bare inert head symbol (sin, cos, …),
+        # which the translation table has already turned into the %mr_i*
+        # OPERATOR SYMBOL the dispatcher binds a head-position capture to
+        # (maxima_rubi_dispatch.lisp mr-binding-value), so `=` on symbols
+        # is the faithful test. A form that is not a plain symbol would
+        # need real pattern matching: GenError, never a silent mis-emit.
+        #
+        # The final else is `false`, not an error: Mathematica leaves a
+        # Switch with no matching form unevaluated, and a rewrite repl that
+        # values to false is declined by %mr_rewrite (its `(and ok r)`
+        # test), which is the closest faithful behaviour available.
+        if len(arglist) < 3 or (len(arglist) - 1) % 2 != 0:
+            raise GenError(f"{key} r{n}: Switch arity {len(arglist)} "
+                           f"(need a subject and form/value pairs)")
+        subject = arglist[0].strip()
+        parts = []
+        for i in range(1, len(arglist), 2):
+            form = arglist[i].strip()
+            if not re.fullmatch(r"%?[A-Za-z_][A-Za-z0-9_]*", form):
+                raise GenError(f"{key} r{n}: Switch form {form!r} is not a "
+                               f"plain symbol — it would need pattern "
+                               f"matching, which this emitter case does not do")
+            parts.append((form, arglist[i + 1].strip()))
+        out = "false"
+        for form, value in reversed(parts):
+            out = f"if {subject} = {form} then {value} else {out}"
+        return f"({out})"
     if head == "Boole":
         if len(arglist) != 1:
             raise GenError(f"{key} r{n}: Boole arity {len(arglist)}")
@@ -1409,15 +1478,29 @@ def split_inner_condition(rhs):
     return head, decls, body[:last], body[last+2:]
 
 
-def emit_rule(run, key, n, rule_vars):
+def emit_rule(run, key, n, rule_vars, fname=None):
     """One rule run (lhs, rhs, cond) -> its cond and repl functions and its
     %mr_defrule registration, as Maxima text (spec 3.4). rule_vars is the
-    set of capture names (from the lhs)."""
+    set of capture names (from the lhs).
+
+    With fname (a Rubi utility function's name) the run is one CLAUSE of
+    that function, `fname[<args>] := rhs /; cond`, and the registration is
+    a %mr_defrewrite record instead (inert-trig substrate design 3.2). The
+    cond and repl bodies are the SAME text either way — this one emitter
+    produces both, so the P3 byte-stability of rule bodies covers the
+    rewrite tables too. The one difference: a clause with no condition at
+    all (no /; outer or inner) registers the literal Maxima `true` as its
+    cond instead of a function returning true, and emits no cond function —
+    %mr_rewrite's `(eq cond-fn t)` branch accepts every binding for it."""
     lhs, rhs, cond = run
-    if not re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL):
-        raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
+    if fname is None:
+        if not re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL):
+            raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
     ctx = {"key": key, "n": n, "vars": rule_vars, "markers": None, "mq": 0}
-    pattern = pattern_sexp(lhs, key, n, rule_vars)
+    if fname is None:
+        pattern = pattern_sexp(lhs, key, n, rule_vars)
+    else:
+        pattern = rewrite_pattern_sexp(lhs, key, n, rule_vars, fname)
     base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
                  if cond else "true")
     # M-cas-simp (3.5 r10, class-3 deferred campaign C6): the .m cond
@@ -1480,15 +1563,32 @@ def emit_rule(run, key, n, rule_vars):
     snap_binds = [f"{snaps[c]} : geteqR(mm, '{c})" for c in caps]
     snap_bind_block = ", ".join(snap_binds) if snap_binds else "true"
     snap_locals_txt = ", ".join(snaps[c] for c in caps) if caps else ""
-    return "\n".join([
+    cond_fun = [
         f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],",
         f"  {bind_block},",
         f"  {cond_txt})$",
+    ]
+    repl_fun = [
         f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals_txt}],",
         f"  {snap_bind_block},",
         f"  {repl_txt})$",
-        f'_mr_rule_{key}_r{n} : %mr_defrule("{key}", {n}, "{pattern}", '
-        f"_mr_cond_{key}_r{n}, _mr_repl_{key}_r{n})$",
+    ]
+    if fname is None:
+        return "\n".join(cond_fun + repl_fun + [
+            f'_mr_rule_{key}_r{n} : %mr_defrule("{key}", {n}, "{pattern}", '
+            f"_mr_cond_{key}_r{n}, _mr_repl_{key}_r{n})$",
+        ])
+    unconditioned = not cond and inner is None
+    if unconditioned:
+        if cond_txt != "true":
+            raise GenError(f"{key} r{n}: an unconditioned clause translated "
+                           f"its cond to {cond_txt!r}, not true")
+        cond_fun, cond_arg = [], "true"
+    else:
+        cond_arg = f"_mr_cond_{key}_r{n}"
+    return "\n".join(cond_fun + repl_fun + [
+        f'_mr_rw_{key}_r{n} : %mr_defrewrite("{key}", {n}, "{pattern}", '
+        f"{cond_arg}, _mr_repl_{key}_r{n})$",
     ])
 
 def emit_file(rel_m, runs, key=None):
@@ -1638,7 +1738,134 @@ def _emit_source(rel_m, key, only, total, load_lines, note=""):
     return total + len(runs)
 
 
+# ----------------------------------------------------------------------
+# Rewrite tables (inert-trig substrate design 3.2, Task 4)
+#
+# Three of Rubi's utility functions are written as `Name[pattern] := rhs /;
+# cond` clauses — the shape an Int rule has — so they are generated through
+# the SAME emitter (emit_rule with fname) into %mr_defrewrite records, one
+# table per function, in source order (the order IS priority: %mr_rewrite
+# answers with the first clause that binds and whose cond accepts).
+
+REWRITE_SOURCE = "Rubi/IntegrationUtilityFunctions.m"
+REWRITE_OUT = ROOT / "rules" / "utils" / "inert_trig_rewrites.mac"
+
+# (table key, Rubi function, clause count). The counts were MEASURED
+# 2026-09-20 over the pinned clone (spec 2.4: 75 / 61 / 4, of which
+# 74 / 60 / 3 carry a condition) and are ASSERTED here: a reference-clone
+# bump that adds or drops a clause fails generation loudly instead of
+# silently changing a table.
+REWRITE_FUNCTIONS = [
+    ("uitf", "UnifyInertTrigFunction", 75),
+    ("fitf", "FixInertTrigFunction", 61),
+    ("rit", "ReduceInertTrig", 4),
+]
+
+
+def utility_runs(src_stripped, fname):
+    """The clause runs of utility function fname in a comment-stripped
+    source: rule_runs' convention (a run starts at a column-0 line and a
+    blank line ends it, except after a dangling ':='), with the column-0
+    marker `fname[` instead of `Int[`. `fname::usage = …` and
+    `Clear[fname]` lines do not start with `fname[`, so they never open a
+    run."""
+    lines = src_stripped.split("\n")
+    runs, cur = [], None
+    for line in lines:
+        if line.startswith(fname + "["):
+            if cur is not None:
+                runs.append(cur)
+            cur = [line]
+        elif cur is not None:
+            if line.strip() == "" and \
+                    not "\n".join(cur).rstrip().endswith(":="):
+                runs.append(cur)
+                cur = None
+            else:
+                cur.append(line)
+    if cur is not None:
+        runs.append(cur)
+    return runs
+
+
+def bare_clause(lhs, key, n):
+    """True when every argument of the clause's LHS is a bare named Blank
+    (UnifyInertTrigFunction[u_, x_], ReduceInertTrig[func_, m_, u_]): the
+    most general pattern of its arity.
+
+    Such a clause goes to the END of its table, after the others in source
+    order. Mathematica does not try a function's definitions in source
+    order: it places a more specific definition before a more general one,
+    and a bare-Blank definition is the most general there is, so it is tried
+    last whatever its position in the file. %mr_rewrite walks the table in
+    list order, so position is the only way to say it — the same argument
+    the design makes for the Int rules' bare-u_ records (inert-trig
+    substrate design 3.3). It matters here: UnifyInertTrigFunction's
+    catch-all u_ is clause 68 of 75 (IntegrationUtilityFunctions.m L7294),
+    and in source order it would make clauses 69-75 unreachable. Record
+    numbers stay the source clause numbers; only the table order moves."""
+    ev = _evaluated(lhs, key, n, "LHS")
+    return all(isinstance(a, tuple) and len(a) == 3 and a[0] == "Pattern"
+               and a[2] == ("Blank",) for a in ev[1:])
+
+
+def emit_rewrites_file(rubi=None):
+    """The whole rules/utils/inert_trig_rewrites.mac text."""
+    rubi = rubi or RUBI
+    src = strip_comments((rubi / REWRITE_SOURCE).read_text())
+    header = ("/* rules/utils/inert_trig_rewrites.mac — GENERATED; do not "
+              "edit.\n"
+              f" * Source: Rubi 4 {PIN}\n"
+              f" *          {REWRITE_SOURCE}\n"
+              " * Regenerate: python3 generator/generate_rules.py --rewrites "
+              "*/\n"
+              f"{MIT}\n\n")
+    body, tables, counts = [], [], []
+    for key, fname, expected in REWRITE_FUNCTIONS:
+        runs = utility_runs(src, fname)
+        if len(runs) != expected:
+            raise GenError(f"{fname}: {len(runs)} clauses in "
+                           f"{REWRITE_SOURCE}, expected {expected} "
+                           f"(measured 2026-09-20) — the reference clone "
+                           f"changed; re-measure before regenerating")
+        names, tail = [], []
+        for n, run in enumerate(runs, start=1):
+            text = "\n".join(run)
+            if ":=" not in text:
+                raise GenError(f"{key} r{n}: unparseable clause (no ':='): "
+                               f"{text[:60]!r}")
+            lhs, rhs, cond = split_rule_outer(text)
+            cond = clean_cond(cond, key, n)
+            rule_vars = pattern_vars(lhs)
+            try:
+                body.append(emit_rule((lhs, rhs, cond), key, n, rule_vars,
+                                      fname=fname))
+            except GenError:
+                raise
+            except Exception as ex:
+                raise GenError(f"{key} r{n}: {type(ex).__name__}: {ex} "
+                               f"(lhs {lhs[:60]!r})") from ex
+            (tail if bare_clause(lhs, key, n) else names).append(
+                f"_mr_rw_{key}_r{n}")
+            body.append("")
+        tables.append(f"mr_rw_{key} : [ {', '.join(names + tail)} ]$")
+        tables.append(f"mr_rw_count_{key} : {len(runs)}$")
+        counts.append(f"{key} {len(runs)}")
+    return (header + "\n".join(body + tables)
+            + "\nmr_witness_inert_trig_rewrites() := true$\n"), counts
+
+
+def generate_rewrites():
+    text, counts = emit_rewrites_file()
+    REWRITE_OUT.parent.mkdir(parents=True, exist_ok=True)
+    REWRITE_OUT.write_text(text)
+    print(f"  {REWRITE_OUT.relative_to(ROOT)}: " + ", ".join(counts))
+
+
 def main(class_num=None):
+    if class_num is None and "--rewrites" in sys.argv:
+        generate_rewrites()
+        return
     if class_num is None:
         class_num = (int(sys.argv[sys.argv.index("--class") + 1])
                      if "--class" in sys.argv else 1)
