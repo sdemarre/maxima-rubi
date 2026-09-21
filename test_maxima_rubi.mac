@@ -122,6 +122,7 @@ run_all_tests() := block([],
   test_translation_fixes_generator(),
   test_translation_fixes_posaux(),
   test_inert_trig_rewrites(),
+  test_inert_trig_reduce_powersum(),
   test_census(),
   print(""),
   print("========================================"),
@@ -3569,6 +3570,89 @@ test_inert_trig_rewrites() := block([],
              is(listp(mr_rw_fitf) and length(mr_rw_fitf) = 61)),
   check_bool("rit table is not empty",
              is(listp(mr_rw_rit) and length(mr_rw_rit) = 4)),
+  true
+)$
+
+/* Task 4 fix round 1: the 3-argument ReduceInertTrig and
+ * PowerOfInertTrigSumQ (Rubi IntegrationUtilityFunctions.m L6509 and
+ * L6487). Every expected value is derived by hand from the .m text; the
+ * derivations are in the fix report
+ * (.superpowers/sdd/2026-09-20-inert-trig-substrate/task-4-report.md). A
+ * call is wrapped in errcatch so a missing arity counts as a failure
+ * instead of killing the run. */
+_t_rit(_t_rit_args) := block([_t_rit_r],
+  _t_rit_r : errcatch(apply(%mr_reduceInertTrig, _t_rit_args)),
+  if _t_rit_r = [] then 'rit_error else first(_t_rit_r))$
+
+test_inert_trig_reduce_powersum() := block([_t_fitf_u, _t_fitf_first],
+  print("--- ReduceInertTrig 3-arg / PowerOfInertTrigSumQ ---"),
+  /* clause 1: x+Pi binds m*n = 1, m*u+v = x; 3-arg m = 1: m>=1, sin arm
+   * -> -RIT[sin, 0, x]; m = 0 falls to func[0*Pi+x] = sin(x). */
+  check("rit: sin(x+pi) = -sin(x)",
+        _t_rit([%mr_isin, x + %pi]), -%mr_isin(x)),
+  /* m = 1, tan arm -> +RIT[tan, 0, x] = tan(x). */
+  check("rit: tan(x+pi) = tan(x)",
+        _t_rit([%mr_itan, x + %pi]), %mr_itan(x)),
+  /* m*n = 1/2: m>=1/2, cos arm -> -RIT[sin, 0, x] = -sin(x). */
+  check("rit: cos(x+pi/2) = -sin(x)",
+        _t_rit([%mr_icos, x + %pi/2]), -%mr_isin(x)),
+  check("rit 3-arg: cos, 1/2, x = -sin(x)",
+        _t_rit([%mr_icos, 1/2, x]), -%mr_isin(x)),
+  /* m = 5/2: m>=2 -> RIT[sin, Mod[5/2,2] = 1/2, x]; m>=1/2, sin arm
+   * -> +RIT[cos, 0, x] = cos(x). */
+  check("rit 3-arg: sin, 5/2, x = cos(x) (Mod branch)",
+        _t_rit([%mr_isin, 5/2, x]), %mr_icos(x)),
+  check("rit: sin(x+5*pi/2) = cos(x) (Mod branch via clause 1)",
+        _t_rit([%mr_isin, x + 5*%pi/2]), %mr_icos(x)),
+  /* m = -1/2: m<0, not m>=-1/4, sin arm -> -RIT[sin, 1/2, -x]; m = 1/2,
+   * sin arm -> +RIT[cos, 0, -x] = cos(-x). Inert heads do not simplify
+   * parity, so cos(-x) stays. */
+  check("rit 3-arg: sin, -1/2, x = -cos(-x) (sign-flip Switch)",
+        _t_rit([%mr_isin, -1/2, x]), -%mr_icos(-x)),
+  check("rit: sin(x-pi/2) = -cos(-x) (sign flip via clause 1)",
+        _t_rit([%mr_isin, x - %pi/2]), -%mr_icos(-x)),
+  /* m = -1/4: m<0 and m>=-1/4 -> func[m*Pi+u] = tan(x - pi/4). */
+  check("rit 3-arg: tan, -1/4, x = tan(x-pi/4) (small negative m kept)",
+        _t_rit([%mr_itan, -1/4, x]), %mr_itan(x - %pi/4)),
+  /* RationalQ[m] fails: the definition does not apply, so the call stays
+   * unevaluated -- the noun form. */
+  check("rit 3-arg: non-rational m stays unevaluated",
+        _t_rit([%mr_isin, k, x]), '%mr_reduceInertTrig(%mr_isin, k, x)),
+  /* PowerOfInertTrigSumQ[u, func, x], L6487. */
+  check_bool("powersumQ: a+b*sin(x) (first MatchQ, a /= 0)",
+             is(%mr_powerOfInertTrigSumQ(a + b*%mr_isin(x), %mr_isin, x) = true)),
+  check_bool("powersumQ: (a+b*(c*sin(x))^2)^(1/2) (first MatchQ)",
+             is(%mr_powerOfInertTrigSumQ((a + b*(c*%mr_isin(x))^2)^(1/2),
+                                          %mr_isin, x) = true)),
+  check_bool("powersumQ: a+b*sin(x)^2+c*sin(x)^4 (second MatchQ only)",
+             is(%mr_powerOfInertTrigSumQ(a + b*%mr_isin(x)^2 + c*%mr_isin(x)^4,
+                                          %mr_isin, x) = true)),
+  check_bool("powersumQ: a+b*cos(x) is not a sin power sum",
+             is(%mr_powerOfInertTrigSumQ(a + b*%mr_icos(x), %mr_isin, x) = false)),
+  /* sin(x)^2: a = 0 with p = 1 integer (or n = 1): the Not[...] excludes it,
+   * and the second pattern needs two func terms. */
+  check_bool("powersumQ: bare sin(x)^2 is excluded by the Not clause",
+             is(%mr_powerOfInertTrigSumQ(%mr_isin(x)^2, %mr_isin, x) = false)),
+  /* fitf clause 37 (L6380): u_.*sec[v_]^n_.*w_ := cos[v]^(-n)*
+   * FixInertTrigFunction[u*w,x] /; PowerOfInertTrigSumQ[w,sin,x] &&
+   * IntegerQ[n]. sec(x)^2*(a+b*sin(x)): u = 1, v = x, n = 2,
+   * w = a+b*sin(x); the inner walk leaves a+b*sin(x) unchanged. */
+  _t_fitf_u : %mr_isec(x)^2 * (a + b*%mr_isin(x)),
+  check("fitf r37 (PowerOfInertTrigSumQ cond) fires",
+        %mr_fixInertTrigFunction(_t_fitf_u, x),
+        %mr_icos(x)^(-2) * (a + b*%mr_isin(x))),
+  check("fitf r37 alone rewrites the input",
+        %mr_rewrite("FixInertTrigFunction", [_mr_rw_fitf_r37], _t_fitf_u, x),
+        %mr_icos(x)^(-2) * (a + b*%mr_isin(x))),
+  /* ... and it is the FIRST clause that does: every handle ahead of it in
+   * table order leaves the input alone. */
+  _t_fitf_first : true,
+  for _t_fitf_i : 1 thru 36 do
+    if %mr_rewrite("FixInertTrigFunction", [part(mr_rw_fitf, _t_fitf_i)],
+                   _t_fitf_u, x) # _t_fitf_u
+    then _t_fitf_first : false,
+  check_bool("fitf: no clause before r37 claims sec(x)^2*(a+b*sin(x))",
+             _t_fitf_first),
   true
 )$
 

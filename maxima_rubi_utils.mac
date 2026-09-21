@@ -5606,14 +5606,154 @@ mr_use_gamma_flag : false$
    and the generated repl gets back the same Maxima symbol: func[u] is
    apply(func, [u]) = %mr_isin(u), and a Switch form `sin` is emitted as the
    symbol %mr_isin and compared with `=`. No tree head is involved.
-   Rubi's ReduceInertTrig is also a 3-ARGUMENT function (its clause 4,
-   ReduceInertTrig[func_, m_, u_]), which clause 1's and 2's replacements
-   call. %mr_rewrite matches (head u x) only, so that clause is emitted into
-   mr_rw_rit but can never bind, and a 3-argument call of this 2-argument
-   wrapper is a Maxima error that %mr_rewrite's errcatch turns into a
-   declined clause. */
-%mr_reduceInertTrig(f, v) :=
-  %mr_rewrite("ReduceInertTrig", mr_rw_rit, f, v)$
+
+   Rubi's ReduceInertTrig has TWO arities, and Maxima functions are
+   fixed-arity, so this entry is variadic and dispatches on the count:
+   - 2 arguments (func, u): the generated table mr_rw_rit, walked by
+     %mr_rewrite. Its clauses 1 and 2 (L6496, L6500) pull the multiple of Pi
+     out of u and recurse with 3 arguments.
+   - 3 arguments (func, m, u): %mr_reduceInertTrig3, the hand port of the
+     single L6509 clause that reduces the multiple m of Pi.
+   The table's clause 4 is the same L6509 clause as a generated record; its
+   pattern has 3 arguments, so it never binds the 2-argument walk and is
+   inert there (it is kept so the table count matches the source). */
+%mr_reduceInertTrig([%mr_rit_args]) :=
+  if length(%mr_rit_args) = 2 then
+    %mr_rewrite("ReduceInertTrig", mr_rw_rit,
+                first(%mr_rit_args), second(%mr_rit_args))
+  else if length(%mr_rit_args) = 3 then
+    %mr_reduceInertTrig3(first(%mr_rit_args), second(%mr_rit_args),
+                         third(%mr_rit_args))
+  else error("%mr_reduceInertTrig: expected 2 or 3 arguments, found",
+             length(%mr_rit_args))$
+
+/* Rubi IntegrationUtilityFunctions.m L6509, ported as written:
+     ReduceInertTrig[func_,m_,u_] := If[m<0, ..., If[m>=2, ...Mod[m,2]...,
+       If[m>=1, Switch[...], If[m>=1/2, Switch[...], func[m*Pi+u]]]]] /;
+     RationalQ[m]
+   returns func[m*Pi+u] with m reduced to -1/4 <= m < 1/2.
+   - The /; RationalQ[m] guard failing means the definition does not apply;
+     Mathematica then leaves the call unevaluated, and so does this port: it
+     returns the noun '%mr_reduceInertTrig(func, m, u). Unreachable from the
+     table, whose clauses 1/2 only call it with a product of rationals.
+   - A Switch whose func is none of the six inert heads is likewise left
+     unevaluated in Mathematica; the port returns the same noun (also
+     unreachable: every caller passes one of the six).
+   - The bare Switch atoms sin ... csc are the symbols %mr_isin ... %mr_icsc,
+     compared with = (syntactic, as Switch is).
+   Locals are %mr_rt_-prefixed (a bound m/u would capture the corpus
+   symbols of the same name inside u). */
+%mr_reduceInertTrig3(%mr_rt_f, %mr_rt_m, %mr_rt_u) := block(
+  [%mr_rt_unev],
+  %mr_rt_unev : '%mr_reduceInertTrig(%mr_rt_f, %mr_rt_m, %mr_rt_u),
+  if not %mr_rationalQ(%mr_rt_m) then %mr_rt_unev
+  else if %mr_rt_m < 0 then (
+    if %mr_rt_m >= -1/4 then apply(%mr_rt_f, [%mr_rt_m*%pi + %mr_rt_u])
+    else if %mr_rt_f = '%mr_isin then
+      -%mr_reduceInertTrig('%mr_isin, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_icos then
+      %mr_reduceInertTrig('%mr_icos, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_itan then
+      -%mr_reduceInertTrig('%mr_itan, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_icot then
+      -%mr_reduceInertTrig('%mr_icot, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_isec then
+      %mr_reduceInertTrig('%mr_isec, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_icsc then
+      -%mr_reduceInertTrig('%mr_icsc, -%mr_rt_m, -%mr_rt_u)
+    else %mr_rt_unev)
+  else if %mr_rt_m >= 2 then
+    %mr_reduceInertTrig(%mr_rt_f, mod(%mr_rt_m, 2), %mr_rt_u)
+  else if %mr_rt_m >= 1 then (
+    if %mr_rt_f = '%mr_isin then
+      -%mr_reduceInertTrig('%mr_isin, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icos then
+      -%mr_reduceInertTrig('%mr_icos, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_itan then
+      %mr_reduceInertTrig('%mr_itan, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icot then
+      %mr_reduceInertTrig('%mr_icot, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_isec then
+      -%mr_reduceInertTrig('%mr_isec, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icsc then
+      -%mr_reduceInertTrig('%mr_icsc, %mr_rt_m - 1, %mr_rt_u)
+    else %mr_rt_unev)
+  else if %mr_rt_m >= 1/2 then (
+    if %mr_rt_f = '%mr_isin then
+      %mr_reduceInertTrig('%mr_icos, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icos then
+      -%mr_reduceInertTrig('%mr_isin, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_itan then
+      -%mr_reduceInertTrig('%mr_icot, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icot then
+      -%mr_reduceInertTrig('%mr_itan, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_isec then
+      -%mr_reduceInertTrig('%mr_icsc, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icsc then
+      %mr_reduceInertTrig('%mr_isec, %mr_rt_m - 1/2, %mr_rt_u)
+    else %mr_rt_unev)
+  else apply(%mr_rt_f, [%mr_rt_m*%pi + %mr_rt_u]))$
+
+/* Rubi IntegrationUtilityFunctions.m L6487:
+     PowerOfInertTrigSumQ[u_,func_,x_] :=
+       MatchQ[u, (a_.+b_.*(c_.*func[w_])^n_.)^p_. /;
+                 FreeQ[{a,b,c,n,p},x] && Not[EqQ[a,0] && (IntegerQ[p] || EqQ[n,1])]] ||
+       MatchQ[u, (a_.+b_.*(d_.*func[w_])^p_.+c_.*(d_.*func[w_])^q_.)^n_. /;
+                 FreeQ[{a,b,c,d,n,p,q},x]]
+   func is a BARE inert head (%mr_isin ...), and in the pattern it is in
+   HEAD position, func[w_]. An (MRArg k) part cannot stand there: a part is
+   converted with max->tree, which turns the bare symbol %mr_isin into a
+   plain atom, not the tree head sin that %mr_isin(w) becomes. So the head's
+   tree name (sin ... csc, the +functions+ rows) is spliced into the pattern
+   TEXT; each of the six texts is part-free and is prepared once and cached
+   by %mr_matchQ. A func outside the six is false (Rubi's MatchQ against a
+   pattern whose head no expression here carries). Optional defaults (a 0,
+   b/c/d 1, exponents 1) are bound by MR-MATCH, so EqQ[a,0] sees the 0 of an
+   absent a. */
+%mr_powerOfInertTrigSumQ(%mr_pts_u, %mr_pts_f, %mr_pts_x) := block(
+  [%mr_pts_h],
+  %mr_pts_h : assoc(%mr_pts_f,
+                    ['%mr_isin = "sin", '%mr_icos = "cos", '%mr_itan = "tan",
+                     '%mr_icot = "cot", '%mr_isec = "sec", '%mr_icsc = "csc"]),
+  if %mr_pts_h = false then false
+  else
+    %mr_matchQ(%mr_pts_u,
+      sconcat("(Power (Plus (Optional (Pattern |_mr_poits_r1mq1_a| (Blank))) ",
+              "(Times (Optional (Pattern |_mr_poits_r1mq1_b| (Blank))) ",
+              "(Power (Times (Optional (Pattern |_mr_poits_r1mq1_c| (Blank))) ",
+              "(", %mr_pts_h, " (Pattern |_mr_poits_r1mq1_w| (Blank)))) ",
+              "(Optional (Pattern |_mr_poits_r1mq1_n| (Blank)))))) ",
+              "(Optional (Pattern |_mr_poits_r1mq1_p| (Blank))))"),
+      [],
+      lambda([%mr_mqb],
+        freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_a, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_b, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_c, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_n, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_p, %mr_mqb))
+        and not (%mr_eqQ(%mr_mk(_mr_poits_r1mq1_a, %mr_mqb), 0)
+                 and (%mr_integerQ(%mr_mk(_mr_poits_r1mq1_p, %mr_mqb))
+                      or %mr_eqQ(%mr_mk(_mr_poits_r1mq1_n, %mr_mqb), 1)))))
+    or %mr_matchQ(%mr_pts_u,
+      sconcat("(Power (Plus (Optional (Pattern |_mr_poits_r2mq1_a| (Blank))) ",
+              "(Times (Optional (Pattern |_mr_poits_r2mq1_b| (Blank))) ",
+              "(Power (Times (Optional (Pattern |_mr_poits_r2mq1_d| (Blank))) ",
+              "(", %mr_pts_h, " (Pattern |_mr_poits_r2mq1_w| (Blank)))) ",
+              "(Optional (Pattern |_mr_poits_r2mq1_p| (Blank))))) ",
+              "(Times (Optional (Pattern |_mr_poits_r2mq1_c| (Blank))) ",
+              "(Power (Times (Optional (Pattern |_mr_poits_r2mq1_d| (Blank))) ",
+              "(", %mr_pts_h, " (Pattern |_mr_poits_r2mq1_w| (Blank)))) ",
+              "(Optional (Pattern |_mr_poits_r2mq1_q| (Blank)))))) ",
+              "(Optional (Pattern |_mr_poits_r2mq1_n| (Blank))))"),
+      [],
+      lambda([%mr_mqb],
+        freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_a, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_b, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_c, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_d, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_n, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_p, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_q, %mr_mqb)))))$
 
 /* Rubi IntegrationUtilityFunctions.m L6170:
      InertReciprocalQ[f_,g_] := f===sin && g===csc || f===cos && g===sec ||
