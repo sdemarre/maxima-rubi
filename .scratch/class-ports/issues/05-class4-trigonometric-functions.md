@@ -225,3 +225,41 @@ chain — the class-3 polylog-ceiling situation exactly
   them), matchable by `MR-MATCH`, and mapped back by `ActivateTrig`. This is
   the one genuinely new substrate question in the port and it is a design
   decision, not a runbook step.
+
+## Carried from the inert-trig substrate (merged 2026-09-21, `0d7d0cc`)
+
+The substrate is on `master`: the eight class-4 TAIL records (4.1.0.1 bridge; 4.7.5 r21, r22,
+r47, r48, r58, r71, r72) are generated through `CLASS4_SUBSET` in `generator/generate_rules.py`,
+with EVERY other class-4 rule still unported. The spec's "Amendments (2026-09-21, execution)"
+section records what changed against the plan. The final whole-branch review deferred these
+items to this port. None blocked the merge:
+
+- **Class-4 body rules go in BEFORE class 6.** `mr_load_all` loads the class-4 files after class
+  6, which is harmless only while their body lists are empty (Rubi.m loads section 4 before 5 and
+  6). The comment in `mr_load_all` says so.
+- **`test/test_rule_table_order.mac`'s universal check iterates `mr_rule_table`**, not every
+  registered handle, so a `_tail` list that `mr_load_all` forgets never enters the table and goes
+  unseen. Only the hard-coded "exactly the eight" check catches that, and only for class 4. Make
+  it iterate 1..fill-pointer when class 4's body rules land.
+- **Repl misfires on inert integrands:** `1_4_1` r18 and `1_1_1_7` r5 "misfire (repl error)" on
+  inert-head integrands. They are caught, so the cost is time and log noise.
+- **The hyperbolic branches of FunctionOfQ / SubstFor are not ported.** Maxima simplifies
+  `cos(%i*z)` to `cosh(z)`, so records decline there. This is a reach limit on class 6 (and on
+  class 4's hyperbolic re-entry).
+- **The generated rit r4 duplicates the hand-ported `%mr_reduceInertTrig3`.** It is unreachable in
+  a 2-arg walk, and the two copies differ on a Switch miss (`false` vs a noun).
+- **radexpand vs PowerOfInertTrigSumQ:** `(b*sin(x)^2)^(1/2)` is rewritten before the predicate
+  sees it. This is the `mr_model_flags` question.
+- **Tests to add:** the fitf targets check the output, not WHICH clause fired; and there is no
+  committed DeactivateTrig target on a sum or a quotient of trig calls.
+- **Cost:** class-6 timeouts rose 5 → 191, attributed to (unmeasured split) r71's trial
+  integration, the r71 split-With repl integrating twice more, r21/r22 going live, and the
+  unbounded `factor(ratsimp(u))` in the 4-arg SubstFor. Run the standing 100 s timeout re-check
+  (`test/launch_timeout_rerun.py`) on `test/corpus_class6.inert-substrate.out` to separate
+  slow-but-correct entries from runaways.
+- **Related tickets:**
+  - `.scratch/class-ports/issues/07`: the six legacy bare-`u_` records sit mid-table. Also note
+    there that `mr_giveup_last` runs the non-give-up tail records ahead of the body give-ups.
+  - `.scratch/class-ports/issues/08`: unprefixed generated With locals in classes 1/2/3/6, and
+    `mr_sum`'s own locals, which already give **silently wrong answers on master**.
+  - `.scratch/corpus-harness/issues/04`: `c*'unintegrable` read as contains-noun.
