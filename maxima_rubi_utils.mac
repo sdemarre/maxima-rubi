@@ -5795,11 +5795,11 @@ mr_use_gamma_flag : false$
    both against a bare declare(noun) test and against the loaded package —
    so the flat subst chain below is faithful and no op/args recursion is
    needed. */
-%mr_activateTrig(u) := block([r],
-  r : u,
-  r : subst(sin, %mr_isin, r), r : subst(cos, %mr_icos, r),
-  r : subst(tan, %mr_itan, r), r : subst(cot, %mr_icot, r),
-  r : subst(sec, %mr_isec, r), r : subst(csc, %mr_icsc, r),
-  r)$
+%mr_activateTrig(u) := block([mr_r],
+  mr_r : u,
+  mr_r : subst(sin, %mr_isin, mr_r), mr_r : subst(cos, %mr_icos, mr_r),
+  mr_r : subst(tan, %mr_itan, mr_r), mr_r : subst(cot, %mr_icot, mr_r),
+  mr_r : subst(sec, %mr_isec, mr_r), mr_r : subst(csc, %mr_icsc, mr_r),
+  mr_r)$
 
 mr_witness_utils() := true$
