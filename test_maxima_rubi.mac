@@ -124,6 +124,7 @@ run_all_tests() := block([],
   test_inert_trig_rewrites(),
   test_inert_trig_reduce_powersum(),
   test_deactivate_trig(),
+  test_function_of_trig_of_linear(),
   test_census(),
   print(""),
   print("========================================"),
@@ -3755,6 +3756,51 @@ test_deactivate_trig() := block([],
   check_bool("round trip: hyperbolic closes symbolically via trigrat",
     is(trigrat(%mr_activateTrig(%mr_deactivateTrig(sinh(x), x)) - sinh(x))
        = 0)),
+  true
+)$
+
+/* Task 7: FunctionOfTrigOfLinearQ and FunctionOfTrig
+ * (IntegrationUtilityFunctions.m L4357-4392) -- the bridge rule's
+ * condition and the substitution records' locator. The bridge rule is a
+ * bare u_ at the END of section 4's table (Int[u_,x_Symbol] :=
+ * Int[DeactivateTrig[u,x],x] /; FunctionOfTrigOfLinearQ[u,x]), so a wrong
+ * TRUE is a deactivation loop or a swallowed integrand, not a wrong
+ * answer -- the negative targets matter most.
+ *
+ * AMENDED 2026-09-21: a trig head MIXED with a hyperbolic head is FALSE
+ * in Rubi. FunctionOfTrig carries a HYPERBOLIC argument as I*u[[1]]
+ * (utils 4381-4385) and a TRIG argument bare (utils 4374-4379), so
+ * merging one against the other gives b/d = 1/I = -I, and the merge
+ * clause requires RationalQ[b/d]. A trig head and a hyperbolic head in
+ * the same integrand are therefore NEVER both admitted -- which is the
+ * whole reason DeactivateTrig exists: it moves the hyperbolic side onto
+ * the inert TRIG heads FIRST, so by the time the rules match, nothing is
+ * mixed. */
+test_function_of_trig_of_linear() := block([],
+  print("--- FunctionOfTrigOfLinearQ / FunctionOfTrig ---"),
+  check_bool("fotlq: trig of a linear argument",
+             %mr_functionOfTrigOfLinearQ(sin(2*x+1), x)),
+  check_bool("fotlq: hyperbolic of a linear argument",
+             %mr_functionOfTrigOfLinearQ(sinh(2*x+1), x)),
+  check_bool("fotlq: a product of trig",
+             %mr_functionOfTrigOfLinearQ(sin(x)^4*(1+sin(x)^2), x)),
+  check_bool("fotlq: a product of hyperbolic",
+             %mr_functionOfTrigOfLinearQ(sinh(x)^4*(1+sinh(x)^2), x)),
+  check_not("fotlq: trig MIXED with hyperbolic",
+            %mr_functionOfTrigOfLinearQ(sin(x)^4*(1+sinh(x)^2), x)),
+  check_not("fotlq: no trig at all",
+            %mr_functionOfTrigOfLinearQ((1+x)^3, x)),
+  check_not("fotlq: trig of a NON-linear argument",
+            %mr_functionOfTrigOfLinearQ(sin(x^2), x)),
+  check_not("fotlq: two different linear arguments",
+            /* Rubi requires ONE linear argument throughout */
+            %mr_functionOfTrigOfLinearQ(sin(x)*cos(2*x+1), x)),
+  check_not("fotlq: an inert expression is not deactivated twice",
+            %mr_functionOfTrigOfLinearQ(%mr_isin(x), x)),
+  check("fot: returns the linear argument",
+        %mr_functionOfTrig(sin(2*x+1), x), 2*x+1),
+  check("fot: false when there is none",
+        %mr_functionOfTrig((1+x)^3, x), false),
   true
 )$
 

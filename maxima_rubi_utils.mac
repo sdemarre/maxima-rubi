@@ -5849,4 +5849,173 @@ mr_use_gamma_flag : false$
   %mr_unifyInertTrigFunction(%mr_fixInertTrigFunction(
     %mr_deactivateTrigAux(u, x), x), x))$
 
+/* ---- Task 7: FunctionOfTrigOfLinearQ + FunctionOfTrig -----------------
+ * IntegrationUtilityFunctions.m L4357-4407 -- the bridge rule's condition
+ * and its helper. '%mr_fot_null stands for Mathematica's Null: a value
+ * distinct both from a returned linear form and from Maxima's `false`
+ * (Mathematica's False), needed because the 3-arg walk below tracks THREE
+ * states -- "nothing found yet" (Null, keep looking), "found and
+ * consistent" (a linear form), "found and INCONSISTENT" (False, abort).
+ * Faithful line-ports of the reference port in
+ * probes/rubi/03-hyperbolic-miscellany-bridge.py's CLASSIFIER (23-case
+ * SELFTEST, both controls holding over the class-6 corpus), with the
+ * probe's three measured Maxima traps carried over: every bound name is
+ * %mr_-prefixed (a block local or `for` variable named like the corpus's
+ * own a/b/d/v/w captures it); `inflag:true` is bound around the two
+ * recursive walks below so `op`/`args` read the internal Times/Power form
+ * Rubi's own clauses are written against (op(2/(1+x)) is "/" without it,
+ * and a walk keyed on "+"/"*"/"^" misses the Power[-1] structure); and
+ * EqQ/coefficient tests go through the house %mr_eqQ/%mr_rationalQ ports
+ * rather than a bare `is(... = 0)`, which is `unknown` (not false) for a
+ * free symbolic coefficient and would make an `and` silently pass. */
+
+/* Rubi FunctionOfTrig[u_,v_,x_] (L4374-4392), the 3-arg recursive walk.
+ * The trig/hyperbolic merge branches read Coefficient[v,x,0/1] and
+ * Coefficient[u[[1]],x,0/1] through %mr_coeff (the house Coefficient
+ * port); the hyperbolic branch carries its argument as I*u[[1]] (the
+ * imaginary-argument identity DeactivateTrig itself later undoes), the
+ * trig branch bare -- merging a trig occurrence against a hyperbolic one
+ * therefore gives b/d = 1/I = -I, which RationalQ rejects (the 2026-09-21
+ * amendment's point: a trig head MIXED with a hyperbolic head is never
+ * admitted). The generic recursion (CalculusQ excluded, else Scan into
+ * args) uses a bare `return()` to break the `for` loop early once w has
+ * gone False -- `return(value)` does not escape the enclosing block in
+ * this build (2026-08-20 measurement, noted where %mr_rest_in et al. are
+ * defined), but a BARE `return()` does break the loop, which is exactly
+ * Rubi's Catch[Scan[...;Throw[False]]] short-circuit: once w is False, no
+ * further argument may revive it (a later merge against a False `v` is
+ * not a Rubi state that can occur, since the loop never reaches it). */
+%mr_functionOfTrig3(%mr_fot_u, %mr_fot_v, %mr_fot_x) := block(
+  [inflag : true, %mr_fot_w, %mr_fot_k,
+   %mr_fot_a, %mr_fot_b, %mr_fot_c, %mr_fot_d, %mr_fot_q],
+  if atom(%mr_fot_u) then
+    (if is(%mr_fot_u = %mr_fot_x) then false else %mr_fot_v)
+  elseif %mr_trigQ(%mr_fot_u) and %mr_linearQ(part(%mr_fot_u, 1), %mr_fot_x) then
+    (if is(%mr_fot_v = '%mr_fot_null) then part(%mr_fot_u, 1)
+     else (
+       %mr_fot_a : %mr_coeff(%mr_fot_v, %mr_fot_x, 0),
+       %mr_fot_b : %mr_coeff(%mr_fot_v, %mr_fot_x, 1),
+       %mr_fot_c : %mr_coeff(part(%mr_fot_u, 1), %mr_fot_x, 0),
+       %mr_fot_d : %mr_coeff(part(%mr_fot_u, 1), %mr_fot_x, 1),
+       %mr_fot_q : %mr_fot_b / %mr_fot_d,
+       if %mr_eqQ(%mr_fot_a*%mr_fot_d - %mr_fot_b*%mr_fot_c, 0)
+           and %mr_rationalQ(%mr_fot_q)
+         then %mr_fot_a/num(%mr_fot_q) + %mr_fot_b*%mr_fot_x/num(%mr_fot_q)
+         else false))
+  elseif %mr_hyperbolicQ(%mr_fot_u) and %mr_linearQ(part(%mr_fot_u, 1), %mr_fot_x) then
+    (if is(%mr_fot_v = '%mr_fot_null) then %i*part(%mr_fot_u, 1)
+     else (
+       %mr_fot_a : %mr_coeff(%mr_fot_v, %mr_fot_x, 0),
+       %mr_fot_b : %mr_coeff(%mr_fot_v, %mr_fot_x, 1),
+       %mr_fot_c : %i*%mr_coeff(part(%mr_fot_u, 1), %mr_fot_x, 0),
+       %mr_fot_d : %i*%mr_coeff(part(%mr_fot_u, 1), %mr_fot_x, 1),
+       %mr_fot_q : %mr_fot_b / %mr_fot_d,
+       if %mr_eqQ(%mr_fot_a*%mr_fot_d - %mr_fot_b*%mr_fot_c, 0)
+           and %mr_rationalQ(%mr_fot_q)
+         then %mr_fot_a/num(%mr_fot_q) + %mr_fot_b*%mr_fot_x/num(%mr_fot_q)
+         else false))
+  elseif %mr_calculusQ(%mr_fot_u) then false
+  else (
+    %mr_fot_w : %mr_fot_v,
+    for %mr_fot_k in args(%mr_fot_u) do (
+      %mr_fot_w : %mr_functionOfTrig3(%mr_fot_k, %mr_fot_w, %mr_fot_x),
+      if is(%mr_fot_w = false) then return()
+    ),
+    %mr_fot_w))$
+
+/* Rubi AlgebraicTrigFunctionQ[u_,x_Symbol] (L4396-4407): u built from
+ * atoms, trig/hyperbolic functions of a linear argument, a power whose
+ * exponent is free of x, and Times/Plus over such pieces. */
+%mr_algebraicTrigFunctionQ(%mr_atfq_u, %mr_atfq_x) := block(
+  [inflag : true, %mr_atfq_k, %mr_atfq_r],
+  if atom(%mr_atfq_u) then true
+  elseif %mr_trigQ(%mr_atfq_u) and %mr_linearQ(part(%mr_atfq_u, 1), %mr_atfq_x) then true
+  elseif %mr_hyperbolicQ(%mr_atfq_u) and %mr_linearQ(part(%mr_atfq_u, 1), %mr_atfq_x) then true
+  elseif op(%mr_atfq_u) = "^" and freeof(%mr_atfq_x, part(%mr_atfq_u, 2)) then
+    %mr_algebraicTrigFunctionQ(part(%mr_atfq_u, 1), %mr_atfq_x)
+  elseif op(%mr_atfq_u) = "*" or op(%mr_atfq_u) = "+" then (
+    %mr_atfq_r : true,
+    for %mr_atfq_k in args(%mr_atfq_u) do
+      if not %mr_algebraicTrigFunctionQ(%mr_atfq_k, %mr_atfq_x) then %mr_atfq_r : false,
+    %mr_atfq_r)
+  else false)$
+
+/* Rubi FunctionOfTrigOfLinearQ branch 1 (L4358-4361), the MatchQ half:
+ *   MatchQ[u, (c_.+d_.*x)^m_.*(a_.+b_.*trig_[e_.+f_.*x])^n_.
+ *     /; FreeQ[{a,b,c,d,e,f,m,n},x] && (TrigQ[trig] || HyperbolicQ[trig])]
+ * trig_ is a HEAD-position pattern variable: MR-MATCH supports this
+ * directly -- a pattern's own head may itself be a (Pattern ...) node,
+ * and mr-match:m1's generic clause recurses the pattern head against
+ * (car expr), the same mechanism the 6.7.6/6.7.7/6.7.9 F_[v_] rules
+ * already exercise (grep '((Pattern' rules/). The bound value comes back
+ * through mr-binding-value/%mr_mk as the MAXIMA VERB the matched head
+ * reads as: `sin`, `cosh`, ... for an ACTIVE call, or `%mr_isin`, ... for
+ * an INERT one -- the tree's head table keeps the inert names disjoint
+ * from the active ones (maxima_rubi_tree.lisp +functions+: "Sin" -> sin
+ * for an active call vs "sin" -> %mr_isin for the inert tree head), so an
+ * inert head can never satisfy TrigQ or HyperbolicQ here and this branch
+ * cannot make deactivation recurse. */
+%mr_fotlq_branch1(%mr_fotlq1_u, %mr_fotlq1_x) := %mr_matchQ(%mr_fotlq1_u,
+  sconcat("(Times ",
+          "(Power (Plus (Optional (Pattern |_mr_fotlq1_c| (Blank))) ",
+          "(Times (Optional (Pattern |_mr_fotlq1_d| (Blank))) (MRArg 1))) ",
+          "(Optional (Pattern |_mr_fotlq1_m| (Blank)))) ",
+          "(Power (Plus (Optional (Pattern |_mr_fotlq1_a| (Blank))) ",
+          "(Times (Optional (Pattern |_mr_fotlq1_b| (Blank))) ",
+          "((Pattern |_mr_fotlq1_trig| (Blank)) ",
+          "(Plus (Optional (Pattern |_mr_fotlq1_e| (Blank))) ",
+          "(Times (Optional (Pattern |_mr_fotlq1_f| (Blank))) (MRArg 1)))))) ",
+          "(Optional (Pattern |_mr_fotlq1_n| (Blank)))))"),
+  [%mr_fotlq1_x],
+  lambda([%mr_mqb],
+    freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_a, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_b, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_c, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_d, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_e, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_f, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_m, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_n, %mr_mqb))
+    and (%mr_trigQ(%mr_mk(_mr_fotlq1_trig, %mr_mqb))
+         or %mr_hyperbolicQ(%mr_mk(_mr_fotlq1_trig, %mr_mqb)))))$
+
+/* Rubi FunctionOfTrigOfLinearQ[u_,x_Symbol] (L4358-4361): branch 1 above,
+ * or branch 2 -- FunctionOfTrig[u,Null,x] finds a consistent linear
+ * argument AND u is algebraic in the trig functions of it. This is the
+ * bridge rule's condition (Int[u_,x_Symbol] := Int[DeactivateTrig[u,x],x]
+ * /; FunctionOfTrigOfLinearQ[u,x]), a bare u_ at the END of section 4's
+ * table -- a wrong TRUE here is a deactivation loop or a swallowed
+ * integrand, not a wrong answer.
+ *
+ * Branch 2 calls the 3-arg FunctionOfTrig DIRECTLY on the RAW u, WITHOUT
+ * activating it first (contrast %mr_functionOfTrig below, which does
+ * activate). Tracing why through the source: for u = %mr_isin(x) (an
+ * inert call, already deactivated), %mr_isin is neither TrigQ nor
+ * HyperbolicQ (the ACTIVE-head lists), nor CalculusQ, so the walk falls
+ * to the generic Scan over u's own args -- here just {x}. Recursing into
+ * the bare argument x hits the walk's FIRST clause, AtomQ[u] with
+ * u===x, which is False by definition (L4375: `If[u===x, False, v]`) --
+ * independent of what v was. That False poisons the Scan (the early-exit
+ * `return()` above) and %mr_functionOfTrigOfLinearQ(%mr_isin(x), x) comes
+ * back false: an already-inert expression can never satisfy the bridge's
+ * condition a second time, whatever its argument. */
+%mr_functionOfTrigOfLinearQ(%mr_fotlq_u, %mr_fotlq_x) := block([%mr_fotlq_v],
+  if %mr_fotlq_branch1(%mr_fotlq_u, %mr_fotlq_x) then true
+  else (
+    %mr_fotlq_v : %mr_functionOfTrig3(%mr_fotlq_u, '%mr_fot_null, %mr_fotlq_x),
+    not (is(%mr_fotlq_v = '%mr_fot_null) or is(%mr_fotlq_v = false))
+      and %mr_algebraicTrigFunctionQ(%mr_fotlq_u, %mr_fotlq_x)))$
+
+/* Rubi FunctionOfTrig[u_,x_Symbol] (L4365-4367): ActivateTrig[u] FIRST,
+ * then the 3-arg walk with v = Null; Null maps to False. This is the
+ * substitution records' locator (Tasks 9-10), used AFTER deactivation, on
+ * expressions that may already carry a just-deactivated (now
+ * re-activated) trig factor -- distinct from FunctionOfTrigOfLinearQ's
+ * own 3-arg call above, which must not itself activate: the bridge
+ * condition runs BEFORE anything has been deactivated. */
+%mr_functionOfTrig(%mr_fot2_u, %mr_fot2_x) := block([%mr_fot2_v],
+  %mr_fot2_v : %mr_functionOfTrig3(%mr_activateTrig(%mr_fot2_u),
+                                    '%mr_fot_null, %mr_fot2_x),
+  if is(%mr_fot2_v = '%mr_fot_null) then false else %mr_fot2_v)$
+
 mr_witness_utils() := true$
