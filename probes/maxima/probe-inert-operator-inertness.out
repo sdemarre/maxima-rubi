@@ -52,10 +52,58 @@ PASS: ratsimp keeps %mr_itan  =>  %mr_itan(x)
 PASS: ratsimp keeps %mr_icot  =>  %mr_icot(x) 
 PASS: ratsimp keeps %mr_isec  =>  %mr_isec(x) 
 PASS: ratsimp keeps %mr_icsc  =>  %mr_icsc(x) 
+for f in ['%mr_isin,'%mr_icos,'%mr_itan,'%mr_icot,'%mr_isec,'%mr_icsc] do
+    (check(concat("trigreduce keeps ",f),trigreduce(apply(f,[x])),
+           apply(f,[x])),
+     check(concat("trigexpand keeps ",f),trigexpand(apply(f,[x])),
+           apply(f,[x])),
+     check(concat("exponentialize keeps ",f),exponentialize(apply(f,[x])),
+           apply(f,[x])),
+     check(concat("radcan keeps ",f),radcan(apply(f,[x])),apply(f,[x])),
+     check(concat("factor keeps ",f),factor(apply(f,[x])),apply(f,[x])))
+PASS: trigreduce keeps %mr_isin  =>  %mr_isin(x) 
+PASS: trigexpand keeps %mr_isin  =>  %mr_isin(x) 
+PASS: exponentialize keeps %mr_isin  =>  %mr_isin(x) 
+PASS: radcan keeps %mr_isin  =>  %mr_isin(x) 
+PASS: factor keeps %mr_isin  =>  %mr_isin(x) 
+PASS: trigreduce keeps %mr_icos  =>  %mr_icos(x) 
+PASS: trigexpand keeps %mr_icos  =>  %mr_icos(x) 
+PASS: exponentialize keeps %mr_icos  =>  %mr_icos(x) 
+PASS: radcan keeps %mr_icos  =>  %mr_icos(x) 
+PASS: factor keeps %mr_icos  =>  %mr_icos(x) 
+PASS: trigreduce keeps %mr_itan  =>  %mr_itan(x) 
+PASS: trigexpand keeps %mr_itan  =>  %mr_itan(x) 
+PASS: exponentialize keeps %mr_itan  =>  %mr_itan(x) 
+PASS: radcan keeps %mr_itan  =>  %mr_itan(x) 
+PASS: factor keeps %mr_itan  =>  %mr_itan(x) 
+PASS: trigreduce keeps %mr_icot  =>  %mr_icot(x) 
+PASS: trigexpand keeps %mr_icot  =>  %mr_icot(x) 
+PASS: exponentialize keeps %mr_icot  =>  %mr_icot(x) 
+PASS: radcan keeps %mr_icot  =>  %mr_icot(x) 
+PASS: factor keeps %mr_icot  =>  %mr_icot(x) 
+PASS: trigreduce keeps %mr_isec  =>  %mr_isec(x) 
+PASS: trigexpand keeps %mr_isec  =>  %mr_isec(x) 
+PASS: exponentialize keeps %mr_isec  =>  %mr_isec(x) 
+PASS: radcan keeps %mr_isec  =>  %mr_isec(x) 
+PASS: factor keeps %mr_isec  =>  %mr_isec(x) 
+PASS: trigreduce keeps %mr_icsc  =>  %mr_icsc(x) 
+PASS: trigexpand keeps %mr_icsc  =>  %mr_icsc(x) 
+PASS: exponentialize keeps %mr_icsc  =>  %mr_icsc(x) 
+PASS: radcan keeps %mr_icsc  =>  %mr_icsc(x) 
+PASS: factor keeps %mr_icsc  =>  %mr_icsc(x) 
+check("trigreduce does NOT reduce the inert square",trigreduce(%mr_isin(x)^2),
+      %mr_isin(x)^2)
+                                                               2
+PASS: trigreduce does NOT reduce the inert square  =>  %mr_isin (x) 
+check("trigreduce DOES reduce the active square (control)",
+      trigreduce(sin(x)^2),(1-cos(2*x))/2)
+                                                              1 - cos(2 x)
+PASS: trigreduce DOES reduce the active square (control)  =>  ──────────── 
+                                                                   2
 print("========================================")
 ======================================== 
 print("Results: ",tests_passed," passed, ",tests_failed," failed")
-Results:  12  passed,  0  failed 
+Results:  44  passed,  0  failed 
 print("========================================")
 ======================================== 
  /home/serge/src/maxima-rubi/probes/maxima/probe-inert-operator-inertness.mac

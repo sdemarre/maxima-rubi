@@ -3582,6 +3582,16 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
 %mr_substFor3(v, u, x) := block([L],
   if %mr_atomQ(v)
   then subst(x, v, u)
+  /* Task 9 (inert-trig substrate): the .m's InertTrigFreeQ arm and its
+     circular-trig Switch arms (Sin/Cos/Tan/Cot only -- %mr_substForTrigHead,
+     defined with FunctionOfQ at the end of this file, which states the
+     deviations). No class-1 call site reaches either: class-1 u carries no
+     inert head and class-1 v no trig factor. */
+  else if not %mr_inertTrigFreeQ(u)
+  then %mr_substFor3(v, %mr_activateTrig(u), x)
+  else if not atom(%mr_nonfreeFactors(v, x))
+    and is(member(op(%mr_nonfreeFactors(v, x)), [sin, cos, tan, cot]) = true)
+  then %mr_substForTrigHead(v, u, x)
   else if not atom(v) and op(v) = "^"
     and is(part(v, 1) = x) and freeof(x, part(v, 2))
   then %mr_substPower(u, x, 1/part(v, 2))
@@ -3593,7 +3603,51 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   )
   else subst(x, v, u))$
 
-%mr_substFor4(w, v, u, x) := w*%mr_substFor3(v, u, x)$
+/* Rubi :5976  SubstFor[w,v,u,x] := SimplifyIntegrand[w*SubstFor[v,u,x],x].
+   Task 10 (inert-trig substrate) restores the SimplifyIntegrand the old
+   port omitted (it read w*SubstFor[v,u,x] bare). Only class 4's 4.7.5
+   records call the 4-argument form (grep of rules/, 2026-09-21: every
+   class-1 call site passes 3). The Weierstrass record (r71) needs it:
+   without it the half-angle integrand reached its trial Int as
+   1/((x^2+1)*(3+2*(1/(x^2+1)-x^2/(x^2+1)))) -- an unnormalized rational no
+   rule matches -- instead of Rubi's 1/(x^2+5).
+
+   SimplifyIntegrand (L2148-2155) is NormalizeLeadTermSigns[
+   NormalizeIntegrandAux[Simplify[u],x]], and what matters here is its
+   Simplify. DEVIATION (stamped; a SHAPE approximation). It is
+   value-preserving, but it CAN move a record's accept/decline: r71's
+   condition is CalculusFreeQ of a trial Int of exactly this simplified
+   shape, and any record that tests a nested Int result's shape is in the
+   same position -- the shape decides which rules the nested Int meets, so
+   whether it comes back calculus-free (r71 declined without this; that is
+   why it was added). The approximation may therefore accept or decline
+   where Rubi's Simplify would not. Mathematica's Simplify returns the smallest form
+   (by its LeafCount-based complexity) among the transformations it tries,
+   never one larger than its input. The port takes the smallest by
+   %mr_leafCount of three candidates -- u itself, ratsimp(u) and
+   factor(ratsimp(u)) -- preferring them in that order on a tie. The
+   house %mr_simp (the table's SimplifyIntegrand) is NOT used: it ends in
+   ratsimp, which re-expands a factored denominator -- MEASURED 2026-09-21,
+   6.1.5 e6 sinh(a+b*x)^6: 4.7.5 r58's integrand x^6/(x^2+1)^4 became
+   x^6/(x^8+4*x^6+6*x^4+4*x^2+1), the nested Int left an unintegrable
+   piece, and a verified entry fell to contains-noun. With u a candidate a
+   form that is already simplest (that one, and the Task-9 records'
+   integrands) reaches Int unchanged. */
+%mr_sf4_simplify(%mr_sf4_u) := block([%mr_sf4_best, %mr_sf4_r, %mr_sf4_f],
+  %mr_sf4_best : %mr_sf4_u,
+  %mr_sf4_r : errcatch(ratsimp(%mr_sf4_u)),
+  if %mr_sf4_r # [] then (
+    %mr_sf4_r : first(%mr_sf4_r),
+    if %mr_leafCount(%mr_sf4_r) < %mr_leafCount(%mr_sf4_best)
+    then %mr_sf4_best : %mr_sf4_r,
+    %mr_sf4_f : errcatch(factor(%mr_sf4_r)),
+    if %mr_sf4_f # [] then (
+      %mr_sf4_f : first(%mr_sf4_f),
+      if %mr_leafCount(%mr_sf4_f) < %mr_leafCount(%mr_sf4_best)
+      then %mr_sf4_best : %mr_sf4_f)),
+  %mr_sf4_best)$
+
+%mr_substFor4(w, v, u, x) := %mr_sf4_simplify(w*%mr_substFor3(v, u, x))$
 
 %mr_substFor : lambda([a, b, c, [d]],
   if length(d) = 0
@@ -5587,5 +5641,845 @@ mr_use_gamma_flag : false$
    if is(dead = true) then false
    else if is(op(u) = "[") then [res, v, n]
    else [apply(op(u), res), v, n])$
+
+/* Rubi's inert-trig rewrite functions, ported as generated rewrite tables
+   (inert-trig substrate design 3.2): every one of their clauses --
+   UnifyInertTrigFunction's 75, FixInertTrigFunction's 61 and
+   ReduceInertTrig's 4, 140 in the generated tables, 137 of them
+   conditioned (uitf r68, fitf r61 and rit r3 register `true`) -- is
+   Name[pattern] := rhs [/; cond], so they compile through the same emitter
+   as an Int rule instead of being hand-written. The tables live in
+   rules/utils/inert_trig_rewrites.mac. Recursion is Rubi's own — a clause
+   that calls itself re-enters through these wrappers, and there is no depth
+   guard by design decision (spec 3.2). */
+%mr_unifyInertTrigFunction(u, x) :=
+  %mr_rewrite("UnifyInertTrigFunction", mr_rw_uitf, u, x)$
+%mr_fixInertTrigFunction(u, x) :=
+  %mr_rewrite("FixInertTrigFunction", mr_rw_fitf, u, x)$
+/* f is a BARE inert head (Rubi's ReduceInertTrig[sin, v]), passed as the
+   operator symbol %mr_isin, not as an application. mr-tree converts that
+   symbol to a plain tree atom (it is not an applied head, so +functions+ is
+   not consulted), every rit clause captures it with a plain func_ Blank,
+   and the generated repl gets back the same Maxima symbol: func[u] is
+   apply(func, [u]) = %mr_isin(u), and a Switch form `sin` is emitted as the
+   symbol %mr_isin and compared with `=`. No tree head is involved.
+
+   Rubi's ReduceInertTrig has TWO arities, and Maxima functions are
+   fixed-arity, so this entry is variadic and dispatches on the count:
+   - 2 arguments (func, u): the generated table mr_rw_rit, walked by
+     %mr_rewrite. Its clauses 1 and 2 (L6496, L6500) pull the multiple of Pi
+     out of u and recurse with 3 arguments.
+   - 3 arguments (func, m, u): %mr_reduceInertTrig3, the hand port of the
+     single L6509 clause that reduces the multiple m of Pi.
+   The table's clause 4 is the same L6509 clause as a generated record; its
+   pattern has 3 arguments, so it never binds the 2-argument walk and is
+   inert there (it is kept so the table count matches the source). */
+%mr_reduceInertTrig([%mr_rit_args]) :=
+  if length(%mr_rit_args) = 2 then
+    %mr_rewrite("ReduceInertTrig", mr_rw_rit,
+                first(%mr_rit_args), second(%mr_rit_args))
+  else if length(%mr_rit_args) = 3 then
+    %mr_reduceInertTrig3(first(%mr_rit_args), second(%mr_rit_args),
+                         third(%mr_rit_args))
+  else error("%mr_reduceInertTrig: expected 2 or 3 arguments, found",
+             length(%mr_rit_args))$
+
+/* Rubi IntegrationUtilityFunctions.m L6509, ported as written:
+     ReduceInertTrig[func_,m_,u_] := If[m<0, ..., If[m>=2, ...Mod[m,2]...,
+       If[m>=1, Switch[...], If[m>=1/2, Switch[...], func[m*Pi+u]]]]] /;
+     RationalQ[m]
+   returns func[m*Pi+u] with m reduced to -1/4 <= m < 1/2.
+   - The /; RationalQ[m] guard failing means the definition does not apply;
+     Mathematica then leaves the call unevaluated, and so does this port: it
+     returns the noun '%mr_reduceInertTrig(func, m, u). Unreachable from the
+     table, whose clauses 1/2 only call it with a product of rationals.
+   - A Switch whose func is none of the six inert heads is likewise left
+     unevaluated in Mathematica; the port returns the same noun (also
+     unreachable: every caller passes one of the six).
+   - The bare Switch atoms sin ... csc are the symbols %mr_isin ... %mr_icsc,
+     compared with = (syntactic, as Switch is).
+   Locals are %mr_rt_-prefixed (a bound m/u would capture the corpus
+   symbols of the same name inside u). */
+%mr_reduceInertTrig3(%mr_rt_f, %mr_rt_m, %mr_rt_u) := block(
+  [%mr_rt_unev],
+  %mr_rt_unev : '%mr_reduceInertTrig(%mr_rt_f, %mr_rt_m, %mr_rt_u),
+  if not %mr_rationalQ(%mr_rt_m) then %mr_rt_unev
+  else if %mr_rt_m < 0 then (
+    if %mr_rt_m >= -1/4 then apply(%mr_rt_f, [%mr_rt_m*%pi + %mr_rt_u])
+    else if %mr_rt_f = '%mr_isin then
+      -%mr_reduceInertTrig('%mr_isin, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_icos then
+      %mr_reduceInertTrig('%mr_icos, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_itan then
+      -%mr_reduceInertTrig('%mr_itan, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_icot then
+      -%mr_reduceInertTrig('%mr_icot, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_isec then
+      %mr_reduceInertTrig('%mr_isec, -%mr_rt_m, -%mr_rt_u)
+    else if %mr_rt_f = '%mr_icsc then
+      -%mr_reduceInertTrig('%mr_icsc, -%mr_rt_m, -%mr_rt_u)
+    else %mr_rt_unev)
+  else if %mr_rt_m >= 2 then
+    %mr_reduceInertTrig(%mr_rt_f, mod(%mr_rt_m, 2), %mr_rt_u)
+  else if %mr_rt_m >= 1 then (
+    if %mr_rt_f = '%mr_isin then
+      -%mr_reduceInertTrig('%mr_isin, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icos then
+      -%mr_reduceInertTrig('%mr_icos, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_itan then
+      %mr_reduceInertTrig('%mr_itan, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icot then
+      %mr_reduceInertTrig('%mr_icot, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_isec then
+      -%mr_reduceInertTrig('%mr_isec, %mr_rt_m - 1, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icsc then
+      -%mr_reduceInertTrig('%mr_icsc, %mr_rt_m - 1, %mr_rt_u)
+    else %mr_rt_unev)
+  else if %mr_rt_m >= 1/2 then (
+    if %mr_rt_f = '%mr_isin then
+      %mr_reduceInertTrig('%mr_icos, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icos then
+      -%mr_reduceInertTrig('%mr_isin, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_itan then
+      -%mr_reduceInertTrig('%mr_icot, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icot then
+      -%mr_reduceInertTrig('%mr_itan, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_isec then
+      -%mr_reduceInertTrig('%mr_icsc, %mr_rt_m - 1/2, %mr_rt_u)
+    else if %mr_rt_f = '%mr_icsc then
+      %mr_reduceInertTrig('%mr_isec, %mr_rt_m - 1/2, %mr_rt_u)
+    else %mr_rt_unev)
+  else apply(%mr_rt_f, [%mr_rt_m*%pi + %mr_rt_u]))$
+
+/* Rubi IntegrationUtilityFunctions.m L6487:
+     PowerOfInertTrigSumQ[u_,func_,x_] :=
+       MatchQ[u, (a_.+b_.*(c_.*func[w_])^n_.)^p_. /;
+                 FreeQ[{a,b,c,n,p},x] && Not[EqQ[a,0] && (IntegerQ[p] || EqQ[n,1])]] ||
+       MatchQ[u, (a_.+b_.*(d_.*func[w_])^p_.+c_.*(d_.*func[w_])^q_.)^n_. /;
+                 FreeQ[{a,b,c,d,n,p,q},x]]
+   func is a BARE inert head (%mr_isin ...), and in the pattern it is in
+   HEAD position, func[w_]. An (MRArg k) part cannot stand there: a part is
+   converted with max->tree, which turns the bare symbol %mr_isin into a
+   plain atom, not the tree head sin that %mr_isin(w) becomes. So the head's
+   tree name (sin ... csc, the +functions+ rows) is spliced into the pattern
+   TEXT; each of the six texts is part-free and is prepared once and cached
+   by %mr_matchQ. A func outside the six is false (Rubi's MatchQ against a
+   pattern whose head no expression here carries). Optional defaults (a 0,
+   b/c/d 1, exponents 1) are bound by MR-MATCH, so EqQ[a,0] sees the 0 of an
+   absent a. */
+%mr_powerOfInertTrigSumQ(%mr_pts_u, %mr_pts_f, %mr_pts_x) := block(
+  [%mr_pts_h],
+  %mr_pts_h : assoc(%mr_pts_f,
+                    ['%mr_isin = "sin", '%mr_icos = "cos", '%mr_itan = "tan",
+                     '%mr_icot = "cot", '%mr_isec = "sec", '%mr_icsc = "csc"]),
+  if %mr_pts_h = false then false
+  else
+    %mr_matchQ(%mr_pts_u,
+      sconcat("(Power (Plus (Optional (Pattern |_mr_poits_r1mq1_a| (Blank))) ",
+              "(Times (Optional (Pattern |_mr_poits_r1mq1_b| (Blank))) ",
+              "(Power (Times (Optional (Pattern |_mr_poits_r1mq1_c| (Blank))) ",
+              "(", %mr_pts_h, " (Pattern |_mr_poits_r1mq1_w| (Blank)))) ",
+              "(Optional (Pattern |_mr_poits_r1mq1_n| (Blank)))))) ",
+              "(Optional (Pattern |_mr_poits_r1mq1_p| (Blank))))"),
+      [],
+      lambda([%mr_mqb],
+        freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_a, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_b, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_c, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_n, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r1mq1_p, %mr_mqb))
+        and not (%mr_eqQ(%mr_mk(_mr_poits_r1mq1_a, %mr_mqb), 0)
+                 and (%mr_integerQ(%mr_mk(_mr_poits_r1mq1_p, %mr_mqb))
+                      or %mr_eqQ(%mr_mk(_mr_poits_r1mq1_n, %mr_mqb), 1)))))
+    or %mr_matchQ(%mr_pts_u,
+      sconcat("(Power (Plus (Optional (Pattern |_mr_poits_r2mq1_a| (Blank))) ",
+              "(Times (Optional (Pattern |_mr_poits_r2mq1_b| (Blank))) ",
+              "(Power (Times (Optional (Pattern |_mr_poits_r2mq1_d| (Blank))) ",
+              "(", %mr_pts_h, " (Pattern |_mr_poits_r2mq1_w| (Blank)))) ",
+              "(Optional (Pattern |_mr_poits_r2mq1_p| (Blank))))) ",
+              "(Times (Optional (Pattern |_mr_poits_r2mq1_c| (Blank))) ",
+              "(Power (Times (Optional (Pattern |_mr_poits_r2mq1_d| (Blank))) ",
+              "(", %mr_pts_h, " (Pattern |_mr_poits_r2mq1_w| (Blank)))) ",
+              "(Optional (Pattern |_mr_poits_r2mq1_q| (Blank)))))) ",
+              "(Optional (Pattern |_mr_poits_r2mq1_n| (Blank))))"),
+      [],
+      lambda([%mr_mqb],
+        freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_a, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_b, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_c, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_d, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_n, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_p, %mr_mqb))
+        and freeof(%mr_pts_x, %mr_mk(_mr_poits_r2mq1_q, %mr_mqb)))))$
+
+/* Rubi IntegrationUtilityFunctions.m L6170:
+     InertReciprocalQ[f_,g_] := f===sin && g===csc || f===cos && g===sec ||
+                                f===tan && g===cot
+   f and g are head captures, which the dispatcher binds to the %mr_i*
+   operator SYMBOL (maxima_rubi_dispatch.lisp mr-binding-value), so SameQ on
+   the inert head is `=` on that symbol. Called from the conds of
+   FixInertTrigFunction's four f_[v_]^m_ clauses. */
+%mr_inertReciprocalQ(f, g) :=
+  is((f = '%mr_isin and g = '%mr_icsc) or (f = '%mr_icos and g = '%mr_isec)
+     or (f = '%mr_itan and g = '%mr_icot))$
+
+/* Rubi InertTrigQ[f_] := MemberQ[{sin,cos,tan,cot,sec,csc},f]
+   (IntegrationUtilityFunctions.m L6160). Takes a HEAD, as upstream does:
+   rules bind F_ over an inert head and test this on the binding. The
+   %mr_hyperbolicQ shape (atom u -> u, else op(u)) is deliberate — the atom
+   branch was wrong there until 2026-09-20 and this one is faithful from the
+   start. */
+%mr_inertTrigQ(u) := block([],
+  is(member(if atom(u) then u else op(u),
+            [%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc]) = true))$
+
+/* Rubi InertTrigFreeQ[u_] := FreeQ[u,sin] && ... && FreeQ[u,csc] (L6173).
+   An EXPRESSION test, unlike InertTrigQ. */
+%mr_inertTrigFreeQ(u) := block([],
+  is(freeof(%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc, u) = true))$
+
+/* Rubi TrigQ[f_] — the ACTIVE heads. Deliberately disjoint from
+   %mr_inertTrigQ: a deactivated expression must not satisfy both. */
+%mr_trigQ(u) := block([],
+  is(member(if atom(u) then u else op(u),
+            [sin, cos, tan, cot, sec, csc]) = true))$
+
+/* Rubi ActivateTrig[u_] (L6180): the inverse of the inert head map of the
+   inert-trig substrate design 3.1. MEASURED 2026-09-21
+   (branch_5_50_base_84_g4204fb669 / SBCL 2.6.7): subst on the operator
+   name rewrites every occurrence at any depth, including under a nested
+   noun-arithmetic head (log(%mr_isin(2*x)^3+y) -> log(sin(2*x)^3+y)),
+   both against a bare declare(noun) test and against the loaded package —
+   so the flat subst chain below is faithful and no op/args recursion is
+   needed. */
+%mr_activateTrig(u) := block([mr_r],
+  mr_r : u,
+  mr_r : subst(sin, %mr_isin, mr_r), mr_r : subst(cos, %mr_icos, mr_r),
+  mr_r : subst(tan, %mr_itan, mr_r), mr_r : subst(cot, %mr_icot, mr_r),
+  mr_r : subst(sec, %mr_isec, mr_r), mr_r : subst(csc, %mr_icsc, mr_r),
+  mr_r)$
+
+/* Rubi DeactivateTrigAux[u,x] (IntegrationUtilityFunctions.m L6198-6218).
+   Both branches. The hyperbolic branch is the cross-section bridge: it maps
+   the six hyperbolic heads onto the six INERT TRIG heads by the
+   imaginary-argument identities, with the argument multiplied by %i. This is
+   how Rubi answers the class-6 shapes that have no section-6 rule file
+   (probes/rubi/02-hyperbolic-inert-trig-bridge). op(u) on a function
+   application (sin(x), sinh(x), ...) returns the bare symbol (sin, sinh,
+   ...), not a string (measured this task; contrast the "+"/"*"/"^" string
+   ops of the else branch's rebuild, trap (b)). The block local is
+   %mr_dta_-prefixed and the else-branch lambda parameter is %mr_dta_t: a
+   local or lambda parameter named like a corpus symbol (v, t, u, x, ...)
+   can capture that symbol inside the walked expression (trap (a)). */
+%mr_deactivateTrigAux(u, x) := block([%mr_dta_v],
+  if atom(u) then u
+  elseif %mr_trigQ(u) and %mr_linearQ([part(u, 1)], x) then (
+    %mr_dta_v : %mr_expandToSum(part(u, 1), x),
+    if op(u) = sin then %mr_reduceInertTrig(%mr_isin, %mr_dta_v)
+    elseif op(u) = cos then %mr_reduceInertTrig(%mr_icos, %mr_dta_v)
+    elseif op(u) = tan then %mr_reduceInertTrig(%mr_itan, %mr_dta_v)
+    elseif op(u) = cot then %mr_reduceInertTrig(%mr_icot, %mr_dta_v)
+    elseif op(u) = sec then %mr_reduceInertTrig(%mr_isec, %mr_dta_v)
+    else %mr_reduceInertTrig(%mr_icsc, %mr_dta_v))
+  elseif %mr_hyperbolicQ(u) and %mr_linearQ([part(u, 1)], x) then (
+    %mr_dta_v : %mr_expandToSum(%i * part(u, 1), x),
+    if op(u) = sinh then -%i * %mr_reduceInertTrig(%mr_isin, %mr_dta_v)
+    elseif op(u) = cosh then %mr_reduceInertTrig(%mr_icos, %mr_dta_v)
+    elseif op(u) = tanh then -%i * %mr_reduceInertTrig(%mr_itan, %mr_dta_v)
+    elseif op(u) = coth then %i * %mr_reduceInertTrig(%mr_icot, %mr_dta_v)
+    elseif op(u) = sech then %mr_reduceInertTrig(%mr_isec, %mr_dta_v)
+    else %i * %mr_reduceInertTrig(%mr_icsc, %mr_dta_v))
+  else apply(op(u),
+             map(lambda([%mr_dta_t], %mr_deactivateTrigAux(%mr_dta_t, x)),
+                 args(u))))$
+
+/* Rubi DeactivateTrig[u,x] (L6189-6195): UnifyInertTrigFunction o
+   FixInertTrigFunction o DeactivateTrigAux. The upstream file also carries
+   a fast-path clause ahead of this one, for (c+d x)^m (a+b trig[e+f x])^n,
+   that recurses DeactivateTrig into the trig factor alone rather than
+   walking the whole product through DeactivateTrigAux. It is NOT ported
+   here: no Layer A target distinguishes it from the general clause below,
+   which subsumes it (map/apply already walks into a product's trig factor
+   the same way), so it would be an optimisation this plan does not need
+   (brief resolution 3). */
+%mr_deactivateTrig(u, x) := block([],
+  %mr_unifyInertTrigFunction(%mr_fixInertTrigFunction(
+    %mr_deactivateTrigAux(u, x), x), x))$
+
+/* ---- Task 7: FunctionOfTrigOfLinearQ + FunctionOfTrig -----------------
+ * IntegrationUtilityFunctions.m L4357-4407 -- the bridge rule's condition
+ * and its helper. '%mr_fot_null stands for Mathematica's Null: a value
+ * distinct both from a returned linear form and from Maxima's `false`
+ * (Mathematica's False), needed because the 3-arg walk below tracks THREE
+ * states -- "nothing found yet" (Null, keep looking), "found and
+ * consistent" (a linear form), "found and INCONSISTENT" (False, abort).
+ * Faithful line-ports of the reference port in
+ * probes/rubi/03-hyperbolic-miscellany-bridge.py's CLASSIFIER (23-case
+ * SELFTEST, both controls holding over the class-6 corpus), with the
+ * probe's three measured Maxima traps carried over: every bound name is
+ * %mr_-prefixed (a block local or `for` variable named like the corpus's
+ * own a/b/d/v/w captures it); `inflag:true` is bound around the two
+ * recursive walks below so `op`/`args` read the internal Times/Power form
+ * Rubi's own clauses are written against (op(2/(1+x)) is "/" without it,
+ * and a walk keyed on "+"/"*"/"^" misses the Power[-1] structure); and
+ * EqQ/coefficient tests go through the house %mr_eqQ/%mr_rationalQ ports
+ * rather than a bare `is(... = 0)`, which is `unknown` (not false) for a
+ * free symbolic coefficient and would make an `and` silently pass. */
+
+/* Rubi FunctionOfTrig[u_,v_,x_] (L4374-4392), the 3-arg recursive walk.
+ * The trig/hyperbolic merge branches read Coefficient[v,x,0/1] and
+ * Coefficient[u[[1]],x,0/1] through %mr_coeff (the house Coefficient
+ * port); the hyperbolic branch carries its argument as I*u[[1]] (the
+ * imaginary-argument identity DeactivateTrig itself later undoes), the
+ * trig branch bare -- merging a trig occurrence against a hyperbolic one
+ * therefore gives b/d = 1/I = -I, which RationalQ rejects (the 2026-09-21
+ * amendment's point: a trig head MIXED with a hyperbolic head is never
+ * admitted). The generic recursion (CalculusQ excluded, else Scan into
+ * args) uses a bare `return()` to break the `for` loop early once w has
+ * gone False -- `return(value)` does not escape the enclosing block in
+ * this build (2026-08-20 measurement, noted where %mr_rest_in et al. are
+ * defined), but a BARE `return()` does break the loop, which is exactly
+ * Rubi's Catch[Scan[...;Throw[False]]] short-circuit: once w is False, no
+ * further argument may revive it (a later merge against a False `v` is
+ * not a Rubi state that can occur, since the loop never reaches it). */
+%mr_functionOfTrig3(%mr_fot_u, %mr_fot_v, %mr_fot_x) := block(
+  [inflag : true, %mr_fot_w, %mr_fot_k,
+   %mr_fot_a, %mr_fot_b, %mr_fot_c, %mr_fot_d, %mr_fot_q],
+  if atom(%mr_fot_u) then
+    (if is(%mr_fot_u = %mr_fot_x) then false else %mr_fot_v)
+  elseif %mr_trigQ(%mr_fot_u) and %mr_linearQ(part(%mr_fot_u, 1), %mr_fot_x) then
+    (if is(%mr_fot_v = '%mr_fot_null) then part(%mr_fot_u, 1)
+     else (
+       %mr_fot_a : %mr_coeff(%mr_fot_v, %mr_fot_x, 0),
+       %mr_fot_b : %mr_coeff(%mr_fot_v, %mr_fot_x, 1),
+       %mr_fot_c : %mr_coeff(part(%mr_fot_u, 1), %mr_fot_x, 0),
+       %mr_fot_d : %mr_coeff(part(%mr_fot_u, 1), %mr_fot_x, 1),
+       %mr_fot_q : %mr_fot_b / %mr_fot_d,
+       if %mr_eqQ(%mr_fot_a*%mr_fot_d - %mr_fot_b*%mr_fot_c, 0)
+           and %mr_rationalQ(%mr_fot_q)
+         then %mr_fot_a/num(%mr_fot_q) + %mr_fot_b*%mr_fot_x/num(%mr_fot_q)
+         else false))
+  elseif %mr_hyperbolicQ(%mr_fot_u) and %mr_linearQ(part(%mr_fot_u, 1), %mr_fot_x) then
+    (if is(%mr_fot_v = '%mr_fot_null) then %i*part(%mr_fot_u, 1)
+     else (
+       %mr_fot_a : %mr_coeff(%mr_fot_v, %mr_fot_x, 0),
+       %mr_fot_b : %mr_coeff(%mr_fot_v, %mr_fot_x, 1),
+       %mr_fot_c : %i*%mr_coeff(part(%mr_fot_u, 1), %mr_fot_x, 0),
+       %mr_fot_d : %i*%mr_coeff(part(%mr_fot_u, 1), %mr_fot_x, 1),
+       %mr_fot_q : %mr_fot_b / %mr_fot_d,
+       if %mr_eqQ(%mr_fot_a*%mr_fot_d - %mr_fot_b*%mr_fot_c, 0)
+           and %mr_rationalQ(%mr_fot_q)
+         then %mr_fot_a/num(%mr_fot_q) + %mr_fot_b*%mr_fot_x/num(%mr_fot_q)
+         else false))
+  elseif %mr_calculusQ(%mr_fot_u) then false
+  else (
+    %mr_fot_w : %mr_fot_v,
+    for %mr_fot_k in args(%mr_fot_u) do (
+      %mr_fot_w : %mr_functionOfTrig3(%mr_fot_k, %mr_fot_w, %mr_fot_x),
+      if is(%mr_fot_w = false) then return()
+    ),
+    %mr_fot_w))$
+
+/* Rubi AlgebraicTrigFunctionQ[u_,x_Symbol] (L4396-4407): u built from
+ * atoms, trig/hyperbolic functions of a linear argument, a power whose
+ * exponent is free of x, and Times/Plus over such pieces. */
+%mr_algebraicTrigFunctionQ(%mr_atfq_u, %mr_atfq_x) := block(
+  [inflag : true, %mr_atfq_k, %mr_atfq_r],
+  if atom(%mr_atfq_u) then true
+  elseif %mr_trigQ(%mr_atfq_u) and %mr_linearQ(part(%mr_atfq_u, 1), %mr_atfq_x) then true
+  elseif %mr_hyperbolicQ(%mr_atfq_u) and %mr_linearQ(part(%mr_atfq_u, 1), %mr_atfq_x) then true
+  elseif op(%mr_atfq_u) = "^" and freeof(%mr_atfq_x, part(%mr_atfq_u, 2)) then
+    %mr_algebraicTrigFunctionQ(part(%mr_atfq_u, 1), %mr_atfq_x)
+  elseif op(%mr_atfq_u) = "*" or op(%mr_atfq_u) = "+" then (
+    %mr_atfq_r : true,
+    for %mr_atfq_k in args(%mr_atfq_u) do
+      if not %mr_algebraicTrigFunctionQ(%mr_atfq_k, %mr_atfq_x) then %mr_atfq_r : false,
+    %mr_atfq_r)
+  else false)$
+
+/* Rubi FunctionOfTrigOfLinearQ branch 1 (L4358-4361), the MatchQ half:
+ *   MatchQ[u, (c_.+d_.*x)^m_.*(a_.+b_.*trig_[e_.+f_.*x])^n_.
+ *     /; FreeQ[{a,b,c,d,e,f,m,n},x] && (TrigQ[trig] || HyperbolicQ[trig])]
+ * trig_ is a HEAD-position pattern variable: MR-MATCH supports this
+ * directly -- a pattern's own head may itself be a (Pattern ...) node,
+ * and mr-match:m1's generic clause recurses the pattern head against
+ * (car expr), the same mechanism the 6.7.6/6.7.7/6.7.9 F_[v_] rules
+ * already exercise (grep '((Pattern' rules/). The bound value comes back
+ * through mr-binding-value/%mr_mk as the MAXIMA VERB the matched head
+ * reads as: `sin`, `cosh`, ... for an ACTIVE call, or `%mr_isin`, ... for
+ * an INERT one -- the tree's head table keeps the inert names disjoint
+ * from the active ones (maxima_rubi_tree.lisp +functions+: "Sin" -> sin
+ * for an active call vs "sin" -> %mr_isin for the inert tree head), so an
+ * inert head can never satisfy TrigQ or HyperbolicQ here and this branch
+ * cannot make deactivation recurse. */
+%mr_fotlq_branch1(%mr_fotlq1_u, %mr_fotlq1_x) := %mr_matchQ(%mr_fotlq1_u,
+  sconcat("(Times ",
+          "(Power (Plus (Optional (Pattern |_mr_fotlq1_c| (Blank))) ",
+          "(Times (Optional (Pattern |_mr_fotlq1_d| (Blank))) (MRArg 1))) ",
+          "(Optional (Pattern |_mr_fotlq1_m| (Blank)))) ",
+          "(Power (Plus (Optional (Pattern |_mr_fotlq1_a| (Blank))) ",
+          "(Times (Optional (Pattern |_mr_fotlq1_b| (Blank))) ",
+          "((Pattern |_mr_fotlq1_trig| (Blank)) ",
+          "(Plus (Optional (Pattern |_mr_fotlq1_e| (Blank))) ",
+          "(Times (Optional (Pattern |_mr_fotlq1_f| (Blank))) (MRArg 1)))))) ",
+          "(Optional (Pattern |_mr_fotlq1_n| (Blank)))))"),
+  [%mr_fotlq1_x],
+  lambda([%mr_mqb],
+    freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_a, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_b, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_c, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_d, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_e, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_f, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_m, %mr_mqb))
+    and freeof(%mr_fotlq1_x, %mr_mk(_mr_fotlq1_n, %mr_mqb))
+    and (%mr_trigQ(%mr_mk(_mr_fotlq1_trig, %mr_mqb))
+         or %mr_hyperbolicQ(%mr_mk(_mr_fotlq1_trig, %mr_mqb)))))$
+
+/* Rubi FunctionOfTrigOfLinearQ[u_,x_Symbol] (L4358-4361): branch 1 above,
+ * or branch 2 -- FunctionOfTrig[u,Null,x] finds a consistent linear
+ * argument AND u is algebraic in the trig functions of it. This is the
+ * bridge rule's condition (Int[u_,x_Symbol] := Int[DeactivateTrig[u,x],x]
+ * /; FunctionOfTrigOfLinearQ[u,x]), a bare u_ at the END of section 4's
+ * table -- a wrong TRUE here is a deactivation loop or a swallowed
+ * integrand, not a wrong answer.
+ *
+ * Branch 2 calls the 3-arg FunctionOfTrig DIRECTLY on the RAW u, WITHOUT
+ * activating it first (contrast %mr_functionOfTrig below, which does
+ * activate). Tracing why through the source: for u = %mr_isin(x) (an
+ * inert call, already deactivated), %mr_isin is neither TrigQ nor
+ * HyperbolicQ (the ACTIVE-head lists), nor CalculusQ, so the walk falls
+ * to the generic Scan over u's own args -- here just {x}. Recursing into
+ * the bare argument x hits the walk's FIRST clause, AtomQ[u] with
+ * u===x, which is False by definition (L4375: `If[u===x, False, v]`) --
+ * independent of what v was. That False poisons the Scan (the early-exit
+ * `return()` above) and %mr_functionOfTrigOfLinearQ(%mr_isin(x), x) comes
+ * back false: an already-inert expression can never satisfy the bridge's
+ * condition a second time, whatever its argument. */
+%mr_functionOfTrigOfLinearQ(%mr_fotlq_u, %mr_fotlq_x) := block([%mr_fotlq_v],
+  if %mr_fotlq_branch1(%mr_fotlq_u, %mr_fotlq_x) then true
+  else (
+    %mr_fotlq_v : %mr_functionOfTrig3(%mr_fotlq_u, '%mr_fot_null, %mr_fotlq_x),
+    not (is(%mr_fotlq_v = '%mr_fot_null) or is(%mr_fotlq_v = false))
+      and %mr_algebraicTrigFunctionQ(%mr_fotlq_u, %mr_fotlq_x)))$
+
+/* Rubi FunctionOfTrig[u_,x_Symbol] (L4365-4367): ActivateTrig[u] FIRST,
+ * then the 3-arg walk with v = Null; Null maps to False. This is the
+ * substitution records' locator (Tasks 9-10), used AFTER deactivation, on
+ * expressions that may already carry a just-deactivated (now
+ * re-activated) trig factor -- distinct from FunctionOfTrigOfLinearQ's
+ * own 3-arg call above, which must not itself activate: the bridge
+ * condition runs BEFORE anything has been deactivated. */
+%mr_functionOfTrig(%mr_fot2_u, %mr_fot2_x) := block([%mr_fot2_v],
+  %mr_fot2_v : %mr_functionOfTrig3(%mr_activateTrig(%mr_fot2_u),
+                                    '%mr_fot_null, %mr_fot2_x),
+  if is(%mr_fot2_v = '%mr_fot_null) then false else %mr_fot2_v)$
+
+/* ---- Task 9: FunctionOfQ (circular-trig branches) and SubstFor's trig
+ * branch -- the utilities the bridge's 4.7.5 substitution records CALL.
+ * IntegrationUtilityFunctions.m L4443-4700 (FunctionOfQ and its trig
+ * predicates), L4895-4924 (FindTrigFactor and the quotient tests),
+ * L5980-6038 (SubstFor, SubstForTrig). The plan's Task 9 interface list
+ * named only DeactivateTrig/FunctionOfTrig/FreeFactors/Subst; the five
+ * emitted 4.7.5 records' conds also call FunctionOfQ and their repls
+ * SubstFor[.., Trig[v]/d, ..] -- without these two the records can never
+ * accept and the bridge's deactivated integrand has nowhere to go
+ * (measured: rubi returned -%i*'unintegrable[%mr_isin(..)*..] for the
+ * 6.1.7 acceptance integrand). Ported under the plan's own rule: the
+ * records' callees come with the records.
+ *
+ * DEVIATIONS (stamped; (a) declines, (b) is unreachable, (c) accepts):
+ *  (a) FunctionOfQ's HYPERBOLIC head branches (Sinh..Csch ->
+ *      FunctionOfSinhQ.. / PureFunctionOfSinhQ..) and its default branch
+ *      (FunctionOfExpnQ) are NOT ported: FunctionOfQ answers false there,
+ *      so the calling record declines. The 4.7.5 records only ever pass
+ *      NonfreeFactors[Trig[v],x] with a circular head -- EXCEPT where
+ *      Maxima's own simplifier turns the head hyperbolic: cos(%i*z) ->
+ *      cosh(z), sin(%i*z) -> %i*sinh(z) (an argument that is a single
+ *      %i*product, i.e. a hyperbolic integrand with NO constant term, c=0).
+ *      Those integrands decline here; Mathematica takes the same turn and
+ *      Rubi answers them through the hyperbolic branches.
+ *  (b) SubstFor's trig branch covers Sin/Cos/Tan/Cot -- the four heads
+ *      the six bridge records pass. Sec/Csc and the six hyperbolic heads
+ *      fall through to the pre-existing algebraic port below. UNREACHABLE
+ *      from the ported records (none passes such a head); if it were
+ *      reached it would NOT decline -- it would mis-substitute, through
+ *      the algebraic port's plain subst.
+ *  (c) FunctionOfSinQ's and SubstForTrig's "u[[1]] is Cos[v/2], u[[2]] is
+ *      Sin[v/2]" test reads the FIRST TWO factors of Mathematica's
+ *      canonical product order; Maxima orders factors differently, so the
+ *      port looks for the pair ANYWHERE among the product's factors. This
+ *      is an ACCEPT direction: it can admit a product Rubi's positional
+ *      test would not, and the result is value-correct (Cos[v/2] Sin[v/2]
+ *      = Sin[v]/2 wherever the pair sits).
+ *
+ * Every bound name is %mr_-prefixed (the capture trap: a block local
+ * named like a corpus symbol -- the acceptance integrand's own a, b, c, d
+ * -- captures it). inflag:true is bound where op/args/part walk the
+ * expression, so a quotient reads as Times[.., Power[.., -1]] as in the
+ * .m (the Task-7 note above). */
+
+/* Rubi IntegerQuotientQ / OddQuotientQ / EvenQuotientQ (L4911-4922):
+   IntegerQ/OddQ/EvenQ of Simplify[u/v]; ratsimp is the house Simplify
+   for a quotient of two linear forms. */
+%mr_integerQuotientQ(%mr_iqq_u, %mr_iqq_v) :=
+  integerp(ratsimp(%mr_iqq_u/%mr_iqq_v))$
+%mr_oddQuotientQ(%mr_iqq_u, %mr_iqq_v) := block([%mr_iqq_q],
+  %mr_iqq_q : ratsimp(%mr_iqq_u/%mr_iqq_v),
+  integerp(%mr_iqq_q) and oddp(%mr_iqq_q))$
+%mr_evenQuotientQ(%mr_iqq_u, %mr_iqq_v) := block([%mr_iqq_q],
+  %mr_iqq_q : ratsimp(%mr_iqq_u/%mr_iqq_v),
+  integerp(%mr_iqq_q) and evenp(%mr_iqq_q))$
+
+/* Rubi FindTrigFactor[func1,func2,u,v,flag] (L4896-4906): the first
+   factor func[w]^m of u (m odd, w an integer multiple of v, and w # v
+   unless flag) as [w, u/func[w]^m]; false if none. The .m walks
+   LeadFactor/RemainingFactors, i.e. the product's factors in order. A
+   non-product u is its own single factor: when it is func[w]^m itself the
+   answer is [w, 1] (the .m's {LeadBase[u][[1]], RemainingFactors[u]},
+   RemainingFactors of a non-product being 1; the port's u/u), otherwise
+   False (the .m recurses on RemainingFactors[u] = 1, which is False). */
+%mr_findTrigFactor(%mr_ftf_f1, %mr_ftf_f2, %mr_ftf_u, %mr_ftf_v, %mr_ftf_flag) :=
+  block([inflag : true, %mr_ftf_k, %mr_ftf_b, %mr_ftf_e, %mr_ftf_r],
+  %mr_ftf_r : false,
+  for %mr_ftf_k in (if not atom(%mr_ftf_u) and op(%mr_ftf_u) = "*"
+                    then args(%mr_ftf_u) else [%mr_ftf_u]) do (
+    if %mr_ftf_r = false then (
+      if not atom(%mr_ftf_k) and op(%mr_ftf_k) = "^"
+      then (%mr_ftf_b : part(%mr_ftf_k, 1), %mr_ftf_e : part(%mr_ftf_k, 2))
+      else (%mr_ftf_b : %mr_ftf_k, %mr_ftf_e : 1),
+      if not atom(%mr_ftf_b)
+         and (op(%mr_ftf_b) = %mr_ftf_f1 or op(%mr_ftf_b) = %mr_ftf_f2)
+         and integerp(%mr_ftf_e) and oddp(%mr_ftf_e)
+         and %mr_integerQuotientQ(part(%mr_ftf_b, 1), %mr_ftf_v)
+         and (%mr_ftf_flag or %mr_neQ(part(%mr_ftf_b, 1), %mr_ftf_v))
+      then %mr_ftf_r : [part(%mr_ftf_b, 1), %mr_ftf_u/%mr_ftf_k])),
+  %mr_ftf_r)$
+
+/* Rubi's Catch[Scan[If[Not[P[#,v,x]], Throw[False]]], u]; True] -- P over
+   every level-1 part of u (a Power's base AND exponent included). */
+%mr_foq_all(%mr_foq_p, %mr_foq_u, %mr_foq_v, %mr_foq_x) :=
+  block([inflag : true, %mr_foq_k, %mr_foq_r],
+  %mr_foq_r : true,
+  for %mr_foq_k in args(%mr_foq_u) do
+    if %mr_foq_r and not %mr_foq_p(%mr_foq_k, %mr_foq_v, %mr_foq_x)
+    then %mr_foq_r : false,
+  %mr_foq_r)$
+
+/* The (Cos[v/2], Sin[v/2]) factor pair of FunctionOfSinQ / SubstForTrig:
+   u with the pair removed, or false (deviation (c) above). */
+%mr_foq_halfPair(%mr_hp_u, %mr_hp_v) := block([inflag : true, %mr_hp_c, %mr_hp_s, %mr_hp_k],
+  %mr_hp_c : false, %mr_hp_s : false,
+  if atom(%mr_hp_u) or op(%mr_hp_u) # "*" then false
+  else (
+    for %mr_hp_k in args(%mr_hp_u) do (
+      if not atom(%mr_hp_k) and op(%mr_hp_k) = cos and %mr_hp_c = false
+         and %mr_eqQ(part(%mr_hp_k, 1), %mr_hp_v/2) then %mr_hp_c : %mr_hp_k,
+      if not atom(%mr_hp_k) and op(%mr_hp_k) = sin and %mr_hp_s = false
+         and %mr_eqQ(part(%mr_hp_k, 1), %mr_hp_v/2) then %mr_hp_s : %mr_hp_k),
+    if %mr_hp_c = false or %mr_hp_s = false then false
+    else %mr_hp_u/(%mr_hp_c*%mr_hp_s)))$
+
+/* Rubi PureFunctionOfSinQ/CosQ/TanQ/CotQ (L4524-4565): u built only from
+   Trig[v] with the named heads (EqQ on the argument, not a multiple). */
+%mr_pureFunctionOfTrigQ(%mr_pft_heads, %mr_pft_u, %mr_pft_v, %mr_pft_x) :=
+  block([inflag : true, %mr_pft_k, %mr_pft_r],
+  if atom(%mr_pft_u) then is(not(%mr_pft_u = %mr_pft_x))
+  elseif %mr_calculusQ(%mr_pft_u) then false
+  elseif %mr_trigQ(%mr_pft_u) and %mr_eqQ(part(%mr_pft_u, 1), %mr_pft_v)
+  then is(member(op(%mr_pft_u), %mr_pft_heads) = true)
+  else (
+    %mr_pft_r : true,
+    for %mr_pft_k in args(%mr_pft_u) do
+      if %mr_pft_r and not %mr_pureFunctionOfTrigQ(%mr_pft_heads, %mr_pft_k,
+                                                   %mr_pft_v, %mr_pft_x)
+      then %mr_pft_r : false,
+    %mr_pft_r))$
+
+/* Rubi FunctionOfSinQ[u,v,x] (L4572-4606). */
+%mr_functionOfSinQ(%mr_fsq_u, %mr_fsq_v, %mr_fsq_x) :=
+  block([inflag : true, %mr_fsq_l, %mr_fsq_h],
+  if atom(%mr_fsq_u) then is(not(%mr_fsq_u = %mr_fsq_x))
+  elseif %mr_calculusQ(%mr_fsq_u) then false
+  elseif %mr_trigQ(%mr_fsq_u) and %mr_integerQuotientQ(part(%mr_fsq_u, 1), %mr_fsq_v) then (
+    if %mr_oddQuotientQ(part(%mr_fsq_u, 1), %mr_fsq_v)
+    then is(member(op(%mr_fsq_u), [sin, csc]) = true)
+    else is(member(op(%mr_fsq_u), [cos, sec]) = true))
+  elseif %mr_integerPowerQ(%mr_fsq_u) and %mr_trigQ(part(%mr_fsq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fsq_u, 1, 1), %mr_fsq_v) then (
+    if evenp(part(%mr_fsq_u, 2)) then true
+    else %mr_functionOfSinQ(part(%mr_fsq_u, 1), %mr_fsq_v, %mr_fsq_x))
+  elseif %mr_productQ(%mr_fsq_u) then (
+    %mr_fsq_h : %mr_foq_halfPair(%mr_fsq_u, %mr_fsq_v),
+    if %mr_fsq_h # false then %mr_functionOfSinQ(%mr_fsq_h, %mr_fsq_v, %mr_fsq_x)
+    else (
+      %mr_fsq_l : %mr_findTrigFactor(sin, csc, %mr_fsq_u, %mr_fsq_v, false),
+      if listp(%mr_fsq_l) and %mr_evenQuotientQ(first(%mr_fsq_l), %mr_fsq_v)
+      then %mr_functionOfSinQ(cos(%mr_fsq_v)*second(%mr_fsq_l), %mr_fsq_v, %mr_fsq_x)
+      else (
+        %mr_fsq_l : %mr_findTrigFactor(cos, sec, %mr_fsq_u, %mr_fsq_v, false),
+        if listp(%mr_fsq_l) and %mr_oddQuotientQ(first(%mr_fsq_l), %mr_fsq_v)
+        then %mr_functionOfSinQ(cos(%mr_fsq_v)*second(%mr_fsq_l), %mr_fsq_v, %mr_fsq_x)
+        else (
+          %mr_fsq_l : %mr_findTrigFactor(tan, cot, %mr_fsq_u, %mr_fsq_v, true),
+          if listp(%mr_fsq_l)
+          then %mr_functionOfSinQ(cos(%mr_fsq_v)*second(%mr_fsq_l), %mr_fsq_v, %mr_fsq_x)
+          else %mr_foq_all(%mr_functionOfSinQ, %mr_fsq_u, %mr_fsq_v, %mr_fsq_x)))))
+  else %mr_foq_all(%mr_functionOfSinQ, %mr_fsq_u, %mr_fsq_v, %mr_fsq_x))$
+
+/* Rubi FunctionOfCosQ[u,v,x] (L4609-4634). */
+%mr_functionOfCosQ(%mr_fcq_u, %mr_fcq_v, %mr_fcq_x) :=
+  block([inflag : true, %mr_fcq_l],
+  if atom(%mr_fcq_u) then is(not(%mr_fcq_u = %mr_fcq_x))
+  elseif %mr_calculusQ(%mr_fcq_u) then false
+  elseif %mr_trigQ(%mr_fcq_u) and %mr_integerQuotientQ(part(%mr_fcq_u, 1), %mr_fcq_v)
+  then is(member(op(%mr_fcq_u), [cos, sec]) = true)
+  elseif %mr_integerPowerQ(%mr_fcq_u) and %mr_trigQ(part(%mr_fcq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fcq_u, 1, 1), %mr_fcq_v) then (
+    if evenp(part(%mr_fcq_u, 2)) then true
+    else %mr_functionOfCosQ(part(%mr_fcq_u, 1), %mr_fcq_v, %mr_fcq_x))
+  elseif %mr_productQ(%mr_fcq_u) then (
+    %mr_fcq_l : %mr_findTrigFactor(sin, csc, %mr_fcq_u, %mr_fcq_v, false),
+    if listp(%mr_fcq_l)
+    then %mr_functionOfCosQ(sin(%mr_fcq_v)*second(%mr_fcq_l), %mr_fcq_v, %mr_fcq_x)
+    else (
+      %mr_fcq_l : %mr_findTrigFactor(tan, cot, %mr_fcq_u, %mr_fcq_v, true),
+      if listp(%mr_fcq_l)
+      then %mr_functionOfCosQ(sin(%mr_fcq_v)*second(%mr_fcq_l), %mr_fcq_v, %mr_fcq_x)
+      else %mr_foq_all(%mr_functionOfCosQ, %mr_fcq_u, %mr_fcq_v, %mr_fcq_x)))
+  else %mr_foq_all(%mr_functionOfCosQ, %mr_fcq_u, %mr_fcq_v, %mr_fcq_x))$
+
+/* Rubi FunctionOfTanQ[u,v,x] (L4637-4652). */
+%mr_functionOfTanQ(%mr_ftq_u, %mr_ftq_v, %mr_ftq_x) :=
+  block([inflag : true, %mr_ftq_l, %mr_ftq_k],
+  if atom(%mr_ftq_u) then is(not(%mr_ftq_u = %mr_ftq_x))
+  elseif %mr_calculusQ(%mr_ftq_u) then false
+  elseif %mr_trigQ(%mr_ftq_u) and %mr_integerQuotientQ(part(%mr_ftq_u, 1), %mr_ftq_v)
+  then is(member(op(%mr_ftq_u), [tan, cot]) = true)
+       or %mr_evenQuotientQ(part(%mr_ftq_u, 1), %mr_ftq_v)
+  elseif %mr_powerQ(%mr_ftq_u) and evenp(part(%mr_ftq_u, 2))
+         and %mr_trigQ(part(%mr_ftq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_ftq_u, 1, 1), %mr_ftq_v) then true
+  elseif %mr_powerQ(%mr_ftq_u) and evenp(part(%mr_ftq_u, 2))
+         and %mr_sumQ(part(%mr_ftq_u, 1))
+  then %mr_functionOfTanQ(expand(part(%mr_ftq_u, 1)^2), %mr_ftq_v, %mr_ftq_x)
+  elseif %mr_productQ(%mr_ftq_u) then (
+    %mr_ftq_l : sublist(args(%mr_ftq_u),
+                        lambda([%mr_ftq_k],
+                               not %mr_functionOfTanQ(%mr_ftq_k, %mr_ftq_v, %mr_ftq_x))),
+    if %mr_ftq_l = [] then true
+    else is(length(%mr_ftq_l) = 2)
+         and %mr_oddTrigPowerQ(first(%mr_ftq_l), %mr_ftq_v, %mr_ftq_x)
+         and %mr_oddTrigPowerQ(second(%mr_ftq_l), %mr_ftq_v, %mr_ftq_x))
+  else %mr_foq_all(%mr_functionOfTanQ, %mr_ftq_u, %mr_ftq_v, %mr_ftq_x))$
+
+/* Rubi OddTrigPowerQ[u,v,x] (L4655-4669). */
+%mr_oddTrigPowerQ(%mr_otp_u, %mr_otp_v, %mr_otp_x) :=
+  block([inflag : true, %mr_otp_l, %mr_otp_k],
+  if atom(%mr_otp_u) then false
+  elseif is(member(op(%mr_otp_u), [sin, cos, sec, csc]) = true)
+  then %mr_oddQuotientQ(part(%mr_otp_u, 1), %mr_otp_v)
+  elseif %mr_powerQ(%mr_otp_u)
+  then integerp(part(%mr_otp_u, 2)) and oddp(part(%mr_otp_u, 2))
+       and %mr_oddTrigPowerQ(part(%mr_otp_u, 1), %mr_otp_v, %mr_otp_x)
+  elseif %mr_productQ(%mr_otp_u) then (
+    if %mr_neQ(%mr_freeFactors(%mr_otp_u, %mr_otp_x), 1)
+    then %mr_oddTrigPowerQ(%mr_nonfreeFactors(%mr_otp_u, %mr_otp_x), %mr_otp_v, %mr_otp_x)
+    else (
+      %mr_otp_l : sublist(args(%mr_otp_u),
+                          lambda([%mr_otp_k],
+                                 not %mr_functionOfTanQ(%mr_otp_k, %mr_otp_v, %mr_otp_x))),
+      if %mr_otp_l = [] then true
+      else is(length(%mr_otp_l) = 1)
+           and %mr_oddTrigPowerQ(first(%mr_otp_l), %mr_otp_v, %mr_otp_x)))
+  elseif %mr_sumQ(%mr_otp_u)
+  then %mr_foq_all(%mr_oddTrigPowerQ, %mr_otp_u, %mr_otp_v, %mr_otp_x)
+  else false)$
+
+/* Rubi FunctionOfQ[v,u,x,PureFlag:False] (L4443-4481): is u a function
+   of v? The optional 4th argument is PureFlag. Circular-trig heads only
+   (deviation (a) above). */
+%mr_functionOfQ(%mr_foq_v, %mr_foq_u, %mr_foq_x, [%mr_foq_opt]) :=
+  block([inflag : true, %mr_foq_pure, %mr_foq_h, %mr_foq_w],
+  %mr_foq_pure : is(length(%mr_foq_opt) > 0 and first(%mr_foq_opt) = true),
+  if freeof(%mr_foq_x, %mr_foq_u) then false
+  elseif atom(%mr_foq_v) then true
+  elseif not %mr_inertTrigFreeQ(%mr_foq_u)
+  then %mr_functionOfQ(%mr_foq_v, %mr_activateTrig(%mr_foq_u), %mr_foq_x, %mr_foq_pure)
+  elseif %mr_productQ(%mr_foq_v) and %mr_neQ(%mr_freeFactors(%mr_foq_v, %mr_foq_x), 1)
+  then %mr_functionOfQ(%mr_nonfreeFactors(%mr_foq_v, %mr_foq_x), %mr_foq_u, %mr_foq_x,
+                       %mr_foq_pure)
+  elseif not %mr_trigQ(%mr_foq_v) then false
+  else (
+    %mr_foq_h : op(%mr_foq_v),
+    %mr_foq_w : part(%mr_foq_v, 1),
+    if %mr_foq_pure then (
+      if %mr_foq_h = sin or %mr_foq_h = csc
+      then %mr_pureFunctionOfTrigQ([sin, csc], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cos or %mr_foq_h = sec
+      then %mr_pureFunctionOfTrigQ([cos, sec], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = tan
+      then %mr_pureFunctionOfTrigQ([tan, cot], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_pureFunctionOfTrigQ([cot], %mr_foq_u, %mr_foq_w, %mr_foq_x))
+    else (
+      if %mr_foq_h = sin or %mr_foq_h = csc
+      then %mr_functionOfSinQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cos or %mr_foq_h = sec
+      then %mr_functionOfCosQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_functionOfTanQ(%mr_foq_u, %mr_foq_w, %mr_foq_x))))$
+
+/* Rubi SubstForTrig[u,sin,cos,v,x] (L6019-6029): u, a function of
+   Trig[v], with Sin[v] -> sin, Cos[v] -> cos. A multiple angle
+   Trig[k v] is TrigExpand'ed first (%mr_sft_y is the expansion's dummy
+   variable, the .m's x). */
+%mr_substForTrig(%mr_sft_u, %mr_sft_s, %mr_sft_c, %mr_sft_v) :=
+  block([inflag : true, %mr_sft_h, %mr_sft_t, %mr_sft_p],
+  if atom(%mr_sft_u) then %mr_sft_u
+  elseif %mr_trigQ(%mr_sft_u) and %mr_integerQuotientQ(part(%mr_sft_u, 1), %mr_sft_v) then (
+    %mr_sft_h : op(%mr_sft_u),
+    if %mr_eqQ(part(%mr_sft_u, 1), %mr_sft_v) then (
+      if %mr_sft_h = sin then %mr_sft_s
+      elseif %mr_sft_h = cos then %mr_sft_c
+      elseif %mr_sft_h = tan then %mr_sft_s/%mr_sft_c
+      elseif %mr_sft_h = cot then %mr_sft_c/%mr_sft_s
+      elseif %mr_sft_h = sec then 1/%mr_sft_c
+      else 1/%mr_sft_s)
+    else (
+      %mr_sft_t : subst(%mr_sft_v, '%mr_sft_y,
+                        trigexpand(apply(%mr_sft_h,
+                          [ratsimp(part(%mr_sft_u, 1)/%mr_sft_v)*'%mr_sft_y]))),
+      if atom(%mr_sft_t) then %mr_sft_t
+      else apply(op(%mr_sft_t),
+                 map(lambda([%mr_sft_p],
+                            %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
+                     args(%mr_sft_t)))))
+  else (
+    %mr_sft_t : %mr_foq_halfPair(%mr_sft_u, %mr_sft_v),
+    if %mr_sft_t # false
+    then %mr_sft_s/2*%mr_substForTrig(%mr_sft_t, %mr_sft_s, %mr_sft_c, %mr_sft_v)
+    else apply(op(%mr_sft_u),
+               map(lambda([%mr_sft_p],
+                          %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
+                   args(%mr_sft_u)))))$
+
+/* Rubi SubstFor[v,u,x]'s FreeFactors + Switch[Head[v], Sin|Cos|Tan|Cot]
+   arms (L5980-5998), for v whose non-free part is one of those four heads
+   (deviation (b)): SubstFor[NonfreeFactors[v,x], u, x/FreeFactors[v,x]]
+   with the head's (sin, cos) pair in that scaled variable. */
+%mr_substForTrigHead(%mr_sfh_v, %mr_sfh_u, %mr_sfh_x) :=
+  block([inflag : true, %mr_sfh_w, %mr_sfh_y, %mr_sfh_h, %mr_sfh_a],
+  %mr_sfh_w : %mr_nonfreeFactors(%mr_sfh_v, %mr_sfh_x),
+  %mr_sfh_y : %mr_sfh_x/%mr_freeFactors(%mr_sfh_v, %mr_sfh_x),
+  %mr_sfh_h : op(%mr_sfh_w),
+  %mr_sfh_a : part(%mr_sfh_w, 1),
+  if %mr_sfh_h = sin
+  then %mr_substForTrig(%mr_sfh_u, %mr_sfh_y, sqrt(1 - %mr_sfh_y^2), %mr_sfh_a)
+  elseif %mr_sfh_h = cos
+  then %mr_substForTrig(%mr_sfh_u, sqrt(1 - %mr_sfh_y^2), %mr_sfh_y, %mr_sfh_a)
+  elseif %mr_sfh_h = tan
+  then %mr_substForTrig(%mr_sfh_u, %mr_sfh_y/sqrt(1 + %mr_sfh_y^2),
+                        1/sqrt(1 + %mr_sfh_y^2), %mr_sfh_a)
+  else %mr_substForTrig(%mr_sfh_u, 1/sqrt(1 + %mr_sfh_y^2),
+                        %mr_sfh_y/sqrt(1 + %mr_sfh_y^2), %mr_sfh_a))$
+
+/* ---- Task 10 (inert-trig substrate): CalculusFreeQ and TryPureTanSubst
+ * -- the two utilities 4.7.5's last three bridge records call and nothing
+ * in the port defined:
+ *   TryPureTanSubst: the conditions of r21/r22 (the Cot/Tan substitution
+ *     records, 4.7.5.m L24/L25), which declined on the unbound call from
+ *     Task 9 until this port -- porting it makes them LIVE;
+ *   CalculusFreeQ: the inner condition of r71 (L74, the half-angle
+ *     Weierstrass substitution), CalculusFreeQ[w, x] on the trial
+ *     integral w.
+ * SubstFor needs nothing new for r71: its v is Tan[v/2]/d, served by the
+ * Tan arm Task 9 ported (%mr_substForTrigHead).
+ *
+ * r71 also carries Block[{$ShowSteps = False, $StepCounter = Null}, Int[..]]
+ * around that trial integral -- verbatim Rubi's IntHide body (L16-17). The
+ * two globals drive the ShowSteps machinery (display of applied rules, and
+ * a count of them; ShowStepRoutines.m L4, L225-239), which the port does
+ * not have: the generator takes every rule's non-ShowSteps branch. Binding
+ * them could change nothing a rule observes, so the generator emits the
+ * Block's BODY alone, exactly as it maps IntHide to plain mr_int
+ * (generate_rules.py translate(), "Block"; any other Block shape is a
+ * generation error). There is no mr_ variable for them to bind, unlike
+ * SimplifyFlag (mr_simplify_flag, line 11) and $UseGamma
+ * (mr_use_gamma_flag), whose values rules do read.
+ *
+ * Every bound name is %mr_-prefixed (the capture trap). */
+
+/* Rubi CalculusFreeQ[u,x] (IntegrationUtilityFunctions.m L338-344): u has
+   no calculus function whose variable (part 2) is x. The CalculusQ list is
+   %mr_calculusQ's (the package nouns, 'unintegrable[f, x] included -- the
+   answer a failed nested mr_int gives -- and the integrate noun of the
+   fall-through). HeldFormQ (Hold, HoldForm, Defer, Pattern) has no port
+   analogue: the port builds no held values (%mr_hold is the identity), so
+   that disjunct reads false. A Power is scanned base and exponent, as the
+   .m's Scan over u. */
+%mr_calculusFreeQ(%mr_cfq_u, %mr_cfq_x) :=
+  block([inflag : true, %mr_cfq_k, %mr_cfq_r],
+  if atom(%mr_cfq_u) then true
+  elseif %mr_calculusQ(%mr_cfq_u) and is(length(%mr_cfq_u) >= 2)
+         and is(part(%mr_cfq_u, 2) = %mr_cfq_x) then false
+  else (
+    %mr_cfq_r : true,
+    for %mr_cfq_k in args(%mr_cfq_u) do
+      if %mr_cfq_r and not %mr_calculusFreeQ(%mr_cfq_k, %mr_cfq_x)
+      then %mr_cfq_r : false,
+    %mr_cfq_r))$
+
+/* Rubi TryPureTanSubst[u,x] (L6099-6108; the commented-out conjuncts of
+   the .m are not live and are not ported):
+     Not[MatchQ[u, F_[c_.*(a_.+b_.*G_[v_])] /; FreeQ[{a,b,c},x] &&
+       MemberQ[{ArcTan,ArcCot,ArcTanh,ArcCoth},F] &&
+       MemberQ[{Tan,Cot,Tanh,Coth},G] && LinearQ[v,x]]]
+   The MatchQ is decided structurally rather than through MR-MATCH, with
+   the pattern's Mathematica semantics spelled out: Times and Plus are
+   flat, so c_. absorbs EVERY x-free factor of the argument and a_. every
+   x-free term; the defaults are c = 1, a = 0, b = 1. The argument
+   therefore matches iff it is (x-free factors) * S, where S is either
+   b*G[v] (b x-free) or a sum whose terms are all x-free except exactly one
+   b*G[v] -- or S is that sum itself / that term itself (c = 1). Any other
+   x-dependent factor or term would have to go into a, b or c and fail
+   FreeQ, so Mathematica's match fails too. No deviation. */
+%mr_tpt_gq(%mr_tpt_g, %mr_tpt_x) := block([inflag : true],
+  not atom(%mr_tpt_g)
+  and is(member(op(%mr_tpt_g), [tan, cot, tanh, coth]) = true)
+  and is(length(%mr_tpt_g) = 1)
+  and %mr_linearQ(part(%mr_tpt_g, 1), %mr_tpt_x))$
+
+/* The x-dependent factors of a product (a non-product is its own one
+   factor). */
+%mr_tpt_nonfree(%mr_tpt_t, %mr_tpt_x) := block([inflag : true],
+  sublist(if not atom(%mr_tpt_t) and op(%mr_tpt_t) = "*"
+          then args(%mr_tpt_t) else [%mr_tpt_t],
+          lambda([%mr_tpt_f], not freeof(%mr_tpt_x, %mr_tpt_f))))$
+
+/* b_.*G_[v_]: exactly one x-dependent factor, and it is G[v]. */
+%mr_tpt_bg(%mr_tpt_t, %mr_tpt_x) := block([%mr_tpt_nf],
+  %mr_tpt_nf : %mr_tpt_nonfree(%mr_tpt_t, %mr_tpt_x),
+  is(length(%mr_tpt_nf) = 1) and %mr_tpt_gq(first(%mr_tpt_nf), %mr_tpt_x))$
+
+/* a_.+b_.*G_[v_]: b*G[v] itself, or a sum with exactly one x-dependent
+   term, that term b*G[v]. */
+%mr_tpt_abg(%mr_tpt_s, %mr_tpt_x) := block([inflag : true, %mr_tpt_nt],
+  if not atom(%mr_tpt_s) and op(%mr_tpt_s) = "+" then (
+    %mr_tpt_nt : sublist(args(%mr_tpt_s),
+                         lambda([%mr_tpt_q], not freeof(%mr_tpt_x, %mr_tpt_q))),
+    is(length(%mr_tpt_nt) = 1) and %mr_tpt_bg(first(%mr_tpt_nt), %mr_tpt_x))
+  else %mr_tpt_bg(%mr_tpt_s, %mr_tpt_x))$
+
+/* c_.*(a_.+b_.*G_[v_]). */
+%mr_tpt_arg(%mr_tpt_w, %mr_tpt_x) := block([%mr_tpt_nf],
+  if %mr_tpt_abg(%mr_tpt_w, %mr_tpt_x) then true
+  else (
+    %mr_tpt_nf : %mr_tpt_nonfree(%mr_tpt_w, %mr_tpt_x),
+    is(length(%mr_tpt_nf) = 1) and %mr_tpt_abg(first(%mr_tpt_nf), %mr_tpt_x)))$
+
+%mr_tryPureTanSubst(%mr_tpt_u, %mr_tpt_x) := block([inflag : true],
+  not (not atom(%mr_tpt_u)
+       and is(member(op(%mr_tpt_u), [atan, acot, atanh, acoth]) = true)
+       and is(length(%mr_tpt_u) = 1)
+       and %mr_tpt_arg(part(%mr_tpt_u, 1), %mr_tpt_x)))$
 
 mr_witness_utils() := true$

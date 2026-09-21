@@ -1,0 +1,16 @@
+#!/bin/sh
+# probes/maxima/probe-class4-with-capture.run — the class-4 With-local
+# capture trap (inert-trig substrate final fix wave I2) before and after
+# the generator's class-4 local prefixing, and the all-class exposure
+# (ticket .scratch/class-ports/issues/08). Section E reloads the pre-fix
+# 4.7.5 file from commit 23855a8 over the table's rule functions.
+#
+#   sh probes/maxima/probe-class4-with-capture.run
+cd "$(dirname "$0")/../.." || exit 1
+pw_before=$(mktemp --suffix=.mac)
+git show 23855a8:rules/class4/4_7_5.mac > "$pw_before"
+maxima --very-quiet --batch-string="pw_before_file : \"$pw_before\"\$ batch(\"probes/maxima/probe-class4-with-capture.mac\")\$" \
+    < /dev/null > probes/maxima/probe-class4-with-capture.out 2>&1
+rm -f "$pw_before"
+echo "wrote probes/maxima/probe-class4-with-capture.out"
+grep -c "resid" probes/maxima/probe-class4-with-capture.out

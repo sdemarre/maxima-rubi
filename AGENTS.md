@@ -175,6 +175,39 @@ plan-2 final review (1.4.2 r17 MatchQ exponent part folding), → 957 matcher tr
 (docs/superpowers/plans/2026-09-14-matcher-translation-fixes.md: the exact seen entry 5, integer
 comparisons / notequal / juxtaposition 17, the PosAux port and the First/Rest siblings 37 checks)).
 
+**Rule-table order — the real `mr_load_all` path** (the per-change gate
+for the bare-`u_` tail-position convention, inert-trig substrate design
+3.3, Task 8 fix round 1, ledger R21). Layer A's own suite
+(`test_maxima_rubi.mac`) never calls `mr_load_all()` — it loads only the
+eager milestone-1 core, so its "tail records are last in the table"
+target only ever sees that stand-in (body = `mr_rules_1_1_1_1`, tail =
+`[]`) and is permanently vacuous on the REAL table. This is the gate that
+checks the real one, kept outside Layer A because later Layer A targets
+depend on the rule table's contents at their point in the suite:
+
+```sh
+maxima --very-quiet -b test/test_rule_table_order.mac
+```
+
+Green: `Results: 8 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
+plan's Task 9, when class 4's bridge subset put the first real `_tail`
+lists in the table; +1 at Task 10's fix round 1: r72 is the tail's only
+give-up record) — both handle lists are defined
+lists and the body list is non-empty; `mr_rule_table` equals the body
+handles followed by the tail handles with nothing lost; the tail is
+non-empty; the tail is exactly the eight bridge records in LoadRules order
+(`4_1_0_1` r1 first, then `4_7_5` r21/r22/r47/r48/r58/r71/r72 — r71, the
+Weierstrass record, since Task 10; r72, the re-activating CannotIntegrate
+give-up, last, since its fix round 1); `4_7_5` r72 is the tail's only
+give-up record (`%mr_giveup_handles`); every tail
+handle's pattern is bare-`u_`; every tail handle is registered after
+every body handle; and every bare-`u_` Int record anywhere in the loaded table
+(read via the debug entry `%mr_rule_pattern_text(handle)`,
+`maxima_rubi_dispatch.lisp`) is either in the tail or one of the six
+named exceptions (`generator/generate_rules.py`
+`BARE_U_BODY_EXCEPTIONS`, `.scratch/class-ports/issues/07-bare-u-
+records-mid-table.md`).
+
 **Matcher substrate — unit suites** (the per-change gate for
 `maxima_rubi_match.lisp` / `maxima_rubi_tree.lisp` /
 `maxima_rubi_dispatch.lisp`; branch `matcher-substrate`, spec
@@ -192,19 +225,29 @@ Green: `Results: 57 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
 empty-leftover lock, +2 at Plan 2: the Power-exponent Optional
 default, +4 at spec §3.8: the flat-absorb committed-tail prune — two
 committed-tail locks, one lock that an uncommitted tail still
-enumerates, one cost test), `Results: 51 passed, 0 failed` (mr-tree;
-46, +5 at Plan 2: CRE input and the booleans) and
-`Results: 66 passed, 0 failed`
+enumerates, one cost test), `Results: 58 passed, 0 failed` (mr-tree;
+46, +5 at Plan 2: CRE input and the booleans, +7 at the inert-trig
+substrate, `53dc578`: the six inert trig heads) and
+`Results: 71 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
 MatchQ pattern prepare rejects is an error, +8 at the final review:
 MatchQ part folding and an out-of-range part error, +1 at Plan 3: the
-switch defaults; +8 more by 2026-09-18, not attributed here).
+switch defaults; +8 more by 2026-09-18, not attributed here; +5 at the
+inert-trig substrate, `e9642a6`: the rewrite records).
 
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the
-2026-09-14 count and is superseded).
+2026-09-14 count and is superseded). Layer A re-measured 2026-09-21 at
+the inert-trig plan's Task 9: `Results: 1146 passed, 0 failed`; at its
+Task 10 (TryPureTanSubst / CalculusFreeQ / SubstFor[w,v,u,x] units, the
+Weierstrass record end to end, the two inert-leak targets):
+`Results: 1164 passed, 0 failed`; at its fix round 1 (4.7.5 r72, the
+re-activating give-up, 4 targets): `Results: 1168 passed, 0 failed`; at
+its final fix wave (the class-4 With-local capture trap, 4 targets,
+`de51845`): `Results: 1172 passed, 0 failed`. The matcher suites
+re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
 test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
@@ -218,6 +261,11 @@ python3 test/check_generated_rules.py
 ```
 
 Green: `Results: 14 passed, 0 failed` (11 + the three translation-fix exception counts, 2026-09-14).
+Superseded: `Results: 21 passed, 0 failed` measured 2026-09-21 at the
+inert-trig plan's Task 9 (20 before it; class 4's bridge subset adds one
+check-7 line, the post-P0 class total `post-P0 class 4: 6 rules over 2
+files`; Task 10 keeps 21 and moves that line to `7 rules over 2 files`,
+its fix round 1 to `8 rules over 2 files`).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
@@ -228,8 +276,10 @@ fixes' 1,283 integer comparisons, 10 `notequal` and 1 juxtaposition), the
 reader self-test
 (`python3 generator/mma_reader.py`), and every pattern string preparing
 in `MR-MATCH`. Regeneration is byte-identical:
-`python3 generator/generate_rules.py --class <1|2|3>` leaves
-`git status --porcelain rules/` empty.
+`python3 generator/generate_rules.py --class <1|2|3|6>` and `--rewrites`
+leave `git status --porcelain rules/` empty (as does `--class 4` against
+the committed class-4 files; class 4 alone prefixes its With/Module
+locals, `de51845`, ticket `.scratch/class-ports/issues/08`).
 
 **Matcher substrate — regression suite** (spec section 4 P1/P2 gates:
 the probe-02 round trip over all 7,444 Rubi LHSs in narrow and wide
@@ -372,13 +422,22 @@ the same commit.
 
 ```sh
 python3 test/test_driver_parens.py          # Results: 2 passed, 0 failed
-python3 test/test_driver_core_pin.py        # Results: 5 passed, 0 failed
+python3 test/test_driver_core_pin.py        # Results: 7 passed, 0 failed
 python3 test/test_driver_out_default.py     # Results: 4 passed, 0 failed
 python3 test/test_driver_radcan_fallback.py # Results: 4 passed, 0 failed
 python3 test/test_ab_records.py             # Results: 6 passed, 0 failed
 python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
 python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
+python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
+python3 test/test_head_rewrites.py          # Results: 20 passed, 0 failed
 ```
+
+`test_driver_inert_leak` guards the inert-head leak classification: an answer
+carrying any of the six inert trig heads (`%mr_isin` … `%mr_icsc`, the bridge
+rule's deactivated form) is classified `error` — not a new class — and the
+driver names the heads on stderr (`inert-leak <entry>: the answer carries …`).
+Its witnesses are synthetic answers injected in place of the `rubi` call, so
+it depends on neither the rule set nor the corpus.
 
 `test_driver_radcan_fallback` guards the `zero_chain` radcan(rat()) fallback —
 part of the VERIFICATION path, which decides `verified` vs `unverified` for

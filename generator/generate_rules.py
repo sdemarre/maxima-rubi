@@ -45,7 +45,7 @@ from translation_table import RENAME, RESTRUCTURE
 # these means a table row exists whose handler nobody implemented — the
 # class-6 `Integral -> "noun"` row did exactly that on 2026-09-20 and
 # produced `noun(expr, x)` in 8 rules. Guarded at the head boundary below.
-HANDLER_ONLY = frozenset({"noun", "block", "cmp", "if",
+HANDLER_ONLY = frozenset({"noun", "block", "cmp", "if", "switch",
                           "loggamma", "power", "plus", "times"})
 import mma_reader as rd  # the evaluated-FullForm reader (spec 3.4)
 from fractions import Fraction
@@ -443,6 +443,8 @@ def translate_token(tok, ctx):
     loudly at the emit_head boundary, not here."""
     if ctx["markers"] and tok in ctx["markers"]:
         return ctx["markers"][tok]
+    if ctx.get("locals") and tok in ctx["locals"]:
+        return ctx["locals"][tok]
     if tok in ctx["vars"]:
         return cap_name(ctx["key"], ctx["n"], tok)
     if tok in ("Pi", "E", "I"):
@@ -515,6 +517,42 @@ def translate(s, ctx):
                 return f"part({translate(s[:p].strip(), ctx)}, {m.group(1)})"
     head, args = head_args(s)
     if head is not None:
+        if head in ("With", "Module") and ctx.get("prefix_locals"):
+            # Class 4 (final fix wave I2, ruling R28): the With/Module
+            # locals are renamed _mr_<key>_r<n>_<name> throughout the
+            # scope (decls and body) -- a pure alpha-renaming of the
+            # emitted block. See _push_scope_locals.
+            parts = split_top(args, ",") if args.strip() else []
+            saved = _push_scope_locals(head, parts[0] if parts else "", ctx)
+            try:
+                arglist = [translate(a, ctx) for a in parts]
+                return emit_head(head, arglist, ctx)
+            finally:
+                ctx["locals"] = saved
+        if head == "Block":
+            # Block[{$ShowSteps = False, $StepCounter = Null}, body] — the
+            # one Block shape in the emitted rules (4_7_5 r71, the
+            # Weierstrass record, inert-trig substrate Task 10), and
+            # verbatim the body of Rubi's IntHide (IntegrationUtilityFunctions.m
+            # L16-17), which the table already maps to plain mr_int. The two
+            # globals belong to the ShowSteps machinery ($ShowSteps displays
+            # steps, $StepCounter counts applied rules; ShowStepRoutines.m
+            # L4, L225-239): the port has neither steps nor a counter (the
+            # generator takes the non-ShowSteps branch of every
+            # If[TrueQ[$LoadShowSteps], ...] wrapper), so binding them
+            # changes nothing a rule can observe, and the port emits the
+            # BODY alone — the IntHide precedent, not a silent drop. Any
+            # other Block (other globals, other values) is a GenError: its
+            # bindings might be observable.
+            parts = split_top(args, ",") if args.strip() else []
+            if len(parts) < 2:
+                raise GenError(f"{ctx['key']} r{ctx['n']}: Block arity "
+                               f"{len(parts)}")
+            if re.sub(r"\s+", "", parts[0]) != \
+                    "{$ShowSteps=False,$StepCounter=Null}":
+                raise GenError(f"{ctx['key']} r{ctx['n']}: unlisted Block "
+                               f"bindings {parts[0].strip()!r}")
+            return translate(",".join(parts[1:]), ctx)
         if head == "MatchQ":
             # The pattern arg must be translated in the FRESH MatchQ
             # marker scope (_emit_matchq mints the names), not the outer
@@ -852,7 +890,9 @@ def _maxima_stmts(body):
             out.append(ch)
     segs = []
     for seg in split_top("".join(out), ","):
-        m = re.match(r"\s*([A-Za-z][A-Za-z0-9_]*)\s*=(?!=)", seg)
+        # a leading _ too: class 4's prefixed locals (_mr_<key>_r<n>_d,
+        # final fix wave I2) are statement targets in 4.7.5 r71's Module
+        m = re.match(r"\s*([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)", seg)
         if m:
             seg = m.group(1) + " :" + seg[m.end():]
         segs.append(seg)
@@ -967,6 +1007,17 @@ _PATTERN_OBJECTS = {"Pattern", "Blank", "BlankSequence", "BlankNullSequence",
 # G-3). 9.1 is outside the probe-02 census (not in LoadRules).
 ACCEPTED_RISKS = {
     ("9_1", 11, "risk:numeric-or-negated-arg:Complex"),   # 9.1.m L15
+    # ReduceInertTrig's first two clauses (IntegrationUtilityFunctions.m
+    # L6496/L6500; inert-trig substrate, Task 4). The Pi-arg flag guards a
+    # BUILT-IN head whose evaluation rewrites a Pi-shifted argument
+    # (Sin[x+Pi] -> -Sin[x]). ReduceInertTrig is a user function, and
+    # SetDelayed never applies the function's own definitions to its LHS —
+    # only the argument's Plus/Times/Power evaluation happens, which the
+    # reader emulates. The Complex[0, mz_] / Complex[0, nz_] flag is the 9.1
+    # L15 case above: a pattern argument keeps Complex unevaluated.
+    ("rit", 1, "risk:Pi-arg:ReduceInertTrig"),
+    ("rit", 2, "risk:Pi-arg:ReduceInertTrig"),
+    ("rit", 2, "risk:numeric-or-negated-arg:Complex"),
 }
 
 
@@ -1013,6 +1064,103 @@ def pattern_sexp(lhs, key, n, rule_vars):
             and ev[2] == ("Pattern", "x", ("Blank", "Symbol"))):
         raise GenError(f"{key} r{n}: LHS is not Int[<pattern>, x_Symbol]: "
                        f"{rd.fullform(ev)[:60]!r}")
+    return _sexp(_rename_captures(ev, key, n, rule_vars), key, n)
+
+
+# The bare-u_ Int-record tail convention (inert-trig substrate design
+# 3.3, Task 8). A generated file may route a rule into mr_rules_<key>_tail
+# instead of mr_rules_<key>; mr_load_all appends every _tail list to
+# mr_rule_table AFTER all classes, so our load-order-walking dispatcher
+# tries such a record last (Mathematica gets there by pattern specificity
+# instead). A bare-u_ record -- integrand (Pattern <name> (Blank)), the
+# most general Int pattern there is -- matches every integrand, so it must
+# never sit ahead of a more specific rule of a later-loading class.
+#
+# Six such records already exist, in classes 1/2/3, at their SOURCE
+# position in the body list. Moving them changes accepted class-1/2/3
+# behaviour and needs a corpus A/B, out of this task's scope
+# (.scratch/class-ports/issues/07-bare-u-records-mid-table.md) -- so this
+# CLOSED, NAMED exception list keeps exactly those six in the body; every
+# OTHER bare-u_ record routes to the tail. The static gate
+# (test/check_generated_rules.py) enforces the same list both ways: every
+# tail record is bare-u_, and no bare-u_ record sits in a body list unless
+# it is named here.
+BARE_U_BODY_EXCEPTIONS = {
+    ("1_4_1", 7):  "mr_simplify_flag and SumQ[u] (issue 07)",
+    ("1_4_1", 8):  "SumQ[u] (issue 07)",
+    ("9_1", 8):    "FreeQ[a, x] (bare a_; issue 07)",
+    ("9_1", 13):   "SumQ[u] (issue 07)",
+    ("2_3", 96):   "FunctionOfExponentialQ[u, x] and not a MatchQ shape (issue 07)",
+    ("3_5", 42):   "NonsumQ[u] and FunctionOfLog[Cancel[x u], x] not false (issue 07)",
+}
+
+
+# Class 4 is emitted as a SUBSET (inert-trig substrate plan, Task 9): only
+# the bridge's bare-u_ records, not section 4's ~2,070 body rules, which need
+# the class-4 Step-1 token closure no one has adjudicated yet. Per source key,
+# the run numbers (1-based, the same n every handle and the static gate use)
+# of the records emitted. Every other run of the file is skipped; numbering
+# is NOT compacted, so a handle keeps its source clause number when the rest
+# of the file is ported later. Each listed record is asserted bare-u_ at
+# generation time -- a reference-clone bump that moves a run fails loudly
+# instead of emitting the wrong rule.
+#   4_1_0_1 r1  Int[u_,x_Symbol] := Int[DeactivateTrig[u,x],x] /;
+#               FunctionOfTrigOfLinearQ[u,x] -- the bridge (4.1.0.1.m L4,
+#               the If[TrueQ[$LoadShowSteps], ...] wrapper that
+#               unwrap_showsteps_line recovers).
+#   4_7_5 r21/r22  the Cot/Tan Subst forms (4.7.5.m L24/L25).
+#   4_7_5 r47/r48  the Sin/Cos derivative-divides forms (L50/L51).
+#   4_7_5 r58   the Tan Subst form under InverseFunctionFreeQ (L61).
+#   4_7_5 r71   the half-angle Weierstrass substitution (L74; Task 10) --
+#               its trial Int sits in a Block[{$ShowSteps = False,
+#               $StepCounter = Null}, ...], which translate() emits as the
+#               body alone (the IntHide precedent; see the "Block" case).
+#   4_7_5 r72   Int[u_,x_Symbol] := With[{v=ActivateTrig[u]},
+#               CannotIntegrate[v,x]] /; Not[InertTrigFreeQ[u]] (L76; Task
+#               10 fix round 1, ruling R26) -- the file's LAST record: the
+#               integrand the bridge admitted and nothing finished is given
+#               up RE-ACTIVATED, so the unintegrable noun carries no inert
+#               head. It must stay last in the tail.
+# 4_7_5 r66/r70 (L69/L73 -- TrigSimplify, ExpandTrig) are bare-u_ too but
+# NOT wrapped; they are class-4 port work, outside this subset.
+CLASS4_SUBSET = {
+    "4_1_0_1": (1,),
+    "4_7_5": (21, 22, 47, 48, 58, 71, 72),
+}
+
+
+def bare_int_clause(lhs, key, n):
+    """True when the Int rule's integrand argument is the most general Int
+    pattern there is: a bare named Blank, (Pattern <name> (Blank)) -- no
+    head, no Optional, no type restriction. See BARE_U_BODY_EXCEPTIONS
+    above for how such a record is routed."""
+    ev = _evaluated(lhs, key, n, "LHS")
+    return (isinstance(ev, tuple) and len(ev) == 3 and ev[0] == "Int"
+            and isinstance(ev[1], tuple) and len(ev[1]) == 3
+            and ev[1][0] == "Pattern" and ev[1][2] == ("Blank",))
+
+
+def rewrite_pattern_sexp(lhs, key, n, rule_vars, fname):
+    """A utility clause's Name[<args>] LHS as the evaluated FullForm
+    s-expression %mr_defrewrite prepares (inert-trig substrate design 3.2).
+    The outermost head is the function name; %mr_rewrite matches the pattern
+    against (Name u x), so the clause must be of arity 2 to be reachable —
+    ReduceInertTrig's 3-argument clause is emitted all the same (it is one
+    of the source's clauses) and simply never binds a 2-argument call. The
+    captures are renamed exactly as an Int rule's (_rename_captures); an
+    `x_` argument keeps the name x, and is the walker's x."""
+    ev = _evaluated(lhs, key, n, "LHS")
+    if not (isinstance(ev, tuple) and ev[0] == fname and len(ev) >= 2):
+        raise GenError(f"{key} r{n}: LHS is not {fname}[...]: "
+                       f"{rd.fullform(ev)[:60]!r}")
+    return _sexp(_rename_captures(ev, key, n, rule_vars), key, n)
+
+
+def _rename_captures(ev, key, n, rule_vars):
+    """Each capture's Pattern name -> its Maxima capture name cap_name(key,
+    n, v), so the dispatcher's binding list is the mm list the cond and repl
+    read with geteqR; x keeps its name (the dispatcher pre-binds it to the
+    integration variable). Every capture must survive evaluation."""
     seen = set()
 
     def rename(e):
@@ -1032,7 +1180,7 @@ def pattern_sexp(lhs, key, n, rule_vars):
         raise GenError(f"{key} r{n}: captures "
                        f"{sorted(set(rule_vars) - seen)} vanish from the "
                        f"evaluated LHS")
-    return _sexp(out, key, n)
+    return out
 
 
 # Mathematica inverse-trig heads -> the NATIVE Maxima function names, for a
@@ -1228,6 +1376,40 @@ def emit_head(head, arglist, ctx):
         # parenthesized: an If inside a && / || cond chain must bind as one
         # operand
         return f"(if {arglist[0]} then {arglist[1]} else {arglist[2]})"
+    if head == "Switch":
+        # Rubi's Switch[e, form1, value1, form2, value2, …] — 3 sites, all
+        # of them in ReduceInertTrig's 3-argument clause (inert-trig
+        # substrate, Task 4). Maxima has no switch, so it becomes a nested
+        # if/elseif over EQUALITY with each form.
+        #
+        # Mathematica matches a Switch form as a PATTERN; at all three
+        # sites every form is a bare inert head symbol (sin, cos, …),
+        # which the translation table has already turned into the %mr_i*
+        # OPERATOR SYMBOL the dispatcher binds a head-position capture to
+        # (maxima_rubi_dispatch.lisp mr-binding-value), so `=` on symbols
+        # is the faithful test. A form that is not a plain symbol would
+        # need real pattern matching: GenError, never a silent mis-emit.
+        #
+        # The final else is `false`, not an error: Mathematica leaves a
+        # Switch with no matching form unevaluated, and a rewrite repl that
+        # values to false is declined by %mr_rewrite (its `(and ok r)`
+        # test), which is the closest faithful behaviour available.
+        if len(arglist) < 3 or (len(arglist) - 1) % 2 != 0:
+            raise GenError(f"{key} r{n}: Switch arity {len(arglist)} "
+                           f"(need a subject and form/value pairs)")
+        subject = arglist[0].strip()
+        parts = []
+        for i in range(1, len(arglist), 2):
+            form = arglist[i].strip()
+            if not re.fullmatch(r"%?[A-Za-z_][A-Za-z0-9_]*", form):
+                raise GenError(f"{key} r{n}: Switch form {form!r} is not a "
+                               f"plain symbol — it would need pattern "
+                               f"matching, which this emitter case does not do")
+            parts.append((form, arglist[i + 1].strip()))
+        out = "false"
+        for form, value in reversed(parts):
+            out = f"if {subject} = {form} then {value} else {out}"
+        return f"({out})"
     if head == "Boole":
         if len(arglist) != 1:
             raise GenError(f"{key} r{n}: Boole arity {len(arglist)}")
@@ -1386,6 +1568,47 @@ def _scope_locals(head, decls_txt, key, n):
     return locals_, assigns
 
 
+def _push_scope_locals(head, decls_raw, ctx):
+    """Class-4 With/Module local prefixing (final fix wave I2, ruling R28).
+
+    A generated repl binds its With/Module locals in a Maxima block and
+    may run a nested mr_int inside it. Maxima binds block locals
+    DYNAMICALLY, so an unprefixed local named like a corpus symbol (d, v,
+    w) is live during the nested integration, and any re-evaluation there
+    substitutes its value for the integrand's own symbol (measured: 4.7.5
+    r47's block([d], d : 1) turned part of the answer to 1/(d x^7 + 1) into
+    the d = 1 answer -- a silently wrong antiderivative). Renaming each
+    local to _mr_<key>_r<n>_<name> makes the block name nothing a user
+    integrand can contain.
+
+    decls_raw is the RAW .m locals list ({v = ..., d}); every name it
+    declares is mapped for the whole scope -- the decl values too, so the
+    emitted text is exactly the unprefixed emission with the locals
+    alpha-renamed (a value naming a same-named local reads it the same
+    way). Returns the previous map, which the caller restores. Emitted for
+    CLASS 4 only (emit_rule sets ctx["prefix_locals"]): classes 1/2/3/6
+    stay byte-identical under the P3 gate; the all-class fix is ticket
+    .scratch/class-ports/issues/08."""
+    d = decls_raw.strip()
+    if not (d.startswith("{") and d.endswith("}")):
+        raise GenError(f"{ctx['key']} r{ctx['n']}: {head} locals not a "
+                       f"list: {d[:40]!r}")
+    saved = ctx.get("locals") or {}
+    new = dict(saved)
+    for p in split_top(d[1:-1], ","):
+        name = split_top(p.strip(), "=")[0].strip()
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", name):
+            raise GenError(f"{ctx['key']} r{ctx['n']}: {head} local "
+                           f"{name!r} is not a plain symbol")
+        if name in ctx["vars"]:
+            raise GenError(f"{ctx['key']} r{ctx['n']}: {head} local "
+                           f"{name!r} shadows a capture -- the prefixed "
+                           f"name would collide with its capture name")
+        new[name] = f"_mr_{ctx['key']}_r{ctx['n']}_{name}"
+    ctx["locals"] = new
+    return saved
+
+
 def _scope_block(locals_, assigns, body):
     lead = ", ".join(assigns) + ", " if assigns else ""
     return f"block([{', '.join(locals_)}], {lead}{body})"
@@ -1409,15 +1632,33 @@ def split_inner_condition(rhs):
     return head, decls, body[:last], body[last+2:]
 
 
-def emit_rule(run, key, n, rule_vars):
+def emit_rule(run, key, n, rule_vars, fname=None):
     """One rule run (lhs, rhs, cond) -> its cond and repl functions and its
     %mr_defrule registration, as Maxima text (spec 3.4). rule_vars is the
-    set of capture names (from the lhs)."""
+    set of capture names (from the lhs).
+
+    With fname (a Rubi utility function's name) the run is one CLAUSE of
+    that function, `fname[<args>] := rhs /; cond`, and the registration is
+    a %mr_defrewrite record instead (inert-trig substrate design 3.2). The
+    cond and repl bodies are the SAME text either way — this one emitter
+    produces both, so the P3 byte-stability of rule bodies covers the
+    rewrite tables too. The one difference: a clause with no condition at
+    all (no /; outer or inner) registers the literal Maxima `true` as its
+    cond instead of a function returning true, and emits no cond function —
+    %mr_rewrite's `(eq cond-fn t)` branch accepts every binding for it."""
     lhs, rhs, cond = run
-    if not re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL):
-        raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
-    ctx = {"key": key, "n": n, "vars": rule_vars, "markers": None, "mq": 0}
-    pattern = pattern_sexp(lhs, key, n, rule_vars)
+    if fname is None:
+        if not re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL):
+            raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
+    # prefix_locals: class 4 renames its With/Module locals (final fix
+    # wave I2; see _push_scope_locals). Never for a rewrite-table clause
+    # (fname) -- those tables stay byte-identical.
+    ctx = {"key": key, "n": n, "vars": rule_vars, "markers": None, "mq": 0,
+           "locals": {}, "prefix_locals": fname is None and CLASS == 4}
+    if fname is None:
+        pattern = pattern_sexp(lhs, key, n, rule_vars)
+    else:
+        pattern = rewrite_pattern_sexp(lhs, key, n, rule_vars, fname)
     base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
                  if cond else "true")
     # M-cas-simp (3.5 r10, class-3 deferred campaign C6): the .m cond
@@ -1446,9 +1687,16 @@ def emit_rule(run, key, n, rule_vars):
         head, decls, body, inner_cond = inner
         repl_txt = translate(drop_optionals(f"{head}[{decls},{body}]",
                                             rule_vars), ctx)
+        # the cond's copy of the scope takes the same local names as the
+        # repl's (class 4: prefixed; see _push_scope_locals)
+        saved = (_push_scope_locals(head, drop_optionals(decls, rule_vars),
+                                    ctx)
+                 if ctx["prefix_locals"] else None)
         locals_, assigns = _scope_locals(
             head, translate(drop_optionals(decls, rule_vars), ctx), key, n)
         test = translate(drop_optionals(inner_cond, rule_vars), ctx)
+        if ctx["prefix_locals"]:
+            ctx["locals"] = saved
         # parenthesized: the outer cond may be an `or` chain
         cond_txt = (f"({base_cond})  and  "
                     f"{_scope_block(locals_, assigns, f'is({test}) = true')}")
@@ -1480,15 +1728,32 @@ def emit_rule(run, key, n, rule_vars):
     snap_binds = [f"{snaps[c]} : geteqR(mm, '{c})" for c in caps]
     snap_bind_block = ", ".join(snap_binds) if snap_binds else "true"
     snap_locals_txt = ", ".join(snaps[c] for c in caps) if caps else ""
-    return "\n".join([
+    cond_fun = [
         f"_mr_cond_{key}_r{n}(mm, x) := block([{locals_txt}],",
         f"  {bind_block},",
         f"  {cond_txt})$",
+    ]
+    repl_fun = [
         f"_mr_repl_{key}_r{n}(mm, x) := block([{snap_locals_txt}],",
         f"  {snap_bind_block},",
         f"  {repl_txt})$",
-        f'_mr_rule_{key}_r{n} : %mr_defrule("{key}", {n}, "{pattern}", '
-        f"_mr_cond_{key}_r{n}, _mr_repl_{key}_r{n})$",
+    ]
+    if fname is None:
+        return "\n".join(cond_fun + repl_fun + [
+            f'_mr_rule_{key}_r{n} : %mr_defrule("{key}", {n}, "{pattern}", '
+            f"_mr_cond_{key}_r{n}, _mr_repl_{key}_r{n})$",
+        ])
+    unconditioned = not cond and inner is None
+    if unconditioned:
+        if cond_txt != "true":
+            raise GenError(f"{key} r{n}: an unconditioned clause translated "
+                           f"its cond to {cond_txt!r}, not true")
+        cond_fun, cond_arg = [], "true"
+    else:
+        cond_arg = f"_mr_cond_{key}_r{n}"
+    return "\n".join(cond_fun + repl_fun + [
+        f'_mr_rw_{key}_r{n} : %mr_defrewrite("{key}", {n}, "{pattern}", '
+        f"{cond_arg}, _mr_repl_{key}_r{n})$",
     ])
 
 def emit_file(rel_m, runs, key=None):
@@ -1511,7 +1776,11 @@ def emit_file(rel_m, runs, key=None):
               f"{MIT}\n\n")
     body = []
     rule_names = []
+    tail_names = []
+    subset = CLASS4_SUBSET.get(key) if CLASS == 4 else None
     for n, run in enumerate(runs, start=1):
+        if subset is not None and n not in subset:
+            continue
         # FIX F3: rule_runs yields LISTS OF LINES; join the run and split it
         # the way the census does.
         text = "\n".join(run)
@@ -1546,10 +1815,30 @@ def emit_file(rel_m, runs, key=None):
             for ln in util_lines:
                 body.append(f" * {ln.strip()}")
             body.append(" */")
-        rule_names.append(f"_mr_rule_{key}_r{n}")
+        handle_name = f"_mr_rule_{key}_r{n}"
+        if subset is not None and not bare_int_clause(lhs, key, n):
+            raise GenError(f"{key} r{n}: listed in CLASS4_SUBSET but not a "
+                           f"bare-u_ Int record -- the source moved; "
+                           f"re-measure the subset")
+        if bare_int_clause(lhs, key, n) and (key, n) not in BARE_U_BODY_EXCEPTIONS:
+            tail_names.append(handle_name)
+        else:
+            rule_names.append(handle_name)
         body.append("")
     body.append(f"mr_rules_{key} : [ {', '.join(rule_names)} ]$")
-    body.append(f"mr_rules_count_{key} : {len(runs)}$")
+    if tail_names:
+        # Only emitted when this file actually has one -- an absent
+        # mr_rules_<key>_tail line is how a class with no such record
+        # (still every class as of Task 8) regenerates byte-identically
+        # (inert-trig substrate design 3.3).
+        body.append(f"mr_rules_{key}_tail : [ {', '.join(tail_names)} ]$")
+    n_emitted = len(runs) if subset is None else len(subset)
+    if subset is not None and len(rule_names) + len(tail_names) != n_emitted:
+        raise GenError(f"{key}: CLASS4_SUBSET lists {n_emitted} runs, "
+                       f"{len(rule_names) + len(tail_names)} emitted "
+                       f"(a listed run number is past the file's "
+                       f"{len(runs)} runs)")
+    body.append(f"mr_rules_count_{key} : {n_emitted}$")
     body.append(f"mr_witness_{key}() := true$")
     return header + "\n".join(body) + "\n"
 
@@ -1568,6 +1857,9 @@ def load_class_files(rubi):
         if not parts or not parts[0].startswith(CLASS_PREFIX):
             continue
         rel = "Rubi/IntegrationRules/" + "/".join(parts) + ".m"
+        # class 4: only the files CLASS4_SUBSET names (see there)
+        if CLASS == 4 and key_of(rel) not in CLASS4_SUBSET:
+            continue
         out.append(rel)
     return out
 
@@ -1607,7 +1899,7 @@ NINE_ONE = ("Rubi/IntegrationRules/9 Miscellaneous/"
 NINE_ONE_TOTAL = 28
 
 def configure(class_num):
-    """Point the generator at class <class_num> (1, 2, 3 or 6)."""
+    """Point the generator at class <class_num> (1, 2, 3, 4 or 6)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
@@ -1622,8 +1914,14 @@ def configure(class_num):
     # so unwrap_showsteps_line finds nothing to recover and the census
     # and the emitter agree exactly
     # (probes/translation/05-class6-syntax-census.out).
+    # class 4: 8 — NOT the section's 2,080 (spec 0.3): only the
+    # CLASS4_SUBSET records, the bridge and six of 4.7.5's substitution
+    # catch-alls (inert-trig substrate plan, Task 9; r71, Task 10) and
+    # 4.7.5's re-activating give-up r72 (Task 10 fix round 1). It grows with the
+    # subset until the class-4 port replaces it with the full total.
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
-                      3: 334, 6: 390}[class_num]
+                      3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),
+                      6: 390}[class_num]
 
 
 def _emit_source(rel_m, key, only, total, load_lines, note=""):
@@ -1632,13 +1930,146 @@ def _emit_source(rel_m, key, only, total, load_lines, note=""):
     out = OUT / f"{key}.mac"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(emit_file(rel_m, runs, key))
+    if CLASS == 4:
+        n = len(CLASS4_SUBSET[key])
+        print(f"  {key}: {n} of {len(runs)} rules (CLASS4_SUBSET){note}")
+        load_lines.append(f"%mr_load_sibling(\"rules/class{CLASS}/{key}.mac\", "
+                          f"'mr_witness_{key})$")
+        return total + n
     print(f"  {key}: {len(runs)} rules{note}")
     load_lines.append(f"%mr_load_sibling(\"rules/class{CLASS}/{key}.mac\", "
                       f"'mr_witness_{key})$")
     return total + len(runs)
 
 
+# ----------------------------------------------------------------------
+# Rewrite tables (inert-trig substrate design 3.2, Task 4)
+#
+# Three of Rubi's utility functions are written as `Name[pattern] := rhs /;
+# cond` clauses — the shape an Int rule has — so they are generated through
+# the SAME emitter (emit_rule with fname) into %mr_defrewrite records, one
+# table per function, in source order (the order IS priority: %mr_rewrite
+# answers with the first clause that binds and whose cond accepts).
+
+REWRITE_SOURCE = "Rubi/IntegrationUtilityFunctions.m"
+REWRITE_OUT = ROOT / "rules" / "utils" / "inert_trig_rewrites.mac"
+
+# (table key, Rubi function, clause count). The counts were MEASURED
+# 2026-09-20 over the pinned clone (spec 2.4: 75 / 61 / 4, of which
+# 74 / 60 / 3 carry a condition) and are ASSERTED here: a reference-clone
+# bump that adds or drops a clause fails generation loudly instead of
+# silently changing a table.
+REWRITE_FUNCTIONS = [
+    ("uitf", "UnifyInertTrigFunction", 75),
+    ("fitf", "FixInertTrigFunction", 61),
+    ("rit", "ReduceInertTrig", 4),
+]
+
+
+def utility_runs(src_stripped, fname):
+    """The clause runs of utility function fname in a comment-stripped
+    source: rule_runs' convention (a run starts at a column-0 line and a
+    blank line ends it, except after a dangling ':='), with the column-0
+    marker `fname[` instead of `Int[`. `fname::usage = …` and
+    `Clear[fname]` lines do not start with `fname[`, so they never open a
+    run."""
+    lines = src_stripped.split("\n")
+    runs, cur = [], None
+    for line in lines:
+        if line.startswith(fname + "["):
+            if cur is not None:
+                runs.append(cur)
+            cur = [line]
+        elif cur is not None:
+            if line.strip() == "" and \
+                    not "\n".join(cur).rstrip().endswith(":="):
+                runs.append(cur)
+                cur = None
+            else:
+                cur.append(line)
+    if cur is not None:
+        runs.append(cur)
+    return runs
+
+
+def bare_clause(lhs, key, n):
+    """True when every argument of the clause's LHS is a bare named Blank
+    (UnifyInertTrigFunction[u_, x_], ReduceInertTrig[func_, m_, u_]): the
+    most general pattern of its arity.
+
+    Such a clause goes to the END of its table, after the others in source
+    order. Mathematica does not try a function's definitions in source
+    order: it places a more specific definition before a more general one,
+    and a bare-Blank definition is the most general there is, so it is tried
+    last whatever its position in the file. %mr_rewrite walks the table in
+    list order, so position is the only way to say it — the same argument
+    the design makes for the Int rules' bare-u_ records (inert-trig
+    substrate design 3.3). It matters here: UnifyInertTrigFunction's
+    catch-all u_ is clause 68 of 75 (IntegrationUtilityFunctions.m L7294),
+    and in source order it would make clauses 69-75 unreachable. Record
+    numbers stay the source clause numbers; only the table order moves."""
+    ev = _evaluated(lhs, key, n, "LHS")
+    return all(isinstance(a, tuple) and len(a) == 3 and a[0] == "Pattern"
+               and a[2] == ("Blank",) for a in ev[1:])
+
+
+def emit_rewrites_file(rubi=None):
+    """The whole rules/utils/inert_trig_rewrites.mac text."""
+    rubi = rubi or RUBI
+    src = strip_comments((rubi / REWRITE_SOURCE).read_text())
+    header = ("/* rules/utils/inert_trig_rewrites.mac — GENERATED; do not "
+              "edit.\n"
+              f" * Source: Rubi 4 {PIN}\n"
+              f" *          {REWRITE_SOURCE}\n"
+              " * Regenerate: python3 generator/generate_rules.py --rewrites "
+              "*/\n"
+              f"{MIT}\n\n")
+    body, tables, counts = [], [], []
+    for key, fname, expected in REWRITE_FUNCTIONS:
+        runs = utility_runs(src, fname)
+        if len(runs) != expected:
+            raise GenError(f"{fname}: {len(runs)} clauses in "
+                           f"{REWRITE_SOURCE}, expected {expected} "
+                           f"(measured 2026-09-20) — the reference clone "
+                           f"changed; re-measure before regenerating")
+        names, tail = [], []
+        for n, run in enumerate(runs, start=1):
+            text = "\n".join(run)
+            if ":=" not in text:
+                raise GenError(f"{key} r{n}: unparseable clause (no ':='): "
+                               f"{text[:60]!r}")
+            lhs, rhs, cond = split_rule_outer(text)
+            cond = clean_cond(cond, key, n)
+            rule_vars = pattern_vars(lhs)
+            try:
+                body.append(emit_rule((lhs, rhs, cond), key, n, rule_vars,
+                                      fname=fname))
+            except GenError:
+                raise
+            except Exception as ex:
+                raise GenError(f"{key} r{n}: {type(ex).__name__}: {ex} "
+                               f"(lhs {lhs[:60]!r})") from ex
+            (tail if bare_clause(lhs, key, n) else names).append(
+                f"_mr_rw_{key}_r{n}")
+            body.append("")
+        tables.append(f"mr_rw_{key} : [ {', '.join(names + tail)} ]$")
+        tables.append(f"mr_rw_count_{key} : {len(runs)}$")
+        counts.append(f"{key} {len(runs)}")
+    return (header + "\n".join(body + tables)
+            + "\nmr_witness_inert_trig_rewrites() := true$\n"), counts
+
+
+def generate_rewrites():
+    text, counts = emit_rewrites_file()
+    REWRITE_OUT.parent.mkdir(parents=True, exist_ok=True)
+    REWRITE_OUT.write_text(text)
+    print(f"  {REWRITE_OUT.relative_to(ROOT)}: " + ", ".join(counts))
+
+
 def main(class_num=None):
+    if class_num is None and "--rewrites" in sys.argv:
+        generate_rewrites()
+        return
     if class_num is None:
         class_num = (int(sys.argv[sys.argv.index("--class") + 1])
                      if "--class" in sys.argv else 1)

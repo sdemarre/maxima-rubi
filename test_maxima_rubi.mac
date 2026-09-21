@@ -121,6 +121,17 @@ run_all_tests() := block([],
   test_expand_expression(),
   test_translation_fixes_generator(),
   test_translation_fixes_posaux(),
+  test_inert_trig_rewrites(),
+  test_inert_trig_reduce_powersum(),
+  test_deactivate_trig(),
+  test_function_of_trig_of_linear(),
+  test_function_of_q(),
+  test_inert_bridge(),
+  test_try_pure_tan_subst(),
+  test_weierstrass(),
+  test_inert_leak_guard(),
+  test_inert_giveup(),
+  test_class4_with_capture(),
   test_census(),
   print(""),
   print("========================================"),
@@ -152,6 +163,28 @@ mr_default_giveup_last : mr_giveup_last$
 test_load_and_api() := block([r, saved_table],
   print("--- load + API fallback gate ---"),
   check_bool("loader witness survived", is(mr_witness_maxima_rubi() = true)),
+  /* Tail rule lists (inert-trig substrate design 3.3). A bare-u_ record
+   * sits at the END of mr_rule_table, because our dispatcher walks in
+   * load order and stops at the first rule that answers (Mathematica
+   * orders it last by pattern specificity instead).
+   *
+   * IMPORTANT (fix round 1, ledger R21): this suite never calls
+   * mr_load_all() -- later Layer A targets depend on the rule table's
+   * contents at their point in the suite, so it must not run here -- and
+   * so this target only ever sees the EAGER MILESTONE-1 CORE STAND-IN
+   * (body = mr_rules_1_1_1_1, tail = [], set at maxima_rubi.mac's top
+   * level for exactly this reason). It is therefore permanently vacuous
+   * on the real table mr_load_all() builds: both handle lists exist, the
+   * body list is non-empty, and every tail handle (vacuously none, since
+   * the stand-in's tail is always []) is greater than every body handle.
+   * The real table's ordering -- including the universal bare-u_
+   * cross-check over every loaded rule -- is gated OUTSIDE Layer A by
+   * test/test_rule_table_order.mac (AGENTS.md, "Rule-table order"). */
+  check_bool("tail records are last in the table (eager-core stand-in only -- test/test_rule_table_order.mac gates the real table)",
+    listp(mr_rule_table_body_handles) and listp(mr_rule_table_tail_handles)
+    and length(mr_rule_table_body_handles) > 0
+    and every(lambda([mr_h], is(mr_h > lmax(mr_rule_table_body_handles))),
+              mr_rule_table_tail_handles)),
   /* 5 fires no class-1 rule with the full table (measured 2026-08-24 —
      the 1.1.1.1 family is (a+b x)^m / x^m / 1/x forms only; x^2 DOES
      fire rule r2), so it exercises the two top-level fall-throughs
@@ -2312,8 +2345,12 @@ test_structural_predicates() := block([],
           %mr_substFor(x + 1, (x + 1)^2 + 1, x), x^2 + 1),
     check("substFor atom",
           %mr_substFor(t, t^2 + 1, x), x^2 + 1),
+    /* by VALUE: since Task 10 (inert-trig substrate) the 4-arg form is
+       SimplifyIntegrand[w SubstFor[v,u,x], x] as in Rubi, whose shape is
+       the smallest-leaf-count candidate (%mr_sf4_simplify), not a fixed
+       form */
     check("substFor 4-arg",
-          %mr_substFor(2, x^2, x^4 + 1, x), 2*(x^2 + 1)),
+          ratsimp(%mr_substFor(2, x^2, x^4 + 1, x) - 2*(x^2 + 1)), 0),
     /* substPower */
     check("substPower",
           %mr_substPower(x^4 + x^2 + 1, x, 1/2), x^2 + x + 1),
@@ -3521,6 +3558,635 @@ test_class6_cluster_c() := block([w],
   check("ete preserves value (cosh(2v))",
         ratsimp(exponentialize(%mr_expandTrigExpand(1, cosh, v, 1, 2, x))
                 - exponentialize(cosh(2*v))), 0),
+  true
+)$
+
+/* Inert-trig rewrite tables (inert-trig substrate design 3.2). One fired
+ * clause and one non-matching input per table, so a table that loads empty
+ * or matches everything both fail. The table file is loaded under errcatch
+ * and the length checks test listp first, so a missing table is a counted
+ * FAIL, never a run that dies without its Results line.
+ *
+ * FixInertTrigFunction[csc[v_]^m_.*(c_.*sin[w_])^n_., x] :=
+ *     sin[v]^(-m)*(c*sin[w])^n /; FreeQ[{c,n},x] && IntegerQ[m]
+ * (IntegrationUtilityFunctions.m L6237, clause 3) so csc(x)^2*sin(x) ->
+ * sin(x)^(-2)*(1*sin(x))^1, with INERT heads throughout. It is the FIRST
+ * clause that accepts: clause 1 (a_*u_ /; FreeQ[a,x]) binds but every split
+ * of the two factors leaves x in a, and clause 2 (u_.*(a_*(b_+v_))^n_) needs
+ * a power whose base is a product with a sum — neither factor is one. Both
+ * sides of check simplify, so the expected value is the clause's replacement
+ * as Maxima writes it back: %mr_isin(x)^(-2)*%mr_isin(x) = 1/%mr_isin(x). */
+test_inert_trig_rewrites() := block([],
+  print("--- inert-trig rewrite tables ---"),
+  errcatch(%mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                            'mr_witness_inert_trig_rewrites)),
+  check("fitf: csc^m (c sin)^n clause fires",
+        %mr_fixInertTrigFunction(%mr_icsc(x)^2 * %mr_isin(x), x),
+        %mr_isin(x)^(-2) * %mr_isin(x)),
+  /* FixInertTrigFunction[a_*u_, x] := a*FixInertTrigFunction[u,x] /; FreeQ[a,x]
+   * (L6228, clause 1) is the self-recursive clause and the first one that
+   * accepts 3*csc(x)^2*sin(x): a = 3, u = csc(x)^2*sin(x). The constant
+   * comes out and the walk re-enters, where clause 3 fires as above. */
+  check("fitf: free factor comes out, recursion re-enters",
+        %mr_fixInertTrigFunction(3 * %mr_icsc(x)^2 * %mr_isin(x), x),
+        3 * %mr_isin(x)^(-2) * %mr_isin(x)),
+  /* log(x): no structured clause binds, so the answer comes from the
+   * unconditioned catch-all u_ (fitf clause 61, uitf clause 68, both
+   * registered with the literal cond true). A walk that found no clause
+   * would also return log(x), so these two checks do not by themselves
+   * tell the catch-all from table exhaustion. */
+  check("fitf: an expression no clause matches is returned unchanged",
+        %mr_fixInertTrigFunction(log(x), x), log(x)),
+  check("uitf: an expression no clause matches is returned unchanged",
+        %mr_unifyInertTrigFunction(log(x), x), log(x)),
+  check_bool("uitf table is not empty",
+             is(listp(mr_rw_uitf) and length(mr_rw_uitf) = 75)),
+  check_bool("fitf table is not empty",
+             is(listp(mr_rw_fitf) and length(mr_rw_fitf) = 61)),
+  check_bool("rit table is not empty",
+             is(listp(mr_rw_rit) and length(mr_rw_rit) = 4)),
+  true
+)$
+
+/* Task 4 fix round 1: the 3-argument ReduceInertTrig and
+ * PowerOfInertTrigSumQ (Rubi IntegrationUtilityFunctions.m L6509 and
+ * L6487). Every expected value is derived by hand from the .m text; the
+ * derivations are in the fix report
+ * (.superpowers/sdd/2026-09-20-inert-trig-substrate/task-4-report.md). A
+ * call is wrapped in errcatch so a missing arity counts as a failure
+ * instead of killing the run. */
+_t_rit(_t_rit_args) := block([_t_rit_r],
+  _t_rit_r : errcatch(apply(%mr_reduceInertTrig, _t_rit_args)),
+  if _t_rit_r = [] then 'rit_error else first(_t_rit_r))$
+
+test_inert_trig_reduce_powersum() := block([_t_fitf_u, _t_fitf_first],
+  print("--- ReduceInertTrig 3-arg / PowerOfInertTrigSumQ ---"),
+  /* clause 1: x+Pi binds m*n = 1, m*u+v = x; 3-arg m = 1: m>=1, sin arm
+   * -> -RIT[sin, 0, x]; m = 0 falls to func[0*Pi+x] = sin(x). */
+  check("rit: sin(x+pi) = -sin(x)",
+        _t_rit([%mr_isin, x + %pi]), -%mr_isin(x)),
+  /* m = 1, tan arm -> +RIT[tan, 0, x] = tan(x). */
+  check("rit: tan(x+pi) = tan(x)",
+        _t_rit([%mr_itan, x + %pi]), %mr_itan(x)),
+  /* m*n = 1/2: m>=1/2, cos arm -> -RIT[sin, 0, x] = -sin(x). */
+  check("rit: cos(x+pi/2) = -sin(x)",
+        _t_rit([%mr_icos, x + %pi/2]), -%mr_isin(x)),
+  check("rit 3-arg: cos, 1/2, x = -sin(x)",
+        _t_rit([%mr_icos, 1/2, x]), -%mr_isin(x)),
+  /* m = 5/2: m>=2 -> RIT[sin, Mod[5/2,2] = 1/2, x]; m>=1/2, sin arm
+   * -> +RIT[cos, 0, x] = cos(x). */
+  check("rit 3-arg: sin, 5/2, x = cos(x) (Mod branch)",
+        _t_rit([%mr_isin, 5/2, x]), %mr_icos(x)),
+  check("rit: sin(x+5*pi/2) = cos(x) (Mod branch via clause 1)",
+        _t_rit([%mr_isin, x + 5*%pi/2]), %mr_icos(x)),
+  /* m = -1/2: m<0, not m>=-1/4, sin arm -> -RIT[sin, 1/2, -x]; m = 1/2,
+   * sin arm -> +RIT[cos, 0, -x] = cos(-x). Inert heads do not simplify
+   * parity, so cos(-x) stays. */
+  check("rit 3-arg: sin, -1/2, x = -cos(-x) (sign-flip Switch)",
+        _t_rit([%mr_isin, -1/2, x]), -%mr_icos(-x)),
+  check("rit: sin(x-pi/2) = -cos(-x) (sign flip via clause 1)",
+        _t_rit([%mr_isin, x - %pi/2]), -%mr_icos(-x)),
+  /* m = -1/4: m<0 and m>=-1/4 -> func[m*Pi+u] = tan(x - pi/4). */
+  check("rit 3-arg: tan, -1/4, x = tan(x-pi/4) (small negative m kept)",
+        _t_rit([%mr_itan, -1/4, x]), %mr_itan(x - %pi/4)),
+  /* RationalQ[m] fails: the definition does not apply, so the call stays
+   * unevaluated -- the noun form. */
+  check("rit 3-arg: non-rational m stays unevaluated",
+        _t_rit([%mr_isin, k, x]), '%mr_reduceInertTrig(%mr_isin, k, x)),
+  /* clause 2 (L6500), the hyperbolic side: an IMAGINARY multiple of Pi.
+   * i*(x + i*Pi/2): mr-tree gives (Times #C(0 1) (Plus x (Times #C(0 1/2)
+   * Pi))), so Complex[0,mz] binds mz = 1, m = 1, Complex[0,nz] binds
+   * nz = 1/2, n = 1, u = x, v = 0. RIT[sin, -m*mz*n*nz = -1/2,
+   * m*mz*I*u+v = i*x]; 3-arg m = -1/2: sin arm -> -RIT[sin, 1/2, -i*x]
+   * -> -RIT[cos, 0, -i*x] = -cos(-i*x). (Check: sin(i*x - Pi/2) =
+   * -cos(i*x).) */
+  check("rit r2: sin(i*(x+i*pi/2)) = -cos(-i*x)",
+        _t_rit([%mr_isin, %i*(x + %i*%pi/2)]), -%mr_icos(-%i*x)),
+  check("rit r2 alone gives it",
+        %mr_rewrite("ReduceInertTrig", [_mr_rw_rit_r2], %mr_isin,
+                    %i*(x + %i*%pi/2)),
+        -%mr_icos(-%i*x)),
+  /* ... and r1 declines it (n would bind the complex 1/2*i, which fails
+   * RationalQ), so r2 is the first clause that fires. %mr_rewrite returns
+   * its first argument when no clause fires. */
+  check("rit r1 declines the imaginary multiple",
+        %mr_rewrite("ReduceInertTrig", [_mr_rw_rit_r1], %mr_isin,
+                    %i*(x + %i*%pi/2)),
+        %mr_isin),
+  /* 2*i*(x + i*Pi): -m*mz*n*nz = -2, u -> 2*i*x. 3-arg m = -2: sin arm
+   * -> -RIT[sin, 2, -2*i*x] -> Mod[2,2] = 0 -> -sin(-2*i*x).
+   * (Check: sin(2*i*x - 2*Pi) = sin(2*i*x).) */
+  check("rit r2: sin(2*i*(x+i*pi)) = -sin(-2*i*x)",
+        _t_rit([%mr_isin, 2*%i*(x + %i*%pi)]), -%mr_isin(-2*%i*x)),
+  /* PowerOfInertTrigSumQ[u, func, x], L6487. */
+  check_bool("powersumQ: a+b*sin(x) (first MatchQ, a /= 0)",
+             is(%mr_powerOfInertTrigSumQ(a + b*%mr_isin(x), %mr_isin, x) = true)),
+  check_bool("powersumQ: (a+b*(c*sin(x))^2)^(1/2) (first MatchQ)",
+             is(%mr_powerOfInertTrigSumQ((a + b*(c*%mr_isin(x))^2)^(1/2),
+                                          %mr_isin, x) = true)),
+  check_bool("powersumQ: a+b*sin(x)^2+c*sin(x)^4 (second MatchQ only)",
+             is(%mr_powerOfInertTrigSumQ(a + b*%mr_isin(x)^2 + c*%mr_isin(x)^4,
+                                          %mr_isin, x) = true)),
+  check_bool("powersumQ: a+b*cos(x) is not a sin power sum",
+             is(%mr_powerOfInertTrigSumQ(a + b*%mr_icos(x), %mr_isin, x) = false)),
+  /* sin(x)^2: a = 0 with p = 1 integer (or n = 1): the Not[...] excludes it,
+   * and the second pattern needs two func terms. */
+  check_bool("powersumQ: bare sin(x)^2 is excluded by the Not clause",
+             is(%mr_powerOfInertTrigSumQ(%mr_isin(x)^2, %mr_isin, x) = false)),
+  /* fitf clause 37 (L6380): u_.*sec[v_]^n_.*w_ := cos[v]^(-n)*
+   * FixInertTrigFunction[u*w,x] /; PowerOfInertTrigSumQ[w,sin,x] &&
+   * IntegerQ[n]. sec(x)^2*(a+b*sin(x)): u = 1, v = x, n = 2,
+   * w = a+b*sin(x); the inner walk leaves a+b*sin(x) unchanged. */
+  _t_fitf_u : %mr_isec(x)^2 * (a + b*%mr_isin(x)),
+  check("fitf r37 (PowerOfInertTrigSumQ cond) fires",
+        %mr_fixInertTrigFunction(_t_fitf_u, x),
+        %mr_icos(x)^(-2) * (a + b*%mr_isin(x))),
+  check("fitf r37 alone rewrites the input",
+        %mr_rewrite("FixInertTrigFunction", [_mr_rw_fitf_r37], _t_fitf_u, x),
+        %mr_icos(x)^(-2) * (a + b*%mr_isin(x))),
+  /* ... and it is the FIRST clause that does: every handle ahead of it in
+   * table order leaves the input alone. */
+  _t_fitf_first : true,
+  for _t_fitf_i : 1 thru 36 do
+    if %mr_rewrite("FixInertTrigFunction", [part(mr_rw_fitf, _t_fitf_i)],
+                   _t_fitf_u, x) # _t_fitf_u
+    then _t_fitf_first : false,
+  check_bool("fitf: no clause before r37 claims sec(x)^2*(a+b*sin(x))",
+             _t_fitf_first),
+  /* ActivateTrig and the inert predicates (inert-trig substrate design 3.2).
+   * %mr_activateTrig is the inverse of the head map of design 3.1. */
+  check("activateTrig: one head", %mr_activateTrig(%mr_isin(x)), sin(x)),
+  check("activateTrig: all six",
+        %mr_activateTrig(%mr_isin(x) + %mr_icos(x) + %mr_itan(x)
+                         + %mr_icot(x) + %mr_isec(x) + %mr_icsc(x)),
+        sin(x) + cos(x) + tan(x) + cot(x) + sec(x) + csc(x)),
+  check("activateTrig: nested, and leaves the rest alone",
+        %mr_activateTrig(log(%mr_isin(2*x)^3 + y)), log(sin(2*x)^3 + y)),
+  check("activateTrig: an already-active expression is unchanged",
+        %mr_activateTrig(sin(x) + log(y)), sin(x) + log(y)),
+  check_bool("inertTrigQ: an inert head", %mr_inertTrigQ(%mr_isin)),
+  check_not("inertTrigQ: an active head", %mr_inertTrigQ(sin)),
+  check_not("inertTrigQ: not a trig head at all", %mr_inertTrigQ(log)),
+  check_bool("inertTrigFreeQ: no inert head present",
+             %mr_inertTrigFreeQ(sin(x) + log(y))),
+  check_not("inertTrigFreeQ: an inert head is present",
+            %mr_inertTrigFreeQ(log(%mr_isin(x)))),
+  check_bool("trigQ: an active trig head", %mr_trigQ(sin)),
+  check_not("trigQ: an inert head is not an active one", %mr_trigQ(%mr_isin)),
+  true
+)$
+
+/* Task 6: DeactivateTrig (IntegrationUtilityFunctions.m L6189-6226).
+ * The six hyperbolic identities individually -- these are the class-6 unlock
+ * and each is worth its own target:
+ *   Sinh -> -I sin[I z]   Cosh ->   cos[I z]   Tanh -> -I tan[I z]
+ *   Coth ->  I cot[I z]   Sech ->   sec[I z]   Csch ->  I csc[I z]
+ * Each expected value is derived by hand from the .m Switch at L6210-6218,
+ * with the argument routed through ExpandToSum and ReduceInertTrig exactly
+ * as the .m does. For u[[1]] = x (a bare linear argument with no Pi term),
+ * ExpandToSum[I*x,x] gives back I*x unexpanded, and ReduceInertTrig's only
+ * firing clause for an argument with no Pi term is the plain identity
+ * func[u] -- MEASURED directly this task (build
+ * branch_5_50_base_84_g4204fb669): %mr_reduceInertTrig(%mr_isin, %i*x) =
+ * %mr_isin(%i*x), and likewise for the other five heads. So each identity
+ * below is the Switch's sign/I-factor applied to inert-head(%i*x), which is
+ * literally what the brief's Step 1 targets already state. */
+test_deactivate_trig() := block([],
+  print("--- DeactivateTrig ---"),
+  check("deactivate: Sinh", %mr_deactivateTrigAux(sinh(x), x),
+        -%i*%mr_isin(%i*x)),
+  check("deactivate: Cosh", %mr_deactivateTrigAux(cosh(x), x),
+        %mr_icos(%i*x)),
+  check("deactivate: Tanh", %mr_deactivateTrigAux(tanh(x), x),
+        -%i*%mr_itan(%i*x)),
+  check("deactivate: Coth", %mr_deactivateTrigAux(coth(x), x),
+        %i*%mr_icot(%i*x)),
+  check("deactivate: Sech", %mr_deactivateTrigAux(sech(x), x),
+        %mr_isec(%i*x)),
+  check("deactivate: Csch", %mr_deactivateTrigAux(csch(x), x),
+        %i*%mr_icsc(%i*x)),
+  /* The trig branch: head for head, argument untouched (same identity
+   * clause, same measurement). */
+  check("deactivate: Sin", %mr_deactivateTrigAux(sin(x), x), %mr_isin(x)),
+  check("deactivate: Cos", %mr_deactivateTrigAux(cos(x), x), %mr_icos(x)),
+  /* Non-linear argument: the LinearQ guard leaves the head ACTIVE, and the
+   * fall-through map branch recurses into x^2, which is itself neither
+   * atom-free nor trig/hyperbolic-headed at the top and so is rebuilt
+   * unchanged via the same map/apply walk. */
+  check("deactivate: a non-linear argument is left active",
+        %mr_deactivateTrigAux(sin(x^2), x), sin(x^2)),
+  /* Structural: it maps over a compound expression, keeping the head. */
+  check("deactivate: maps over a product",
+        %mr_deactivateTrigAux(sin(x)*cos(x), x), %mr_isin(x)*%mr_icos(x)),
+  /* The round trip both ways -- the invariant of design 3.1. */
+  check("round trip: trig",
+        %mr_activateTrig(%mr_deactivateTrig(sin(x)^2, x)), sin(x)^2),
+  /* The hyperbolic round trip: ratsimp cannot close a hyperbolic identity
+   * (AGENTS.md class-6 trap), but core trigrat can -- MEASURED this task:
+   * trigrat(-%i*sin(%i*x) - sinh(x)) reduces to exactly 0. That is a
+   * stronger, symbolic close (resolution 2), used instead of the brief's
+   * numeric-at-a-point check. */
+  check_bool("round trip: hyperbolic closes symbolically via trigrat",
+    is(trigrat(%mr_activateTrig(%mr_deactivateTrig(sinh(x), x)) - sinh(x))
+       = 0)),
+  true
+)$
+
+/* Task 7: FunctionOfTrigOfLinearQ and FunctionOfTrig
+ * (IntegrationUtilityFunctions.m L4357-4392) -- the bridge rule's
+ * condition and the substitution records' locator. The bridge rule is a
+ * bare u_ at the END of section 4's table (Int[u_,x_Symbol] :=
+ * Int[DeactivateTrig[u,x],x] /; FunctionOfTrigOfLinearQ[u,x]), so a wrong
+ * TRUE is a deactivation loop or a swallowed integrand, not a wrong
+ * answer -- the negative targets matter most.
+ *
+ * AMENDED 2026-09-21: a trig head MIXED with a hyperbolic head is FALSE
+ * in Rubi. FunctionOfTrig carries a HYPERBOLIC argument as I*u[[1]]
+ * (utils 4381-4385) and a TRIG argument bare (utils 4374-4379), so
+ * merging one against the other gives b/d = 1/I = -I, and the merge
+ * clause requires RationalQ[b/d]. A trig head and a hyperbolic head in
+ * the same integrand are therefore NEVER both admitted -- which is the
+ * whole reason DeactivateTrig exists: it moves the hyperbolic side onto
+ * the inert TRIG heads FIRST, so by the time the rules match, nothing is
+ * mixed. */
+test_function_of_trig_of_linear() := block([],
+  print("--- FunctionOfTrigOfLinearQ / FunctionOfTrig ---"),
+  check_bool("fotlq: trig of a linear argument",
+             %mr_functionOfTrigOfLinearQ(sin(2*x+1), x)),
+  check_bool("fotlq: hyperbolic of a linear argument",
+             %mr_functionOfTrigOfLinearQ(sinh(2*x+1), x)),
+  check_bool("fotlq: a product of trig",
+             %mr_functionOfTrigOfLinearQ(sin(x)^4*(1+sin(x)^2), x)),
+  check_bool("fotlq: a product of hyperbolic",
+             %mr_functionOfTrigOfLinearQ(sinh(x)^4*(1+sinh(x)^2), x)),
+  check_not("fotlq: trig MIXED with hyperbolic",
+            %mr_functionOfTrigOfLinearQ(sin(x)^4*(1+sinh(x)^2), x)),
+  check_not("fotlq: no trig at all",
+            %mr_functionOfTrigOfLinearQ((1+x)^3, x)),
+  check_not("fotlq: trig of a NON-linear argument",
+            %mr_functionOfTrigOfLinearQ(sin(x^2), x)),
+  check_not("fotlq: two different linear arguments",
+            /* Rubi requires ONE linear argument throughout */
+            %mr_functionOfTrigOfLinearQ(sin(x)*cos(2*x+1), x)),
+  check_not("fotlq: an inert expression is not deactivated twice",
+            %mr_functionOfTrigOfLinearQ(%mr_isin(x), x)),
+  check("fot: returns the linear argument",
+        %mr_functionOfTrig(sin(2*x+1), x), 2*x+1),
+  check("fot: false when there is none",
+        %mr_functionOfTrig((1+x)^3, x), false),
+  true
+)$
+
+/* FunctionOfQ (circular-trig branches) and SubstFor's trig branch (inert-
+ * trig substrate plan, Task 9): the utilities the bridge's 4.7.5
+ * substitution records call (maxima_rubi_utils.mac, which states the three
+ * deviations). The cos pair below is the 6.1.7 acceptance chain's own
+ * step: after deactivation 4.7.5 r48 asks whether u/Sin[v] is a function
+ * of Cos[v], and substitutes Cos[v] -> x. */
+test_function_of_q() := block([],
+  print("--- FunctionOfQ / SubstFor (trig) ---"),
+  check_bool("foq: an even sin power is a function of cos",
+             %mr_functionOfQ(cos(x), a - b*sin(x)^2, x)),
+  check_not("foq: an odd sin power is not a function of cos",
+            %mr_functionOfQ(cos(x), sin(x)*(a - b*sin(x)^2), x)),
+  check_not("foq: a 1/cos factor is not a function of sin",
+            %mr_functionOfQ(sin(x), sin(x)*(a - b*sin(x)^2)/cos(x), x)),
+  check_bool("foq: an inert u is activated first",
+             %mr_functionOfQ(cos(x), a - b*%mr_isin(x)^2, x)),
+  check_bool("foq: a free factor of v is dropped",
+             %mr_functionOfQ(2*cos(x), sin(x)^2, x)),
+  check_not("foq: u free of x", %mr_functionOfQ(cos(x), a, x)),
+  check_bool("foq: tan (not pure) accepts sec^2",
+             %mr_functionOfQ(tan(x), sec(x)^2, x)),
+  check_bool("foq: pure tan accepts a polynomial in tan",
+             %mr_functionOfQ(tan(x), 1 + tan(x)^2, x, true)),
+  check_not("foq: pure tan rejects sec^2",
+            %mr_functionOfQ(tan(x), sec(x)^2, x, true)),
+  check_not("foq: a hyperbolic v declines (deviation (a), not ported)",
+            %mr_functionOfQ(cosh(x), sinh(x)^2, x)),
+  /* SubstFor[v,u,x]: x is BOTH the integration variable v is a function
+     of and the symbol v is replaced by (Rubi's own convention). */
+  check("sft: cos(x) -> x takes sin^2 to 1-x^2",
+        ratsimp(%mr_substFor(cos(x), a - b*sin(x)^2, x) - (a - b*(1 - x^2))), 0),
+  check("sft: an inert u is activated first",
+        ratsimp(%mr_substFor(cos(x), a - b*%mr_isin(x)^2, x) - (a - b*(1 - x^2))), 0),
+  check("sft: a multiple angle is expanded first",
+        ratsimp(%mr_substFor(sin(x), cos(2*x), x) - (1 - 2*x^2)), 0),
+  check("sft: a free factor of v scales the variable",
+        ratsimp(%mr_substFor(2*sin(x), sin(x)^2, x) - x^2/4), 0),
+  check("sft: tan(x) -> x takes sin^2/cos^2 to x^2",
+        ratsimp(%mr_substFor(tan(x), sin(x)^2/cos(x)^2, x) - x^2), 0),
+  true
+)$
+
+/* The inert-trig bridge, end to end (inert-trig substrate design 3.5, 5.2).
+ * A 6.1.7 integrand: a power of one hyperbolic times a binomial in another.
+ * Rubi has NO section-6 rule for this shape -- it answers it through section
+ * 4's rules via the inert bridge, and before this plan the package reached no
+ * rule at all for the whole 1,173-entry family (1,166 deferred, zero PASS).
+ *
+ * Corpus entry, 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac:
+ *   [sinh(c+d*x)*(a+b*sinh(c+d*x)^2), x, 2,
+ *    (a-b)*cosh(c+d*x)/d + 1/3*b*cosh(c+d*x)^3/d]
+ * Verified by DIFFERENTIATION, not by comparing to the expected text: the
+ * package's form may differ and still be right. The zero test is
+ * ratsimp(exponentialize(.)) -- plain ratsimp cannot close a hyperbolic
+ * identity (the class-6 lesson); it closes this residual to 0 symbolically
+ * (core trigrat does too, measured). The answer must also carry no noun
+ * (unintegrable, mr_int) and no inert %mr_i* head.
+ *
+ * The chain (traced with rubi_verbose on the full mr_load_all table, and the
+ * same here): 4.1.0.1 r1 (the bridge: FunctionOfTrigOfLinearQ, then
+ * Int[DeactivateTrig[u,x],x]) -> 9.1 r11 (Int[Complex[0,a] u] ->
+ * Complex[0,a] Int[u], a = -1: the -%i the sinh identity brings) ->
+ * 4.7.5 r48 (Cos derivative-divides: u/Sin[v] is a function of Cos[v],
+ * v = %i d x + %i c; Subst[Int[a - b (1-x^2), x], x, Cos[v]]) -> 1.4.1 r7
+ * (the polynomial sum, term by term) -> back-substitution and Dist by
+ * -1/(%i d).
+ *
+ * What it loads, and why: Layer A never calls mr_load_all() (later targets
+ * depend on the table's contents at their point), so the target builds the
+ * table the chain consults itself, and restores the old one: the rewrite
+ * tables DeactivateTrig walks; 1.4.1 and 9.1, the two class-1 files the
+ * chain's algebraic steps fire from; and the two class-4 files. The order
+ * is the real table's -- every body list first, the class-4 _tail lists
+ * LAST -- so the bridge is only tried after every body rule has declined.
+ * The loads are under errcatch: a missing file is a counted FAIL, not a run
+ * that dies without its Results line. */
+test_inert_bridge() := block([mr_ib_saved, mr_ib_ok, mr_ib_f, mr_ib_r],
+  print("--- the inert-trig bridge, end to end (6.1.7) ---"),
+  mr_ib_ok : errcatch(
+    %mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                     'mr_witness_inert_trig_rewrites),
+    %mr_load_sibling("rules/class1/1_4_1.mac", 'mr_witness_1_4_1),
+    %mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1),
+    %mr_load_sibling("rules/class4/4_1_0_1.mac", 'mr_witness_4_1_0_1),
+    %mr_load_sibling("rules/class4/4_7_5.mac", 'mr_witness_4_7_5),
+    true),
+  mr_ib_f : sinh(c + d*x)*(a + b*sinh(c + d*x)^2),
+  mr_ib_saved : mr_rule_table,
+  mr_ib_r : false,
+  if mr_ib_ok # [] then (
+    mr_rule_table : flatten([mr_rule_table, mr_rules_1_4_1, mr_rules_9_1,
+                             mr_rules_4_1_0_1, mr_rules_4_7_5,
+                             mr_rules_4_1_0_1_tail, mr_rules_4_7_5_tail]),
+    mr_ib_r : rubi(mr_ib_f, x)),
+  mr_rule_table : mr_ib_saved,
+  check_bool("6.1.7: the bridge answers a hyperbolic .7 integrand",
+    is(mr_ib_r # false)
+    and freeof('unintegrable, 'mr_int, mr_ib_r)
+    and %mr_inertTrigFreeQ(mr_ib_r)
+    and is(ratsimp(exponentialize(diff(mr_ib_r, x) - mr_ib_f)) = 0)),
+  true
+)$
+
+/* Task 10 (inert-trig substrate): TryPureTanSubst, CalculusFreeQ and the
+ * 4-argument SubstFor's SimplifyIntegrand -- the utilities 4.7.5 r21/r22
+ * (TryPureTanSubst, live from this port on) and r71 (the Weierstrass
+ * record: CalculusFreeQ on its trial integral, SubstFor[w,v,u,x]'s
+ * SimplifyIntegrand) call. */
+test_try_pure_tan_subst() := block([],
+  print("--- TryPureTanSubst / CalculusFreeQ / SubstFor[w,v,u,x] ---"),
+  /* TryPureTanSubst is Not[MatchQ[u, F_[c_.*(a_.+b_.*G_[v_])] /; ...]] */
+  check_not("tpt: ArcTan[a+b Tan[linear]] matches, so false",
+            %mr_tryPureTanSubst(atan(a + b*tan(c + d*x)), x)),
+  check_not("tpt: ArcCot[c (a - b Cot[2x])] matches (c_. absorbs k)",
+            %mr_tryPureTanSubst(acot(k*(a - b*cot(2*x))), x)),
+  check_not("tpt: ArcTanh[Tanh[x]/2] matches (a = 0, b = 1/2)",
+            %mr_tryPureTanSubst(atanh(tanh(x)/2), x)),
+  check_bool("tpt: a factor outside the ArcTan is no match",
+             %mr_tryPureTanSubst(3*atan(a + b*tan(c + d*x)), x)),
+  check_bool("tpt: a nonlinear v is no match",
+             %mr_tryPureTanSubst(atan(tan(x^2)), x)),
+  check_bool("tpt: an x-dependent a is no match",
+             %mr_tryPureTanSubst(atan(x + tan(x)), x)),
+  check_bool("tpt: a Sin inside ArcTan is no match",
+             %mr_tryPureTanSubst(atan(2*sin(x)), x)),
+  check_bool("tpt: 4.7.5 r22 is live: a pure-tan u accepts",
+             _mr_cond_4_7_5_r22([_mr_4_7_5_r22_u = %mr_itan(x)^3], x)),
+  check_bool("cfq: no calculus head", %mr_calculusFreeQ(a*x + sin(x), x)),
+  check_not("cfq: the unintegrable noun in x",
+            %mr_calculusFreeQ(1 + 'unintegrable[f(x), x], x)),
+  check_bool("cfq: an integrate noun in another variable",
+             %mr_calculusFreeQ(1 + 'integrate(f(y), y), x)),
+  check_not("cfq: a diff noun nested under exp",
+            %mr_calculusFreeQ(exp('diff(f(x), x)), x)),
+  /* SubstFor[w,v,u,x] = SimplifyIntegrand[w SubstFor[v,u,x], x]: the
+     half-angle integrand reaches Int normalized (without the
+     SimplifyIntegrand it was 1/((x^2+1)*(3+2*(1/(x^2+1)-x^2/(x^2+1))))). */
+  check("sf4: the half-angle integrand is simplified",
+        %mr_substFor(1/(1 + x^2), tan(x/2), 1/(3 + 2*cos(x)), x), 1/(x^2 + 5)),
+  /* ... but a form already simplest is kept: ratsimp would re-expand this
+     denominator (6.1.5 e6's r58 integrand, measured 2026-09-21) */
+  check("sf4: a factored denominator is not re-expanded",
+        %mr_substFor(1/(1 + x^2), tan(x), sin(x)^6, x), x^6/(x^2 + 1)^4),
+  true
+)$
+
+/* The rule table test_inert_bridge builds (every body list, then the
+ * class-4 _tail lists LAST), plus 1.1.2.1 -- the class-1 file whose r10
+ * answers the Weierstrass record's rational integrand 1/(x^2+5). The loads
+ * are under errcatch: a missing file is a counted FAIL. Returns false when
+ * a load failed, else the table. */
+mr_t10_bridge_table() := block([mr_t10_ok],
+  mr_t10_ok : errcatch(
+    %mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                     'mr_witness_inert_trig_rewrites),
+    %mr_load_sibling("rules/class1/1_4_1.mac", 'mr_witness_1_4_1),
+    %mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1),
+    %mr_load_sibling("rules/class1/1_1_2_1.mac", 'mr_witness_1_1_2_1),
+    %mr_load_sibling("rules/class4/4_1_0_1.mac", 'mr_witness_4_1_0_1),
+    %mr_load_sibling("rules/class4/4_7_5.mac", 'mr_witness_4_7_5),
+    true),
+  if mr_t10_ok = [] then false
+  else flatten([mr_rule_table, mr_rules_1_4_1, mr_rules_9_1, mr_rules_1_1_2_1,
+                mr_rules_4_1_0_1, mr_rules_4_7_5,
+                mr_rules_4_1_0_1_tail, mr_rules_4_7_5_tail]))$
+
+/* The Weierstrass record end to end (4.7.5.m L74, r71). 1/(3+2 Cos[x]) is
+ * no function of Sin, Cos or Tan alone for the five earlier records (r47/
+ * r48 need an odd Sin/Cos factor, r21/r22/r58 a function of Tan), so the
+ * chain is 4.1.0.1 r1 (the bridge) -> 4.7.5 r71: its trial Int of
+ * SubstFor[1/(1+x^2), Tan[x/2], u, x] = 1/(x^2+5) is calculus-free (1.1.2.1
+ * r10 answers it), so Dist[2, Subst[Int[1/(x^2+5)], x, Tan[x/2]]] -- traced
+ * with rubi_verbose on the full mr_load_all table. The hyperbolic
+ * 1/(3+2 Cosh[c+d x]) takes the same record through the inert argument
+ * %i d x + %i c. Zero test: radcan(exponentialize(.)) -- ratsimp leaves the
+ * e^(i x) / e^(3 i x) kernels uncombined on these residuals (measured). */
+test_weierstrass() := block([mr_t10_saved, mr_t10_tab, mr_t10_f1, mr_t10_r1,
+                             mr_t10_f2, mr_t10_r2],
+  print("--- the Weierstrass record (4.7.5 r71), end to end ---"),
+  mr_t10_saved : mr_rule_table,
+  mr_t10_tab : mr_t10_bridge_table(),
+  mr_t10_f1 : 1/(3 + 2*cos(x)),
+  mr_t10_f2 : 1/(3 + 2*cosh(c + d*x)),
+  mr_t10_r1 : false, mr_t10_r2 : false,
+  if mr_t10_tab # false then (
+    mr_rule_table : mr_t10_tab,
+    mr_t10_r1 : rubi(mr_t10_f1, x),
+    mr_t10_r2 : rubi(mr_t10_f2, x)),
+  mr_rule_table : mr_t10_saved,
+  check_bool("r71: 1/(3+2 cos x) answers by the half-angle substitution",
+    is(mr_t10_r1 # false)
+    and freeof('unintegrable, 'mr_int, mr_t10_r1)
+    and %mr_inertTrigFreeQ(mr_t10_r1)
+    and is(radcan(exponentialize(diff(mr_t10_r1, x) - mr_t10_f1)) = 0)),
+  check_bool("r71: 1/(3+2 cosh(c+d x)) answers through the inert argument",
+    is(mr_t10_r2 # false)
+    and freeof('unintegrable, 'mr_int, mr_t10_r2)
+    and %mr_inertTrigFreeQ(mr_t10_r2)
+    and is(radcan(exponentialize(diff(mr_t10_r2, x) - mr_t10_f2)) = 0)),
+  true
+)$
+
+/* The inert-head leak guard (inert-trig substrate design 3.1 invariant, 3.4).
+ * An inert head exists only between the bridge rule and activation. A rule
+ * that forgot its %mr_activateTrig would otherwise return junk that
+ * differentiates to nothing recognisable and lands in a deferred mass. Run
+ * on the bridge table (the default Layer A table has no bridge, so the
+ * check would be vacuous there). Both pass on first run -- no rule leaks on
+ * these inputs; the driver's own guard (test/test_driver_inert_leak.py) is
+ * the one that was red first. */
+test_inert_leak_guard() := block([mr_t10_saved, mr_t10_tab, mr_t10_r1, mr_t10_r2],
+  print("--- the inert-head leak guard ---"),
+  mr_t10_saved : mr_rule_table,
+  mr_t10_tab : mr_t10_bridge_table(),
+  mr_t10_r1 : 'mr_t10_noload, mr_t10_r2 : 'mr_t10_noload,
+  if mr_t10_tab # false then (
+    mr_rule_table : mr_t10_tab,
+    mr_t10_r1 : rubi(sin(x)^2, x),
+    mr_t10_r2 : rubi(sinh(c + d*x)*(a + b*sinh(c + d*x)^2), x)),
+  mr_rule_table : mr_t10_saved,
+  check_not("no inert head leaks from a trig answer",
+            is(mr_t10_r1 = 'mr_t10_noload)
+            or is(%mr_inertTrigFreeQ(mr_t10_r1) = false)),
+  check_not("no inert head leaks from a hyperbolic answer",
+            is(mr_t10_r2 = 'mr_t10_noload)
+            or is(%mr_inertTrigFreeQ(mr_t10_r2) = false)),
+  true
+)$
+
+/* 4.7.5 r72 (4.7.5.m L76, Task 10 fix round 1, ruling R26) -- the file's
+ * last record and the tail's last:
+ *   Int[u_,x_Symbol] := With[{v=ActivateTrig[u]}, CannotIntegrate[v,x]] /;
+ *     Not[InertTrigFreeQ[u]]
+ * An integrand the bridge (4.1.0.1 r1) deactivates and no later record
+ * finishes is given up RE-ACTIVATED. Before r72 the port answered
+ * unintegrable(<the INERT integrand>), which the driver's leak guard reads
+ * as error (2,604 class-6 entries at Task 10, 114 of them no-answer ->
+ * error). The integrands are real class-6 entries whose corpus answer is
+ * Unintegrable(<integrand>, x): 6.1.1 e26 csch(a+b x)/(c+d x) and 6.2.1 e29
+ * sech(a+b x)/(c+d x). Expected from the source: CannotIntegrate[v,x] is the
+ * top-level noun (the driver's no-answer), v = ActivateTrig[DeactivateTrig
+ * [f]] carries no inert head, and is f in VALUE. The port does not return f
+ * in FORM: ActivateTrig restores circular heads of an imaginary argument
+ * (csc(%i b x + %i a)), which Mathematica would auto-simplify to Csch and
+ * Maxima does not -- so the value check is radcan(exponentialize(.)).
+ * The noun test is string(op(.)) = "unintegrable", the driver's own: op()
+ * of the subscripted marker is the NOUN %unintegrable, so op(.) =
+ * 'unintegrable is false on it. */
+test_inert_giveup() := block([mr_t10_saved, mr_t10_tab, mr_t10_f1, mr_t10_r1,
+                              mr_t10_f2, mr_t10_r2],
+  print("--- the re-activating give-up (4.7.5 r72) ---"),
+  mr_t10_saved : mr_rule_table,
+  mr_t10_tab : mr_t10_bridge_table(),
+  mr_t10_f1 : csch(a + b*x)/(c + d*x),
+  mr_t10_f2 : sech(a + b*x)/(c + d*x),
+  mr_t10_r1 : 'mr_t10_noload, mr_t10_r2 : 'mr_t10_noload,
+  if mr_t10_tab # false then (
+    mr_rule_table : mr_t10_tab,
+    mr_t10_r1 : rubi(mr_t10_f1, x),
+    mr_t10_r2 : rubi(mr_t10_f2, x)),
+  mr_rule_table : mr_t10_saved,
+  check_bool("r72: csch(a+b x)/(c+d x) gives up as a top-level unintegrable noun in x",
+    not(atom(mr_t10_r1)) and is(string(op(mr_t10_r1)) = "unintegrable")
+    and is(length(args(mr_t10_r1)) = 2) and is(second(args(mr_t10_r1)) = x)),
+  check_bool("r72: the given-up integrand carries no inert head (re-activated)",
+    not(atom(mr_t10_r1)) and %mr_inertTrigFreeQ(mr_t10_r1)
+    and freeof('%mr_isin, '%mr_icos, '%mr_itan, '%mr_icot, '%mr_isec,
+               '%mr_icsc, mr_t10_r1)),
+  check_bool("r72: the given-up integrand is the input in value",
+    not(atom(mr_t10_r1)) and is(string(op(mr_t10_r1)) = "unintegrable")
+    and is(radcan(exponentialize(first(args(mr_t10_r1)) - mr_t10_f1)) = 0)),
+  check_bool("r72: sech(a+b x)/(c+d x) gives up re-activated, in value",
+    not(atom(mr_t10_r2)) and is(string(op(mr_t10_r2)) = "unintegrable")
+    and %mr_inertTrigFreeQ(mr_t10_r2)
+    and is(second(args(mr_t10_r2)) = x)
+    and is(radcan(exponentialize(first(args(mr_t10_r2)) - mr_t10_f2)) = 0)),
+  true
+)$
+
+/* The class-4 With-local capture trap (final fix wave I2, ruling R28).
+ * The 4.7.5 repls bind their With/Module locals in a Maxima block and
+ * run a nested mr_int INSIDE it. Maxima binds block locals dynamically,
+ * so a local named like a corpus symbol (d, v, w) leaks into every
+ * re-evaluation the nested integration does: mr_sum's
+ * ev(subst(i, var, ev(fun))) (maxima_rubi_utils.mac, the Sum handler)
+ * re-evaluates the summand, and with 4.7.5 r47's block([d], d : 1)
+ * live the d of 1/(d x^7 + 1) became 1 in part of the answer. Measured
+ * before the fix (final-review probes capture3/capture4): cos(x)/(d
+ * sin(x)^7 + 1) answered with residual 1.08e-3 at x = 0.37, d = 0.7,
+ * sin(x)/(c + d cos(x)^5) with -0.020; the same integrands with d
+ * renamed q gave 0. The fix: the generator prefixes class 4's With/
+ * Module locals _mr_<key>_r<n>_ (ticket 08 carries the all-class fix).
+ *
+ * The table: the bridge table (mr_t10_bridge_table) plus the class-1
+ * files the nested 1/(d x^7 + 1) and 1/(c + d x^5) chains fire from
+ * (traced with rubi_verbose on the full mr_load_all table: 1.1.3.1 r13,
+ * the Sum over the quadratic factors; 1.2.1.2 r3/r9 and 1.2.1.1 r12 the
+ * quadratic pieces; 1.1.2.1 r11 and 1.1.1.1 r3 the linear ones).
+ *
+ * The zero test is numeric, at two points: the answers carry
+ * cos(k %pi/7) / cos(k %pi/5) constants, and ratsimp/radcan leave the
+ * residual as an unreduced polynomial in them (measured; see the fix
+ * wave report). |residual| < 1e-12 at two points is far below the
+ * 1e-3 / 2e-2 the trap produced. The renaming check is the trap's own
+ * signature: d -> q -> d must give back the SAME answer. */
+mr_i2_resid(f, r, pts) := block([mr_i2_z],
+  mr_i2_z : errcatch(float(abs(rectform(
+              subst(pts, diff(r, x) - f))))),
+  if mr_i2_z = [] then 1.0 else first(mr_i2_z))$
+test_class4_with_capture() := block([mr_i2_saved, mr_i2_tab, mr_i2_ok,
+                                     mr_i2_f1, mr_i2_r1, mr_i2_q1,
+                                     mr_i2_f2, mr_i2_r2, mr_i2_q2],
+  print("--- the class-4 With-local capture trap (I2) ---"),
+  mr_i2_saved : mr_rule_table,
+  mr_i2_tab : mr_t10_bridge_table(),
+  mr_i2_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/1_1_3_1.mac", 'mr_witness_1_1_3_1),
+    %mr_load_sibling("rules/class1/1_2_1_1.mac", 'mr_witness_1_2_1_1),
+    %mr_load_sibling("rules/class1/1_2_1_2.mac", 'mr_witness_1_2_1_2),
+    true),
+  mr_i2_f1 : cos(x)/(d*sin(x)^7 + 1),
+  mr_i2_f2 : sin(x)/(c + d*cos(x)^5),
+  mr_i2_r1 : false, mr_i2_q1 : false, mr_i2_r2 : false, mr_i2_q2 : false,
+  if mr_i2_tab # false and mr_i2_ok # [] then (
+    mr_rule_table : append(
+      [mr_rules_1_1_1_1, mr_rules_1_1_3_1, mr_rules_1_2_1_1, mr_rules_1_2_1_2],
+      mr_i2_tab),
+    mr_rule_table : flatten(mr_rule_table),
+    mr_i2_r1 : rubi(mr_i2_f1, x),
+    mr_i2_q1 : subst(q = d, rubi(subst(d = q, mr_i2_f1), x)),
+    mr_i2_r2 : rubi(mr_i2_f2, x),
+    mr_i2_q2 : subst(q = d, rubi(subst(d = q, mr_i2_f2), x))),
+  mr_rule_table : mr_i2_saved,
+  check_bool("I2: cos(x)/(d sin(x)^7+1) answers and verifies (|resid| < 1e-12 at two points)",
+    is(mr_i2_r1 # false)
+    and freeof('unintegrable, 'mr_int, mr_i2_r1)
+    and %mr_inertTrigFreeQ(mr_i2_r1)
+    and is(mr_i2_resid(mr_i2_f1, mr_i2_r1, [x = 0.37, d = 0.7]) < 1.0e-12)
+    and is(mr_i2_resid(mr_i2_f1, mr_i2_r1, [x = 1.1, d = 1.9]) < 1.0e-12)),
+  check_bool("I2: cos(x)/(d sin(x)^7+1) is the same answer with d renamed q",
+    is(mr_i2_r1 # false) and is(mr_i2_r1 = mr_i2_q1)),
+  check_bool("I2: sin(x)/(c+d cos(x)^5) answers and verifies (|resid| < 1e-12 at two points)",
+    is(mr_i2_r2 # false)
+    and freeof('unintegrable, 'mr_int, mr_i2_r2)
+    and %mr_inertTrigFreeQ(mr_i2_r2)
+    and is(mr_i2_resid(mr_i2_f2, mr_i2_r2, [x = 0.37, c = 1.3, d = 0.7]) < 1.0e-12)
+    and is(mr_i2_resid(mr_i2_f2, mr_i2_r2, [x = 1.1, c = 2.2, d = 1.9]) < 1.0e-12)),
+  check_bool("I2: sin(x)/(c+d cos(x)^5) is the same answer with d renamed q",
+    is(mr_i2_r2 # false) and is(mr_i2_r2 = mr_i2_q2)),
   true
 )$
 

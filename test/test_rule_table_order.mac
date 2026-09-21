@@ -1,0 +1,139 @@
+/* test/test_rule_table_order.mac -- the bare-u_ tail-position gate on the
+ * REAL loaded table (inert-trig substrate design 3.3, Task 8 fix round 1;
+ * ledger R21).
+ *
+ * test_maxima_rubi.mac's "tail records are last in the table" target
+ * (test_load_and_api) only ever sees the eager milestone-1 core stand-in
+ * (mr_rule_table_body_handles = mr_rules_1_1_1_1, tail = []) -- Layer A
+ * never calls mr_load_all(), by design (later Layer A targets depend on
+ * the rule table's contents at their point in the suite, so mr_load_all()
+ * must not run inside test_maxima_rubi.mac). That makes the Layer A target
+ * permanently vacuous on the real table: nothing committed checked the
+ * ordering of the table mr_load_all() actually builds, which is the
+ * guarantee Task 9's end-to-end acceptance depends on. This file is that
+ * check, kept OUTSIDE Layer A.
+ *
+ * From the repo root:  maxima --very-quiet -b test/test_rule_table_order.mac
+ * Ends with a Results: line; a missing Results line is a failure. */
+display2d : false$
+
+tests_passed : 0$
+tests_failed : 0$
+
+check_bool(test_name, actual) := block([v],
+  v : is(actual),
+  if v = true then (
+    tests_passed : tests_passed + 1,
+    print("  PASS: ", test_name)
+  ) else (
+    tests_failed : tests_failed + 1,
+    print("  FAIL: ", test_name),
+    print("    actual:   ", actual)
+  ),
+  true)$
+
+load("maxima_rubi.mac")$
+mr_load_all()$
+
+/* The same structural definition generator/generate_rules.py's
+   bare_int_clause and test/check_generated_rules.py's INT_BARE_U check
+   statically, replayed here against %mr_rule_pattern_text(handle) -- the
+   rule's ORIGINAL pattern string, off the LIVE loaded table, not the
+   source files on disk. A bare-u_ Int record's pattern is exactly
+   "(Int (Pattern <name> (Blank)) (Pattern x (Blank Symbol)))"; <name> is
+   either a bare word or a |piped| name with no nested structure, so ruling
+   out any "(", ")" or " " in the middle segment is enough to rule out
+   every other (structured) pattern accidentally sharing the prefix/suffix
+   -- every non-bare pattern has more structure between them, which always
+   introduces at least one of those three characters. */
+mr_bare_u_pattern_p(mr_pat) := block([mr_pre, mr_suf, mr_ln, mr_pn, mr_sn, mr_mid],
+  mr_pre : "(Int (Pattern ",
+  mr_suf : " (Blank)) (Pattern x (Blank Symbol)))",
+  mr_ln : slength(mr_pat),
+  mr_pn : slength(mr_pre),
+  mr_sn : slength(mr_suf),
+  if mr_ln <= mr_pn + mr_sn then false
+  elseif substring(mr_pat, 1, mr_pn + 1) # mr_pre then false
+  elseif substring(mr_pat, mr_ln - mr_sn + 1, mr_ln + 1) # mr_suf then false
+  else (
+    mr_mid : substring(mr_pat, mr_pn + 1, mr_ln - mr_sn + 1),
+    is(slength(mr_mid) > 0) and is(ssearch("(", mr_mid) = false)
+      and is(ssearch(")", mr_mid) = false)
+      and is(ssearch(" ", mr_mid) = false)
+  ))$
+
+/* The closed, named exception list (generator/generate_rules.py
+   BARE_U_BODY_EXCEPTIONS, test/check_generated_rules.py's copy of the
+   same six pairs, .scratch/class-ports/issues/07-bare-u-records-mid-
+   table.md) -- looked up here by the Maxima globals each generated file
+   binds its handle to, not re-derived. */
+mr_exception_handles : [
+  _mr_rule_1_4_1_r7, _mr_rule_1_4_1_r8,
+  _mr_rule_9_1_r8, _mr_rule_9_1_r13,
+  _mr_rule_2_3_r96, _mr_rule_3_5_r42
+]$
+
+check_bool("both handle lists are defined lists and the body list is non-empty",
+  listp(mr_rule_table_body_handles) and listp(mr_rule_table_tail_handles)
+  and length(mr_rule_table_body_handles) > 0)$
+
+check_bool("mr_rule_table = body handles followed by tail handles, nothing lost",
+  is(mr_rule_table = append(mr_rule_table_body_handles, mr_rule_table_tail_handles))
+  and is(length(mr_rule_table) = length(mr_rule_table_body_handles)
+                                  + length(mr_rule_table_tail_handles)))$
+
+/* Task 9 (ledger R19/R21): the tail is no longer empty -- class 4's
+   inert-trig bridge subset put the first real _tail lists in it, so the
+   ordering check below is no longer vacuous. These two pin WHAT the tail
+   holds: non-empty, and exactly the eight bridge records in Rubi LoadRules
+   order (4.1.0.1's DeactivateTrig bridge first, then 4.7.5's catch-alls in
+   source order: the five Subst forms, r71 -- the half-angle Weierstrass
+   substitution, Task 10 -- and r72, the re-activating CannotIntegrate
+   give-up (Task 10 fix round 1, ruling R26), which is 4.7.5's last record
+   and closes the tail) -- a _tail list mr_load_all forgot to name in its
+   tail flatten, or named in the wrong order, fails here. */
+check_bool("the tail is non-empty",
+  is(length(mr_rule_table_tail_handles) > 0))$
+
+check_bool("the tail is exactly the eight bridge records, the 4.1.0.1 bridge first",
+  is(mr_rule_table_tail_handles =
+     [_mr_rule_4_1_0_1_r1,
+      _mr_rule_4_7_5_r21, _mr_rule_4_7_5_r22, _mr_rule_4_7_5_r47,
+      _mr_rule_4_7_5_r48, _mr_rule_4_7_5_r58, _mr_rule_4_7_5_r71,
+      _mr_rule_4_7_5_r72]))$
+
+/* r72 answers Rubi's give-up marker, so the dispatcher's mr_giveup_last
+   second pass holds it back as well; it must be the tail's ONLY give-up
+   record, so nothing re-orders the tail's other seven around it. */
+check_bool("r72 is the tail's only give-up record",
+  is(%mr_giveup_handles(mr_rule_table_tail_handles) = [_mr_rule_4_7_5_r72]))$
+
+/* The converse of the universal cross-check below: nothing but a bare-u_
+   record may sit in the tail (a specific record there would be tried after
+   every catch-all, i.e. too late). */
+check_bool("every tail handle's pattern is a bare-u_ Int pattern",
+  every(lambda([mr_h], mr_bare_u_pattern_p(%mr_rule_pattern_text(mr_h))),
+        mr_rule_table_tail_handles))$
+
+/* Vacuous until Task 9 (the tail was []); now a real check over the eight
+   bridge records. */
+check_bool("every tail handle is registered after every body handle",
+  every(lambda([mr_h], is(mr_h > lmax(mr_rule_table_body_handles))),
+        mr_rule_table_tail_handles))$
+
+/* The universal cross-check, over EVERY handle mr_load_all() actually
+   registered (3,903 at Task 8; 3,909 with Task 9's six; 3,910 with Task
+   10's r71; 3,911 with r72): a bare-u_ record must be in the
+   tail or be one of the six named exceptions -- anywhere else fails it. */
+mr_bad_bare : sublist(mr_rule_table,
+  lambda([mr_h],
+    mr_bare_u_pattern_p(%mr_rule_pattern_text(mr_h))
+    and not(member(mr_h, mr_rule_table_tail_handles))
+    and not(member(mr_h, mr_exception_handles))))$
+check_bool("every bare-u_ Int record in the loaded table is in the tail or a named exception",
+  is(mr_bad_bare = []))$
+
+print("")$
+print("========================================")$
+print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$
+print("========================================")$

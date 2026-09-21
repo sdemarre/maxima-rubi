@@ -26,7 +26,9 @@
 (defun test-table ()
   (format t "--- head table ---~%")
   (let ((table (head-table)))
-    (check "one entry per (head, arity) of the probe-02 table" (= (length table) 45) (length table))
+    ;; 45 from the probe-02 table, +6 for the inert-trig substrate's six rows
+    ;; (inert-trig substrate design 3.1).
+    (check "one entry per (head, arity) of the probe-02 table" (= (length table) 51) (length table))
     (flet ((op (head arity) (third (find-if (lambda (r) (and (string= (symbol-name (first r)) head)
                                                              (= (second r) arity)))
                                             table))))
@@ -77,6 +79,21 @@
     (check-conv "mm_Foo(x)" "(Foo x)")
     (check-conv "mm_sin(x)" "(sin x)")))
 
+(defun test-inert-trig ()
+  (format t "--- inert trig heads ---~%")
+  ;; The inert trig heads (inert-trig substrate design 3.1). Rubi's section-4
+  ;; rules pattern on the LOWERCASE heads; these are the Maxima operators that
+  ;; carry them. The active heads must stay untouched: the reader's readtable
+  ;; case is :preserve, so sin and Sin are different symbols.
+  (check-conv "%mr_isin(x)" "(sin x)")
+  (check-conv "%mr_icos(x)" "(cos x)")
+  (check-conv "%mr_itan(x)" "(tan x)")
+  (check-conv "%mr_icot(x)" "(cot x)")
+  (check-conv "%mr_isec(x)" "(sec x)")
+  (check-conv "%mr_icsc(x)" "(csc x)")
+  ;; Inert and active in ONE expression, as a half-deactivated integrand is.
+  (check-conv "sin(x) + %mr_isin(x)" "(Plus (Sin x) (sin x))"))
+
 (defun test-round-trip ()
   (format t "--- tree->max round trip ---~%")
   (dolist (s '("a+b*x" "(a+b*x)^m*(c+d*x)^n" "x/(a+b*x)" "2*%i*x" "1+%i" "li[2](x)" "psi[1](x)"
@@ -89,6 +106,7 @@
   (setf *passed* 0 *failed* 0)
   (test-table)
   (test-max->tree)
+  (test-inert-trig)
   (test-round-trip)
   (format t "Results: ~a passed, ~a failed~%" *passed* *failed*)
   (finish-output))

@@ -32,7 +32,14 @@
     ("SinhIntegral" 1 "expintegral_shi") ("CoshIntegral" 1 "expintegral_chi")
     ("LogIntegral" 1 "expintegral_li") ("Gamma" 1 "gamma") ("Gamma" 2 "gamma_incomplete")
     ("LogGamma" 1 "log_gamma") ("ProductLog" 1 "lambert_w") ("BesselJ" 2 "bessel_j")
-    ("Zeta" 1 "zeta") ("Factorial" 1 "factorial") ("Abs" 1 "abs")))
+    ("Zeta" 1 "zeta") ("Factorial" 1 "factorial") ("Abs" 1 "abs")
+    ;; Rubi's six INERT trig heads (inert-trig substrate design 3.1). The
+    ;; Maxima side is an undefined operator, so the simplifier leaves it alone
+    ;; (probes/maxima/probe-inert-operator-inertness, 44/0); the tree side is
+    ;; the lowercase head section 4's rules pattern on. sin and Sin stay
+    ;; distinct because read-tree's readtable case is :preserve.
+    ("sin" 1 "%mr_isin") ("cos" 1 "%mr_icos") ("tan" 1 "%mr_itan")
+    ("cot" 1 "%mr_icot") ("sec" 1 "%mr_isec") ("csc" 1 "%mr_icsc")))
 
 ;;; Maxima's subscripted functions li[n](x), psi[n](x): mqapply of an array op.
 (defparameter +subscripted+ '(("PolyLog" maxima::$li) ("PolyGamma" maxima::$psi)))

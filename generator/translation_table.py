@@ -179,6 +179,53 @@ RENAME = {
     "ExpandTrigReduce": "%mr_expandTrigReduce",
     "ExpandTrigToExp": "%mr_expandTrigToExp",
     "ExpandTrigExpand": "%mr_expandTrigExpand",
+    # Rubi's six INERT trig heads (inert-trig substrate design 3.1), the
+    # LOWERCASE spellings. They are distinct tokens from the active
+    # "Sin"/"Cos"/... rows above (this table is case-sensitive), and they
+    # map to the six %mr_i* operators Task 1 measured inert
+    # (probes/maxima/probe-inert-operator-inertness.out, 44/0) and Task 2
+    # wired into mr-tree's +functions+ as the arity-1 tree heads
+    # sin/cos/tan/cot/sec/csc. The rows serve BOTH positions:
+    #   * head position — sin[v] -> %mr_isin(v);
+    #   * ATOM position — Rubi passes the bare head as a value
+    #     (ReduceInertTrig[sin,v], PowerOfInertTrigSumQ[w,sin,x],
+    #     Switch[func, sin, ...]). The dispatcher binds a head-position
+    #     capture to exactly this operator symbol (maxima_rubi_dispatch.lisp
+    #     mr-binding-value / mr-head-verb), so a bare head and a bound head
+    #     capture are the SAME Maxima symbol and compare with `=`.
+    "sin": "%mr_isin", "cos": "%mr_icos", "tan": "%mr_itan",
+    "cot": "%mr_icot", "sec": "%mr_isec", "csc": "%mr_icsc",
+    # The three generated rewrite functions themselves (inert-trig
+    # substrate design 3.2, Task 4): their clauses are self-recursive, so
+    # a repl body calls the wrapper that re-enters the walk.
+    "UnifyInertTrigFunction": "%mr_unifyInertTrigFunction",
+    "FixInertTrigFunction": "%mr_fixInertTrigFunction",
+    "ReduceInertTrig": "%mr_reduceInertTrig",
+    # Two predicates the FixInertTrigFunction conds call, both ported in
+    # maxima_rubi_utils.mac: %mr_inertReciprocalQ (Task 4; one line in Rubi
+    # too) and %mr_powerOfInertTrigSumQ (commit 826e134, with the
+    # 3-argument ReduceInertTrig).
+    "InertReciprocalQ": "%mr_inertReciprocalQ",
+    "PowerOfInertTrigSumQ": "%mr_powerOfInertTrigSumQ",
+    # inert-trig substrate plan, Task 9: the tokens of the bridge's six
+    # bare-u_ records (4.1.0.1 r1, 4.7.5 r21/r22/r47/r48/r58). The ACTIVE
+    # circular heads Tan/Cot join Sin/Cos/Sec/Csc above (natives); the
+    # substrate utilities map to their maxima_rubi_utils.mac ports.
+    # %mr_tryPureTanSubst: unported at Task 9 (4.7.5 r21/r22 declined on
+    # the unbound call); ported at Task 10 with %mr_calculusFreeQ, the
+    # Weierstrass record's (4_7_5 r71) inner condition.
+    "Tan": "tan", "Cot": "cot",
+    "FunctionOfTrigOfLinearQ": "%mr_functionOfTrigOfLinearQ",
+    "DeactivateTrig": "%mr_deactivateTrig",
+    "ActivateTrig": "%mr_activateTrig",
+    "FunctionOfTrig": "%mr_functionOfTrig",
+    "FreeFactors": "%mr_freeFactors",
+    "FunctionOfQ": "%mr_functionOfQ",
+    "TryPureTanSubst": "%mr_tryPureTanSubst",
+    "CalculusFreeQ": "%mr_calculusFreeQ",
+    # Task 10 fix round 1: 4.7.5 r72's condition (the re-activating
+    # CannotIntegrate catch-all). One argument in both Rubi and the port.
+    "InertTrigFreeQ": "%mr_inertTrigFreeQ",
     # Rubi's undocumented $UseGamma control global (absent from Rubi.m;
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):
@@ -210,6 +257,11 @@ RESTRUCTURE = {
     # Maxima's eager argument evaluation (generate_class1.py Sum handler).
     "With": "block", "Module": "block",
     "If": "if",
+    # Switch is emitter-dispatched (inert-trig substrate, Task 4):
+    # Switch[e, form, value, ...] has no 1:1 Maxima name — it becomes a
+    # nested if/elseif over equality with each form. Handler name only,
+    # never emitted (the HANDLER_ONLY guard).
+    "Switch": "switch",
     # Answer-side special functions: keep the NATIVE Maxima names. They
     # are not package-defined shims, so the anti-masking %mr_ rule does
     # not apply; emitting the native noun lets `diff` differentiate the

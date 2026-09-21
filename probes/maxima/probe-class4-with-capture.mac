@@ -1,0 +1,57 @@
+/* probes/maxima/probe-class4-with-capture.mac — the class-4 With-local
+ * capture trap (inert-trig substrate final fix wave I2, ruling R28) and
+ * the all-class exposure behind it (ticket
+ * .scratch/class-ports/issues/08-generator-unprefixed-with-locals.md).
+ * Run through probe-class4-with-capture.run, which passes the pre-fix
+ * 4.7.5 file (commit 23855a8) as pw_before_file. Full mr_load_all table.
+ * Every bound name is pw_-prefixed (the trap this probe measures). */
+print("=== probe: class-4 With-local capture trap ===")$
+print(build_info())$
+load("maxima_rubi.mac")$
+mr_load_all()$
+display2d : false$
+pw_res(pw_f, pw_r, pw_pt) := block([pw_z],
+  pw_z : errcatch(float(abs(rectform(subst(pw_pt, diff(pw_r, x) - pw_f))))),
+  if pw_z = [] then "err" else first(pw_z))$
+pw_p1 : [x = 0.37, c = 1.3, d = 0.7, q = 0.7]$
+pw_p2 : [x = 1.1, c = 2.2, d = 1.9, q = 1.9]$
+pw_fs : [cos(x)/(d*sin(x)^7 + 1), sin(x)/(c + d*cos(x)^5),
+         cos(x)/(1 + d*sin(x)^7)]$
+
+print("--- A. after the fix (current tree): residual at two points; d->q->d same answer ---")$
+for pw_f in pw_fs do block([pw_r, pw_q],
+  pw_r : rubi(pw_f, x),
+  pw_q : subst(q = d, rubi(subst(d = q, pw_f), x)),
+  print(pw_f, " resid1:", pw_res(pw_f, pw_r, pw_p1), " resid2:", pw_res(pw_f, pw_r, pw_p2),
+        " answered:", freeof('unintegrable, 'mr_int, pw_r), " same-as-renamed:", is(pw_r = pw_q)))$
+
+print("--- B. does a symbolic zero chain close the residual? (timed) ---")$
+block([pw_f, pw_r, pw_d, pw_t],
+  pw_f : cos(x)/(d*sin(x)^7 + 1),
+  pw_r : rubi(pw_f, x),
+  pw_d : diff(pw_r, x) - pw_f,
+  pw_t : elapsed_real_time(),
+  print("ratsimp = 0:", is(ratsimp(pw_d) = 0), " s:", elapsed_real_time() - pw_t),
+  pw_t : elapsed_real_time(),
+  print("radcan(ratsimp) = 0:", is(radcan(ratsimp(pw_d)) = 0), " s:", elapsed_real_time() - pw_t),
+  pw_t : elapsed_real_time(),
+  print("ratsimp(trigsimp) = 0:", is(ratsimp(trigsimp(pw_d)) = 0), " s:", elapsed_real_time() - pw_t))$
+
+print("--- C. the mechanism, class-4-free: a nested mr_int under a block local named d ---")$
+block([pw_f, pw_r0, pw_r1],
+  pw_f : 1/(c + d*x^5),
+  pw_r0 : mr_int(pw_f, x),
+  pw_r1 : block([d], d : 1, mr_int(pw_f, x)),
+  print("unbound d resid:", pw_res(pw_f, pw_r0, pw_p1), "   under block([d], d:1) resid:", pw_res(pw_f, pw_r1, pw_p1)))$
+
+print("--- D. mr_sum's own unprefixed locals (a, b, i, s, t) — pre-existing, all classes ---")$
+for pw_f in [1/(a + b*x^5), 1/(p + q*x^5), 1/(1 + s*x^5), 1/(1 + t*x^5), 1/(1 + i*x^5)] do
+  print(pw_f, " resid:", pw_res(pw_f, rubi(pw_f, x),
+                                [x = 0.37, a = 1.3, b = 0.7, p = 1.3, q = 0.7, s = 0.7, t = 0.7, i = 0.7]))$
+
+print("--- E. before the fix: the 23855a8 4.7.5 bodies reloaded over the table's functions ---")$
+load(pw_before_file)$
+for pw_f in pw_fs do block([pw_r],
+  pw_r : rubi(pw_f, x),
+  print(pw_f, " resid1:", pw_res(pw_f, pw_r, pw_p1), " resid2:", pw_res(pw_f, pw_r, pw_p2)))$
+print("=== end ===")$

@@ -191,28 +191,57 @@ KNOWN_CLASSES = {
 }
 PASS_CLASSES = {"expected", "verified", "no-answer"}
 
+# The inert-head leak guard (inert-trig substrate design 3.1 invariant, 3.4;
+# Task 10). The bridge rule (4.1.0.1 r1) deactivates a trig integrand into
+# these six heads, and a section-4 rule must activate them again before it
+# answers. An answer still carrying one is a PACKAGE DEFECT: diff() cannot
+# see through an inert head, so the entry would otherwise sink silently into
+# deferred / contains-noun / unverified. It is classified `error` -- a class
+# the mergers already know; a new class would break their agreement with
+# KNOWN_CLASSES -- and run_entry names the heads on stderr. The test runs
+# FIRST, before the noun and zero-chain tests. Guarded by
+# test/test_driver_inert_leak.py.
+INERT_HEADS = ("%mr_isin", "%mr_icos", "%mr_itan",
+               "%mr_icot", "%mr_isec", "%mr_icsc")
+INERT_LEAK_TAG = "INERT-LEAK"
 
-def _core_fingerprint():
-    """md5 over exactly the files test/build_rules_core.sh bakes into the
-    image (loader + utils + dispatch lisp + matcher lisp + converter
-    lisp + every class-1, class-2 AND class-3 rule file)."""
+
+def inert_leak_heads(out):
+    """The inert heads an entry run's output reports leaked (the Maxima text
+    prints `INERT-LEAK <heads>` beside its `CLASS error` line); [] if none."""
+    for line in out.splitlines():
+        line = line.strip()
+        if line.startswith(INERT_LEAK_TAG + " "):
+            return [h for h in line[len(INERT_LEAK_TAG):].split()
+                    if h in INERT_HEADS]
+    return []
+
+
+def _core_fingerprint_files():
+    """The files test/build_rules_core.sh bakes into the image, as sorted
+    RELATIVE paths: loader + utils + dispatch lisp + matcher lisp +
+    converter lisp + every rules/*/*.mac (all rule classes AND rules/utils,
+    whose inert-trig rewrite tables mr_load_all also loads). One general
+    glob, not a per-class list: a new rules/ subdirectory is covered the
+    day it appears, and a superset can only make a core look stale (a
+    rebuild), never a stale core look fresh."""
     import glob
-    import hashlib
     # Canonical order: sorted RELATIVE paths (must match
-    # test/build_rules_core.sh exactly — an order difference makes every
-    # freshly built core look stale, measured 2026-08-26).
-    rels = sorted(["maxima_rubi.mac", "maxima_rubi_utils.mac",
+    # test/build_rules_core.sh's C-locale sort exactly — an order difference
+    # makes every freshly built core look stale, measured 2026-08-26).
+    # Guarded by test/test_driver_core_pin.py (the two fingerprints agree).
+    return sorted(["maxima_rubi.mac", "maxima_rubi_utils.mac",
                    "maxima_rubi_dispatch.lisp",
                    "maxima_rubi_match.lisp",
                    "maxima_rubi_tree.lisp"] +
                   [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class1", "*.mac"))] +
-                  [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class2", "*.mac"))] +
-                  [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class3", "*.mac"))] +
-                  [os.path.relpath(p, ROOT) for p in
-                   glob.glob(os.path.join(ROOT, "rules", "class6", "*.mac"))])
+                   glob.glob(os.path.join(ROOT, "rules", "*", "*.mac"))])
+
+
+def _core_fingerprint():
+    """md5 over _core_fingerprint_files(), concatenated in that order."""
+    import hashlib
+    rels = _core_fingerprint_files()
     h = hashlib.md5()
     for rel in rels:
         with open(os.path.join(ROOT, rel), "rb") as fh:
@@ -696,6 +725,16 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # answers verify normally (measured: 1.2.2.7 e1 carries a ∫-term
     # and its self-diff closes).
     has_noun = "not is(freeof(unintegrable, mr_r))"
+    # The inert-head leak test (INERT_HEADS above): first, in both
+    # branches. freeof on an operator symbol tests whether that operator
+    # occurs (freeof(%mr_isin, %mr_isin(x)) is false).
+    heads = ", ".join(INERT_HEADS)
+    leak = (f"if not apply(freeof, [{heads}, mr_r]) then ("
+            "disp(concat(\"CLASS error\")), "
+            f"disp(concat(\"{INERT_LEAK_TAG}\", "
+            f"apply(concat, map(lambda([MR_h], concat(\" \", string(MR_h))), "
+            f"sublist([{heads}], lambda([MR_h], not freeof(MR_h, mr_r)))))))) "
+            "else ")
     # Every switch is assigned at the head of the entry text, and the
     # depth-cap counter is reset with them, so the DEPTHCAP line below
     # counts this entry's cap hits only (exact seen test design 3.3).
@@ -714,7 +753,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
         # e110, the pinned Rubi's r30 p<0,q>0 reduction whose nested
         # integrals fall to the file catch-all; their zero chains cannot
         # close because the markers' integrands survive diff).
-        body = (f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
+        body = (leak + f"if is({noun} = 1) then disp(concat(\"CLASS no-answer\")) "
                 f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                 f"else disp(concat(\"CLASS unexpected\"))")
     else:
@@ -738,7 +777,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
         if e_text2 is not None:
             ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})", var_text,
                              ZC_FALLBACK)
-            body = (f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
+            body = (leak + f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
                     f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                     "else block([MR_z, MR_z2, MR_w], MR_w: (" + zv + "), "
                     "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
@@ -747,7 +786,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
                     "then disp(concat(\"CLASS expected\")) "
                     "else disp(concat(\"CLASS unverified\"))))")
         else:
-            body = (f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
+            body = (leak + f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
                     f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                     "else block([MR_z, MR_w], MR_w: (" + zv + "), "
                     "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
@@ -853,6 +892,11 @@ def run_entry(rel, idx, entry_text, line_no):
     if cpu_out and cpu_out[0] is not None:
         dt = cpu_out[0]
     cls, caps = classify_output(out, timed_out)
+    if cls == "error":
+        leaked = inert_leak_heads(out)
+        if leaked:
+            sys.stderr.write(f"inert-leak {label}: the answer carries "
+                             f"{', '.join(leaked)} (classified error)\n")
     return cls, f"{cls:14s} t={dt:6.1f}s {label}", caps
 
 

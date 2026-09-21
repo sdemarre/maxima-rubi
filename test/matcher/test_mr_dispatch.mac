@@ -283,12 +283,56 @@ test_matchq() := block([B],
         errcatch(%mr_matchQ(x, "(Times (MRArg 0) (Pattern |_t_mq8_u| (Blank)))", [x], true)), []),
   true)$
 
+/* Rewrite records (inert-trig substrate design 3.2): the non-Int sibling of
+   %mr_defrule. Five behaviours, on a hand-written two-record table -- no
+   generated content, no rule files.
+
+   Table (in order):
+     r1  F[a_*u_, x] := 99            /; FreeQ[a, x]
+     r2  F[u_, x]    := 7
+
+   so F[3*y, y] takes r1 (a=3 is free of y), F[y, y] falls to r2, and
+   F[y*(y+1), y] -- every complete binding of a_*u_ has x=y free in BOTH
+   factors, so r1's cond rejects them all -- shows a rejecting cond does
+   not stop the walk. Each %mr_defrewrite call itself is
+   wrapped in errcatch (rather than assigning its handle directly) so the
+   RED run -- %mr_defrewrite still undefined -- fails only the checks below
+   instead of aborting the whole block. */
+_mr_cond_t3_r1(mm, x) := freeof(x, geteqR(mm, '_t3_r1_a))$
+_mr_repl_t3_r1(mm, x) := 99$
+_mr_cond_t3_r2(mm, x) := true$
+_mr_repl_t3_r2(mm, x) := 7$
+
+p_t3_r1 : "(F (Times (Pattern |_t3_r1_a| (Blank)) (Pattern |_t3_r1_u| (Blank))) (Pattern x (Blank)))"$
+p_t3_r2 : "(F (Pattern |_t3_r2_u| (Blank)) (Pattern x (Blank)))"$
+
+test_rewrite() := block([h1, h2, tbl],
+  print("--- rewrite records: %mr_defrewrite / %mr_rewrite ---"),
+  h1 : %mr_defrewrite("t3", 1, p_t3_r1, _mr_cond_t3_r1, _mr_repl_t3_r1),
+  h2 : %mr_defrewrite("t3", 2, p_t3_r2, _mr_cond_t3_r2, _mr_repl_t3_r2),
+  tbl : [h1, h2],
+  check("rewrite: first record fires", %mr_rewrite("F", tbl, 3*y, y), 99),
+  check("rewrite: falls through to second", %mr_rewrite("F", tbl, y, y), 7),
+  /* y*(y+1): a_*u_ has two candidate bindings (a=y,u=y+1) and (a=y+1,u=y);
+     x=y occurs free in BOTH factors, so r1's cond rejects every binding
+     (not just the first one mr_cond_retry would otherwise retry into) and
+     the walk falls to r2. */
+  check("rewrite: cond rejects, walk continues", %mr_rewrite("F", tbl, y*(y+1), y), 7),
+  check("rewrite: no record matches -> u unchanged", %mr_rewrite("G", [h1], y, y), y),
+  check("rewrite: a pattern the preparer rejects errors at load",
+        errcatch(%mr_defrewrite("t3", 3,
+          "(F (Alternatives (Pattern |_t3_r3_a| (Blank)) (Pattern |_t3_r3_b| (Blank))) (Pattern x (Blank)))",
+          true, _mr_repl_t3_r2)),
+        []),
+  true)$
+
 test_records()$
 test_dispatch()$
 test_bindings()$
 test_entries()$
 test_giveup()$
 test_matchq()$
+test_rewrite()$
 print("")$
 print("========================================")$
 print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$

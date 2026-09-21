@@ -129,8 +129,8 @@ counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).")
 ;;; 1-based index in *mr-rules*); mr_rules_<key> and mr_rule_table are
 ;;; Maxima lists of handles.
 
-(defstruct (mr-rule (:constructor make-mr-rule (key n pattern cond repl giveup)))
-  key n pattern cond repl giveup)
+(defstruct (mr-rule (:constructor make-mr-rule (key n pattern pattern-text cond repl giveup)))
+  key n pattern pattern-text cond repl giveup)
 
 (defun mr-form-has-symbol-p (sym form)
   "True when SYM occurs anywhere in the cons tree FORM."
@@ -167,7 +167,7 @@ runs at load."
                       (error (e)
                         (merror (intl:gettext "%mr_defrule: ~A r~A: ~A") key n
                                 (princ-to-string e))))))
-      (vector-push-extend (make-mr-rule key n compiled cond repl
+      (vector-push-extend (make-mr-rule key n compiled pattern cond repl
                                         (mr-giveup-repl-p repl))
                           *mr-rules*)
       (fill-pointer *mr-rules*))))
@@ -405,6 +405,91 @@ cond, repl, as the dispatcher runs it), or false."
   (destructuring-bind (h f x) args
     (multiple-value-bind (expr pre) (mr-integrand f x)
       (and expr (with-mr-switches (mr-apply-rule (mr-rule-of h) expr pre f x))))))
+
+(defmfun |$%MR_RULE_PATTERN_TEXT| (&rest args)
+  "%mr_rule_pattern_text(handle): the rule's ORIGINAL pattern string, exactly
+as passed to %mr_defrule before mr-match:prepare compiled it — a test and
+debugging entry (inert-trig substrate design 3.3, Task 8 fix round 1: the
+bare-u_ tail-position gate reads it to classify a handle from the loaded
+table, the same structural definition generator/generate_rules.py's
+bare_int_clause and test/check_generated_rules.py's INT_BARE_U check
+statically)."
+  (unless (= (length args) 1)
+    (merror (intl:gettext "%mr_rule_pattern_text: expected 1 arg, found ~A") (length args)))
+  (mr-rule-pattern-text (mr-rule-of (first args))))
+
+;;; ------------------------------------------------------------------
+;;; Rewrite records (inert-trig substrate design 3.2)
+;;;
+;;; %mr_defrewrite(key, n, pattern, cond, repl) is %mr_defrule's sibling for
+;;; Rubi's utility functions whose clauses are `Name[pattern] := rhs /; cond`
+;;; -- every clause of UnifyInertTrigFunction (75), FixInertTrigFunction (61)
+;;; and ReduceInertTrig (4) is of that shape: 140 in the generated tables,
+;;; 137 conditioned, 3 registering `true` as their cond. The pattern's outermost
+;;; head is the function name rather than Int, and there is no
+;;; integrand/variable split, so there is no mr-accept and no pre-binding.
+;;; Placed here (after with-mr-switches / mr-guarded / mr-call / mr-true-p /
+;;; mr-binding-list are all defined above) rather than beside mr-rule-of,
+;;; since mr-guarded and with-mr-switches are macros: SBCL macroexpands each
+;;; top-level form as `load` reads it, so a use ahead of the macro's own
+;;; defmacro would not expand as a macro call at all.
+
+(defstruct (mr-rewrite (:constructor make-mr-rewrite (key n pattern cond repl)))
+  key n pattern cond repl)
+
+(defvar *mr-rewrites* (make-array 256 :adjustable t :fill-pointer 0)
+  "Every rewrite record %mr_defrewrite registered, in load order.")
+
+(defmfun |$%MR_DEFREWRITE| (&rest args)
+  (unless (= (length args) 5)
+    (merror (intl:gettext "%mr_defrewrite: expected 5 args, found ~A")
+            (length args)))
+  (destructuring-bind (key n pattern cond repl) args
+    (let ((compiled (handler-case (mr-match:prepare (mr-match:read-tree pattern))
+                      (error (e)
+                        (merror (intl:gettext "%mr_defrewrite: ~A r~A: ~A") key n
+                                (princ-to-string e))))))
+      (vector-push-extend (make-mr-rewrite key n compiled cond repl) *mr-rewrites*)
+      (fill-pointer *mr-rewrites*))))
+
+(defun mr-rewrite-of (handle)
+  (if (and (integerp handle) (<= 1 handle (fill-pointer *mr-rewrites*)))
+      (aref *mr-rewrites* (1- handle))
+      (merror (intl:gettext "%mr_rewrite: not a rewrite handle: ~M") handle)))
+
+(defmfun |$%MR_REWRITE| (&rest args)
+  "%mr_rewrite(head, table, u, x): walk TABLE (a Maxima list of
+%mr_defrewrite handles) in order; the first record whose pattern binds
+(head u x) and whose cond accepts answers with its repl's value. U
+unchanged when none does -- Mathematica's own behaviour for a call with no
+applicable definition, which is what the callers rely on."
+  (unless (= (length args) 4)
+    (merror (intl:gettext "%mr_rewrite: expected 4 args, found ~A") (length args)))
+  (destructuring-bind (head table u x) args
+    (unless ($listp table)
+      (merror (intl:gettext "%mr_rewrite: the table is not a list: ~M") table))
+    (let ((expr (list (mr-match:sym head)
+                       (mr-tree:max->tree u)
+                       (mr-tree:max->tree x))))
+      (with-mr-switches
+        (dolist (h (cdr table) u)
+          (let* ((rw (mr-rewrite-of h))
+                 (cond-fn (mr-rewrite-cond rw))
+                 (accepted nil))
+            (mr-guarded (setf accepted nil)
+              (mr-match:match
+               (mr-rewrite-pattern rw) expr
+               :cond-hook (lambda (b)
+                            (let ((mb (mr-binding-list b nil)))
+                              (when (or (eq cond-fn t)
+                                        (multiple-value-bind (v ok)
+                                            (mr-call cond-fn mb x)
+                                          (and ok (mr-true-p v))))
+                                (setf accepted mb))))))
+            (when accepted
+              (multiple-value-bind (r ok) (mr-call (mr-rewrite-repl rw) accepted x)
+                (when (and ok r)
+                  (return r))))))))))
 
 ;;; ------------------------------------------------------------------
 ;;; MatchQ (spec 3.4): %mr_matchQ(u, "<pattern>", [<parts>], cond)
