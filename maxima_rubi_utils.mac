@@ -5766,4 +5766,40 @@ mr_use_gamma_flag : false$
   is((f = '%mr_isin and g = '%mr_icsc) or (f = '%mr_icos and g = '%mr_isec)
      or (f = '%mr_itan and g = '%mr_icot))$
 
+/* Rubi InertTrigQ[f_] := MemberQ[{sin,cos,tan,cot,sec,csc},f]
+   (IntegrationUtilityFunctions.m L6160). Takes a HEAD, as upstream does:
+   rules bind F_ over an inert head and test this on the binding. The
+   %mr_hyperbolicQ shape (atom u -> u, else op(u)) is deliberate — the atom
+   branch was wrong there until 2026-09-20 and this one is faithful from the
+   start. */
+%mr_inertTrigQ(u) := block([],
+  is(member(if atom(u) then u else op(u),
+            [%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc]) = true))$
+
+/* Rubi InertTrigFreeQ[u_] := FreeQ[u,sin] && ... && FreeQ[u,csc] (L6173).
+   An EXPRESSION test, unlike InertTrigQ. */
+%mr_inertTrigFreeQ(u) := block([],
+  is(freeof(%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc, u) = true))$
+
+/* Rubi TrigQ[f_] — the ACTIVE heads. Deliberately disjoint from
+   %mr_inertTrigQ: a deactivated expression must not satisfy both. */
+%mr_trigQ(u) := block([],
+  is(member(if atom(u) then u else op(u),
+            [sin, cos, tan, cot, sec, csc]) = true))$
+
+/* Rubi ActivateTrig[u_] (L6180): the inverse of the inert head map of the
+   inert-trig substrate design 3.1. MEASURED 2026-09-21
+   (branch_5_50_base_84_g4204fb669 / SBCL 2.6.7): subst on the operator
+   name rewrites every occurrence at any depth, including under a nested
+   noun-arithmetic head (log(%mr_isin(2*x)^3+y) -> log(sin(2*x)^3+y)),
+   both against a bare declare(noun) test and against the loaded package —
+   so the flat subst chain below is faithful and no op/args recursion is
+   needed. */
+%mr_activateTrig(u) := block([r],
+  r : u,
+  r : subst(sin, %mr_isin, r), r : subst(cos, %mr_icos, r),
+  r : subst(tan, %mr_itan, r), r : subst(cot, %mr_icot, r),
+  r : subst(sec, %mr_isec, r), r : subst(csc, %mr_icsc, r),
+  r)$
+
 mr_witness_utils() := true$

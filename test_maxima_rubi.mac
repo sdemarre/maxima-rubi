@@ -3678,6 +3678,26 @@ test_inert_trig_reduce_powersum() := block([_t_fitf_u, _t_fitf_first],
     then _t_fitf_first : false,
   check_bool("fitf: no clause before r37 claims sec(x)^2*(a+b*sin(x))",
              _t_fitf_first),
+  /* ActivateTrig and the inert predicates (inert-trig substrate design 3.2).
+   * %mr_activateTrig is the inverse of the head map of design 3.1. */
+  check("activateTrig: one head", %mr_activateTrig(%mr_isin(x)), sin(x)),
+  check("activateTrig: all six",
+        %mr_activateTrig(%mr_isin(x) + %mr_icos(x) + %mr_itan(x)
+                         + %mr_icot(x) + %mr_isec(x) + %mr_icsc(x)),
+        sin(x) + cos(x) + tan(x) + cot(x) + sec(x) + csc(x)),
+  check("activateTrig: nested, and leaves the rest alone",
+        %mr_activateTrig(log(%mr_isin(2*x)^3 + y)), log(sin(2*x)^3 + y)),
+  check("activateTrig: an already-active expression is unchanged",
+        %mr_activateTrig(sin(x) + log(y)), sin(x) + log(y)),
+  check_bool("inertTrigQ: an inert head", %mr_inertTrigQ(%mr_isin)),
+  check_not("inertTrigQ: an active head", %mr_inertTrigQ(sin)),
+  check_not("inertTrigQ: not a trig head at all", %mr_inertTrigQ(log)),
+  check_bool("inertTrigFreeQ: no inert head present",
+             %mr_inertTrigFreeQ(sin(x) + log(y))),
+  check_not("inertTrigFreeQ: an inert head is present",
+            %mr_inertTrigFreeQ(log(%mr_isin(x)))),
+  check_bool("trigQ: an active trig head", %mr_trigQ(sin)),
+  check_not("trigQ: an inert head is not an active one", %mr_trigQ(%mr_isin)),
   true
 )$
 
