@@ -1,0 +1,51 @@
+/* rules/class4/4_7_5.mac — GENERATED; do not edit.
+ * Source: Rubi 4 61e9c18ea248061cd83c67882f7c91a73cef912d
+ *          Rubi/IntegrationRules/4 Trig functions/4.7 Miscellaneous/4.7.5 Inert trig functions.m
+ * Regenerate: python3 generator/generate_rules.py --class 4 --only 4_7_5 */
+/* Ported from Rule-Based Integration (Rubi), https://github.com/RuleBasedIntegration/Rubi
+ * Copyright (c) 2018 Rule-Based-Integration Organization (MIT). */
+
+_mr_cond_4_7_5_r21(mm, x) := block([_mr_4_7_5_r21_u],
+  _mr_4_7_5_r21_u : geteqR(mm, '_mr_4_7_5_r21_u),
+  (true)  and  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r21_u, x), is(not(%mr_falseQ(v))  and  %mr_functionOfQ(%mr_nonfreeFactors(cot(v), x), _mr_4_7_5_r21_u, x, true)  and  %mr_tryPureTanSubst(%mr_activateTrig(_mr_4_7_5_r21_u), x)) = true))$
+_mr_repl_4_7_5_r21(mm, x) := block([_mr_4_7_5_r21_u__s],
+  _mr_4_7_5_r21_u__s : geteqR(mm, '_mr_4_7_5_r21_u),
+  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r21_u__s, x), block([d], d : %mr_freeFactors(cot(v), x), %mr_dist(-d/%mr_coeff(v, x, 1), %mr_subst(mr_int(%mr_substFor(1/(1 + d^2*x^2), cot(v)/d, _mr_4_7_5_r21_u__s, x), x), x, cot(v)/d), x))))$
+_mr_rule_4_7_5_r21 : %mr_defrule("4_7_5", 21, "(Int (Pattern |_mr_4_7_5_r21_u| (Blank)) (Pattern x (Blank Symbol)))", _mr_cond_4_7_5_r21, _mr_repl_4_7_5_r21)$
+
+_mr_cond_4_7_5_r22(mm, x) := block([_mr_4_7_5_r22_u],
+  _mr_4_7_5_r22_u : geteqR(mm, '_mr_4_7_5_r22_u),
+  (true)  and  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r22_u, x), is(not(%mr_falseQ(v))  and  %mr_functionOfQ(%mr_nonfreeFactors(tan(v), x), _mr_4_7_5_r22_u, x, true)  and  %mr_tryPureTanSubst(%mr_activateTrig(_mr_4_7_5_r22_u), x)) = true))$
+_mr_repl_4_7_5_r22(mm, x) := block([_mr_4_7_5_r22_u__s],
+  _mr_4_7_5_r22_u__s : geteqR(mm, '_mr_4_7_5_r22_u),
+  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r22_u__s, x), block([d], d : %mr_freeFactors(tan(v), x), %mr_dist(d/%mr_coeff(v, x, 1), %mr_subst(mr_int(%mr_substFor(1/(1 + d^2*x^2), tan(v)/d, _mr_4_7_5_r22_u__s, x), x), x, tan(v)/d), x))))$
+_mr_rule_4_7_5_r22 : %mr_defrule("4_7_5", 22, "(Int (Pattern |_mr_4_7_5_r22_u| (Blank)) (Pattern x (Blank Symbol)))", _mr_cond_4_7_5_r22, _mr_repl_4_7_5_r22)$
+
+_mr_cond_4_7_5_r47(mm, x) := block([_mr_4_7_5_r47_u],
+  _mr_4_7_5_r47_u : geteqR(mm, '_mr_4_7_5_r47_u),
+  (true)  and  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r47_u, x), is(not(%mr_falseQ(v))  and  %mr_functionOfQ(%mr_nonfreeFactors(sin(v), x), _mr_4_7_5_r47_u/cos(v), x)) = true))$
+_mr_repl_4_7_5_r47(mm, x) := block([_mr_4_7_5_r47_u__s],
+  _mr_4_7_5_r47_u__s : geteqR(mm, '_mr_4_7_5_r47_u),
+  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r47_u__s, x), block([d], d : %mr_freeFactors(sin(v), x), %mr_dist(d/%mr_coeff(v, x, 1), %mr_subst(mr_int(%mr_substFor(1, sin(v)/d, _mr_4_7_5_r47_u__s/cos(v), x), x), x, sin(v)/d), x))))$
+_mr_rule_4_7_5_r47 : %mr_defrule("4_7_5", 47, "(Int (Pattern |_mr_4_7_5_r47_u| (Blank)) (Pattern x (Blank Symbol)))", _mr_cond_4_7_5_r47, _mr_repl_4_7_5_r47)$
+
+_mr_cond_4_7_5_r48(mm, x) := block([_mr_4_7_5_r48_u],
+  _mr_4_7_5_r48_u : geteqR(mm, '_mr_4_7_5_r48_u),
+  (true)  and  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r48_u, x), is(not(%mr_falseQ(v))  and  %mr_functionOfQ(%mr_nonfreeFactors(cos(v), x), _mr_4_7_5_r48_u/sin(v), x)) = true))$
+_mr_repl_4_7_5_r48(mm, x) := block([_mr_4_7_5_r48_u__s],
+  _mr_4_7_5_r48_u__s : geteqR(mm, '_mr_4_7_5_r48_u),
+  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r48_u__s, x), block([d], d : %mr_freeFactors(cos(v), x), %mr_dist(-d/%mr_coeff(v, x, 1), %mr_subst(mr_int(%mr_substFor(1, cos(v)/d, _mr_4_7_5_r48_u__s/sin(v), x), x), x, cos(v)/d), x))))$
+_mr_rule_4_7_5_r48 : %mr_defrule("4_7_5", 48, "(Int (Pattern |_mr_4_7_5_r48_u| (Blank)) (Pattern x (Blank Symbol)))", _mr_cond_4_7_5_r48, _mr_repl_4_7_5_r48)$
+
+_mr_cond_4_7_5_r58(mm, x) := block([_mr_4_7_5_r58_u],
+  _mr_4_7_5_r58_u : geteqR(mm, '_mr_4_7_5_r58_u),
+  (%mr_inverseFunctionFreeQ(_mr_4_7_5_r58_u, x)  and  not(%mr_matchQ(_mr_4_7_5_r58_u, "(Times (Optional (Pattern |_mr_4_7_5_r58mq1_v| (Blank))) (Power (Times (Optional (Pattern |_mr_4_7_5_r58mq1_c| (Blank))) (Power (tan (Pattern |_mr_4_7_5_r58mq1_w| (Blank))) (Optional (Pattern |_mr_4_7_5_r58mq1_n| (Blank)))) (Power (tan (Pattern |_mr_4_7_5_r58mq1_z| (Blank))) (Optional (Pattern |_mr_4_7_5_r58mq1_n| (Blank))))) (Optional (Pattern |_mr_4_7_5_r58mq1_p| (Blank)))))", [], lambda([%mr_mqb], freeof(x, %mr_mk(_mr_4_7_5_r58mq1_c, %mr_mqb)) and freeof(x, %mr_mk(_mr_4_7_5_r58mq1_p, %mr_mqb))  and  integerp(%mr_mk(_mr_4_7_5_r58mq1_n, %mr_mqb))  and  %mr_linearQ(%mr_mk(_mr_4_7_5_r58mq1_w, %mr_mqb), x)  and  %mr_eqQ(%mr_mk(_mr_4_7_5_r58mq1_z, %mr_mqb), 2*%mr_mk(_mr_4_7_5_r58mq1_w, %mr_mqb))))))  and  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r58_u, x), is(not(%mr_falseQ(v))  and  %mr_functionOfQ(%mr_nonfreeFactors(tan(v), x), _mr_4_7_5_r58_u, x)) = true))$
+_mr_repl_4_7_5_r58(mm, x) := block([_mr_4_7_5_r58_u__s],
+  _mr_4_7_5_r58_u__s : geteqR(mm, '_mr_4_7_5_r58_u),
+  block([v], v : %mr_functionOfTrig(_mr_4_7_5_r58_u__s, x), block([d], d : %mr_freeFactors(tan(v), x), %mr_dist(d/%mr_coeff(v, x, 1), %mr_subst(mr_int(%mr_substFor(1/(1 + d^2*x^2), tan(v)/d, _mr_4_7_5_r58_u__s, x), x), x, tan(v)/d), x))))$
+_mr_rule_4_7_5_r58 : %mr_defrule("4_7_5", 58, "(Int (Pattern |_mr_4_7_5_r58_u| (Blank)) (Pattern x (Blank Symbol)))", _mr_cond_4_7_5_r58, _mr_repl_4_7_5_r58)$
+
+mr_rules_4_7_5 : [  ]$
+mr_rules_4_7_5_tail : [ _mr_rule_4_7_5_r21, _mr_rule_4_7_5_r22, _mr_rule_4_7_5_r47, _mr_rule_4_7_5_r48, _mr_rule_4_7_5_r58 ]$
+mr_rules_count_4_7_5 : 5$
+mr_witness_4_7_5() := true$

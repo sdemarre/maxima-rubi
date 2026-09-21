@@ -253,23 +253,38 @@ mr_load_all() := block([],
                            mr_rules_6_3_10, mr_rules_6_3_11, mr_rules_6_3_12,
                            mr_rules_6_5_10, mr_rules_6_5_11, mr_rules_6_7_6,
                            mr_rules_6_7_7, mr_rules_6_7_8, mr_rules_6_7_9]),
+  /* class 4 (trig), the inert-trig bridge SUBSET only (inert-trig
+     substrate plan, Task 9): 6 records over 2 files, every one a bare-u_
+     record, so every one is in the files' _tail lists and both body lists
+     are empty (generator/generate_rules.py CLASS4_SUBSET). Loaded after
+     class 6 because only their tails matter today. NOTE for the class-4
+     port: Rubi.m LoadRules puts section 4 BEFORE section 6, so once these
+     body lists carry rules they belong between the class-3 and class-6
+     flattens, not here. */
+  %mr_load_sibling("rules/class4/4_1_0_1.mac", 'mr_witness_4_1_0_1),
+  %mr_load_sibling("rules/class4/4_7_5.mac", 'mr_witness_4_7_5),
+  mr_rule_table : flatten([mr_rule_table, mr_rules_4_1_0_1,
+                           mr_rules_4_7_5]),
   /* Tail rule lists (inert-trig substrate design 3.3, Task 8). A
      generated file may define mr_rules_<key>_tail beside mr_rules_<key>
      for a bare-u_ Int record (the most general Int pattern there is);
      our dispatcher walks mr_rule_table in load order and stops at the
      first rule that answers, so such a record has to be tried LAST
-     (Mathematica gets there by pattern specificity instead). No
-     generated file defines one yet -- the six legacy bare-u_ records in
-     classes 1/2/3 are a closed, named exception kept in their bodies
-     (generator/generate_rules.py BARE_U_BODY_EXCEPTIONS,
-     .scratch/class-ports/issues/07-bare-u-records-mid-table.md) -- so
-     the tail list is empty here; Task 9 is what appends the first real
-     mr_rules_<key>_tail lists (class 4's inert-trig bridge) after this
-     point. mr_rule_table_body_handles / _tail_handles are exposed so the
-     ordering is assertable (test_maxima_rubi.mac) rather than inspected
-     by eye. */
+     (Mathematica gets there by pattern specificity instead). The six
+     legacy bare-u_ records in classes 1/2/3 are a closed, named exception
+     kept in their bodies (generator/generate_rules.py
+     BARE_U_BODY_EXCEPTIONS,
+     .scratch/class-ports/issues/07-bare-u-records-mid-table.md). There
+     is NO automatic collector: every _tail list is NAMED here by hand, in
+     Rubi LoadRules order, exactly as every body list is named above -- a
+     new file with a _tail list must be added to this flatten (the
+     real-table gate test/test_rule_table_order.mac fails if a bare-u_
+     record reaches neither the tail nor the exception list).
+     mr_rule_table_body_handles / _tail_handles are exposed so the
+     ordering is assertable rather than inspected by eye. */
   mr_rule_table_body_handles : mr_rule_table,
-  mr_rule_table_tail_handles : [],
+  mr_rule_table_tail_handles : flatten([mr_rules_4_1_0_1_tail,
+                                        mr_rules_4_7_5_tail]),
   mr_rule_table : flatten([mr_rule_table_body_handles,
                            mr_rule_table_tail_handles])
 )$

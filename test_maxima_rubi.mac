@@ -126,6 +126,7 @@ run_all_tests() := block([],
   test_deactivate_trig(),
   test_function_of_trig_of_linear(),
   test_function_of_q(),
+  test_inert_bridge(),
   test_census(),
   print(""),
   print("========================================"),
@@ -3866,6 +3867,67 @@ test_function_of_q() := block([],
         ratsimp(%mr_substFor(2*sin(x), sin(x)^2, x) - x^2/4), 0),
   check("sft: tan(x) -> x takes sin^2/cos^2 to x^2",
         ratsimp(%mr_substFor(tan(x), sin(x)^2/cos(x)^2, x) - x^2), 0),
+  true
+)$
+
+/* The inert-trig bridge, end to end (inert-trig substrate design 3.5, 5.2).
+ * A 6.1.7 integrand: a power of one hyperbolic times a binomial in another.
+ * Rubi has NO section-6 rule for this shape -- it answers it through section
+ * 4's rules via the inert bridge, and before this plan the package reached no
+ * rule at all for the whole 1,173-entry family (1,166 deferred, zero PASS).
+ *
+ * Corpus entry, 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac:
+ *   [sinh(c+d*x)*(a+b*sinh(c+d*x)^2), x, 2,
+ *    (a-b)*cosh(c+d*x)/d + 1/3*b*cosh(c+d*x)^3/d]
+ * Verified by DIFFERENTIATION, not by comparing to the expected text: the
+ * package's form may differ and still be right. The zero test is
+ * ratsimp(exponentialize(.)) -- plain ratsimp cannot close a hyperbolic
+ * identity (the class-6 lesson); it closes this residual to 0 symbolically
+ * (core trigrat does too, measured). The answer must also carry no noun
+ * (unintegrable, mr_int) and no inert %mr_i* head.
+ *
+ * The chain (traced with rubi_verbose on the full mr_load_all table, and the
+ * same here): 4.1.0.1 r1 (the bridge: FunctionOfTrigOfLinearQ, then
+ * Int[DeactivateTrig[u,x],x]) -> 9.1 r11 (Int[Complex[0,a] u] ->
+ * Complex[0,a] Int[u], a = -1: the -%i the sinh identity brings) ->
+ * 4.7.5 r48 (Cos derivative-divides: u/Sin[v] is a function of Cos[v],
+ * v = %i d x + %i c; Subst[Int[a - b (1-x^2), x], x, Cos[v]]) -> 1.4.1 r7
+ * (the polynomial sum, term by term) -> back-substitution and Dist by
+ * -1/(%i d).
+ *
+ * What it loads, and why: Layer A never calls mr_load_all() (later targets
+ * depend on the table's contents at their point), so the target builds the
+ * table the chain consults itself, and restores the old one: the rewrite
+ * tables DeactivateTrig walks; 1.4.1 and 9.1, the two class-1 files the
+ * chain's algebraic steps fire from; and the two class-4 files. The order
+ * is the real table's -- every body list first, the class-4 _tail lists
+ * LAST -- so the bridge is only tried after every body rule has declined.
+ * The loads are under errcatch: a missing file is a counted FAIL, not a run
+ * that dies without its Results line. */
+test_inert_bridge() := block([mr_ib_saved, mr_ib_ok, mr_ib_f, mr_ib_r],
+  print("--- the inert-trig bridge, end to end (6.1.7) ---"),
+  mr_ib_ok : errcatch(
+    %mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                     'mr_witness_inert_trig_rewrites),
+    %mr_load_sibling("rules/class1/1_4_1.mac", 'mr_witness_1_4_1),
+    %mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1),
+    %mr_load_sibling("rules/class4/4_1_0_1.mac", 'mr_witness_4_1_0_1),
+    %mr_load_sibling("rules/class4/4_7_5.mac", 'mr_witness_4_7_5),
+    true),
+  mr_ib_f : sinh(c + d*x)*(a + b*sinh(c + d*x)^2),
+  mr_ib_saved : mr_rule_table,
+  mr_ib_r : false,
+  if mr_ib_ok # [] then (
+    mr_rule_table : flatten([mr_rule_table, mr_rules_1_4_1, mr_rules_9_1,
+                             mr_rules_4_1_0_1, mr_rules_4_7_5,
+                             mr_rules_4_1_0_1_tail, mr_rules_4_7_5_tail]),
+    mr_ib_r : rubi(mr_ib_f, x)),
+  mr_rule_table : mr_ib_saved,
+  check_bool("6.1.7: the bridge answers a hyperbolic .7 integrand",
+    is(mr_ib_r # false)
+    and freeof('unintegrable, 'mr_int, mr_ib_r)
+    and %mr_inertTrigFreeQ(mr_ib_r)
+    and is(ratsimp(exponentialize(diff(mr_ib_r, x) - mr_ib_f)) = 0)),
   true
 )$
 

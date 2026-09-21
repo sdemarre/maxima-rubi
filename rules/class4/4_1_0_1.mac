@@ -1,0 +1,19 @@
+/* rules/class4/4_1_0_1.mac — GENERATED; do not edit.
+ * Source: Rubi 4 61e9c18ea248061cd83c67882f7c91a73cef912d
+ *          Rubi/IntegrationRules/4 Trig functions/4.1 Sine/4.1.0.1 (a sin)^m (b trg)^n.m
+ * Regenerate: python3 generator/generate_rules.py --class 4 --only 4_1_0_1 */
+/* Ported from Rule-Based Integration (Rubi), https://github.com/RuleBasedIntegration/Rubi
+ * Copyright (c) 2018 Rule-Based-Integration Organization (MIT). */
+
+_mr_cond_4_1_0_1_r1(mm, x) := block([_mr_4_1_0_1_r1_u],
+  _mr_4_1_0_1_r1_u : geteqR(mm, '_mr_4_1_0_1_r1_u),
+  %mr_functionOfTrigOfLinearQ(_mr_4_1_0_1_r1_u, x))$
+_mr_repl_4_1_0_1_r1(mm, x) := block([_mr_4_1_0_1_r1_u__s],
+  _mr_4_1_0_1_r1_u__s : geteqR(mm, '_mr_4_1_0_1_r1_u),
+  mr_int(%mr_deactivateTrig(_mr_4_1_0_1_r1_u__s, x), x))$
+_mr_rule_4_1_0_1_r1 : %mr_defrule("4_1_0_1", 1, "(Int (Pattern |_mr_4_1_0_1_r1_u| (Blank)) (Pattern x (Blank Symbol)))", _mr_cond_4_1_0_1_r1, _mr_repl_4_1_0_1_r1)$
+
+mr_rules_4_1_0_1 : [  ]$
+mr_rules_4_1_0_1_tail : [ _mr_rule_4_1_0_1_r1 ]$
+mr_rules_count_4_1_0_1 : 1$
+mr_witness_4_1_0_1() := true$

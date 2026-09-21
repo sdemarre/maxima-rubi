@@ -208,6 +208,22 @@ RENAME = {
     # (the class-2/3/6 port rows above are the precedent for this state).
     "InertReciprocalQ": "%mr_inertReciprocalQ",
     "PowerOfInertTrigSumQ": "%mr_powerOfInertTrigSumQ",
+    # inert-trig substrate plan, Task 9: the tokens of the bridge's six
+    # bare-u_ records (4.1.0.1 r1, 4.7.5 r21/r22/r47/r48/r58). The ACTIVE
+    # circular heads Tan/Cot join Sin/Cos/Sec/Csc above (natives); the
+    # substrate utilities map to their maxima_rubi_utils.mac ports.
+    # %mr_tryPureTanSubst is NOT ported by Task 9 (the plan gives it to
+    # Task 10): until then the 4.7.5 r21/r22 conds end in an unbound call,
+    # which their is(... = true) wrapper reads as false -- the two records
+    # decline (the class-2/3/6 "static closure" precedent above).
+    "Tan": "tan", "Cot": "cot",
+    "FunctionOfTrigOfLinearQ": "%mr_functionOfTrigOfLinearQ",
+    "DeactivateTrig": "%mr_deactivateTrig",
+    "ActivateTrig": "%mr_activateTrig",
+    "FunctionOfTrig": "%mr_functionOfTrig",
+    "FreeFactors": "%mr_freeFactors",
+    "FunctionOfQ": "%mr_functionOfQ",
+    "TryPureTanSubst": "%mr_tryPureTanSubst",
     # Rubi's undocumented $UseGamma control global (absent from Rubi.m;
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):
