@@ -156,6 +156,22 @@ mr_default_giveup_last : mr_giveup_last$
 test_load_and_api() := block([r, saved_table],
   print("--- load + API fallback gate ---"),
   check_bool("loader witness survived", is(mr_witness_maxima_rubi() = true)),
+  /* Tail rule lists (inert-trig substrate design 3.3). A bare-u_ record
+   * sits at the END of mr_rule_table, because our dispatcher walks in
+   * load order and stops at the first rule that answers (Mathematica
+   * orders it last by pattern specificity instead). The regression this
+   * prevents: a catch-all swallowing an integrand an earlier class
+   * answers. Empty until Task 9 (no generated file defines a
+   * mr_rules_<key>_tail list yet), so this checks the plumbing rather
+   * than real records: both handle lists exist, the body list is
+   * non-empty, and every tail handle (vacuously none, for now) is
+   * greater than every body handle. Task 9 re-checks it with real tail
+   * records. */
+  check_bool("tail records are last in the table",
+    listp(mr_rule_table_body_handles) and listp(mr_rule_table_tail_handles)
+    and length(mr_rule_table_body_handles) > 0
+    and every(lambda([mr_h], is(mr_h > lmax(mr_rule_table_body_handles))),
+              mr_rule_table_tail_handles)),
   /* 5 fires no class-1 rule with the full table (measured 2026-08-24 —
      the 1.1.1.1 family is (a+b x)^m / x^m / 1/x forms only; x^2 DOES
      fire rule r2), so it exercises the two top-level fall-throughs

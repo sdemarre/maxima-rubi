@@ -295,6 +295,88 @@ def check_rewrites(g):
             % REWRITE_FILE.relative_to(ROOT), same, detail)
 
 
+INT_BARE_U = re.compile(
+    r"^\(Int \(Pattern (\|[^|]*\||\w+) \(Blank\)\) "
+    r"\(Pattern x \(Blank Symbol\)\)\)$")
+BODY_LIST_RE = re.compile(r"^mr_rules_(\w+) : \[ (.*) \]\$$", re.M)
+TAIL_LIST_RE = re.compile(r"^mr_rules_(\w+)_tail : \[ (.*) \]\$$", re.M)
+
+# The bare-u_ Int-record tail convention's closed exception list (inert-trig
+# substrate design 3.3; generator/generate_rules.py carries the same list,
+# under the same name -- a mismatch between the two would itself be a
+# generator/gate disagreement the byte-identity check below would catch).
+# Six legacy records sit in their class's body list, at source position;
+# moving them changes accepted class-1/2/3 behaviour and needs a corpus A/B,
+# out of this task's scope: .scratch/class-ports/issues/07-bare-u-records-
+# mid-table.md.
+BARE_U_BODY_EXCEPTIONS = {
+    ("1_4_1", 7):  "mr_simplify_flag and SumQ[u] (issue 07)",
+    ("1_4_1", 8):  "SumQ[u] (issue 07)",
+    ("9_1", 8):    "FreeQ[a, x] (bare a_; issue 07)",
+    ("9_1", 13):   "SumQ[u] (issue 07)",
+    ("2_3", 96):   "FunctionOfExponentialQ[u, x] and not a MatchQ shape (issue 07)",
+    ("3_5", 42):   "NonsumQ[u] and FunctionOfLog[Cancel[x u], x] not false (issue 07)",
+}
+
+
+def check_bare_u_tail(g):
+    """Check 9: the bare-u_ Int-record tail convention (inert-trig
+    substrate design 3.3; ledger R18), both directions, over every
+    generated rule file (not just the P0 classes -- the convention applies
+    to every class, present and future):
+
+      - every record in a mr_rules_<key>_tail list has a bare-u_
+        integrand -- strict, no exceptions;
+      - no bare-u_ record sits in a mr_rules_<key> body list, except the
+        closed, named BARE_U_BODY_EXCEPTIONS above -- a seventh such
+        record anywhere fails this."""
+    tail_wrong, body_wrong = [], []
+    for p in sorted(ROOT.glob("rules/class*/*.mac")):
+        text = p.read_text()
+        patterns = {(k, int(n)): pat for k, n, pat in re.findall(
+            r'^_mr_rule_\w+ : %mr_defrule\("([0-9a-z_]+)", (\d+), "([^"]*)"',
+            text, re.M)}
+        tail_names = set()
+        for key, names_txt in TAIL_LIST_RE.findall(text):
+            for nm in (n for n in names_txt.split(", ") if n):
+                m = re.fullmatch(r"_mr_rule_%s_r(\d+)" % re.escape(key), nm)
+                if not m:
+                    tail_wrong.append("%s: malformed tail entry %r" % (p, nm))
+                    continue
+                n = int(m.group(1))
+                tail_names.add((key, n))
+                pat = patterns.get((key, n))
+                if pat is None or not INT_BARE_U.fullmatch(pat):
+                    tail_wrong.append(
+                        "%s %s r%d: tail record is not a bare-u_ "
+                        "integrand (%r)" % (p, key, n, pat))
+        for key, names_txt in BODY_LIST_RE.findall(text):
+            if key.endswith("_tail"):
+                # the tail-list line itself also matches this regex
+                # (mr_rules_<key>_tail : [ ... ]$ reads as a body list
+                # whose "key" happens to end in _tail); skip it here, it
+                # was already handled by TAIL_LIST_RE above.
+                continue
+            for nm in (n for n in names_txt.split(", ") if n):
+                m = re.fullmatch(r"_mr_rule_%s_r(\d+)" % re.escape(key), nm)
+                if not m:
+                    continue
+                n = int(m.group(1))
+                if (key, n) in tail_names:
+                    continue
+                pat = patterns.get((key, n))
+                if pat is not None and INT_BARE_U.fullmatch(pat) \
+                        and (key, n) not in BARE_U_BODY_EXCEPTIONS:
+                    body_wrong.append(
+                        "%s %s r%d: bare-u_ record in a body list, not "
+                        "in the closed exception list (%r)" % (p, key, n, pat))
+    g.check("every mr_rules_<key>_tail record has a bare-u_ integrand",
+            not tail_wrong, "\n    ".join(tail_wrong[:40]))
+    g.check("no bare-u_ record sits in a body list except the closed "
+            "exception list of %d (issue 07)" % len(BARE_U_BODY_EXCEPTIONS),
+            not body_wrong, "\n    ".join(body_wrong[:40]))
+
+
 def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=P0_BASE)
@@ -415,6 +497,7 @@ def main(argv):
                 "EXPECTED_TOTAL %d)" % (cls, got, len(paths), want),
                 got == want, "got %d, want %d" % (got, want))
     check_rewrites(g)
+    check_bare_u_tail(g)
     g.check("no defmatch/matchdeclare; one %mr_defrule per rule; every cond/repl explained",
             not unexplained, "\n    ".join(unexplained[:40]))
     g.check("moved inner conditions are exact transformations", not bad_moves, "\n    ".join(bad_moves[:40]))

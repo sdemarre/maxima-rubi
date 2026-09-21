@@ -1027,6 +1027,45 @@ def pattern_sexp(lhs, key, n, rule_vars):
     return _sexp(_rename_captures(ev, key, n, rule_vars), key, n)
 
 
+# The bare-u_ Int-record tail convention (inert-trig substrate design
+# 3.3, Task 8). A generated file may route a rule into mr_rules_<key>_tail
+# instead of mr_rules_<key>; mr_load_all appends every _tail list to
+# mr_rule_table AFTER all classes, so our load-order-walking dispatcher
+# tries such a record last (Mathematica gets there by pattern specificity
+# instead). A bare-u_ record -- integrand (Pattern <name> (Blank)), the
+# most general Int pattern there is -- matches every integrand, so it must
+# never sit ahead of a more specific rule of a later-loading class.
+#
+# Six such records already exist, in classes 1/2/3, at their SOURCE
+# position in the body list. Moving them changes accepted class-1/2/3
+# behaviour and needs a corpus A/B, out of this task's scope
+# (.scratch/class-ports/issues/07-bare-u-records-mid-table.md) -- so this
+# CLOSED, NAMED exception list keeps exactly those six in the body; every
+# OTHER bare-u_ record routes to the tail. The static gate
+# (test/check_generated_rules.py) enforces the same list both ways: every
+# tail record is bare-u_, and no bare-u_ record sits in a body list unless
+# it is named here.
+BARE_U_BODY_EXCEPTIONS = {
+    ("1_4_1", 7):  "mr_simplify_flag and SumQ[u] (issue 07)",
+    ("1_4_1", 8):  "SumQ[u] (issue 07)",
+    ("9_1", 8):    "FreeQ[a, x] (bare a_; issue 07)",
+    ("9_1", 13):   "SumQ[u] (issue 07)",
+    ("2_3", 96):   "FunctionOfExponentialQ[u, x] and not a MatchQ shape (issue 07)",
+    ("3_5", 42):   "NonsumQ[u] and FunctionOfLog[Cancel[x u], x] not false (issue 07)",
+}
+
+
+def bare_int_clause(lhs, key, n):
+    """True when the Int rule's integrand argument is the most general Int
+    pattern there is: a bare named Blank, (Pattern <name> (Blank)) -- no
+    head, no Optional, no type restriction. See BARE_U_BODY_EXCEPTIONS
+    above for how such a record is routed."""
+    ev = _evaluated(lhs, key, n, "LHS")
+    return (isinstance(ev, tuple) and len(ev) == 3 and ev[0] == "Int"
+            and isinstance(ev[1], tuple) and len(ev[1]) == 3
+            and ev[1][0] == "Pattern" and ev[1][2] == ("Blank",))
+
+
 def rewrite_pattern_sexp(lhs, key, n, rule_vars, fname):
     """A utility clause's Name[<args>] LHS as the evaluated FullForm
     s-expression %mr_defrewrite prepares (inert-trig substrate design 3.2).
@@ -1611,6 +1650,7 @@ def emit_file(rel_m, runs, key=None):
               f"{MIT}\n\n")
     body = []
     rule_names = []
+    tail_names = []
     for n, run in enumerate(runs, start=1):
         # FIX F3: rule_runs yields LISTS OF LINES; join the run and split it
         # the way the census does.
@@ -1646,9 +1686,19 @@ def emit_file(rel_m, runs, key=None):
             for ln in util_lines:
                 body.append(f" * {ln.strip()}")
             body.append(" */")
-        rule_names.append(f"_mr_rule_{key}_r{n}")
+        handle_name = f"_mr_rule_{key}_r{n}"
+        if bare_int_clause(lhs, key, n) and (key, n) not in BARE_U_BODY_EXCEPTIONS:
+            tail_names.append(handle_name)
+        else:
+            rule_names.append(handle_name)
         body.append("")
     body.append(f"mr_rules_{key} : [ {', '.join(rule_names)} ]$")
+    if tail_names:
+        # Only emitted when this file actually has one -- an absent
+        # mr_rules_<key>_tail line is how a class with no such record
+        # (still every class as of Task 8) regenerates byte-identically
+        # (inert-trig substrate design 3.3).
+        body.append(f"mr_rules_{key}_tail : [ {', '.join(tail_names)} ]$")
     body.append(f"mr_rules_count_{key} : {len(runs)}$")
     body.append(f"mr_witness_{key}() := true$")
     return header + "\n".join(body) + "\n"

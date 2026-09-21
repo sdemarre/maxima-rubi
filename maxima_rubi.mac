@@ -95,6 +95,13 @@ mr_witness_dispatch() := is(%mr_binomialQ(1 + x, x) = true)
  * suite verifies behaviorally; 5 rules, safe on any build. */
 %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1)$
 mr_rule_table : mr_rules_1_1_1_1$
+/* Tail rule lists (inert-trig substrate design 3.3, Task 8) -- set here
+   too, not only at the end of mr_load_all below, because Layer A's own
+   suite (test_maxima_rubi.mac) loads only this eager core and never
+   calls mr_load_all(); mr_load_all recomputes both after the full load.
+   See the mr_load_all comment for the mechanism. */
+mr_rule_table_body_handles : mr_rule_table$
+mr_rule_table_tail_handles : []$
 
 /* Full class-1 load — the 73-file list in Rubi LoadRules order (67
  * LoadRules files + the five corpus-matched `b`-suffixed 1.2.1
@@ -245,7 +252,26 @@ mr_load_all() := block([],
                            mr_rules_6_1_11, mr_rules_6_1_12, mr_rules_6_1_13,
                            mr_rules_6_3_10, mr_rules_6_3_11, mr_rules_6_3_12,
                            mr_rules_6_5_10, mr_rules_6_5_11, mr_rules_6_7_6,
-                           mr_rules_6_7_7, mr_rules_6_7_8, mr_rules_6_7_9])
+                           mr_rules_6_7_7, mr_rules_6_7_8, mr_rules_6_7_9]),
+  /* Tail rule lists (inert-trig substrate design 3.3, Task 8). A
+     generated file may define mr_rules_<key>_tail beside mr_rules_<key>
+     for a bare-u_ Int record (the most general Int pattern there is);
+     our dispatcher walks mr_rule_table in load order and stops at the
+     first rule that answers, so such a record has to be tried LAST
+     (Mathematica gets there by pattern specificity instead). No
+     generated file defines one yet -- the six legacy bare-u_ records in
+     classes 1/2/3 are a closed, named exception kept in their bodies
+     (generator/generate_rules.py BARE_U_BODY_EXCEPTIONS,
+     .scratch/class-ports/issues/07-bare-u-records-mid-table.md) -- so
+     the tail list is empty here; Task 9 is what appends the first real
+     mr_rules_<key>_tail lists (class 4's inert-trig bridge) after this
+     point. mr_rule_table_body_handles / _tail_handles are exposed so the
+     ordering is assertable (test_maxima_rubi.mac) rather than inspected
+     by eye. */
+  mr_rule_table_body_handles : mr_rule_table,
+  mr_rule_table_tail_handles : [],
+  mr_rule_table : flatten([mr_rule_table_body_handles,
+                           mr_rule_table_tail_handles])
 )$
 
 mr_witness_maxima_rubi() := true$
