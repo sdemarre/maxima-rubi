@@ -443,6 +443,8 @@ def translate_token(tok, ctx):
     loudly at the emit_head boundary, not here."""
     if ctx["markers"] and tok in ctx["markers"]:
         return ctx["markers"][tok]
+    if ctx.get("locals") and tok in ctx["locals"]:
+        return ctx["locals"][tok]
     if tok in ctx["vars"]:
         return cap_name(ctx["key"], ctx["n"], tok)
     if tok in ("Pi", "E", "I"):
@@ -515,6 +517,18 @@ def translate(s, ctx):
                 return f"part({translate(s[:p].strip(), ctx)}, {m.group(1)})"
     head, args = head_args(s)
     if head is not None:
+        if head in ("With", "Module") and ctx.get("prefix_locals"):
+            # Class 4 (final fix wave I2, ruling R28): the With/Module
+            # locals are renamed _mr_<key>_r<n>_<name> throughout the
+            # scope (decls and body) -- a pure alpha-renaming of the
+            # emitted block. See _push_scope_locals.
+            parts = split_top(args, ",") if args.strip() else []
+            saved = _push_scope_locals(head, parts[0] if parts else "", ctx)
+            try:
+                arglist = [translate(a, ctx) for a in parts]
+                return emit_head(head, arglist, ctx)
+            finally:
+                ctx["locals"] = saved
         if head == "Block":
             # Block[{$ShowSteps = False, $StepCounter = Null}, body] — the
             # one Block shape in the emitted rules (4_7_5 r71, the
@@ -876,7 +890,9 @@ def _maxima_stmts(body):
             out.append(ch)
     segs = []
     for seg in split_top("".join(out), ","):
-        m = re.match(r"\s*([A-Za-z][A-Za-z0-9_]*)\s*=(?!=)", seg)
+        # a leading _ too: class 4's prefixed locals (_mr_<key>_r<n>_d,
+        # final fix wave I2) are statement targets in 4.7.5 r71's Module
+        m = re.match(r"\s*([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)", seg)
         if m:
             seg = m.group(1) + " :" + seg[m.end():]
         segs.append(seg)
@@ -1552,6 +1568,47 @@ def _scope_locals(head, decls_txt, key, n):
     return locals_, assigns
 
 
+def _push_scope_locals(head, decls_raw, ctx):
+    """Class-4 With/Module local prefixing (final fix wave I2, ruling R28).
+
+    A generated repl binds its With/Module locals in a Maxima block and
+    may run a nested mr_int inside it. Maxima binds block locals
+    DYNAMICALLY, so an unprefixed local named like a corpus symbol (d, v,
+    w) is live during the nested integration, and any re-evaluation there
+    substitutes its value for the integrand's own symbol (measured: 4.7.5
+    r47's block([d], d : 1) turned part of the answer to 1/(d x^7 + 1) into
+    the d = 1 answer -- a silently wrong antiderivative). Renaming each
+    local to _mr_<key>_r<n>_<name> makes the block name nothing a user
+    integrand can contain.
+
+    decls_raw is the RAW .m locals list ({v = ..., d}); every name it
+    declares is mapped for the whole scope -- the decl values too, so the
+    emitted text is exactly the unprefixed emission with the locals
+    alpha-renamed (a value naming a same-named local reads it the same
+    way). Returns the previous map, which the caller restores. Emitted for
+    CLASS 4 only (emit_rule sets ctx["prefix_locals"]): classes 1/2/3/6
+    stay byte-identical under the P3 gate; the all-class fix is ticket
+    .scratch/class-ports/issues/08."""
+    d = decls_raw.strip()
+    if not (d.startswith("{") and d.endswith("}")):
+        raise GenError(f"{ctx['key']} r{ctx['n']}: {head} locals not a "
+                       f"list: {d[:40]!r}")
+    saved = ctx.get("locals") or {}
+    new = dict(saved)
+    for p in split_top(d[1:-1], ","):
+        name = split_top(p.strip(), "=")[0].strip()
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", name):
+            raise GenError(f"{ctx['key']} r{ctx['n']}: {head} local "
+                           f"{name!r} is not a plain symbol")
+        if name in ctx["vars"]:
+            raise GenError(f"{ctx['key']} r{ctx['n']}: {head} local "
+                           f"{name!r} shadows a capture -- the prefixed "
+                           f"name would collide with its capture name")
+        new[name] = f"_mr_{ctx['key']}_r{ctx['n']}_{name}"
+    ctx["locals"] = new
+    return saved
+
+
 def _scope_block(locals_, assigns, body):
     lead = ", ".join(assigns) + ", " if assigns else ""
     return f"block([{', '.join(locals_)}], {lead}{body})"
@@ -1593,7 +1650,11 @@ def emit_rule(run, key, n, rule_vars, fname=None):
     if fname is None:
         if not re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL):
             raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
-    ctx = {"key": key, "n": n, "vars": rule_vars, "markers": None, "mq": 0}
+    # prefix_locals: class 4 renames its With/Module locals (final fix
+    # wave I2; see _push_scope_locals). Never for a rewrite-table clause
+    # (fname) -- those tables stay byte-identical.
+    ctx = {"key": key, "n": n, "vars": rule_vars, "markers": None, "mq": 0,
+           "locals": {}, "prefix_locals": fname is None and CLASS == 4}
     if fname is None:
         pattern = pattern_sexp(lhs, key, n, rule_vars)
     else:
@@ -1626,9 +1687,16 @@ def emit_rule(run, key, n, rule_vars, fname=None):
         head, decls, body, inner_cond = inner
         repl_txt = translate(drop_optionals(f"{head}[{decls},{body}]",
                                             rule_vars), ctx)
+        # the cond's copy of the scope takes the same local names as the
+        # repl's (class 4: prefixed; see _push_scope_locals)
+        saved = (_push_scope_locals(head, drop_optionals(decls, rule_vars),
+                                    ctx)
+                 if ctx["prefix_locals"] else None)
         locals_, assigns = _scope_locals(
             head, translate(drop_optionals(decls, rule_vars), ctx), key, n)
         test = translate(drop_optionals(inner_cond, rule_vars), ctx)
+        if ctx["prefix_locals"]:
+            ctx["locals"] = saved
         # parenthesized: the outer cond may be an `or` chain
         cond_txt = (f"({base_cond})  and  "
                     f"{_scope_block(locals_, assigns, f'is({test}) = true')}")

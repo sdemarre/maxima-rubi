@@ -131,6 +131,7 @@ run_all_tests() := block([],
   test_weierstrass(),
   test_inert_leak_guard(),
   test_inert_giveup(),
+  test_class4_with_capture(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4112,6 +4113,80 @@ test_inert_giveup() := block([mr_t10_saved, mr_t10_tab, mr_t10_f1, mr_t10_r1,
     and %mr_inertTrigFreeQ(mr_t10_r2)
     and is(second(args(mr_t10_r2)) = x)
     and is(radcan(exponentialize(first(args(mr_t10_r2)) - mr_t10_f2)) = 0)),
+  true
+)$
+
+/* The class-4 With-local capture trap (final fix wave I2, ruling R28).
+ * The 4.7.5 repls bind their With/Module locals in a Maxima block and
+ * run a nested mr_int INSIDE it. Maxima binds block locals dynamically,
+ * so a local named like a corpus symbol (d, v, w) leaks into every
+ * re-evaluation the nested integration does: mr_sum's
+ * ev(subst(i, var, ev(fun))) (maxima_rubi_utils.mac, the Sum handler)
+ * re-evaluates the summand, and with 4.7.5 r47's block([d], d : 1)
+ * live the d of 1/(d x^7 + 1) became 1 in part of the answer. Measured
+ * before the fix (final-review probes capture3/capture4): cos(x)/(d
+ * sin(x)^7 + 1) answered with residual 1.08e-3 at x = 0.37, d = 0.7,
+ * sin(x)/(c + d cos(x)^5) with -0.020; the same integrands with d
+ * renamed q gave 0. The fix: the generator prefixes class 4's With/
+ * Module locals _mr_<key>_r<n>_ (ticket 08 carries the all-class fix).
+ *
+ * The table: the bridge table (mr_t10_bridge_table) plus the class-1
+ * files the nested 1/(d x^7 + 1) and 1/(c + d x^5) chains fire from
+ * (traced with rubi_verbose on the full mr_load_all table: 1.1.3.1 r13,
+ * the Sum over the quadratic factors; 1.2.1.2 r3/r9 and 1.2.1.1 r12 the
+ * quadratic pieces; 1.1.2.1 r11 and 1.1.1.1 r3 the linear ones).
+ *
+ * The zero test is numeric, at two points: the answers carry
+ * cos(k %pi/7) / cos(k %pi/5) constants, and ratsimp/radcan leave the
+ * residual as an unreduced polynomial in them (measured; see the fix
+ * wave report). |residual| < 1e-12 at two points is far below the
+ * 1e-3 / 2e-2 the trap produced. The renaming check is the trap's own
+ * signature: d -> q -> d must give back the SAME answer. */
+mr_i2_resid(f, r, pts) := block([mr_i2_z],
+  mr_i2_z : errcatch(float(abs(rectform(
+              subst(pts, diff(r, x) - f))))),
+  if mr_i2_z = [] then 1.0 else first(mr_i2_z))$
+test_class4_with_capture() := block([mr_i2_saved, mr_i2_tab, mr_i2_ok,
+                                     mr_i2_f1, mr_i2_r1, mr_i2_q1,
+                                     mr_i2_f2, mr_i2_r2, mr_i2_q2],
+  print("--- the class-4 With-local capture trap (I2) ---"),
+  mr_i2_saved : mr_rule_table,
+  mr_i2_tab : mr_t10_bridge_table(),
+  mr_i2_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/1_1_3_1.mac", 'mr_witness_1_1_3_1),
+    %mr_load_sibling("rules/class1/1_2_1_1.mac", 'mr_witness_1_2_1_1),
+    %mr_load_sibling("rules/class1/1_2_1_2.mac", 'mr_witness_1_2_1_2),
+    true),
+  mr_i2_f1 : cos(x)/(d*sin(x)^7 + 1),
+  mr_i2_f2 : sin(x)/(c + d*cos(x)^5),
+  mr_i2_r1 : false, mr_i2_q1 : false, mr_i2_r2 : false, mr_i2_q2 : false,
+  if mr_i2_tab # false and mr_i2_ok # [] then (
+    mr_rule_table : append(
+      [mr_rules_1_1_1_1, mr_rules_1_1_3_1, mr_rules_1_2_1_1, mr_rules_1_2_1_2],
+      mr_i2_tab),
+    mr_rule_table : flatten(mr_rule_table),
+    mr_i2_r1 : rubi(mr_i2_f1, x),
+    mr_i2_q1 : subst(q = d, rubi(subst(d = q, mr_i2_f1), x)),
+    mr_i2_r2 : rubi(mr_i2_f2, x),
+    mr_i2_q2 : subst(q = d, rubi(subst(d = q, mr_i2_f2), x))),
+  mr_rule_table : mr_i2_saved,
+  check_bool("I2: cos(x)/(d sin(x)^7+1) answers and verifies (|resid| < 1e-12 at two points)",
+    is(mr_i2_r1 # false)
+    and freeof('unintegrable, 'mr_int, mr_i2_r1)
+    and %mr_inertTrigFreeQ(mr_i2_r1)
+    and is(mr_i2_resid(mr_i2_f1, mr_i2_r1, [x = 0.37, d = 0.7]) < 1.0e-12)
+    and is(mr_i2_resid(mr_i2_f1, mr_i2_r1, [x = 1.1, d = 1.9]) < 1.0e-12)),
+  check_bool("I2: cos(x)/(d sin(x)^7+1) is the same answer with d renamed q",
+    is(mr_i2_r1 # false) and is(mr_i2_r1 = mr_i2_q1)),
+  check_bool("I2: sin(x)/(c+d cos(x)^5) answers and verifies (|resid| < 1e-12 at two points)",
+    is(mr_i2_r2 # false)
+    and freeof('unintegrable, 'mr_int, mr_i2_r2)
+    and %mr_inertTrigFreeQ(mr_i2_r2)
+    and is(mr_i2_resid(mr_i2_f2, mr_i2_r2, [x = 0.37, c = 1.3, d = 0.7]) < 1.0e-12)
+    and is(mr_i2_resid(mr_i2_f2, mr_i2_r2, [x = 1.1, c = 2.2, d = 1.9]) < 1.0e-12)),
+  check_bool("I2: sin(x)/(c+d cos(x)^5) is the same answer with d renamed q",
+    is(mr_i2_r2 # false) and is(mr_i2_r2 = mr_i2_q2)),
   true
 )$
 
