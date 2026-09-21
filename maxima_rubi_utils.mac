@@ -5643,9 +5643,12 @@ mr_use_gamma_flag : false$
    else [apply(op(u), res), v, n])$
 
 /* Rubi's inert-trig rewrite functions, ported as generated rewrite tables
-   (inert-trig substrate design 3.2): 136 of their 142 clauses are
-   Name[pattern] := rhs /; cond, so they compile through the same emitter as
-   an Int rule instead of being hand-written. The tables live in
+   (inert-trig substrate design 3.2): every one of their clauses --
+   UnifyInertTrigFunction's 75, FixInertTrigFunction's 61 and
+   ReduceInertTrig's 4, 140 in the generated tables, 137 of them
+   conditioned (uitf r68, fitf r61 and rit r3 register `true`) -- is
+   Name[pattern] := rhs [/; cond], so they compile through the same emitter
+   as an Int rule instead of being hand-written. The tables live in
    rules/utils/inert_trig_rewrites.mac. Recursion is Rubi's own — a clause
    that calls itself re-enters through these wrappers, and there is no depth
    guard by design decision (spec 3.2). */
@@ -6085,7 +6088,7 @@ mr_use_gamma_flag : false$
  * 6.1.7 acceptance integrand). Ported under the plan's own rule: the
  * records' callees come with the records.
  *
- * DEVIATIONS (stamped; each is the decline direction):
+ * DEVIATIONS (stamped; (a) declines, (b) is unreachable, (c) accepts):
  *  (a) FunctionOfQ's HYPERBOLIC head branches (Sinh..Csch ->
  *      FunctionOfSinhQ.. / PureFunctionOfSinhQ..) and its default branch
  *      (FunctionOfExpnQ) are NOT ported: FunctionOfQ answers false there,
@@ -6098,11 +6101,17 @@ mr_use_gamma_flag : false$
  *      Rubi answers them through the hyperbolic branches.
  *  (b) SubstFor's trig branch covers Sin/Cos/Tan/Cot -- the four heads
  *      the six bridge records pass. Sec/Csc and the six hyperbolic heads
- *      fall through to the pre-existing algebraic port below.
+ *      fall through to the pre-existing algebraic port below. UNREACHABLE
+ *      from the ported records (none passes such a head); if it were
+ *      reached it would NOT decline -- it would mis-substitute, through
+ *      the algebraic port's plain subst.
  *  (c) FunctionOfSinQ's and SubstForTrig's "u[[1]] is Cos[v/2], u[[2]] is
  *      Sin[v/2]" test reads the FIRST TWO factors of Mathematica's
  *      canonical product order; Maxima orders factors differently, so the
- *      port looks for the pair ANYWHERE among the product's factors.
+ *      port looks for the pair ANYWHERE among the product's factors. This
+ *      is an ACCEPT direction: it can admit a product Rubi's positional
+ *      test would not, and the result is value-correct (Cos[v/2] Sin[v/2]
+ *      = Sin[v]/2 wherever the pair sits).
  *
  * Every bound name is %mr_-prefixed (the capture trap: a block local
  * named like a corpus symbol -- the acceptance integrand's own a, b, c, d
@@ -6125,9 +6134,11 @@ mr_use_gamma_flag : false$
 /* Rubi FindTrigFactor[func1,func2,u,v,flag] (L4896-4906): the first
    factor func[w]^m of u (m odd, w an integer multiple of v, and w # v
    unless flag) as [w, u/func[w]^m]; false if none. The .m walks
-   LeadFactor/RemainingFactors, i.e. the product's factors in order; a
-   non-product u is its own single factor (RemainingFactors -> 1 ->
-   False). */
+   LeadFactor/RemainingFactors, i.e. the product's factors in order. A
+   non-product u is its own single factor: when it is func[w]^m itself the
+   answer is [w, 1] (the .m's {LeadBase[u][[1]], RemainingFactors[u]},
+   RemainingFactors of a non-product being 1; the port's u/u), otherwise
+   False (the .m recurses on RemainingFactors[u] = 1, which is False). */
 %mr_findTrigFactor(%mr_ftf_f1, %mr_ftf_f2, %mr_ftf_u, %mr_ftf_v, %mr_ftf_flag) :=
   block([inflag : true, %mr_ftf_k, %mr_ftf_b, %mr_ftf_e, %mr_ftf_r],
   %mr_ftf_r : false,

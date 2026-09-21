@@ -201,11 +201,10 @@ RENAME = {
     "UnifyInertTrigFunction": "%mr_unifyInertTrigFunction",
     "FixInertTrigFunction": "%mr_fixInertTrigFunction",
     "ReduceInertTrig": "%mr_reduceInertTrig",
-    # Two predicates the FixInertTrigFunction conds call. %mr_inertReciprocalQ
-    # is ported in maxima_rubi_utils.mac (Task 4; one line in Rubi too);
-    # %mr_powerOfInertTrigSumQ is NOT ported yet — the table is static
-    # closure and the port lands with the rest of the substrate utilities
-    # (the class-2/3/6 port rows above are the precedent for this state).
+    # Two predicates the FixInertTrigFunction conds call, both ported in
+    # maxima_rubi_utils.mac: %mr_inertReciprocalQ (Task 4; one line in Rubi
+    # too) and %mr_powerOfInertTrigSumQ (commit 826e134, with the
+    # 3-argument ReduceInertTrig).
     "InertReciprocalQ": "%mr_inertReciprocalQ",
     "PowerOfInertTrigSumQ": "%mr_powerOfInertTrigSumQ",
     # inert-trig substrate plan, Task 9: the tokens of the bridge's six

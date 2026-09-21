@@ -423,8 +423,9 @@ statically)."
 ;;;
 ;;; %mr_defrewrite(key, n, pattern, cond, repl) is %mr_defrule's sibling for
 ;;; Rubi's utility functions whose clauses are `Name[pattern] := rhs /; cond`
-;;; -- 136 of the 142 clauses of FixInertTrigFunction and
-;;; UnifyInertTrigFunction are of exactly that shape. The pattern's outermost
+;;; -- every clause of UnifyInertTrigFunction (75), FixInertTrigFunction (61)
+;;; and ReduceInertTrig (4) is of that shape: 140 in the generated tables,
+;;; 137 conditioned, 3 registering `true` as their cond. The pattern's outermost
 ;;; head is the function name rather than Int, and there is no
 ;;; integrand/variable split, so there is no mr-accept and no pre-binding.
 ;;; Placed here (after with-mr-switches / mr-guarded / mr-call / mr-true-p /

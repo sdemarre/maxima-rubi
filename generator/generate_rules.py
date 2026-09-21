@@ -1116,7 +1116,7 @@ BARE_U_BODY_EXCEPTIONS = {
 #               $StepCounter = Null}, ...], which translate() emits as the
 #               body alone (the IntHide precedent; see the "Block" case).
 #   4_7_5 r72   Int[u_,x_Symbol] := With[{v=ActivateTrig[u]},
-#               CannotIntegrate[v,x]] /; Not[InertTrigFreeQ[u]] (L77; Task
+#               CannotIntegrate[v,x]] /; Not[InertTrigFreeQ[u]] (L76; Task
 #               10 fix round 1, ruling R26) -- the file's LAST record: the
 #               integrand the bridge admitted and nothing finished is given
 #               up RE-ACTIVATED, so the unintegrable noun carries no inert
