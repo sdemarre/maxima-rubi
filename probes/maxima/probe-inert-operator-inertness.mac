@@ -66,6 +66,24 @@ for f in ['%mr_isin, '%mr_icos, '%mr_itan, '%mr_icot, '%mr_isec, '%mr_icsc]
   do check(concat("ratsimp keeps ", f),
            ratsimp(apply(f, [x])), apply(f, [x]))$
 
+/* The simplifiers the ported rules actually call. trigreduce/trigexpand and
+ * exponentialize are the class-6 workhorses (maxima_rubi_utils.mac stamps two
+ * deviations against them); radcan and factor appear in the zero chain and in
+ * %mr_simp. An inert head must come back untouched from all of them. */
+for f in ['%mr_isin, '%mr_icos, '%mr_itan, '%mr_icot, '%mr_isec, '%mr_icsc] do (
+  check(concat("trigreduce keeps ", f), trigreduce(apply(f, [x])), apply(f, [x])),
+  check(concat("trigexpand keeps ", f), trigexpand(apply(f, [x])), apply(f, [x])),
+  check(concat("exponentialize keeps ", f), exponentialize(apply(f, [x])), apply(f, [x])),
+  check(concat("radcan keeps ", f), radcan(apply(f, [x])), apply(f, [x])),
+  check(concat("factor keeps ", f), factor(apply(f, [x])), apply(f, [x])))$
+
+/* The discriminating pair again, for the multiple-angle simplifier: trigreduce
+ * rewrites sin(x)^2 and must not touch the inert square. */
+check("trigreduce does NOT reduce the inert square",
+      trigreduce(%mr_isin(x)^2), %mr_isin(x)^2)$
+check("trigreduce DOES reduce the active square (control)",
+      trigreduce(sin(x)^2), (1 - cos(2*x))/2)$
+
 print("========================================")$
 print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$
 print("========================================")$
