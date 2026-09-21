@@ -290,6 +290,13 @@ def switch_header():
     return "  switches: " + run_records.switches_text(SWITCH_SETTINGS)
 
 
+def zc_header():
+    """Suffix for the record's `filter:` line when the zero chain's
+    radcan(rat()) fallback is OFF. Empty in every normal run, so a normal
+    record's header is byte-identical to before this switch existed."""
+    return "" if ZC_FALLBACK else "  zc-fallback: off"
+
+
 def core_header():
     """Suffix for the record's `filter:` header line: names a pinned core
     (the shard merge accepts any `filter:` line), empty otherwise."""
@@ -319,6 +326,13 @@ mac_file = os.path.join(workdir, "i.mac")
 # seconds, so records state the kind on their filter: line and any A/B must
 # hold it fixed.
 CAP_KIND = os.environ.get("MR_CAP_KIND", "cpu")
+# MR_ZC_FALLBACK=0 drops the zero chain's radcan(rat()) fallback stage for the
+# whole run. It exists for ONE measurement — the fallback-off arm that answers
+# "does the fallback still rescue anything" by A/B against a normal record
+# (probes/maxima/probe-radcan-fallback-live). It is NOT a tuning knob: a record
+# taken with it is not comparable to one taken without, exactly as a cpu record
+# is not comparable to a wall one, which is why the header states it (below).
+ZC_FALLBACK = os.environ.get("MR_ZC_FALLBACK", "1") != "0"
 if CAP_KIND not in ("cpu", "wall"):
     raise SystemExit(f"corpus_driver: MR_CAP_KIND must be cpu or wall, not {CAP_KIND!r}")
 
@@ -465,8 +479,15 @@ def extract_entries(path):
     return entries, line_nos
 
 
-def zero_chain(d_expr, var):
+def zero_chain(d_expr, var, fallback=True):
     """Statement list whose value is 1 iff the zero-test closes.
+
+    FALLBACK=False emits the same chain WITHOUT the radcan(rat()) stage.
+    Nothing in a corpus run passes it: it exists so the fallback's guard
+    (test/test_driver_radcan_fallback.py) can run one diff BOTH ways and
+    prove the fallback is what closes it, rather than asserting a
+    classification that the rule set decides (2026-09-21 — the guard's
+    previous witnesses rotted at commit 29d237a for exactly that reason).
 
     The whole chain is errcatch'd: a ratsimp/factor crash inside the
     VERIFICATION (measured 2026-08-24: `quotient' by `zero' on 1.2.2.4
@@ -621,7 +642,7 @@ def zero_chain(d_expr, var):
     # gate that let radcan(rat()) run on elliptic-diffs, burning the
     # 30 s cap on 28 entries (18 of them 1.2.1.3 e440-e484
     # unverified->timeout) in the 2026-08-28 A/B.
-    fallback = ("if apply(freeof, [elliptic_f, elliptic_e, elliptic_pi, "
+    fallback_text = ("if apply(freeof, [elliptic_f, elliptic_e, elliptic_pi, "
                 "elliptic_ec, elliptic_eu, elliptic_kc, MR_de]) = true "
                 "then block([MR_fb], "
                 "MR_fb : errcatch(radcan(rat(MR_de))), "
@@ -629,10 +650,13 @@ def zero_chain(d_expr, var):
                 "else (MR_fb : part(MR_fb, 1), "
                 "if is(MR_fb = 0) then 1 else 0)) "
                 "else 0")
+    if not fallback:
+        return ("block([MR_zr], MR_zr : errcatch(" + inner + "), "
+                "if MR_zr # [] and part(MR_zr, 1) = 1 then 1 else 0)")
     return (
         "block([MR_zr, MR_zf], MR_zr : errcatch(" + inner + "), "
         "if MR_zr # [] and part(MR_zr, 1) = 1 then 1 "
-        "else (MR_zf : errcatch(" + fallback + "), "
+        "else (MR_zf : errcatch(" + fallback_text + "), "
         "if MR_zf = [] then 0 else part(MR_zf, 1)))"
     )
 
@@ -708,10 +732,12 @@ def build_text(f_text, var_text, e_text, e_text2=None):
         # e182, both numerically correct, timed out under ze-first).
         # "verified" and "expected" are both PASS classes, so the
         # reordering is classification-safe.
-        ze = zero_chain(f"diff(mr_r - ({e_text}), {var_text})", var_text)
-        zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f", var_text)
+        ze = zero_chain(f"diff(mr_r - ({e_text}), {var_text})", var_text,
+                        ZC_FALLBACK)
+        zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f", var_text, ZC_FALLBACK)
         if e_text2 is not None:
-            ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})", var_text)
+            ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})", var_text,
+                             ZC_FALLBACK)
             body = (f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
                     f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                     "else block([MR_z, MR_z2, MR_w], MR_w: (" + zv + "), "
@@ -776,7 +802,8 @@ def header_lines(title, detail, build_lines):
     return ([title,
              f"date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"]
             + list(build_lines)
-            + [f"filter: {FILTER!r}  {detail}" + switch_header() + core_header(), ""])
+            + [f"filter: {FILTER!r}  {detail}" + switch_header()
+               + core_header() + zc_header(), ""])
 
 
 def classify_output(out, timed_out):

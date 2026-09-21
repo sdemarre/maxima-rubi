@@ -364,6 +364,30 @@ python3 test/p5_gate.py winner <switch> <run-1 c1> <run-1 c2> <run-1 c3> <flip c
 Guard (no Maxima): `python3 test/test_run_records.py` — green
 `Results: 43 passed, 0 failed`.
 
+**Harness guards** — the per-change gate for `test/corpus_driver.py`. They are
+listed HERE because the one that was NOT listed spent weeks red without anyone
+noticing (`.scratch/corpus-harness/issues/03`): **a green guard suite is not the
+same as a guard in the gate list.** When a new one is written, add it here in
+the same commit.
+
+```sh
+python3 test/test_driver_parens.py          # Results: 2 passed, 0 failed
+python3 test/test_driver_core_pin.py        # Results: 5 passed, 0 failed
+python3 test/test_driver_out_default.py     # Results: 4 passed, 0 failed
+python3 test/test_driver_radcan_fallback.py # Results: 4 passed, 0 failed
+python3 test/test_ab_records.py             # Results: 6 passed, 0 failed
+python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
+python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
+```
+
+`test_driver_radcan_fallback` guards the `zero_chain` radcan(rat()) fallback —
+part of the VERIFICATION path, which decides `verified` vs `unverified` for
+every entry of every class. Its rescue/gate witnesses are SYNTHETIC and frozen
+(2026-09-21), not corpus entries: the corpus-driven ones rotted at commit
+`29d237a` because `deferred`/`contains-noun` are decided before the zero chain
+is built, so a rule change silently stopped them exercising the fallback.
+Do not re-point them at corpus entries.
+
 **Record A/B** — the entry-level diff of any two merged records (any
 class, shard files and re-check records too); use it for every
 regression gate instead of writing a one-off join:

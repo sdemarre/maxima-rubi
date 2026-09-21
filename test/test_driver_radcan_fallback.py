@@ -38,13 +38,41 @@ Four checks:
   2. gate semantics (Maxima): the apply(freeof, ...) gate is false on
      an elliptic-carrying expression and true on a plain one — the
      exact regression the no-op list form failed to catch.
-  3. rescue (Maxima): measured entries with NON-elliptic zero-diffs
-     that the stage chain cannot close classify as a PASS class
-     (verified / expected) via the fallback.
-  4. gate-blocks (Maxima): measured entries whose zero-diff carries
-     elliptic functions classify `unverified` — the gate must keep
-     the fallback off them (their chain crash is errcatched, the
-     gated fallback returns 0).
+  3. rescue (Maxima): a zero-diff the stage chain cannot close is
+     closed by zero_chain WITH the fallback and not closed WITHOUT
+     it. Both arms are the same zero_chain, through its `fallback`
+     parameter, so the check proves the fallback is the stage that
+     closes it rather than assuming it.
+  4. gate-blocks (Maxima): the SAME zero-diff multiplied by an
+     elliptic factor is left unclosed — while ungated
+     radcan(rat(.)) still returns 0 on it. That last clause is what
+     makes this a gate test: the fallback WOULD close the diff, and
+     only the elliptic gate stops it.
+
+WITNESSES — 2026-09-21. Checks 3 and 4 used to run two measured CORPUS
+entries end to end and read the driver's classification. That coupled
+them to the rule set, which is not what they guard: `deferred` and
+`contains-noun` are decided BEFORE the zero chain is built
+(corpus_driver.build_text), so an entry that stops reaching the
+zero-test silently stops exercising the fallback. Commit 29d237a
+(2026-09-18, the faithful pair, class-1 +3,310) did exactly that —
+1.2.1.4 e764 verified -> deferred, 1.1.3.8 e541/e543/e544 unverified ->
+contains-noun — and the guard went red for weeks while the fallback it
+guards was untouched (`.scratch/corpus-harness/issues/03`).
+
+The witnesses are therefore synthetic and frozen, and depend on neither
+the rule set nor the corpus:
+
+    rescue      %e^(n*log(x)) - x^n
+    gate-blocks elliptic_f(x, 1/2)*(%e^(n*log(x)) - x^n)
+
+Both are identically zero. `n` is deliberately NOT one of the zero
+chain's sweep parameters (a b c d e f g h A B C D p), so the leading
+numeric stage evaluates to a float NOUN and declines — which is the
+only way the symbolic stages, and then the fallback, are ever reached.
+Measured 2026-09-21 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7:
+the rescue witness is nofb=0, withfb=1, gate=true; the gated witness is
+nofb=0, withfb=0, gate=false, and ungated radcan(rat(.)) = 0.
 
 Re-runnable:  python3 test/test_driver_radcan_fallback.py
 Exits nonzero if any check fails.
@@ -57,21 +85,14 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
-# Non-elliptic zero-diffs the stage chain cannot close but
-# radcan(rat()) does (measured 2026-08-28): the fallback must rescue
-# them to a PASS class.
-RESCUE_TARGETS = [
-    ("1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p", 2588),
-    ("1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p", 764),
-]
-# Zero-diffs carrying elliptic functions the stage chain crashes on
-# (1.1.3.8 quartic family, measured 2026-08-28): the gate must keep
-# the fallback off them -> `unverified`, not a PASS class.
-GATED_TARGETS = [
-    ("1.1.3.8 P(x) (c x)^m (a+b x^n)^p", 541),
-    ("1.1.3.8 P(x) (c x)^m (a+b x^n)^p", 543),
-    ("1.1.3.8 P(x) (c x)^m (a+b x^n)^p", 544),
-]
+# A zero-diff no ratsimp/factor stage closes and radcan(rat()) does.
+# `n` is not a sweep parameter, so the leading numeric stage declines
+# (see the module docstring); without that the numeric stage would
+# close any true zero and the fallback would never be reached.
+RESCUE_WITNESS = "%e^(n*log(x)) - x^n"
+# The same zero-diff behind an elliptic factor: the gate must keep the
+# fallback off it EVEN THOUGH radcan(rat()) would return 0.
+GATED_WITNESS = "elliptic_f(x, 1/2)*(%e^(n*log(x)) - x^n)"
 GATE_SYMS = ("elliptic_f, elliptic_e, elliptic_pi, "
              "elliptic_ec, elliptic_eu, elliptic_kc")
 
@@ -152,64 +173,74 @@ def check_gate_semantics(driver):
     return failures
 
 
+def _chain_probe(driver, witness):
+    """(nofb, withfb, gate, ungated_radcan) for WITNESS, in one Maxima."""
+    no_fb = driver.zero_chain(witness, "x", fallback=False)
+    with_fb = driver.zero_chain(witness, "x", fallback=True)
+    text = ("MR_N: (" + no_fb + ")$\n"
+            "MR_W: (" + with_fb + ")$\n"
+            f"MR_G: apply(freeof, [{GATE_SYMS}, ({witness})])$\n"
+            f"MR_R: errcatch(radcan(rat({witness})))$\n"
+            'disp(concat("RES ", string(MR_N), " ", string(MR_W), " ",\n'
+            '            string(MR_G), " ",\n'
+            '            string(if MR_R = [] then CRASH else part(MR_R, 1))))$\n')
+    out, timed_out = driver.maxima_run(text, 120)
+    for line in out.splitlines():
+        parts = line.strip().split()
+        if len(parts) == 5 and parts[0] == "RES":
+            return tuple(parts[1:])
+    return ("timeout" if timed_out else "no-result",) * 4
+
+
 def check_rescue(driver):
-    """Non-elliptic crashing/non-closing zero-diffs must classify as
-    a PASS class via the fallback."""
+    """The fallback must close a zero-diff the stage chain cannot.
+
+    Both arms are the SAME zero_chain, switched by its `fallback`
+    parameter, so a witness that the chain closes on its own can never
+    pass this check vacuously — which is how the previous, corpus-
+    driven version of it rotted unnoticed."""
     failures = []
-    for filt, entry_no in RESCUE_TARGETS:
-        try:
-            pf, cls, _dt, label, _out = _run_one(driver, filt, entry_no)
-        except SystemExit as e:
-            return [f"cannot resolve {filt} e{entry_no}: {e}"]
-        if cls not in driver.PASS_CLASSES:
-            failures.append(f"{label} classified {cls!r}, expected a PASS "
-                            f"class (unverified before the fallback)")
+    nofb, withfb, gate, _rad = _chain_probe(driver, RESCUE_WITNESS)
+    if gate != "true":
+        failures.append(f"the rescue witness carries a gated symbol "
+                        f"(gate printed {gate!r}); it cannot reach the "
+                        "fallback at all, so the check would be vacuous")
+    if nofb != "0":
+        failures.append(f"zero_chain(fallback=False) printed {nofb!r}, want "
+                        "'0' — the stage chain now closes the witness on "
+                        "its own, so the witness no longer exercises the "
+                        "fallback and must be replaced")
+    if withfb != "1":
+        failures.append(f"zero_chain(fallback=True) printed {withfb!r}, want "
+                        "'1' — the radcan(rat()) fallback no longer closes "
+                        "a diff that nothing else closes")
     return failures
 
 
 def check_gate_blocks(driver):
-    """Elliptic-carrying zero-diffs must stay out of the fallback:
-    `unverified` (chain crash errcatched, gated fallback returns 0),
-    not a PASS class."""
+    """The elliptic gate must keep the fallback off an elliptic-carrying
+    diff — and the point is that radcan(rat()) WOULD have closed it.
+
+    Without the last assertion this check passes on any diff the
+    fallback merely fails to close, which says nothing about the gate."""
     failures = []
-    for filt, entry_no in GATED_TARGETS:
-        try:
-            pf, cls, _dt, label, _out = _run_one(driver, filt, entry_no)
-        except SystemExit as e:
-            return [f"cannot resolve {filt} e{entry_no}: {e}"]
-        if cls != "unverified":
-            failures.append(f"{label} classified {cls!r}, expected "
-                            f"'unverified' (elliptic diff must be "
-                            f"gated out of the fallback)")
+    nofb, withfb, gate, rad = _chain_probe(driver, GATED_WITNESS)
+    if gate != "false":
+        failures.append(f"the gate ADMITS the elliptic witness (gate "
+                        f"printed {gate!r}, want 'false')")
+    if rad != "0":
+        failures.append(f"ungated radcan(rat()) printed {rad!r}, want '0' — "
+                        "the witness is no longer a diff the fallback would "
+                        "close, so blocking it proves nothing about the gate")
+    if nofb != "0":
+        failures.append(f"zero_chain(fallback=False) printed {nofb!r}, want "
+                        "'0' — the stage chain closes the witness, so the "
+                        "fallback is never consulted and the check is vacuous")
+    if withfb != "0":
+        failures.append(f"zero_chain(fallback=True) printed {withfb!r}, want "
+                        "'0' — the gate let radcan(rat()) run on an "
+                        "elliptic-carrying diff")
     return failures
-
-
-def _run_one(driver, filter, entry_no):
-    files = driver.file_list()
-    for path, rel in files:
-        if filter in rel:
-            entries, line_nos = driver.extract_entries(path)
-            if 1 <= entry_no <= len(entries):
-                els = driver.split_elements(entries[entry_no - 1][1:-1])
-                f_text, var_text, _s, e_text = els[0], els[1], els[2], els[3]
-                e_text2 = els[4] if len(els) == 5 else None
-                label = f"{rel} e{entry_no} L{line_nos[entry_no - 1]}"
-                out, timed_out = driver.maxima_run(
-                    driver.build_text(f_text, var_text, e_text, e_text2),
-                    45)
-                cls = None
-                for line in out.splitlines():
-                    line = line.strip()
-                    if line.startswith("CLASS "):
-                        cls = line[6:].strip()
-                        break
-                if cls is None:
-                    cls = "timeout" if timed_out else "error"
-                if cls not in driver.KNOWN_CLASSES:
-                    cls = "error"
-                pf = "PASS" if cls in driver.PASS_CLASSES else "FAIL"
-                return pf, cls, 0.0, label, out
-    raise SystemExit(f"target not found: {filter!r} e{entry_no}")
 
 
 def main():
@@ -230,11 +261,11 @@ def main():
                "the apply(freeof, ...) gate discriminates elliptic "
                "from plain expressions"),
               ("rescue", check_rescue,
-               "the non-elliptic measured entries now classify as "
-               "PASS classes via the fallback"),
+               "the fallback closes a zero-diff the stage chain "
+               "alone does not"),
               ("gate-blocks", check_gate_blocks,
-               "the elliptic-carrying measured entries stay "
-               "`unverified` (gated out of the fallback)")]
+               "the gate keeps the fallback off an elliptic diff "
+               "radcan(rat()) would have closed")]
     for name, fn, okmsg in checks:
         try:
             fails = fn(driver)

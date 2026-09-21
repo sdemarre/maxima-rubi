@@ -1,0 +1,15 @@
+#!/bin/sh
+# probe-radcan-fallback-live.run — is the zero-chain radcan(rat()) fallback
+# still load-bearing on today's rules?  (`.scratch/corpus-harness/issues/03` #2)
+#
+# Every `verified`/`expected` entry of the two files the fallback's own
+# docstring names as its beneficiaries (1.1.3.8, 1.2.1.4) is re-answered on the
+# rules core, and its zero-diff run through zero_chain WITHOUT the fallback
+# first — only a diff the stage chain cannot close and the fallback can is a
+# rescue.  646 targets, 12 workers, 150 s per-entry cap.
+#
+#   sh probes/maxima/probe-radcan-fallback-live.run
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/maxima/probe-radcan-fallback-live.py \
+    > probes/maxima/probe-radcan-fallback-live.out 2>&1
+echo "wrote probes/maxima/probe-radcan-fallback-live.out"
