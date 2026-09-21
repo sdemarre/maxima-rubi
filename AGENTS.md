@@ -225,15 +225,17 @@ Green: `Results: 57 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
 empty-leftover lock, +2 at Plan 2: the Power-exponent Optional
 default, +4 at spec §3.8: the flat-absorb committed-tail prune — two
 committed-tail locks, one lock that an uncommitted tail still
-enumerates, one cost test), `Results: 51 passed, 0 failed` (mr-tree;
-46, +5 at Plan 2: CRE input and the booleans) and
-`Results: 66 passed, 0 failed`
+enumerates, one cost test), `Results: 58 passed, 0 failed` (mr-tree;
+46, +5 at Plan 2: CRE input and the booleans, +7 at the inert-trig
+substrate, `53dc578`: the six inert trig heads) and
+`Results: 71 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
 MatchQ pattern prepare rejects is an error, +8 at the final review:
 MatchQ part folding and an out-of-range part error, +1 at Plan 3: the
-switch defaults; +8 more by 2026-09-18, not attributed here).
+switch defaults; +8 more by 2026-09-18, not attributed here; +5 at the
+inert-trig substrate, `e9642a6`: the rewrite records).
 
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the
@@ -242,7 +244,10 @@ the inert-trig plan's Task 9: `Results: 1146 passed, 0 failed`; at its
 Task 10 (TryPureTanSubst / CalculusFreeQ / SubstFor[w,v,u,x] units, the
 Weierstrass record end to end, the two inert-leak targets):
 `Results: 1164 passed, 0 failed`; at its fix round 1 (4.7.5 r72, the
-re-activating give-up, 4 targets): `Results: 1168 passed, 0 failed`.
+re-activating give-up, 4 targets): `Results: 1168 passed, 0 failed`; at
+its final fix wave (the class-4 With-local capture trap, 4 targets,
+`de51845`): `Results: 1172 passed, 0 failed`. The matcher suites
+re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
 test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
@@ -271,8 +276,10 @@ fixes' 1,283 integer comparisons, 10 `notequal` and 1 juxtaposition), the
 reader self-test
 (`python3 generator/mma_reader.py`), and every pattern string preparing
 in `MR-MATCH`. Regeneration is byte-identical:
-`python3 generator/generate_rules.py --class <1|2|3>` leaves
-`git status --porcelain rules/` empty.
+`python3 generator/generate_rules.py --class <1|2|3|6>` and `--rewrites`
+leave `git status --porcelain rules/` empty (as does `--class 4` against
+the committed class-4 files; class 4 alone prefixes its With/Module
+locals, `de51845`, ticket `.scratch/class-ports/issues/08`).
 
 **Matcher substrate — regression suite** (spec section 4 P1/P2 gates:
 the probe-02 round trip over all 7,444 Rubi LHSs in narrow and wide
@@ -422,6 +429,7 @@ python3 test/test_ab_records.py             # Results: 6 passed, 0 failed
 python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
 python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
 python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
+python3 test/test_head_rewrites.py          # Results: 20 passed, 0 failed
 ```
 
 `test_driver_inert_leak` guards the inert-head leak classification: an answer
