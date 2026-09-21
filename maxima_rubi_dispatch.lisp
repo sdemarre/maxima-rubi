@@ -129,8 +129,8 @@ counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).")
 ;;; 1-based index in *mr-rules*); mr_rules_<key> and mr_rule_table are
 ;;; Maxima lists of handles.
 
-(defstruct (mr-rule (:constructor make-mr-rule (key n pattern cond repl giveup)))
-  key n pattern cond repl giveup)
+(defstruct (mr-rule (:constructor make-mr-rule (key n pattern pattern-text cond repl giveup)))
+  key n pattern pattern-text cond repl giveup)
 
 (defun mr-form-has-symbol-p (sym form)
   "True when SYM occurs anywhere in the cons tree FORM."
@@ -167,7 +167,7 @@ runs at load."
                       (error (e)
                         (merror (intl:gettext "%mr_defrule: ~A r~A: ~A") key n
                                 (princ-to-string e))))))
-      (vector-push-extend (make-mr-rule key n compiled cond repl
+      (vector-push-extend (make-mr-rule key n compiled pattern cond repl
                                         (mr-giveup-repl-p repl))
                           *mr-rules*)
       (fill-pointer *mr-rules*))))
@@ -405,6 +405,18 @@ cond, repl, as the dispatcher runs it), or false."
   (destructuring-bind (h f x) args
     (multiple-value-bind (expr pre) (mr-integrand f x)
       (and expr (with-mr-switches (mr-apply-rule (mr-rule-of h) expr pre f x))))))
+
+(defmfun |$%MR_RULE_PATTERN_TEXT| (&rest args)
+  "%mr_rule_pattern_text(handle): the rule's ORIGINAL pattern string, exactly
+as passed to %mr_defrule before mr-match:prepare compiled it — a test and
+debugging entry (inert-trig substrate design 3.3, Task 8 fix round 1: the
+bare-u_ tail-position gate reads it to classify a handle from the loaded
+table, the same structural definition generator/generate_rules.py's
+bare_int_clause and test/check_generated_rules.py's INT_BARE_U check
+statically)."
+  (unless (= (length args) 1)
+    (merror (intl:gettext "%mr_rule_pattern_text: expected 1 arg, found ~A") (length args)))
+  (mr-rule-pattern-text (mr-rule-of (first args))))
 
 ;;; ------------------------------------------------------------------
 ;;; Rewrite records (inert-trig substrate design 3.2)

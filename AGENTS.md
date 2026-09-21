@@ -175,6 +175,32 @@ plan-2 final review (1.4.2 r17 MatchQ exponent part folding), → 957 matcher tr
 (docs/superpowers/plans/2026-09-14-matcher-translation-fixes.md: the exact seen entry 5, integer
 comparisons / notequal / juxtaposition 17, the PosAux port and the First/Rest siblings 37 checks)).
 
+**Rule-table order — the real `mr_load_all` path** (the per-change gate
+for the bare-`u_` tail-position convention, inert-trig substrate design
+3.3, Task 8 fix round 1, ledger R21). Layer A's own suite
+(`test_maxima_rubi.mac`) never calls `mr_load_all()` — it loads only the
+eager milestone-1 core, so its "tail records are last in the table"
+target only ever sees that stand-in (body = `mr_rules_1_1_1_1`, tail =
+`[]`) and is permanently vacuous on the REAL table. This is the gate that
+checks the real one, kept outside Layer A because later Layer A targets
+depend on the rule table's contents at their point in the suite:
+
+```sh
+maxima --very-quiet -b test/test_rule_table_order.mac
+```
+
+Green: `Results: 4 passed, 0 failed` — both handle lists are defined
+lists and the body list is non-empty; `mr_rule_table` equals the body
+handles followed by the tail handles with nothing lost; every tail
+handle is registered after every body handle (vacuously true today, no
+generated file defines a `_tail` list yet — Task 9 makes it a real
+check); and every bare-`u_` Int record anywhere in the loaded table
+(read via the debug entry `%mr_rule_pattern_text(handle)`,
+`maxima_rubi_dispatch.lisp`) is either in the tail or one of the six
+named exceptions (`generator/generate_rules.py`
+`BARE_U_BODY_EXCEPTIONS`, `.scratch/class-ports/issues/07-bare-u-
+records-mid-table.md`).
+
 **Matcher substrate — unit suites** (the per-change gate for
 `maxima_rubi_match.lisp` / `maxima_rubi_tree.lisp` /
 `maxima_rubi_dispatch.lisp`; branch `matcher-substrate`, spec
