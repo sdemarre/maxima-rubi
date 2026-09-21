@@ -224,6 +224,9 @@ RENAME = {
     "FunctionOfQ": "%mr_functionOfQ",
     "TryPureTanSubst": "%mr_tryPureTanSubst",
     "CalculusFreeQ": "%mr_calculusFreeQ",
+    # Task 10 fix round 1: 4.7.5 r72's condition (the re-activating
+    # CannotIntegrate catch-all). One argument in both Rubi and the port.
+    "InertTrigFreeQ": "%mr_inertTrigFreeQ",
     # Rubi's undocumented $UseGamma control global (absent from Rubi.m;
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):

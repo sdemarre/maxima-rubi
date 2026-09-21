@@ -130,6 +130,7 @@ run_all_tests() := block([],
   test_try_pure_tan_subst(),
   test_weierstrass(),
   test_inert_leak_guard(),
+  test_inert_giveup(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4061,6 +4062,56 @@ test_inert_leak_guard() := block([mr_t10_saved, mr_t10_tab, mr_t10_r1, mr_t10_r2
   check_not("no inert head leaks from a hyperbolic answer",
             is(mr_t10_r2 = 'mr_t10_noload)
             or is(%mr_inertTrigFreeQ(mr_t10_r2) = false)),
+  true
+)$
+
+/* 4.7.5 r72 (4.7.5.m L77, Task 10 fix round 1, ruling R26) -- the file's
+ * last record and the tail's last:
+ *   Int[u_,x_Symbol] := With[{v=ActivateTrig[u]}, CannotIntegrate[v,x]] /;
+ *     Not[InertTrigFreeQ[u]]
+ * An integrand the bridge (4.1.0.1 r1) deactivates and no later record
+ * finishes is given up RE-ACTIVATED. Before r72 the port answered
+ * unintegrable(<the INERT integrand>), which the driver's leak guard reads
+ * as error (2,604 class-6 entries at Task 10, 114 of them no-answer ->
+ * error). The integrands are real class-6 entries whose corpus answer is
+ * Unintegrable(<integrand>, x): 6.1.1 e26 csch(a+b x)/(c+d x) and 6.2.1 e29
+ * sech(a+b x)/(c+d x). Expected from the source: CannotIntegrate[v,x] is the
+ * top-level noun (the driver's no-answer), v = ActivateTrig[DeactivateTrig
+ * [f]] carries no inert head, and is f in VALUE. The port does not return f
+ * in FORM: ActivateTrig restores circular heads of an imaginary argument
+ * (csc(%i b x + %i a)), which Mathematica would auto-simplify to Csch and
+ * Maxima does not -- so the value check is radcan(exponentialize(.)).
+ * The noun test is string(op(.)) = "unintegrable", the driver's own: op()
+ * of the subscripted marker is the NOUN %unintegrable, so op(.) =
+ * 'unintegrable is false on it. */
+test_inert_giveup() := block([mr_t10_saved, mr_t10_tab, mr_t10_f1, mr_t10_r1,
+                              mr_t10_f2, mr_t10_r2],
+  print("--- the re-activating give-up (4.7.5 r72) ---"),
+  mr_t10_saved : mr_rule_table,
+  mr_t10_tab : mr_t10_bridge_table(),
+  mr_t10_f1 : csch(a + b*x)/(c + d*x),
+  mr_t10_f2 : sech(a + b*x)/(c + d*x),
+  mr_t10_r1 : 'mr_t10_noload, mr_t10_r2 : 'mr_t10_noload,
+  if mr_t10_tab # false then (
+    mr_rule_table : mr_t10_tab,
+    mr_t10_r1 : rubi(mr_t10_f1, x),
+    mr_t10_r2 : rubi(mr_t10_f2, x)),
+  mr_rule_table : mr_t10_saved,
+  check_bool("r72: csch(a+b x)/(c+d x) gives up as a top-level unintegrable noun in x",
+    not(atom(mr_t10_r1)) and is(string(op(mr_t10_r1)) = "unintegrable")
+    and is(length(args(mr_t10_r1)) = 2) and is(second(args(mr_t10_r1)) = x)),
+  check_bool("r72: the given-up integrand carries no inert head (re-activated)",
+    not(atom(mr_t10_r1)) and %mr_inertTrigFreeQ(mr_t10_r1)
+    and freeof('%mr_isin, '%mr_icos, '%mr_itan, '%mr_icot, '%mr_isec,
+               '%mr_icsc, mr_t10_r1)),
+  check_bool("r72: the given-up integrand is the input in value",
+    not(atom(mr_t10_r1)) and is(string(op(mr_t10_r1)) = "unintegrable")
+    and is(radcan(exponentialize(first(args(mr_t10_r1)) - mr_t10_f1)) = 0)),
+  check_bool("r72: sech(a+b x)/(c+d x) gives up re-activated, in value",
+    not(atom(mr_t10_r2)) and is(string(op(mr_t10_r2)) = "unintegrable")
+    and %mr_inertTrigFreeQ(mr_t10_r2)
+    and is(second(args(mr_t10_r2)) = x)
+    and is(radcan(exponentialize(first(args(mr_t10_r2)) - mr_t10_f2)) = 0)),
   true
 )$
 

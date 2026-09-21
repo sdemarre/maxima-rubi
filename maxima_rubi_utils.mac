@@ -3614,9 +3614,14 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
 
    SimplifyIntegrand (L2148-2155) is NormalizeLeadTermSigns[
    NormalizeIntegrandAux[Simplify[u],x]], and what matters here is its
-   Simplify. DEVIATION (stamped; a SHAPE approximation, value-preserving,
-   so it can neither accept nor decline a record -- it changes which rules
-   the nested Int meets): Mathematica's Simplify returns the smallest form
+   Simplify. DEVIATION (stamped; a SHAPE approximation). It is
+   value-preserving, but it CAN move a record's accept/decline: r71's
+   condition is CalculusFreeQ of a trial Int of exactly this simplified
+   shape, and any record that tests a nested Int result's shape is in the
+   same position -- the shape decides which rules the nested Int meets, so
+   whether it comes back calculus-free (r71 declined without this; that is
+   why it was added). The approximation may therefore accept or decline
+   where Rubi's Simplify would not. Mathematica's Simplify returns the smallest form
    (by its LeafCount-based complexity) among the transformations it tries,
    never one larger than its input. The port takes the smallest by
    %mr_leafCount of three candidates -- u itself, ratsimp(u) and

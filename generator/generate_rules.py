@@ -1099,12 +1099,17 @@ BARE_U_BODY_EXCEPTIONS = {
 #               its trial Int sits in a Block[{$ShowSteps = False,
 #               $StepCounter = Null}, ...], which translate() emits as the
 #               body alone (the IntHide precedent; see the "Block" case).
-# 4_7_5 r66/r70/r72 (L69/L73/L76 -- TrigSimplify,
-# ExpandTrig, CannotIntegrate) are bare-u_ too but NOT wrapped; they are
-# class-4 port work, outside this subset.
+#   4_7_5 r72   Int[u_,x_Symbol] := With[{v=ActivateTrig[u]},
+#               CannotIntegrate[v,x]] /; Not[InertTrigFreeQ[u]] (L77; Task
+#               10 fix round 1, ruling R26) -- the file's LAST record: the
+#               integrand the bridge admitted and nothing finished is given
+#               up RE-ACTIVATED, so the unintegrable noun carries no inert
+#               head. It must stay last in the tail.
+# 4_7_5 r66/r70 (L69/L73 -- TrigSimplify, ExpandTrig) are bare-u_ too but
+# NOT wrapped; they are class-4 port work, outside this subset.
 CLASS4_SUBSET = {
     "4_1_0_1": (1,),
-    "4_7_5": (21, 22, 47, 48, 58, 71),
+    "4_7_5": (21, 22, 47, 48, 58, 71, 72),
 }
 
 
@@ -1841,9 +1846,10 @@ def configure(class_num):
     # so unwrap_showsteps_line finds nothing to recover and the census
     # and the emitter agree exactly
     # (probes/translation/05-class6-syntax-census.out).
-    # class 4: 7 — NOT the section's 2,080 (spec 0.3): only the
+    # class 4: 8 — NOT the section's 2,080 (spec 0.3): only the
     # CLASS4_SUBSET records, the bridge and six of 4.7.5's substitution
-    # catch-alls (inert-trig substrate plan, Task 9; r71, Task 10). It grows with the
+    # catch-alls (inert-trig substrate plan, Task 9; r71, Task 10) and
+    # 4.7.5's re-activating give-up r72 (Task 10 fix round 1). It grows with the
     # subset until the class-4 port replaces it with the full total.
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
                       3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),
