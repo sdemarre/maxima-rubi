@@ -238,7 +238,7 @@ All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 the inert-trig plan's Task 9: `Results: 1146 passed, 0 failed`; at its
 Task 10 (TryPureTanSubst / CalculusFreeQ / SubstFor[w,v,u,x] units, the
 Weierstrass record end to end, the two inert-leak targets):
-`Results: 1163 passed, 0 failed`.
+`Results: 1164 passed, 0 failed`.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
 test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
