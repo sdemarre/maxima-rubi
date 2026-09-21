@@ -49,21 +49,27 @@ mr_unintegrable(f, x) := 'unintegrable[f, x]$
     strings never compare equal here (measured 2026-08-25, probes
     op_cmp_probe / op_typeof_probe, Maxima 5.50.0 SBCL). A dead lambda
     branch is worse than an error: subst then descends into the lambda
-    and fatals replacing its parameter. */
-mr_sum(fun, var, lo, hi) := block([a, b, i, s, t],
+    and fatals replacing its parameter. The locals are prefixed: ev
+    re-evaluates the summand while they are live, and Maxima binds block
+    locals dynamically, so a local named a, b, i, s or t captured the
+    integrand's own symbol (ticket 08 D: rubi(1/(a+b*x^5), x) answered
+    with residual 0.035) and a lambda body's With local s. */
+mr_sum(fun, var, lo, hi) := block([%mr_sum_a, %mr_sum_b, %mr_sum_i,
+                                    %mr_sum_s, %mr_sum_t],
   if numberp(lo) and numberp(hi) then (
-    a : ceiling(lo),
-    b : floor(hi),
-    if a > b then 0
+    %mr_sum_a : ceiling(lo),
+    %mr_sum_b : floor(hi),
+    if %mr_sum_a > %mr_sum_b then 0
     else (
-      s : 0,
-      for i : a thru b do (
-        if atom(fun) then t : ev(subst(i, var, ev(fun)))
-        else if (op(fun) = lambda or op(fun) = "lambda") then t : apply(fun, [i])
-        else t : ev(subst(i, var, fun)),
-        s : s + t
+      %mr_sum_s : 0,
+      for %mr_sum_i : %mr_sum_a thru %mr_sum_b do (
+        if atom(fun) then %mr_sum_t : ev(subst(%mr_sum_i, var, ev(fun)))
+        else if (op(fun) = lambda or op(fun) = "lambda") then
+          %mr_sum_t : apply(fun, [%mr_sum_i])
+        else %mr_sum_t : ev(subst(%mr_sum_i, var, fun)),
+        %mr_sum_s : %mr_sum_s + %mr_sum_t
       ),
-      s
+      %mr_sum_s
     )
   )
   else 'mr_sum[fun, var, lo, hi])$
