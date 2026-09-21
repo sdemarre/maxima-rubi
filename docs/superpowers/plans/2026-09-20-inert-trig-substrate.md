@@ -787,7 +787,9 @@ The bridge rule's condition, and the substitution records' locator.
  * happen, or the bare-u_ bridge record would swallow the table. */
 check_bool("fotlq: trig of a linear argument", %mr_functionOfTrigOfLinearQ(sin(2*x+1), x)),
 check_bool("fotlq: hyperbolic of a linear argument", %mr_functionOfTrigOfLinearQ(sinh(2*x+1), x)),
-check_bool("fotlq: a product of them", %mr_functionOfTrigOfLinearQ(sin(x)^4*(1+sinh(x)^2), x)),
+check_bool("fotlq: a product of trig", %mr_functionOfTrigOfLinearQ(sin(x)^4*(1+sin(x)^2), x)),
+check_bool("fotlq: a product of hyperbolic", %mr_functionOfTrigOfLinearQ(sinh(x)^4*(1+sinh(x)^2), x)),
+check_not("fotlq: trig MIXED with hyperbolic", %mr_functionOfTrigOfLinearQ(sin(x)^4*(1+sinh(x)^2), x)),
 check_not("fotlq: no trig at all", %mr_functionOfTrigOfLinearQ((1+x)^3, x)),
 check_not("fotlq: trig of a NON-linear argument", %mr_functionOfTrigOfLinearQ(sin(x^2), x)),
 check_not("fotlq: two different linear arguments",
@@ -799,19 +801,61 @@ check("fot: returns the linear argument", %mr_functionOfTrig(sin(2*x+1), x), 2*x
 check("fot: false when there is none", %mr_functionOfTrig((1+x)^3, x), false),
 ```
 
-The `two different linear arguments` and `an inert expression` targets are the two that matter most: both are cases where a `true` would make the bridge rule fire where Rubi's does not, and the bridge rule is a bare `u_` at the end of the table, so a wrong `true` is an infinite deactivation loop or a swallowed integrand. Read Rubi's `FunctionOfTrigOfLinearQ` and `FunctionOfTrig` before writing the implementation and confirm the single-argument requirement from the source rather than from these targets.
+**AMENDED 2026-09-21 — this target was wrong, and the amendment is a
+correctness fix, not a preference.** The step as written asserted
+`%mr_functionOfTrigOfLinearQ(sin(x)^4*(1+sinh(x)^2), x)` is TRUE. Rubi returns
+**False**: `FunctionOfTrig` carries a HYPERBOLIC argument as `I*u[[1]]`
+(`IntegrationUtilityFunctions.m:4381-4385`) and a TRIG argument bare
+(4374-4379), so merging one against the other gives `b/d = 1/I = -I`, and the
+clause requires `RationalQ[b/d]`. **A trig head and a hyperbolic head in the
+same integrand are therefore NEVER both admitted** — which is the whole reason
+`DeactivateTrig` exists: it moves the hyperbolic side onto the inert TRIG heads
+FIRST, so by the time the rules match, nothing is mixed. Implementing the
+original target would make the bare-`u_` bridge record fire where Rubi's does
+not — the exact failure this step warns about below. Measured with the faithful
+port in `probes/rubi/03-hyperbolic-miscellany-bridge.py` (23-case SELFTEST,
+both controls hold): mixed FALSE, pure-trig TRUE, pure-hyperbolic TRUE.
+
+The `two different linear arguments`, `trig MIXED with hyperbolic` and `an inert expression` targets are the three that matter most: both are cases where a `true` would make the bridge rule fire where Rubi's does not, and the bridge rule is a bare `u_` at the end of the table, so a wrong `true` is an infinite deactivation loop or a swallowed integrand. Read Rubi's `FunctionOfTrigOfLinearQ` and `FunctionOfTrig` before writing the implementation and confirm the single-argument requirement from the source rather than from these targets.
 
 - [ ] **Step 2: Run to verify they fail**
 
-Expected: `Results: 1096 passed, 9 failed`.
+Expected: `Results: 1096 passed, 11 failed`. (9 in the plan as approved; the
+2026-09-21 amendment above replaces one target with three.)
 
 - [ ] **Step 3: Implement**
+
+**A faithful Maxima port of both already exists and is self-tested** —
+`probes/rubi/03-hyperbolic-miscellany-bridge.py`'s `CLASSIFIER` (23-case
+`SELFTEST`, both controls holding over all 5,080 class-6 integrands). Read it
+before writing this step; it is a probe, not production code, so it is a
+reference to port from rather than something to import. **It paid for three
+Maxima traps, every one of which produced plausible-but-wrong booleans rather
+than an error:**
+
+1. **Variable capture.** A `block` local or `for` variable named `a`, `b`, `d`,
+   `v`, `w` CAPTURES the corpus's own symbol of that name inside the expression
+   being walked — Maxima re-evaluates a value when it is used. Measured:
+   `cosh(a+b*x)*sinh(a+b*x)` classified `non-algebraic` because the loop
+   binding of `a` was substituted back into the argument `a+b*x`. Prefix every
+   bound name.
+2. **`op` reports the DISPLAY form.** `op(2/(1+x))` is `/`, `op(a-b)` is `-`,
+   so a walk keyed on `"*"`/`"+"`/`"^"` misses them entirely. `inflag: true`
+   switches inspection to the internal Times/Plus/Power form — which is the
+   structure Rubi's clauses are written against.
+3. **`is(equal(b,0))` is `unknown` for a free symbol**, and the unknown
+   propagates through an `and`, so the predicate returns neither true nor false
+   and every downstream `if` quietly takes its else arm. Use SYNTACTIC
+   `is(mr_d = 0)`. Rubi has the same semantics deliberately: `PolyQ` never
+   tries to PROVE a symbolic coefficient nonzero, it reads the shape.
 
 Port both from `IntegrationUtilityFunctions.m`, following the house style of the neighbouring predicates: a `block` with explicit locals, `is(... = true)` on every boolean return, and a comment naming the upstream function and line. Both are recursive walks over the expression; `%mr_functionOfTrig` returns the argument it found so that the caller can reuse it, and `%mr_functionOfTrigOfLinearQ` is the boolean form. Keep them faithful — in particular, the inert heads must not satisfy them, or deactivation recurses.
 
 - [ ] **Step 4: Run to verify they pass**
 
-Expected: `Results: 1105 passed, 0 failed`.
+Expected: `Results: 1107 passed, 0 failed`. (1105 in the plan as approved;
++2 from the 2026-09-21 amendment. Tasks 8-10's counts shift by the same +2:
+the chain's tail becomes 1107 -> 1108 -> 1109.)
 
 - [ ] **Step 5: Commit**
 
@@ -825,7 +869,7 @@ an already-inert expression. The bridge rule is a bare u_ at the END of the
 table, so a wrong true is a deactivation loop or a swallowed integrand rather
 than a wrong answer.
 
-Layer A 1096 -> 1105 passed, 0 failed."
+Layer A 1096 -> 1107 passed, 0 failed."
 ```
 
 ---
