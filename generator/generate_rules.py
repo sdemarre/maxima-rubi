@@ -382,10 +382,10 @@ def unwrap_showsteps_lines(text):
     """Map unwrap_showsteps_line over the comment-stripped .m text."""
     return "\n".join(unwrap_showsteps_line(ln) for ln in text.split("\n"))
 
-_COMMENT_ONLY_LINE = re.compile(r"\s*\(\*.*\*\)\s*")
+_COMMENT_ONLY_LINE = re.compile(r"\s*\(\*(?:(?!\*\)).)*\*\)\s*")
 
 def drop_comment_only_lines(text):
-    """Spec 2026-09-22 A2.1: a whole-line Mathematica comment (9.2 r12's
+    r"""Spec 2026-09-22 A2.1: a whole-line Mathematica comment (9.2 r12's
     `(* ILtQ[n,0] && ILtQ[m,0] || *)` inside a multi-line condition) is
     dropped ENTIRELY, not just its comment text -- strip_comments leaves a
     blank line in its place, and rule_runs splits a run at a blank line, so
@@ -393,7 +393,19 @@ def drop_comment_only_lines(text):
     strip_comments, for every class (measured neutral on classes 1/2/3/6,
     probe 08 part C; Step 5 re-proves it). An inline comment (anything else
     on the line besides the comment) is left untouched, for strip_comments
-    to handle."""
+    to handle.
+
+    Fix round 1 (task review finding 1): the regex's inner run is
+    `(?:(?!\*\)).)*`, not a bare `.*` -- a bare `.*` is greedy across the
+    WHOLE line, so `(* a *) code (* b *)` fullmatches (the `.*` swallows
+    ` code (* b ` too) and the real code between the two comments is
+    silently dropped. The negative-lookahead run stops at the FIRST `*)`,
+    so the line only fullmatches when that first `*)` is also the last
+    character run before end-of-line (mod trailing whitespace) -- i.e. the
+    line is exactly one comment and nothing else, no second `*)` (comment
+    or code) anywhere after it. No 9.2/9.3 source line has two comments on
+    one line (checked, see the fix-round-1 report), so this had no
+    observed case in the port; the fix guards the general function."""
     return "\n".join(ln for ln in text.split("\n")
                      if not _COMMENT_ONLY_LINE.fullmatch(ln))
 
@@ -417,9 +429,19 @@ def unwrap_showsteps_multiline(text):
     out, i, n = [], 0, len(lines)
     while i < n:
         if lines[i].strip() == _SHOWSTEPS_IF_MULTILINE:
+            wrapper_start = i
             i += 1
-            while not lines[i].strip().startswith("SimplifyFlag"):
+            # Fix round 1 (task review finding 2): bounded -- an
+            # unbounded `while not ...: i += 1` runs off the end of
+            # `lines` (a raw IndexError) when a wrapper is missing its
+            # `SimplifyFlag,` line; fail loudly instead.
+            while i < n and not lines[i].strip().startswith("SimplifyFlag"):
                 i += 1
+            if i >= n:
+                raise GenError(
+                    "unwrap_showsteps_multiline: no 'SimplifyFlag' line "
+                    "found after the If[TrueQ[$LoadShowSteps], wrapper "
+                    f"opened at source line {wrapper_start + 1}")
             i += 1
             while i < n and not lines[i].strip():
                 i += 1

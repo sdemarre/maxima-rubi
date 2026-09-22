@@ -288,7 +288,10 @@ ticket `.scratch/class-ports/issues/08`).
 
 The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
 guard, pure Python: `python3 test/test_generator_section9.py` — green
-`Results: 11 passed, 0 failed`.
+`Results: 13 passed, 0 failed` (11 at the task; +2 at its fix round 1:
+the two-comments-on-one-line guard on `drop_comment_only_lines` and the
+bounded, loud `GenError` on a wrapper missing its `SimplifyFlag` line in
+`unwrap_showsteps_multiline`).
 
 **Matcher substrate — regression suite** (spec section 4 P1/P2 gates:
 the probe-02 round trip over all 7,444 Rubi LHSs in narrow and wide

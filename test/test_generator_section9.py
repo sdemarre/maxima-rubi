@@ -30,6 +30,14 @@ check("A2.1 the condition stays one run (no blank line inside it)",
       len(g.rule_runs(g.strip_comments(out))), 1)
 check("A2.1 an inline comment is left to strip_comments",
       g.drop_comment_only_lines("a && (* b *) c\n"), "a && (* b *) c\n")
+# Fix round 1 (task review finding 1): a greedy `.*` between `(*` and the
+# FINAL `*)` on the line would fullmatch a line with code between two
+# comments, silently dropping the code -- verified absent from the 9.2/9.3
+# pinned sources (no line matches `(\*.*\*).*(\*`, checked with grep; see
+# the fix-round-1 report), but the function must still refuse to drop it.
+check("A2.1 code between two comments on one line survives",
+      g.drop_comment_only_lines("(* a *) code (* b *)\n"),
+      "(* a *) code (* b *)\n")
 
 # A2.2 -- the multi-line ShowSteps wrapper keeps its plain branch only.
 wrapped = ("If[TrueQ[$LoadShowSteps],\n\n"
@@ -43,6 +51,19 @@ check("A2.2 one rule run remains", len(g.rule_runs(plain)), 1)
 check("A2.2 text without a wrapper passes through unchanged",
       g.unwrap_showsteps_multiline("Int[u_,x_Symbol] :=\n  u\n"),
       "Int[u_,x_Symbol] :=\n  u\n")
+# Fix round 1 (task review finding 2): a wrapper missing its SimplifyFlag
+# line must not run off the end of the line list (a raw IndexError) --
+# it is a GenError (a SystemExit subclass, house convention).
+try:
+    g.unwrap_showsteps_multiline(
+        "If[TrueQ[$LoadShowSteps],\n\nInt[u_,x_Symbol] := u\n")
+    a22_missing_simplifyflag = "no exception raised"
+except SystemExit:
+    a22_missing_simplifyflag = "SystemExit"
+except IndexError:
+    a22_missing_simplifyflag = "IndexError"
+check("A2.2 a wrapper missing SimplifyFlag raises GenError (not IndexError)",
+      a22_missing_simplifyflag, "SystemExit")
 
 # A2.3 -- UnsameQ.
 g.CLASS, g.CLASS_PREFIX = 9, "9 "
