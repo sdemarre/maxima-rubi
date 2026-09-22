@@ -61,3 +61,15 @@ a seventh bare-`u_` record in a body list fails the gate.
    deviation is intended (e.g. the `SumQ` split being early on purpose) before
    deciding.
 3. Remove the gate's exception list once the six are in the tail.
+
+2026-09-22 — **Related redundancy, same records**: `1_4_1` r7/r8 are the two
+branches of one multi-line `If[TrueQ[$LoadShowSteps], <ShowStep rule>,
+<plain rule>]` wrapper. The single-line unwrapper (class-3 decision C6b:
+keep the plain branch) never saw the multi-line form, so both branches
+were ported; r7 is the ShowStep branch (`mr_simplify_flag and ...`, always
+true in the port), making r8 dead. The section-9 port adds a multi-line
+unwrapper but scopes it to class 9 (spec
+`docs/superpowers/specs/2026-09-22-section9-port-design.md` A2.2): applied
+to class 1 it drops one record (3,054 -> 3,053,
+`probes/translation/08-section9-generator-dryrun.py` part C notes it).
+Whoever moves these records should drop the duplicate in the same A/B.
