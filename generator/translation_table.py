@@ -255,6 +255,10 @@ RENAME = {
     # QuotientOfLinears (FractionalPowerOfQuotientOfLinears is internal,
     # not a generated-rule token).
     "SubstForFractionalPowerOfQuotientOfLinears": "%mr_substForFractionalPowerOfQuotientOfLinears",
+    # section 9 G6b (2026-09-22, task-9 brief): FunctionOfLinear (the
+    # 5-arg overload and FunctionOfLinearSubst are internal, not
+    # generated-rule tokens).
+    "FunctionOfLinear": "%mr_functionOfLinear",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.

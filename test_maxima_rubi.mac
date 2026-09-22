@@ -142,6 +142,7 @@ run_all_tests() := block([],
   test_section9_g4(),
   test_section9_g5(),
   test_section9_g6a(),
+  test_section9_g6b(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4466,6 +4467,22 @@ test_section9_g6a() := block([],
         %mr_commonFactors([log(4), log(8)]), [log(2), 2, 3]),
   check("commonFactors: log(4), log(8), log(16) (three-way log-ratio gcd)",
         %mr_commonFactors([log(4), log(8), log(16)]), [log(2), 2, 3, 4]),
+  true)$
+
+/* Section 9, G6b (spec 2026-09-22 A1): FunctionOfLinear (Rubi :4169, the
+   5-arg overload :4176), FunctionOfLinearSubst (:4206). Expected values
+   are hand-traced through the upstream definition (plan Task 9). */
+test_section9_g6b() := block([],
+  print("--- section 9 G6b: FunctionOfLinear ---"),
+  check("fol: sin(2x+1)^2 + cos(2x+1) -> x, a = 1, b = 2",
+        %mr_functionOfLinear(sin(2*x + 1)^2 + cos(2*x + 1), x),
+        [sin(x)^2 + cos(x), 1, 2]),
+  check("fol: sin(2x) cos(2x) -> a = 0, b = 2",
+        %mr_functionOfLinear(sin(2*x)*cos(2*x), x), [cos(x)*sin(x), 0, 2]),
+  check("fol: already in x (a = 0, b = 1) declines", %mr_functionOfLinear(sin(x), x), false),
+  check("fol: two unrelated linears reduce to x itself, declines",
+        %mr_functionOfLinear(sin(x)*cos(2*x), x), false),
+  check("fols: a linear term", %mr_functionOfLinearSubst(2*x + 3, 1, 2, x), x + 2),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).

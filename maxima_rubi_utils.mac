@@ -7463,4 +7463,101 @@ if not integerp(lcm(1, 1)) then load("functs")$
   ),
   %mr_cf_result)$
 
+/* ==== Section 9 (9.2 + 9.3) utilities: spec 2026-09-22 ==== */
+
+/* Rubi :4169-4175  FunctionOfLinear[u,x] — if u(x) is equivalent to an
+   expression of the form f(a+b*x) and not the case a=0, b=1, returns
+   [f(x),a,b]; else false. The With[{lst=...}] binding is the aux call
+   below with the initial a/b/flag all false. */
+%mr_functionOfLinear(%mr_fol_u, x) := block([inflag : true, %mr_fol_lst],
+  %mr_fol_lst : %mr_functionOfLinearAux(%mr_fol_u, false, false, x, false),
+  if atom(%mr_fol_lst) or %mr_falseQ(first(%mr_fol_lst))
+     or (is(first(%mr_fol_lst) = 0) and is(second(%mr_fol_lst) = 1))
+  then false
+  else [%mr_functionOfLinearSubst(%mr_fol_u, first(%mr_fol_lst), second(%mr_fol_lst), x),
+        first(%mr_fol_lst), second(%mr_fol_lst)])$
+
+/* Rubi :4176-4205  FunctionOfLinear[u,a,b,x,flag] — the 5-arg overload:
+   thread a running [a,b] pair through u's structure until every leaf is
+   free of x or the pattern fails (an atom result signals failure and the
+   Catch/Scan of :4198-4202 short-circuits the whole call to False; ported
+   as the inner block's early return(false), which return exits, matching
+   the Catch/Throw). The PowerQ branch (:4193-4194) recurses on
+   Log[u[[1]]]*u[[2]] when the base is free of x. The :4196-4199
+   ProductQ/MonomialFactor branch's true arm is dead code upstream
+   (If[False && ...] always falls to its own else, False) — not ported;
+   only the false-arm's decline (ProductQ[u] and a nonzero monomial
+   degree) is kept. */
+%mr_functionOfLinearAux(%mr_fola_u, %mr_fola_a, %mr_fola_b, x, %mr_fola_flag) := block(
+  [inflag : true, %mr_fola_lst, %mr_fola_e, %mr_fola_sflag],
+  if freeof(x, %mr_fola_u) then [%mr_fola_a, %mr_fola_b]
+  elseif %mr_calculusQ(%mr_fola_u) then false
+  elseif %mr_linearQ(%mr_fola_u, x) then (
+    if %mr_falseQ(%mr_fola_a) then
+      [%mr_coeff(%mr_fola_u, x, 0), %mr_coeff(%mr_fola_u, x, 1)]
+    else (
+      %mr_fola_lst : %mr_commonFactors([%mr_fola_b, %mr_coeff(%mr_fola_u, x, 1)]),
+      if %mr_eqQ(%mr_coeff(%mr_fola_u, x, 0), 0) and not %mr_fola_flag
+        then [0, first(%mr_fola_lst)]
+      elseif %mr_eqQ(%mr_fola_b * %mr_coeff(%mr_fola_u, x, 0)
+                       - %mr_fola_a * %mr_coeff(%mr_fola_u, x, 1), 0)
+        then [%mr_fola_a / second(%mr_fola_lst), first(%mr_fola_lst)]
+      else [0, 1]
+    )
+  )
+  elseif %mr_powerQ(%mr_fola_u) and freeof(x, part(%mr_fola_u, 1)) then
+    %mr_functionOfLinearAux(log(part(%mr_fola_u, 1)) * part(%mr_fola_u, 2),
+                             %mr_fola_a, %mr_fola_b, x, false)
+  else (
+    %mr_fola_lst : if %mr_productQ(%mr_fola_u) then %mr_monomialFactor(%mr_fola_u, x)
+                   else [0, %mr_fola_u],
+    if %mr_productQ(%mr_fola_u) and %mr_neQ(first(%mr_fola_lst), 0) then false
+    else (
+      %mr_fola_sflag : %mr_sumQ(%mr_fola_u),
+      block([%mr_fola_acc : [%mr_fola_a, %mr_fola_b]],
+        for %mr_fola_e in %mr_args_in(%mr_fola_u) do (
+          %mr_fola_acc : %mr_functionOfLinearAux(%mr_fola_e, first(%mr_fola_acc),
+                                                  second(%mr_fola_acc), x, %mr_fola_sflag),
+          if atom(%mr_fola_acc) then return(false)
+        ),
+        %mr_fola_acc)
+    )
+  ))$
+
+/* Rubi :4206-4222  FunctionOfLinearSubst[u,a,b,x] — substitutes x back
+   into u = f(a+b*x) to recover f(x). The PowerQ branch's E^FullSimplify[
+   ...] (:4213) is %e^ratsimp(...) (the brief's exact reading: this
+   occurrence, unlike CommonFactors' log-ratio gate, is a plain rational
+   simplification of an additive/multiplicative exponent expression,
+   which ratsimp closes). Map[Function[...],u] (:4219) under inflag : true
+   is apply(op(u), map(...)), the house idiom (this file's line ~3582). */
+%mr_functionOfLinearSubst(%mr_fols_u, %mr_fols_a, %mr_fols_b, x) := block(
+  [inflag : true, %mr_fols_lst, %mr_fols_tmp],
+  if freeof(x, %mr_fols_u) then %mr_fols_u
+  elseif %mr_linearQ(%mr_fols_u, x) then (
+    %mr_fols_tmp : %mr_coeff(%mr_fols_u, x, 1),
+    %mr_fols_tmp : if is(%mr_fols_tmp = %mr_fols_b) then 1 else %mr_fols_tmp / %mr_fols_b,
+    %mr_coeff(%mr_fols_u, x, 0) - %mr_fols_a * %mr_fols_tmp + %mr_fols_tmp * x
+  )
+  elseif %mr_powerQ(%mr_fols_u) and freeof(x, part(%mr_fols_u, 1)) then
+    %e ^ ratsimp(%mr_functionOfLinearSubst(log(part(%mr_fols_u, 1)) * part(%mr_fols_u, 2),
+                                            %mr_fols_a, %mr_fols_b, x))
+  else (
+    %mr_fols_lst : if %mr_productQ(%mr_fols_u) then %mr_monomialFactor(%mr_fols_u, x)
+                   else [0, %mr_fols_u],
+    if %mr_productQ(%mr_fols_u) and %mr_neQ(first(%mr_fols_lst), 0) then (
+      if %mr_rationalQ(%mr_leadFactor(second(%mr_fols_lst)))
+         and is(%mr_leadFactor(second(%mr_fols_lst)) < 0)
+      then -%mr_functionOfLinearSubst(
+              %mr_divideDegreesOfFactors(-second(%mr_fols_lst), first(%mr_fols_lst)) * x,
+              %mr_fols_a, %mr_fols_b, x) ^ first(%mr_fols_lst)
+      else %mr_functionOfLinearSubst(
+              %mr_divideDegreesOfFactors(second(%mr_fols_lst), first(%mr_fols_lst)) * x,
+              %mr_fols_a, %mr_fols_b, x) ^ first(%mr_fols_lst)
+    )
+    else apply(op(%mr_fols_u),
+               map(lambda([%mr_fols_e], %mr_functionOfLinearSubst(%mr_fols_e, %mr_fols_a, %mr_fols_b, x)),
+                   %mr_args_in(%mr_fols_u)))
+  ))$
+
 mr_witness_utils() := true$
