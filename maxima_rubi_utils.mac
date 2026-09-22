@@ -6494,4 +6494,75 @@ mr_use_gamma_flag : false$
  * no ev, so no capture (spec 2026-09-22 A2.3). */
 %mr_unsameQ(%mr_usq_a, %mr_usq_b) := not is(%mr_usq_a = %mr_usq_b)$
 
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :7430-7448 PiecewiseLinearQ / Divides -- 9.2's gate (all 19 of
+ * 9.2's rules call PiecewiseLinearQ) and 9.3's Divides. */
+
+/* Rubi :7434 F_[G_[v_]] pair table: MemberQ[{{ArcTanh,Tanh}, ...},{F,G}].
+   Native atan/acot/atanh/acoth operator names -- NOT %mr_atanh (this
+   file's line-3125 evaluating shim, unrelated to the native atanh/acoth
+   Maxima binds and corpus integrands carry). */
+%mr_plq_fgQ(%mr_plq_u, %mr_plq_x) := block([inflag : true, %mr_plq_g],
+  if atom(%mr_plq_u) or not is(length(%mr_plq_u) = 1) then false
+  else (
+    %mr_plq_g : part(%mr_plq_u, 1),
+    not atom(%mr_plq_g) and is(length(%mr_plq_g) = 1)
+    and is(member([op(%mr_plq_u), op(%mr_plq_g)],
+                  [[atanh, tanh], [atanh, coth], [acoth, coth], [acoth, tanh],
+                   [atan, tan], [atan, cot], [acot, cot], [acot, tan]]) = true)
+    and %mr_linearQ(part(%mr_plq_g, 1), %mr_plq_x)))$
+
+/* Rubi :7434 F_^(v_): a kept power node (the line-3903 note: an
+   exponent-1 or sqrt argument is stripped/re-headed before this sees
+   it, matching the .m's own Power[F,v] requirement) with an x-free
+   base and a linear exponent. */
+%mr_plq_powFV(%mr_plq_p, %mr_plq_x) := block([inflag : true],
+  %mr_powerQ(%mr_plq_p)
+  and freeof(%mr_plq_x, part(%mr_plq_p, 1))
+  and %mr_linearQ(part(%mr_plq_p, 2), %mr_plq_x))$
+
+/* Rubi :7434 Log[c_.*F_^(v_)] /; FreeQ[{F,c},x] && LinearQ[v,x]: Times is
+   flat, so c_. absorbs EVERY x-free factor of the log argument, and the
+   match holds iff its x-dependent factors are exactly one F^v (mirrors
+   %mr_tpt_arg's Times-flat accounting, line 6438). */
+%mr_plq_logArgQ(%mr_plq_w, %mr_plq_x) := block([inflag : true, %mr_plq_nf],
+  %mr_plq_nf : sublist(if not atom(%mr_plq_w) and op(%mr_plq_w) = "*"
+                        then args(%mr_plq_w) else [%mr_plq_w],
+                        lambda([%mr_plq_f], not freeof(%mr_plq_x, %mr_plq_f))),
+  is(length(%mr_plq_nf) = 1) and %mr_plq_powFV(first(%mr_plq_nf), %mr_plq_x))$
+
+/* Rubi :7434-7440 PiecewiseLinearQ[u,x], the 2-arg predicate: LinearQ,
+   or the Log[c F^v] shape, or one of the eight F[G[v]] pairs. The .m's
+   commented-out (* && Not[MonomialQ[u,x]] *) stays out -- not live
+   upstream (task-2 brief step 3). */
+%mr_plq_core(%mr_plq_u, %mr_plq_x) := block([inflag : true],
+  %mr_linearQ(%mr_plq_u, %mr_plq_x)
+  or (not atom(%mr_plq_u) and is(op(%mr_plq_u) = log)
+      and is(length(%mr_plq_u) = 1)
+      and %mr_plq_logArgQ(part(%mr_plq_u, 1), %mr_plq_x))
+  or %mr_plq_fgQ(%mr_plq_u, %mr_plq_x))$
+
+/* Rubi :7430-7433 PiecewiseLinearQ[u,x] / PiecewiseLinearQ[u,v,x]: one
+   Maxima function with a rest argument, since Rubi overloads the name
+   by arity. One rest element is the 2-arg form; two is (u,v,x) =
+   plq(u,x) and plq(v,x). */
+%mr_piecewiseLinearQ(%mr_plq_u, [%mr_plq_r]) := block([%mr_plq_x],
+  if length(%mr_plq_r) = 2 then (
+    %mr_plq_x : second(%mr_plq_r),
+    %mr_plq_core(%mr_plq_u, %mr_plq_x)
+      and %mr_plq_core(first(%mr_plq_r), %mr_plq_x)
+  )
+  else (
+    %mr_plq_x : first(%mr_plq_r),
+    %mr_plq_core(%mr_plq_u, %mr_plq_x)
+  ))$
+
+/* Rubi :7443-7448 Divides[y,u,x]: the quotient u/y when it is free of x,
+   else False. %mr_simp is a pure rewrite of its argument (no ev), so
+   capture trap 1 does not apply; x stays unprefixed (house rule: the
+   integration variable itself). */
+%mr_divides(%mr_div_y, %mr_div_u, x) := block([%mr_div_v],
+  %mr_div_v : %mr_simp(%mr_div_u / %mr_div_y),
+  if freeof(x, %mr_div_v) then %mr_div_v else false)$
+
 mr_witness_utils() := true$

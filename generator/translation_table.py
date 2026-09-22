@@ -230,6 +230,10 @@ RENAME = {
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):
     "$UseGamma": "mr_use_gamma_flag",
+    # section 9 (2026-09-22): 9.2's gate and 9.3's Divides
+    # (maxima_rubi_utils.mac, task-2 brief).
+    "PiecewiseLinearQ": "%mr_piecewiseLinearQ",
+    "Divides": "%mr_divides",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.

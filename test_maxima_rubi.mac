@@ -135,6 +135,7 @@ run_all_tests() := block([],
   test_mr_sum_capture(),
   test_with_local_capture_all(),
   test_section9_unsameQ(),
+  test_section9_g1(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4241,6 +4242,30 @@ test_section9_unsameQ() := block([],
   print("--- section 9: UnsameQ ---"),
   check_bool("unsameQ: different expressions", %mr_unsameQ(x + 1, x + 2)),
   check_not("unsameQ: identical after simplification", %mr_unsameQ(x + 1, 1 + x)),
+  true)$
+
+/* Section 9, G1 (spec 2026-09-22 A1): PiecewiseLinearQ (Rubi :7430-7440)
+   and Divides (:7443). atan(tan(x)) and friends are NOT auto-simplified
+   in this build (probes/rubi/06), which is why 9.2 exists at all. */
+test_section9_g1() := block([],
+  print("--- section 9 G1: PiecewiseLinearQ / Divides ---"),
+  check_bool("plq: a linear function", %mr_piecewiseLinearQ(2*x + 3, x)),
+  check_not("plq: a quadratic", %mr_piecewiseLinearQ(x^2, x)),
+  check_bool("plq: log(c F^v), c = 2, F = e", %mr_piecewiseLinearQ(log(2*%e^x), x)),
+  check_bool("plq: log(c F^v), F = 2, v linear", %mr_piecewiseLinearQ(log(3*2^(2*x + 1)), x)),
+  check_not("plq: log(c F^v) with v not linear", %mr_piecewiseLinearQ(log(3*2^(x^2)), x)),
+  check_not("plq: log(c F^v) with c not free", %mr_piecewiseLinearQ(log(x*%e^x), x)),
+  check_bool("plq: atan(tan(linear))", %mr_piecewiseLinearQ(atan(tan(2*x + 1)), x)),
+  check_bool("plq: acot(tan(x)), a listed pair", %mr_piecewiseLinearQ(acot(tan(x)), x)),
+  check_not("plq: atan(sin(x)), not a listed pair", %mr_piecewiseLinearQ(atan(sin(x)), x)),
+  check_not("plq: atan(tan(x^2)), argument not linear", %mr_piecewiseLinearQ(atan(tan(x^2)), x)),
+  check_bool("plq 3-arg: both piecewise linear",
+             %mr_piecewiseLinearQ(atan(tan(x)), 2*x + 1, x)),
+  check_not("plq 3-arg: the second is not",
+            %mr_piecewiseLinearQ(atan(tan(x)), x^2, x)),
+  check("divides: (x+1)/(2x+2) is free of x", %mr_divides(2*x + 2, x + 1, x), 1/2),
+  check("divides: x^2/x is not free of x", %mr_divides(x, x^2, x), false),
+  check("divides: 3x/(a x)", %mr_divides(a*x, 3*x, x), 3/a),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).
