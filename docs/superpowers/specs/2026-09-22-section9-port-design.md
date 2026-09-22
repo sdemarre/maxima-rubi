@@ -365,3 +365,87 @@ integration variable is `3*x+2`, an expression. A substitution rule
 rewrote the variable slot of an `unintegrable` noun. It is out of scope
 here. The port may change that entry's route (the tail's r38 could answer
 the inner integral), and the plan records what happens to it.
+
+### A5. End-to-end results (2026-09-22, `346c513` + this commit)
+
+`test/test_section9_e2e.mac`: **`Results: 4 passed, 0 failed`** (5.4 s wall,
+build `branch_5_50_base_84_g4204fb669`, SBCL 2.6.7). Run it with stdin from
+`/dev/null` — see "The ldb trap" below.
+
+| target | route (verbose-traced) | answer |
+|---|---|---|
+| `atan(tan(x))` | 9.2 r1 | `(tan(x)^2+1)*atan(tan(x))^2/(2*sec(x)^2)` |
+| `(1+%e^x)/(%e^x+x)` (2.3 e733) | 9.3 derivative-divides | `log(x+%e^x)` |
+| `%e^x*(1+x)/(x*%e^x+1)` | 9.3 derivative-divides | `log(%e^x*x+1)` |
+| `1/(1+sqrt((1+x)/(1-x)))` | **9_3 r38** (`SubstForFractionalPowerOfQuotientOfLinears`) | `-(2*log(sqrt(-((x+1)/(x-1)))+1)+(x-1)*sqrt(-((x+1)/(x-1)))-x-log(-(2/(x-1)))+1)/2` |
+
+Each verifies at `x = 0.3` and `x = 0.7` to under `1.0e-10`.
+
+**A4's fourth integrand is replaced, and why.** A4 lists
+`1/(x + sqrt((1+x)/(1-x)))` for the `SubstForFractionalPowerOfQuotientOfLinears`
+record. The record fires on it and substitutes CORRECTLY —
+`%mr_substForFractionalPowerOfQuotientOfLinears(1/(x+sqrt((1+x)/(1-x))), x)`
+returns `[x/(x^5+x^4+2*x^3+x-1), 2, (x+1)/(1-x), 2]` — but the rational integral
+it leaves, `2*x/((x^2+1)*(x^3+x^2+x-1))`, never returns: it allocates until the
+SBCL heap is exhausted and the runtime dies (`Heap exhausted, game over`), at
+394.7 s on this branch and at **402.2 s on `master`**, where no class-9 rule is
+loaded at all. So it is a pre-existing class-1 cost that section 9 merely gives
+a new route to (`.scratch/class-ports/issues/11-class1-heap-exhaustion-quintic-rational.md`).
+The gate therefore uses `1/(1 + sqrt((1+x)/(1-x)))`, which `rubi_verbose` shows
+going through the same record (`rubi: rule 9_3 r38 fired on 1/(sqrt((x+1)/(1-x))+1)`),
+is equally RED on master (`'unintegrable[1/(sqrt((x+1)/(1-x))+1),x]`, measured),
+and answers in 2 s. (A4's own row labels `9_3 r38` as
+`SubstForFractionalPowerOfLinear`; in the generated table r37 is
+`SubstForFractionalPowerOfLinear` and **r38** is
+`SubstForFractionalPowerOfQuotientOfLinears`.)
+
+**The `ldb` trap.** The first attempt at this task reported the gate as a hang:
+no output, no CPU, both SBCL threads parked in `futex_do_wait`. It was not a
+hang. A fatal SBCL error drops into the `ldb` low-level debugger, which reads
+from stdin, so with an inherited terminal stdin the dead process sits there
+forever. Redirecting stdin from `/dev/null` turns it into a visible
+`Heap exhausted, game over` — the same reason the dispatch suite is run
+`< /dev/null` and the corpus driver gives entry subprocesses `/dev/null`
+(AGENTS.md; `probes/matcher/09-harness-fault-verdict.out`). Note also that
+`timeout` does not kill maxima's `sbcl` grandchild: use `setsid` + `killpg`.
+
+**Step 3, the `SimplifyIntegrand` record (9.3 r9): no target found, gate stays
+at 4.** Each of §5/A4's four candidates was run on the full table with
+`rubi_verbose`; all four are answered by an EARLIER body record, so the tail's
+r9 is never reached (it does not even appear as a decline):
+
+| candidate | answered by | answer |
+|---|---|---|
+| `(x^2-1)/(x-1)*%e^(x^2)*x` | `1_4_1 r1` | `-sqrt(%pi)*erfi(x)/4+%e^(x^2)*x/2+%e^(x^2)/2` |
+| `(x^3-1)/((x-1)*(x^2+x+1)^2)` | `1_4_1 r18` | `2*atan((2*x+1)/sqrt(3))/sqrt(3)` |
+| `(%e^(2*x)-1)/((%e^x-1)*(%e^x+1))` | `2_3 r96` | `x` |
+| `((x+1)^2-x^2-2*x)/(x^2+1)` | `1_4_1 r18` | `atan(x)` |
+
+That is A4's stated fallback: r9's reach is left to the Task 13 corpus A/B.
+
+**Step 4, the r38 observation entry `x/(1+sqrt(2+3*x))`.** On `master` it
+reproduces A4 exactly: `'unintegrable[(3*x)/(sqrt(3*x+2)+1),3*x+2]/9` in 2 s.
+On this branch it **no longer returns**: 280.5 s and then
+`Heap exhausted, game over`. The trace's last two firings are `9_3 r18` on
+`((sqrt(x)+1)*x-2*sqrt(x)-2)/(sqrt(x)+1)^2` and then `9_1 r28` on the same
+expression with the square expanded. This is a section-9 REGRESSION for that
+entry, and its cause is a port defect in the record, below.
+
+**Found while tracing Step 4 — 9.3 r18/r22/r23/r24 are unguarded and leak
+(`.scratch/class-ports/issues/13-9_3-condition-assignment-idiom-q-r.md`).**
+These four records use Rubi's condition-assignment idiom
+(`... /; Not[FalseQ[r=Divides[...]]] && Not[FalseQ[q=DerivativeDivides[...]]]`,
+with `q*r` on the right-hand side). The generator emitted `=` as Maxima
+EQUALITY, so (1) `%mr_falseQ(<equation>)` is never true and the guard is
+VACUOUS — the record fires whenever its pattern matches — and (2) the repl
+re-declares `q`/`r` as fresh unassigned block locals, so the answer is
+multiplied by two unbound symbols. Witness, measured:
+`rubi(((sqrt(x)+1)*x-2*sqrt(x)-2)/(sqrt(x)+1)^2, x)` returns
+`_mr_9_3_r18_q*_mr_9_3_r18_r*<degree-49 rational mess>` on this branch, against
+a 2 s `unintegrable` on master. A scan of every generated rule file
+(`grep -o "%mr_falseQ(_mr_[A-Za-z0-9_]*=" rules/class*/*.mac`) finds this shape
+in exactly these four records and nowhere else. It is NOT fixed here — Task 12
+regenerates no rule file — but the gate now rejects any answer containing a
+symbol whose name starts `_mr_` (`mr_e2e_no_locals`, the one addition to the
+brief's gate code), so a fix can be pinned by adding a target that routes
+through r18.

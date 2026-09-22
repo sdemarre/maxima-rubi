@@ -1,0 +1,62 @@
+/* test/test_section9_e2e.mac -- the section-9 port end to end, on the REAL
+ * mr_load_all table (outside Layer A: Layer A never calls mr_load_all).
+ * Every target was measured RED on master (spec 2026-09-22 A4,
+ * probes/rubi/06-section9-red-targets.out).
+ *
+ * From the repo root:  maxima --very-quiet -b test/test_section9_e2e.mac
+ * Ends with a Results: line; a missing Results line is a failure. */
+display2d : false$
+linel : 10000$
+tests_passed : 0$
+tests_failed : 0$
+check_bool(test_name, actual) := block([v],
+  v : is(actual),
+  if v = true then (tests_passed : tests_passed + 1, print("  PASS: ", test_name))
+  else (tests_failed : tests_failed + 1, print("  FAIL: ", test_name),
+        print("    actual:   ", actual)),
+  true)$
+load("maxima_rubi.mac")$
+mr_load_all()$
+
+/* |F'(x) - f(x)| at a point: the answer verifies numerically. */
+mr_e2e_resid(mr_f, mr_F, mr_pt) :=
+  abs(float(subst(mr_pt, diff(mr_F, x) - mr_f)))$
+/* No rule-local symbol escaped into the answer. Deviation from the brief,
+   added 2026-09-22: 9.3 r18/r22/r23/r24 multiply their answer by two UNBOUND
+   locals (`_mr_9_3_r18_q*_mr_9_3_r18_r*...`, issue 13), which `freeof` of
+   'unintegrable / 'mr_int does not see. Every generated rule local is named
+   `_mr_<key>_r<n>_<name>`, so the check is "no variable starts `_mr_`". */
+mr_e2e_no_locals(mr_F) := block([mr_vs],
+  mr_vs : sublist(listofvars(mr_F),
+                  lambda([mr_v], block([mr_s], mr_s : sconcat(mr_v),
+                    is(slength(mr_s) > 4 and substring(mr_s, 1, 5) = "_mr_")))),
+  is(length(mr_vs) = 0))$
+mr_e2e_ok(mr_f, mr_F) :=
+  listp(mr_F) and is(length(mr_F) = 1)
+  and freeof('unintegrable, 'mr_int, first(mr_F))
+  and mr_e2e_no_locals(first(mr_F))
+  and is(mr_e2e_resid(mr_f, first(mr_F), [x = 0.3]) < 1.0e-10)
+  and is(mr_e2e_resid(mr_f, first(mr_F), [x = 0.7]) < 1.0e-10)$
+
+mr_e2e_targets : [
+  ["9.2 r1: atan(tan(x))",                                   atan(tan(x))],
+  ["9.3 derivative-divides: 2.3 e733",                       (1 + %e^x)/(%e^x + x)],
+  ["9.3 derivative-divides: product numerator",              %e^x*(1 + x)/(x*%e^x + 1)],
+  /* Spec A4's integrand for this record is 1/(x + sqrt((1+x)/(1-x))). It
+     routes through 9_3 r38 correctly, but the rational integral the
+     substitution leaves, 2*x/((x^2+1)*(x^3+x^2+x-1)), EXHAUSTS the SBCL
+     heap in the class-1 rules -- on master too, so a pre-existing class-1
+     cost, not a section-9 one (amendment A5). This integrand reaches the
+     SAME record (9_3 r38, verbose-traced) and is equally RED on master. */
+  ["9.3 SubstForFractionalPowerOfQuotientOfLinears",         1/(1 + sqrt((1 + x)/(1 - x)))]
+]$
+for mr_t in mr_e2e_targets do (
+  mr_ans : errcatch(rubi(second(mr_t), x)),
+  print("    ", first(mr_t), " -> ", mr_ans),
+  check_bool(sconcat(first(mr_t), ": answers, no noun, verifies at x = 0.3, 0.7"),
+             mr_e2e_ok(second(mr_t), mr_ans)))$
+
+print("")$
+print("========================================")$
+print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$
+print("========================================")$

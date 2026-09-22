@@ -215,6 +215,24 @@ in the tail or one of the six named exceptions
 (`generator/generate_rules.py` `BARE_U_BODY_EXCEPTIONS`,
 `.scratch/class-ports/issues/07-bare-u-records-mid-table.md`).
 
+**Section 9 — end to end** (the per-change gate for `rules/class9/` and the
+section-9 utilities; spec `docs/superpowers/specs/2026-09-22-section9-port-design.md`).
+Runs the RED-on-master targets through the real `mr_load_all` table, so it
+lives outside Layer A like the rule-table gate:
+
+```sh
+maxima --very-quiet -b test/test_section9_e2e.mac < /dev/null
+```
+
+Green: `Results: 4 passed, 0 failed` (5.4 s, 2026-09-22, spec amendment A5).
+Each target answers, carries no noun and no leaked `_mr_` rule local, and
+verifies numerically at `x = 0.3` and `x = 0.7`. **Redirect stdin from
+`/dev/null`**: a rule set that drives SBCL into a fatal error (heap
+exhaustion is reachable from here — `.scratch/class-ports/issues/11`) lands in
+the `ldb` debugger, which then waits on an inherited stdin and is
+indistinguishable from a hang. `timeout` does not help either — maxima forks
+`sbcl`, so kill the process GROUP (`setsid` + `killpg`) instead.
+
 **Matcher substrate — unit suites** (the per-change gate for
 `maxima_rubi_match.lisp` / `maxima_rubi_tree.lisp` /
 `maxima_rubi_dispatch.lisp`; branch `matcher-substrate`, spec
