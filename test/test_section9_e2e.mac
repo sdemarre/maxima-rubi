@@ -42,6 +42,18 @@ mr_e2e_targets : [
   ["9.2 r1: atan(tan(x))",                                   atan(tan(x))],
   ["9.3 derivative-divides: 2.3 e733",                       (1 + %e^x)/(%e^x + x)],
   ["9.3 derivative-divides: product numerator",              %e^x*(1 + x)/(x*%e^x + 1)],
+  /* Task 12b fix round 1: an END-TO-END route through one of the four
+     condition-assignment records (issue 13), so an over-strict guard
+     cannot leave them silently dead. Traced with rubi_verbose (2026-09-22,
+     build branch_5_50_base_84_g4204fb669):
+       rule 9_3 r18 fired on ((%e^x+1)*(x+%e^x)^2)/((x+%e^x)^2+1) with
+         [v = x+%e^x, m = 2, y = x+%e^x, n = 2, b = 1, a = 1, p = -1,
+          u = %e^x+1]
+     i.e. Divides[y^2,v^2,x] = 1 and DerivativeDivides[y,u,x] = 1, and the
+     record answers y - atan(y) with y = x + %e^x. r17 (the same family
+     without the v^m factor) declines first, so this really is r18. */
+  ["9.3 r18: the condition-assignment idiom, end to end",
+   (%e^x + 1)*(x + %e^x)^2/((x + %e^x)^2 + 1)],
   /* Spec A4's integrand for this record is 1/(x + sqrt((1+x)/(1-x))). It
      routes through 9_3 r38 correctly, but the rational integral the
      substitution leaves, 2*x/((x^2+1)*(x^3+x^2+x-1)), EXHAUSTS the SBCL

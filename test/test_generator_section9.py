@@ -79,5 +79,43 @@ check("A2.4 Int[u_,x_] emits the x_Symbol pattern",
 check("A2.4 the record is a bare-u_ Int clause",
       g.bare_int_clause("Int[u_,x_]", "t9", 2), True)
 
+# Task 12b -- Rubi's condition-assignment idiom (.scratch/class-ports/
+# issues/13). The recogniser is structural: an assignment, inside a rule
+# condition, to a name the enclosing With/Module declares WITHOUT an
+# initialiser.
+IDIOM = ("Not[FalseQ[r=Divides[y^m,v^m,x]]] && "
+         "Not[FalseQ[q=DerivativeDivides[y,u,x]]]")
+check("12b the idiom is found, in the condition's evaluation order",
+      g._condition_assignments(IDIOM, ["q", "r"], "9_3", 18, "the cond"),
+      [("r", "Divides[y^m,v^m,x]"), ("q", "DerivativeDivides[y,u,x]")])
+check("12b bare locals are the ones declared without an initialiser",
+      g._scope_bare_locals("{v=f[x], q, r}"), ["q", "r"])
+for label, cond, bare in [
+        ("a name no scope declares", "Not[FalseQ[q=D[y,x]]]", []),
+        ("an already-initialised local", "Not[FalseQ[v=D[y,x]]]", ["q"]),
+        ("the same name twice", "FalseQ[q=A[x]] && FalseQ[q=B[x]]", ["q"])]:
+    try:
+        g._condition_assignments(cond, bare, "9_3", 18, "the cond")
+        outcome = "no exception raised"
+    except SystemExit:
+        outcome = "SystemExit"
+    check(f"12b an assignment to {label} raises GenError", outcome,
+          "SystemExit")
+check("12b non-assignment operators are not assignments",
+      g._condition_assignments("a==b && c=!=d && a>=1 && b<=2 && e!=f",
+                               [], "9_3", 18, "the cond"), [])
+# Fix round 1 (review item 1): Mathematica initialises the scope's own
+# declarations on entry and evaluates the condition afterwards, so the
+# condition assignments come LAST. Leading with them emitted `q : g(v)`
+# off an UNBOUND v. Output-neutral on the four upstream sites, which
+# declare no initialised local.
+check("12b hoist: the scope's own initialisers come first",
+      g._hoist_scope_assigns("{v=f[x], q}", [("q", "g[v]")], "9_3", 18),
+      "{v=f[x], q=g[v]}")
+check("12b hoist: with no initialised local, the condition's order stands",
+      g._hoist_scope_assigns("{q,r}", [("r", "A[x]"), ("q", "B[x]")],
+                             "9_3", 18),
+      "{r=A[x], q=B[x]}")
+
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

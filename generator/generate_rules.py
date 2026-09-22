@@ -1840,17 +1840,29 @@ def _hoist_scope_assigns(decls, cassigns, key, n):
     """The repl's copy of a raw .m locals list, with each condition
     assignment repeated as a scope initialiser. The cond and the repl are
     separate Maxima functions, so the condition's binding cannot reach the
-    replacement: each evaluates the assignments itself. The initialisers
-    lead the list in the CONDITION's order — _scope_block emits them as
-    sequential `name : value` statements, so a later one may read an
-    earlier one exactly as the condition's `&&` chain does."""
+    replacement: each evaluates the assignments itself.
+
+    ORDER (fix round 1). Mathematica enters the scope first — every
+    declaration with an initialiser is evaluated at that point — and
+    evaluates the `/;` condition afterwards, so the condition's
+    assignments come LAST. The declarations therefore keep their own
+    relative order and the condition assignments follow, in the
+    condition's order. _scope_block emits the list as sequential
+    `name : value` statements, so `Module[{v=f[x], q}, … /;
+    Not[FalseQ[q=g[v]]]]` emits `v : f(x)` before `q : g(v)` and g reads
+    a bound v. Leading with the condition assignments instead (the first
+    cut here) emitted `q : g(v)` first, off an unbound v.
+
+    Output-neutral on the four upstream sites, which are all
+    `Module[{q,r}]` with no initialised local: `rest` is empty there and
+    the emitted list is the same either way."""
     d = decls.strip()
     if not (d.startswith("{") and d.endswith("}")):
         raise GenError(f"{key} r{n}: locals not a list: {d[:40]!r}")
     done = {nm for nm, _ in cassigns}
     rest = [p.strip() for p in split_top(d[1:-1], ",")
             if split_top(p.strip(), "=")[0].strip() not in done]
-    return "{" + ", ".join([f"{nm}={rhs}" for nm, rhs in cassigns] + rest) + "}"
+    return "{" + ", ".join(rest + [f"{nm}={rhs}" for nm, rhs in cassigns]) + "}"
 
 
 def _assign_in_test(test, cassigns, ctx, key, n):
