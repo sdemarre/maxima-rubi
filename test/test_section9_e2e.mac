@@ -56,6 +56,20 @@ for mr_t in mr_e2e_targets do (
   check_bool(sconcat(first(mr_t), ": answers, no noun, verifies at x = 0.3, 0.7"),
              mr_e2e_ok(second(mr_t), mr_ans)))$
 
+/* Issue 13's witness (9.3 r18's condition-assignment idiom, .m :145). The
+   record's pattern matches this integrand, but DerivativeDivides declines
+   on it, so the faithful outcome is no answer at all -- what `rubi`
+   returns is NOT the assertion here. Ported with Maxima's `=` the guard
+   was vacuous and the answer came back as a degree-49/48 rational
+   multiplied by the two UNBOUND rule locals `_mr_9_3_r18_q*_mr_9_3_r18_r`.
+   The assertion is the ticket's: no rule local escapes into the answer. */
+mr_i13 : ((sqrt(x) + 1)*x - 2*sqrt(x) - 2)/(sqrt(x) + 1)^2$
+mr_ans : errcatch(rubi(mr_i13, x))$
+print("     issue 13 witness -> ", mr_ans)$
+check_bool("issue 13 witness: no rule local (_mr_...) escapes into the answer",
+           listp(mr_ans) and is(length(mr_ans) = 1)
+           and mr_e2e_no_locals(first(mr_ans)))$
+
 print("")$
 print("========================================")$
 print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$

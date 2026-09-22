@@ -1759,6 +1759,120 @@ def split_inner_condition(rhs):
     return head, decls, body[:last], body[last+2:]
 
 
+# Rubi's condition-assignment idiom. An assignment `name=<expr>` in a rule
+# condition, with no `==`/`=!=`/`<=`/`>=`/`:=` in front of the `=`. The name
+# is a plain Mathematica symbol, so the lookbehind rejects a suffix match.
+_COND_ASSIGN = re.compile(r"(?<![A-Za-z0-9$_])([A-Za-z][A-Za-z0-9]*)\s*=(?![=!])")
+
+
+def _scope_bare_locals(decls):
+    """The names a raw .m With/Module locals list declares WITHOUT an
+    initialiser ({q,r} -> ['q','r']; {v=…, d} -> ['d'])."""
+    d = decls.strip()
+    if not (d.startswith("{") and d.endswith("}")):
+        return []
+    out = []
+    for p in split_top(d[1:-1], ","):
+        parts = split_top(p.strip(), "=")
+        if len(parts) == 1 and parts[0].strip():
+            out.append(parts[0].strip())
+    return out
+
+
+def _condition_assignments(cond, bare, key, n, where):
+    """Rubi's condition-assignment idiom -> [(name, raw rhs text), …] in the
+    order the condition evaluates them.
+
+    The idiom is a `/;` test that BINDS a name the replacement then reads
+    (9.3 .m :145, :177, :185, :193 — the only four sites in the pinned
+    clone, `grep -rn "FalseQ\\[[a-zA-Z]*=" reference/rubi/.../IntegrationRules/`):
+
+        Module[{q,r}, q*r*Subst[…] /;
+          Not[FalseQ[r=Divides[y^m,v^m,x]]] &&
+          Not[FalseQ[q=DerivativeDivides[y,u,x]]]]
+
+    Maxima's `=` is EQUALITY, not assignment, so emitting the assignment
+    verbatim builds an equation object: %mr_falseQ of an equation is never
+    true, the guard is vacuous and the record fires on every integrand its
+    pattern matches, while the replacement's q and r stay unbound symbols
+    that multiply the answer (.scratch/class-ports/issues/13).
+
+    Recognised STRUCTURALLY — an assignment to a BARE local of the
+    enclosing With/Module scope — never by rule number, so a later class
+    carrying the idiom is handled too. Any other assignment in a condition
+    (to a capture, to an already-initialised local, or anywhere outside a
+    scope at all) has no such placement and is a GenError rather than a
+    silent equation."""
+    out = []
+    for m in _COND_ASSIGN.finditer(cond):
+        name = m.group(1)
+        if name not in bare:
+            raise GenError(
+                f"{key} r{n}: assignment to {name!r} in {where} — not a bare "
+                f"local of an enclosing With/Module scope, so it has no "
+                f"faithful Maxima placement (issue 13)")
+        i, depth = m.end(), 0
+        while i < len(cond):
+            ch = cond[i]
+            if ch in "[({":
+                depth += 1
+            elif ch in "])}":
+                if depth == 0:
+                    break
+                depth -= 1
+            elif depth == 0 and (ch == "," or cond.startswith("&&", i)
+                                 or cond.startswith("||", i)):
+                break
+            i += 1
+        rhs = cond[m.end():i].strip()
+        if not rhs:
+            raise GenError(f"{key} r{n}: empty assignment right-hand side "
+                           f"for {name!r} in {where}")
+        out.append((name, rhs))
+    names = [nm for nm, _ in out]
+    if len(set(names)) != len(names):
+        raise GenError(f"{key} r{n}: {where} assigns a name twice ({names}) "
+                       f"— the replacement cannot repeat that order")
+    return out
+
+
+def _hoist_scope_assigns(decls, cassigns, key, n):
+    """The repl's copy of a raw .m locals list, with each condition
+    assignment repeated as a scope initialiser. The cond and the repl are
+    separate Maxima functions, so the condition's binding cannot reach the
+    replacement: each evaluates the assignments itself. The initialisers
+    lead the list in the CONDITION's order — _scope_block emits them as
+    sequential `name : value` statements, so a later one may read an
+    earlier one exactly as the condition's `&&` chain does."""
+    d = decls.strip()
+    if not (d.startswith("{") and d.endswith("}")):
+        raise GenError(f"{key} r{n}: locals not a list: {d[:40]!r}")
+    done = {nm for nm, _ in cassigns}
+    rest = [p.strip() for p in split_top(d[1:-1], ",")
+            if split_top(p.strip(), "=")[0].strip() not in done]
+    return "{" + ", ".join([f"{nm}={rhs}" for nm, rhs in cassigns] + rest) + "}"
+
+
+def _assign_in_test(test, cassigns, ctx, key, n):
+    """The cond's copy: the assignments stay exactly where the condition
+    puts them, so Maxima's short-circuiting `and` evaluates them in the
+    upstream `&&` order and skips the ones after the first false test
+    (measured: `is(not(f(r:g(false))) and not(f(q:h(7))))` never calls h).
+    `=` becomes `:`; an argument-position assignment is legal Maxima and
+    values to the assigned value (`f(a : b)` parses and binds)."""
+    for name in dict.fromkeys(nm for nm, _ in cassigns):
+        mapped = (ctx.get("locals") or {}).get(name, name)
+        want = sum(1 for nm, _ in cassigns if nm == name)
+        pat = re.compile(r"(?<![A-Za-z0-9_$])" + re.escape(mapped)
+                         + r"\s*=(?![=<>])")
+        test, cnt = pat.subn(mapped + " : ", test)
+        if cnt != want:
+            raise GenError(f"{key} r{n}: the translated condition has {cnt} "
+                           f"assignment site(s) for {mapped!r}, expected "
+                           f"{want}")
+    return test
+
+
 def emit_rule(run, key, n, rule_vars, fname=None):
     """One rule run (lhs, rhs, cond) -> its cond and repl functions and its
     %mr_defrule registration, as Maxima text (spec 3.4). rule_vars is the
@@ -1789,6 +1903,11 @@ def emit_rule(run, key, n, rule_vars, fname=None):
         pattern = pattern_sexp(lhs, key, n, rule_vars)
     else:
         pattern = rewrite_pattern_sexp(lhs, key, n, rule_vars, fname)
+    # An assignment in the OUTER condition binds nothing any scope
+    # declares, so it has no faithful placement: loud, never an equation
+    # (see _condition_assignments).
+    if cond:
+        _condition_assignments(cond, [], key, n, "the outer condition")
     base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
                  if cond else "true")
     # M-cas-simp (3.5 r10, class-3 deferred campaign C6): the .m cond
@@ -1815,7 +1934,15 @@ def emit_rule(run, key, n, rule_vars, fname=None):
         repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
     else:
         head, decls, body, inner_cond = inner
-        repl_txt = translate(drop_optionals(f"{head}[{decls},{body}]",
+        # Rubi's condition-assignment idiom (issue 13): the repl repeats
+        # the condition's assignments as scope initialisers, the cond
+        # performs them in place.
+        cassigns = _condition_assignments(
+            inner_cond, _scope_bare_locals(decls), key, n,
+            "the inner condition")
+        decls_repl = (_hoist_scope_assigns(decls, cassigns, key, n)
+                      if cassigns else decls)
+        repl_txt = translate(drop_optionals(f"{head}[{decls_repl},{body}]",
                                             rule_vars), ctx)
         # the cond's copy of the scope takes the same local names as the
         # repl's (prefixed; see _push_scope_locals)
@@ -1825,6 +1952,8 @@ def emit_rule(run, key, n, rule_vars, fname=None):
         locals_, assigns = _scope_locals(
             head, translate(drop_optionals(decls, rule_vars), ctx), key, n)
         test = translate(drop_optionals(inner_cond, rule_vars), ctx)
+        if cassigns:
+            test = _assign_in_test(test, cassigns, ctx, key, n)
         if ctx["prefix_locals"]:
             ctx["locals"] = saved
         # parenthesized: the outer cond may be an `or` chain

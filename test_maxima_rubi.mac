@@ -143,6 +143,7 @@ run_all_tests() := block([],
   test_section9_g5(),
   test_section9_g6a(),
   test_section9_g6b(),
+  test_section9_condassign(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4494,6 +4495,72 @@ test_section9_g6b() := block([],
         %mr_functionOfLinear(4^(2*x + 1), x), [%e^x, log(4), 2*log(4)]),
   check("fols: 4^(2x+1) at its own [a,b] = [log(4), 2 log(4)]",
         %mr_functionOfLinearSubst(4^(2*x + 1), log(4), 2*log(4), x), %e^x),
+  true)$
+
+/* Rubi's condition-assignment idiom, on the generated records that carry
+   it (9.3 .m :145/:177/:185/:193 -> 9_3 r18/r22/r23/r24; the only four
+   sites in the pinned clone). Upstream r18:
+
+     Int[u_.*v_^m_.*(a_.+b_.*y_^n_)^p_.,x_Symbol] :=
+       Module[{q,r}, q*r*Subst[Int[x^m*(a+b*x^n)^p,x],x,y] /;
+         Not[FalseQ[r=Divides[y^m,v^m,x]]] &&
+         Not[FalseQ[q=DerivativeDivides[y,u,x]]]] /; FreeQ[{a,b,m,n,p},x]
+
+   The `/;` test BINDS r and q and the replacement multiplies by them.
+   Maxima's `=` is EQUALITY, so emitted verbatim the guard tests an
+   equation object -- never false, so the record fires unguarded -- and
+   the replacement's q, r stay unbound symbols in the answer
+   (.scratch/class-ports/issues/13). The generator emits `:`.
+
+   Expected values hand-derived from upstream (Rubi :7443 Divides,
+   :6947 DerivativeDivides), y = v = x^2+1, m = 1 throughout:
+     Divides[y^m,v^m,x] = (x^2+1)/(x^2+1) = 1, free of x;
+     u = x  : DerivativeDivides[x^2+1,x,x] = x/D[x^2+1,x] = 1/2, so the
+              record fires and its q*r factor is 1/2 exactly;
+     u = x^3: Exponent[u,x] = 3 =/= Exponent[y,x]-1 = 1, so
+              DerivativeDivides = False and the record must decline;
+     v = x  : Divides[x^2+1,x,x] = x/(x^2+1), not free of x, so
+              Divides = False and the record must decline -- and the
+              condition must not even reach DerivativeDivides. */
+test_section9_condassign() := block(
+    [mr_ca_saved, mr_ca_ok, mr_ca_fire, mr_ca_nodd, mr_ca_nodiv,
+     mr_ca_r22, mr_ca_res, mr_ca_ref],
+  print("--- section 9: the condition-assignment idiom (9.3 r18/r22) ---"),
+  mr_ca_saved : mr_rule_table,
+  mr_ca_ok : errcatch(
+    %mr_load_sibling("rules/class9/9_3.mac", 'mr_witness_9_3), true),
+  mr_rule_table : mr_ca_saved,
+  check_bool("condassign: rules/class9/9_3.mac loads", is(mr_ca_ok # [])),
+  mr_ca_fire : ['_mr_9_3_r18_a = 1, '_mr_9_3_r18_b = 1, '_mr_9_3_r18_m = 1,
+                '_mr_9_3_r18_n = 1, '_mr_9_3_r18_p = 1, '_mr_9_3_r18_u = x,
+                '_mr_9_3_r18_v = x^2 + 1, '_mr_9_3_r18_y = x^2 + 1],
+  mr_ca_nodd : ['_mr_9_3_r18_a = 1, '_mr_9_3_r18_b = 1, '_mr_9_3_r18_m = 1,
+                '_mr_9_3_r18_n = 1, '_mr_9_3_r18_p = 1, '_mr_9_3_r18_u = x^3,
+                '_mr_9_3_r18_v = x^2 + 1, '_mr_9_3_r18_y = x^2 + 1],
+  mr_ca_nodiv : ['_mr_9_3_r18_a = 1, '_mr_9_3_r18_b = 1, '_mr_9_3_r18_m = 1,
+                 '_mr_9_3_r18_n = 1, '_mr_9_3_r18_p = 1, '_mr_9_3_r18_u = x,
+                 '_mr_9_3_r18_v = x, '_mr_9_3_r18_y = x^2 + 1],
+  /* r22 is the same idiom on the trinomial LHS; n2 = 2 n and w = y are
+     its extra outer tests, satisfied here, so only the idiom decides. */
+  mr_ca_r22 : ['_mr_9_3_r22_a = 1, '_mr_9_3_r22_b = 1, '_mr_9_3_r22_c = 1,
+               '_mr_9_3_r22_m = 1, '_mr_9_3_r22_n = 1, '_mr_9_3_r22_n2 = 2,
+               '_mr_9_3_r22_p = 1, '_mr_9_3_r22_u = x^3,
+               '_mr_9_3_r22_v = x^2 + 1, '_mr_9_3_r22_w = x^2 + 1,
+               '_mr_9_3_r22_y = x^2 + 1],
+  check_bool("condassign: 9_3 r18 cond fires when Divides and DerivativeDivides both answer",
+             _mr_cond_9_3_r18(mr_ca_fire, x)),
+  check_not("condassign: 9_3 r18 cond declines when DerivativeDivides is False",
+            _mr_cond_9_3_r18(mr_ca_nodd, x)),
+  check_not("condassign: 9_3 r18 cond declines when Divides is False",
+            _mr_cond_9_3_r18(mr_ca_nodiv, x)),
+  check_not("condassign: 9_3 r22 cond declines when DerivativeDivides is False",
+            _mr_cond_9_3_r22(mr_ca_r22, x)),
+  mr_ca_res : _mr_repl_9_3_r18(mr_ca_fire, x),
+  mr_ca_ref : %mr_subst(mr_int(x*(x + 1), x), x, x^2 + 1),
+  check_bool("condassign: 9_3 r18 repl answer is free of the rule locals q and r",
+             freeof('_mr_9_3_r18_q, '_mr_9_3_r18_r, mr_ca_res)),
+  check("condassign: 9_3 r18 repl multiplies by q*r = 1/2",
+        ratsimp(mr_ca_res / mr_ca_ref), 1/2),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).
