@@ -7324,10 +7324,46 @@ if not integerp(lcm(1, 1)) then load("functs")$
    Apply[SameQ,lst3] (every element syntactically identical) is
    %mr_everyQ against is(# = first(lst3)) (the %mr_unsameQ SameQ
    precedent, this file's line ~6495). The Log branch's First[#] (the
-   log's own argument) is first(%mr_args_in(#)); FullSimplify there is
-   ratsimp (the brief); GCD of the (possibly fractional) ratio list is
-   the numerator-gcd over denominator-lcm identity (Mathematica's GCD on
-   rationals), since Maxima's gcd/lcm are integer-only. */
+   log's own argument) is first(%mr_args_in(#)).
+   FIX ROUND 1 (Task 8 fix round 1, 2026-09-22): the brief's "FullSimplify
+   there is ratsimp" is WRONG for this ratio specifically -- MEASURED:
+   ratsimp(log(8)/log(4)) stays the unsimplified quotient log(8)/log(4)
+   (not 3/2), so with ratsimp the log branch's EveryQ[RationalQ,...] gate
+   never passes for any two DIFFERENT log arguments and the branch was
+   dead code (commonFactors([log(4),log(8)]) came out [1,log(4),log(8)]
+   -- no common log factor extracted at all, via the MostMainFactorPosition
+   fallback, which is wrong: upstream's FullSimplify recognizes log(8)/
+   log(4) = 3/2 and extracts log(2)). This is exactly the gap
+   %mr_logRatio(base, F) already closes for commensurable positive-
+   integer bases (this file's line ~4801, written for the same FullSimplify/
+   ratsimp gap in FunctionOfExponential's TestAux) -- reused here rather
+   than reinvented: %mr_logRatio(first(%mr_args_in(e)), first(%mr_args_in(
+   first(lst3)))) gives the exact rational log(e's argument)/log(first
+   lst3's argument), or false when the arguments are not commensurable
+   (MEASURED: %mr_logRatio(8,4) = 3/2, %mr_logRatio(6,4) = false, matching
+   FullSimplify's own decline on non-commensurable bases); %mr_rationalQ
+   (false) = false, so the EveryQ[RationalQ,...] gate still correctly
+   declines non-commensurable inputs. GCD of the (possibly fractional)
+   ratio list is the numerator-gcd over denominator-lcm identity
+   (Mathematica's GCD on rationals), since Maxima's gcd/lcm are
+   integer-only. MEASURED 2026-09-22: apply(gcd, [1,3]) is the noun
+   spmod(1,3), NOT 1 -- gcd is also a Maxima OPTION VARIABLE (its default
+   algorithm name, "spmod"), and apply evaluates its function-position
+   argument, so the bare symbol gcd resolves to that option value before
+   apply ever sees it; gcd(1,3) direct-called (no apply) is unaffected
+   (evaluates to 1) since a direct call resolves the function cell, not
+   the value cell. apply("gcd", ...) (the quoted-string form, the same
+   idiom this file already uses for apply("+", ...) / apply("*", ...))
+   sidesteps the value-cell read and gives 1 for TWO arguments -- but
+   gcd's real signature (? gcd) is gcd(p1, p2, x1, ...), a BINARY gcd
+   plus optional POLYNOMIAL VARIABLES, not a variadic numeric gcd: three
+   or more numeric arguments (apply("gcd", [1,3,2])) fail "gcd: improper
+   argument: 2" (2 is read as a variable spec). lcm(expr1, ..., exprn)
+   (functs) IS genuinely variadic, so apply("lcm", ...) is fine for any
+   length; gcd is folded pairwise instead, lreduce("gcd", ...) (the
+   quoted-string form again -- lreduce(gcd, ...), unquoted, hits the
+   same value-cell trap and silently builds spmod(spmod(...),...)
+   nouns). */
 %mr_commonFactors(%mr_cf_lst) := block(
   [%mr_cf_lst1, %mr_cf_lst2, %mr_cf_lst3, %mr_cf_lst4, %mr_cf_bases,
    %mr_cf_common, %mr_cf_base, %mr_cf_num, %mr_cf_isLog, %mr_cf_ratios,
@@ -7352,12 +7388,14 @@ if not integerp(lcm(1, 1)) then load("functs")$
                              and is(first(%mr_args_in(%mr_cf_e)) > 0)),
                     %mr_cf_lst3)
       then (
-        %mr_cf_ratios : map(lambda([%mr_cf_e], ratsimp(%mr_cf_e / first(%mr_cf_lst3))),
+        %mr_cf_ratios : map(lambda([%mr_cf_e],
+                                    %mr_logRatio(first(%mr_args_in(%mr_cf_e)),
+                                                 first(%mr_args_in(first(%mr_cf_lst3))))),
                              %mr_cf_lst3),
         if %mr_everyQ(%mr_rationalQ, %mr_cf_ratios) then %mr_cf_isLog : true
       ),
       if %mr_cf_isLog then (
-        %mr_cf_num : apply(gcd, map(num, %mr_cf_ratios)) / apply(lcm, map(denom, %mr_cf_ratios)),
+        %mr_cf_num : lreduce("gcd", map(num, %mr_cf_ratios)) / apply("lcm", map(denom, %mr_cf_ratios)),
         %mr_cf_common : %mr_cf_common
           * log(first(%mr_args_in(first(%mr_cf_lst3))) ^ %mr_cf_num),
         %mr_cf_lst2 : map(lambda([%mr_cf_p, %mr_cf_q], %mr_cf_p * %mr_cf_q / %mr_cf_num),

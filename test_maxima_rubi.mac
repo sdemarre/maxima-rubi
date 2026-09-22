@@ -4451,6 +4451,21 @@ test_section9_g6a() := block([],
   check("commonFactors: b, 2b", %mr_commonFactors([b, 2*b]), [b, 1, 2]),
   check("commonFactors: a x, b x (the MostMainFactorPosition path)",
         %mr_commonFactors([a*x, b*x]), [x, a, b]),
+  /* Task 8 fix round 1: the Log branch (upstream :3029-3033), reached
+     when every LeadFactor is Log of a positive integer and the pairwise
+     ratios are rational. Hand-derived from upstream: for
+     [log(4),log(8)], lst3 = [log(4),log(8)], ratios = [1, log(8)/log(4)]
+     = [1, 3/2] under FullSimplify (log(8) = 3 log(2), log(4) = 2 log(2));
+     GCD([1,3/2]) = 1/2; common = Log[4^(1/2)] = log(2); the quotients
+     are ratio*2/num = [2,3]. For the three-way case the ratios are
+     [1,3/2,2] (log(16) = 4 log(2)), GCD = 1/2 again, quotients [2,3,4].
+     MEASURED 2026-09-22: ratsimp(log(8)/log(4)) stays the unsimplified
+     quotient (the brief's "FullSimplify there is ratsimp" is wrong for
+     this ratio specifically -- source comment, %mr_commonFactors). */
+  check("commonFactors: log(4), log(8) (the log-ratio branch)",
+        %mr_commonFactors([log(4), log(8)]), [log(2), 2, 3]),
+  check("commonFactors: log(4), log(8), log(16) (three-way log-ratio gcd)",
+        %mr_commonFactors([log(4), log(8), log(16)]), [log(2), 2, 3, 4]),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).
