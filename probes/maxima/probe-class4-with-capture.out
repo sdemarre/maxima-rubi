@@ -1,4 +1,4 @@
-pw_before_file:"/tmp/tmp.pJUVhvsYTn.mac"
+pw_before_file:"/tmp/tmp.xSQlhFroqp.mac"
 batch("probes/maxima/probe-class4-with-capture.mac")
 print("=== probe: class-4 With-local capture trap ===")
 === probe: class-4 With-local capture trap === 
@@ -49,9 +49,9 @@ block([pw_f,pw_r,pw_d,pw_t],pw_f:cos(x)/(d*sin(x)^7+1),pw_r:rubi(pw_f,x),
             elapsed_real_time()-pw_t),pw_t:elapsed_real_time(),
       print("ratsimp(trigsimp) = 0:",is(ratsimp(trigsimp(pw_d)) = 0)," s:",
             elapsed_real_time()-pw_t))
-ratsimp = 0: false  s: 1.504028 
-radcan(ratsimp) = 0: false  s: 2.1870399999999997 
-ratsimp(trigsimp) = 0: false  s: 17.018315 
+ratsimp = 0: false  s: 1.7280230000000003 
+radcan(ratsimp) = 0: false  s: 1.8620269999999994 
+ratsimp(trigsimp) = 0: false  s: 17.745247999999997 
 print("--- C. the mechanism, class-4-free: a nested mr_int under a block local named d ---")
 --- C. the mechanism, class-4-free: a nested mr_int under a block local named d ---
   
@@ -69,12 +69,11 @@ for pw_f in [1/(a+b*x^5),1/(p+q*x^5),1/(1+s*x^5),1/(1+t*x^5),1/(1+i*x^5)] do
           pw_res(pw_f,rubi(pw_f,x),
                  [x = 0.37,a = 1.3,b = 0.7,p = 1.3,q = 0.7,s = 0.7,t = 0.7,
                   i = 0.7]))
-1/(b*x^5+a)  resid: 0.035379584247915374 
+1/(b*x^5+a)  resid: 1.6653345369377348e-16 
 1/(q*x^5+p)  resid: 1.6653345369377348e-16 
-expt: undefined: 0 to a negative exponent.
-1/(s*x^5+1)  resid: 1.1362438767648086e-16 
-1/(t*x^5+1)  resid: 0.30439990148052953 
-1/(i*x^5+1)  resid: 0.012160138457050995 
+1/(s*x^5+1)  resid: 1.6653345369377348e-16 
+1/(t*x^5+1)  resid: 1.6653345369377348e-16 
+1/(i*x^5+1)  resid: 1.6653345369377348e-16 
 print("--- E. before the fix: the 23855a8 4.7.5 bodies reloaded over the table's functions ---")
 --- E. before the fix: the 23855a8 4.7.5 bodies reloaded over the table's functions ---
   

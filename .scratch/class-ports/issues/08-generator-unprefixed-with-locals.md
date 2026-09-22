@@ -1,6 +1,6 @@
 # The generator's With/Module locals are unprefixed in classes 1/2/3/6 (and mr_sum re-evaluates under them)
 
-Status: open
+Status: fixed (branch fix-mr-sum-capture); one follow-up open (the slowdown below)
 Type: bug (silently wrong antiderivatives)
 Label: needs-triage
 Filed: 2026-09-21 (inert-trig substrate final fix wave, item I2, ruling R28)
@@ -99,3 +99,65 @@ generated block binds); a difference, or a non-zero numeric residual
 `float(rectform(subst([x=0.37, ...], diff(r, x) - f)))`, is the trap.
 The final-review probes (`/tmp/claude-1000/final-review/capture*.mac`,
 not committed) ran the same comparison over class-6 corpus integrands.
+
+## Resolution (2026-09-22)
+
+- `afabf04` mr_sum's locals are `%mr_sum_*` (fix step 2). The audit found no
+  other `ev(` or `''` in the hand-written utilities. The double `ev` is kept:
+  with the locals prefixed it no longer captures anything.
+- `c69826d` the generator prefixes With/Module locals in every class (fix
+  step 1). 74 files regenerated; undoing the renaming reproduces the previous
+  files byte for byte (the local `D` was emitted as `diff` before). The P3
+  gate has the closed exception `undo_local_prefix`, 1,602 declarations, 22/0.
+  Layer A 1179/0 (7 new targets, each RED before its fix).
+- Probe re-run: section D residuals 0.035 / 0.30 / 0.012 -> 1.7e-16. Section
+  C is the bare mechanism (a hand-written block([d])) and still captures, by
+  design.
+
+### Measurement (fix step 3)
+
+Full runs, queue runner, 30 s cpu, 2026-09-21/22, named records
+`test/corpus_class{1,2,3,6}.locals-prefix.out` (12 workers; class 1 24).
+The host ran an Android emulator (~6.5 cores) throughout, so entries near the
+cap moved with the load: CPU per entry was 1.13-1.21x the accepted records' on
+entries the fix cannot reach. The full-run A/B against the accepted records is
+therefore NOT the attribution:
+
+| class | accepted -> new PASS | P->F | F->P |
+|---|---|---|---|
+| 1 | 18,114 -> 18,094 | 68 | 48 |
+| 2 | 708 -> 716 | 0 | 8 |
+| 3 | 1,673 -> 1,673 | 0 | 0 |
+| 6 | 1,636 -> 1,629 | 7 | 0 |
+
+The attribution is a PAIRED rerun of every entry whose verdict changed (238),
+the pre-fix core (`5ca6126`, fingerprint `3d08a28a`, the accepted records'
+core) and the new core running concurrently, 6 workers each, same load:
+
+| class | changed | old -> new core, same load |
+|---|---|---|
+| 2 | 8 | 8 F->P (unverified -> verified) |
+| 3 | 13 | same PASS/FAIL on every entry (4 flip timeout <-> contains-noun at 29.5-30.1 s, both directions) |
+| 6 | 24 | identical verdicts on all 24 -- its 7 P->F were load |
+| 1 | 193 | 51 F->P, 9 P->F, 46 P->P (load), 87 F->F |
+
+Then the 60 class-1 entries whose PASS differed between the cores, at a 100 s
+cap, both cores: all 60 verify on the new core.
+- 47 are the trap: on the old core 40 RAN AWAY past 100 s (e.g. 1.1.1.2
+  e1772-e1833, 1.1.3.4 e156-e178) and 7 answered wrong (unverified); the new
+  core verifies each in < 5 s.
+- 13 straddle the cap and verify on BOTH cores, but the new core is slower on
+  all 13: 1.02-1.25x, median ~1.07x (1.2.1.2 e602 24.4 -> 30.6 s, e1519
+  25.5 -> 30.3 s, e479 25.4 -> 29.1 s; 1.2.1.4 e831 28.4 -> 32.5 s). 9 of them
+  cross 30 s.
+
+Net on the same load: class 1 +51 / -9, class 2 +8, classes 3 and 6 0.
+
+## Follow-up: the 13-entry slowdown (open)
+
+Systematic (13/13 in one direction), small, unexplained. Hypothesis, NOT
+measured: a renamed local that is a Sum index or lambda parameter
+(`k` -> `_mr_<key>_r<n>_k`) survives into expressions, and Maxima orders terms
+by symbol name, so later rules see a differently ordered expression and take a
+different (valid, slower) path. Check first: `rubi_verbose` rule traces of
+1.2.1.2 e602 on the two cores (`MR_RULES_CORE_PATH`), diffed.
