@@ -1,0 +1,10 @@
+#!/bin/sh
+# probes/rubi/04-section9-load-and-legacy.run -- the section-9 load order, the
+# Dec-2023 renumbering, where the legacy 9.1 rules went, and the formal-
+# derivative corpus. Static over the pinned clones, seconds.
+#
+#   sh probes/rubi/04-section9-load-and-legacy.run
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/rubi/04-section9-load-and-legacy.py \
+    > probes/rubi/04-section9-load-and-legacy.out
+echo "wrote probes/rubi/04-section9-load-and-legacy.out"

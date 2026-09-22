@@ -1,0 +1,68 @@
+pinned rubi: 61e9c18ea248061cd83c67882f7c91a73cef912d
+
+== A. section-9 LoadRules lines in Rubi.m ==
+  Rubi.m:204: LoadRules[FileNameJoin[{"9 Miscellaneous", "9.2 Piecewise linear functions"}]];
+  Rubi.m:354: LoadRules[FileNameJoin[{"9 Miscellaneous", "9.1 Derivative integration rules"}]]
+  Rubi.m:356: LoadRules[FileNameJoin[{"9 Miscellaneous", "9.3 Miscellaneous integration rules"}]];
+  rule counts (^Int[ lines):
+    21  9.1 Derivative integration rules.m
+    27  9.1 Integrand simplification rules.m
+    21  9.2 Derivative integration rules.m
+    19  9.2 Piecewise linear functions.m
+    76  9.3 Miscellaneous integration rules.m
+    19  9.3 Piecewise linear functions.m
+    58  9.4 Miscellaneous integration rules.m
+
+== B. f7fa0fd: section-9 LoadRules lines removed/added ==
+  -LoadRules[{"9 Miscellaneous", "9.1 Integrand simplification rules"}];
+  -LoadRules[{"9 Miscellaneous", "9.3 Piecewise linear functions"}];
+  -  LoadRules[{"9 Miscellaneous", "9.2 Derivative integration rules"}]
+  -LoadRules[{"9 Miscellaneous", "9.4 Miscellaneous integration rules"}];
+  +  LoadRules[FileNameJoin[{"9 Miscellaneous", "9.2 Piecewise linear functions"}]];
+  +  LoadRules[FileNameJoin[{"9 Miscellaneous", "9.1 Derivative integration rules"}]]
+  +  LoadRules[FileNameJoin[{"9 Miscellaneous", "9.3 Miscellaneous integration rules"}]];
+
+== C. legacy 9.1 Integrand simplification LHSs in the pinned rule set ==
+  absent Int[u_.*(a_+b_.*x_^n_.)^p_.,x_Symbol]                          []
+  absent Int[u_.*(a_.+b_.*x_^n_.)^p_.,x_Symbol]                         []
+  absent Int[u_.*(a_+b_.*x_^n_.+c_.*x_^j_.)^p_.,x_Symbol]               []
+  absent Int[u_.*(a_.+b_.*x_^n_.+c_.*x_^j_.)^p_.,x_Symbol]              []
+  absent Int[u_.*(a_.+b_.*x_^n_.+c_.*x_^j_.)^p_.,x_Symbol]              []
+  absent Int[u_.*(a_.*v_+b_.*v_+w_.)^p_.,x_Symbol]                      []
+  FOUND  Int[u_.*Px_^p_,x_Symbol]                                       ['1.3.1 u (a+b x+c x^2+d x^3)^p.m', '1.3.2 u (a+b x+c x^2+d x^3+e x^4)^p.m']
+  absent Int[a_,x_Symbol]                                               []
+  absent Int[a_*(b_+c_.*x_),x_Symbol]                                   []
+  absent Int[-u_,x_Symbol]                                              []
+  absent Int[Complex[0,a_]*u_,x_Symbol]                                 []
+  absent Int[a_*u_,x_Symbol]                                            []
+  FOUND  Int[(c_.*x_)^m_.*u_,x_Symbol]                                  ['1.4.1 Algebraic function simplification.m']
+  absent Int[u_.*(a_.*x_^n_)^m_,x_Symbol]                               []
+  absent Int[u_.*v_^m_.*(b_*v_)^n_,x_Symbol]                            []
+  FOUND  Int[u_.*(a_.*v_)^m_*(b_.*v_)^n_,x_Symbol]                      ['1.4.1 Algebraic function simplification.m']
+  FOUND  Int[u_.*(a_.*v_)^m_*(b_.*v_)^n_,x_Symbol]                      ['1.4.1 Algebraic function simplification.m']
+  FOUND  Int[u_.*(a_.*v_)^m_*(b_.*v_)^n_,x_Symbol]                      ['1.4.1 Algebraic function simplification.m']
+  FOUND  Int[u_.*(a_.*v_)^m_*(b_.*v_)^n_,x_Symbol]                      ['1.4.1 Algebraic function simplification.m']
+  FOUND  Int[u_.*(a_+b_.*v_)^m_.*(c_+d_.*v_)^n_.,x_Symbol]              ['1.4.1 Algebraic function simplification.m']
+  FOUND  Int[u_.*(a_+b_.*v_)^m_*(c_+d_.*v_)^n_,x_Symbol]                ['1.4.1 Algebraic function simplification.m']
+  FOUND  Int[u_.*(a_+b_.*v_)^m_*(c_+d_.*v_)^n_,x_Symbol]                ['1.4.1 Algebraic function simplification.m']
+  FOUND  Int[u_.*(a_+b_.*v_)^m_*(A_.+B_.*v_+C_.*v_^2),x_Symbol]         ['1.4.1 Algebraic function simplification.m']
+  FOUND  Int[u_.*(a_+b_.*x_^n_.)^m_.*(c_+d_.*x_^q_.)^p_.,x_Symbol]      ['1.4.1 Algebraic function simplification.m']
+  FOUND  Int[u_.*(a_+b_.*x_^n_.)^m_.*(c_+d_.*x_^j_)^p_.,x_Symbol]       ['1.4.1 Algebraic function simplification.m']
+  absent Int[u_.*(a_+b_.*x_+c_.*x_^2)^p_.,x_Symbol]                     []
+  absent Int[u_.*(a_+b_.*x_^n_+c_.*x_^n2_.)^p_.,x_Symbol]               []
+  found 12 / 27
+
+== D. constant-factor LHSs (Int[Complex[0, / Int[a_*u_ / Int[-u_) ==
+    3  9 Miscellaneous/9.1 Integrand simplification rules.m (NOT loaded: renumbered away)
+
+== E. corpus entries with a formal derivative ==
+    94  8 Special functions/8.10 Formal derivatives.mac
+
+== F. old-numbered files vs their pinned successors (whole-rule text) ==
+  9.2 Derivative integration rules.m (21) -> 9.1 Derivative integration rules.m (21): only-old 16, only-new 16, shared 5
+    only-old rules whose LHS is absent from the new file: 0
+  9.3 Piecewise linear functions.m (19) -> 9.2 Piecewise linear functions.m (19): only-old 12, only-new 12, shared 7
+    only-old rules whose LHS is absent from the new file: 0
+  9.4 Miscellaneous integration rules.m (58) -> 9.3 Miscellaneous integration rules.m (76): only-old 43, only-new 61, shared 15
+    only-old rules whose LHS is absent from the new file: 1
+      Int[x_^m_*u_,x_Symbol]

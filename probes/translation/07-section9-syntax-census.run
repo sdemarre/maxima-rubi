@@ -1,0 +1,14 @@
+#!/bin/sh
+# probes/translation/07-section9-syntax-census.run — section-9 census driver
+# (docs/class-porting.md Step 1(a)). Covers the three Rubi.m-loaded section-9
+# files: 9.1 Derivative integration (deferred to class 8), 9.2 Piecewise
+# linear, 9.3 Miscellaneous. The legacy 9.1 Integrand simplification file is
+# not Rubi.m-loaded and so not in this census.
+#
+#   sh probes/translation/07-section9-syntax-census.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# section-9 rule syntax census, $(date -u +%F)"
+  python3 probes/translation/01-class1-syntax-census.py reference/rubi "9 "
+} > probes/translation/07-section9-syntax-census.out
+echo "wrote probes/translation/07-section9-syntax-census.out"
