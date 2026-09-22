@@ -1,0 +1,12 @@
+#!/bin/sh
+# probes/rubi/06-section9-red-targets.run -- master's answers on the
+# section-9 port's end-to-end targets. One Maxima process, ~1 minute.
+#
+#   sh probes/rubi/06-section9-red-targets.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# section-9 RED targets on $(git rev-parse --short HEAD), $(date +%F)"
+  maxima --very-quiet -b probes/rubi/06-section9-red-targets.mac 2>&1 \
+    | grep -E '^(build:|TARGET )'
+} > probes/rubi/06-section9-red-targets.out
+echo "wrote probes/rubi/06-section9-red-targets.out"

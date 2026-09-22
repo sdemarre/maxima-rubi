@@ -1,0 +1,10 @@
+#!/bin/sh
+# probes/rubi/05-section9-utility-closure.run -- the transitive utility
+# closure of the section-9 port (9.2 + 9.3). Static over the pinned Rubi
+# clone and the working tree's translation table and utils, seconds.
+#
+#   sh probes/rubi/05-section9-utility-closure.run
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/rubi/05-section9-utility-closure.py \
+    > probes/rubi/05-section9-utility-closure.out
+echo "wrote probes/rubi/05-section9-utility-closure.out"

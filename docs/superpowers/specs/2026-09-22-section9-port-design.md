@@ -244,3 +244,124 @@ This spec, then a plan (`superpowers:writing-plans`) executed on a branch
 `section9-port` with subagent-driven development, per-task review, and a
 final review before merge. The runbook (`docs/class-porting.md`) applies
 from Step 1c.
+
+## Amendments
+
+### A1. The dependency closure (2026-09-22, before the plan)
+
+`probes/rubi/05-section9-utility-closure.{py,run,out}` walks the eleven
+missing names of §2 through `IntegrationUtilityFunctions.m`, following a
+name whether it is called (`Name[`) or passed as a value
+(`Map[Name, lst]`). The result is **40 missing utilities** (0 unknown),
+which call 11 utilities that are already ported (`CalculusQ`, `NonfreeTerms`,
+`FreeTerms`, `SubstForFractionalPower`, `FractionalPowerQ`, `EveryQ`, `LogQ`,
+`ComplexNumberQ`, `NumericFactor`, `NonnumericFactors`, `OrderedQ`). The 40
+fall into six groups, and each group is one plan task:
+
+| group | entry points (called by rules) | helpers |
+|---|---|---|
+| G1 piecewise / quotient | `PiecewiseLinearQ`, `Divides` | — |
+| G2 structural predicates | `EulerIntegrandQ`, `SimplerIntegrandQ`, `SubstForFractionalPowerQ`, `PolynomialInQ`, `PolynomialInSubst` | `CancelCommonFactors`, `SubstForFractionalPowerAuxQ`, `PolynomialInAuxQ`, `PolynomialInSubstAux` |
+| G3 power variable | `PowerVariableExpn` | `PowerVariableDegree`, `PowerVariableSubst` |
+| G4 square root of quadratic | `FunctionOfSquareRootOfQuadratic` | `SquareRootOfQuadraticSubst` |
+| G5 quotient of linears | `SubstForFractionalPowerOfQuotientOfLinears` | `FractionalPowerOfQuotientOfLinears` |
+| G6 function of linear | `FunctionOfLinear` | `FunctionOfLinearSubst`, `MonomialFactor`, `MinimumDegree`, `DivideDegreesOfFactors`, `LeadFactor`, `LeadBase`, `LeadDegree`, `RemainingFactors`, `CommonFactors`, `Smallest`, `MostMainFactorPosition`, `FactorOrder`, `Map2`, `ReapList`, `AbsurdNumberQ`, `AbsurdNumberFactors`, `NonabsurdNumberFactors`, `AbsurdNumberGCD`, `AbsurdNumberGCDList`, `FactorAbsurdNumber`, `CombineExponents` |
+
+Each name is a hand port in `maxima_rubi_utils.mac` under `%mr_<name>`,
+except two:
+- `Map2` and `ReapList` are Mathematica list plumbing (`Reap`/`Sow` over a
+  `Do`). `CommonFactors` uses Maxima's `map(f, l1, l2)` in their place and
+  records that in a comment. They get no `%mr_` port.
+- `FactorOrder` wraps Mathematica's `Order`, whose canonical order is not
+  Maxima's. The port uses `ordergreatp`/`orderlessp`, and the comment
+  records the deviation. It decides only which factor `CommonFactors`
+  treats as "most main" when no other branch applies, so a different choice
+  changes the form of a common factor, not whether one is found.
+
+The closure is larger than §2's first-level list (11 names) because of G6.
+`FunctionOfLinear` calls `CommonFactors`, which calls Rubi's
+"absurd number" family.
+
+### A2. Generator gaps (2026-09-22)
+
+`probes/translation/08-section9-generator-dryrun.{py,run,out}` runs the
+unchanged emitter over 9.2 and 9.3 (writing only to a temporary
+directory). Besides the 11 unlisted heads of §2, it stops on four
+structural gaps. Each is a generator change in the plan:
+
+1. **A whole-line comment inside a multi-line condition** (9.2 r12, the
+   `(* ILtQ[n,0] && ... || *)` line). Comment stripping leaves a blank
+   line, and `rule_runs` splits rules at blank lines, so the condition is
+   cut in half. Fix: drop comment-only lines before stripping. Measured
+   byte-neutral: classes 1/2/3/6 regenerate identical, 100 files (probe
+   part C).
+2. **The multi-line `If[TrueQ[$LoadShowSteps], <ShowStep rule>, <plain
+   rule>]` wrapper** (nine in 9.3). The single-line unwrapper
+   (`unwrap_showsteps_line`, class-3 decision C6b: keep the plain branch)
+   does not see it. Fix: reduce each wrapper to its plain branch. This is
+   **scoped to class 9**: class 1's `1_4_1.mac` carries both branches of
+   the same wrapper (r7/r8), and making the fix general changes that file
+   (3,054 → 3,053 rules), which §1 rules out. The redundancy in 1.4.1 is
+   recorded on ticket 07's family, not fixed here.
+3. **`v=!=u` (UnsameQ)** in 9.3's `NormalizeIntegrand` record. The walk
+   reads it as `=` followed by `!=`. Fix: an `=!=` emitter case producing
+   `%mr_unsameQ(v, u)`, a syntactic `not(is(a = b))`. No class-1/2/3/6
+   `.m` file uses `=!=`, so nothing already generated changes.
+4. **`Int[u_,x_]`**, 9.3's final give-up, written with `x_`, not
+   `x_Symbol`. Fix: accept it and emit the `x_Symbol` pattern. The
+   dispatcher always passes a symbol as `x`, so the two match the same
+   calls here. This also keeps the record a bare-`u_` pattern
+   (`(Pattern x (Blank Symbol))`), which the tail convention and
+   `test/test_rule_table_order.mac` rely on.
+
+With stand-ins for these four and placeholder rows for the 11 heads, the
+emitter produces **86 records**, and every pattern string prepares in
+MR-MATCH (86/86, probe part D).
+
+### A3. Corrected counts, and the tail (supersedes §1, §3.2 and §3.4 where they differ)
+
+- **9.3 is 67 rules, not 76.** `grep -c '^Int\['` counts both branches of
+  the nine ShowSteps wrappers. The port keeps one per wrapper (A2.2).
+  Class 9 is therefore **19 + 67 = 86**, and the generator's
+  `EXPECTED_TOTAL` for class 9 is 86. The census's 116 double-counts the
+  same nine wrappers.
+- **The 9.3 tail is 11 records, not 18**: r9, r37, r38, r51, r55, r56,
+  r57, r62, r63, r66, and r67, the `CannotIntegrate` give-up, which is
+  last. Seven of the 18 counted in review were the ShowStep duplicates.
+- **9.3's body interleaves with its tail**. Body records r64 and r65 come
+  after tail record r63 in the file, so they are *registered* after some
+  tail records. The dispatcher walks list order, not handle order
+  (`%mr_dispatch_tree`), so the table is still correct. But
+  `test/test_rule_table_order.mac`'s check "every tail handle is registered
+  after every body handle" becomes false and is replaced by a check on
+  list position: every tail handle's position in `mr_rule_table` is
+  greater than the position of every body handle. Its other changes are
+  the ones §3.2 lists, with the tail being the eight bridge records
+  followed by the eleven 9.3 records above, and the give-up pair being
+  `4_7_5` r72 and `9_3` r67.
+- 9.3 r3/r4 (L36/L42, `Unintegrable[...]` answers) are body give-ups.
+
+### A4. End-to-end targets, measured RED (2026-09-22)
+
+`probes/rubi/06-section9-red-targets.{mac,run,out}` (`641e0e1`, build
+`branch_5_50_base_84_g4204fb669`, SBCL 2.6.7):
+
+| target | rule | master |
+|---|---|---|
+| `atan(tan(x))` | 9.2 r1 (`PiecewiseLinearQ`, `{ArcTan,Tan}`) | `unintegrable` |
+| `(1+%e^x)/(%e^x+x)` (2.3 e733) | 9.3 derivative-divides | `unintegrable` |
+| `%e^x*(1+x)/(x*%e^x+1)` | 9.3 derivative-divides | `unintegrable` |
+| `1/(x+sqrt((1+x)/(1-x)))` | 9.3 `SubstForFractionalPowerOfQuotientOfLinears` | `unintegrable` |
+| `x/(1+sqrt(2+3*x))` | 9.3 r38 (`SubstForFractionalPowerOfLinear`) | `'unintegrable[(3*x)/(sqrt(3*x+2)+1), 3*x+2]/9` |
+| `log(2*%e^x)^2` (control) | — | `log(2*%e^x)^3/3` |
+
+These replace §5's target list. §5's "one target that exercises the bare
+`SimplifyIntegrand` record" stays, with its integrand found during the
+plan from `rubi_verbose` traces, because no measured RED candidate is
+known to reach r9.
+
+The r38 row shows an existing `master` defect: the answer is a noun whose
+integration variable is `3*x+2`, an expression. A substitution rule
+rewrote the variable slot of an `unintegrable` noun. It is out of scope
+here. The port may change that entry's route (the tail's r38 could answer
+the inner integral), and the plan records what happens to it.

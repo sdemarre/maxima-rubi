@@ -1,0 +1,20 @@
+/* probes/rubi/06-section9-red-targets.mac -- what master answers today for
+   the section-9 port's end-to-end targets (spec
+   docs/superpowers/specs/2026-09-22-section9-port-design.md amendment A4).
+   Each should answer `unintegrable` (RED) before the port. One mr_load_all
+   load, then one rubi() per target under errcatch. */
+display2d : false$
+linel : 100000$
+load("maxima_rubi.mac")$
+mr_load_all()$
+print("build:", build_info())$
+mr_red_targets : [
+  ["9.2 r1 PiecewiseLinearQ {ArcTan,Tan}",      atan(tan(x))],
+  ["9.3 derivative-divides, 2.3 e733",          (1+%e^x)/(%e^x+x)],
+  ["9.3 derivative-divides, product numerator", %e^x*(1+x)/(x*%e^x+1)],
+  ["9.3 SubstForFractionalPowerOfQuotientOfLinears", 1/(x+sqrt((1+x)/(1-x)))],
+  ["9.3 SubstForFractionalPowerOfLinear (r38)", x/(1+sqrt(2+3*x))],
+  ["control: answered on master",               log(2*%e^x)^2]
+]$
+for mr_t in mr_red_targets do
+  print("TARGET", first(mr_t), "|", second(mr_t), "->", errcatch(rubi(second(mr_t), x)))$

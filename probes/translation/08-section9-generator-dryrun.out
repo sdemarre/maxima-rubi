@@ -1,0 +1,33 @@
+# section-9 generator dry run; files:
+  Rubi/IntegrationRules/9 Miscellaneous/9.2 Piecewise linear functions.m
+  Rubi/IntegrationRules/9 Miscellaneous/9.3 Miscellaneous integration rules.m
+
+== A. unchanged emitter
+  unlisted head PiecewiseLinearQ                             first at 9_2 r1
+  stopped: generate_class1: 9_2 r12: unbalanced cond (depth 1): 'FreeQ[{m,n},x] && PiecewiseLinearQ[u,v,x]  && NeQ[m,-1] && ('
+
+== B. with the four stand-ins
+  unlisted head PiecewiseLinearQ                             first at 9_2 r1
+  unlisted head SimplerIntegrandQ                            first at 9_3 r9
+  unlisted head Divides                                      first at 9_3 r18
+  unlisted head SubstForFractionalPowerQ                     first at 9_3 r37
+  unlisted head SubstForFractionalPowerOfQuotientOfLinears   first at 9_3 r38
+  unlisted head FunctionOfLinear                             first at 9_3 r51
+  unlisted head PowerVariableExpn                            first at 9_3 r52
+  unlisted head EulerIntegrandQ                              first at 9_3 r55
+  unlisted head FunctionOfSquareRootOfQuadratic              first at 9_3 r55
+  unlisted head PolynomialInQ                                first at 9_3 r61
+  unlisted head PolynomialInSubst                            first at 9_3 r61
+  unlisted heads: 11; other error: None
+  TOTAL emitted: 86
+  9_2.mac: 19 records, 0 in _tail: 
+  9_3.mac: 67 records, 11 in _tail: _mr_rule_9_3_r9 _mr_rule_9_3_r37 _mr_rule_9_3_r38 _mr_rule_9_3_r51 _mr_rule_9_3_r55 _mr_rule_9_3_r56 _mr_rule_9_3_r57 _mr_rule_9_3_r62 _mr_rule_9_3_r63 _mr_rule_9_3_r66 _mr_rule_9_3_r67
+
+== C. stand-in (1) alone over classes 1/2/3/6, byte comparison
+  class 1: 73 files identical, 0 differ
+  class 2: 3 files identical, 0 differ
+  class 3: 11 files identical, 0 differ
+  class 6: 13 files identical, 0 differ
+
+== D. pattern strings of B prepared in MR-MATCH
+  Results: 86 passed, 0 failed

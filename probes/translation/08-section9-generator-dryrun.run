@@ -1,0 +1,10 @@
+#!/bin/sh
+# probes/translation/08-section9-generator-dryrun.run -- the generator gaps
+# between the unchanged emitter and 9.2 + 9.3. Writes only to a temporary
+# directory (never rules/). No Maxima; sbcl for part D. Seconds.
+#
+#   sh probes/translation/08-section9-generator-dryrun.run
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/translation/08-section9-generator-dryrun.py \
+    > probes/translation/08-section9-generator-dryrun.out
+echo "wrote probes/translation/08-section9-generator-dryrun.out"

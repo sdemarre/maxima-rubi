@@ -1,0 +1,144 @@
+# section-9 utility closure (IntegrationUtilityFunctions.m @ pinned clone)
+# start: 11 names: PiecewiseLinearQ Divides EulerIntegrandQ FunctionOfLinear FunctionOfSquareRootOfQuadratic PolynomialInQ PolynomialInSubst PowerVariableExpn SimplerIntegrandQ SubstForFractionalPowerOfQuotientOfLinears SubstForFractionalPowerQ
+
+== MISSING (40)
+  PiecewiseLinearQ                             <- (start)                                       L7430
+  Divides                                      <- (start)                                       L7443
+  EulerIntegrandQ                              <- (start)                                       L5017
+  FunctionOfLinear                             <- (start)                                       L4169
+  FunctionOfSquareRootOfQuadratic              <- (start)                                       L5071
+  PolynomialInQ                                <- (start)                                       L3223
+  PolynomialInSubst                            <- (start)                                       L3275
+  PowerVariableExpn                            <- (start)                                       L4976
+  SimplerIntegrandQ                            <- (start)                                       L804
+  SubstForFractionalPowerOfQuotientOfLinears   <- (start)                                       L1801
+  SubstForFractionalPowerQ                     <- (start)                                       L1815
+  CommonFactors                                <- FunctionOfLinear                              L3025
+  DivideDegreesOfFactors                       <- FunctionOfLinear                              L4224
+  FunctionOfLinearSubst                        <- FunctionOfLinear                              L4206
+  LeadFactor                                   <- FunctionOfLinear                              L1281
+  MonomialFactor                               <- FunctionOfLinear                              L3112
+  SquareRootOfQuadraticSubst                   <- FunctionOfSquareRootOfQuadratic               L5119
+  PolynomialInAuxQ                             <- PolynomialInQ                                 L3227
+  PolynomialInSubstAux                         <- PolynomialInSubst                             L3280
+  PowerVariableDegree                          <- PowerVariableExpn                             L4985
+  PowerVariableSubst                           <- PowerVariableExpn                             L5001
+  CancelCommonFactors                          <- SimplerIntegrandQ                             L821
+  FractionalPowerOfQuotientOfLinears           <- SubstForFractionalPowerOfQuotientOfLinears    L1831
+  SubstForFractionalPowerAuxQ                  <- SubstForFractionalPowerQ                      L1822
+  AbsurdNumberFactors                          <- CommonFactors                                 L1918
+  AbsurdNumberGCD                              <- CommonFactors                                 L1953
+  LeadBase                                     <- CommonFactors                                 L1311
+  LeadDegree                                   <- CommonFactors                                 L1323
+  Map2                                         <- CommonFactors                                 L37
+  MostMainFactorPosition                       <- CommonFactors                                 L3076
+  NonabsurdNumberFactors                       <- CommonFactors                                 L1927
+  RemainingFactors                             <- CommonFactors                                 L1296
+  Smallest                                     <- CommonFactors                                 L3092
+  MinimumDegree                                <- MonomialFactor                                L3138
+  AbsurdNumberQ                                <- AbsurdNumberFactors                           L1907
+  AbsurdNumberGCDList                          <- AbsurdNumberGCD                               L1961
+  FactorAbsurdNumber                           <- AbsurdNumberGCD                               L1936
+  ReapList                                     <- Map2                                          L46
+  FactorOrder                                  <- MostMainFactorPosition                        L3082
+  CombineExponents                             <- FactorAbsurdNumber                            L1944
+
+== UNKNOWN (0)
+
+== ported (11)
+  CalculusQ                                    <- FunctionOfLinear                              L283
+  NonfreeTerms                                 <- PolynomialInQ                                 L1227
+  FreeTerms                                    <- PolynomialInSubst                             L1214
+  SubstForFractionalPower                      <- SubstForFractionalPowerOfQuotientOfLinears    L1874
+  FractionalPowerQ                             <- SubstForFractionalPowerQ                      L206
+  EveryQ                                       <- CommonFactors                                 L29
+  LogQ                                         <- CommonFactors                                 L238
+  ComplexNumberQ                               <- LeadFactor                                    L105
+  NumericFactor                                <- AbsurdNumberFactors                           L1100
+  NonnumericFactors                            <- NonabsurdNumberFactors                        L1126
+  OrderedQ                                     <- MinimumDegree                               
+
+== table (50)
+  ArcCot                                       <- PiecewiseLinearQ                            
+  ArcCoth                                      <- PiecewiseLinearQ                            
+  ArcTan                                       <- PiecewiseLinearQ                            
+  ArcTanh                                      <- PiecewiseLinearQ                            
+  Cot                                          <- PiecewiseLinearQ                            
+  Coth                                         <- PiecewiseLinearQ                            
+  FreeQ                                        <- PiecewiseLinearQ                              L1024
+  LinearQ                                      <- PiecewiseLinearQ                              L1373
+  Log                                          <- PiecewiseLinearQ                            
+  MatchQ                                       <- PiecewiseLinearQ                            
+  MemberQ                                      <- PiecewiseLinearQ                              L4058
+  Tan                                          <- PiecewiseLinearQ                            
+  Tanh                                         <- PiecewiseLinearQ                            
+  If                                           <- Divides                                       L8
+  Simplify                                     <- Divides                                     
+  With                                         <- Divides                                     
+  AtomQ                                        <- FunctionOfLinear                            
+  Coefficient                                  <- FunctionOfLinear                            
+  EqQ                                          <- FunctionOfLinear                              L365
+  FalseQ                                       <- FunctionOfLinear                              L62
+  IntegerQ                                     <- FunctionOfLinear                              L2218
+  Module                                       <- FunctionOfLinear                            
+  NeQ                                          <- FunctionOfLinear                              L370
+  Not                                          <- FunctionOfLinear                              L2495
+  PowerQ                                       <- FunctionOfLinear                              L162
+  ProductQ                                     <- FunctionOfLinear                              L171
+  RationalQ                                    <- FunctionOfLinear                              L97
+  SumQ                                         <- FunctionOfLinear                              L180
+  Denominator                                  <- FunctionOfSquareRootOfQuadratic             
+  Exponent                                     <- FunctionOfSquareRootOfQuadratic             
+  FractionQ                                    <- FunctionOfSquareRootOfQuadratic               L88
+  FullSimplify                                 <- FunctionOfSquareRootOfQuadratic             
+  PolynomialQ                                  <- FunctionOfSquareRootOfQuadratic               L3749
+  PosQ                                         <- FunctionOfSquareRootOfQuadratic               L605
+  Rt                                           <- FunctionOfSquareRootOfQuadratic               L7514
+  Sqrt                                         <- FunctionOfSquareRootOfQuadratic             
+  NonfreeFactors                               <- PolynomialInQ                                 L1201
+  FreeFactors                                  <- PolynomialInSubst                             L1188
+  LeafCount                                    <- SimplerIntegrandQ                           
+  Plus                                         <- SimplerIntegrandQ                           
+  RationalFunctionExponents                    <- SimplerIntegrandQ                             L1619
+  RationalFunctionQ                            <- SimplerIntegrandQ                             L1578
+  QuotientOfLinearsParts                       <- SubstForFractionalPowerOfQuotientOfLinears    L1768
+  GCD                                          <- CommonFactors                               
+  Min                                          <- CommonFactors                               
+  Numerator                                    <- SquareRootOfQuadraticSubst                  
+  IGtQ                                         <- PolynomialInAuxQ                              L379
+  QuotientOfLinearsQ                           <- FractionalPowerOfQuotientOfLinears            L1731
+  Max                                          <- Smallest                                    
+  Times                                        <- AbsurdNumberGCDList                         
+
+== builtin (31)
+  Symbol                                       <- PiecewiseLinearQ                            
+  False                                        <- Divides                                     
+  True                                         <- EulerIntegrandQ                             
+  Catch                                        <- FunctionOfLinear                            
+  Function                                     <- FunctionOfLinear                            
+  Scan                                         <- FunctionOfLinear                            
+  Throw                                        <- FunctionOfLinear                            
+  ReplaceAll                                   <- PolynomialInSubst                           
+  Apply                                        <- SimplerIntegrandQ                           
+  First                                        <- CommonFactors                               
+  Length                                       <- CommonFactors                               
+  Map                                          <- CommonFactors                               
+  Prepend                                      <- CommonFactors                               
+  ReplacePart                                  <- CommonFactors                               
+  Return                                       <- CommonFactors                               
+  SameQ                                        <- CommonFactors                               
+  While                                        <- CommonFactors                               
+  Im                                           <- LeadFactor                                  
+  Re                                           <- LeadFactor                                  
+  List                                         <- MonomialFactor                              
+  Rest                                         <- MonomialFactor                              
+  DeleteCases                                  <- CancelCommonFactors                         
+  LCM                                          <- FractionalPowerOfQuotientOfLinears          
+  Do                                           <- Map2                                        
+  Sow                                          <- Map2                                        
+  FactorInteger                                <- FactorAbsurdNumber                          
+  Flatten                                      <- FactorAbsurdNumber                          
+  Sort                                         <- FactorAbsurdNumber                          
+  Reap                                         <- ReapList                                    
+  Order                                        <- FactorOrder                                 
+  Drop                                         <- CombineExponents                            
