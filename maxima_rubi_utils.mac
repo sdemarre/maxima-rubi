@@ -6944,4 +6944,93 @@ mr_use_gamma_flag : false$
     )
   ))$
 
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :1801 SubstForFractionalPowerOfQuotientOfLinears, :1831
+ * FractionalPowerOfQuotientOfLinears (G5). */
+
+/* lcm is a NOUN until "functs" is loaded (describe("lcm", exact):
+   "load (\"functs\") loads this function" -- measured 2026-09-22;
+   integerp(lcm(1,1)) is false unloaded, true once loaded -- the
+   witness this guard reads). Loaded once, guarded, so re-loading this
+   file after functs is already present is a no-op. */
+if not integerp(lcm(1, 1)) then load("functs")$
+
+/* Rubi :1831-1840  FractionalPowerOfQuotientOfLinears[u,n,v,x] — the
+   first (depth-first, parts order) fractional power of a NON-LINEAR
+   quotient-of-linears base found in u: {LCM[Denominator[exponent], n],
+   base}; the {n,v} identity on atom/x-free; the CalculusQ decline; the
+   v-equality guard (the LCM accumulates only for the SAME base); else
+   the parts scan. This is %mr_fractionalPowerOfLinear's twin (this
+   file's line ~5476) with the extra QuotientOfLinearsQ-and-not-LinearQ
+   guard in place of the plain LinearQ test, and a genuine lcm() call
+   in place of abs(d*n)/gcd(d,n) (that port's LCM stand-in predates
+   loading "functs"; the guard above makes the noun-free lcm available
+   here). The scan's Throw[False] is the flag + bare return() idiom
+   (the line-81 note); inflag : true reads u's internal Times/Plus/
+   Power args, matching Mathematica's Scan over ALL of a node's parts
+   (a Power node's exponent is scanned too, not only its base). */
+%mr_fractionalPowerOfQuotientOfLinears(%mr_fpql_u, %mr_fpql_n, %mr_fpql_v, x) :=
+  block([inflag : true, %mr_fpql_i, %mr_fpql_e, %mr_fpql_d, %mr_fpql_lst],
+  if atom(%mr_fpql_u) or freeof(x, %mr_fpql_u) then [%mr_fpql_n, %mr_fpql_v]
+  elseif %mr_calculusQ(%mr_fpql_u) then false
+  elseif %mr_fractionalPowerQ(%mr_fpql_u)
+         and %mr_quotientOfLinearsQ(part(%mr_fpql_u, 1), x)
+         and not %mr_linearQ(part(%mr_fpql_u, 1), x)
+         and (%mr_falseQ(%mr_fpql_v) or %mr_eqQ(part(%mr_fpql_u, 1), %mr_fpql_v))
+  then (
+    %mr_fpql_e : %mr_fractionalPowerExpon(%mr_fpql_u),
+    %mr_fpql_d : denom(%mr_fpql_e),
+    [lcm(%mr_fpql_d, %mr_fpql_n), part(%mr_fpql_u, 1)]
+  )
+  else (
+    %mr_fpql_lst : [%mr_fpql_n, %mr_fpql_v],
+    for %mr_fpql_i : 1 thru length(%mr_fpql_u) do (
+      %mr_fpql_lst : %mr_fractionalPowerOfQuotientOfLinears(
+                       part(%mr_fpql_u, %mr_fpql_i),
+                       part(%mr_fpql_lst, 1), part(%mr_fpql_lst, 2), x),
+      if atom(%mr_fpql_lst) then return()
+    ),
+    if atom(%mr_fpql_lst) then false else %mr_fpql_lst
+  ))$
+
+/* Rubi :1801-1811  SubstForFractionalPowerOfQuotientOfLinears[u,x] —
+   the 4-list contract: {v,n,(a+b*x)/(c+d*x),b*c-a*d} where v is u with
+   every ((a+b*x)/(c+d*x))^(m/n) replaced by x^m and x by
+   (-a+c*x^n)/(b-d*x^n), times x^(n-1)/(b-d*x^n)^2, all Simplify'd
+   (= %mr_simp); NonfreeFactors/FreeFactors split v. False decline when
+   FractionalPowerOfQuotientOfLinears finds no such quotient (the
+   {n,False} identity — lst[[2]] atom) or when d = 0 (the quotient
+   collapsed to a plain linear, EqQ guard). This is
+   %mr_substForFractionalPowerOfLinear's twin (line ~5549): the located
+   base is a quotient, so its four QuotientOfLinearsParts coefficients
+   replace the plain linear's two, and the substitution target w is the
+   quotient's own inverse-map value in place of -a/b + x^n/b. */
+%mr_substForFractionalPowerOfQuotientOfLinears(%mr_sffpoql_u, x) := block(
+  [%mr_sffpoql_lst, %mr_sffpoql_n, %mr_sffpoql_tmp, %mr_sffpoql_a,
+   %mr_sffpoql_b, %mr_sffpoql_c, %mr_sffpoql_d, %mr_sffpoql_l],
+  %mr_sffpoql_lst : %mr_fractionalPowerOfQuotientOfLinears(%mr_sffpoql_u, 1, false, x),
+  if atom(%mr_sffpoql_lst) or atom(part(%mr_sffpoql_lst, 2)) then false
+  else (
+    %mr_sffpoql_n : part(%mr_sffpoql_lst, 1),
+    %mr_sffpoql_tmp : part(%mr_sffpoql_lst, 2),
+    %mr_sffpoql_lst : %mr_quotientOfLinearsParts(%mr_sffpoql_tmp, x),
+    %mr_sffpoql_a : part(%mr_sffpoql_lst, 1),
+    %mr_sffpoql_b : part(%mr_sffpoql_lst, 2),
+    %mr_sffpoql_c : part(%mr_sffpoql_lst, 3),
+    %mr_sffpoql_d : part(%mr_sffpoql_lst, 4),
+    if %mr_eqQ(%mr_sffpoql_d, 0) then false
+    else (
+      %mr_sffpoql_l : %mr_simp(
+        x^(%mr_sffpoql_n - 1)
+        * %mr_substForFractionalPower(%mr_sffpoql_u, %mr_sffpoql_tmp,
+            %mr_sffpoql_n,
+            (-%mr_sffpoql_a + %mr_sffpoql_c*x^%mr_sffpoql_n)
+              / (%mr_sffpoql_b - %mr_sffpoql_d*x^%mr_sffpoql_n), x)
+        / (%mr_sffpoql_b - %mr_sffpoql_d*x^%mr_sffpoql_n)^2),
+      [%mr_nonfreeFactors(%mr_sffpoql_l, x), %mr_sffpoql_n, %mr_sffpoql_tmp,
+       %mr_freeFactors(%mr_sffpoql_l, x)
+         * (%mr_sffpoql_b*%mr_sffpoql_c - %mr_sffpoql_a*%mr_sffpoql_d)]
+    )
+  ))$
+
 mr_witness_utils() := true$

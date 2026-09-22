@@ -140,6 +140,7 @@ run_all_tests() := block([],
   test_section9_g2b(),
   test_section9_g3(),
   test_section9_g4(),
+  test_section9_g5(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4381,6 +4382,27 @@ test_section9_g4() := block([r],
   check("fosq else: the substitution",
         ratsimp(second(r) - 2*sqrt(-x^2 + 3*x - 1)/(2*x + sqrt(5) - 3)), 0),
   check("fosq else: the branch tag", third(r), 3),
+  true)$
+
+/* Section 9, G5 (spec 2026-09-22 A1): SubstForFractionalPowerOfQuotient-
+   OfLinears (Rubi :1801), FractionalPowerOfQuotientOfLinears (:1831).
+   Single powers only: Maxima splits a PRODUCT of two powers of one
+   quotient into separate numerator and denominator powers (measured). */
+test_section9_g5() := block([r],
+  print("--- section 9 G5: SubstForFractionalPowerOfQuotientOfLinears ---"),
+  check("fpql: the square root of a quotient of linears",
+        %mr_fractionalPowerOfQuotientOfLinears(x*sqrt((1 + x)/(1 - x)), 1, false, x),
+        [2, (x + 1)/(1 - x)]),
+  check("fpql: a root of a LINEAR base is not one",
+        %mr_fractionalPowerOfQuotientOfLinears(x*sqrt(1 + x), 1, false, x), [1, false]),
+  r : %mr_substForFractionalPowerOfQuotientOfLinears(1/(x + sqrt((1 + x)/(1 - x))), x),
+  check("sffpoql: the substituted integrand",
+        ratsimp(first(r) - x/((x^2 + 1)*(x^3 + x^2 + x - 1))), 0),
+  check("sffpoql: n", second(r), 2),
+  check("sffpoql: the quotient", ratsimp(third(r) - (1 + x)/(1 - x)), 0),
+  check("sffpoql: b c - a d times the free factors", fourth(r), 2),
+  check("sffpoql: no quotient of linears declines",
+        %mr_substForFractionalPowerOfQuotientOfLinears(x*sqrt(1 + x), x), false),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).

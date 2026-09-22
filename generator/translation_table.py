@@ -251,6 +251,10 @@ RENAME = {
     # (the 3-arg overload and SquareRootOfQuadraticSubst are internal,
     # not generated-rule tokens -- the census shows only the 2-arg call).
     "FunctionOfSquareRootOfQuadratic": "%mr_functionOfSquareRootOfQuadratic",
+    # section 9 G5 (2026-09-22, task-7 brief): SubstForFractionalPowerOf-
+    # QuotientOfLinears (FractionalPowerOfQuotientOfLinears is internal,
+    # not a generated-rule token).
+    "SubstForFractionalPowerOfQuotientOfLinears": "%mr_substForFractionalPowerOfQuotientOfLinears",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.
