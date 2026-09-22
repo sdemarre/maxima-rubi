@@ -7493,14 +7493,26 @@ if not integerp(lcm(1, 1)) then load("functs")$
   if freeof(x, %mr_fola_u) then [%mr_fola_a, %mr_fola_b]
   elseif %mr_calculusQ(%mr_fola_u) then false
   elseif %mr_linearQ(%mr_fola_u, x) then (
+    /* WORKAROUND (ticket .scratch/class-ports/issues/10-mr-coeff-drops-
+       nonatomic-constant-terms.md): %mr_coeff(u,x,0) drops a degree-0
+       term that is x-free but not an atom (e.g. log(4) in log(4)*(2*x+1),
+       the exact form the PowerQ branch below recurses into for a
+       non-%e base) -- MEASURED, %mr_coeff(log(4)+x,x,0) = 0. ratcoef(u,
+       x,n), verified on this file's actual cases (a symbolic a+b*x, an
+       integer 2+3*x, the log(4)*(2*x+1) product form, and an %e-bearing
+       constant/coefficient), gives the correct degree-0 and degree-1
+       terms in every case and is used here in %mr_coeff's place; u is
+       already gated %mr_linearQ so ratcoef's polynomial-in-x reading
+       applies. Do not carry this substitution to any other port -- the
+       general fix belongs to ticket 10. */
     if %mr_falseQ(%mr_fola_a) then
-      [%mr_coeff(%mr_fola_u, x, 0), %mr_coeff(%mr_fola_u, x, 1)]
+      [ratcoef(%mr_fola_u, x, 0), ratcoef(%mr_fola_u, x, 1)]
     else (
-      %mr_fola_lst : %mr_commonFactors([%mr_fola_b, %mr_coeff(%mr_fola_u, x, 1)]),
-      if %mr_eqQ(%mr_coeff(%mr_fola_u, x, 0), 0) and not %mr_fola_flag
+      %mr_fola_lst : %mr_commonFactors([%mr_fola_b, ratcoef(%mr_fola_u, x, 1)]),
+      if %mr_eqQ(ratcoef(%mr_fola_u, x, 0), 0) and not %mr_fola_flag
         then [0, first(%mr_fola_lst)]
-      elseif %mr_eqQ(%mr_fola_b * %mr_coeff(%mr_fola_u, x, 0)
-                       - %mr_fola_a * %mr_coeff(%mr_fola_u, x, 1), 0)
+      elseif %mr_eqQ(%mr_fola_b * ratcoef(%mr_fola_u, x, 0)
+                       - %mr_fola_a * ratcoef(%mr_fola_u, x, 1), 0)
         then [%mr_fola_a / second(%mr_fola_lst), first(%mr_fola_lst)]
       else [0, 1]
     )
@@ -7535,9 +7547,12 @@ if not integerp(lcm(1, 1)) then load("functs")$
   [inflag : true, %mr_fols_lst, %mr_fols_tmp],
   if freeof(x, %mr_fols_u) then %mr_fols_u
   elseif %mr_linearQ(%mr_fols_u, x) then (
-    %mr_fols_tmp : %mr_coeff(%mr_fols_u, x, 1),
+    /* WORKAROUND (ticket 10, same as %mr_functionOfLinearAux above):
+       ratcoef(u,x,n) in place of %mr_coeff(u,x,n), u already gated
+       %mr_linearQ. */
+    %mr_fols_tmp : ratcoef(%mr_fols_u, x, 1),
     %mr_fols_tmp : if is(%mr_fols_tmp = %mr_fols_b) then 1 else %mr_fols_tmp / %mr_fols_b,
-    %mr_coeff(%mr_fols_u, x, 0) - %mr_fols_a * %mr_fols_tmp + %mr_fols_tmp * x
+    ratcoef(%mr_fols_u, x, 0) - %mr_fols_a * %mr_fols_tmp + %mr_fols_tmp * x
   )
   elseif %mr_powerQ(%mr_fols_u) and freeof(x, part(%mr_fols_u, 1)) then
     %e ^ ratsimp(%mr_functionOfLinearSubst(log(part(%mr_fols_u, 1)) * part(%mr_fols_u, 2),

@@ -4483,6 +4483,17 @@ test_section9_g6b() := block([],
   check("fol: two unrelated linears reduce to x itself, declines",
         %mr_functionOfLinear(sin(x)*cos(2*x), x), false),
   check("fols: a linear term", %mr_functionOfLinearSubst(2*x + 3, 1, 2, x), x + 2),
+  /* Fix round 1 (ticket .scratch/class-ports/issues/10): the PowerQ/
+     %e^... branch, a non-%e base with a nonzero exponent constant.
+     Hand-derived from upstream (u(X) = 4^(2X+1) = e^(log(4)+2log(4)X),
+     so a = log(4), b = 2 log(4), f(x) = e^x; u(X) itself is f(a+bX) =
+     e^(log(4)+2log(4)X) = 4^(2X+1), confirming the triple): before the
+     ratcoef workaround, %mr_coeff(u,x,0) dropped the log(4) constant
+     term of log(4)*(2x+1) and this returned [%e^x,0,2*log(4)]. */
+  check("fol: 4^(2x+1), non-%e base, nonzero exponent constant",
+        %mr_functionOfLinear(4^(2*x + 1), x), [%e^x, log(4), 2*log(4)]),
+  check("fols: 4^(2x+1) at its own [a,b] = [log(4), 2 log(4)]",
+        %mr_functionOfLinearSubst(4^(2*x + 1), log(4), 2*log(4), x), %e^x),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).
