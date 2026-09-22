@@ -382,6 +382,62 @@ def unwrap_showsteps_lines(text):
     """Map unwrap_showsteps_line over the comment-stripped .m text."""
     return "\n".join(unwrap_showsteps_line(ln) for ln in text.split("\n"))
 
+_COMMENT_ONLY_LINE = re.compile(r"\s*\(\*.*\*\)\s*")
+
+def drop_comment_only_lines(text):
+    """Spec 2026-09-22 A2.1: a whole-line Mathematica comment (9.2 r12's
+    `(* ILtQ[n,0] && ILtQ[m,0] || *)` inside a multi-line condition) is
+    dropped ENTIRELY, not just its comment text -- strip_comments leaves a
+    blank line in its place, and rule_runs splits a run at a blank line, so
+    the condition would be cut in half. Applied to the raw .m text before
+    strip_comments, for every class (measured neutral on classes 1/2/3/6,
+    probe 08 part C; Step 5 re-proves it). An inline comment (anything else
+    on the line besides the comment) is left untouched, for strip_comments
+    to handle."""
+    return "\n".join(ln for ln in text.split("\n")
+                     if not _COMMENT_ONLY_LINE.fullmatch(ln))
+
+_SHOWSTEPS_IF_MULTILINE = "If[TrueQ[$LoadShowSteps],"
+
+def unwrap_showsteps_multiline(text):
+    """Spec 2026-09-22 A2.2: the multi-line
+        If[TrueQ[$LoadShowSteps],
+        <blank>
+        <ShowStep rule ending in ".../;\\nSimplifyFlag,">
+        <blank>
+        <plain rule>]
+    wrapper (nine in 9.3) -- the single-line unwrapper above
+    (unwrap_showsteps_line, class-3 decision C6b: keep the plain branch)
+    does not see it. Reduces each wrapper to its plain branch, dropping one
+    trailing ']' (the If's own closer) from the branch's last line.
+    Scoped to class 9 in _emit_source: applied to class 1 it would drop
+    1_4_1 r7, since that file's ShowSteps wrapper carries BOTH branches as
+    separate rules (ticket 07) rather than this reduce-to-one shape."""
+    lines = text.split("\n")
+    out, i, n = [], 0, len(lines)
+    while i < n:
+        if lines[i].strip() == _SHOWSTEPS_IF_MULTILINE:
+            i += 1
+            while not lines[i].strip().startswith("SimplifyFlag"):
+                i += 1
+            i += 1
+            while i < n and not lines[i].strip():
+                i += 1
+            blk = []
+            while i < n and lines[i].strip():
+                blk.append(lines[i])
+                i += 1
+            if not blk or not blk[-1].rstrip().endswith("]"):
+                raise GenError(
+                    "unwrap_showsteps_multiline: the plain branch does not "
+                    f"end in ']': {blk[-1] if blk else ''!r}")
+            blk[-1] = blk[-1].rstrip()[:-1]
+            out += blk
+            continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
 def split_top_power(s):
     """(base, exp) if s is a top-level power `base^exp`; else (None, None)."""
     s = s.strip()
@@ -728,9 +784,17 @@ def translate_atom(s, ctx):
 
 def _relation_items(s):
     """Partition the depth-0 text of s into a complete item sequence
-    [start, end, kind]: relational ops ("op": = <= >= < > == #= !=), chain
-    terminators ("stop": ';', ',', ' and ', ' or '), and the term runs
-    between them ("term")."""
+    [start, end, kind]: relational ops ("op": = <= >= < > == #= != =!=),
+    chain terminators ("stop": ';', ',', ' and ', ' or '), and the term
+    runs between them ("term").
+
+    Spec 2026-09-22 A2.3: `=!=` (Rubi's UnsameQ, 9.3's only use) is read as
+    ONE three-character op, checked before the two-character ops below --
+    without this, the walk reads it as the single-char op `=` followed by
+    the two-char op `!=` (two adjacent "op" items, no "term" between them),
+    which the `!=` lone-relation guard in _expand_chains then rejects as
+    "outside a lone relation". `===` (SameQ) is a different three-character
+    sequence (no `!`) and is untouched by this check."""
     items = []
     i = 0
     n = len(s)
@@ -753,7 +817,9 @@ def _relation_items(s):
         if depth == 0:
             two = s[i:i+2]
             hit = None
-            if two in ("==", "#=", "<=", ">=", "!="):
+            if s[i:i+3] == "=!=":
+                hit = (i, i + 3, "op")
+            elif two in ("==", "#=", "<=", ">=", "!="):
                 hit = (i, i + 2, "op")
             elif ch in "<>=" and s[i-1:i] != ":":
                 hit = (i, i + 1, "op")
@@ -812,6 +878,29 @@ def _expand_chains(s):
         out.append(ch)
         i += 1
     s = "".join(out)
+    # FIX (spec 2026-09-22 A2.3): Rubi's `=!=` (UnsameQ), 9.3's only use
+    # (the NormalizeIntegrand record `v=!=u`) -- a SYNTACTIC test, unlike
+    # `!=` below (Unequal, a value test). `%mr_unsameQ(L, R)` is
+    # `not is(L = R)` (maxima_rubi_utils.mac). Mirrors the `!=` pass
+    # exactly -- same lone-relation guard, same spacing handling, loud on
+    # `=!=` inside a chain (Mathematica's chained UnsameQ has no
+    # class-1-9 site) -- and runs FIRST: its token is three characters, and
+    # _relation_items reads it as one "op" item only when it is checked
+    # ahead of the two-character `!=`/`==` ops (see _relation_items).
+    items = _relation_items(s)
+    for i in range(len(items) - 1, -1, -1):
+        if items[i][2] != "op" or s[items[i][0]:items[i][1]] != "=!=":
+            continue
+        if not (0 < i < len(items) - 1 and items[i-1][2] == "term"
+                and items[i+1][2] == "term") \
+                or (i >= 2 and items[i-2][2] == "op") \
+                or (i + 2 < len(items) and items[i+2][2] == "op"):
+            raise GenError(f"`=!=` outside a lone relation: {s!r}")
+        lt = s[items[i-1][0]:items[i-1][1]]
+        rt = s[items[i+1][0]:items[i+1][1]]
+        s = (s[:items[i-1][0]] + lt[:len(lt) - len(lt.lstrip())]
+             + "%mr_unsameQ(" + lt.strip() + ", " + rt.strip() + ")"
+             + rt[len(rt.rstrip()):] + s[items[i+1][1]:])
     # FIX (matcher translation fixes design 3.1): Mathematica's `!=`
     # (Unequal) passed through the walk as the characters `!` `=`, which
     # Maxima reads as a factorial and an equation -- `k != 1` is `k! = 1`
@@ -1129,11 +1218,25 @@ CLASS4_SUBSET = {
 }
 
 
+_INT_X_UNTYPED = re.compile(r"^Int\[(.*),\s*x_\]$", re.DOTALL)
+
+def _normalize_int_x(lhs):
+    """Spec 2026-09-22 A2.4: 9.3's final give-up is written `Int[u_,x_]`,
+    not `Int[u_,x_Symbol]` -- the dispatcher always passes a symbol as x,
+    so the two match the same calls here. Read only the exact untyped
+    `x_` in the SECOND argument position (a already-typed `x_Symbol` LHS,
+    every class 1-6 rule, does not match: the trailing literal is `]`
+    right after `x_`, which `x_Symbol]` is not), so this is a no-op on
+    every existing rule."""
+    m = _INT_X_UNTYPED.match(lhs.strip())
+    return f"Int[{m.group(1)}, x_Symbol]" if m else lhs
+
 def bare_int_clause(lhs, key, n):
     """True when the Int rule's integrand argument is the most general Int
     pattern there is: a bare named Blank, (Pattern <name> (Blank)) -- no
     head, no Optional, no type restriction. See BARE_U_BODY_EXCEPTIONS
     above for how such a record is routed."""
+    lhs = _normalize_int_x(lhs)
     ev = _evaluated(lhs, key, n, "LHS")
     return (isinstance(ev, tuple) and len(ev) == 3 and ev[0] == "Int"
             and isinstance(ev[1], tuple) and len(ev[1]) == 3
@@ -1650,6 +1753,9 @@ def emit_rule(run, key, n, rule_vars, fname=None):
     %mr_rewrite's `(eq cond-fn t)` branch accepts every binding for it."""
     lhs, rhs, cond = run
     if fname is None:
+        # A2.4: 9.3's `Int[u_,x_]` give-up read as `Int[u_,x_Symbol]` --
+        # a no-op on every already-typed class 1-6 LHS (_normalize_int_x).
+        lhs = _normalize_int_x(lhs)
         if not re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL):
             raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
     # prefix_locals: every class renames its With/Module locals (ticket
@@ -1927,7 +2033,13 @@ def configure(class_num):
 
 
 def _emit_source(rel_m, key, only, total, load_lines, note=""):
-    text = unwrap_showsteps_lines(strip_comments((RUBI / rel_m).read_text()))
+    # A2.1: every class, before strip_comments. A2.2: class 9 only, after
+    # strip_comments and before unwrap_showsteps_lines (applied to class 1
+    # it would drop 1_4_1 r7 -- see unwrap_showsteps_multiline).
+    stripped = strip_comments(drop_comment_only_lines((RUBI / rel_m).read_text()))
+    if CLASS == 9:
+        stripped = unwrap_showsteps_multiline(stripped)
+    text = unwrap_showsteps_lines(stripped)
     runs = rule_runs(text)
     out = OUT / f"{key}.mac"
     out.parent.mkdir(parents=True, exist_ok=True)

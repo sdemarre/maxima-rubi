@@ -6488,4 +6488,10 @@ mr_use_gamma_flag : false$
        and is(length(%mr_tpt_u) = 1)
        and %mr_tpt_arg(part(%mr_tpt_u, 1), %mr_tpt_x)))$
 
+/* ===================== section 9 (2026-09-22 A2.3) ====================
+ * Rubi's UnsameQ (=!=): structural inequality. is(a = b) is Maxima's
+ * SYNTACTIC identity of the simplified forms, which is what SameQ tests;
+ * no ev, so no capture (spec 2026-09-22 A2.3). */
+%mr_unsameQ(%mr_usq_a, %mr_usq_b) := not is(%mr_usq_a = %mr_usq_b)$
+
 mr_witness_utils() := true$

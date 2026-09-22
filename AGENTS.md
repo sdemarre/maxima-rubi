@@ -286,6 +286,10 @@ the committed class-4 files; every class prefixes its With/Module
 locals `_mr_<key>_r<n>_<name>` — class 4 since `de51845`, the rest since
 ticket `.scratch/class-ports/issues/08`).
 
+The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
+guard, pure Python: `python3 test/test_generator_section9.py` — green
+`Results: 11 passed, 0 failed`.
+
 **Matcher substrate — regression suite** (spec section 4 P1/P2 gates:
 the probe-02 round trip over all 7,444 Rubi LHSs in narrow and wide
 modes, tree leg and Maxima leg through `mr-tree`, the probe-02
