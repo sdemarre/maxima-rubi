@@ -63,3 +63,15 @@ committed, the byte-identity gates for classes 1–3 (and 4–7 if
 accepted earlier) green, Layer A green.
 
 ## Comments
+
+2026-09-22 — **9.1 Derivative integration rules (21) now belong to this
+port** (user decision, section-9 spec
+`docs/superpowers/specs/2026-09-22-section9-port-design.md` §0.3.3). The
+evidence: its only corpus is `8 Special functions/8.10 Formal
+derivatives.mac` (94 entries, `probes/rubi/04-section9-load-and-legacy.out`
+§E); `Rubi.m` loads it at L354, after class 8 and inside the
+`$LoadElementaryFunctionRules` block; and it needs a Maxima
+representation of `Derivative[n][f][x]` (the corpus writes
+`Derivative(1)(f)(x)`), which is a design question, so this port starts
+with a brainstorm. Its census tokens outside the table: `Derivative`, `F`
+(`probes/translation/07-section9-syntax-census.out`).

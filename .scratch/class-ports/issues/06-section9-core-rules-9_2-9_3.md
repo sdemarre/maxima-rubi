@@ -108,3 +108,13 @@ none a derivative-divides rule), 1.1.3.7 (9), 2.3 (8), and smaller
 counts. So nothing in the current table handles the
 numerator-is-the-denominator's-derivative shape. The second half
 (9.3's rule answering once ported) needs the port.
+
+2026-09-22 — **Specced**: `docs/superpowers/specs/2026-09-22-section9-port-design.md`
+(reviewed with the user 2026-09-22; review fixes applied). Scope 9.2 + 9.3
+from the pinned files; the legacy `rules/class1/9_1.mac` stays; 9.1
+Derivative integration moves to ticket 01. **Candidate legacy addition**,
+to be measured, not ported blind: old `9.4` L58 (pre-renumbering Rubi,
+`f7fa0fd^`), `Int[x_^m_*u_, x] := With[{k=Denominator[m]},
+k*Subst[Int[x^(k*(m+1)-1)*ReplaceAll[u, x->x^k], x], x, x^(1/k)]] /;
+FractionQ[m]`: the general fractional-power substitution, the only old
+left-hand side with no pinned successor (`probes/rubi/04-section9-load-and-legacy.out` §F).

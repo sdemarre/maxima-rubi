@@ -119,20 +119,34 @@ design 3.3):
 
 - **9.2 body**: immediately after the class-1 table (after the legacy
   `9_1`, which ends class 1) and before class 2 (`Rubi.m` L204).
-- **9.3 body**: the END of the body, after class 6 and after class 4's body
-  (empty today; non-empty once class 4 is ported). `Rubi.m` loads 9.3 last.
-- **9.3 tail**: 9.3's bare-`u_` records (the census counts 17
-  `Int[u_,x_Symbol]` left-hand sides; the generator's bare-`u_` test is
-  authoritative) go in the tail AFTER the eight class-4 bridge records, in
-  load order.
-- **Give-ups** are unaffected: under `mr_giveup_last` (default true) they
-  run in a second pass after every ordinary rule, wherever they sit.
+- **9.3 body**: always the LAST body entry, after every class's body
+  (today after class 6 and class 4's empty body; it stays last as classes
+  5, 7 and 8 are ported). `Rubi.m` loads 9.3 last.
+- **9.3 tail**: 9.3's bare-`u_` records go in the tail AFTER the eight
+  class-4 bridge records, in load order. The pinned file has 18: 17
+  `Int[u_,x_Symbol]` left-hand sides and one `Int[u_,x_]` (the
+  generator's bare-`u_` test is authoritative).
+- **9.3's global give-up.** The file's last record (L596) is
+  `Int[u_,x_] := CannotIntegrate[u,x]`, Rubi's final catch-all. The
+  dispatcher already classifies a `CannotIntegrate` replacement as a
+  give-up (`mr-giveup-repl-p`; `CannotIntegrate` and `Unintegrable` map
+  to the same package noun), so it is ported like any other record and
+  becomes the LAST record of the tail. Two body records (L36, L42) also
+  answer `Unintegrable[...]`; they are give-ups too, and they stay in the body.
+- **Give-ups** run in a second pass after every ordinary rule, wherever
+  they sit (`mr_giveup_last`, default true). Within that pass table order
+  holds, so `4_7_5` r72 (which re-activates the inert trig heads) still
+  runs before 9.3's catch-all, as in `Rubi.m`.
 
 `mr_load_all` (and the rules core built from it) is the only loader that
-changes. `test/test_rule_table_order.mac` changes with it: "the tail is
-exactly the eight bridge records" becomes "the tail is the eight bridge
-records followed by the 9.3 tail records, in load order", with the same
-body-before-tail and bare-`u_` checks.
+changes. `test/test_rule_table_order.mac` changes with it:
+- "the tail is exactly the eight bridge records" becomes "the tail is the
+  eight bridge records followed by 9.3's 18 tail records, in load order";
+- "`4_7_5` r72 is the tail's only give-up record" becomes "the tail's
+  give-up records are exactly `4_7_5` r72 and 9.3's `CannotIntegrate`
+  record, in that order, and the latter is the tail's last record";
+- the body-before-tail and bare-`u_` checks stay as they are, and a new
+  check asserts that 9.3's body is the last body entry.
 
 ### 3.3 Utilities and the dependency closure
 
@@ -168,8 +182,10 @@ utility that re-evaluates an expression (`ev`) is flagged in review.
 1. **Re-baseline first, on a quiet host.** The accepted records predate
    ticket 08, and its full-run records were taken under an emulator's load
    (ticket 08, Measurement). Before 9.x lands, run classes 1, 2, 3 and 6 on
-   `master` with the queue runner at the accepted records' worker counts
-   (class 1 at 24, the others at 12), on a host with nothing else heavy
+   `master` with the queue runner at **24 workers for every class** (user
+   decision 2026-09-22: the accepted class-1 record's worker count; this is
+   above the 12 physical cores, so step 2 must use the same count for the
+   A/B to hold concurrency constant), on a host with nothing else heavy
    running. These are the reference records for step 2 and the candidate
    official records for ticket 08 (promotion is the user's decision).
 2. **9.2 + 9.3**: the same four classes on the branch, same conditions,
@@ -213,9 +229,12 @@ utility that re-evaluates an expression (`ev`) is flagged in review.
   can turn today's `deferred`/`contains-noun` answers into new paths, and
   cost time. The step-2 A/B measures it; runaway growth shows as new
   `timeout`s.
-- **Interaction with the legacy 9.1.** Both carry simplification rules; the
-  legacy file sits earlier (end of class 1), so it keeps priority where both
-  apply, as in the 2018 Rubi.
+- **Interaction with the legacy 9.1.** Both carry simplification rules. The
+  legacy file sits earlier in our table (the end of class 1), so it keeps
+  priority where both apply. That is NOT the 2018 placement: the
+  pre-renumbering `Rubi.m` (`f7fa0fd^`, L100) loads 9.1 Integrand
+  simplification FIRST, before 1.1.1.1. Moving it is out of scope here and
+  is recorded as its own ticket, to be measured before it moves.
 - **Hand-port traps.** §3.3's three traps each produced plausible wrong
   answers, not errors, in the last two campaigns.
 
