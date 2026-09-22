@@ -132,6 +132,8 @@ run_all_tests() := block([],
   test_inert_leak_guard(),
   test_inert_giveup(),
   test_class4_with_capture(),
+  test_mr_sum_capture(),
+  test_with_local_capture_all(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4187,6 +4189,82 @@ test_class4_with_capture() := block([mr_i2_saved, mr_i2_tab, mr_i2_ok,
     and is(mr_i2_resid(mr_i2_f2, mr_i2_r2, [x = 1.1, c = 2.2, d = 1.9]) < 1.0e-12)),
   check_bool("I2: sin(x)/(c+d cos(x)^5) is the same answer with d renamed q",
     is(mr_i2_r2 # false) and is(mr_i2_r2 = mr_i2_q2)),
+  true
+)$
+
+/* mr_sum's own capture trap (ticket 08, section D). mr_sum was
+ * block([a, b, i, s, t], ...) and re-evaluates its summand with ev
+ * while those locals are live, so an integrand symbol named a, b, i, s
+ * or t read mr_sum's bounds / running sum instead of itself; a lambda
+ * summand naming an enclosing With local s read the running sum.
+ * Measured before the fix (probes/maxima/probe-class4-with-capture,
+ * section D): rubi(1/(a+b*x^5), x) answered with residual 0.035. */
+test_mr_sum_capture() := block([mr_sc_saved, mr_sc_ok, mr_sc_f, mr_sc_r,
+                                mr_sc_q, mr_sc_u],
+  print("--- mr_sum's own capture trap (ticket 08 D) ---"),
+  check("mr_sum: expression summand keeps a, b, s, t, i",
+    mr_sum(a + b + s + t + i*k, k, 1, 2), 2*a + 2*b + 2*s + 2*t + 3*i),
+  mr_sc_u : a*k,
+  check("mr_sum: identifier summand keeps a",
+    mr_sum('mr_sc_u, k, 1, 2), 3*a),
+  check("mr_sum: a lambda body reads the enclosing s, not the running sum",
+    block([s], s : 10, mr_sum(lambda([k], s*k), k, 1, 2)), 30),
+  mr_sc_saved : mr_rule_table,
+  mr_sc_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/1_1_3_1.mac", 'mr_witness_1_1_3_1),
+    %mr_load_sibling("rules/class1/1_2_1_1.mac", 'mr_witness_1_2_1_1),
+    %mr_load_sibling("rules/class1/1_2_1_2.mac", 'mr_witness_1_2_1_2),
+    true),
+  mr_sc_f : 1/(a + b*x^5),
+  mr_sc_r : false, mr_sc_q : false,
+  if mr_sc_ok # [] then (
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_1_3_1,
+                             mr_rules_1_2_1_1, mr_rules_1_2_1_2]),
+    mr_sc_r : rubi(mr_sc_f, x),
+    mr_sc_q : subst([p = a, q = b], rubi(subst([a = p, b = q], mr_sc_f), x))),
+  mr_rule_table : mr_sc_saved,
+  check_bool("mr_sum: 1/(a+b x^5) answers and verifies (|resid| < 1e-12 at two points)",
+    is(mr_sc_r # false)
+    and freeof('unintegrable, 'mr_int, mr_sc_r)
+    and is(mr_i2_resid(mr_sc_f, mr_sc_r, [x = 0.37, a = 1.3, b = 0.7]) < 1.0e-12)
+    and is(mr_i2_resid(mr_sc_f, mr_sc_r, [x = 1.1, a = 2.2, b = 1.9]) < 1.0e-12)),
+  check_bool("mr_sum: 1/(a+b x^5) is the same answer with a, b renamed p, q",
+    is(mr_sc_r # false) and is(mr_sc_r = mr_sc_q)),
+  true
+)$
+
+/* The generated With/Module locals, every class (ticket 08, section C).
+ * 1.1.3.1 r13 binds block([r, s, k, u]) and runs its nested mr_int and
+ * mr_sum inside it; mr_sum re-evaluates the summand while that block is
+ * live, so unprefixed, an integrand spelled with r and s read the
+ * locals' values (r : num(Rt(a/b, n)) is then r^(1/5)). The generator
+ * now names every With/Module local _mr_<key>_r<n>_<name>. */
+test_with_local_capture_all() := block([mr_wl_saved, mr_wl_ok, mr_wl_f,
+                                        mr_wl_r, mr_wl_q],
+  print("--- generated With/Module locals, every class (ticket 08 C) ---"),
+  mr_wl_saved : mr_rule_table,
+  mr_wl_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/1_1_3_1.mac", 'mr_witness_1_1_3_1),
+    %mr_load_sibling("rules/class1/1_2_1_1.mac", 'mr_witness_1_2_1_1),
+    %mr_load_sibling("rules/class1/1_2_1_2.mac", 'mr_witness_1_2_1_2),
+    true),
+  mr_wl_f : 1/(r + s*x^5),
+  mr_wl_r : false, mr_wl_q : false,
+  if mr_wl_ok # [] then (
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_1_3_1,
+                             mr_rules_1_2_1_1, mr_rules_1_2_1_2]),
+    mr_wl_r : rubi(mr_wl_f, x),
+    mr_wl_q : subst([p = r, q = s], rubi(subst([r = p, s = q], mr_wl_f), x))),
+  mr_rule_table : mr_wl_saved,
+  check_bool("With locals: 1/(r+s x^5) answers and verifies (|resid| < 1e-12 at two points)",
+    is(mr_wl_r # false)
+    and freeof('unintegrable, 'mr_int, mr_wl_r)
+    and is(mr_i2_resid(mr_wl_f, mr_wl_r, [x = 0.37, r = 1.3, s = 0.7]) < 1.0e-12)
+    and is(mr_i2_resid(mr_wl_f, mr_wl_r, [x = 1.1, r = 2.2, s = 1.9]) < 1.0e-12)),
+  check_bool("With locals: 1/(r+s x^5) is the same answer with r, s renamed p, q",
+    is(mr_wl_r # false) and is(mr_wl_r = mr_wl_q)),
   true
 )$
 

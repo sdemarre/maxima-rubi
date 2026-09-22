@@ -246,8 +246,10 @@ Weierstrass record end to end, the two inert-leak targets):
 `Results: 1164 passed, 0 failed`; at its fix round 1 (4.7.5 r72, the
 re-activating give-up, 4 targets): `Results: 1168 passed, 0 failed`; at
 its final fix wave (the class-4 With-local capture trap, 4 targets,
-`de51845`): `Results: 1172 passed, 0 failed`. The matcher suites
-re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
+`de51845`): `Results: 1172 passed, 0 failed`; at ticket 08 (the capture
+trap in `mr_sum`'s own locals, 5 targets, and in the generated With/Module
+locals of every class, 2 targets): `Results: 1179 passed, 0 failed`. The
+matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
 test/matcher/test_mr_match.lisp --eval '(mr-match-test:run)'`.
@@ -265,7 +267,9 @@ Superseded: `Results: 21 passed, 0 failed` measured 2026-09-21 at the
 inert-trig plan's Task 9 (20 before it; class 4's bridge subset adds one
 check-7 line, the post-P0 class total `post-P0 class 4: 6 rules over 2
 files`; Task 10 keeps 21 and moves that line to `7 rules over 2 files`,
-its fix round 1 to `8 rules over 2 files`).
+its fix round 1 to `8 rules over 2 files`). Now `Results: 22 passed, 0
+failed` (2026-09-21, ticket 08): the With/Module local prefixing is one more
+closed exception, `undo_local_prefix`, its 1,602 declarations pinned.
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
@@ -278,8 +282,9 @@ reader self-test
 in `MR-MATCH`. Regeneration is byte-identical:
 `python3 generator/generate_rules.py --class <1|2|3|6>` and `--rewrites`
 leave `git status --porcelain rules/` empty (as does `--class 4` against
-the committed class-4 files; class 4 alone prefixes its With/Module
-locals, `de51845`, ticket `.scratch/class-ports/issues/08`).
+the committed class-4 files; every class prefixes its With/Module
+locals `_mr_<key>_r<n>_<name>` — class 4 since `de51845`, the rest since
+ticket `.scratch/class-ports/issues/08`).
 
 **Matcher substrate — regression suite** (spec section 4 P1/P2 gates:
 the probe-02 round trip over all 7,444 Rubi LHSs in narrow and wide
