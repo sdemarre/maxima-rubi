@@ -189,24 +189,31 @@ depend on the rule table's contents at their point in the suite:
 maxima --very-quiet -b test/test_rule_table_order.mac
 ```
 
-Green: `Results: 8 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
+Green: `Results: 11 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
 plan's Task 9, when class 4's bridge subset put the first real `_tail`
 lists in the table; +1 at Task 10's fix round 1: r72 is the tail's only
-give-up record) — both handle lists are defined
-lists and the body list is non-empty; `mr_rule_table` equals the body
-handles followed by the tail handles with nothing lost; the tail is
-non-empty; the tail is exactly the eight bridge records in LoadRules order
+give-up record; +3 at Task 11, section-9's 9.2/9.3) — both handle lists
+are defined lists and the body list is non-empty; `mr_rule_table` equals
+the body handles followed by the tail handles with nothing lost; the tail
+is non-empty; the tail is the eight bridge records in LoadRules order
 (`4_1_0_1` r1 first, then `4_7_5` r21/r22/r47/r48/r58/r71/r72 — r71, the
 Weierstrass record, since Task 10; r72, the re-activating CannotIntegrate
-give-up, last, since its fix round 1); `4_7_5` r72 is the tail's only
-give-up record (`%mr_giveup_handles`); every tail
-handle's pattern is bare-`u_`; every tail handle is registered after
-every body handle; and every bare-`u_` Int record anywhere in the loaded table
-(read via the debug entry `%mr_rule_pattern_text(handle)`,
-`maxima_rubi_dispatch.lisp`) is either in the tail or one of the six
-named exceptions (`generator/generate_rules.py`
-`BARE_U_BODY_EXCEPTIONS`, `.scratch/class-ports/issues/07-bare-u-
-records-mid-table.md`).
+give-up, since its fix round 1) followed by 9.3's eleven bare-`u_`
+records in file order (Task 11), r67 — Rubi's own final `CannotIntegrate`
+catch-all — last and closing the tail; the tail's give-ups
+(`%mr_giveup_handles`) are exactly `4_7_5` r72 and `9_3` r67; every tail
+handle's pattern is bare-`u_`; every tail handle sits after every body
+handle **by list position** in `mr_rule_table` (spec A3: since Task 11,
+9.3 interleaves — its body records r64/r65 are registered, in the
+source file, after its own tail record r63, so registration order no
+longer matches table order and only list position is asserted); 9.2's
+body sits right after 9.1 (class 1's last list) and before class 2, and
+9.3's body is the last body entry; and every bare-`u_` Int record
+anywhere in the loaded table (read via the debug entry
+`%mr_rule_pattern_text(handle)`, `maxima_rubi_dispatch.lisp`) is either
+in the tail or one of the six named exceptions
+(`generator/generate_rules.py` `BARE_U_BODY_EXCEPTIONS`,
+`.scratch/class-ports/issues/07-bare-u-records-mid-table.md`).
 
 **Matcher substrate — unit suites** (the per-change gate for
 `maxima_rubi_match.lisp` / `maxima_rubi_tree.lisp` /

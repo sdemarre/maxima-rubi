@@ -89,24 +89,32 @@ check_bool("mr_rule_table = body handles followed by tail handles, nothing lost"
    order (4.1.0.1's DeactivateTrig bridge first, then 4.7.5's catch-alls in
    source order: the five Subst forms, r71 -- the half-angle Weierstrass
    substitution, Task 10 -- and r72, the re-activating CannotIntegrate
-   give-up (Task 10 fix round 1, ruling R26), which is 4.7.5's last record
-   and closes the tail) -- a _tail list mr_load_all forgot to name in its
+   give-up (Task 10 fix round 1, ruling R26), which is 4.7.5's last record),
+   followed by section 9.3's eleven bare-u_ records in file order (Task 11,
+   spec 3.2/A3), r67 -- Rubi's own final CannotIntegrate catch-all -- last
+   and closing the tail) -- a _tail list mr_load_all forgot to name in its
    tail flatten, or named in the wrong order, fails here. */
 check_bool("the tail is non-empty",
   is(length(mr_rule_table_tail_handles) > 0))$
 
-check_bool("the tail is exactly the eight bridge records, the 4.1.0.1 bridge first",
+check_bool("the tail is the eight bridge records, then 9.3's eleven, in load order",
   is(mr_rule_table_tail_handles =
      [_mr_rule_4_1_0_1_r1,
       _mr_rule_4_7_5_r21, _mr_rule_4_7_5_r22, _mr_rule_4_7_5_r47,
       _mr_rule_4_7_5_r48, _mr_rule_4_7_5_r58, _mr_rule_4_7_5_r71,
-      _mr_rule_4_7_5_r72]))$
+      _mr_rule_4_7_5_r72,
+      _mr_rule_9_3_r9, _mr_rule_9_3_r37, _mr_rule_9_3_r38, _mr_rule_9_3_r51,
+      _mr_rule_9_3_r55, _mr_rule_9_3_r56, _mr_rule_9_3_r57, _mr_rule_9_3_r62,
+      _mr_rule_9_3_r63, _mr_rule_9_3_r66, _mr_rule_9_3_r67]))$
 
 /* r72 answers Rubi's give-up marker, so the dispatcher's mr_giveup_last
-   second pass holds it back as well; it must be the tail's ONLY give-up
-   record, so nothing re-orders the tail's other seven around it. */
-check_bool("r72 is the tail's only give-up record",
-  is(%mr_giveup_handles(mr_rule_table_tail_handles) = [_mr_rule_4_7_5_r72]))$
+   second pass holds it back as well; 9.3's r67 is Rubi's own final
+   CannotIntegrate catch-all, so it is the tail's other give-up record --
+   nothing re-orders the tail's other nine around either of them. */
+check_bool("the tail's give-ups are 4.7.5 r72 then 9.3 r67 (Rubi's final catch-all)",
+  is(%mr_giveup_handles(mr_rule_table_tail_handles) = [_mr_rule_4_7_5_r72, _mr_rule_9_3_r67]))$
+check_bool("9.3 r67 is the last record of the table",
+  is(last(mr_rule_table) = _mr_rule_9_3_r67))$
 
 /* The converse of the universal cross-check below: nothing but a bare-u_
    record may sit in the tail (a specific record there would be tried after
@@ -115,16 +123,29 @@ check_bool("every tail handle's pattern is a bare-u_ Int pattern",
   every(lambda([mr_h], mr_bare_u_pattern_p(%mr_rule_pattern_text(mr_h))),
         mr_rule_table_tail_handles))$
 
-/* Vacuous until Task 9 (the tail was []); now a real check over the eight
-   bridge records. */
-check_bool("every tail handle is registered after every body handle",
-  every(lambda([mr_h], is(mr_h > lmax(mr_rule_table_body_handles))),
+/* Spec 2026-09-22 A3: 9.3 interleaves -- body records r64/r65 follow
+   tail record r63 in the file, so REGISTRATION order no longer matches
+   table order. The dispatcher walks list order (%mr_dispatch_tree), so
+   that is the order asserted. */
+mr_nbody : length(mr_rule_table_body_handles)$
+check_bool("every tail handle sits after every body handle in the table",
+  every(lambda([mr_h], is(first(sublist_indices(mr_rule_table, lambda([mr_g], mr_g = mr_h))) > mr_nbody)),
         mr_rule_table_tail_handles))$
+
+/* Spec 3.2: 9.2's body right after class 1 (whose last list is the
+   legacy 9_1) and before class 2; 9.3's body is the last body entry. */
+mr_pos(mr_h) := first(sublist_indices(mr_rule_table, lambda([mr_g], mr_g = mr_h)))$
+check_bool("9.2's body follows 9.1 (legacy) and precedes class 2",
+  is(mr_pos(first(mr_rules_9_2)) = mr_pos(last(mr_rules_9_1)) + 1)
+  and is(mr_pos(last(mr_rules_9_2)) + 1 = mr_pos(first(mr_rules_2_1))))$
+check_bool("9.3's body is the last body entry",
+  is(last(mr_rule_table_body_handles) = last(mr_rules_9_3)))$
 
 /* The universal cross-check, over EVERY handle mr_load_all() actually
    registered (3,903 at Task 8; 3,909 with Task 9's six; 3,910 with Task
-   10's r71; 3,911 with r72): a bare-u_ record must be in the
-   tail or be one of the six named exceptions -- anywhere else fails it. */
+   10's r71; 3,911 with r72; +86 with Task 11's 9.2/9.3): a bare-u_ record
+   must be in the tail or be one of the six named exceptions -- anywhere
+   else fails it. */
 mr_bad_bare : sublist(mr_rule_table,
   lambda([mr_h],
     mr_bare_u_pattern_p(%mr_rule_pattern_text(mr_h))

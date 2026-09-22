@@ -194,15 +194,20 @@ mr_load_class1_all() := block([],
 )$
 
 /* Full table load (Rubi.m LoadRules order): class 1 (the 73-term
-   flatten above) then class 2 — the first $LoadElementaryFunctionRules
-   block (3 files, 125 rules; measured 2026-08-28) then class 3 — the
-    "3 Logarithms" LoadRules block (11 files, 334 rules; Rubi.m
-    :211-221 order, verified against the pinned clone 2026-08-29 —
-    3.3 and 3.4 load BEFORE the 3.2.x files: that is Rubi's LoadRules
-    order, not numeric order). The table is the 3-class load: the
-    87-term flatten (3,513 rules). The driver and the rules core call
-    this; Layer A loads the 1.1.1.1 core file above and the sibling
-    files its sections pin. */
+   flatten above, 9.1 included as its last list) then 9.2 (19 rules,
+   Rubi.m L204, section-9 spec 3.2) then class 2 — the first
+   $LoadElementaryFunctionRules block (3 files, 125 rules; measured
+   2026-08-28) then class 3 — the "3 Logarithms" LoadRules block (11
+   files, 334 rules; Rubi.m :211-221 order, verified against the pinned
+   clone 2026-08-29 — 3.3 and 3.4 load BEFORE the 3.2.x files: that is
+   Rubi's LoadRules order, not numeric order) then class 6 (390 rules)
+   then class 4's inert-trig bridge subset (6 records, tail-only) then
+   9.3 last (67 rules, Rubi.m L356, section-9 spec A3). The table is
+   the full load: 3,997 rules (3,513 classes 1-3 + 390 class 6 + 6
+   class-4 bridge + 19 9.2 + 67 9.3; measured 2026-09-22,
+   length(mr_rule_table) after mr_load_all()). The driver and the
+   rules core call this; Layer A loads the 1.1.1.1 core file above and
+   the sibling files its sections pin. */
 mr_load_all() := block([],
   /* The inert-trig rewrite tables (inert-trig substrate design 3.2) load
      FIRST: nothing in the file is an Int rule, and the utilities it backs
@@ -210,6 +215,11 @@ mr_load_all() := block([],
   %mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
                    'mr_witness_inert_trig_rewrites),
   mr_load_class1_all(),
+  /* 9.2 Piecewise linear functions (19): Rubi.m L204 loads it right
+     after class 1 and before the $LoadElementaryFunctionRules block,
+     ALWAYS (section-9 spec 3.2). */
+  %mr_load_sibling("rules/class9/9_2.mac", 'mr_witness_9_2),
+  mr_rule_table : flatten([mr_rule_table, mr_rules_9_2]),
   %mr_load_sibling("rules/class2/2_1.mac", 'mr_witness_2_1),
   %mr_load_sibling("rules/class2/2_2.mac", 'mr_witness_2_2),
   %mr_load_sibling("rules/class2/2_3.mac", 'mr_witness_2_3),
@@ -260,11 +270,17 @@ mr_load_all() := block([],
      class 6 because only their tails matter today. NOTE for the class-4
      port: Rubi.m LoadRules puts section 4 BEFORE section 6, so once these
      body lists carry rules they belong between the class-3 and class-6
-     flattens, not here. */
+     flattens, not here -- AND before 9.3's body below (section 9 loads
+     last of all, spec 3.2/A3). */
   %mr_load_sibling("rules/class4/4_1_0_1.mac", 'mr_witness_4_1_0_1),
   %mr_load_sibling("rules/class4/4_7_5.mac", 'mr_witness_4_7_5),
   mr_rule_table : flatten([mr_rule_table, mr_rules_4_1_0_1,
                            mr_rules_4_7_5]),
+  /* 9.3 Miscellaneous integration rules (67): Rubi.m L356 loads it LAST.
+     Its body stays the last body entry as classes 5, 7 and 8 are ported
+     (spec A3); its eleven bare-u_ records are the end of the tail. */
+  %mr_load_sibling("rules/class9/9_3.mac", 'mr_witness_9_3),
+  mr_rule_table : flatten([mr_rule_table, mr_rules_9_3]),
   /* Tail rule lists (inert-trig substrate design 3.3, Task 8). A
      generated file may define mr_rules_<key>_tail beside mr_rules_<key>
      for a bare-u_ Int record (the most general Int pattern there is);
@@ -284,7 +300,8 @@ mr_load_all() := block([],
      ordering is assertable rather than inspected by eye. */
   mr_rule_table_body_handles : mr_rule_table,
   mr_rule_table_tail_handles : flatten([mr_rules_4_1_0_1_tail,
-                                        mr_rules_4_7_5_tail]),
+                                        mr_rules_4_7_5_tail,
+                                        mr_rules_9_3_tail]),
   mr_rule_table : flatten([mr_rule_table_body_handles,
                            mr_rule_table_tail_handles])
 )$
