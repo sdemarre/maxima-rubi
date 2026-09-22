@@ -4368,6 +4368,19 @@ test_section9_g4() := block([r],
   check("fosq a>0: the substitution",
         ratsimp(second(r) - (sqrt(-x^2 + x + 1) - 1)/x), 0),
   check("fosq a>0: the branch tag", third(r), 1),
+  /* else branch (neither PosQ(c) nor PosQ(a)): a=-1, b=3, c=-1,
+     discriminant = b^2-4ac = 5, sqrt = sqrt(5), r = c-x^2 = -1-x^2.
+     Hand-derived from Rubi :5071 (fix round 1, task-6 review finding 1):
+     SquareRootOfQuadraticSubst[u,-sqrt*x/r,-(b*c+c*sqrt+(-b+sqrt)*x^2)/(2*c*r),x]
+     splits u = x^(-1)*tmp^(-1/2) into xx^(-1)*vv^(-1) as in the other two
+     branches; xx*vv = sqrt(5)*x*(3+sqrt(5)+(3-sqrt(5))*x^2)/(2*(1+x^2)^2),
+     so -sqrt*(1/(xx*vv))*x/r^2 collapses to -2/(3+sqrt(5)+(3-sqrt(5))*x^2). */
+  r : %mr_functionOfSquareRootOfQuadratic(1/(x*sqrt(-1 + 3*x - x^2)), x),
+  check("fosq else: the substituted integrand",
+        ratsimp(first(r) - (-2/(3 + sqrt(5) + (3 - sqrt(5))*x^2))), 0),
+  check("fosq else: the substitution",
+        ratsimp(second(r) - 2*sqrt(-x^2 + 3*x - 1)/(2*x + sqrt(5) - 3)), 0),
+  check("fosq else: the branch tag", third(r), 3),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).
