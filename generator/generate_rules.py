@@ -1990,6 +1990,16 @@ def load_class_files(rubi):
         # class 4: only the files CLASS4_SUBSET names (see there)
         if CLASS == 4 and key_of(rel) not in CLASS4_SUBSET:
             continue
+        # class 9: "9.1 Derivative integration rules" belongs to class 8
+        # (spec §0.3.3, ticket 01), not class 9. Its key is "9_1" -- the
+        # SAME key as the legacy class-1 file (NINE_ONE, "9.1 Integrand
+        # simplification rules.m", a different .m that happens to share
+        # the number) -- so skipping it here is what keeps that key
+        # exclusive to class 1; see the GenError guard in main() for the
+        # case where this exclusion is ever removed or another class-9
+        # file collides.
+        if CLASS == 9 and key_of(rel) == "9_1":
+            continue
         out.append(rel)
     return out
 
@@ -2029,7 +2039,7 @@ NINE_ONE = ("Rubi/IntegrationRules/9 Miscellaneous/"
 NINE_ONE_TOTAL = 28
 
 def configure(class_num):
-    """Point the generator at class <class_num> (1, 2, 3, 4 or 6)."""
+    """Point the generator at class <class_num> (1, 2, 3, 4, 6 or 9)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
@@ -2049,9 +2059,15 @@ def configure(class_num):
     # catch-alls (inert-trig substrate plan, Task 9; r71, Task 10) and
     # 4.7.5's re-activating give-up r72 (Task 10 fix round 1). It grows with the
     # subset until the class-4 port replaces it with the full total.
+    # class 9: 86 — 19 (9.2 Piecewise linear functions) + 67 (9.3
+    # Miscellaneous integration rules), spec 2026-09-22 A3.
+    # `grep -c '^Int\['` over the two .m files gives 95, not 86: it counts
+    # BOTH branches of 9.3's nine single-line
+    # If[TrueQ[$LoadShowSteps], …] wrappers (unwrap_showsteps_line keeps
+    # only the plain branch — 9 fewer records, 95 - 9 = 86).
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
                       3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),
-                      6: 390}[class_num]
+                      6: 390, 9: 86}[class_num]
 
 
 def _emit_source(rel_m, key, only, total, load_lines, note=""):
@@ -2225,6 +2241,13 @@ def main(class_num=None):
         key = key_of(rel_m)
         if only and key != only:
             continue
+        # class 9: a class-9 key silently overwriting a class-1 file
+        # (rules/class1/9_1.mac, the legacy "9.1 Integrand simplification
+        # rules" port) would define a second mr_rules_9_1 and neither
+        # loader would notice -- loud instead (Task 10).
+        if CLASS == 9 and (ROOT / "rules" / "class1" / f"{key}.mac").exists():
+            raise GenError(f"class-9 key {key} collides with "
+                           f"rules/class1/{key}.mac")
         total = _emit_source(rel_m, key, only, total, load_lines)
         table_terms.append(f"mr_rules_{key}")
     if CLASS == 1:
