@@ -7033,4 +7033,396 @@ if not integerp(lcm(1, 1)) then load("functs")$
     )
   ))$
 
+/* ===================== section 9 (2026-09-22 A1), G6a =================
+ * The factor utilities under FunctionOfLinear (Rubi :1281-:1975,
+ * :3025-:3160, :4224): LeadFactor/RemainingFactors/LeadBase/LeadDegree,
+ * MonomialFactor/MinimumDegree, DivideDegreesOfFactors, the absurd-number
+ * family, Smallest/FactorOrder/MostMainFactorPosition, and CommonFactors. */
+
+/* Rubi :1281-1290  LeadFactor[u] — the leading factor of a product,
+   recursing into First[u]; for a purely-imaginary complex number (Re = 0)
+   whose Im is not 1, the leading factor of the imaginary part (I is not
+   itself counted as a factor); else u itself. inflag : true reads the
+   internal Times args (this file's house idiom). */
+%mr_leadFactor(%mr_lf_u) := block([inflag : true],
+  if %mr_productQ(%mr_lf_u) then %mr_leadFactor(first(%mr_lf_u))
+  elseif %mr_complexNumberQ(%mr_lf_u) and is(realpart(%mr_lf_u) = 0) then
+    (if is(imagpart(%mr_lf_u) = 1) then %mr_lf_u
+     else %mr_leadFactor(imagpart(%mr_lf_u)))
+  else %mr_lf_u)$
+
+/* Rubi :1296-1305  RemainingFactors[u] — the product without its leading
+   factor: RemainingFactors[First[u]] * Rest[u] for a product (the .m's
+   own recursion on First[u], not just Rest[u], matters only when First[u]
+   is itself a purely-imaginary complex number); the complex/else branches
+   mirror LeadFactor's. */
+%mr_remainingFactors(%mr_rf_u) := block([inflag : true],
+  if %mr_productQ(%mr_rf_u) then
+    %mr_remainingFactors(first(%mr_rf_u)) * %mr_rest_in(%mr_rf_u)
+  elseif %mr_complexNumberQ(%mr_rf_u) and is(realpart(%mr_rf_u) = 0) then
+    (if is(imagpart(%mr_rf_u) = 1) then 1
+     else %i * %mr_remainingFactors(imagpart(%mr_rf_u)))
+  else 1)$
+
+/* Rubi :1311-1319  LeadBase[u] — the base of LeadFactor[u]. */
+%mr_leadBase(%mr_lb_u) := block([inflag : true, %mr_lb_v],
+  %mr_lb_v : %mr_leadFactor(%mr_lb_u),
+  if %mr_powerQ(%mr_lb_v) then part(%mr_lb_v, 1) else %mr_lb_v)$
+
+/* Rubi :1323-1331  LeadDegree[u] — the degree (exponent) of LeadFactor[u],
+   or 1 when the leading factor is not itself a power. */
+%mr_leadDegree(%mr_ld_u) := block([inflag : true, %mr_ld_v],
+  %mr_ld_v : %mr_leadFactor(%mr_ld_u),
+  if %mr_powerQ(%mr_ld_v) then part(%mr_ld_v, 2) else 1)$
+
+/* Rubi :3112-3132  MonomialFactor[u,x] — {n,v} where x^n*v == u and n is
+   free of x. The atom/Power/Product/Sum cases follow the .m literally;
+   the Power case's IntegerQ branch reads u's own exponent (u[[2]]), not
+   MonomialFactor's; the Sum case's Scan is the for-loop starting at the
+   second mapped {deg,v} pair (this file's house idiom for Scan under
+   inflag : true, e.g. line 5523). */
+%mr_monomialFactor(%mr_mf_u, x) := block(
+  [inflag : true, %mr_mf_lst1, %mr_mf_lst2, %mr_mf_lst, %mr_mf_deg, %mr_mf_i],
+  if atom(%mr_mf_u) then
+    (if is(%mr_mf_u = x) then [1, 1] else [0, %mr_mf_u])
+  elseif %mr_powerQ(%mr_mf_u) then (
+    if integerp(part(%mr_mf_u, 2)) then (
+      %mr_mf_lst1 : %mr_monomialFactor(part(%mr_mf_u, 1), x),
+      [first(%mr_mf_lst1) * part(%mr_mf_u, 2),
+       second(%mr_mf_lst1) ^ part(%mr_mf_u, 2)]
+    )
+    elseif is(part(%mr_mf_u, 1) = x) and freeof(x, part(%mr_mf_u, 2))
+      then [part(%mr_mf_u, 2), 1]
+    else [0, %mr_mf_u]
+  )
+  elseif %mr_productQ(%mr_mf_u) then (
+    %mr_mf_lst1 : %mr_monomialFactor(first(%mr_mf_u), x),
+    %mr_mf_lst2 : %mr_monomialFactor(%mr_rest_in(%mr_mf_u), x),
+    [first(%mr_mf_lst1) + first(%mr_mf_lst2),
+     second(%mr_mf_lst1) * second(%mr_mf_lst2)]
+  )
+  elseif %mr_sumQ(%mr_mf_u) then (
+    %mr_mf_lst : map(lambda([%mr_mf_e], %mr_monomialFactor(%mr_mf_e, x)),
+                      %mr_args_in(%mr_mf_u)),
+    %mr_mf_deg : first(first(%mr_mf_lst)),
+    for %mr_mf_i : 2 thru length(%mr_mf_lst) do
+      %mr_mf_deg : %mr_minimumDegree(%mr_mf_deg, first(part(%mr_mf_lst, %mr_mf_i))),
+    if %mr_eqQ(%mr_mf_deg, 0) or (%mr_rationalQ(%mr_mf_deg) and is(%mr_mf_deg < 0))
+    then [0, %mr_mf_u]
+    else [%mr_mf_deg,
+          apply("+", map(lambda([%mr_mf_e],
+                                 x ^ (first(%mr_mf_e) - %mr_mf_deg) * second(%mr_mf_e)),
+                          %mr_mf_lst))]
+  )
+  else [0, %mr_mf_u])$
+
+/* Rubi :3138-3152  MinimumDegree[deg1,deg2] — the .m's OrderedQ[{d1,d2}]
+   tie-break is %mr_orderedQ (ported, this file's line 1060); Simplify is
+   %mr_simp (the zero-chain, this file's line ~429). */
+%mr_minimumDegree(%mr_mdeg_d1, %mr_mdeg_d2) := block([%mr_mdeg_d],
+  if %mr_rationalQ(%mr_mdeg_d1) then
+    (if %mr_rationalQ(%mr_mdeg_d2) then min(%mr_mdeg_d1, %mr_mdeg_d2) else %mr_mdeg_d1)
+  elseif %mr_rationalQ(%mr_mdeg_d2) then %mr_mdeg_d2
+  else (
+    %mr_mdeg_d : %mr_simp(%mr_mdeg_d1 - %mr_mdeg_d2),
+    if %mr_rationalQ(%mr_mdeg_d) then
+      (if is(%mr_mdeg_d > 0) then %mr_mdeg_d2 else %mr_mdeg_d1)
+    else
+      (if %mr_orderedQ(%mr_mdeg_d1, %mr_mdeg_d2) then %mr_mdeg_d1 else %mr_mdeg_d2)
+  ))$
+
+/* Rubi :4224-4230  DivideDegreesOfFactors[u,n] — the base of each factor
+   of u raised to its degree divided by n; Map over a product preserves
+   the Times head (apply(op(u), map(f, args(u))), the house idiom for
+   Mathematica's Map on a compound node under inflag : true). */
+%mr_divideDegreesOfFactors(%mr_ddof_u, %mr_ddof_n) := block([inflag : true],
+  if %mr_productQ(%mr_ddof_u) then
+    apply(op(%mr_ddof_u),
+          map(lambda([%mr_ddof_f],
+                      %mr_leadBase(%mr_ddof_f) ^ (%mr_leadDegree(%mr_ddof_f) / %mr_ddof_n)),
+              %mr_args_in(%mr_ddof_u)))
+  else %mr_leadBase(%mr_ddof_u) ^ (%mr_leadDegree(%mr_ddof_u) / %mr_ddof_n))$
+
+/* ---- the absurd-number family, Rubi :1905-1975 ---------------------- */
+
+/* Rubi :1905-1913  AbsurdNumberQ[u] — a rational number, a positive
+   rational raised to a fractional power, or a product of absurd numbers.
+   The .m's binary u_*v_ pattern is, over Maxima's flat "*" node, every
+   top-level factor being absurd (%mr_everyQ over %mr_args_in). */
+%mr_absurdNumberQ(%mr_anq_u) := block([inflag : true],
+  if %mr_rationalQ(%mr_anq_u) then true
+  elseif %mr_powerQ(%mr_anq_u) then
+    %mr_rationalQ(part(%mr_anq_u, 1)) and is(part(%mr_anq_u, 1) > 0)
+      and %mr_fractionQ(part(%mr_anq_u, 2))
+  elseif %mr_productQ(%mr_anq_u) then
+    %mr_everyQ(%mr_absurdNumberQ, %mr_args_in(%mr_anq_u))
+  else false)$
+
+/* Rubi :1918-1923  AbsurdNumberFactors[u] — the product of u's absurd-
+   number factors. */
+%mr_absurdNumberFactors(%mr_anf_u) := block([inflag : true],
+  if %mr_absurdNumberQ(%mr_anf_u) then %mr_anf_u
+  elseif %mr_productQ(%mr_anf_u) then
+    apply(op(%mr_anf_u), map(%mr_absurdNumberFactors, %mr_args_in(%mr_anf_u)))
+  else %mr_numericFactor(%mr_anf_u))$
+
+/* Rubi :1926-1931  NonabsurdNumberFactors[u] — the product of u's factors
+   that are not absurd numbers. */
+%mr_nonabsurdNumberFactors(%mr_nanf_u) := block([inflag : true],
+  if %mr_absurdNumberQ(%mr_nanf_u) then 1
+  elseif %mr_productQ(%mr_nanf_u) then
+    apply(op(%mr_nanf_u), map(%mr_nonabsurdNumberFactors, %mr_args_in(%mr_nanf_u)))
+  else %mr_nonnumericFactors(%mr_nanf_u))$
+
+/* Rubi :1934-1940  FactorAbsurdNumber[m] — m's prime factorization as a
+   list of [prime, exponent] pairs, denominator primes carrying a negative
+   exponent. MEASURED 2026-09-22 (branch_5_50_base_84_g4204fb669/SBCL):
+   ifactors(n) factors a POSITIVE integer n > 1 (ifactors(6) = [[2,1],
+   [3,1]]) and ifactors(1) = [] (NOT Mathematica's FactorInteger[1] =
+   {{1,1}}); a numerator or denominator of 1 contributes no pairs, and
+   the whole-m-is-1 (or -1) case is the only place the {{1,1}} (or
+   {{-1,1}}) identity is needed, handled by the empty-merge special case
+   below. A negative m gets a leading [-1,1] pair (FactorInteger's own
+   sign convention). The power branch reads m's own exponent (m[[2]]);
+   the product branch's Flatten[Map[...],1] is apply(append, map(...))
+   over %mr_args_in, and Sort[...,#1[[1]]<#2[[1]]&] is the exact sort
+   comparator the brief specifies. */
+%mr_factorAbsurdNumber(%mr_fan_m) := block(
+  [inflag : true, %mr_fan_sgn, %mr_fan_nu, %mr_fan_de, %mr_fan_l1, %mr_fan_l2,
+   %mr_fan_merged, %mr_fan_p, %mr_fan_q],
+  if %mr_rationalQ(%mr_fan_m) then (
+    %mr_fan_sgn : if is(%mr_fan_m < 0) then -1 else 1,
+    %mr_fan_nu : abs(num(%mr_fan_m)),
+    %mr_fan_de : abs(denom(%mr_fan_m)),
+    %mr_fan_l1 : if is(%mr_fan_nu = 1) then [] else ifactors(%mr_fan_nu),
+    %mr_fan_l2 : map(lambda([%mr_fan_p], [first(%mr_fan_p), -second(%mr_fan_p)]),
+                      if is(%mr_fan_de = 1) then [] else ifactors(%mr_fan_de)),
+    %mr_fan_merged : append(%mr_fan_l1, %mr_fan_l2),
+    if is(%mr_fan_merged = []) then
+      %mr_fan_merged : (if is(%mr_fan_sgn = -1) then [[-1, 1]] else [[1, 1]])
+    elseif is(%mr_fan_sgn = -1) then
+      %mr_fan_merged : cons([-1, 1], %mr_fan_merged),
+    sort(%mr_fan_merged, lambda([%mr_fan_p, %mr_fan_q], first(%mr_fan_p) < first(%mr_fan_q)))
+  )
+  elseif %mr_powerQ(%mr_fan_m) then
+    map(lambda([%mr_fan_p], [first(%mr_fan_p), second(%mr_fan_p) * part(%mr_fan_m, 2)]),
+        %mr_factorAbsurdNumber(part(%mr_fan_m, 1)))
+  else
+    %mr_combineExponents(
+      sort(apply(append, map(%mr_factorAbsurdNumber, %mr_args_in(%mr_fan_m))),
+           lambda([%mr_fan_p, %mr_fan_q], first(%mr_fan_p) < first(%mr_fan_q)))))$
+
+/* Rubi :1943-1947  CombineExponents[lst] — a sorted [prime,exponent] list
+   with equal-prime pairs merged (added) into one. */
+%mr_combineExponents(%mr_ce_lst) := block([],
+  if length(%mr_ce_lst) < 2 then %mr_ce_lst
+  elseif is(first(first(%mr_ce_lst)) = first(second(%mr_ce_lst))) then
+    %mr_combineExponents(
+      cons([first(first(%mr_ce_lst)), second(first(%mr_ce_lst)) + second(second(%mr_ce_lst))],
+           rest(%mr_ce_lst, 2)))
+  else cons(first(%mr_ce_lst), %mr_combineExponents(rest(%mr_ce_lst))))$
+
+/* Rubi :1950-1956  AbsurdNumberGCD[seq__] — DEVIATION (spec, the brief's
+   Interfaces list): the pinned Rubi only ever calls this through
+   Apply[AbsurdNumberGCD, lst], so the port takes ONE Maxima list in place
+   of the variadic seq__. A one-element list is its own element (the
+   .m's Length[lst]==1 base case); otherwise the gcd of the first element's
+   factorization against the gcd of the rest. */
+%mr_absurdNumberGCD(%mr_agcd_lst) := block([%mr_agcd_rest],
+  if is(length(%mr_agcd_lst) = 1) then first(%mr_agcd_lst)
+  else (
+    %mr_agcd_rest : %mr_absurdNumberGCD(rest(%mr_agcd_lst)),
+    %mr_absurdNumberGCDList(%mr_factorAbsurdNumber(first(%mr_agcd_lst)),
+                             %mr_factorAbsurdNumber(%mr_agcd_rest))
+  ))$
+
+/* Rubi :1959-1975  AbsurdNumberGCDList[lst1,lst2] — the gcd of two
+   [prime,exponent] factorizations: an exhausted list contributes only its
+   partner's negative-exponent (denominator) primes; equal leading primes
+   keep the smaller exponent; otherwise the smaller leading prime is
+   dropped (kept only if its own exponent is negative, i.e. it is a
+   denominator prime the gcd must still carry). */
+%mr_absurdNumberGCDList(%mr_agcdl_l1, %mr_agcdl_l2) := block([%mr_agcdl_p],
+  if is(%mr_agcdl_l1 = []) then
+    apply("*", map(lambda([%mr_agcdl_p], first(%mr_agcdl_p) ^ min(second(%mr_agcdl_p), 0)),
+                    %mr_agcdl_l2))
+  elseif is(%mr_agcdl_l2 = []) then
+    apply("*", map(lambda([%mr_agcdl_p], first(%mr_agcdl_p) ^ min(second(%mr_agcdl_p), 0)),
+                    %mr_agcdl_l1))
+  elseif is(first(first(%mr_agcdl_l1)) = first(first(%mr_agcdl_l2))) then
+    (if is(second(first(%mr_agcdl_l1)) <= second(first(%mr_agcdl_l2))) then
+       first(first(%mr_agcdl_l1)) ^ second(first(%mr_agcdl_l1))
+         * %mr_absurdNumberGCDList(rest(%mr_agcdl_l1), rest(%mr_agcdl_l2))
+     else
+       first(first(%mr_agcdl_l1)) ^ second(first(%mr_agcdl_l2))
+         * %mr_absurdNumberGCDList(rest(%mr_agcdl_l1), rest(%mr_agcdl_l2)))
+  elseif is(first(first(%mr_agcdl_l1)) < first(first(%mr_agcdl_l2))) then
+    (if is(second(first(%mr_agcdl_l1)) < 0) then
+       first(first(%mr_agcdl_l1)) ^ second(first(%mr_agcdl_l1))
+         * %mr_absurdNumberGCDList(rest(%mr_agcdl_l1), %mr_agcdl_l2)
+     else
+       %mr_absurdNumberGCDList(rest(%mr_agcdl_l1), %mr_agcdl_l2))
+  else
+    (if is(second(first(%mr_agcdl_l2)) < 0) then
+       first(first(%mr_agcdl_l2)) ^ second(first(%mr_agcdl_l2))
+         * %mr_absurdNumberGCDList(%mr_agcdl_l1, rest(%mr_agcdl_l2))
+     else
+       %mr_absurdNumberGCDList(%mr_agcdl_l1, rest(%mr_agcdl_l2))))$
+
+/* Rubi :3092-3101  Smallest — the smaller of two numbers when they agree
+   in sign, else 0; Smallest[lst] folds Smallest over a list. */
+%mr_smallest(%mr_sm_n1, %mr_sm_n2) := block([],
+  if is(%mr_sm_n1 > 0) then
+    (if is(%mr_sm_n2 > 0) then min(%mr_sm_n1, %mr_sm_n2) else 0)
+  else (if is(%mr_sm_n2 > 0) then 0 else max(%mr_sm_n1, %mr_sm_n2)))$
+
+%mr_smallestList(%mr_sml_lst) := block([%mr_sml_num, %mr_sml_e],
+  %mr_sml_num : first(%mr_sml_lst),
+  for %mr_sml_e in rest(%mr_sml_lst) do %mr_sml_num : %mr_smallest(%mr_sml_num, %mr_sml_e),
+  %mr_sml_num)$
+
+/* Rubi :3082-3090  FactorOrder[u,v] — 0 if u and v are both 1, -1/1 if
+   only one of them is 1, else Mathematica's Order[u,v] (1 before, 0
+   equal, -1 after in canonical order). DEVIATION (spec A1): Maxima's
+   canonical order (orderlessp) stands in for Mathematica's Order; ported
+   as orderlessp/is(u=v) per the brief. */
+%mr_factorOrder(%mr_fo_u, %mr_fo_v) := block([],
+  if is(%mr_fo_u = 1) then (if is(%mr_fo_v = 1) then 0 else -1)
+  elseif is(%mr_fo_v = 1) then 1
+  else (if orderlessp(%mr_fo_u, %mr_fo_v) then 1
+        elseif is(%mr_fo_u = %mr_fo_v) then 0
+        else -1))$
+
+/* Rubi :3076-3080  MostMainFactorPosition[lst] — the position of the
+   factor most main (FactorOrder-earliest) in lst, starting from the
+   sentinel factor 1 (which every real factor is FactorOrder-before). */
+%mr_mostMainFactorPosition(%mr_mmfp_lst) := block(
+  [%mr_mmfp_factor : 1, %mr_mmfp_num : 1, %mr_mmfp_i],
+  for %mr_mmfp_i : 1 thru length(%mr_mmfp_lst) do
+    if is(%mr_factorOrder(part(%mr_mmfp_lst, %mr_mmfp_i), %mr_mmfp_factor) > 0) then (
+      %mr_mmfp_factor : part(%mr_mmfp_lst, %mr_mmfp_i),
+      %mr_mmfp_num : %mr_mmfp_i
+    ),
+  %mr_mmfp_num)$
+
+/* Rubi :3025-3051  CommonFactors[lst] — an (n+1)-element list whose first
+   element is the product of the factors common to every term of lst and
+   whose remaining elements are each term divided by the common factor.
+   Map2/ReapList are NOT ported (spec A1): the .m's Map2 is Maxima's
+   two-list map (measured to apply element-wise, this file's line
+   ~7100-probe); the While[True,...,Return[...]] loop is a for-loop with
+   a return, matching the house idiom (e.g. this file's line ~6979); the
+   .m's nested If-chain, where the THIRD branch's lst4=Map[LeadDegree,...]
+   assignment runs unconditionally once the first two branches decline
+   (a plain statement between two Ifs, not itself a condition), is ported
+   as the %mr_cf_isLog flag guarding entry to the log branch, with lst4
+   computed only in the surviving elses -- semantically identical to the
+   .m's fall-through, since the log branch's own lst4 (the per-term
+   ratio, a DIFFERENT variable reused under the same name upstream) is
+   never read once that branch is skipped. ReplacePart[lst,e,k] is a
+   makelist copy with index k replaced (never a destructive part-set).
+   Apply[SameQ,lst3] (every element syntactically identical) is
+   %mr_everyQ against is(# = first(lst3)) (the %mr_unsameQ SameQ
+   precedent, this file's line ~6495). The Log branch's First[#] (the
+   log's own argument) is first(%mr_args_in(#)); FullSimplify there is
+   ratsimp (the brief); GCD of the (possibly fractional) ratio list is
+   the numerator-gcd over denominator-lcm identity (Mathematica's GCD on
+   rationals), since Maxima's gcd/lcm are integer-only. */
+%mr_commonFactors(%mr_cf_lst) := block(
+  [%mr_cf_lst1, %mr_cf_lst2, %mr_cf_lst3, %mr_cf_lst4, %mr_cf_bases,
+   %mr_cf_common, %mr_cf_base, %mr_cf_num, %mr_cf_isLog, %mr_cf_ratios,
+   %mr_cf_i, %mr_cf_dummy, %mr_cf_result, %mr_cf_e, %mr_cf_p, %mr_cf_q],
+  %mr_cf_lst1 : map(%mr_nonabsurdNumberFactors, %mr_cf_lst),
+  %mr_cf_lst2 : map(%mr_absurdNumberFactors, %mr_cf_lst),
+  %mr_cf_num : %mr_absurdNumberGCD(%mr_cf_lst2),
+  %mr_cf_common : %mr_cf_num,
+  %mr_cf_lst2 : map(lambda([%mr_cf_e], %mr_cf_e / %mr_cf_num), %mr_cf_lst2),
+  %mr_cf_result : for %mr_cf_dummy : 1 while true do (
+    %mr_cf_lst3 : map(%mr_leadFactor, %mr_cf_lst1),
+    if %mr_everyQ(lambda([%mr_cf_e], is(%mr_cf_e = first(%mr_cf_lst3))), %mr_cf_lst3)
+    then (
+      %mr_cf_common : %mr_cf_common * first(%mr_cf_lst3),
+      %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+    )
+    else (
+      %mr_cf_isLog : false,
+      if %mr_everyQ(lambda([%mr_cf_e],
+                           %mr_logQ(%mr_cf_e)
+                             and integerp(first(%mr_args_in(%mr_cf_e)))
+                             and is(first(%mr_args_in(%mr_cf_e)) > 0)),
+                    %mr_cf_lst3)
+      then (
+        %mr_cf_ratios : map(lambda([%mr_cf_e], ratsimp(%mr_cf_e / first(%mr_cf_lst3))),
+                             %mr_cf_lst3),
+        if %mr_everyQ(%mr_rationalQ, %mr_cf_ratios) then %mr_cf_isLog : true
+      ),
+      if %mr_cf_isLog then (
+        %mr_cf_num : apply(gcd, map(num, %mr_cf_ratios)) / apply(lcm, map(denom, %mr_cf_ratios)),
+        %mr_cf_common : %mr_cf_common
+          * log(first(%mr_args_in(first(%mr_cf_lst3))) ^ %mr_cf_num),
+        %mr_cf_lst2 : map(lambda([%mr_cf_p, %mr_cf_q], %mr_cf_p * %mr_cf_q / %mr_cf_num),
+                           %mr_cf_lst2, %mr_cf_ratios),
+        %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+      )
+      else (
+        %mr_cf_lst4 : map(%mr_leadDegree, %mr_cf_lst1),
+        %mr_cf_bases : map(%mr_leadBase, %mr_cf_lst1),
+        if %mr_everyQ(lambda([%mr_cf_e], is(%mr_cf_e = first(%mr_cf_bases))), %mr_cf_bases)
+           and %mr_everyQ(%mr_rationalQ, %mr_cf_lst4)
+        then (
+          %mr_cf_num : %mr_smallestList(%mr_cf_lst4),
+          %mr_cf_base : first(%mr_cf_bases),
+          if not is(%mr_cf_num = 0) then %mr_cf_common : %mr_cf_common * %mr_cf_base ^ %mr_cf_num,
+          %mr_cf_lst2 : map(lambda([%mr_cf_p, %mr_cf_q], %mr_cf_p * %mr_cf_base ^ (%mr_cf_q - %mr_cf_num)),
+                             %mr_cf_lst2, %mr_cf_lst4),
+          %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+        )
+        elseif is(length(%mr_cf_lst1) = 2)
+           and %mr_eqQ(first(%mr_cf_bases) + second(%mr_cf_bases), 0)
+           and %mr_neQ(first(%mr_cf_lst1), 1)
+           and integerp(first(%mr_cf_lst4))
+           and %mr_fractionQ(second(%mr_cf_lst4))
+        then (
+          %mr_cf_num : min(first(%mr_cf_lst4), second(%mr_cf_lst4)),
+          %mr_cf_base : second(%mr_cf_bases),
+          if not is(%mr_cf_num = 0) then %mr_cf_common : %mr_cf_common * %mr_cf_base ^ %mr_cf_num,
+          %mr_cf_lst2 : [first(%mr_cf_lst2) * (-1) ^ first(%mr_cf_lst4), second(%mr_cf_lst2)],
+          %mr_cf_lst2 : map(lambda([%mr_cf_p, %mr_cf_q], %mr_cf_p * %mr_cf_base ^ (%mr_cf_q - %mr_cf_num)),
+                             %mr_cf_lst2, %mr_cf_lst4),
+          %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+        )
+        elseif is(length(%mr_cf_lst1) = 2)
+           and %mr_eqQ(first(%mr_cf_bases) + second(%mr_cf_bases), 0)
+           and %mr_neQ(second(%mr_cf_lst1), 1)
+           and integerp(second(%mr_cf_lst4))
+           and %mr_fractionQ(first(%mr_cf_lst4))
+        then (
+          %mr_cf_num : min(first(%mr_cf_lst4), second(%mr_cf_lst4)),
+          %mr_cf_base : first(%mr_cf_bases),
+          if not is(%mr_cf_num = 0) then %mr_cf_common : %mr_cf_common * %mr_cf_base ^ %mr_cf_num,
+          %mr_cf_lst2 : [first(%mr_cf_lst2), second(%mr_cf_lst2) * (-1) ^ second(%mr_cf_lst4)],
+          %mr_cf_lst2 : map(lambda([%mr_cf_p, %mr_cf_q], %mr_cf_p * %mr_cf_base ^ (%mr_cf_q - %mr_cf_num)),
+                             %mr_cf_lst2, %mr_cf_lst4),
+          %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+        )
+        else (
+          %mr_cf_num : %mr_mostMainFactorPosition(%mr_cf_lst3),
+          %mr_cf_lst2 : makelist(
+                          if %mr_cf_i = %mr_cf_num
+                          then part(%mr_cf_lst3, %mr_cf_num) * part(%mr_cf_lst2, %mr_cf_num)
+                          else part(%mr_cf_lst2, %mr_cf_i),
+                          %mr_cf_i, 1, length(%mr_cf_lst2)),
+          %mr_cf_lst1 : makelist(
+                          if %mr_cf_i = %mr_cf_num
+                          then %mr_remainingFactors(part(%mr_cf_lst1, %mr_cf_num))
+                          else part(%mr_cf_lst1, %mr_cf_i),
+                          %mr_cf_i, 1, length(%mr_cf_lst1))
+        )
+      )
+    ),
+    if %mr_everyQ(lambda([%mr_cf_e], is(%mr_cf_e = 1)), %mr_cf_lst1)
+    then return(cons(%mr_cf_common, %mr_cf_lst2))
+  ),
+  %mr_cf_result)$
+
 mr_witness_utils() := true$
