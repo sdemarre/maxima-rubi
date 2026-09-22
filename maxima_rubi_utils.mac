@@ -6523,12 +6523,13 @@ mr_use_gamma_flag : false$
 
 /* Rubi :7434 Log[c_.*F_^(v_)] /; FreeQ[{F,c},x] && LinearQ[v,x]: Times is
    flat, so c_. absorbs EVERY x-free factor of the log argument, and the
-   match holds iff its x-dependent factors are exactly one F^v (mirrors
-   %mr_tpt_arg's Times-flat accounting, line 6438). */
-%mr_plq_logArgQ(%mr_plq_w, %mr_plq_x) := block([inflag : true, %mr_plq_nf],
-  %mr_plq_nf : sublist(if not atom(%mr_plq_w) and op(%mr_plq_w) = "*"
-                        then args(%mr_plq_w) else [%mr_plq_w],
-                        lambda([%mr_plq_f], not freeof(%mr_plq_x, %mr_plq_f))),
+   match holds iff its x-dependent factors are exactly one F^v. The
+   non-free-factors accounting is %mr_tpt_nonfree (line 6459, TryPureTanSubst's
+   port, immediately above): it already binds inflag : true and prefixes
+   its own locals/params, so it is called here rather than reimplemented
+   (fix round 1, task review finding 1). */
+%mr_plq_logArgQ(%mr_plq_w, %mr_plq_x) := block([%mr_plq_nf],
+  %mr_plq_nf : %mr_tpt_nonfree(%mr_plq_w, %mr_plq_x),
   is(length(%mr_plq_nf) = 1) and %mr_plq_powFV(first(%mr_plq_nf), %mr_plq_x))$
 
 /* Rubi :7434-7440 PiecewiseLinearQ[u,x], the 2-arg predicate: LinearQ,
@@ -6545,17 +6546,21 @@ mr_use_gamma_flag : false$
 /* Rubi :7430-7433 PiecewiseLinearQ[u,x] / PiecewiseLinearQ[u,v,x]: one
    Maxima function with a rest argument, since Rubi overloads the name
    by arity. One rest element is the 2-arg form; two is (u,v,x) =
-   plq(u,x) and plq(v,x). */
+   plq(u,x) and plq(v,x). Any other rest length is a caller error, not a
+   silent first()/second() failure on a short list (fix round 1, task
+   review finding 2). */
 %mr_piecewiseLinearQ(%mr_plq_u, [%mr_plq_r]) := block([%mr_plq_x],
   if length(%mr_plq_r) = 2 then (
     %mr_plq_x : second(%mr_plq_r),
     %mr_plq_core(%mr_plq_u, %mr_plq_x)
       and %mr_plq_core(first(%mr_plq_r), %mr_plq_x)
   )
-  else (
+  elseif length(%mr_plq_r) = 1 then (
     %mr_plq_x : first(%mr_plq_r),
     %mr_plq_core(%mr_plq_u, %mr_plq_x)
-  ))$
+  )
+  else error("%mr_piecewiseLinearQ: expected (u, x) or (u, v, x), got ",
+             length(%mr_plq_r) + 1, " total argument(s)"))$
 
 /* Rubi :7443-7448 Divides[y,u,x]: the quotient u/y when it is free of x,
    else False. %mr_simp is a pure rewrite of its argument (no ev), so
