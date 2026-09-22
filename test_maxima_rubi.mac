@@ -136,6 +136,7 @@ run_all_tests() := block([],
   test_with_local_capture_all(),
   test_section9_unsameQ(),
   test_section9_g1(),
+  test_section9_g2a(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4266,6 +4267,39 @@ test_section9_g1() := block([],
   check("divides: (x+1)/(2x+2) is free of x", %mr_divides(2*x + 2, x + 1, x), 1/2),
   check("divides: x^2/x is not free of x", %mr_divides(x, x^2, x), false),
   check("divides: 3x/(a x)", %mr_divides(a*x, 3*x, x), 3/a),
+  true)$
+
+/* Section 9, G2a (spec 2026-09-22 A1). EulerIntegrandQ (Rubi :5017-5039)
+   is five Name[pattern] := True/False /; cond clauses, generated into
+   rules/utils/inert_trig_rewrites.mac as mr_rw_eiq (the inert-trig
+   rewrite machinery, design 3.2). SimplerIntegrandQ :804,
+   CancelCommonFactors :821. */
+test_section9_g2a() := block([],
+  print("--- section 9 G2a: EulerIntegrandQ / SimplerIntegrandQ ---"),
+  errcatch(%mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                            'mr_witness_inert_trig_rewrites)),
+  check_bool("eiq: (x+sqrt(Q))^-1, Q quadratic not binomial",
+             %mr_eulerIntegrandQ(1/(x + sqrt(x^2 + 2*x + 3)), x)),
+  check_not("eiq: (x+sqrt(x^2+1))^-1, Q binomial and p rational",
+            %mr_eulerIntegrandQ(1/(x + sqrt(x^2 + 1)), x)),
+  check_bool("eiq: (x+sqrt(x^2+1))^q, p not rational",
+             %mr_eulerIntegrandQ((x + sqrt(x^2 + 1))^q, x)),
+  check_bool("eiq: sqrt(Q)*(x+sqrt(Q))^-2, clause 2",
+             %mr_eulerIntegrandQ(sqrt(x^2 + 2*x + 3)/(x + sqrt(x^2 + 2*x + 3))^2, x)),
+  check_bool("eiq: sqrt(x^2+1)/(x^2+x+1), clause 4",
+             %mr_eulerIntegrandQ(sqrt(x^2 + 1)/(x^2 + x + 1), x)),
+  check_not("eiq: x^2, the catch-all False", %mr_eulerIntegrandQ(x^2, x)),
+  check("ccf: a common factor x cancels",
+        %mr_cancelCommonFactors(2*x*sin(x), x*cos(x)), [2*sin(x), cos(x)]),
+  check("ccf: u is a factor of v", %mr_cancelCommonFactors(x, x*cos(x)), [1, cos(x)]),
+  check("ccf: v is a factor of u", %mr_cancelCommonFactors(x*sin(x), x), [sin(x), 1]),
+  check("ccf: nothing in common", %mr_cancelCommonFactors(sin(x), cos(x)), [sin(x), cos(x)]),
+  check_bool("sic: x is simpler than a large product",
+             %mr_simplerIntegrandQ(x, (x^5 + x^4 + x^3 + x^2 + x + 1)^3*sin(x), x)),
+  check_not("sic: the large product is not simpler than x",
+            %mr_simplerIntegrandQ((x^5 + x^4 + x^3 + x^2 + x + 1)^3*sin(x), x, x)),
+  check_bool("sic: rational functions compare by exponent sums (2 < 4)",
+             %mr_simplerIntegrandQ(1/(x^2 + 1), x/(x^3 + 1), x)),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).

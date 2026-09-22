@@ -234,6 +234,10 @@ RENAME = {
     # (maxima_rubi_utils.mac, task-2 brief).
     "PiecewiseLinearQ": "%mr_piecewiseLinearQ",
     "Divides": "%mr_divides",
+    # section 9 G2a (2026-09-22, task-3 brief): EulerIntegrandQ (a
+    # generated rewrite table) and its two hand-ported callers.
+    "EulerIntegrandQ": "%mr_eulerIntegrandQ",
+    "SimplerIntegrandQ": "%mr_simplerIntegrandQ",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.

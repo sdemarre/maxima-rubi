@@ -6570,4 +6570,67 @@ mr_use_gamma_flag : false$
   %mr_div_v : %mr_simp(%mr_div_u / %mr_div_y),
   if freeof(x, %mr_div_v) then %mr_div_v else false)$
 
+/* ===================== section 9 (2026-09-22 A2) ======================
+ * Rubi :5017-5039 EulerIntegrandQ, :804-819 SimplerIntegrandQ, :821-835
+ * CancelCommonFactors. */
+
+/* Rubi :5017-5039 EulerIntegrandQ: its five clauses are the generated
+   rewrite table mr_rw_eiq (rules/utils/inert_trig_rewrites.mac); every
+   clause answers True or False, the last unconditionally. */
+%mr_eulerIntegrandQ(%mr_eiq_u, x) :=
+  is(%mr_rewrite("EulerIntegrandQ", mr_rw_eiq, %mr_eiq_u, x) = true)$
+
+/* Rubi :821-835 CancelCommonFactors[u,v]: {u1,v1} are u and v with their
+   common factors cancelled one at a time. ProductQ/First/Rest/MemberQ
+   read under inflag : true (capture trap 2): First[u] is first(u),
+   Rest[u] is %mr_rest_in(u), MemberQ[v,f] is member(f, %mr_args_in(v)).
+   DeleteCases[v,f,1,1] removes ONE occurrence of f from v's factor list
+   and rebuilds the product; delete(f,v,1) does the same and, via its own
+   Times reconstruction, already collapses a one-factor remainder to that
+   bare factor and an empty remainder to 1 -- both call sites here delete
+   from a v (or u) already known ProductQ, so delete always sees a
+   genuine multi-factor Times. */
+%mr_cancelCommonFactors(%mr_ccf_u, %mr_ccf_v) := block([inflag : true],
+  if %mr_productQ(%mr_ccf_u) then (
+    if %mr_productQ(%mr_ccf_v) then (
+      if member(first(%mr_ccf_u), %mr_args_in(%mr_ccf_v)) then
+        %mr_cancelCommonFactors(%mr_rest_in(%mr_ccf_u),
+                                 delete(first(%mr_ccf_u), %mr_ccf_v, 1))
+      else block([%mr_ccf_r],
+        %mr_ccf_r : %mr_cancelCommonFactors(%mr_rest_in(%mr_ccf_u), %mr_ccf_v),
+        [first(%mr_ccf_u) * first(%mr_ccf_r), second(%mr_ccf_r)])
+    ) else (
+      if member(%mr_ccf_v, %mr_args_in(%mr_ccf_u)) then
+        [delete(%mr_ccf_v, %mr_ccf_u, 1), 1]
+      else [%mr_ccf_u, %mr_ccf_v]
+    )
+  ) else (
+    if %mr_productQ(%mr_ccf_v) then (
+      if member(%mr_ccf_u, %mr_args_in(%mr_ccf_v)) then
+        [1, delete(%mr_ccf_u, %mr_ccf_v, 1)]
+      else [%mr_ccf_u, %mr_ccf_v]
+    ) else [%mr_ccf_u, %mr_ccf_v]
+  ))$
+
+/* Rubi :804-819 SimplerIntegrandQ[u,v,x]: the two commented-out lines
+   (the Head/Length short circuit) stay out, not live upstream. LeafCount
+   is %mr_leafCount, Apply[Plus,RationalFunctionExponents[..]] is the sum
+   of %mr_rationalFunctionExponents's 2-element list.
+   Deviation: %mr_leafCount counts differently from Mathematica's
+   LeafCount (measured 2026-09-22: 7 for both 1/(x^2+1) and x/(x^3+1),
+   where Mathematica gives 7 and 9), so the 6/10 threshold can decide
+   differently near the boundary. */
+%mr_simplerIntegrandQ(%mr_sic_u, %mr_sic_v, x) := block(
+  [%mr_sic_lst, %mr_sic_u1, %mr_sic_v1],
+  %mr_sic_lst : %mr_cancelCommonFactors(%mr_sic_u, %mr_sic_v),
+  %mr_sic_u1 : first(%mr_sic_lst),
+  %mr_sic_v1 : second(%mr_sic_lst),
+  if %mr_leafCount(%mr_sic_u1) < 6/10 * %mr_leafCount(%mr_sic_v1) then true
+  elseif %mr_rationalFunctionQ(%mr_sic_u1, x) then
+    (if %mr_rationalFunctionQ(%mr_sic_v1, x) then
+       is(apply("+", %mr_rationalFunctionExponents(%mr_sic_u1, x))
+          < apply("+", %mr_rationalFunctionExponents(%mr_sic_v1, x)))
+     else true)
+  else false)$
+
 mr_witness_utils() := true$

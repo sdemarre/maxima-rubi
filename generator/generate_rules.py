@@ -2099,6 +2099,12 @@ REWRITE_FUNCTIONS = [
     ("uitf", "UnifyInertTrigFunction", 75),
     ("fitf", "FixInertTrigFunction", 61),
     ("rit", "ReduceInertTrig", 4),
+    # Section 9 (spec 2026-09-22 A1): EulerIntegrandQ's five
+    # `EulerIntegrandQ[<pattern>, x_Symbol] := True/False [/; cond]` clauses
+    # (IntegrationUtilityFunctions.m L5017, L5022, L5028, L5034, L5038; L5022
+    # and L5028 are identical in the source and both stay, since the table
+    # is faithful to the file). MEASURED 2026-09-20 over the pinned clone: 5.
+    ("eiq", "EulerIntegrandQ", 5),
 ]
 
 
