@@ -244,6 +244,9 @@ RENAME = {
     "SubstForFractionalPowerQ": "%mr_substForFractionalPowerQ",
     "PolynomialInQ": "%mr_polynomialInQ",
     "PolynomialInSubst": "%mr_polynomialInSubst",
+    # section 9 G3 (2026-09-22, task-5 brief): PowerVariableExpn (the
+    # Degree/Subst helpers are internal, not generated-rule tokens).
+    "PowerVariableExpn": "%mr_powerVariableExpn",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.

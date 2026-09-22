@@ -138,6 +138,7 @@ run_all_tests() := block([],
   test_section9_g1(),
   test_section9_g2a(),
   test_section9_g2b(),
+  test_section9_g3(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4326,6 +4327,21 @@ test_section9_g2b() := block([],
                 - (((x - 1)/2)^2 + (x - 1)/2)), 0),
   check("pis: a polynomial in log(x)",
         ratsimp(%mr_polynomialInSubst(log(x)^2 + 3*log(x), log(x), x) - (x^2 + 3*x)), 0),
+  true)$
+
+/* Section 9, G3 (spec 2026-09-22 A1): PowerVariableExpn (Rubi :4976),
+   PowerVariableDegree (:4985), PowerVariableSubst (:5001). (2*x)^4
+   auto-simplifies to 16*x^4 in this build (measured), so c = 1 throughout. */
+test_section9_g3() := block([],
+  print("--- section 9 G3: PowerVariableExpn ---"),
+  check("pvd: m = 0 takes the first power's degree",
+        %mr_powerVariableDegree(sin(x^4), 0, 1, x), [4, 1]),
+  check("pve: sin(x^4), m = 2 -> x sin(x^2)",
+        %mr_powerVariableExpn(sin(x^4), 2, x), [x*sin(x^2), 2, 1]),
+  check("pve: two powers with a common gcd",
+        %mr_powerVariableExpn(sin(x^4)*cos(x^6), 2, x), [x*sin(x^2)*cos(x^3), 2, 1]),
+  check("pve: gcd(2,3) = 1 declines", %mr_powerVariableExpn(sin(x^3), 2, x), false),
+  check("pve: m not an integer declines", %mr_powerVariableExpn(sin(x^4), 1/2, x), false),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).

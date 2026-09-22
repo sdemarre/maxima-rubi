@@ -6717,4 +6717,72 @@ mr_use_gamma_flag : false$
         %mr_polynomialInSubstAux(%mr_pis_u,
           %mr_nonfreeFactors(%mr_pis_w, x), x)))$
 
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :4976 PowerVariableExpn, :4985 PowerVariableDegree, :5001
+ * PowerVariableSubst. */
+
+/* Rubi :4985 PowerVariableDegree[u,m,c,x]: threads {m,c} through u's
+   arguments (Catch[Module[{lst={m,c}}, Scan[..If[AtomQ[lst],
+   Throw[False]]],u]; lst]), false at the first argument that declines
+   (capture trap 2: the found-flag while loop over %mr_args_in(u), the
+   %mr_simplerQ_scan precedent, this file's line ~1182). u[[1]]/x is the
+   power's base over x (FreeQ[u[[1]]/x,x] asks whether the base is c*x);
+   m===u[[2]] and c===u[[1]]/x are SameQ, is(a = b) (capture trap 3, the
+   %mr_polynomialInAuxQ precedent). GCD is gcd on the two integers. */
+%mr_powerVariableDegree(%mr_pvd_u, %mr_pvd_m, %mr_pvd_c, x) := block(
+  [inflag : true, %mr_pvd_args, %mr_pvd_i, %mr_pvd_n, %mr_pvd_lst, %mr_pvd_ok],
+  if freeof(x, %mr_pvd_u) then [%mr_pvd_m, %mr_pvd_c]
+  elseif atom(%mr_pvd_u) or %mr_calculusQ(%mr_pvd_u) then false
+  elseif %mr_powerQ(%mr_pvd_u) and freeof(x, part(%mr_pvd_u, 1) / x) then (
+    if %mr_eqQ(%mr_pvd_m, 0)
+       or (is(%mr_pvd_m = part(%mr_pvd_u, 2))
+           and is(%mr_pvd_c = part(%mr_pvd_u, 1) / x))
+    then [part(%mr_pvd_u, 2), part(%mr_pvd_u, 1) / x]
+    elseif integerp(part(%mr_pvd_u, 2)) and integerp(%mr_pvd_m)
+           and gcd(%mr_pvd_m, part(%mr_pvd_u, 2)) > 1
+           and is(%mr_pvd_c = part(%mr_pvd_u, 1) / x)
+    then [gcd(%mr_pvd_m, part(%mr_pvd_u, 2)), %mr_pvd_c]
+    else false
+  )
+  else (
+    %mr_pvd_args : %mr_args_in(%mr_pvd_u),
+    %mr_pvd_n : length(%mr_pvd_args),
+    %mr_pvd_i : 0,
+    %mr_pvd_lst : [%mr_pvd_m, %mr_pvd_c],
+    %mr_pvd_ok : true,
+    while %mr_pvd_ok and %mr_pvd_i < %mr_pvd_n do (
+      %mr_pvd_i : %mr_pvd_i + 1,
+      %mr_pvd_lst : %mr_powerVariableDegree(part(%mr_pvd_args, %mr_pvd_i),
+                      first(%mr_pvd_lst), second(%mr_pvd_lst), x),
+      if atom(%mr_pvd_lst) then %mr_pvd_ok : false
+    ),
+    if %mr_pvd_ok then %mr_pvd_lst else false
+  ))$
+
+/* Rubi :5001 PowerVariableSubst[u,m,x]: the else-branch Map[Function[..],
+   u] is, under inflag : true, apply(op(u), map(f, args(u))) (capture
+   trap 2, the house idiom cited at this file's line ~9). */
+%mr_powerVariableSubst(%mr_pvs_u, %mr_pvs_m, x) := block([inflag : true],
+  if freeof(x, %mr_pvs_u) or atom(%mr_pvs_u) or %mr_calculusQ(%mr_pvs_u)
+  then %mr_pvs_u
+  elseif %mr_powerQ(%mr_pvs_u) and freeof(x, part(%mr_pvs_u, 1) / x) then
+    x^(part(%mr_pvs_u, 2) / %mr_pvs_m)
+  else apply(op(%mr_pvs_u),
+             map(lambda([%mr_pvs_t],
+                        %mr_powerVariableSubst(%mr_pvs_t, %mr_pvs_m, x)),
+                 %mr_args_in(%mr_pvs_u))))$
+
+/* Rubi :4976 PowerVariableExpn[u,m,x]: With[{lst=PowerVariableDegree[u,m,
+   1,x]}, ...] is a plain local (no recomputation hazard: lst is bound
+   once from the call's own arguments, none of them named lst). */
+%mr_powerVariableExpn(%mr_pve_u, %mr_pve_m, x) := block([%mr_pve_lst],
+  if not integerp(%mr_pve_m) then false
+  else (
+    %mr_pve_lst : %mr_powerVariableDegree(%mr_pve_u, %mr_pve_m, 1, x),
+    if atom(%mr_pve_lst) then false
+    else [x^(%mr_pve_m / first(%mr_pve_lst))
+            * %mr_powerVariableSubst(%mr_pve_u, first(%mr_pve_lst), x),
+          first(%mr_pve_lst), second(%mr_pve_lst)]
+  ))$
+
 mr_witness_utils() := true$
