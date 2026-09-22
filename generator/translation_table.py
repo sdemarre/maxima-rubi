@@ -247,6 +247,10 @@ RENAME = {
     # section 9 G3 (2026-09-22, task-5 brief): PowerVariableExpn (the
     # Degree/Subst helpers are internal, not generated-rule tokens).
     "PowerVariableExpn": "%mr_powerVariableExpn",
+    # section 9 G4 (2026-09-22, task-6 brief): FunctionOfSquareRootOfQuadratic
+    # (the 3-arg overload and SquareRootOfQuadraticSubst are internal,
+    # not generated-rule tokens -- the census shows only the 2-arg call).
+    "FunctionOfSquareRootOfQuadratic": "%mr_functionOfSquareRootOfQuadratic",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.

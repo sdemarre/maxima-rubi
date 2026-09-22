@@ -6785,4 +6785,163 @@ mr_use_gamma_flag : false$
           first(%mr_pve_lst), second(%mr_pve_lst)]
   ))$
 
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :5071 FunctionOfSquareRootOfQuadratic (2-arg entry, its :5102
+ * 3-arg overload) and :5119 SquareRootOfQuadraticSubst. */
+
+/* Rubi :5071 the exclusion MatchQ[u, x^m_.*(a_+b_.*x^n_.)^p_ /;
+   FreeQ[{a,b,m,n,p},x]]: neither Times-level factor carries its own
+   Optional dot (only the nested m_./n_. do), so the pattern requires u
+   to be EXACTLY a two-factor product -- one factor a bare x or x^m
+   (m free of x), the other a kept power (a+b*x^n)^p with p free of x.
+   BinomialQ[w,x] (%mr_binomialQ, :549) is exactly the a+b*x^n test, so
+   the remaining structural work is picking out the two factors; a
+   three-term sum such as x^2+x+1 is not a BinomialQ base, so it does
+   not exclude (the c>0 target below depends on this). */
+%mr_fosq_excludedQ(%mr_fosqx_u, x) := block(
+  [inflag : true, %mr_fosqx_facs, %mr_fosqx_xf, %mr_fosqx_pw, %mr_fosqx_t],
+  if not %mr_productQ(%mr_fosqx_u) then false
+  else (
+    %mr_fosqx_facs : %mr_args_in(%mr_fosqx_u),
+    if not is(length(%mr_fosqx_facs) = 2) then false
+    else (
+      %mr_fosqx_xf : false, %mr_fosqx_pw : false,
+      for %mr_fosqx_t in %mr_fosqx_facs do (
+        if is(%mr_fosqx_t = x)
+           or (%mr_powerQ(%mr_fosqx_t) and is(part(%mr_fosqx_t, 1) = x)
+               and freeof(x, part(%mr_fosqx_t, 2)))
+        then %mr_fosqx_xf : %mr_fosqx_t
+        elseif %mr_powerQ(%mr_fosqx_t) and freeof(x, part(%mr_fosqx_t, 2))
+        then %mr_fosqx_pw : %mr_fosqx_t
+      ),
+      if %mr_fosqx_xf = false or %mr_fosqx_pw = false then false
+      else %mr_binomialQ(part(%mr_fosqx_pw, 1), x)
+    )
+  ))$
+
+/* Rubi :5102 FunctionOfSquareRootOfQuadratic[u,v,x] (the 3-arg
+   overload): the Catch[Scan[..Throw[False]]] thread over u's arguments
+   is, under inflag : true, the %mr_powerVariableDegree precedent (this
+   file's line ~6732) -- a found-flag while loop over %mr_args_in(u)
+   threading the single-element list forward and stopping at the first
+   atom (False) result. u===v in the power branch is is(u = v) (SameQ,
+   the %mr_unsameQ precedent). */
+%mr_functionOfSquareRootOfQuadraticAux(%mr_fosqa_u, %mr_fosqa_v, x) := block(
+  [inflag : true, %mr_fosqa_args, %mr_fosqa_n, %mr_fosqa_i, %mr_fosqa_lst,
+   %mr_fosqa_ok],
+  if atom(%mr_fosqa_u) or freeof(x, %mr_fosqa_u) then [%mr_fosqa_v]
+  elseif %mr_powerQ(%mr_fosqa_u) and freeof(x, part(%mr_fosqa_u, 2)) then (
+    if %mr_fractionQ(part(%mr_fosqa_u, 2))
+       and is(denom(part(%mr_fosqa_u, 2)) = 2)
+       and %mr_polynomialQ(part(%mr_fosqa_u, 1), x)
+       and is(%mr_degree(part(%mr_fosqa_u, 1), x) = 2)
+    then (
+      if %mr_falseQ(%mr_fosqa_v) or is(part(%mr_fosqa_u, 1) = %mr_fosqa_v)
+      then [part(%mr_fosqa_u, 1)]
+      else false
+    )
+    else %mr_functionOfSquareRootOfQuadraticAux(
+           part(%mr_fosqa_u, 1), %mr_fosqa_v, x)
+  )
+  elseif %mr_productQ(%mr_fosqa_u) or %mr_sumQ(%mr_fosqa_u) then (
+    %mr_fosqa_args : %mr_args_in(%mr_fosqa_u),
+    %mr_fosqa_n : length(%mr_fosqa_args),
+    %mr_fosqa_i : 0,
+    %mr_fosqa_lst : [%mr_fosqa_v],
+    %mr_fosqa_ok : true,
+    while %mr_fosqa_ok and %mr_fosqa_i < %mr_fosqa_n do (
+      %mr_fosqa_i : %mr_fosqa_i + 1,
+      %mr_fosqa_lst : %mr_functionOfSquareRootOfQuadraticAux(
+                        part(%mr_fosqa_args, %mr_fosqa_i),
+                        first(%mr_fosqa_lst), x),
+      if atom(%mr_fosqa_lst) then %mr_fosqa_ok : false
+    ),
+    if %mr_fosqa_ok then %mr_fosqa_lst else false
+  )
+  else false)$
+
+/* Rubi :5119 SquareRootOfQuadraticSubst[u,vv,xx,x]: the else-branch
+   Map[Function[..],u] is, under inflag : true, apply(op(u), map(f,
+   args(u))) (capture trap 2, the house idiom cited at this file's
+   line ~9). */
+%mr_squareRootOfQuadraticSubst(%mr_sqs_u, %mr_sqs_vv, %mr_sqs_xx, x) :=
+  block([inflag : true],
+  if atom(%mr_sqs_u) or freeof(x, %mr_sqs_u) then
+    (if is(%mr_sqs_u = x) then %mr_sqs_xx else %mr_sqs_u)
+  elseif %mr_powerQ(%mr_sqs_u) and freeof(x, part(%mr_sqs_u, 2)) then (
+    if %mr_fractionQ(part(%mr_sqs_u, 2))
+       and is(denom(part(%mr_sqs_u, 2)) = 2)
+       and %mr_polynomialQ(part(%mr_sqs_u, 1), x)
+       and is(%mr_degree(part(%mr_sqs_u, 1), x) = 2)
+    then %mr_sqs_vv^num(part(%mr_sqs_u, 2))
+    else %mr_squareRootOfQuadraticSubst(
+           part(%mr_sqs_u, 1), %mr_sqs_vv, %mr_sqs_xx, x)^part(%mr_sqs_u, 2)
+  )
+  else apply(op(%mr_sqs_u),
+             map(lambda([%mr_sqs_t],
+                        %mr_squareRootOfQuadraticSubst(
+                          %mr_sqs_t, %mr_sqs_vv, %mr_sqs_xx, x)),
+                 %mr_args_in(%mr_sqs_u))))$
+
+/* Rubi :5071-5100 FunctionOfSquareRootOfQuadratic[u,x] (the 2-arg
+   entry): the three Euler-substitution branches (c>0, a>0, else) in
+   upstream order, tagged 2/1/3. FullSimplify in the third branch is
+   ratsimp (the translation table's row); Simplify is %mr_simp. */
+%mr_functionOfSquareRootOfQuadratic(%mr_fosq_u, x) := block(
+  [inflag : true, %mr_fosq_lst, %mr_fosq_tmp, %mr_fosq_a, %mr_fosq_b,
+   %mr_fosq_c, %mr_fosq_sqrt, %mr_fosq_q, %mr_fosq_r],
+  if %mr_fosq_excludedQ(%mr_fosq_u, x) then false
+  else (
+    %mr_fosq_lst : %mr_functionOfSquareRootOfQuadraticAux(%mr_fosq_u, false, x),
+    if atom(%mr_fosq_lst) or %mr_falseQ(first(%mr_fosq_lst)) then false
+    else (
+      %mr_fosq_tmp : first(%mr_fosq_lst),
+      %mr_fosq_a : %mr_coeff(%mr_fosq_tmp, x, 0),
+      %mr_fosq_b : %mr_coeff(%mr_fosq_tmp, x, 1),
+      %mr_fosq_c : %mr_coeff(%mr_fosq_tmp, x, 2),
+      if (%mr_eqQ(%mr_fosq_a, 0) and %mr_eqQ(%mr_fosq_b, 0))
+         or %mr_eqQ(%mr_fosq_b^2 - 4*%mr_fosq_a*%mr_fosq_c, 0)
+      then false
+      elseif %mr_posQ(%mr_fosq_c) then (
+        %mr_fosq_sqrt : %mr_rt(%mr_fosq_c, 2),
+        %mr_fosq_q : %mr_fosq_a*%mr_fosq_sqrt + %mr_fosq_b*x
+                       + %mr_fosq_sqrt*x^2,
+        %mr_fosq_r : %mr_fosq_b + 2*%mr_fosq_sqrt*x,
+        [%mr_simp(%mr_squareRootOfQuadraticSubst(%mr_fosq_u,
+                    %mr_fosq_q / %mr_fosq_r, (-%mr_fosq_a + x^2) / %mr_fosq_r,
+                    x)
+                  * %mr_fosq_q / %mr_fosq_r^2),
+         %mr_simp(%mr_fosq_sqrt*x + sqrt(%mr_fosq_tmp)),
+         2]
+      )
+      elseif %mr_posQ(%mr_fosq_a) then (
+        %mr_fosq_sqrt : %mr_rt(%mr_fosq_a, 2),
+        %mr_fosq_q : %mr_fosq_c*%mr_fosq_sqrt - %mr_fosq_b*x
+                       + %mr_fosq_sqrt*x^2,
+        %mr_fosq_r : %mr_fosq_c - x^2,
+        [%mr_simp(%mr_squareRootOfQuadraticSubst(%mr_fosq_u,
+                    %mr_fosq_q / %mr_fosq_r,
+                    (-%mr_fosq_b + 2*%mr_fosq_sqrt*x) / %mr_fosq_r, x)
+                  * %mr_fosq_q / %mr_fosq_r^2),
+         %mr_simp((-%mr_fosq_sqrt + sqrt(%mr_fosq_tmp)) / x),
+         1]
+      )
+      else (
+        %mr_fosq_sqrt : %mr_rt(%mr_fosq_b^2 - 4*%mr_fosq_a*%mr_fosq_c, 2),
+        %mr_fosq_r : %mr_fosq_c - x^2,
+        [%mr_simp(-%mr_fosq_sqrt
+                  * %mr_squareRootOfQuadraticSubst(%mr_fosq_u,
+                      -%mr_fosq_sqrt*x / %mr_fosq_r,
+                      -(%mr_fosq_b*%mr_fosq_c + %mr_fosq_c*%mr_fosq_sqrt
+                         + (-%mr_fosq_b + %mr_fosq_sqrt)*x^2)
+                        / (2*%mr_fosq_c*%mr_fosq_r),
+                      x)
+                  * x / %mr_fosq_r^2),
+         ratsimp(2*%mr_fosq_c*sqrt(%mr_fosq_tmp)
+                   / (%mr_fosq_b - %mr_fosq_sqrt + 2*%mr_fosq_c*x)),
+         3]
+      )
+    )
+  ))$
+
 mr_witness_utils() := true$

@@ -139,6 +139,7 @@ run_all_tests() := block([],
   test_section9_g2a(),
   test_section9_g2b(),
   test_section9_g3(),
+  test_section9_g4(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4342,6 +4343,31 @@ test_section9_g3() := block([],
         %mr_powerVariableExpn(sin(x^4)*cos(x^6), 2, x), [x*sin(x^2)*cos(x^3), 2, 1]),
   check("pve: gcd(2,3) = 1 declines", %mr_powerVariableExpn(sin(x^3), 2, x), false),
   check("pve: m not an integer declines", %mr_powerVariableExpn(sin(x^4), 1/2, x), false),
+  true)$
+
+/* Section 9, G4 (spec 2026-09-22 A1): FunctionOfSquareRootOfQuadratic
+   (Rubi :5071, its 3-arg overload :5102), SquareRootOfQuadraticSubst
+   (:5119). The expected values are hand-derived from the upstream
+   definition (plan Task 6). */
+test_section9_g4() := block([r],
+  print("--- section 9 G4: FunctionOfSquareRootOfQuadratic ---"),
+  check("fosq: x^m (a+b x^n)^p is excluded",
+        %mr_functionOfSquareRootOfQuadratic(x^2*sqrt(x^2 + 1), x), false),
+  check("fosq: two different quadratics under roots",
+        %mr_functionOfSquareRootOfQuadratic(sqrt(x^2 + x + 1)*sqrt(x^2 + 2), x), false),
+  check("fosq: a zero discriminant declines",
+        %mr_functionOfSquareRootOfQuadratic(1/sqrt(x^2 + 2*x + 1), x), false),
+  /* c > 0 branch: a = b = c = 1, sqrt = 1, q = 1+x+x^2, r = 1+2x */
+  r : %mr_functionOfSquareRootOfQuadratic(1/(x*sqrt(x^2 + x + 1)), x),
+  check("fosq c>0: the substituted integrand", ratsimp(first(r) - 1/(x^2 - 1)), 0),
+  check("fosq c>0: the substitution", second(r), x + sqrt(x^2 + x + 1)),
+  check("fosq c>0: the branch tag", third(r), 2),
+  /* a > 0 branch: a = 1, b = 1, c = -1, sqrt = 1, r = -1-x^2 */
+  r : %mr_functionOfSquareRootOfQuadratic(1/(x*sqrt(1 + x - x^2)), x),
+  check("fosq a>0: the substituted integrand", ratsimp(first(r) - 1/(2*x - 1)), 0),
+  check("fosq a>0: the substitution",
+        ratsimp(second(r) - (sqrt(-x^2 + x + 1) - 1)/x), 0),
+  check("fosq a>0: the branch tag", third(r), 1),
   true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).
