@@ -238,6 +238,12 @@ RENAME = {
     # generated rewrite table) and its two hand-ported callers.
     "EulerIntegrandQ": "%mr_eulerIntegrandQ",
     "SimplerIntegrandQ": "%mr_simplerIntegrandQ",
+    # section 9 G2b (2026-09-22, task-4 brief): SubstForFractionalPowerQ,
+    # PolynomialInQ, PolynomialInSubst (the AuxQ/Aux helpers are internal,
+    # not generated-rule tokens).
+    "SubstForFractionalPowerQ": "%mr_substForFractionalPowerQ",
+    "PolynomialInQ": "%mr_polynomialInQ",
+    "PolynomialInSubst": "%mr_polynomialInSubst",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.

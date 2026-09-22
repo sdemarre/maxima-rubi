@@ -6633,4 +6633,77 @@ mr_use_gamma_flag : false$
      else true)
   else false)$
 
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :1815 SubstForFractionalPowerQ, :1822 SubstForFractionalPowerAuxQ,
+ * :3223 PolynomialInQ, :3227 PolynomialInAuxQ, :3275 PolynomialInSubst,
+ * :3280 PolynomialInSubstAux. */
+
+/* Rubi :1815 SubstForFractionalPowerQ[u,v,x]: True unless u has a
+   fractional-power subexpression whose base is not v (Catch/Scan/
+   Throw[False] over u's arguments, else True). Scan[..Throw[False]];True
+   is every() over the internal-args list (capture trap 2, %mr_args_in);
+   every([]) = true matches the empty-Scan default. */
+%mr_substForFractionalPowerQ(u, v, x) := block([inflag : true],
+  if atom(u) or freeof(x, u) then true
+  elseif %mr_fractionalPowerQ(u) then %mr_substForFractionalPowerAuxQ(u, v, x)
+  else every(
+    lambda([%mr_sffpq_t], %mr_substForFractionalPowerQ(%mr_sffpq_t, v, x)),
+    %mr_args_in(u)))$
+
+/* Rubi :1822 SubstForFractionalPowerAuxQ[u,v,x]: True iff some
+   subexpression of u is a fractional power of exactly v. Scan[..
+   Throw[True]];False is some() over the internal-args list; some([]) =
+   false matches the empty-Scan default. */
+%mr_substForFractionalPowerAuxQ(u, v, x) := block([inflag : true],
+  if atom(u) then false
+  elseif %mr_fractionalPowerQ(u) and %mr_eqQ(part(u, 1), v) then true
+  else some(
+    lambda([%mr_sffpaq_t], %mr_substForFractionalPowerAuxQ(%mr_sffpaq_t, v, x)),
+    %mr_args_in(u)))$
+
+/* Rubi :3227 PolynomialInAuxQ[u,v,x]: u===v is is(u = v) (SameQ, the
+   %mr_unsameQ precedent, this file's line ~6495); IGtQ is %mr_iGtQ (the
+   RESTRUCTURE "cmp" path's ported positive-integer test,
+   maxima_rubi_utils.mac:711, used by the same-base exponent-ratio and
+   exponent-positivity checks); SumQ/ProductQ's Scan[..Throw[False]];True
+   is every() over the internal-args list (capture trap 2). */
+%mr_polynomialInAuxQ(u, v, x) := block([inflag : true],
+  if is(u = v) then true
+  elseif atom(u) then not is(u = x)
+  elseif %mr_powerQ(u) then
+    (if %mr_powerQ(v) and is(part(u, 1) = part(v, 1))
+       then %mr_iGtQ(part(u, 2) / part(v, 2), 0)
+       else %mr_iGtQ(part(u, 2), 0)
+              and %mr_polynomialInAuxQ(part(u, 1), v, x))
+  elseif %mr_sumQ(u) or %mr_productQ(u) then
+    every(lambda([%mr_piaq_t], %mr_polynomialInAuxQ(%mr_piaq_t, v, x)),
+          %mr_args_in(u))
+  else false)$
+
+/* Rubi :3223 PolynomialInQ[u,v,x]. */
+%mr_polynomialInQ(u, v, x) :=
+  %mr_polynomialInAuxQ(u, %mr_nonfreeFactors(%mr_nonfreeTerms(v, x), x), x)$
+
+/* Rubi :3280 PolynomialInSubstAux[u,v,x]: the else-branch Map[Function[
+   ..],u] is, under inflag : true, apply(op(u), map(f, args(u))) (capture
+   trap 2, the house idiom cited at this file's line ~9). */
+%mr_polynomialInSubstAux(u, v, x) := block([inflag : true],
+  if is(u = v) then x
+  elseif atom(u) then u
+  elseif %mr_powerQ(u) then
+    (if %mr_powerQ(v) and is(part(u, 1) = part(v, 1))
+       then x^(part(u, 2) / part(v, 2))
+       else %mr_polynomialInSubstAux(part(u, 1), v, x)^part(u, 2))
+  else apply(op(u),
+             map(lambda([%mr_pisa_t], %mr_polynomialInSubstAux(%mr_pisa_t, v, x)),
+                 %mr_args_in(u))))$
+
+/* Rubi :3275 PolynomialInSubst[u,v,x]: ReplaceAll[...,{x->...}] is a
+   single-target subst (Maxima's subst is simultaneous, matching
+   Mathematica's ReplaceAll here since there is only the one x-rule). */
+%mr_polynomialInSubst(u, v, x) := block([%mr_pis_w],
+  %mr_pis_w : %mr_nonfreeTerms(v, x),
+  subst((x - %mr_freeTerms(v, x)) / %mr_freeFactors(%mr_pis_w, x), x,
+        %mr_polynomialInSubstAux(u, %mr_nonfreeFactors(%mr_pis_w, x), x)))$
+
 mr_witness_utils() := true$
