@@ -1,6 +1,6 @@
 # The generator's With/Module locals are unprefixed in classes 1/2/3/6 (and mr_sum re-evaluates under them)
 
-Status: fixed (branch fix-mr-sum-capture); one follow-up open (the slowdown below)
+Status: fixed (branch fix-mr-sum-capture, merged 2026-09-22)
 Type: bug (silently wrong antiderivatives)
 Label: needs-triage
 Filed: 2026-09-21 (inert-trig substrate final fix wave, item I2, ruling R28)
@@ -153,11 +153,21 @@ cap, both cores: all 60 verify on the new core.
 
 Net on the same load: class 1 +51 / -9, class 2 +8, classes 3 and 6 0.
 
-## Follow-up: the 13-entry slowdown (open)
+## Follow-up: the 13-entry "slowdown" -- REFUTED (2026-09-22)
 
-Systematic (13/13 in one direction), small, unexplained. Hypothesis, NOT
-measured: a renamed local that is a Sum index or lambda parameter
-(`k` -> `_mr_<key>_r<n>_k`) survives into expressions, and Maxima orders terms
-by symbol name, so later rules see a differently ordered expression and take a
-different (valid, slower) path. Check first: `rubi_verbose` rule traces of
-1.2.1.2 e602 on the two cores (`MR_RULES_CORE_PATH`), diffed.
+The 100 s paired rerun showed the new core slower on 13/13 cap-straddling
+entries (1.02-1.25x). Two direct measurements say it is not the change:
+
+1. `rubi_verbose` traces of 1.2.1.2 e602 on the two cores are IDENTICAL
+   (51,573 lines, same rules in the same order, same answer) -- the
+   term-ordering hypothesis is wrong; both cores do the same work.
+2. Three of the worst entries, run exactly as the driver builds them (answer +
+   verification), one process at a time, old and new cores ALTERNATING, 3
+   repetitions, child CPU from getrusage: median new/old 1.012 (e602), 0.972
+   (1.2.1.2 e1519), 0.996 (1.2.1.4 e831); run-to-run spread on one core ~10 %.
+
+So the 9 class-1 P->F of the paired 30 s run are cap-boundary entries (22-29 s
+of CPU against a 30 s cap), and side-by-side arms are NOT a sound timing A/B on
+this host -- alternate them instead. Net effect of the ticket on the same load:
+class 1 +51 (47 confirmed at 100 s: 40 runaways, 7 wrong answers), class 2 +8,
+classes 3 and 6 unchanged; no cost.
