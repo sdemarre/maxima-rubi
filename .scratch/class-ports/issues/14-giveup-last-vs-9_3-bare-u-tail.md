@@ -119,3 +119,12 @@ has NOT been measured — this repo has no Mathematica. If it does not,
 cause.
 
 Ticket 07 (bare-`u_` records mid-table) is the sibling ordering ticket.
+
+## User decision, 2026-09-23
+
+**Fix it — build the third dispatch tier.** Not shipped as a documented
+regression: the project's measure is Rubi's own PASS counts, and class 3's
+−96 is a real loss against them. Flipping `mr_giveup_last` is ruled out by
+`probes/section9/06-giveup-switch-control.out` (the switch alone loses 64 of a
+seeded 2,000-entry class-1 PASS sample, gains 0). The fix is measured against
+the 189 give-up-bucket entries plus that 2,000-entry control.
