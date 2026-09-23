@@ -52,7 +52,7 @@ for arm in pre post; do
 done
 rec() { ls "$WORK/$1"/*.timeout30s.out 2>/dev/null | head -1; }
 {
-  echo "# section-9 probe 08: class 6 paired, before/after mr_inert_class4_only (ticket 15)"
+  echo "# section-9 probe 08: class 6 paired, before/after the inert-domain guard (ticket 15)"
   echo "# tree $(git rev-parse --short HEAD), $(date +%F), 12+12 workers concurrently, 30 s cpu cap"
   awk '/^fingerprint |^git_rev |^rules /{print "# pre core:  " $0}' "$PRE.stamp"
   awk '/^fingerprint |^git_rev |^rules /{print "# post core: " $0}' "$POST.stamp"

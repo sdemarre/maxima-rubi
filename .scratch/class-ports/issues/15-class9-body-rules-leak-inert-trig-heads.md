@@ -1,6 +1,6 @@
 # 9.3 body rules fire inside the inert-trig domain and leak `%mr_itan` & co into answers — at least 281 class-6 answers, 69 of them previously CORRECT
 
-Status: open
+Status: fixed (c13e213, 2026-09-23); the four-class re-measure is pending with ticket 14
 Type: bug (HIGH — unusable answers; the sharpest defect in the section-9 measurement)
 Filed: 2026-09-23 (section-9 port, Task 14 attribution; spec
 `docs/superpowers/specs/2026-09-22-section9-port-design.md` A6.2)
@@ -104,3 +104,52 @@ zero, and the 39 `verified` / 30 `expected` entries must come back.
   routes through this leak still belongs with the fix, not before it -- the
   e2e gate must stay green until then -- but the gate can now catch it the
   day the fix lands.
+
+## Fix (2026-09-23, commits d7f37dd -> c13e213)
+
+**Shipped: `mr_inert_leak_misfire` (run switch, default true,
+`maxima_rubi_dispatch.lisp`).** In the inert domain -- an integrand that
+carries one of the six inert heads -- a NON-class-4 record whose answer also
+carries one is a misfire in `mr-apply-rule` (beside the boolean-leak
+misfire) and the walk goes on. Class-4 records re-activate as they emit and
+are exempt. By induction on the recursion every answer in the inert domain
+stays inert-free. The witness now routes `9_3 r41 misfire (inert head
+leaked)` -> `4_7_5 r22`, the reference core's route.
+
+**Suggested fix 2 was tried first and is WRONG** (d7f37dd, replaced by
+c13e213): offering an inert integrand to class-4 records ONLY stopped every
+leak but cost 650 class-6 PASS->FAIL against 209 FAIL->PASS
+(`probes/section9/08-inert-guard-class6.class4-only.out`). Its premise --
+nothing but class 4 acts on inert integrands -- was measured on the LEAK set
+only (`probes/section9/07-inert-leak-census.out`: a non-class-4 record fires
+inertly in all 284 finishing leak entries, r41 in 280; the pre-section-9
+core, only 9_1 r11 in 2). Over the 650 losers
+(`07-inert-leak-census.losers-pre.out`) 9_3 r51 (FunctionOfLinear) fires on
+an inert integrand in 612, the 9.1 pull-outs in most of the rest: sound
+records, and section 9's class-6 value. In Mathematica, too, general 9.x
+rules act on an inert integrand whenever no more specific 4.x rule matches;
+r41 is unsound there only because its prefactor keeps `v` outside Int.
+
+**Measured** (`probes/section9/08-inert-guard-class6.out`; records
+`test/section9_t15_class6.{pre,post}.out`): the whole of class 6, PAIRED --
+pre-fix core `fa583d5f` (933a941) and fixed core `0fe237ca` (c13e213)
+concurrently, 12 workers each, 30 s cpu cap, on a host carrying an emulator
+(hence paired, not against the committed records):
+
+- inert-leak answers **280 -> 0**;
+- PASS 2,228 -> 2,388: **164 FAIL->PASS, 4 PASS->FAIL** -- the 4 are
+  `verified -> timeout` at the cap boundary (28.4-30.0 s already in `pre`;
+  r41 still pays for its recursion before it is declined);
+- the ticket's gate: of the 89 entries the leak cost against the reference
+  (`corpus_class6.s9-ref.out` PASS, `.s9.out` error), **all 39 `verified`
+  and all 30 `expected` are back**; of the 20 `no-answer`, 13 are back and 7
+  now read `contains-noun` (no leak).
+
+Gates at c13e213: dispatch 80/0, section-9 e2e 7/0 (the leak witness
+`(2*tanh(1+3*x))^(7/2)`, RED 6/1 with the switch off), rule-table order
+11/0, Layer A 1293/0, no-inert-leak 5/0, mr-match 57/0, mr-tree 58/0,
+generator P3 23/0, run-records 43/0.
+
+Still open: ticket 16 (r41's match-enumeration cost, e190 has no trig) is
+untouched by this fix; ticket 05 (class 4 proper) remains the real closure
+of the inert domain.
