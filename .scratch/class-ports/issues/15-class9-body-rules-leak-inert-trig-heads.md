@@ -91,3 +91,16 @@ zero, and the 39 `verified` / 30 `expected` entries must come back.
 - Ticket 05 (class-4 trigonometric port) — the real fix for the missing layer.
 - Ticket 14 (`mr_giveup_last` vs 9.3's bare-`u_` tail) — 13 of these 89 entries
   are ALSO recovered by that experiment.
+- Ticket 16 (`9_3 r41`'s match-enumeration blowup) — the same record, `9_3
+  r41`, is implicated in both tickets; ticket 16's bisection (`only-r41`
+  hangs on e190) is unrelated to the leak (e190 has no trig in it), so r41
+  is worth looking at first for either defect, but neither ticket's fix
+  necessarily fixes the other.
+- `test/test_section9_e2e.mac`'s `mr_e2e_no_locals` check was blind to this
+  leak (it filtered `listofvars`, and the six inert heads are operators, not
+  variables); it now also rejects any of the six inert heads via `freeof`,
+  pinned independently of the rule set by
+  `test/test_section9_no_inert_leak.mac`'s synthetic witnesses. A target that
+  routes through this leak still belongs with the fix, not before it -- the
+  e2e gate must stay green until then -- but the gate can now catch it the
+  day the fix lands.

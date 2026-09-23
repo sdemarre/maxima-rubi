@@ -21,16 +21,22 @@ mr_load_all()$
 /* |F'(x) - f(x)| at a point: the answer verifies numerically. */
 mr_e2e_resid(mr_f, mr_F, mr_pt) :=
   abs(float(subst(mr_pt, diff(mr_F, x) - mr_f)))$
-/* No rule-local symbol escaped into the answer. Deviation from the brief,
-   added 2026-09-22: 9.3 r18/r22/r23/r24 multiply their answer by two UNBOUND
-   locals (`_mr_9_3_r18_q*_mr_9_3_r18_r*...`, issue 13), which `freeof` of
-   'unintegrable / 'mr_int does not see. Every generated rule local is named
-   `_mr_<key>_r<n>_<name>`, so the check is "no variable starts `_mr_`". */
+/* No rule-local symbol escaped into the answer, and no inert trig head
+   (%mr_isin .. %mr_icsc, issue 15) is loose in it either -- those are
+   OPERATORS, not variables, so a `listofvars` check alone cannot see them.
+   Deviation from the brief, added 2026-09-22: 9.3 r18/r22/r23/r24 multiply
+   their answer by two UNBOUND locals (`_mr_9_3_r18_q*_mr_9_3_r18_r*...`,
+   issue 13), which `freeof` of 'unintegrable / 'mr_int does not see. Every
+   generated rule local is named `_mr_<key>_r<n>_<name>`, so the local check
+   is "no variable starts `_mr_`"; the head check is a `freeof` over the six
+   inert trig operators. */
 mr_e2e_no_locals(mr_F) := block([mr_vs],
   mr_vs : sublist(listofvars(mr_F),
                   lambda([mr_v], block([mr_s], mr_s : sconcat(mr_v),
                     is(slength(mr_s) > 4 and substring(mr_s, 1, 5) = "_mr_")))),
-  is(length(mr_vs) = 0))$
+  is(length(mr_vs) = 0)
+  and is(freeof(%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc,
+                mr_F)))$
 mr_e2e_ok(mr_f, mr_F) :=
   listp(mr_F) and is(length(mr_F) = 1)
   and freeof('unintegrable, 'mr_int, first(mr_F))

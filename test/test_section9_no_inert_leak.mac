@@ -1,0 +1,54 @@
+/* test/test_section9_no_inert_leak.mac -- pins test/test_section9_e2e.mac's
+ * `mr_e2e_no_locals` check itself, independent of the rule set (issue 15:
+ * %mr_isin .. %mr_icsc are OPERATORS, not variables, so a `listofvars`-only
+ * check cannot see them). Synthetic witnesses only, as
+ * test/test_driver_inert_leak.py's Maxima checks do -- this file loads no
+ * rule files and never calls mr_load_all, so it cannot rot when the rule
+ * set changes which entries happen to leak.
+ *
+ * The function body below is a hand-kept copy of
+ * test/test_section9_e2e.mac's `mr_e2e_no_locals`; if that one changes,
+ * mirror the change here.
+ *
+ * From the repo root:  maxima --very-quiet -b test/test_section9_no_inert_leak.mac
+ * Ends with a Results: line; a missing Results line is a failure. */
+display2d : false$
+linel : 10000$
+tests_passed : 0$
+tests_failed : 0$
+check_bool(test_name, actual) := block([v],
+  v : is(actual),
+  if v = true then (tests_passed : tests_passed + 1, print("  PASS: ", test_name))
+  else (tests_failed : tests_failed + 1, print("  FAIL: ", test_name),
+        print("    actual:   ", actual)),
+  true)$
+
+mr_e2e_no_locals(mr_F) := block([mr_vs],
+  mr_vs : sublist(listofvars(mr_F),
+                  lambda([mr_v], block([mr_s], mr_s : sconcat(mr_v),
+                    is(slength(mr_s) > 4 and substring(mr_s, 1, 5) = "_mr_")))),
+  is(length(mr_vs) = 0)
+  and is(freeof(%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc,
+                mr_F)))$
+
+check_bool("clean answer with no rule locals or inert heads passes",
+           mr_e2e_no_locals(-cos(x)))$
+check_bool("a rule-local symbol still fails the check",
+           not mr_e2e_no_locals(x * _mr_9_3_r18_q))$
+check_bool("a top-level inert head fails the check",
+           not mr_e2e_no_locals(%mr_isin(x)^2))$
+check_bool("an inert head nested inside an otherwise clean answer fails",
+           not mr_e2e_no_locals(x/2 - %mr_icos(2*x)/4))$
+check_bool("each of the six inert heads is individually caught",
+           block([mr_heads, mr_ok],
+             mr_heads : [%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec,
+                         %mr_icsc],
+             mr_ok : true,
+             for mr_h in mr_heads do
+               if mr_e2e_no_locals(apply(mr_h, [x])) then mr_ok : false,
+             mr_ok))$
+
+print("")$
+print("========================================")$
+print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$
+print("========================================")$

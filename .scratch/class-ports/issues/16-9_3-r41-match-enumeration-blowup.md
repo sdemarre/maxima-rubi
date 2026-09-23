@@ -77,6 +77,15 @@ Note the 9.3 TAIL also costs about 14 s on this entry on its own (2.09 s ->
 two tickets share a record. A fix that makes r41 unreachable in the inert domain
 does NOT fix this one: e190 has no trig in it.
 
+## Related
+
+- Ticket 15 (class-9 body rules leak inert trig heads) — the same record,
+  `9_3 r41`, is implicated in both tickets: it is the first place to look
+  for either defect. They are not the same bug -- e190 here has no trig in
+  it at all -- and ticket 15 does not claim r41 is the only leaker (five of
+  the six inert heads leak across the 281 `error` entries there), so a fix
+  for one is not expected to fix the other.
+
 ## Suggested next step (not applied here)
 
 Measure the enumeration directly — `mr-match:match` on this pattern against the
