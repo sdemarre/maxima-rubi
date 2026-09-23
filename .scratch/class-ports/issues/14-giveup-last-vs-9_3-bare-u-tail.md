@@ -1,6 +1,6 @@
 # `mr_giveup_last` defers the Unintegrable markers behind 9.3's bare-`u_` tail — 189 PASS→FAIL
 
-Status: open
+Status: fixed (2026-09-23); the four-class re-measure is pending
 Type: bug (faithfulness — rule ordering; the whole of class 3's -96 in the section-9 measurement)
 Filed: 2026-09-23 (section-9 port, Task 14 attribution; spec
 `docs/superpowers/specs/2026-09-22-section9-port-design.md` A6.1)
@@ -128,3 +128,58 @@ regression: the project's measure is Rubi's own PASS counts, and class 3's
 `probes/section9/06-giveup-switch-control.out` (the switch alone loses 64 of a
 seeded 2,000-entry class-1 PASS sample, gains 0). The fix is measured against
 the 189 give-up-bucket entries plus that 2,000-entry control.
+
+## Fix (2026-09-23)
+
+Two run switches in `maxima_rubi_dispatch.lisp`, both default true, and two
+per-rule marks `mr_load_all` sets (`%mr_mark_tail` on
+`mr_rule_table_tail_handles`, `%mr_mark_general` on `mr_rules_9_3`). Under
+`mr_giveup_last` the walk becomes Mathematica's order by specificity
+class, in four passes (`mr-rule-tier`):
+
+1. specific ordinary rules (classes 1/2/3/6, 9.1, 9.2);
+2. the specific give-ups (the 72 markers, 9.3's body give-ups r3/r4);
+3. 9.3's general body, then every bare-`u_` tail record -- the class-4
+   bridge included -- in table order;
+4. the bare-`u_` give-ups: `4_7_5 r72`, then `9_3 r67`.
+
+`mr_last_resort_tier` alone (tail only; the bridge's ordinary records stay
+in pass 1) and `mr_general_after_giveups` (9.3's body AND the bridge to
+pass 3) are separable for A/B.
+
+**`4_7_5 r72` is in pass 4, not 2, on purpose.** It accepts ANY inert
+integrand, so a plain third tier (ordinary -> give-ups -> 9.3 tail) would
+run it before `9_3 r51`, which answers the inert integrand in ~600 class-6
+entries (ticket 15's census).
+
+**Measured, all paired on one core (12 + 12 workers, 30 s cpu cap):**
+
+- `probes/section9/09-last-resort-tier.out` -- tail tier off vs on. The
+  214-entry set (every PASS->FAIL the give-up experiment restored; it
+  contains this ticket's 189): 14 -> 129 PASS, 0 lost. Probe 06's 2,000
+  class-1 control: 0 lost, 1 gained. Of the 74 `no-answer` entries left, the
+  top-level rule was a 9.3 BODY record in 49 (r52 `Int[u_/x,x]`, r54, r46,
+  r53, r49, r41) and the bridge `4_1_0_1 r1` in 24.
+- `probes/section9/10-general-body.bridge-pass1.out` -- first try at the
+  body step, bridge left in pass 1: the bucket +49, but section 9's 1,132
+  FAIL->PASS gains lost 25, 24 of them real slowdowns (0.8-5 s -> timeout,
+  class 6): the bridge had jumped AHEAD of 9.3's body.
+- `probes/section9/10-general-body.out` -- the shipped order (bridge moves
+  with the body): the bucket **+51 / -0 (178 of 214 PASS)**, control
+  unchanged, the 1,132 gains **+2 / -1** (the -1 `expected -> timeout` at
+  29.8 s).
+
+Not recovered (36 of 214): the 8 class-1 `verified -> timeout` entries at
+the cap (a load effect in the section-9 record, not ordering), and entries
+whose top-level route is the bridge `4_1_0_1 r1` -- 9.3 records act inside
+the inert domain before `4_7_5 r72`'s give-up, where Mathematica has a
+specific 4.x rule: that is class 4 proper (ticket 05).
+
+Gates: dispatch 106/0 (+26), section-9 e2e 9/0 (+2: 3.4 e635/e104 answer
+the top-level noun, RED 7/2 with both switches off), rule-table order 13/0
+(+2: the marks equal the lists), Layer A 1293/0, no-inert-leak 5/0,
+mr-match 57/0, mr-tree 58/0, generator P3 23/0, run-records 43/0, harness
+guards unchanged.
+
+The open sub-question above (`%mr_expandIntegrand` vs `SmartApart` on
+`x^2/(x+log(x))`) is untouched.

@@ -314,7 +314,12 @@ mr_load_all() := block([],
                                         mr_rules_4_7_5_tail,
                                         mr_rules_9_3_tail]),
   mr_rule_table : flatten([mr_rule_table_body_handles,
-                           mr_rule_table_tail_handles])
+                           mr_rule_table_tail_handles]),
+  /* the dispatcher's last-resort tier (mr_last_resort_tier, ticket 14)
+     reads the mark, not the list */
+  %mr_mark_tail(mr_rule_table_tail_handles),
+  /* 9.3's body: general patterns (mr_general_after_giveups, ticket 14) */
+  %mr_mark_general(mr_rules_9_3)
 )$
 
 mr_witness_maxima_rubi() := true$

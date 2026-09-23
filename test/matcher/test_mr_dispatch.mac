@@ -258,6 +258,102 @@ test_inert_domain() := block([hleak, hok, hc4, hc4leak, saved],
   check("mr_inert_leak_misfire defaults to true", saved, true),
   true)$
 
+/* The last-resort tier (the mr_last_resort_tier switch, ticket 14). A
+   bare-u_ TAIL record (%mr_mark_tail) is Mathematica's least specific
+   pattern, so the specific give-ups (the Unintegrable markers) outrank it:
+   under mr_giveup_last the walk is ordinary rules, then the specific
+   give-ups, then the tail's ordinary records, then the tail's give-ups.
+   Class-4 tail records are the inert-trig bridge -- domain-guarded, tried
+   in the first pass as before -- so only their give-up (4_7_5 r72) waits
+   for the last tier. */
+test_last_resort() := block([hord, hgu, htail, htgu, hc4, hc4gu, saved, savedg, savedb],
+  print("--- the last-resort tier (mr_last_resort_tier) ---"),
+  saved : mr_last_resort_tier, savedg : mr_giveup_last,
+  /* the TAIL tier alone: the general-body switch (next section) moves the
+     class-4 bridge as well */
+  savedb : mr_general_after_giveups, mr_general_after_giveups : false,
+  hord  : %mr_defrule("1_t", 60, p_xm, t_true, t_42),
+  hgu   : %mr_defrule("3_t", 61, p_xm, t_true, t_unint1),
+  htail : %mr_defrule("9_t", 62, p_xm, t_true, t_7),
+  htgu  : %mr_defrule("9_t", 63, p_xm, t_true, t_unint2),
+  hc4   : %mr_defrule("4_t", 64, p_xm, t_true, t_m),
+  hc4gu : %mr_defrule("4_t", 65, p_xm, t_true, t_unint),
+  check("%mr_mark_tail returns the number of handles marked",
+        %mr_mark_tail([htail, htgu, hc4, hc4gu]), 4),
+  check("%mr_tail_handles reads the marks back, in table order",
+        %mr_tail_handles([hord, htail, hgu, htgu, hc4, hc4gu]), [htail, htgu, hc4, hc4gu]),
+  mr_giveup_last : true, mr_last_resort_tier : true,
+  check("a specific give-up outranks a tail ordinary record",
+        %mr_dispatch_tree(x^3, x, [htail, hgu], 1), mr_unintegrable(1, x)),
+  check("an ordinary rule still outranks the specific give-up",
+        %mr_dispatch_tree(x^3, x, [htail, hgu, hord], 1), 42),
+  check("a tail ordinary record outranks a tail give-up",
+        %mr_dispatch_tree(x^3, x, [htgu, htail], 1), 7),
+  check("a class-4 tail ordinary record stays in the first pass",
+        %mr_dispatch_tree(x^3, x, [hgu, hc4], 1), 3),
+  check("a class-4 tail give-up waits for the last tier",
+        %mr_dispatch_tree(x^3, x, [hc4gu, htail], 1), 7),
+  check("tail give-ups keep their table order",
+        %mr_dispatch_tree(x^3, x, [hc4gu, htgu], 1), mr_unintegrable(3, x)),
+  mr_last_resort_tier : false,
+  check("mr_last_resort_tier false: the tail ordinary record wins pass 1",
+        %mr_dispatch_tree(x^3, x, [htail, hgu], 1), 7),
+  mr_last_resort_tier : true, mr_giveup_last : false,
+  check("mr_giveup_last false: load order, whatever the tier switch",
+        %mr_dispatch_tree(x^3, x, [htail, hgu], 1), 7),
+  mr_giveup_last : savedg, mr_last_resort_tier : saved,
+  mr_general_after_giveups : savedb,
+  check("mr_last_resort_tier defaults to true", saved, true),
+  check("%mr_mark_tail on a non-handle is an error", errcatch(%mr_mark_tail([10^9])), []),
+  check("%mr_tail_handles wrong arity is an error", errcatch(%mr_tail_handles()), []),
+  true)$
+
+/* The general body records (the mr_general_after_giveups switch, ticket
+   14). %mr_mark_general flags BODY records whose patterns are general enough
+   that Mathematica's specificity order puts the specific give-ups first (9.3's
+   body: u_/x, u_*x^m_., ...). Under the switch their ordinary records join the
+   tail's ordinary records in pass 3, in table order; a general give-up stays a
+   specific give-up (pass 2). */
+t_5(mm, x) := 5$
+test_general_body() := block([hgu, htail, htgu, hgen, hgengu, hc4, saved, savedt, savedg],
+  print("--- general body records (mr_general_after_giveups) ---"),
+  saved : mr_general_after_giveups, savedt : mr_last_resort_tier, savedg : mr_giveup_last,
+  hgu    : %mr_defrule("3_t", 70, p_xm, t_true, t_unint1),
+  htail  : %mr_defrule("9_t", 71, p_xm, t_true, t_7),
+  htgu   : %mr_defrule("9_t", 72, p_xm, t_true, t_unint2),
+  hgen   : %mr_defrule("9_t", 73, p_xm, t_true, t_5),
+  hgengu : %mr_defrule("9_t", 74, p_xm, t_true, t_unint),
+  hc4    : %mr_defrule("4_t", 75, p_xm, t_true, t_m),
+  %mr_mark_tail([htail, htgu, hc4]),
+  check("%mr_mark_general returns the number of handles marked",
+        %mr_mark_general([hgen, hgengu]), 2),
+  check("%mr_general_handles reads the marks back, in table order",
+        %mr_general_handles([htail, hgengu, hgu, hgen]), [hgengu, hgen]),
+  mr_giveup_last : true, mr_last_resort_tier : true,
+  mr_general_after_giveups : false,
+  check("switch false: a general ordinary record wins pass 1",
+        %mr_dispatch_tree(x^3, x, [hgen, hgu], 1), 5),
+  mr_general_after_giveups : true,
+  check("a specific give-up outranks a general ordinary record",
+        %mr_dispatch_tree(x^3, x, [hgen, hgu], 1), mr_unintegrable(1, x)),
+  check("general and tail ordinary records share pass 3, in table order (a)",
+        %mr_dispatch_tree(x^3, x, [hgen, htail], 1), 5),
+  check("general and tail ordinary records share pass 3, in table order (b)",
+        %mr_dispatch_tree(x^3, x, [htail, hgen], 1), 7),
+  check("a general ordinary record outranks a tail give-up",
+        %mr_dispatch_tree(x^3, x, [htgu, hgen], 1), 5),
+  check("the class-4 bridge keeps its place BEHIND a general record",
+        %mr_dispatch_tree(x^3, x, [hgen, hc4], 1), 5),
+  check("the class-4 bridge waits behind the specific give-ups too",
+        %mr_dispatch_tree(x^3, x, [hgu, hc4], 1), mr_unintegrable(1, x)),
+  check("a general give-up stays a specific give-up (pass 2)",
+        %mr_dispatch_tree(x^3, x, [htail, hgengu], 1), mr_unintegrable(3, x)),
+  mr_general_after_giveups : saved, mr_last_resort_tier : savedt, mr_giveup_last : savedg,
+  check("mr_general_after_giveups defaults to true", saved, true),
+  check("%mr_mark_general on a non-handle is an error", errcatch(%mr_mark_general([10^9])), []),
+  check("%mr_general_handles wrong arity is an error", errcatch(%mr_general_handles()), []),
+  true)$
+
 t_fault1(b) := ?error('?storage\-condition)$
 
 test_matchq() := block([B],
@@ -369,6 +465,8 @@ test_bindings()$
 test_entries()$
 test_giveup()$
 test_inert_domain()$
+test_last_resort()$
+test_general_body()$
 test_matchq()$
 test_rewrite()$
 print("")$

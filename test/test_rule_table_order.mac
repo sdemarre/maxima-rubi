@@ -113,6 +113,13 @@ check_bool("the tail is the eight bridge records, then 9.3's eleven, in load ord
    nothing re-orders the tail's other nine around either of them. */
 check_bool("the tail's give-ups are 4.7.5 r72 then 9.3 r67 (Rubi's final catch-all)",
   is(%mr_giveup_handles(mr_rule_table_tail_handles) = [_mr_rule_4_7_5_r72, _mr_rule_9_3_r67]))$
+/* Ticket 14: the dispatcher's last-resort tier (mr_last_resort_tier)
+   reads the per-rule tail MARK mr_load_all sets with %mr_mark_tail, not
+   the list -- so the marked set must be exactly the tail list. */
+check_bool("the rules marked as tail are exactly mr_rule_table_tail_handles",
+  is(%mr_tail_handles(mr_rule_table) = mr_rule_table_tail_handles))$
+check_bool("the rules marked as general are exactly 9.3's body",
+  is(%mr_general_handles(mr_rule_table) = mr_rules_9_3))$
 check_bool("9.3 r67 is the last record of the table",
   is(last(mr_rule_table) = _mr_rule_9_3_r67))$
 

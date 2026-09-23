@@ -97,6 +97,24 @@ check_bool("issue 13 witness: no rule local (_mr_...) escapes into the answer",
            listp(mr_ans) and is(length(mr_ans) = 1)
            and mr_e2e_no_locals(first(mr_ans)))$
 
+/* Issue 14's witnesses: corpus answer Unintegrable, so the faithful outcome
+   is the TOP-LEVEL noun -- the specific marker (3_4 r39 / 3_4 r14) wins at
+   the top. With mr_last_resort_tier and mr_general_after_giveups both false,
+   9.3's bare-u_ tail (9_3 r51 on e635) and general body (9_3 r52 on e104)
+   run first and the marker fires INSIDE the reduced integral
+   (probes/section9/01-giveup-ordering.out; measured RED 2026-09-23). */
+mr_top_noun(mr_f) := block([mr_a],
+  mr_a : errcatch(rubi(mr_f, x)),
+  print("     ", mr_f, " -> ", mr_a),
+  listp(mr_a) and is(length(mr_a) = 1) and not atom(first(mr_a))
+  /* the driver's own top-level noun test (test/corpus_driver.py
+     build_text): the subscripted noun's op compares as a string */
+  and is(string(op(first(mr_a))) = "unintegrable"))$
+check_bool("issue 14: 3.4 e635 answers the top-level Unintegrable noun",
+           mr_top_noun((a + b*log(c*(d + e/(f + g*x))^p))^n))$
+check_bool("issue 14: 3.4 e104 answers the top-level Unintegrable noun",
+           mr_top_noun(1/(x*log(c*(a + b*x^2)^p))))$
+
 print("")$
 print("========================================")$
 print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$

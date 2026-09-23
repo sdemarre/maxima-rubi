@@ -1,0 +1,42 @@
+#!/bin/sh
+# probes/section9/10-general-body.run -- ticket 14, step 2. Two arms on THIS
+# tree's core over the same subsets (see the .py docstring; mr_last_resort_tier on in both), concurrently at
+# 12 workers each, differing only in mr_general_after_giveups. Run detached:
+#   setsid sh probes/section9/10-general-body.run < /dev/null > LOG 2>&1 &
+set -u
+cd "$(dirname "$0")/../.." || exit 1
+P=probes/section9/10-general-body.py
+WORK=${TMPDIR:-/tmp}/mr-s9-probe10
+OUT=probes/section9/10-general-body.out
+sh test/build_rules_core.sh || exit 1
+CORE=$PWD/test/mr_rules.core
+rm -rf "$WORK"; mkdir -p "$WORK"
+python3 "$P" --write-subsets "$WORK/subsets" || exit 1
+# class by class; within a class both arms run concurrently (12 + 12)
+for n in 1 2 3 6; do
+  case $n in 1) sec="1 Algebraic functions";; 2) sec="2 Exponentials";;
+             3) sec="3 Logarithms";; 6) sec="6 Hyperbolic functions";; esac
+  [ -s "$WORK/subsets/subset_class$n.out" ] || continue
+  for arm in tail body; do
+    [ $arm = body ] && SW=true || SW=false
+    d="$WORK/$arm/class$n"; mkdir -p "$d"
+    MR_SWITCHES="mr_general_after_giveups=$SW" MR_RULES_CORE_PATH="$CORE" \
+      python3 test/run_corpus_queue.py "$sec" \
+        --entries-from "$WORK/subsets/subset_class$n.out" --class timeout \
+        --out-dir "$d" --workers 12 --launch > "$d.plan" 2>&1 || { cat "$d.plan"; exit 1; }
+  done
+  for arm in tail body; do
+    for pid in $(awk '{print $2}' "$WORK/$arm/class$n/pids"); do
+      while kill -0 "$pid" 2>/dev/null; do sleep 10; done
+    done
+  done
+done
+{
+  echo "# section-9 probe 10: 9.3 general body after the give-ups (ticket 14), tail vs body, same core"
+  echo "# tree $(git rev-parse --short HEAD), $(date +%F), 12+12 workers concurrently, 30 s cpu cap"
+  awk '/^fingerprint |^git_rev |^rules /{print "# core: " $0}' "$CORE.stamp"
+  echo "# host at end: $(cat /proc/loadavg)"
+  echo
+  python3 "$P" --score "$WORK"
+} > "$OUT" 2>&1
+echo "wrote $OUT"
