@@ -405,9 +405,75 @@ def drop_comment_only_lines(text):
     line is exactly one comment and nothing else, no second `*)` (comment
     or code) anywhere after it. No 9.2/9.3 source line has two comments on
     one line (checked, see the fix-round-1 report), so this had no
-    observed case in the port; the fix guards the general function."""
-    return "\n".join(ln for ln in text.split("\n")
-                     if not _COMMENT_ONLY_LINE.fullmatch(ln))
+    observed case in the port; the fix guards the general function.
+
+    Fix round 2 (final review, section-9 port): dropping a line -- rather
+    than blanking it, as strip_comments would -- loses whatever separator
+    role that line was playing. That is harmless when the comment sits
+    INSIDE a rule whose brackets are not yet balanced (9.2 r12: the run so
+    far is `FreeQ[m,x] && (`, an unclosed paren, so the rule plainly is
+    not over) -- rule_runs was never going to see a legitimate boundary
+    there anyway once the line is gone. It is NOT harmless when the
+    comment sits between two rules whose brackets ARE balanced at that
+    point (rule A is syntactically complete): there, dropping is safe
+    only because the NEXT surviving line reopens its own run on the
+    literal column-0 `Int[` marker, which forcibly closes whatever came
+    before and starts fresh regardless of what got dropped. Two rules
+    separated ONLY by a comment-only line (no blank line) rely on exactly
+    that today (measured neutral on classes 1/2/3/4/6/9,
+    test/check_generated_rules.py) -- but nothing requires the NEXT rule
+    to be so well-behaved in classes not yet ported (5/7/8), e.g. an
+    indented continuation that does not start with `Int[`. Guard it
+    directly: walk the lines tracking bracket depth and whether the run
+    in progress dangles on a bare ':=' (rule_runs' own exception, a
+    comment between ':=' and the rhs); at a comment-only line where the
+    enclosing rule is balanced and not dangling, dropping is safe only if
+    the next surviving line starts with `Int[` -- otherwise two runs would
+    be joined (or one silently lost), and that is a GenError, not a
+    silent corruption."""
+    lines = text.split("\n")
+    is_comment = [bool(_COMMENT_ONLY_LINE.fullmatch(ln)) for ln in lines]
+    if _drop_would_join_runs(lines, is_comment):
+        raise GenError(
+            "drop_comment_only_lines: a comment-only line sits between two "
+            "balanced, non-dangling rule runs whose next line does not "
+            "reopen on Int[ -- dropping it would join or lose a run")
+    return "\n".join(ln for ln, c in zip(lines, is_comment) if not c)
+
+_BRACKET_DELTA = {"[": 1, "(": 1, "{": 1, "]": -1, ")": -1, "}": -1}
+
+def _bracket_delta(line):
+    return sum(_BRACKET_DELTA.get(ch, 0) for ch in line)
+
+def _drop_would_join_runs(lines, is_comment):
+    """See drop_comment_only_lines' fix-round-2 note. `depth` tracks
+    bracket balance since the run's own `Int[` opener; `dangling` mirrors
+    rule_runs' "ends in a bare ':='" exception."""
+    cur_open, depth, dangling = False, 0, False
+    n = len(lines)
+    for i, line in enumerate(lines):
+        if line.startswith("Int["):
+            cur_open, depth = True, _bracket_delta(line)
+            dangling = line.rstrip().endswith(":=")
+            continue
+        if is_comment[i]:
+            if cur_open and depth == 0 and not dangling:
+                j = i + 1
+                while j < n and is_comment[j]:
+                    j += 1
+                nxt = lines[j] if j < n else ""
+                if not nxt.startswith("Int["):
+                    return True
+                cur_open, depth, dangling = False, 0, False
+            continue
+        if not cur_open:
+            continue
+        if line.strip() == "" and depth == 0 and not dangling:
+            cur_open, depth, dangling = False, 0, False
+            continue
+        depth += _bracket_delta(line)
+        dangling = line.rstrip().endswith(":=")
+    return False
 
 _SHOWSTEPS_IF_MULTILINE = "If[TrueQ[$LoadShowSteps],"
 

@@ -38,6 +38,29 @@ check("A2.1 an inline comment is left to strip_comments",
 check("A2.1 code between two comments on one line survives",
       g.drop_comment_only_lines("(* a *) code (* b *)\n"),
       "(* a *) code (* b *)\n")
+# Fix round 2 (final review): a comment-only line that is the SOLE
+# separator between two rules must not be swallowed into one run. Rubi's
+# own column-0 Int[ convention makes this safe today (the second rule's
+# literal Int[ always closes the first run whatever a dropped line leaves
+# behind); this pins that it stays safe, and that a rule NOT opening on
+# Int[ at column 0 is caught loudly instead of silently merged.
+two_rules_no_blank = ("Int[u_,x_Symbol] := u /; FreeQ[u,x]\n"
+                      "(* a stray note *)\n"
+                      "Int[v_,x_Symbol] := v /; FreeQ[v,x]\n")
+out = g.drop_comment_only_lines(two_rules_no_blank)
+check("A2.1 fix round 2: two Int[ rules split by a bare comment stay two runs",
+      len(g.rule_runs(g.strip_comments(out))), 2)
+indented_second_rule = ("Int[u_,x_Symbol] := u /; FreeQ[u,x]\n"
+                        "(* a stray note *)\n"
+                        "  Int[v_,x_Symbol] := v /; FreeQ[v,x]\n")
+try:
+    g.drop_comment_only_lines(indented_second_rule)
+    a21_join_outcome = "no exception raised"
+except SystemExit:
+    a21_join_outcome = "SystemExit"
+check("A2.1 fix round 2: a rule not opening on column-0 Int[ raises "
+      "GenError instead of silently joining two runs",
+      a21_join_outcome, "SystemExit")
 
 # A2.2 -- the multi-line ShowSteps wrapper keeps its plain branch only.
 wrapped = ("If[TrueQ[$LoadShowSteps],\n\n"
