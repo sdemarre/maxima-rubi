@@ -1,0 +1,52 @@
+/* probes/section9/04-route-rules.mac -- the A6.4 witnesses: the ten
+   PASS->FAIL entries whose corpus answer is Unintegrable/CannotIntegrate
+   with a Rubi step count of 0 or 1, and which now take a 9.3 route that
+   leaves the marker INSIDE a partial reduction.
+
+   Every integrand below is the corpus entry's, with its file, entry number
+   and line. Run with 04-route-rules.run on the reference core and the
+   branch core; the deciding rule is the LAST `fired` line of each trace.
+
+   Also records the open sub-question of A6.4 / ticket 14:
+   %mr_expandIntegrand treats log(x) and %e^x as indeterminates when it
+   divides, which is what makes 9_3 r63's SumQ guard true. */
+display2d : false$
+linel : 100000$
+mr_flat_wide : false$
+mr_cond_retry : true$
+mr_model_flags : true$
+mr_nested_fallback : false$
+mr_giveup_last : true$
+mr_max_depth : 16$
+print("build:", build_info())$
+print("rules:", length(mr_rule_table))$
+mr_probe(mr_label, mr_f) := block([mr_r],
+  rubi_verbose : true,
+  print("-- TRACE", mr_label),
+  mr_r : errcatch(rubi(mr_f, x)),
+  rubi_verbose : false,
+  print("ANSWER", mr_label, "|", mr_r),
+  print("TOPLEVEL_NOUN", mr_label, "|",
+        if mr_r = [] then "error"
+        else if atom(first(mr_r)) then "atom"
+        else is(sconcat(op(first(mr_r))) = "unintegrable")),
+  print("CARRIES_MARKER", mr_label, "|",
+        if mr_r = [] then "error" else not freeof('unintegrable, first(mr_r))))$
+mr_probe("1.3.2-e760", F(x)*sqrt(1-x)*sqrt(x))$
+mr_probe("1.3.2-e761", F(x)/(sqrt(1-x)*sqrt(x)))$
+mr_probe("2.3-e758",   x/(%e^x+x))$
+mr_probe("3.5-e286",   x^2/(x+log(x)))$
+mr_probe("3.5-e287",   x/(x+log(x)))$
+mr_probe("3.5-e290",   1/(x^2*(x+log(x))))$
+mr_probe("6.7.1-e1014", cosh(a+b*x)*F(c,d,sinh(a+b*x),r,s))$
+mr_probe("6.7.1-e1015", F(c,d,cosh(a+b*x),r,s)*sinh(a+b*x))$
+mr_probe("6.7.1-e1016", F(c,d,tanh(a+b*x),r,s)*sech(a+b*x)^2)$
+mr_probe("6.7.1-e1017", csch(a+b*x)^2*F(c,d,coth(a+b*x),r,s))$
+/* the open sub-question: is the SumQ guard of 9_3 r63 true here because
+   %mr_expandIntegrand divides with a non-polynomial subexpression as an
+   indeterminate? (Whether Mathematica's SmartApart does the same on these
+   inputs is NOT measured here.) */
+print("EXPANDINTEGRAND x^2/(x+log(x)) |", %mr_expandIntegrand(x^2/(x+log(x)), x),
+      "| SumQ:", %mr_sumQ(%mr_expandIntegrand(x^2/(x+log(x)), x)))$
+print("EXPANDINTEGRAND x/(%e^x+x) |", %mr_expandIntegrand(x/(%e^x+x), x),
+      "| SumQ:", %mr_sumQ(%mr_expandIntegrand(x/(%e^x+x), x)))$

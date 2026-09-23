@@ -21,10 +21,15 @@ Inputs, all committed under test/:
                                   PASS->FAIL entries with mr_giveup_last=false
                                   (12 workers, 30 s cpu cap) -- the experiment
                                   that isolates the give-up ordering cause
-  section9_timing_ab.out          the ALTERNATING SEQUENTIAL timing A/B (one
-                                  process at a time, ref core then branch core,
-                                  120 s cpu cap) of the entries that stay
-                                  `timeout` on the branch at 12 workers.
+and one probe output:
+
+  ../probes/section9/05-timing-ab.out
+                                  the ALTERNATING SEQUENTIAL timing A/B (one
+                                  entry at a time, one process at a time, ref
+                                  core then branch core, 120 s cpu cap) of the
+                                  entries that stay `timeout` on the branch at
+                                  12 workers, written by
+                                  `sh probes/section9/05-timing-ab.run`.
                                   Concurrent runs never carry a timing claim
                                   (timing-ab-alternate-not-concurrent).
 
@@ -37,8 +42,7 @@ is walked -- never claims an entry the cap decided):
                finishing inside the 30 s cap at under 1.2x the reference cost
                (or, with no timing row, the branch core PASSes it at 12 workers
                in the paired rerun, or the REFERENCE core already fails it
-               there): the 30 s cpu cap and the run's concurrency, not the rule
-               set, decide it.
+               there).
   cost         the same, but the sequential A/B puts the branch at or over the
                30 s cap, or at 1.2x the reference or more.
   inert-leak   the branch answer carries one of the six inert trig heads
@@ -49,6 +53,11 @@ is walked -- never claims an entry the cap decided):
                non-give-up bare-`u_` records.
   route        everything else: a 9.x rule answers first and its answer
                carries an interior noun.
+
+NOTE on the `cap` bucket: every entry in it ALSO returns to a PASS class in the
+give-up experiment, but that arm ran at 12 workers rather than the record's 24,
+so it cannot separate the switch from the lower contention and is not used for
+them. What is claimed for a `cap` entry is only what its own row shows.
 
 The script also prints the OVERLAP between the last two: entries the give-up
 experiment recovers although they are primarily bucketed as inert-leak.
@@ -87,7 +96,7 @@ def leak_set():
 def timing():
     """{(rel, entry): {arm: seconds}} from the alternating sequential A/B."""
     out = {}
-    path = os.path.join(ROOT, "test", "section9_timing_ab.out")
+    path = os.path.join(ROOT, "probes", "section9", "05-timing-ab.out")
     if not os.path.exists(path):
         return out
     rx = re.compile(r"^(ref|new)\s+(\S+)\s+t=\s*([\d.]+)s\s+(.*) e(\d+) L\d+\s*$")
@@ -162,7 +171,7 @@ def main():
                     extra = ""
                     if cause in ("cost", "cap") and k in times:
                         t = times[k]
-                        extra = ("  [sequential 120 s cap: ref "
+                        extra = ("  [probe 05, sequential 120 s cap: ref "
                                  f"{t.get('ref', ('?', 0))[1]}s {t.get('ref', ('?',))[0]},"
                                  f" branch {t.get('new', ('?', 0))[1]}s"
                                  f" {t.get('new', ('?',))[0]}]")

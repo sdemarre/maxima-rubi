@@ -1,0 +1,65 @@
+/* probes/section9/03-r41-bisect.mac -- the A6.3 / ticket 16 bisection:
+   which 9.3 record turns 1 Algebraic functions/1.3 Miscellaneous/1.3.1
+   Rational functions.mac e190 (L273) x*(2*c+3*d*x)*(a+c*x^2+d*x^3)^n from
+   1.7 s on the reference core into more than 120 s on the branch.
+
+   Runs on the BRANCH core only: it removes handles from mr_rule_table and
+   times rubi() for each subset. %mr_probe_budget (seconds) bounds each
+   arm -- an arm that exceeds it is reported HUNG and the probe moves on,
+   because Maxima has no per-call timeout and the blocking arms do not
+   return at all. The bound is enforced by 03-r41-bisect.run, which runs
+   ONE arm per Maxima process under `timeout`; this file takes the arm's
+   name from mr_probe_arm. */
+display2d : false$
+linel : 100000$
+mr_flat_wide : false$
+mr_cond_retry : true$
+mr_model_flags : true$
+mr_nested_fallback : false$
+mr_giveup_last : true$
+mr_max_depth : 16$
+mr_f : x*(2*c+3*d*x)*(a+c*x^2+d*x^3)^n$
+mr_full : mr_rule_table$
+mr_body : mr_rules_9_3$
+mr_tail : mr_rules_9_3_tail$
+/* the arm's KEPT 9.3 handles; everything else in 9.3 is removed */
+mr_keep : if     is(mr_probe_arm = "all-9_3-out")   then []
+          elseif is(mr_probe_arm = "body-out")      then mr_tail
+          elseif is(mr_probe_arm = "tail-out")      then mr_body
+          elseif is(mr_probe_arm = "body-first-28") then firstn(mr_body, 28)
+          elseif is(mr_probe_arm = "block-r30-r36") then
+            [_mr_rule_9_3_r30, _mr_rule_9_3_r31, _mr_rule_9_3_r32,
+             _mr_rule_9_3_r33, _mr_rule_9_3_r34, _mr_rule_9_3_r35,
+             _mr_rule_9_3_r36]
+          elseif is(mr_probe_arm = "block-r39-r45") then
+            [_mr_rule_9_3_r39, _mr_rule_9_3_r40, _mr_rule_9_3_r41,
+             _mr_rule_9_3_r42, _mr_rule_9_3_r43, _mr_rule_9_3_r44,
+             _mr_rule_9_3_r45]
+          elseif is(mr_probe_arm = "block-r46-r53") then
+            [_mr_rule_9_3_r46, _mr_rule_9_3_r47, _mr_rule_9_3_r48,
+             _mr_rule_9_3_r49, _mr_rule_9_3_r50, _mr_rule_9_3_r52,
+             _mr_rule_9_3_r53]
+          elseif is(mr_probe_arm = "block-r54-r65") then
+            [_mr_rule_9_3_r54, _mr_rule_9_3_r58, _mr_rule_9_3_r59,
+             _mr_rule_9_3_r60, _mr_rule_9_3_r61, _mr_rule_9_3_r64,
+             _mr_rule_9_3_r65]
+          elseif is(mr_probe_arm = "only-r39") then [_mr_rule_9_3_r39]
+          elseif is(mr_probe_arm = "only-r40") then [_mr_rule_9_3_r40]
+          elseif is(mr_probe_arm = "only-r41") then [_mr_rule_9_3_r41]
+          elseif is(mr_probe_arm = "only-r42") then [_mr_rule_9_3_r42]
+          elseif is(mr_probe_arm = "only-r43") then [_mr_rule_9_3_r43]
+          elseif is(mr_probe_arm = "only-r44") then [_mr_rule_9_3_r44]
+          elseif is(mr_probe_arm = "only-r45") then [_mr_rule_9_3_r45]
+          elseif is(mr_probe_arm = "none-removed") then append(mr_body, mr_tail)
+          else error("unknown arm", mr_probe_arm)$
+mr_drop : sublist(append(mr_body, mr_tail),
+                  lambda([mr_h], not member(mr_h, mr_keep)))$
+mr_rule_table : sublist(mr_full, lambda([mr_h], not member(mr_h, mr_drop)))$
+print("build:", build_info())$
+block([mr_t0, mr_r],
+  mr_t0 : elapsed_run_time(),
+  mr_r : errcatch(rubi(mr_f, x)),
+  print("ARM", mr_probe_arm, "| kept_9_3:", length(mr_keep),
+        "| table:", length(mr_rule_table),
+        "| seconds:", float(elapsed_run_time() - mr_t0),
+        "| answer:", mr_r))$

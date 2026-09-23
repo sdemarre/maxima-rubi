@@ -1,0 +1,25 @@
+#!/bin/sh
+# probes/section9/04-route-rules.run -- spec A6.4 / ticket 14.
+# Two rules-core runs (~2 min), stdin /dev/null (AGENTS.md ldb trap).
+# The reference core has no class-9 rules, so its EXPANDINTEGRAND lines
+# still print: %mr_expandIntegrand is a utility, not a rule.
+#
+#   sh probes/section9/04-route-rules.run
+cd "$(dirname "$0")/../.." || exit 1
+REF=../mr-s9-ref/test/mr_rules.core
+NEW=test/mr_rules.core
+M=probes/section9/04-route-rules.mac
+arm() {
+  echo "=== $2 (core $1)"
+  [ -f "$1" ] || { echo "MISSING CORE $1 -- see spec A6 for how it was built"; return; }
+  awk '/^fingerprint |^rules /{print "  stamp: " $0}' "$1.stamp"
+  sbcl --tls-limit 100000 --core "$1" --noinform --very-quiet -b "$M" </dev/null 2>&1 \
+    | grep -E '^(build:|rules:|-- TRACE|ANSWER|TOPLEVEL_NOUN|CARRIES_MARKER|EXPANDINTEGRAND)|rubi: rule [0-9_]+ r[0-9]+ fired'
+}
+{
+  echo "# section-9 probe 04: the ten route PASS->FAIL entries"
+  echo "# tree $(git rev-parse --short HEAD), $(date +%F)"
+  arm "$REF" reference
+  arm "$NEW" branch
+} > probes/section9/04-route-rules.out 2>&1
+echo "wrote probes/section9/04-route-rules.out"

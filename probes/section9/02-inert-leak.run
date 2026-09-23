@@ -1,0 +1,23 @@
+#!/bin/sh
+# probes/section9/02-inert-leak.run -- spec A6.2 / ticket 15.
+# Two rules-core runs (~1 min), stdin /dev/null (AGENTS.md ldb trap).
+#
+#   sh probes/section9/02-inert-leak.run
+cd "$(dirname "$0")/../.." || exit 1
+REF=../mr-s9-ref/test/mr_rules.core
+NEW=test/mr_rules.core
+M=probes/section9/02-inert-leak.mac
+arm() {
+  echo "=== $2 (core $1)"
+  [ -f "$1" ] || { echo "MISSING CORE $1 -- see spec A6 for how it was built"; return; }
+  awk '/^fingerprint |^rules /{print "  stamp: " $0}' "$1.stamp"
+  sbcl --tls-limit 100000 --core "$1" --noinform --very-quiet -b "$M" </dev/null 2>&1 \
+    | grep -E '^(build:|rules:|-- TRACE|ANSWER|INERT_LEAK|RATSIMP_SELF_DIFF_ZERO)|rubi: rule [0-9_]+ r[0-9]+ fired'
+}
+{
+  echo "# section-9 probe 02: the inert-trig head leak witness"
+  echo "# tree $(git rev-parse --short HEAD), $(date +%F)"
+  arm "$REF" reference
+  arm "$NEW" branch
+} > probes/section9/02-inert-leak.out 2>&1
+echo "wrote probes/section9/02-inert-leak.out"

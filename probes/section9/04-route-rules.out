@@ -1,0 +1,147 @@
+# section-9 probe 04: the ten route PASS->FAIL entries
+# tree f547a03, 2026-09-23
+=== reference (core ../mr-s9-ref/test/mr_rules.core)
+  stamp: fingerprint 0182d32ce35fda4b93d3f33d2ad8b43a
+  stamp: rules 3911
+build: %build_info("branch_5_50_base_84_g4204fb669","2026-08-31 13:27:47","x86_64-pc-linux-gnu","SBCL","2.6.7","/home/serge/.maxima","/tmp","/home/serge/.maxima/binary/branch_5_50_base_84_g4204fb669/sbcl/2_6_7",false,false) 
+rules: 3911 
+-- TRACE 1.3.2-e760 
+ANSWER 1.3.2-e760 | ['unintegrable[sqrt(1-x)*sqrt(x)*F(x),x]] 
+TOPLEVEL_NOUN 1.3.2-e760 | true 
+CARRIES_MARKER 1.3.2-e760 | true 
+-- TRACE 1.3.2-e761 
+ANSWER 1.3.2-e761 | ['unintegrable[F(x)/(sqrt(1-x)*sqrt(x)),x]] 
+TOPLEVEL_NOUN 1.3.2-e761 | true 
+CARRIES_MARKER 1.3.2-e761 | true 
+-- TRACE 2.3-e758 
+ANSWER 2.3-e758 | ['unintegrable[x/(x+%e^x),x]] 
+TOPLEVEL_NOUN 2.3-e758 | true 
+CARRIES_MARKER 2.3-e758 | true 
+-- TRACE 3.5-e286 
+ANSWER 3.5-e286 | ['unintegrable[x^2/(log(x)+x),x]] 
+TOPLEVEL_NOUN 3.5-e286 | true 
+CARRIES_MARKER 3.5-e286 | true 
+-- TRACE 3.5-e287 
+ANSWER 3.5-e287 | ['unintegrable[x/(log(x)+x),x]] 
+TOPLEVEL_NOUN 3.5-e287 | true 
+CARRIES_MARKER 3.5-e287 | true 
+-- TRACE 3.5-e290 
+ANSWER 3.5-e290 | ['unintegrable[1/(x^2*(log(x)+x)),x]] 
+TOPLEVEL_NOUN 3.5-e290 | true 
+CARRIES_MARKER 3.5-e290 | true 
+-- TRACE 6.7.1-e1014 
+ANSWER 6.7.1-e1014 | ['unintegrable[F(c,d,sinh(b*x+a),r,s)*cosh(b*x+a),x]] 
+TOPLEVEL_NOUN 6.7.1-e1014 | true 
+CARRIES_MARKER 6.7.1-e1014 | true 
+-- TRACE 6.7.1-e1015 
+ANSWER 6.7.1-e1015 | ['unintegrable[F(c,d,cosh(b*x+a),r,s)*sinh(b*x+a),x]] 
+TOPLEVEL_NOUN 6.7.1-e1015 | true 
+CARRIES_MARKER 6.7.1-e1015 | true 
+-- TRACE 6.7.1-e1016 
+ANSWER 6.7.1-e1016 | ['unintegrable[F(c,d,tanh(b*x+a),r,s)*sech(b*x+a)^2,x]] 
+TOPLEVEL_NOUN 6.7.1-e1016 | true 
+CARRIES_MARKER 6.7.1-e1016 | true 
+-- TRACE 6.7.1-e1017 
+ANSWER 6.7.1-e1017 | ['unintegrable[F(c,d,coth(b*x+a),r,s)*csch(b*x+a)^2,x]] 
+TOPLEVEL_NOUN 6.7.1-e1017 | true 
+CARRIES_MARKER 6.7.1-e1017 | true 
+EXPANDINTEGRAND x^2/(x+log(x)) | log(x)^2/(log(x)+x)-log(x)+x | SumQ: true 
+EXPANDINTEGRAND x/(%e^x+x) | 1-%e^x/(x+%e^x) | SumQ: true 
+=== branch (core test/mr_rules.core)
+  stamp: fingerprint 434c241ad6c11e1b152b9b1bc1469214
+  stamp: rules 3997
+build: %build_info("branch_5_50_base_84_g4204fb669","2026-08-31 13:27:47","x86_64-pc-linux-gnu","SBCL","2.6.7","/home/serge/.maxima","/tmp","/home/serge/.maxima/binary/branch_5_50_base_84_g4204fb669/sbcl/2_6_7",false,false) 
+rules: 3997 
+-- TRACE 1.3.2-e760 
+rubi: rule 9_3 r67 fired on x^2*sqrt(1-x^2)*F(x^2) with [_mr_9_3_r67_u = x^2*sqrt(1-x^2)*F(x^2)]
+rubi: rule 9_3 r54 fired on sqrt(1-x)*sqrt(x)*F(x) with [_mr_9_3_r54_m = 1/2,_mr_9_3_r54_Fx = sqrt(1-x)*F(x)]
+ANSWER 1.3.2-e760 | [2*'unintegrable[sqrt(1-x)*x*F(x),sqrt(x)]] 
+TOPLEVEL_NOUN 1.3.2-e760 | false 
+CARRIES_MARKER 1.3.2-e760 | true 
+-- TRACE 1.3.2-e761 
+rubi: rule 9_3 r67 fired on F(x^2)/sqrt(1-x^2) with [_mr_9_3_r67_u = F(x^2)/sqrt(1-x^2)]
+rubi: rule 9_3 r54 fired on F(x)/(sqrt(1-x)*sqrt(x)) with [_mr_9_3_r54_m = -(1/2),_mr_9_3_r54_Fx = F(x)/sqrt(1-x)]
+ANSWER 1.3.2-e761 | [2*'unintegrable[F(x)/sqrt(1-x),sqrt(x)]] 
+TOPLEVEL_NOUN 1.3.2-e761 | false 
+CARRIES_MARKER 1.3.2-e761 | true 
+-- TRACE 2.3-e758 
+rubi: rule 9_3 r67 fired on %e^x/(x+%e^x) with [_mr_9_3_r67_u = %e^x/(x+%e^x)]
+rubi: rule 1_4_1 r7 fired on 1-%e^x/(x+%e^x) with [_mr_1_4_1_r7_u = 1-%e^x/(x+%e^x)]
+rubi: rule 9_3 r63 fired on x/(x+%e^x) with [_mr_9_3_r63_u = x/(x+%e^x)]
+ANSWER 2.3-e758 | [x-'unintegrable[%e^x/(x+%e^x),x]] 
+TOPLEVEL_NOUN 2.3-e758 | false 
+CARRIES_MARKER 2.3-e758 | true 
+-- TRACE 3.5-e286 
+rubi: rule 9_3 r67 fired on log(x)^2/(log(x)+x) with [_mr_9_3_r67_u = log(x)^2/(log(x)+x)]
+rubi: rule 3_1_1 r1 fired on log(x) with [_mr_3_1_1_r1_n = 1,_mr_3_1_1_r1_c = 1]
+rubi: rule 1_1_1_1 r2 fired on x with [_mr_1_1_1_1_r2_m = 1]
+rubi: rule 1_4_1 r7 fired on log(x)^2/(log(x)+x)-log(x)+x with [_mr_1_4_1_r7_u = log(x)^2/(log(x)+x)-log(x)+x]
+rubi: rule 9_3 r63 fired on x^2/(log(x)+x) with [_mr_9_3_r63_u = x^2/(log(x)+x)]
+ANSWER 3.5-e286 | ['unintegrable[log(x)^2/(log(x)+x),x]-x*log(x)+x^2/2+x] 
+TOPLEVEL_NOUN 3.5-e286 | false 
+CARRIES_MARKER 3.5-e286 | true 
+-- TRACE 3.5-e287 
+rubi: rule 9_3 r67 fired on 1/(log(x)+x) with [_mr_9_3_r67_u = 1/(log(x)+x)]
+rubi: rule 9_3 r67 fired on log(x)/(log(x)+x) with [_mr_9_3_r67_u = log(x)/(log(x)+x)]
+rubi: rule 1_4_1 r7 fired on 1-log(x)/(log(x)+x) with [_mr_1_4_1_r7_u = 1-log(x)/(log(x)+x)]
+rubi: rule 9_3 r63 fired on x/(log(x)+x) with [_mr_9_3_r63_u = x/(log(x)+x)]
+ANSWER 3.5-e287 | [x-'unintegrable[log(x)/(log(x)+x),x]] 
+TOPLEVEL_NOUN 3.5-e287 | false 
+CARRIES_MARKER 3.5-e287 | true 
+-- TRACE 3.5-e290 
+rubi: rule 9_3 r67 fired on 1/(log(x)^3+x*log(x)^2) with [_mr_9_3_r67_u = 1/(log(x)^3+x*log(x)^2)]
+rubi: rule 2_1 r3 fired on %e^-x/x with [_mr_2_1_r3_F = %e,_mr_2_1_r3_f = 1,_mr_2_1_r3_e = 0,_mr_2_1_r3_g = -1,_mr_2_1_r3_d = 1,_mr_2_1_r3_c = 0]
+rubi: rule 3_1_2 r9 fired on 1/(x^2*log(x)) with [_mr_3_1_2_r9_m = -2,_mr_3_1_2_r9_c = 1,_mr_3_1_2_r9_b = 1,_mr_3_1_2_r9_a = 0,_mr_3_1_2_r9_p = -1]
+rubi: rule 1_1_1_1 r2 fired on 1/x^2 with [_mr_1_1_1_1_r2_m = -2]
+rubi: rule 3_1_2 r2 fired on 1/(x*log(x)^2) with [_mr_3_1_2_r2_n = 1,_mr_3_1_2_r2_c = 1,_mr_3_1_2_r2_b = 1,_mr_3_1_2_r2_a = 0,_mr_3_1_2_r2_p = -2]
+rubi: rule 1_4_1 r7 fired on 1/(log(x)^3+x*log(x)^2)+1/(x^2*log(x))-1/(x*log(x)^2) with [_mr_1_4_1_r7_u = 1/(log(x)^3+x*log(x)^2)+1/(x^2*log(x))-1/(x*log(x)^2)]
+rubi: rule 9_3 r63 fired on 1/(x^2*(log(x)+x)) with [_mr_9_3_r63_u = 1/(x^2*(log(x)+x))]
+ANSWER 3.5-e290 | ['unintegrable[1/(log(x)^3+x*log(x)^2),x]+expintegral_ei(-log(x))+1/log(x)] 
+TOPLEVEL_NOUN 3.5-e290 | false 
+CARRIES_MARKER 3.5-e290 | true 
+-- TRACE 6.7.1-e1014 
+rubi: rule 9_3 r67 fired on (F(c,d,sinh(b*x+a),r,s)*cosh(b*x+a))/(x^2+1) with [_mr_9_3_r67_u = (F(c,d,sinh(b*x+a),r,s)*cosh(b*x+a))/(x^2+1)]
+rubi: rule 9_3 r67 fired on (F(c,d,sinh(x),r,s)*cosh(x))/(2*x+2) with [_mr_9_3_r67_u = (F(c,d,sinh(x),r,s)*cosh(x))/(2*x+2)]
+rubi: rule 9_3 r67 fired on (F(c,d,sinh(x),r,s)*cosh(x))/(2*x-2) with [_mr_9_3_r67_u = (F(c,d,sinh(x),r,s)*cosh(x))/(2*x-2)]
+rubi: rule 1_4_1 r7 fired on (F(c,d,sinh(x),r,s)*cosh(x))/(2*x+2)-(F(c,d,sinh(x),r,s)*cosh(x))/(2*x-2) with [_mr_1_4_1_r7_u = (F(c,d,sinh(x),r,s)*cosh(x))/(2*x+2)-(F(c,d,sinh(x),r,s)*cosh(x))/(2*x-2)]
+rubi: rule 9_3 r46 fired on (F(c,d,sinh(x),r,s)*cosh(x))/(1-x^2) with [_mr_9_3_r46_n = 2,_mr_9_3_r46_b = -1,_mr_9_3_r46_a = 1,_mr_9_3_r46_u = F(c,d,sinh(x),r,s)*cosh(x)]
+rubi: rule 9_3 r67 fired on F(c,d,sinh(x),r,s)*cosh(x) with [_mr_9_3_r67_u = F(c,d,sinh(x),r,s)*cosh(x)]
+rubi: rule 9_3 r51 fired on F(c,d,sinh(b*x+a),r,s)*cosh(b*x+a) with [_mr_9_3_r51_u = F(c,d,sinh(b*x+a),r,s)*cosh(b*x+a)]
+ANSWER 6.7.1-e1014 | ['unintegrable[F(c,d,sinh(b*x+a),r,s)*cosh(b*x+a),b*x+a]/b] 
+TOPLEVEL_NOUN 6.7.1-e1014 | false 
+CARRIES_MARKER 6.7.1-e1014 | true 
+-- TRACE 6.7.1-e1015 
+rubi: rule 9_3 r67 fired on (F(c,d,cosh(b*x+a),r,s)*sinh(b*x+a))/(x^2+1) with [_mr_9_3_r67_u = (F(c,d,cosh(b*x+a),r,s)*sinh(b*x+a))/(x^2+1)]
+rubi: rule 9_3 r67 fired on (F(c,d,cosh(x),r,s)*sinh(x))/(2*x+2) with [_mr_9_3_r67_u = (F(c,d,cosh(x),r,s)*sinh(x))/(2*x+2)]
+rubi: rule 9_3 r67 fired on (F(c,d,cosh(x),r,s)*sinh(x))/(2*x-2) with [_mr_9_3_r67_u = (F(c,d,cosh(x),r,s)*sinh(x))/(2*x-2)]
+rubi: rule 1_4_1 r7 fired on (F(c,d,cosh(x),r,s)*sinh(x))/(2*x+2)-(F(c,d,cosh(x),r,s)*sinh(x))/(2*x-2) with [_mr_1_4_1_r7_u = (F(c,d,cosh(x),r,s)*sinh(x))/(2*x+2)-(F(c,d,cosh(x),r,s)*sinh(x))/(2*x-2)]
+rubi: rule 9_3 r46 fired on (F(c,d,cosh(x),r,s)*sinh(x))/(1-x^2) with [_mr_9_3_r46_n = 2,_mr_9_3_r46_b = -1,_mr_9_3_r46_a = 1,_mr_9_3_r46_u = F(c,d,cosh(x),r,s)*sinh(x)]
+rubi: rule 9_3 r67 fired on F(c,d,cosh(x),r,s)*sinh(x) with [_mr_9_3_r67_u = F(c,d,cosh(x),r,s)*sinh(x)]
+rubi: rule 9_3 r51 fired on F(c,d,cosh(b*x+a),r,s)*sinh(b*x+a) with [_mr_9_3_r51_u = F(c,d,cosh(b*x+a),r,s)*sinh(b*x+a)]
+ANSWER 6.7.1-e1015 | ['unintegrable[F(c,d,cosh(b*x+a),r,s)*sinh(b*x+a),b*x+a]/b] 
+TOPLEVEL_NOUN 6.7.1-e1015 | false 
+CARRIES_MARKER 6.7.1-e1015 | true 
+-- TRACE 6.7.1-e1016 
+rubi: rule 9_3 r67 fired on (F(c,d,tanh(b*x+a),r,s)*sech(b*x+a)^2)/(x^2+1) with [_mr_9_3_r67_u = (F(c,d,tanh(b*x+a),r,s)*sech(b*x+a)^2)/(x^2+1)]
+rubi: rule 9_3 r67 fired on (F(c,d,tanh(x),r,s)*sech(x)^2)/(2*x+2) with [_mr_9_3_r67_u = (F(c,d,tanh(x),r,s)*sech(x)^2)/(2*x+2)]
+rubi: rule 9_3 r67 fired on (F(c,d,tanh(x),r,s)*sech(x)^2)/(2*x-2) with [_mr_9_3_r67_u = (F(c,d,tanh(x),r,s)*sech(x)^2)/(2*x-2)]
+rubi: rule 1_4_1 r7 fired on (F(c,d,tanh(x),r,s)*sech(x)^2)/(2*x+2)-(F(c,d,tanh(x),r,s)*sech(x)^2)/(2*x-2) with [_mr_1_4_1_r7_u = (F(c,d,tanh(x),r,s)*sech(x)^2)/(2*x+2)-(F(c,d,tanh(x),r,s)*sech(x)^2)/(2*x-2)]
+rubi: rule 9_3 r46 fired on (F(c,d,tanh(x),r,s)*sech(x)^2)/(1-x^2) with [_mr_9_3_r46_n = 2,_mr_9_3_r46_b = -1,_mr_9_3_r46_a = 1,_mr_9_3_r46_u = F(c,d,tanh(x),r,s)*sech(x)^2]
+rubi: rule 9_3 r67 fired on F(c,d,tanh(x),r,s)*sech(x)^2 with [_mr_9_3_r67_u = F(c,d,tanh(x),r,s)*sech(x)^2]
+rubi: rule 9_3 r51 fired on F(c,d,tanh(b*x+a),r,s)*sech(b*x+a)^2 with [_mr_9_3_r51_u = F(c,d,tanh(b*x+a),r,s)*sech(b*x+a)^2]
+ANSWER 6.7.1-e1016 | ['unintegrable[F(c,d,tanh(b*x+a),r,s)*sech(b*x+a)^2,b*x+a]/b] 
+TOPLEVEL_NOUN 6.7.1-e1016 | false 
+CARRIES_MARKER 6.7.1-e1016 | true 
+-- TRACE 6.7.1-e1017 
+rubi: rule 9_3 r67 fired on (F(c,d,coth(b*x+a),r,s)*csch(b*x+a)^2)/(x^2+1) with [_mr_9_3_r67_u = (F(c,d,coth(b*x+a),r,s)*csch(b*x+a)^2)/(x^2+1)]
+rubi: rule 9_3 r67 fired on (F(c,d,coth(x),r,s)*csch(x)^2)/(2*x+2) with [_mr_9_3_r67_u = (F(c,d,coth(x),r,s)*csch(x)^2)/(2*x+2)]
+rubi: rule 9_3 r67 fired on (F(c,d,coth(x),r,s)*csch(x)^2)/(2*x-2) with [_mr_9_3_r67_u = (F(c,d,coth(x),r,s)*csch(x)^2)/(2*x-2)]
+rubi: rule 1_4_1 r7 fired on (F(c,d,coth(x),r,s)*csch(x)^2)/(2*x+2)-(F(c,d,coth(x),r,s)*csch(x)^2)/(2*x-2) with [_mr_1_4_1_r7_u = (F(c,d,coth(x),r,s)*csch(x)^2)/(2*x+2)-(F(c,d,coth(x),r,s)*csch(x)^2)/(2*x-2)]
+rubi: rule 9_3 r46 fired on (F(c,d,coth(x),r,s)*csch(x)^2)/(1-x^2) with [_mr_9_3_r46_n = 2,_mr_9_3_r46_b = -1,_mr_9_3_r46_a = 1,_mr_9_3_r46_u = F(c,d,coth(x),r,s)*csch(x)^2]
+rubi: rule 9_3 r67 fired on F(c,d,coth(x),r,s)*csch(x)^2 with [_mr_9_3_r67_u = F(c,d,coth(x),r,s)*csch(x)^2]
+rubi: rule 9_3 r51 fired on F(c,d,coth(b*x+a),r,s)*csch(b*x+a)^2 with [_mr_9_3_r51_u = F(c,d,coth(b*x+a),r,s)*csch(b*x+a)^2]
+ANSWER 6.7.1-e1017 | ['unintegrable[F(c,d,coth(b*x+a),r,s)*csch(b*x+a)^2,b*x+a]/b] 
+TOPLEVEL_NOUN 6.7.1-e1017 | false 
+CARRIES_MARKER 6.7.1-e1017 | true 
+EXPANDINTEGRAND x^2/(x+log(x)) | log(x)^2/(log(x)+x)-log(x)+x | SumQ: true 
+EXPANDINTEGRAND x/(%e^x+x) | 1-%e^x/(x+%e^x) | SumQ: true 

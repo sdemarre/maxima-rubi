@@ -1,0 +1,37 @@
+#!/bin/sh
+# probes/section9/06-giveup-switch-control.run -- spec A6.1 / ticket 14.
+# Two BRANCH-core arms over the SAME seeded sample of class-1 entries that
+# pass in the branch record, at the SAME worker count, differing only in
+# mr_giveup_last. ~15 min on a quiet host.
+#
+#   sh probes/section9/06-giveup-switch-control.run [workers]   (default 12)
+set -u
+cd "$(dirname "$0")/../.." || exit 1
+W=${1:-12}
+NEW=$PWD/test/mr_rules.core
+WORK=${TMPDIR:-/tmp}/mr-s9-probe06
+P=probes/section9/06-giveup-switch-control.py
+[ -f "$NEW" ] || { echo "MISSING branch core -- run sh test/build_rules_core.sh"; exit 1; }
+rm -rf "$WORK"; mkdir -p "$WORK"
+python3 "$P" --write-subset "$WORK/subset.out" || exit 1
+for arm in control flipped; do
+  [ "$arm" = control ] && SW=true || SW=false
+  d="$WORK/$arm"; mkdir -p "$d"
+  MR_SWITCHES="mr_giveup_last=$SW" MR_RULES_CORE_PATH="$NEW" \
+    python3 test/run_corpus_queue.py "1 Algebraic functions" \
+      --entries-from "$WORK/subset.out" --class timeout --out-dir "$d" \
+      --workers "$W" --launch > "$d/plan.txt" 2>&1 || exit 1
+  for pid in $(awk '{print $2}' "$d/pids"); do
+    while kill -0 "$pid" 2>/dev/null; do sleep 10; done
+  done
+done
+{
+  echo "# section-9 probe 06: what turning mr_giveup_last OFF costs on class 1"
+  echo "# tree $(git rev-parse --short HEAD), $(date +%F), $W workers, 30 s cpu cap"
+  awk '/^fingerprint |^rules /{print "# branch core: " $0}' "$NEW.stamp"
+  echo "# Both arms are the BRANCH core over the same entries at the same"
+  echo "# worker count; the only difference is mr_giveup_last."
+  echo
+  python3 "$P" --score "$WORK/control" "$WORK/flipped"
+} > probes/section9/06-giveup-switch-control.out 2>&1
+echo "wrote probes/section9/06-giveup-switch-control.out"
