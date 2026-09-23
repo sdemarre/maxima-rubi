@@ -1,0 +1,69 @@
+#!/bin/sh
+# probes/section9/08-inert-guard-class6.run -- ticket 15's acceptance: the
+# whole of class 6, PAIRED, before and after the inert-domain guard.
+#
+# History: the first run (08-inert-guard-class6.class4-only.out, post core at
+# 934d269) measured the FIRST guard, which offered an inert integrand to
+# class-4 records only: 283 -> 0 leaks, but 650 PASS->FAIL / 209 FAIL->PASS.
+# The shipping guard is mr_inert_leak_misfire; this script's current output
+# is 08-inert-guard-class6.out. The `pre` arm's shard headers state the
+# current switch set: the pre-fix dispatcher has no such variable, and the
+# driver's assignment of an unknown Maxima global is inert there.
+#
+# Two cores run CONCURRENTLY over the same entries, 12 workers each (24 in
+# all, as in the spec-A6 arms), so both see the same host load: the pair is
+# fair even on a host that is not quiet, which a comparison against the
+# committed 24-worker records would not be.
+#   pre  : the branch before the guard, a worktree at 933a941 (its core
+#          built there: sh test/build_rules_core.sh)
+#   post : this tree's core (rebuilt here)
+# The gate (ticket 15): no inert-leak answers in `post`; the 39 verified /
+# 30 expected entries the leak cost come back.
+#
+#   sh probes/section9/08-inert-guard-class6.run [pre-worktree]   (default ../mr-t15-pre)
+#   ~30-40 min; run detached (setsid ... < /dev/null &).
+set -u
+cd "$(dirname "$0")/../.." || exit 1
+PRE_TREE=${1:-../mr-t15-pre}
+PRE=$(cd "$PRE_TREE" && pwd)/test/mr_rules.core
+POST=$PWD/test/mr_rules.core
+WORK=${TMPDIR:-/tmp}/mr-s9-probe08
+OUT=probes/section9/08-inert-guard-class6.out
+SEC="6 Hyperbolic functions"
+[ -f "$PRE" ] || { echo "MISSING pre core $PRE"; exit 1; }
+sh test/build_rules_core.sh || exit 1
+rm -rf "$WORK"; mkdir -p "$WORK"
+# every class-6 entry, labelled `timeout` for the subset path
+# (test/section9_changed.py's docstring explains the label)
+awk '/ e[0-9]+ L[0-9]+$/ { sub(/^[a-z-]+ +/, "timeout        "); print }' \
+  test/corpus_class6.s9.out > "$WORK/all.out"
+for arm in pre post; do
+  [ "$arm" = pre ] && core=$PRE || core=$POST
+  mkdir -p "$WORK/$arm"
+  MR_RULES_CORE_PATH="$core" python3 test/run_corpus_queue.py "$SEC" \
+    --entries-from "$WORK/all.out" --class timeout --out-dir "$WORK/$arm" \
+    --workers 12 --launch > "$WORK/$arm.plan" 2>&1 || { cat "$WORK/$arm.plan"; exit 1; }
+done
+for arm in pre post; do
+  for pid in $(awk '{print $2}' "$WORK/$arm/pids"); do
+    while kill -0 "$pid" 2>/dev/null; do sleep 20; done
+  done
+  sh test/wait_timeout_rerun.sh "$WORK/$arm" >> "$WORK/$arm/wait.log" 2>&1
+done
+rec() { ls "$WORK/$1"/*.timeout30s.out 2>/dev/null | head -1; }
+{
+  echo "# section-9 probe 08: class 6 paired, before/after mr_inert_class4_only (ticket 15)"
+  echo "# tree $(git rev-parse --short HEAD), $(date +%F), 12+12 workers concurrently, 30 s cpu cap"
+  awk '/^fingerprint |^git_rev |^rules /{print "# pre core:  " $0}' "$PRE.stamp"
+  awk '/^fingerprint |^git_rev |^rules /{print "# post core: " $0}' "$POST.stamp"
+  echo "# entries: $(wc -l < "$WORK/all.out")"
+  echo "# host at end: $(cat /proc/loadavg)"
+  for arm in pre post; do
+    echo "inert-leak answers, $arm: $(grep -c '^inert-leak ' "$WORK/$arm/queue.log")"
+  done
+  echo
+  python3 test/ab_records.py "$(rec pre)" "$(rec post)" --all
+} > "$OUT" 2>&1
+cp "$(rec pre)" test/section9_t15_class6.pre.out
+cp "$(rec post)" test/section9_t15_class6.post.out
+echo "wrote $OUT"

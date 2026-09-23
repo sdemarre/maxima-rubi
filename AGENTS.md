@@ -233,7 +233,7 @@ maxima --very-quiet -b test/test_section9_e2e.mac < /dev/null
 Green: `Results: 7 passed, 0 failed` (4 at Task 12, spec amendment A5; +2 at
 Task 12b, the r18/r22/r23/r24 condition-assignment idiom; re-measured
 2026-09-23 at Task 14; +1 at ticket 15, the inert-trig leak witness
-`(2*tanh(1+3*x))^(7/2)`, RED with `mr_inert_class4_only:false`). Each target answers, carries no noun and no leaked
+`(2*tanh(1+3*x))^(7/2)`, RED with `mr_inert_leak_misfire:false`). Each target answers, carries no noun and no leaked
 `_mr_` rule local, and verifies numerically at `x = 0.3` and `x = 0.7`.
 **Redirect stdin from `/dev/null`**: a rule set that drives SBCL into a fatal error (heap
 exhaustion is reachable from here — `.scratch/class-ports/issues/11`) lands in
@@ -261,15 +261,15 @@ committed-tail locks, one lock that an uncommitted tail still
 enumerates, one cost test), `Results: 58 passed, 0 failed` (mr-tree;
 46, +5 at Plan 2: CRE input and the booleans, +7 at the inert-trig
 substrate, `53dc578`: the six inert trig heads) and
-`Results: 79 passed, 0 failed`
+`Results: 80 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
 MatchQ pattern prepare rejects is an error, +8 at the final review:
 MatchQ part folding and an out-of-range part error, +1 at Plan 3: the
 switch defaults; +8 more by 2026-09-18, not attributed here; +5 at the
-inert-trig substrate, `e9642a6`: the rewrite records; +8 at ticket 15,
-2026-09-23: the `mr_inert_class4_only` inert-domain guard).
+inert-trig substrate, `e9642a6`: the rewrite records; +9 at ticket 15,
+2026-09-23: the `mr_inert_leak_misfire` inert-leak misfire).
 
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the

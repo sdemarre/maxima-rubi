@@ -17,7 +17,11 @@ the six inert heads is tallied by record. Class-4 records (key 4_*) are the
 bridge and are expected there; everything else is a record running inside
 the inert domain.
 
-  python3 probes/section9/07-inert-leak-census.py [workers]   (default 12)
+  python3 probes/section9/07-inert-leak-census.py [workers [ENTRIES]]
+
+ENTRIES (optional) is any file whose lines name entries as `<rel> e<N>`
+(an ab_records.py PASS->FAIL listing, a record); by default the leak set.
+Workers default to 12.
 """
 
 import os
@@ -35,6 +39,7 @@ sys.argv = _argv
 
 LOG = os.path.join(ROOT, "test", "section9_paired_class6.new", "queue.log")
 LEAK_RX = re.compile(r"^inert-leak (.*) e(\d+) L(\d+): ")
+LIST_RX = re.compile(r"(\d+ [^/]+/.*\.mac) e(\d+)\b")
 FIRE_RX = re.compile(r"^rubi: rule (\S+) r(\d+) fired on (.*?) with \[")
 HEADS = cd.INERT_HEADS
 
@@ -49,13 +54,14 @@ mr_max_depth : 16$
 """
 
 
-def leak_entries():
-    out = []
-    with open(LOG, encoding="utf-8") as fh:
+def leak_entries(path=None):
+    out, seen = [], set()
+    with open(path or LOG, encoding="utf-8") as fh:
         for line in fh:
-            m = LEAK_RX.match(line)
-            if m:
-                out.append((m.group(1), int(m.group(2)), int(m.group(3))))
+            m = LEAK_RX.match(line) if path is None else LIST_RX.search(line)
+            if m and (m.group(1), int(m.group(2))) not in seen:
+                seen.add((m.group(1), int(m.group(2))))
+                out.append((m.group(1), int(m.group(2)), 0))
     return out
 
 
@@ -78,9 +84,10 @@ def run_one(key):
 
 def main():
     workers = int(sys.argv[1]) if len(sys.argv) > 1 else 12
-    keys = leak_entries()
+    src = sys.argv[2] if len(sys.argv) > 2 else None
+    keys = leak_entries(src)
     print(f"# section-9 probe 07: records firing on an inert integrand, "
-          f"over the {len(keys)} leak entries of {os.path.relpath(LOG, ROOT)}")
+          f"over the {len(keys)} entries of {os.path.relpath(src or LOG, ROOT)}")
     print(f"# core: {cd.RULES_CORE}")
     with open(cd.RULES_CORE_STAMP, encoding="utf-8") as fh:
         for line in fh:

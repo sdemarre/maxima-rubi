@@ -71,7 +71,7 @@ defaults.")
 
 ;;; The RUN switches (exact seen test design
 ;;; docs/superpowers/specs/2026-09-15-matcher-seen-test-intpart-design.md
-;;; 3.3; mr_giveup_last and mr_inert_class4_only joined later). Unlike the
+;;; 3.3; mr_giveup_last and mr_inert_leak_misfire joined later). Unlike the
 ;;; three migration switches above these are not hard-wired by
 ;;; p6_hardwire.py: they stay run parameters.
 
@@ -109,26 +109,35 @@ is half of a PAIR with the seen-cut fall-through (maxima_rubi_utils.mac,
 the record's 30 s cap: 318 verified, with 300/300 control entries
 unchanged.")
 
-(defmvar $mr_inert_class4_only t
-  "Run switch: true (default) = %mr_dispatch_tree offers an integrand that
-carries one of the six INERT trig heads (%mr_isin ... %mr_icsc) to class-4
-records only (key \"4_...\"); false = the whole table, in load order.
+(defmvar $mr_inert_leak_misfire t
+  "Run switch: true (default) = in the inert-trig domain a non-class-4
+rule whose answer carries an inert trig head is a MISFIRE (declined like a
+leaked boolean) and the walk goes on; false = the answer stands.
 
-WHY. The inert heads exist only below the class-4 deactivation bridge
-(4_1_0_1 r1, Rubi's Int[u_,x] := Int[DeactivateTrig[u,x],x]), and only
-class-4 records know them: they re-activate as they emit. In Mathematica
-the specific 4.x rules outrank the general 9.x ones on such an integrand,
-so e.g. 9_3 r41 (Int[u_.*(a_.*v_^m_.)^p_,x]) never gets one. The port has
-only class 4's bridge subset, all of it in the TAIL, so without this guard
-9.3's body records reach the deactivated integrand first and emit an
-inert-headed prefactor outside the recursive mr_int, where nothing
-re-activates it (ticket 15). MEASURED 2026-09-23
-(probes/section9/07-inert-leak-census.out): over the 286 class-6 entries
-whose answers leak, a non-class-4 record fires on an inert integrand in
-all 284 that finish (9_3 r41 in 280); on the pre-section-9 core the same
-entries see only class-4 records there, plus 9_1 r11 in 2 (harmless).
-4_7_5 r72, the re-activating give-up, accepts every inert integrand, so
-the class-4-only walk always ends in an answer.")
+The inert domain is an integrand carrying one of Rubi's six inert trig heads
+(%mr_isin ... %mr_icsc); it exists only below the class-4 deactivation
+bridge (4_1_0_1 r1, Int[u_,x] := Int[DeactivateTrig[u,x],x]). Class-4
+records re-activate as they emit and are exempt.
+
+WHY. The port has only class 4's bridge subset, all in the TAIL, so general
+records reach the deactivated integrand before any class-4 one. Most are
+sound there: what they emit outside the recursive mr_int is x-free (9_1's
+pull-outs) or a substitution of it (9_3 r51, FunctionOfLinear), and the
+recursion's own answer is re-activated. 9_3 r41
+(Int[u_.*(a_.*v_^m_.)^p_,x]) is not: its prefactor keeps v -- an inert
+head -- OUTSIDE mr_int, and it reaches the answer (ticket 15). In
+Mathematica a specific 4.x rule outranks r41 there. By induction on the
+recursion, declining every such answer keeps every answer in the inert
+domain inert-free.
+
+MEASURED 2026-09-23 (probes/section9/07, 08): over the 286 leaking class-6
+entries a non-class-4 record fires on an inert integrand in all 284 that
+finish (9_3 r41 in 280). The first guard, offering such an integrand to
+class-4 records ONLY, stopped every leak but cost 650 class-6 PASSes
+against 209 gained: 9_3 r51 fires inertly in 612 of those 650, and the
+9.1 pull-outs in most of the rest -- they are what section 9 bought for
+class 6. This misfire rule was prototyped over the 859 entries that guard
+changed: +151 / -4 against the unguarded branch, zero leaks.")
 
 (defparameter +mr-inert-ops+
   '($%mr_isin $%mr_icos $%mr_itan $%mr_icot $%mr_isec $%mr_icsc)
@@ -144,6 +153,7 @@ is an improper list."
         (t (loop for tail on (cdr e) thereis (mr-carries-inert-p (car tail))))))
 
 (defun mr-class4-rule-p (rule)
+  "True when RULE is a class-4 record (its key starts \"4_\")."
   (let ((key (mr-rule-key rule)))
     (and (stringp key) (> (length key) 1) (string= "4_" key :end2 2))))
 
@@ -354,6 +364,9 @@ decline or misfire)."
                (mr-verbose "rubi: rule ~A r~A declined on ~M with ~M~%" key n f mm) nil)
               ((and $%mr_boolcheck (mr-contains-boolean-p r))
                (mr-verbose "rubi: rule ~A r~A misfire (boolean leaked) on ~M with ~M~%" key n f mm) nil)
+              ((and $mr_inert_leak_misfire (not (mr-class4-rule-p rule))
+                    (mr-carries-inert-p r) (mr-carries-inert-p f))
+               (mr-verbose "rubi: rule ~A r~A misfire (inert head leaked) on ~M with ~M~%" key n f mm) nil)
               (t
                (mr-verbose "rubi: rule ~A r~A fired on ~M with ~M~%" key n f mm) r))))))
 
@@ -373,10 +386,6 @@ marker) and pass 2 tries them, so a give-up catch-all can only win once
 every ordinary rule has declined. See the $mr_giveup_last docstring for what
 that buys and why it changes no Rubi semantics.
 
-Under mr_inert_class4_only (the default) an integrand carrying an inert
-trig head skips every non-class-4 rule in both passes; see that switch's
-docstring.
-
 The reordering is done HERE, over the table the caller hands in, rather than
 by baking a second reordered table at load: test_maxima_rubi.mac swaps its
 own cumulative table into mr_rule_table in ~20 sections, and a table built
@@ -394,23 +403,20 @@ handles (33 of 3,513 in class 1) and only runs when pass 1 found nothing."
     (multiple-value-bind (expr pre) (mr-integrand f x)
       (when expr
         (with-mr-switches
-          (let ((class4-only (and $mr_inert_class4_only (mr-carries-inert-p f))))
           (if (null $mr_giveup_last)
               (dolist (h (cdr table) nil)
-                (let ((rule (mr-rule-of h)))
-                  (unless (and class4-only (not (mr-class4-rule-p rule)))
-                    (let ((r (mr-apply-rule rule expr pre f x)))
-                      (when r (return r))))))
+                (let ((r (mr-apply-rule (mr-rule-of h) expr pre f x)))
+                  (when r (return r))))
               (let ((deferred nil))
                 (or (dolist (h (cdr table) nil)
                       (let ((rule (mr-rule-of h)))
-                        (cond ((and class4-only (not (mr-class4-rule-p rule))))
-                              ((mr-rule-giveup rule) (push rule deferred))
-                              (t (let ((r (mr-apply-rule rule expr pre f x)))
-                                   (when r (return r)))))))
+                        (if (mr-rule-giveup rule)
+                            (push rule deferred)
+                            (let ((r (mr-apply-rule rule expr pre f x)))
+                              (when r (return r))))))
                     (dolist (rule (nreverse deferred) nil)
                       (let ((r (mr-apply-rule rule expr pre f x)))
-                        (when r (return r)))))))))))))
+                        (when r (return r))))))))))))
 
 (defmfun |$%MR_GIVEUP_HANDLES| (&rest args)
   "%mr_giveup_handles(table): the handles of TABLE whose rule is a give-up
