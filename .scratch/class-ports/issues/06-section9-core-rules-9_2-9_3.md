@@ -1,6 +1,6 @@
 # Section 9.2 + 9.3 port — Rubi's always-loaded core rules missing from our table
 
-Status: needs-triage
+Status: done (2026-09-23 — see Resolution)
 Type: task (port, runbook-driven)
 Filed: 2026-09-13 (found while reading P5 run-1 `deferred` entries of
 the matcher substrate, Plan 3; user: port before class 4+)
@@ -118,3 +118,46 @@ to be measured, not ported blind: old `9.4` L58 (pre-renumbering Rubi,
 k*Subst[Int[x^(k*(m+1)-1)*ReplaceAll[u, x->x^k], x], x, x^(1/k)]] /;
 FractionQ[m]`: the general fractional-power substitution, the only old
 left-hand side with no pinned successor (`probes/rubi/04-section9-load-and-legacy.out` §F).
+
+## Resolution (2026-09-23, branch `section9-port`, Tasks 1-14)
+
+Status: **done**. 9.2 (19 rules) and 9.3 (67) are ported and loaded —
+`rules/class9/9_2.mac`, `rules/class9/9_3.mac`, 86 rules, in `Rubi.m` LoadRules
+positions (9.2 right after class 1, 9.3 last of all; `mr_load_all`,
+`maxima_rubi.mac`). The rule table is 3,997 records.
+
+**The measurement and the full attribution are spec amendment A6**,
+`docs/superpowers/specs/2026-09-22-section9-port-design.md` (records in `test/`:
+`corpus_class{1,2,3,6}.s9-ref.out` / `.s9.out`, `section9_ab_class{N}.out`,
+`section9_paired_class{N}.{ref,new}/`, `section9_giveup_arm_class{N}.out`,
+`section9_timing_ab.out`, `section9_attribution.py` / `.out`). Headline, four
+classes, 34,827 entries, reference core `0182d32c` -> branch core `434c241a`:
+**PASS 22,189 -> 23,016 (+827)**, 1,132 FAIL->PASS, 305 PASS->FAIL, all 305
+attributed (A6.0.1).
+
+**This ticket's motivating entry.** `2 Exponentials/2.3` e733
+`(1+%e^x)/(%e^x+x)`: `deferred` -> **`verified`** in 0.4 s, through 9.3's
+derivative-divides rule — the second half of the 2026-09-13 check, as predicted.
+
+**Old 9.4 L58 stays recorded as a candidate legacy addition** (the general
+fractional-power substitution `Int[x_^m_*u_,x] := With[{k=Denominator[m]}, …]
+/; FractionQ[m]`, `probes/rubi/04-section9-load-and-legacy.out` §F). It was NOT
+ported here — the pinned 9.3 has its own `Int[x_^m_*Fx_,x_]` (r54), and A6.4
+shows r54 already changing routes on two entries, so adding another general
+substitution rule needs its own measurement.
+
+**Three defects the measurement found are open as their own tickets**, and two
+of them are recommended as fixes BEFORE the branch merges:
+
+- `14-giveup-last-vs-9_3-bare-u-tail.md` — 189 PASS->FAIL, the whole of class
+  3's -96: `mr_giveup_last` defers classes 1/2/3's `Unintegrable` markers behind
+  9.3's ten non-give-up bare-`u_` tail records.
+- `15-class9-body-rules-leak-inert-trig-heads.md` — 281 class-6 answers carry
+  `%mr_itan` & co, 89 of them previously PASS and 69 previously CORRECT:
+  `9_3 r41` fires inside the class-4 inert-trig domain and its prefactor is
+  never re-activated. **Blocking.**
+- `16-9_3-r41-match-enumeration-blowup.md` — `1.3.1` e190/e238 go from 1.7 s
+  and 6.2 s to over 120 s; the same rule, but through match enumeration.
+
+Tickets 09, 10, 11 and 12 (filed during this port) stay open; ticket 13 (the
+condition-assignment idiom) was fixed in Task 12b.

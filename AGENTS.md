@@ -224,9 +224,10 @@ lives outside Layer A like the rule-table gate:
 maxima --very-quiet -b test/test_section9_e2e.mac < /dev/null
 ```
 
-Green: `Results: 4 passed, 0 failed` (5.4 s, 2026-09-22, spec amendment A5).
-Each target answers, carries no noun and no leaked `_mr_` rule local, and
-verifies numerically at `x = 0.3` and `x = 0.7`. **Redirect stdin from
+Green: `Results: 6 passed, 0 failed` (4 at Task 12, spec amendment A5; +2 at
+Task 12b, the r18/r22/r23/r24 condition-assignment idiom; re-measured
+2026-09-23 at Task 14). Each target answers, carries no noun and no leaked
+`_mr_` rule local, and verifies numerically at `x = 0.3` and `x = 0.7`. **Redirect stdin from
 `/dev/null`**: a rule set that drives SBCL into a fatal error (heap
 exhaustion is reachable from here — `.scratch/class-ports/issues/11`) lands in
 the `ldb` debugger, which then waits on an inherited stdin and is
@@ -273,7 +274,10 @@ re-activating give-up, 4 targets): `Results: 1168 passed, 0 failed`; at
 its final fix wave (the class-4 With-local capture trap, 4 targets,
 `de51845`): `Results: 1172 passed, 0 failed`; at ticket 08 (the capture
 trap in `mr_sum`'s own locals, 5 targets, and in the generated With/Module
-locals of every class, 2 targets): `Results: 1179 passed, 0 failed`. The
+locals of every class, 2 targets): `Results: 1179 passed, 0 failed`; at the
+section-9 port (branch `section9-port`, its Tasks 1-12b: the 9.2/9.3 utility
+units and the condition-assignment idiom):
+**`Results: 1292 passed, 0 failed`**, re-measured 2026-09-23 at Task 14. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -292,9 +296,12 @@ Superseded: `Results: 21 passed, 0 failed` measured 2026-09-21 at the
 inert-trig plan's Task 9 (20 before it; class 4's bridge subset adds one
 check-7 line, the post-P0 class total `post-P0 class 4: 6 rules over 2
 files`; Task 10 keeps 21 and moves that line to `7 rules over 2 files`,
-its fix round 1 to `8 rules over 2 files`). Now `Results: 22 passed, 0
+its fix round 1 to `8 rules over 2 files`); then `Results: 22 passed, 0
 failed` (2026-09-21, ticket 08): the With/Module local prefixing is one more
 closed exception, `undo_local_prefix`, its 1,602 declarations pinned.
+Now **`Results: 23 passed, 0 failed`** (2026-09-22, the section-9 port's
+Task 10: one more check-7 line, `post-P0 class 9: 86 rules over 2 files`;
+re-measured 2026-09-23 at Task 14).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
@@ -313,10 +320,12 @@ ticket `.scratch/class-ports/issues/08`).
 
 The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
 guard, pure Python: `python3 test/test_generator_section9.py` — green
-`Results: 13 passed, 0 failed` (11 at the task; +2 at its fix round 1:
+**`Results: 21 passed, 0 failed`** (re-measured 2026-09-23 at Task 14;
+13 at Task 1: 11 at the task; +2 at its fix round 1:
 the two-comments-on-one-line guard on `drop_comment_only_lines` and the
 bounded, loud `GenError` on a wrapper missing its `SimplifyFlag` line in
-`unwrap_showsteps_multiline`).
+`unwrap_showsteps_multiline`; +8 at Task 12b, the condition-assignment
+idiom's recogniser, hoist order and `GenError` paths).
 
 **Matcher substrate — regression suite** (spec section 4 P1/P2 gates:
 the probe-02 round trip over all 7,444 Rubi LHSs in narrow and wide
