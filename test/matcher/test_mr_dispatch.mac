@@ -221,6 +221,38 @@ test_giveup() := block([hg, h42, hd, hg1, hg2, saved],
   mr_giveup_last : saved,
   true)$
 
+/* The inert-trig domain (the mr_inert_class4_only switch, ticket 15). An
+   integrand carrying one of the six inert trig heads exists only below the
+   class-4 deactivation bridge, and only class-4 records (key "4_...") know
+   those heads: Rubi's specific 4.x rules outrank its general 9.x rules
+   there, and the port has only class 4's bridge subset, so the dispatcher
+   offers such an integrand to class-4 records alone. */
+test_inert_domain() := block([ho, hc4, hc4g, saved],
+  print("--- the inert-trig domain (mr_inert_class4_only) ---"),
+  saved : mr_inert_class4_only,
+  ho   : %mr_defrule("9_t", 50, p_u, t_true, t_42),
+  hc4  : %mr_defrule("4_t", 51, p_u, t_true, t_7),
+  hc4g : %mr_defrule("4_t", 52, p_u, t_true, t_unint1),
+  mr_inert_class4_only : true,
+  check("inert integrand: a non-class-4 record is skipped",
+        %mr_dispatch_tree(%mr_itan(x)^3, x, [ho, hc4], 1), 7),
+  check("inert head below the top: still class 4 only",
+        %mr_dispatch_tree(x*%mr_isin(2*x), x, [ho, hc4], 1), 7),
+  check("inert head inside a CRE integrand: still class 4 only",
+        %mr_dispatch_tree(rat(%mr_itan(x)^3), x, [ho, hc4], 1), 7),
+  check("active integrand: the table order is unchanged",
+        %mr_dispatch_tree(tan(x)^3, x, [ho, hc4], 1), 42),
+  check("inert integrand, no class-4 record: no rule answers",
+        %mr_dispatch_tree(%mr_icsc(x), x, [ho], 1), false),
+  check("inert integrand: a class-4 give-up still answers last",
+        %mr_dispatch_tree(%mr_icos(x), x, [ho, hc4g], 1), mr_unintegrable(1, x)),
+  mr_inert_class4_only : false,
+  check("mr_inert_class4_only false: load order on an inert integrand",
+        %mr_dispatch_tree(%mr_itan(x)^3, x, [ho, hc4], 1), 42),
+  mr_inert_class4_only : saved,
+  check("mr_inert_class4_only defaults to true", saved, true),
+  true)$
+
 t_fault1(b) := ?error('?storage\-condition)$
 
 test_matchq() := block([B],
@@ -331,6 +363,7 @@ test_dispatch()$
 test_bindings()$
 test_entries()$
 test_giveup()$
+test_inert_domain()$
 test_matchq()$
 test_rewrite()$
 print("")$
