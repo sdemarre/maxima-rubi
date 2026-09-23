@@ -227,8 +227,8 @@ maxima --very-quiet -b test/test_section9_e2e.mac < /dev/null
 Green: `Results: 6 passed, 0 failed` (4 at Task 12, spec amendment A5; +2 at
 Task 12b, the r18/r22/r23/r24 condition-assignment idiom; re-measured
 2026-09-23 at Task 14). Each target answers, carries no noun and no leaked
-`_mr_` rule local, and verifies numerically at `x = 0.3` and `x = 0.7`. **Redirect stdin from
-`/dev/null`**: a rule set that drives SBCL into a fatal error (heap
+`_mr_` rule local, and verifies numerically at `x = 0.3` and `x = 0.7`.
+**Redirect stdin from `/dev/null`**: a rule set that drives SBCL into a fatal error (heap
 exhaustion is reachable from here — `.scratch/class-ports/issues/11`) lands in
 the `ldb` debugger, which then waits on an inherited stdin and is
 indistinguishable from a hang. `timeout` does not help either — maxima forks
