@@ -5216,7 +5216,13 @@ mr_use_gamma_flag : false$
  * MEASURED 2026-08-29 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7
  * (fresh TLS-flagged process; the full session is in the task-5 report):
  *  - lcm(2,3) STAYS A NOUN; the working LCM id is abs(d*n)/gcd(d, n)
- *    (gcd(4,6) = 2 evaluates, abs(2*3)/gcd(2,3) = 6);
+ *    (gcd(4,6) = 2 evaluates, abs(2*3)/gcd(2,3) = 6). True as measured
+ *    here (2026-08-29, before "functs" was ever loaded); since the
+ *    guarded `load("functs")` this file's section 9 adds at :6956,
+ *    lcm is a noun no longer once this file has finished loading, but
+ *    %mr_fractionalPowerOfLinear below (this file's twin at line
+ *    ~5476) keeps the abs(d*n)/gcd(d, n) stand-in rather than switch to
+ *    lcm(d, n), so its measured baseline does not move;
  *  - denominator(3/2) STAYS A NOUN while denom(3/2) = 2 / denom(2/3) = 3
  *    / denom(1/2) = 2 / denom(-2/3) = 3 evaluate — denom is the
  *    Denominator reading (the negative-rational "-" wrapper included);
@@ -5471,8 +5477,13 @@ mr_use_gamma_flag : false$
    SAME base); the CalculusQ decline; else the parts scan. The scan's
    Throw[False] is the flag + bare return() idiom (return(value) is
    loop-level — the line-81 note). LCM = abs(d*n)/gcd(d, n) (lcm is a
-   noun — measured); Denominator = denom (denominator is a noun —
-   measured). */
+   noun — measured, before "functs" was loaded); Denominator = denom
+   (denominator is a noun — measured). Since the guarded
+   `load("functs")` this file's section 9 adds at :6956, lcm is no
+   longer a noun once this file has finished loading; the
+   abs(d*n)/gcd(d, n) stand-in stays here anyway (its twin's note at
+   this file's line ~5218) so this function's measured baseline does
+   not move. */
 %mr_fractionalPowerOfLinear(u, n, v, x) := block([i, e, d, lst],
   if atom(u) or freeof(x, u) then [n, v]
   else if %mr_calculusQ(u) then false
