@@ -466,10 +466,32 @@ mr_giveup_last=true mr_max_depth=16`. `build_info()`: Maxima
 **Records.** `test/corpus_class{1,2,3,6}.s9-ref.out` and `.s9.out`; the A/B
 `test/section9_ab_class{1,2,3,6}.out`; the paired rerun of every entry whose
 verdict class changed, both cores concurrently at 12 workers each,
-`test/section9_paired_class{N}.{ref,new}/`; the two attribution experiments
-`test/section9_giveup_arm_class{N}.out` and `test/section9_timing_ab.out`; the
-attribution itself, `python3 test/section9_attribution.py` ->
-`test/section9_attribution.out`.
+`test/section9_paired_class{N}.{ref,new}/`; the give-up experiment
+`test/section9_giveup_arm_class{N}.out`; the attribution itself,
+`python3 test/section9_attribution.py` -> `test/section9_attribution.out`.
+
+**Probes.** Every traced claim below has a committed, re-runnable probe under
+`probes/section9/` (research discipline, AGENTS.md). Each takes its arms from
+the two rules cores — `test/mr_rules.core` and `../mr-s9-ref/test/mr_rules.core`
+— and each runs its Maxima with stdin from `/dev/null` (the `ldb` trap, A5).
+
+| probe | what it measures | amendment |
+|---|---|---|
+| `01-giveup-ordering.{mac,run,out}` | `3.4` e635 and e104 on both cores and with `mr_giveup_last=false`: which rule fires, and whether the noun is top level | A6.1 |
+| `02-inert-leak.{mac,run,out}` | `6.3.2` e13 on both cores: which rule fires, and which inert heads the answer carries | A6.2 |
+| `03-r41-bisect.{mac,run,out}` | the 16-arm bisection of 9.3 over `1.3.1` e190, one Maxima per arm under `timeout` | A6.3 |
+| `04-route-rules.{mac,run,out}` | the ten route entries on both cores, plus `%mr_expandIntegrand` on two of them | A6.4 |
+| `05-timing-ab.run` -> `.out` | the ALTERNATING SEQUENTIAL timing A/B (this file is what `section9_attribution.py` reads) | A6.3 |
+| `06-giveup-switch-control.{py,run,out}` | what turning `mr_giveup_last` OFF costs on a seeded class-1 control sample, both arms at the same worker count | A6.1 |
+
+**The core the measurement ran on.** `test/mr_rules.core.stamp` as written
+during the Task-13 run said `git_dirty 1`, because the run's own untracked
+records were in the tree while the core was built. Rebuilt on the clean tree at
+`f547a03` (`sh test/build_rules_core.sh`): fingerprint
+`434c241ad6c11e1b152b9b1bc1469214`, `rules 3997`, `git_dirty 0` — **identical
+fingerprint**, so the measured core is the committed tree's rule set. (The
+fingerprint is computed over the rule files, which untracked records do not
+touch.)
 
 #### A6.0 The result
 
@@ -511,12 +533,23 @@ early and now run to the cap, not a broad slowdown.
 the script counts each entry once, under the leak.
 
 **Cap boundary (12).** Each is `verified`/`expected` at 27.9-30.0 s on the
-reference core and 30.0-30.1 s on the branch, and either the paired rerun at 12
-workers verifies it on the BRANCH core (or already fails it on the REFERENCE
-core), or the sequential A/B below puts the branch inside the cap at under 1.2x
-the reference cost (`1.2.1.2` e404 21.5 -> 21.9 s, `1.2.1.3` e1154 21.8 ->
-22.3 s). The 30 s cpu cap and the 24-worker concurrency decide them, not the
-rule set.
+reference core and 30.0-30.1 s on the branch. What was measured for each:
+
+- **2 of the 12** have a sequential timing row that puts the branch inside the
+  30 s cap at essentially the reference cost — `1.2.1.2` e404 21.5 -> 21.9 s,
+  `1.2.1.3` e1154 21.8 -> 22.3 s (probe 05). For these two the rule set is
+  ruled out as the cause.
+- **The other 10** rest on the paired rerun at 12 workers: the BRANCH core
+  verifies the entry there (`1.1.1.3` e1100, `1.2.1.3` e1276, `1.2.1.4` e341,
+  `1.2.2.3` e259/e260 and class 6's `6.1.3` e69/e80, `6.1.7` e339, `6.3.7`
+  e191), or the REFERENCE core already fails it there (`1.2.1.3` e969). That
+  shows a lower-contention run of the SAME branch core gets them, which is
+  consistent with the cap deciding them; it does NOT measure their cost against
+  the reference core, and no sequential row was taken for them.
+
+All 12 also return to a PASS class in the give-up experiment, but that arm ran
+at 12 workers rather than the record's 24, so it cannot separate the switch from
+the lower contention and is not used for them.
 
 #### A6.1 The give-up ordering defect — 189 entries, the whole of class 3's loss
 
@@ -531,6 +564,14 @@ MEASURED: the branch core over exactly the 305 PASS->FAIL entries with
 — 115 of class 3's 118, 9 of class 2's 10, 65 of class 6's 162 — plus 13 of the
 89 leak entries.
 
+That arm ran at 12 workers against the record's 24, so for an entry whose
+branch symptom is a TIMEOUT the lower contention could be part of why it
+finishes. 182 of the 189 are not of that kind: their branch verdict is
+`contains-noun`, a verdict CLASS that contention cannot turn into `no-answer`.
+The remaining 7 (class 3, `no-answer -> timeout`, 30.0-30.1 s on the branch
+against 1.2-2.7 s on the reference) are the ones where the confound is open;
+they are PASS->FAIL caused by the port either way.
+
 CAUSE. `mr_giveup_last` (default true, `maxima_rubi_dispatch.lisp`) walks the
 table in two passes: pass 1 skips every give-up rule (a replacement answering
 `mr_unintegrable`), pass 2 runs them. It exists because our table is LOAD order
@@ -543,22 +584,47 @@ reaches the 72 `Unintegrable` marker rules of classes 1/2/3. In Mathematica
 those marker rules are SPECIFIC patterns and beat `Int[u_, x_Symbol]`; here
 they lose.
 
-WITNESS, `rubi_verbose` on both cores. `3 Logarithms/3.4` e635
-`(a+b*log(c*(d+e/(f+g*x))^p))^n`, corpus `Unintegrable`, Rubi step count **0**:
+WITNESS — probe `probes/section9/01-giveup-ordering.{mac,run,out}`,
+`rubi_verbose` on both cores and on the branch core with the switch off.
+`3 Logarithms/3.4` e635 `(a+b*log(c*(d+e/(f+g*x))^p))^n`, corpus
+`Unintegrable`, Rubi step count **0** (Rubi applies no rule at all):
 
 | core | route | answer |
 |---|---|---|
 | reference `0182d32c` | the whole table declines, then the give-up pass: `3_4 r39` | `unintegrable((a+b log(c (d+e/(f+g x))^p))^n, x)` — `no-answer`, PASS |
 | branch `434c241a` | pass 1 reaches the 9.3 tail: **`9_3 r51`** (`FunctionOfLinear`) substitutes `x -> (x-f)/g`; the inner integral falls to `3_4 r6`'s marker | `unintegrable((a+b log(c((d g x+d f+e)/(g x+f))^p))^n, g x+f)/g` — `contains-noun`, FAIL |
 
-With `mr_giveup_last:false` the branch core answers the clean top-level noun
-for that entry and for `3.4` e104 `1/(x*log(c*(a+b*x^2)^p))`.
+`3.4` e104 `1/(x*log(c*(a+b*x^2)^p))` is the same shape with a different 9.3
+record: the reference answers the top-level noun through `3_4 r14`, the branch
+fires **`9_3 r52`** (`PowerVariableExpn`) and buries the marker. With
+`mr_giveup_last:false` the branch core answers the clean top-level noun for
+both entries (probe 01's third arm).
 
-`mr_giveup_last=false` is NOT the fix: the switch's own docstring records the
-+318 class-1 entries it recovers. The indicated fix is a THIRD tier — ordinary
-rules, then give-up rules, then the bare-`u_` last-resort records — or
-equivalently keeping the 9.x bare-`u_` tail out of pass 1. It is a dispatcher
-change, not a re-port. Ticket
+**What flipping the switch off would cost — measured, not quoted.** The
+switch's docstring does NOT say the switch recovers 318 class-1 entries. It says
+the opposite about the switch alone: "reordering ALONE recovers nothing, because
+the seen-cut self-recursion of `1_2_3_5` r12 blocks the same path first", and
+the 318-of-341 figure is the measurement of a **PAIR** — the reordering together
+with the seen-cut fall-through (`%mr_top_body`). So the switch's own cost had to
+be measured. Probe `probes/section9/06-giveup-switch-control.{py,run,out}` runs
+a seeded random sample (seed 20260923) of 2,000 class-1 entries that PASS in
+the branch record, twice on the BRANCH core at the same worker count (12) and
+the same 30 s cpu cap, differing only in `mr_giveup_last`:
+
+| arm | PASS of 2,000 |
+|---|---|
+| `mr_giveup_last=true` (shipping) | 2,000 |
+| `mr_giveup_last=false` | **1,936** |
+
+**64 entries lost, 0 gained**, and every loss is a verdict-CLASS change, not a
+cost one — 62 `verified -> contains-noun` and 2 `verified -> deferred`, with 0
+going to `timeout`, so contention plays no part. That is 3.2 % of a class-1
+PASS sample; the switch is carrying real answers and must not simply be turned
+off.
+
+The indicated fix is a THIRD tier — ordinary rules, then give-up rules, then the
+bare-`u_` last-resort records — or equivalently keeping the 9.x bare-`u_` tail
+out of pass 1. It is a dispatcher change, not a re-port. Ticket
 `.scratch/class-ports/issues/14-giveup-last-vs-9_3-bare-u-tail.md`.
 
 #### A6.2 The inert-trig head leak — 89 entries, all class 6, 69 of them previously CORRECT
@@ -572,8 +638,9 @@ record is one of these; 89 were PASS before — **39 `verified`**, **30
 `expected`**, 20 `no-answer` — and all 69 of the previously-CORRECT ones carry
 `%mr_itan` (the `(b tanh)^(n/2)` and `(b coth)^(n/2)` families, 6.3.2 / 6.4.2).
 
-WITNESS, `6.3.2` e13 `(b*tanh(c+d*x))^(7/2)` (corpus: a closed form in 7
-steps), `rubi_verbose` on both cores:
+WITNESS — probe `probes/section9/02-inert-leak.{mac,run,out}`. `6.3.2` e13
+`(b*tanh(c+d*x))^(7/2)` (corpus: a closed form in 7 steps), `rubi_verbose` on
+both cores:
 
 - reference: `4_1_0_1 r1` deactivates the trig, `4_7_5 r22` (the pure-tan
   substitution) answers, the answer verifies.
@@ -599,26 +666,47 @@ the answer cannot be differentiated, verified or used. Ticket
 
 #### A6.3 Cost — 5 class-1 entries, and one rule behind them
 
-`test/section9_timing_ab.out`, ALTERNATING SEQUENTIAL (one entry at a time, one
-process at a time, reference core then branch core, 120 s cpu cap) — never the
-concurrent pair (memory: timing-ab-alternate-not-concurrent):
+Probe `probes/section9/05-timing-ab.run` -> `probes/section9/05-timing-ab.out`,
+ALTERNATING SEQUENTIAL (one entry at a time, one process at a time, reference
+core then branch core, 120 s cpu cap) — never the concurrent pair (memory:
+timing-ab-alternate-not-concurrent). `test/section9_attribution.py` reads this
+file to split the `cap` and `cost` buckets:
 
-| entry | reference | branch | ratio |
-|---|---|---|---|
-| `1.2.1.2` e335 | 17.9 s verified | 27.8 s verified | 1.55x |
-| `1.2.1.4` e585 | 18.4 s verified | 42.9 s verified | 2.33x |
-| `1.2.1.9` e61 | 19.2 s verified | 29.1 s verified | 1.52x |
-| `1.3.1` e190 | 1.7 s verified | **>120 s timeout** | >70x |
-| `1.3.1` e238 | 6.2 s verified | **>120 s timeout** | >19x |
+| entry | reference | branch | ratio | bucket |
+|---|---|---|---|---|
+| `1.2.1.2` e335 | 18.0 s verified | 27.8 s verified | 1.54x | cost |
+| `1.2.1.4` e585 | 18.4 s verified | 43.0 s verified | 2.34x | cost |
+| `1.2.1.9` e61 | 19.2 s verified | 29.1 s verified | 1.52x | cost |
+| `1.3.1` e190 | 1.7 s verified | **>120 s timeout** | >70x | cost |
+| `1.3.1` e238 | 6.2 s verified | **>120 s timeout** | >19x | cost |
+| `1.2.1.2` e404 | 21.5 s verified | 21.9 s verified | 1.02x | cap |
+| `1.2.1.3` e1154 | 21.8 s verified | 22.2 s verified | 1.02x | cap |
+
+The last two are the reason this probe covers seven entries and not five: the
+paired rerun could not tell them apart from the five, and the sequential rows
+put them at the reference cost, so they are `cap`, not `cost`.
 
 The first three are entries already near the cap that the branch pushes over.
 `1.3.1` e190 `x*(2*c+3*d*x)*(a+c*x^2+d*x^3)^n` and e238 are different in kind,
 and the cause is **`9_3 r41` again**. Bisected on the branch core by removing
-handles from `mr_rule_table` and timing `rubi`: whole 9.3 removed 1.7 s; 9.3
-body removed (tail kept) 13.6 s; body kept, tail removed — no return; first half
-of the body kept 1.7 s; of the second half's four blocks of seven, only the
-block holding r39-r45 hangs; of those seven kept one at a time, only **r41**
-hangs (the other six 1.78-1.85 s). Under `rubi_verbose` r41's condition is
+handles from `mr_rule_table` and timing `rubi` — probe
+`probes/section9/03-r41-bisect.{mac,run,out}`, 16 arms, one Maxima process per
+arm under `timeout`, arms that do not return recorded HUNG:
+
+| arm (9.3 handles KEPT) | elapsed |
+|---|---|
+| `none-removed` — the shipping table | **HUNG** (no return inside 90 s) |
+| `all-9_3-out` | 2.09 s, answer `(a+c x^2+d x^3)^(n+1)/(n+1)` |
+| `body-out` (9.3 tail kept) | 15.88 s, same answer |
+| `tail-out` (9.3 body kept) | **HUNG** |
+| `body-first-28` | 1.86 s |
+| `block-r30-r36` / `block-r46-r53` / `block-r54-r65` | 1.91 / 1.76 / 1.77 s |
+| `block-r39-r45` | **HUNG** |
+| `only-r39` / `only-r40` / `only-r42` / `only-r43` / `only-r44` / `only-r45` | 1.81 / 1.78 / 1.76 / 1.77 / 1.77 / 1.76 s |
+| **`only-r41`** | **HUNG** |
+
+So the 9.3 tail costs about 14 s on this entry on its own (2.09 -> 15.88 s), and
+**r41 alone** is what stops it returning. Under `rubi_verbose` r41's condition is
 rejected ONCE and then no further verbose line appears for 70 s, so the time
 goes into the matcher's `mr_cond_retry` binding ENUMERATION for r41's pattern
 `u_.*(a_.*v_^m_.)^p_`, not into the condition and not into a firing. Ticket
@@ -628,21 +716,27 @@ goes into the matcher's `mr_cond_retry` binding ENUMERATION for r41's pattern
 
 Ten entries whose corpus answer is `Unintegrable`/`CannotIntegrate` with a Rubi
 step count of 0 or 1 now take a 9.3 route that leaves an interior marker. The
-rule that answers first, `rubi_verbose`-traced:
+rule that answers first, `rubi_verbose`-traced on both cores — probe
+`probes/section9/04-route-rules.{mac,run,out}`:
 
 | entries | rule | upstream |
 |---|---|---|
-| `3.5` e286/e287/e290, `2.3` e758 | `9_3 r63` | `Int[u_,x_] := With[{v=ExpandIntegrand[u,x]}, Int[v,x] /; SumQ[v]]` |
-| `1.3.2` e760/e761 | `9_3 r54` | `Int[x_^m_*Fx_,x_] := With[{k=Denominator[m]}, k*Subst[Int[x^(k*(m+1)-1)*SubstPower[Fx,x,k],x],x,x^(1/k)]] /; FractionQ[m]` |
+| `3.5` e286/e287/e290, `2.3` e758 | `9_3 r63` | `9.3 …:560-563` `Int[u_,x_] := With[{v=ExpandIntegrand[u,x]}, Int[v,x] /; SumQ[v]]` |
+| `1.3.2` e760/e761 | `9_3 r54` | `9.3 …:463-466` `Int[x_^m_*Fx_,x_] := With[{k=Denominator[m]}, k*Subst[Int[x^(k*(m+1)-1)*SubstPower[Fx,x,k],x],x,x^(1/k)]] /; FractionQ[m]` |
 | `6.7.1` e1014-e1017 | `9_3 r51`, then `9_3 r46` | `FunctionOfLinear`, then `RationalFunctionExpand` |
 
 Each condition is a byte-faithful port of its upstream line; what differs is
 which rule gets there first, the same load-order-vs-specificity gap as A6.1.
-One sub-question is left open and is recorded in ticket 14:
-`%mr_expandIntegrand(x^2/(x+log(x)), x)` returns
-`log(x)^2/(x+log(x)) - log(x) + x`, i.e. it divides treating `log(x)` as an
-indeterminate, which is what makes `9_3 r63`'s `SumQ` guard true. Whether
-Mathematica's `SmartApart` does the same on that input is NOT measured here.
+One sub-question is left open and is recorded in ticket 14 (probe 04's
+`EXPANDINTEGRAND` lines): `%mr_expandIntegrand(x^2/(x+log(x)), x)` returns
+`log(x)^2/(log(x)+x) - log(x) + x` and `%mr_expandIntegrand(x/(%e^x+x), x)`
+returns `1 - %e^x/(x+%e^x)`, both `SumQ` true — it divides treating `log(x)`
+and `%e^x` as indeterminates, which is what makes `9_3 r63`'s guard true. The
+utility is PRE-EXISTING and behaves identically on both cores (probe 04 prints
+the same two lines on each); what is new is the 9.3 record that consumes it. Whether
+Mathematica's `SmartApart` (`IntegrationUtilityFunctions.m:3897`, reached from
+`ExpandExpression`:3780 at its line 3785) does the same on that input is NOT
+measured here — this repo has no Mathematica.
 
 #### A6.5 Gates, re-measured 2026-09-23 at Task 14
 
@@ -661,14 +755,16 @@ The port is a large net gain (+827 PASS, 1,132 FAIL->PASS) and ticket 06's
 target entry verifies. Two of the defects this measurement found are NOT
 acceptable as they stand:
 
-1. **A6.2, the inert-head leak** (ticket 15) — 281 class-6 answers carry a
-   placeholder operator; 69 of those entries previously produced a CORRECT,
-   verified antiderivative. **Blocking.**
+1. **A6.2, the inert-head leak** (ticket 15) — at least 281 class-6 answers
+   carry a placeholder operator (286 entries leak in the paired rerun; 281 of
+   them reach `error` in the full record and 5 hit the cap first); 69 of those
+   entries previously produced a CORRECT, verified antiderivative. **Blocking.**
 2. **A6.1, the give-up ordering** (ticket 14) — 189 entries lose a clean
    give-up, which is the whole of class 3's -96. A dispatcher fix.
 
 A6.3's `1.3.1` e190/e238 (ticket 16, a >70x cost explosion on cheap entries,
 same rule as A6.2) and A6.4's ten route changes are recorded with the same
-evidence but are smaller in scale. §6's "every PASS->FAIL attributed" is met;
-its "all gates green" is met; the acceptance decision, and the merge, are the
-user's, and this amendment recommends the two fixes first.
+evidence but are smaller in scale. §6's "every PASS->FAIL attributed" is met,
+each cause by a committed probe under `probes/section9/`; its "all gates green"
+is met (A6.5). The acceptance decision, and the merge, are the user's, and this
+amendment recommends the two fixes first.

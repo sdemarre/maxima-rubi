@@ -130,7 +130,8 @@ positions (9.2 right after class 1, 9.3 last of all; `mr_load_all`,
 `docs/superpowers/specs/2026-09-22-section9-port-design.md` (records in `test/`:
 `corpus_class{1,2,3,6}.s9-ref.out` / `.s9.out`, `section9_ab_class{N}.out`,
 `section9_paired_class{N}.{ref,new}/`, `section9_giveup_arm_class{N}.out`,
-`section9_timing_ab.out`, `section9_attribution.py` / `.out`). Headline, four
+`section9_attribution.py` / `.out`; the six re-runnable probes behind A6's
+traced claims are `probes/section9/01..06`). Headline, four
 classes, 34,827 entries, reference core `0182d32c` -> branch core `434c241a`:
 **PASS 22,189 -> 23,016 (+827)**, 1,132 FAIL->PASS, 305 PASS->FAIL, all 305
 attributed (A6.0.1).

@@ -1,4 +1,4 @@
-# 9.3 body rules fire inside the inert-trig domain and leak `%mr_itan` & co into answers — 281 class-6 answers, 69 of them previously CORRECT
+# 9.3 body rules fire inside the inert-trig domain and leak `%mr_itan` & co into answers — at least 281 class-6 answers, 69 of them previously CORRECT
 
 Status: open
 Type: bug (HIGH — unusable answers; the sharpest defect in the section-9 measurement)
@@ -16,7 +16,7 @@ BODY, because class 4 is ported only as the eight-record bridge subset.
 
 So `9_3 r41` — Rubi's
 `Int[u_.*(a_.*v_^m_.)^p_,x] := a^IntPart[p]*(a*v^m)^FracPart[p]/v^(m*FracPart[p]) * Int[u*v^(m*p),x]`
-(`9.3 Miscellaneous integration rules.m:345`) — fires on the DEACTIVATED
+(`9 Miscellaneous/9.3 Miscellaneous integration rules.m:346-348`) — fires on the DEACTIVATED
 integrand and emits its prefactor OUTSIDE the recursive `mr_int`. Nothing
 re-activates that factor, so an inert head reaches the user-visible answer.
 
@@ -28,23 +28,36 @@ more specific and are tried first, so Rubi never gets here.
 
 Branch core `434c241a` (3,997 rules) vs reference core `0182d32c` (3,911):
 
-- **281 of the branch's class-6 answers carry an inert head** (`%mr_isin` 112,
-  `%mr_itan` 92, `%mr_icsc` 46, `%mr_icos` 32, `%mr_isec` 2, 2 with two heads —
-  counted over the paired rerun's 286, `test/section9_paired_class6.new/queue.log`).
-  The reference core produced **zero**.
+- The driver names the leaked head on stderr, so the leak set can be counted
+  exactly. Over the **paired rerun** of the changed entries
+  (`test/section9_paired_class6.new/queue.log`) **286 entries leak**:
+  `%mr_isin` 112, `%mr_itan` 92, `%mr_icsc` 46, `%mr_icos` 32, `%mr_isec` 2,
+  and 2 entries carrying two heads — that partition is of the **286**, not of
+  the 281 below.
+- In the **full 24-worker record** (`test/corpus_class6.s9.out`) 281 of those
+  286 are `error` and the other 5 are `timeout`: they hit the 30 s cap before
+  the leaking answer was produced. So **281 is a FLOOR** on the number of
+  leaking answers in that record, not the whole leak set. The reference core
+  produced **zero** `error` verdicts and zero `inert-leak` stderr lines.
 - The driver classifies such an answer `error`
   (`test/test_driver_inert_leak.py`), and EVERY `error` in
-  `test/corpus_class6.s9.out` is one of these.
+  `test/corpus_class6.s9.out` is one of these — no other kind of error occurs
+  in that record.
 - **89 of them were PASS before**: 39 `verified`, 30 `expected`, 20
   `no-answer`. All 69 of the previously-CORRECT ones carry `%mr_itan` — the
   `(b tanh)^(n/2)` and `(b coth)^(n/2)` families of `6.3.2` and `6.4.2`.
 
-Witness, `6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2` e13
+Witness — **committed probe `probes/section9/02-inert-leak.{mac,run,out}`**,
+`sh probes/section9/02-inert-leak.run`:
+`6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2` e13
 `(b*tanh(c+d*x))^(7/2)` (corpus: a closed form in 7 steps), `rubi_verbose` on
 both cores:
 
 - reference: `4_1_0_1 r1` deactivates, `4_7_5 r22` (the pure-tan substitution)
-  answers, the answer verifies (0.4 s).
+  answers, no inert head is left (`INERT_LEAK … | []`), and the record's verdict
+  for the entry is `verified` at 0.4 s. (The probe's own one-step
+  `RATSIMP_SELF_DIFF_ZERO` prints `false`; it is a cheap indicator, not
+  `test/corpus_driver.py`'s zero chain, which is what decides `verified`.)
 - branch: `4_1_0_1 r1` deactivates, then `9_3 r41` fires on
   `(-%i*%mr_itan(%i*(c+d*x)))^(7/2)` with
   `[m = 1, v = %mr_itan(%i d x + %i c), a = -%i, p = 7/2, u = 1]` and the answer
