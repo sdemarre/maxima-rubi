@@ -7749,3 +7749,102 @@ mr_witness_utils() := true$
                    %mr_sa_a),
     if is(%mr_sa_a = %mr_sa_b) then %mr_sa_u
     else funmake(op(%mr_sa_u), %mr_sa_b)))$
+
+/* ---- class 5 (inverse trig functions), Step 4 ---------------------------
+   The four utilities the class-5 census's token closure left to port
+   (.scratch/class-ports/issues/02, Step 1; probes/translation/
+   10-class5-syntax-census.out). Parameters carry the %mr_ prefix (the
+   capture trap, ticket 17). */
+
+/* Rubi L80  HalfIntegerQ[u__] := Scan[Function[If[Head[#]===Rational &&
+   Denominator[#]==2, Null, Return[False]]], {u}] === Null — every argument
+   an EXPLICIT rational with denominator 2 (an integer, a float or a symbol
+   is not). Variadic, as Rubi's is; 5.1.3/5.1.4 call it with two. */
+%mr_halfIntegerQ([%mr_hi_args]) :=
+  every(lambda([%mr_hi_a], ratnump(%mr_hi_a) and not integerp(%mr_hi_a)
+                           and is(denom(%mr_hi_a) = 2)),
+        %mr_hi_args)$
+
+/* Mathematica's Head[u], for the one class-5 reader, 5.3.7 r27/r28's
+   EqQ[Head[tmp], ArcTan]: a non-atom's operator, read with inflag true so
+   it is the stored head (a/b is a product, as Times[a, Power[b, -1]] is).
+   The operator of an inverse-trig call is the native symbol the table
+   emits for the bare head atom (atan for ArcTan), so %mr_eqQ compares the
+   two (probes/answer-side/05-class5-answer-side-identities.out H1-H3). An
+   atom answers Mathematica's atom heads Integer / Real / Symbol / String;
+   anything else (a Maxima rational, which is not an atom here, and a
+   sum, product or power) answers its operator. */
+%mr_head(%mr_hd_u) := block([inflag : true],
+  if atom(%mr_hd_u) then (
+    if integerp(%mr_hd_u) then 'Integer
+    elseif floatnump(%mr_hd_u) or bfloatp(%mr_hd_u) then 'Real
+    elseif stringp(%mr_hd_u) then 'String
+    else 'Symbol)
+  else op(%mr_hd_u))$
+
+/* Rubi L6084  InverseFunctionOfLinear[u, x]: the first subexpression of u
+   (depth first, arguments in order) that is an inverse function of a
+   linear argument, else false. InverseFunctionQ is %mr_inverseFunctionQ
+   (log, the six inverse-trig heads, the six inverse-hyperbolic ones, mod,
+   polylog). Rubi's Scan walks the stored arguments, so inflag is true. */
+%mr_inverseFunctionOfLinear(%mr_ifl_u, %mr_ifl_x) :=
+  block([inflag : true, %mr_ifl_r, %mr_ifl_a],
+  if atom(%mr_ifl_u) or %mr_calculusQ(%mr_ifl_u)
+     or freeof(%mr_ifl_x, %mr_ifl_u) then false
+  elseif %mr_inverseFunctionQ(%mr_ifl_u)
+         and %mr_linearQ(part(%mr_ifl_u, 1), %mr_ifl_x) then %mr_ifl_u
+  else (
+    %mr_ifl_r : false,
+    for %mr_ifl_a in args(%mr_ifl_u) while %mr_ifl_r = false do (
+      %mr_ifl_r : %mr_inverseFunctionOfLinear(%mr_ifl_a, %mr_ifl_x),
+      if atom(%mr_ifl_r) then %mr_ifl_r : false),
+    %mr_ifl_r))$
+
+/* Mathematica's InverseFunction[h] for the heads InverseFunctionQ admits
+   (the one-argument ones; mod and polylog have no inverse and answer
+   false). Used only by %mr_substForInverseFunction's 3-argument form. */
+%mr_inverseHead(%mr_ih_h) := block([%mr_ih_p],
+  %mr_ih_p : assoc(%mr_ih_h,
+    [atan = tan, acot = cot, asin = sin, acos = cos, asec = sec, acsc = csc,
+     asinh = sinh, acosh = cosh, atanh = tanh, acoth = coth, asech = sech,
+     acsch = csch, log = exp], false),
+  %mr_ih_p)$
+
+/* Rubi L6085-6096  SubstForInverseFunction[u, v, x] and [u, v, w, x]: u
+   with every subexpression having v's head and v's (first) argument
+   replaced by x, and x itself replaced by w. The 3-argument form takes
+   w = (-a + h^-1(x))/b for v = h(a + b x) (Coefficient[v[[1]], x, k]).
+   Rubi's Map rebuilds every level; here an x-free subexpression is
+   returned as is (v carries x, so it cannot occur there, and x itself is
+   not in it), and a level is rebuilt with funmake (the class-8 capture
+   rule: never apply), or returned as is when its arguments came back
+   unchanged. */
+%mr_substForInverseFunction(%mr_sfi_u, %mr_sfi_v, [%mr_sfi_rest]) :=
+  block([%mr_sfi_w, %mr_sfi_x, %mr_sfi_h],
+  if length(%mr_sfi_rest) = 1 then (
+    %mr_sfi_x : first(%mr_sfi_rest),
+    %mr_sfi_h : %mr_inverseHead(op(%mr_sfi_v)),
+    if %mr_sfi_h = false
+    then error("%mr_substForInverseFunction: no inverse for", op(%mr_sfi_v)),
+    %mr_sfi_w : (-%mr_coeff(part(%mr_sfi_v, 1), %mr_sfi_x, 0)
+                 + funmake(%mr_sfi_h, [%mr_sfi_x]))
+                / %mr_coeff(part(%mr_sfi_v, 1), %mr_sfi_x, 1))
+  elseif length(%mr_sfi_rest) = 2 then (
+    %mr_sfi_w : first(%mr_sfi_rest),
+    %mr_sfi_x : second(%mr_sfi_rest))
+  else error("%mr_substForInverseFunction: expected 3 or 4 args"),
+  %mr_sfi_aux(%mr_sfi_u, %mr_sfi_v, %mr_sfi_w, %mr_sfi_x))$
+
+%mr_sfi_aux(%mr_sfa_u, %mr_sfa_v, %mr_sfa_w, %mr_sfa_x) :=
+  block([inflag : true, %mr_sfa_a, %mr_sfa_b],
+  if atom(%mr_sfa_u) then (if %mr_sfa_u = %mr_sfa_x then %mr_sfa_w else %mr_sfa_u)
+  elseif freeof(%mr_sfa_x, %mr_sfa_u) then %mr_sfa_u
+  elseif op(%mr_sfa_u) = op(%mr_sfa_v)
+         and %mr_eqQ(part(%mr_sfa_u, 1), part(%mr_sfa_v, 1)) then %mr_sfa_x
+  else (
+    %mr_sfa_a : args(%mr_sfa_u),
+    %mr_sfa_b : map(lambda([%mr_sfa_t],
+                      %mr_sfi_aux(%mr_sfa_t, %mr_sfa_v, %mr_sfa_w, %mr_sfa_x)),
+                    %mr_sfa_a),
+    if is(%mr_sfa_a = %mr_sfa_b) then %mr_sfa_u
+    else funmake(op(%mr_sfa_u), %mr_sfa_b)))$

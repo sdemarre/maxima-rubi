@@ -304,7 +304,11 @@ port's Step 4 (2026-09-25: `%mr_derivative`, FunctionOfExpnQ and
 FunctionOfQ's general arm, SubstForAux, 38 checks): `Results: 1331
 passed, 0 failed`; with its capture fixes, the formal-derivative CalculusQ
 reading and the 9.1 Derivative end-to-end targets (19 checks, three older
-checks re-pointed): **`Results: 1350 passed, 0 failed`**. The
+checks re-pointed): `Results: 1350 passed, 0 failed`; at the class-5 port's
+Step 4 (2026-09-25: `%mr_halfIntegerQ`, `%mr_head`,
+`%mr_inverseFunctionOfLinear`, `%mr_substForInverseFunction`, and class-5
+rule files end to end on sibling tables, 37 checks):
+**`Results: 1387 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load

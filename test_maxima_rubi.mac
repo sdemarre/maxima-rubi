@@ -148,6 +148,9 @@ run_all_tests() := block([],
   test_class8_cluster_b(),
   test_class8_cluster_c(),
   test_class8_e2e(),
+  test_class5_cluster_a(),
+  test_class5_cluster_b(),
+  test_class5_e2e(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4808,6 +4811,122 @@ test_class8_e2e() := block([mr_c8_saved, mr_c8_ok, mr_c8_r, mr_c8_e,
     check("9_1d r4 twice: Int sin(a+b x) f''(x), the corpus's answer",
           expand(mr_c8_r - mr_c8_e), 0)),
   mr_rule_table : mr_c8_saved,
+  true
+)$
+
+/* ---- class 5 cluster A: HalfIntegerQ, Head ----------------------------
+   docs/class-porting.md Step 4; the class-5 census's unlisted tokens
+   (.scratch/class-ports/issues/02, Step 1). HalfIntegerQ (Rubi L80, 8
+   rules of 5.1.3/5.1.4): every argument an explicit rational with
+   denominator 2. Head (5.3.7 r27/r28's EqQ[Head[tmp], ArcTan]): a call's
+   operator is the native symbol the table emits for the bare head atom
+   (probes/answer-side/05-class5-answer-side-identities.out H1-H3). */
+test_class5_cluster_a() := block([],
+  print("--- class 5 cluster A: HalfIntegerQ, Head ---"),
+  check_bool("halfIntegerQ: 1/2", %mr_halfIntegerQ(1/2)),
+  check_bool("halfIntegerQ: 3/2 and -1/2 (both)", %mr_halfIntegerQ(3/2, -1/2)),
+  check_not("halfIntegerQ: 1/2 and 1 (an integer is not)", %mr_halfIntegerQ(1/2, 1)),
+  check_not("halfIntegerQ: 3", %mr_halfIntegerQ(3)),
+  check_not("halfIntegerQ: 1/3", %mr_halfIntegerQ(1/3)),
+  check_not("halfIntegerQ: 0.5 (a float is not explicit)", %mr_halfIntegerQ(0.5)),
+  check_not("halfIntegerQ: a symbol p", %mr_halfIntegerQ(p)),
+  check_not("halfIntegerQ: p/2 (symbolic)", %mr_halfIntegerQ(p/2)),
+  check("head: atan(1+2*x) is atan", %mr_head(atan(1 + 2*x)), 'atan),
+  check("head: acot(x) is acot", %mr_head(acot(x)), 'acot),
+  check_bool("head: EqQ[Head[atan(..)], ArcTan] as the rule emits it",
+             %mr_eqQ(%mr_head(atan(1 + 2*x)), atan)),
+  check_not("head: EqQ[Head[acot(..)], ArcTan] is false",
+            %mr_eqQ(%mr_head(acot(1 + 2*x)), atan)),
+  check_not("head: a sum's head is not atan", %mr_eqQ(%mr_head(a + atan(x)), atan)),
+  check("head: a/b is a product (the stored head)", %mr_head(a/b), "*"),
+  check("head: an integer atom is Integer", %mr_head(3), 'Integer),
+  check("head: a symbol atom is Symbol", %mr_head(a), 'Symbol),
+  true
+)$
+
+/* ---- class 5 cluster B: InverseFunctionOfLinear, SubstForInverseFunction
+   Rubi L6084 / L6085-6096, the 5.3.7 r27/r28 pair (Int[u_*v_^n_., x] with
+   v a quadratic of negative discriminant and u carrying ArcTan/ArcCot of a
+   linear argument). */
+test_class5_cluster_b() := block([],
+  print("--- class 5 cluster B: InverseFunctionOfLinear, SubstForInverseFunction ---"),
+  check("ifl: the inverse function of a linear argument inside a power",
+        %mr_inverseFunctionOfLinear(%e^atan(1 + 2*x), x), atan(1 + 2*x)),
+  check("ifl: depth first, inside a product",
+        %mr_inverseFunctionOfLinear(x^2*%e^acot(3*x), x), acot(3*x)),
+  check("ifl: log is an inverse function too (InverseFunctionQ)",
+        %mr_inverseFunctionOfLinear(x*log(1 + x), x), log(1 + x)),
+  check("ifl: a non-linear argument is not (and nothing below it is)",
+        %mr_inverseFunctionOfLinear(%e^atan(x^2), x), false),
+  check("ifl: a trig call is not an inverse function",
+        %mr_inverseFunctionOfLinear(sin(1 + 2*x), x), false),
+  check("ifl: x-free is false", %mr_inverseFunctionOfLinear(%e^atan(a), x), false),
+  check("ifl: an atom is false", %mr_inverseFunctionOfLinear(x, x), false),
+  check("sfi 4-arg: v -> x and x -> w",
+        %mr_substForInverseFunction(x*%e^atan(1 + 2*x), atan(1 + 2*x), w, x),
+        w*%e^x),
+  check("sfi 3-arg, atan: w = (tan(x) - 1)/2",
+        ratsimp(%mr_substForInverseFunction(x*%e^atan(1 + 2*x), atan(1 + 2*x), x)
+                - (tan(x) - 1)/2*%e^x), 0),
+  check("sfi 3-arg, acot: w = cot(x)/3",
+        ratsimp(%mr_substForInverseFunction(x^2*atan(3*x)*acot(3*x), acot(3*x), x)
+                - (cot(x)/3)^2*atan(cot(x))*x), 0),
+  check("sfi: an x-free factor is kept as is",
+        %mr_substForInverseFunction(a*%e^atan(x), atan(x), x), a*%e^x),
+  true
+)$
+
+/* ---- class 5 end to end ------------------------------------------------
+   Generated class-5 files through the dispatcher, on a sibling table (the
+   class-8 e2e shape), with the nested integrate fall-through Layer A binds
+   on: 5.3.7 r27/r28 (the ports above), 5.5.1 r1/r2 (the asec/acsc rows),
+   5.1.5 r9 (the ExpandExpression row). Each answer is checked by its
+   derivative. NOTE: r27/r28 reach only quadratics whose discriminant
+   identity closes syntactically (1+x^2 here): %mr_eqQ does not expand
+   (.scratch/matcher-translation-fixes/issues/03), so a shifted quadratic
+   such as 4x^2+4x+2 declines -- recorded on ticket 02, not pinned here. */
+test_class5_e2e() := block([mr_c5_saved, mr_c5_ok, mr_c5_r],
+  print("--- class 5 end to end: 5.3.7 r27/r28, 5.5.1, 5.1.5 r9 ---"),
+  mr_c5_saved : mr_rule_table,
+  mr_c5_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class5/5_1_5.mac", 'mr_witness_5_1_5),
+    %mr_load_sibling("rules/class5/5_3_7.mac", 'mr_witness_5_3_7),
+    %mr_load_sibling("rules/class5/5_5_1.mac", 'mr_witness_5_5_1),
+    true),
+  check_bool("class 5 e2e: rule files load", is(mr_c5_ok # [])),
+  if mr_c5_ok # [] then (
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_5_3_7]),
+    check_bool("5_3_7 r27: Int e^atan(x)/(1+x^2) = e^atan(x)",
+               is(rubi(%e^atan(x)/(1 + x^2), x) = %e^atan(x))),
+    check_bool("5_3_7 r28: Int e^acot(x)/(1+x^2) = -e^acot(x)",
+               is(rubi(%e^acot(x)/(1 + x^2), x) = -%e^acot(x))),
+    mr_c5_r : rubi(x*%e^atan(x)/(1 + x^2)^2, x),
+    /* the answer carries sin(2*atan(x)), which ratsimp does not close:
+       the derivative is checked at two points instead */
+    check_bool("5_3_7 r27, n = -2 with an x factor: no noun",
+               freeof('unintegrable, mr_c5_r)),
+    check_bool("5_3_7 r27, n = -2 with an x factor: the derivative at x = 0.3, 0.7",
+               every(lambda([mr_c5_p],
+                        is(abs(float(subst(x = mr_c5_p, diff(mr_c5_r, x)
+                                        - x*%e^atan(x)/(1 + x^2)^2))) < 1.0e-12)),
+                     [0.3, 0.7])),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_5_5_1]),
+    mr_c5_r : rubi(asec(x), x),
+    check_bool("5_5_1 r1: Int asec(x) has no noun", freeof('unintegrable, mr_c5_r)),
+    check_bool("5_5_1 r1: Int asec(x), the derivative at x = 2.3",
+               is(abs(float(subst(x = 2.3, diff(mr_c5_r, x) - asec(x)))) < 1.0e-12)),
+    mr_c5_r : rubi(acsc(3*x), x),
+    check_bool("5_5_1 r2: Int acsc(3x), the derivative at x = 2.3",
+               is(abs(float(subst(x = 2.3, diff(mr_c5_r, x) - acsc(3*x)))) < 1.0e-12)),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_5_1_5]),
+    mr_c5_r : rubi((1 + x + x^2)*asin(x), x),
+    check_bool("5_1_5 r9: Int (1+x+x^2) asin(x) has no noun",
+               freeof('unintegrable, mr_c5_r)),
+    check_bool("5_1_5 r9: Int (1+x+x^2) asin(x), the derivative at x = 0.3",
+               is(abs(float(subst(x = 0.3, diff(mr_c5_r, x) - (1 + x + x^2)*asin(x))))
+                  < 1.0e-12))),
+  mr_rule_table : mr_c5_saved,
   true
 )$
 
