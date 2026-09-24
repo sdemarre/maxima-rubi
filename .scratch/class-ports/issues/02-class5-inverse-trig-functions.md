@@ -183,3 +183,88 @@ a syntactically negated argument — `asin(-x) = -asin(x)`, `atan(-x) =
 %pi - acos(x)`, `asec(-x) = %pi - asec(x)`; `atan(1/x)`/`acot(1/x)` stay.
 So `(a+b*acos(-c*x))^n` reaches the matcher as `(a+%pi*b - b*acos(c*x))^n`
 — the same rule shape with shifted captures, not a miss.
+
+### 2026-09-25 — Steps 2-7 complete (branch `class-ports`)
+
+Build `branch_5_50_base_84_g4204fb669`, SBCL 2.6.7. Steps 8-10 (baseline,
+package corpus run, close) are the coordinator's.
+
+- **Step 2** (`0667f47`): 8 rows — `ArcSec`/`ArcCsc` -> `asec`/`acsc`,
+  `Discriminant` -> `poly_discriminant`, `ExpandExpression` (ported since
+  class 1), and the four Step-4 ports `HalfIntegerQ`,
+  `InverseFunctionOfLinear`, `SubstForInverseFunction`, `Head`. The closure
+  probe then reports 0 UNLISTED. Byte-identity EMPTY for 1/2/3/4/6/8/9 +
+  rewrites.
+- **Step 3** (`db3840a`): **667 rules** over 15 files (5.1.1 6, 5.1.2 14,
+  5.1.3 30, 5.1.4 60, 5.1.5 62, 5.1.6 43, 5.3.1 10, 5.3.2 24, 5.3.3 22, 5.3.4
+  161, 5.3.5 20, 5.3.6 76, 5.3.7 79, 5.5.1 36, 5.5.2 24). The only generator
+  change is `configure()` (EXPECTED_TOTAL 667 = the census's 665 + 5.3.7's two
+  ShowSteps records). No new emitter case, no G-9 LHS risk, no bare-`u_`
+  record. P3 static 24 -> **25/0** (all 5,178 pattern strings prepare).
+- **Step 4** (`03e7699`): `%mr_halfIntegerQ`, `%mr_head`,
+  `%mr_inverseFunctionOfLinear`, `%mr_substForInverseFunction` (+
+  `%mr_inverseHead`, `%mr_sfi_aux`), and class-5 files end to end on sibling
+  tables (5.3.7 r27/r28, 5.5.1 r1/r2, 5.1.5 r9). Layer A 1350 -> RED 1358/28
+  -> **GREEN 1387/0**.
+- **Step 5** (with Step 3): per-file counts equal the census; no raw `$`;
+  the new rows landed (asec 31, acsc 31, poly_discriminant 6,
+  %mr_halfIntegerQ 8, %mr_expandExpression 2, %mr_inverseFunctionOfLinear 4,
+  %mr_substForInverseFunction 2, %mr_head 2 call sites).
+- **Step 6** (`4a5820e`): `mr_load_all` loads class 5 right after class 3 and
+  before class 6 (Rubi.m: section 5 after 4 and before 6; class 4's ported
+  bridge records have empty bodies, so section 5 follows section 3 in the
+  body order). Table **4,992** (4,325 + 667); tail unchanged. Rule-table
+  order **15/0** (+1: class 5's bodies contiguous between `3_5` and
+  `6_1_10`). The full table loads without the TLS flag (that gate runs flagless).
+  Core rebuilt in the `mr-ports` worktree: `rules=4992`, fingerprint
+  **`8e57b2901075a7fb8cf63a3198d79b4b`** (driver agrees:
+  `test_driver_core_pin` 7/0).
+- **Step 7**: **no `HEAD_REWRITES` row** (Step 1). `test/test_head_rewrites.py`
+  47 -> **52/0** (five class-5 corpus excerpts: Si/Ci/GAMMA/FresnelC over
+  `acos`, and the six inverse-trig natives untouched). No-op over EVERY entry
+  (`probes/corpus/19-class5-head-rewrite-noop.out`): the driver is unchanged
+  by this port, so 0 normalized texts differ from `4f8144a` in all eight
+  sections; section 5's rewrite totals equal the Step-1 census (Ci 386, Si
+  380, FresnelC 403, FresnelS 383, GAMMA 92, HypergeometricPFQ 36). Slice
+  A/B (`probes/corpus/20-class5-slice-ab.out`: 63 entries of classes
+  1/2/3/6/8 on a core built at `4f8144a` against the class-5 core): **0
+  transitions** either way. The 2-per-file class-5 slice (36 entries, 18
+  files): **32/36 PASS** (32 verified), 4 contains-noun — 5.2.5 e1/e2
+  (`x^k (a+b acos(c x))/(d-c^2 d x^2)`) and 5.5.2/5.6.2 e1 (`asec(a x^5)/x`,
+  `acsc(a x^5)/x`), whose Rubi routes substitute to `x tan(x)`/`x cot(x)`
+  sub-integrals (likely the unported section-4 bodies).
+
+Other gates at the end: section-9 e2e 9/0, mr-match 57/0, mr-tree 84/0,
+dispatch 106/0, generator section-9 unit 26/0, run-records 43/0, every
+harness guard at its figure, byte-identity EMPTY for 1/2/3/4/5/6/8/9 +
+rewrites.
+
+**Findings for Step 9 / follow-ups.**
+
+1. **EqQ's syntactic zero test limits 5.3.7 r27/r28** (the ShowSteps pair).
+   Their condition `EqQ[Discriminant[v,x]*tmp[[1]]^2 + D[v,x]^2, 0]` is an
+   identity in x. `%mr_eqQ` reads it without expanding
+   (`.scratch/matcher-translation-fixes/issues/03`, open, awaiting the
+   user's decision), so the pair fires only when the identity cancels on
+   simplification (`v = 1+x^2`) and declines on a shifted quadratic
+   (`4x^2+4x+2` with `atan(2x+1)`, measured in the Step-4 scratch run). Not a
+   new ticket: a class-5 site of issue 03's defect, noted there by this
+   comment.
+2. **No `SimplifyAntiderivative`.** Rubi's `Subst` rectifies a discontinuous
+   `ArcTan`/`ArcCot` (`RectifyTangent`/`RectifyCotangent`); the port does
+   not (Step 1, transitive closure item 4). A class-5 answer can then differ
+   from the expected text by a piecewise constant: it can still verify by
+   differentiation but not be `expected` (form-identical).
+3. **The simplifier rewrites a negated inverse-trig argument**
+   (`acos(-x) = %pi - acos(x)`, `asec(-x) = %pi - asec(x)`, the other four
+   odd; probe 05 S1-S6). The matcher sees the rewritten form, the same rule
+   shape with shifted captures. Nothing to fix. It is the likely reading if
+   an `acos`/`asec` entry with a negative coefficient answers in an
+   unexpected form.
+
+**Decided by judgment** (recorded here, not asked): `Discriminant` as the
+native `poly_discriminant` rather than a port (it measures equal to
+Mathematica's); `Head` as a narrow `%mr_head` (Mathematica's atom heads for
+atoms, the stored operator otherwise) rather than a general one; the
+x-free short cut in `SubstForInverseFunction`'s walk (sound: v carries x);
+no new ticket for finding 1 (issue 03 already owns the defect).

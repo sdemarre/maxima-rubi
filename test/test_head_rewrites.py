@@ -105,5 +105,25 @@ check("Derivative inside a longer name intact", n("MyDerivative(1)(f)(x)"),
 check("idempotent on a rewritten text",
       n(n("Derivative(2)(f)(x)*Psi(1,x)*GAMMA(z)*Ei(1,z)")),
       "%mr_derivative(2, f, x)*psi[1](x)*gamma(z)*expintegral_e(1,z)")
+# --- class 5 (2026-09-25): no new row. The section's answers are native
+# inverse-trig texts plus heads earlier rows already cover
+# (probes/corpus/18-class5-answer-heads.out); corpus excerpts, verbatim.
+check("class 5: Si/Ci of an acos argument, acos kept",
+      n("-5/64*Si(acos(a*x))/a^7-9/64*Si(3*acos(a*x))/a^7"),
+      "-5/64*expintegral_si(acos(a*x))/a^7-9/64*expintegral_si(3*acos(a*x))/a^7")
+check("class 5: 2-arg GAMMA of an acos argument",
+      n("2^(-4-n)*acos(a*x)^n*GAMMA(1+n,-2*%i*acos(a*x))/(a^4*(-%i*acos(a*x))^n)"),
+      "2^(-4-n)*acos(a*x)^n*gamma_incomplete(1+n,-2*%i*acos(a*x))/(a^4*(-%i*acos(a*x))^n)")
+check("class 5: FresnelC of sqrt(acos), acos kept",
+      n("-1/80*FresnelC(sqrt(10/%pi)*sqrt(acos(a*x)))*sqrt(1/10*%pi)/a^5"),
+      "-1/80*fresnel_c(sqrt(10/%pi)*sqrt(acos(a*x)))*sqrt(1/10*%pi)/a^5")
+check("class 5: asec/polylog answer untouched",
+      n("1/10*%i*asec(a*x^5)^2-1/5*asec(a*x^5)*log(1+%e^(2*%i*asec(a*x^5)))"
+        "+1/10*%i*polylog(2,-%e^(2*%i*asec(a*x^5)))"),
+      "1/10*%i*asec(a*x^5)^2-1/5*asec(a*x^5)*log(1+%e^(2*%i*asec(a*x^5)))"
+      "+1/10*%i*polylog(2,-%e^(2*%i*asec(a*x^5)))")
+check("class 5: the six inverse-trig natives untouched",
+      n("asin(x)+acos(x)+atan(x)+acot(x)+asec(x)+acsc(x)"),
+      "asin(x)+acos(x)+atan(x)+acot(x)+asec(x)+acsc(x)")
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

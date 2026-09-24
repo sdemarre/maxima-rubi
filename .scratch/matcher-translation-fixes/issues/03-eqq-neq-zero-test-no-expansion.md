@@ -67,3 +67,13 @@ A fix must therefore distinguish two cases:
    as a deviation.
 3. If changed: red/green probe, Layer A checks, and a corpus A/B, because it moves many 1.1.x/1.2.x
    routes.
+
+## Comments
+
+2026-09-25 (class-5 port, branch `class-ports`) — **a class-5 site.** 5.3.7 r27/r28 (the ShowSteps
+pair `Int[u_*v_^n_., x]`, quadratic `v` of negative discriminant, `u` carrying ArcTan/ArcCot of a
+linear argument) require `EqQ[Discriminant[v,x]*tmp[[1]]^2 + D[v,x]^2, 0]`, an identity in x. It
+cancels on simplification for `v = 1+x^2` (the rule fires; Layer A `test_class5_e2e`), and not for a
+shifted quadratic: `4x^2+4x+2` with `atan(2x+1)` gives `-16*(2*x+1)^2+(8*x+4)^2`, which
+`%mr_eqQ` reads nonzero, so the rule declines. Details on
+`.scratch/class-ports/issues/02-class5-inverse-trig-functions.md` (Steps 2-7, finding 1).
