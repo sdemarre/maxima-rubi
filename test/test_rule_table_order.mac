@@ -164,6 +164,21 @@ check_bool("class 8's bodies (8.1..8.9) then 9.1 Derivative follow class 6 and p
                     mr_rules_8_5, mr_rules_8_6, mr_rules_8_7, mr_rules_8_8,
                     mr_rules_8_9, mr_rules_9_1d]))
   and is(mr_pos(last(mr_rules_9_1d)) + 1 = mr_pos(first(mr_rules_9_3))))$
+/* Class 5 (2026-09-25): its fifteen bodies in Rubi.m order (5.1.1 ..
+   5.5.2), contiguous, right after class 3's last list (3_5) and right
+   before class 6's first (6_1_10) -- section 5 loads after section 4
+   (whose ported bridge bodies are empty) and before section 6. Class 5
+   has no bare-u_ record, so the tail is unchanged. */
+mr_c5_lists : [mr_rules_5_1_1, mr_rules_5_1_2, mr_rules_5_1_3, mr_rules_5_1_4,
+               mr_rules_5_1_5, mr_rules_5_1_6, mr_rules_5_3_1, mr_rules_5_3_2,
+               mr_rules_5_3_3, mr_rules_5_3_4, mr_rules_5_3_5, mr_rules_5_3_6,
+               mr_rules_5_3_7, mr_rules_5_5_1, mr_rules_5_5_2]$
+check_bool("class 5's bodies (5.1.1..5.5.2) follow class 3 and precede class 6, contiguous",
+  is(mr_pos(first(mr_rules_5_1_1)) = mr_pos(last(mr_rules_3_5)) + 1)
+  and is(sublist(mr_rule_table, lambda([mr_h], member(mr_h, flatten(mr_c5_lists))))
+         = flatten(mr_c5_lists))
+  and is(mr_pos(last(mr_rules_5_5_2)) + 1 = mr_pos(first(mr_rules_6_1_10)))
+  and is(length(flatten(mr_c5_lists)) = 667))$
 print("table length after mr_load_all: ", length(mr_rule_table))$
 
 /* The universal cross-check, over EVERY handle mr_load_all() actually

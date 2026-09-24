@@ -200,13 +200,15 @@ mr_load_class1_all() := block([],
    2026-08-28) then class 3 — the "3 Logarithms" LoadRules block (11
    files, 334 rules; Rubi.m :211-221 order, verified against the pinned
    clone 2026-08-29 — 3.3 and 3.4 load BEFORE the 3.2.x files: that is
-   Rubi's LoadRules order, not numeric order) then class 6 (390 rules)
+   Rubi's LoadRules order, not numeric order) then class 5 (667 rules,
+   Rubi.m L283-299) then class 6 (390 rules)
    then class 4's inert-trig bridge subset (8 records, tail-only) then
    class 8 and 9.1 Derivative (307 + 21 rules; 8.9 r44 in the tail) then
    9.3 last (67 rules: 56 body + 11 tail, Rubi.m L356, section-9 spec
-   A3). The table is the full load: 4,325 rules (measured 2026-09-25,
+   A3). The table is the full load: 4,992 rules (measured 2026-09-25,
    test/test_rule_table_order.mac prints length(mr_rule_table) after
-   mr_load_all(); 3,997 before class 8 + its 328). The 3,997 was 3,513
+   mr_load_all(); 4,325 before class 5 + its 667; 3,997 before class 8 +
+   its 328). The 3,997 was 3,513
    classes 1-3 +
    390 class 6 + 8 class-4 bridge + 19 9.2 + 67 9.3; each term measured
    2026-09-22 against the loaded lists directly -- 3,513 is
@@ -253,10 +255,38 @@ mr_load_all() := block([],
                            mr_rules_3_1_5, mr_rules_3_3, mr_rules_3_4,
                            mr_rules_3_2_1, mr_rules_3_2_2, mr_rules_3_2_3,
                            mr_rules_3_5]),
+  /* class 5 (inverse trig), 667 rules over 15 files (5.1 Inverse sine,
+     5.3 Inverse tangent, 5.5 Inverse secant; Rubi.m L283-299) — Rubi.m
+     LoadRules order is rule PRIORITY: section 5 loads after section 4 and
+     before section 6. Class 4's only ported records are its bridge subset,
+     whose BODY lists are empty (they load below, for their tails), so
+     class 5's bodies follow class 3's directly and precede class 6's.
+     Class 5 has no bare-u_ record, so no _tail list. */
+  %mr_load_sibling("rules/class5/5_1_1.mac", 'mr_witness_5_1_1),
+  %mr_load_sibling("rules/class5/5_1_2.mac", 'mr_witness_5_1_2),
+  %mr_load_sibling("rules/class5/5_1_3.mac", 'mr_witness_5_1_3),
+  %mr_load_sibling("rules/class5/5_1_4.mac", 'mr_witness_5_1_4),
+  %mr_load_sibling("rules/class5/5_1_5.mac", 'mr_witness_5_1_5),
+  %mr_load_sibling("rules/class5/5_1_6.mac", 'mr_witness_5_1_6),
+  %mr_load_sibling("rules/class5/5_3_1.mac", 'mr_witness_5_3_1),
+  %mr_load_sibling("rules/class5/5_3_2.mac", 'mr_witness_5_3_2),
+  %mr_load_sibling("rules/class5/5_3_3.mac", 'mr_witness_5_3_3),
+  %mr_load_sibling("rules/class5/5_3_4.mac", 'mr_witness_5_3_4),
+  %mr_load_sibling("rules/class5/5_3_5.mac", 'mr_witness_5_3_5),
+  %mr_load_sibling("rules/class5/5_3_6.mac", 'mr_witness_5_3_6),
+  %mr_load_sibling("rules/class5/5_3_7.mac", 'mr_witness_5_3_7),
+  %mr_load_sibling("rules/class5/5_5_1.mac", 'mr_witness_5_5_1),
+  %mr_load_sibling("rules/class5/5_5_2.mac", 'mr_witness_5_5_2),
+  mr_rule_table : flatten([mr_rule_table, mr_rules_5_1_1, mr_rules_5_1_2,
+                           mr_rules_5_1_3, mr_rules_5_1_4, mr_rules_5_1_5,
+                           mr_rules_5_1_6, mr_rules_5_3_1, mr_rules_5_3_2,
+                           mr_rules_5_3_3, mr_rules_5_3_4, mr_rules_5_3_5,
+                           mr_rules_5_3_6, mr_rules_5_3_7, mr_rules_5_5_1,
+                           mr_rules_5_5_2]),
   /* class 6 (hyperbolic), 390 rules over 13 files — Rubi.m LoadRules
-     order, which is rule PRIORITY: it loads after all of classes 1-3,
-     exactly as class 2 loads after class 1. Classes 4 and 5 are not
-     ported, so section 6 follows section 3 directly. */
+     order, which is rule PRIORITY: it loads after all of classes 1-3 and
+     after class 5 (section 4's bodies are not ported), exactly as class 2
+     loads after class 1. */
   %mr_load_sibling("rules/class6/6_1_10.mac", 'mr_witness_6_1_10),
   %mr_load_sibling("rules/class6/6_1_11.mac", 'mr_witness_6_1_11),
   %mr_load_sibling("rules/class6/6_1_12.mac", 'mr_witness_6_1_12),
@@ -297,8 +327,8 @@ mr_load_all() := block([],
      $LoadElementaryFunctionRules block, right after class 8; generated
      with class 8 under the key 9_1d, since the legacy class-1 file owns
      9_1). Rubi.m LoadRules order is rule PRIORITY: sections 4-7 come
-     before 8, and of them only 6 and 4's (empty-bodied) bridge subset are
-     ported, so class 8 follows them; 9.3's body stays last (spec A3).
+     before 8, and of them only 5, 6 and 4's (empty-bodied) bridge subset
+     are ported, so class 8 follows them; 9.3's body stays last (spec A3).
      8.9's bare-u_ record (r44, the ProductLog Subst) is in
      mr_rules_8_9_tail, named in the tail flatten below. */
   %mr_load_sibling("rules/class8/8_1.mac", 'mr_witness_8_1),
