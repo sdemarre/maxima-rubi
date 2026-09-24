@@ -1,0 +1,10 @@
+#!/bin/sh
+# probes/corpus/15-class8-answer-heads.run — class-8 answer-head census
+# driver (docs/class-porting.md Step 1(b)). Reuses the class-6 probe's
+# curated + discovery passes (probes/corpus/12-class6-answer-heads.py takes
+# the section as its argument).
+#
+#   sh probes/corpus/15-class8-answer-heads.run
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/corpus/12-class6-answer-heads.py "8 Special functions" > probes/corpus/15-class8-answer-heads.out
+echo "wrote probes/corpus/15-class8-answer-heads.out"
