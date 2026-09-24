@@ -315,9 +315,12 @@ files`; Task 10 keeps 21 and moves that line to `7 rules over 2 files`,
 its fix round 1 to `8 rules over 2 files`); then `Results: 22 passed, 0
 failed` (2026-09-21, ticket 08): the With/Module local prefixing is one more
 closed exception, `undo_local_prefix`, its 1,602 declarations pinned.
-Now **`Results: 23 passed, 0 failed`** (2026-09-22, the section-9 port's
+Then `Results: 23 passed, 0 failed` (2026-09-22, the section-9 port's
 Task 10: one more check-7 line, `post-P0 class 9: 86 rules over 2 files`;
-re-measured 2026-09-23 at Task 14).
+re-measured 2026-09-23 at Task 14). Now **`Results: 24 passed, 0 failed`**
+(2026-09-25, the class-8 port's Step 3: one more check-7 line,
+`post-P0 class 8: 328 rules over 10 files` — the nine loaded "8 " files and
+9.1 Derivative as `rules/class8/9_1d.mac`).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
@@ -328,7 +331,7 @@ fixes' 1,283 integer comparisons, 10 `notequal` and 1 juxtaposition), the
 reader self-test
 (`python3 generator/mma_reader.py`), and every pattern string preparing
 in `MR-MATCH`. Regeneration is byte-identical:
-`python3 generator/generate_rules.py --class <1|2|3|6>` and `--rewrites`
+`python3 generator/generate_rules.py --class <1|2|3|6|8|9>` and `--rewrites`
 leave `git status --porcelain rules/` empty (as does `--class 4` against
 the committed class-4 files; every class prefixes its With/Module
 locals `_mr_<key>_r<n>_<name>` — class 4 since `de51845`, the rest since
@@ -336,7 +339,11 @@ ticket `.scratch/class-ports/issues/08`).
 
 The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
 guard, pure Python: `python3 test/test_generator_section9.py` — green
-**`Results: 21 passed, 0 failed`** (re-measured 2026-09-23 at Task 14;
+**`Results: 26 passed, 0 failed`** (2026-09-25, the class-8 port: 23 after
+`7df5f9d`'s two `drop_comment_only_lines` join-guard checks, +3 for the
+guard's fix in `a6713a4` — a comment-only line before a blank line, before
+a multi-line comment, before the single-line ShowSteps wrapper; the guard
+had aborted `--class 1` and `--class 3`. Earlier: 21, re-measured 2026-09-23 at Task 14;
 13 at Task 1: 11 at the task; +2 at its fix round 1:
 the two-comments-on-one-line guard on `drop_comment_only_lines` and the
 bounded, loud `GenError` on a wrapper missing its `SimplifyFlag` line in

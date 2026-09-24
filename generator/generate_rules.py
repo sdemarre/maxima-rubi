@@ -707,8 +707,20 @@ def translate(s, ctx):
             if len(parts) < 2:
                 raise GenError(f"{ctx['key']} r{ctx['n']}: Block arity "
                                f"{len(parts)}")
-            if re.sub(r"\s+", "", parts[0]) != \
-                    "{$ShowSteps=False,$StepCounter=Null}":
+            binds = re.sub(r"\s+", "", parts[0])
+            if binds == "{$UseGamma=True}":
+                # 8.6 r9 (class 8, 2026-09-25): Block[{$UseGamma = True},
+                # rhs] -- the one Block whose binding a rule CAN observe:
+                # $UseGamma is the package global mr_use_gamma_flag (the
+                # table's $-row), read by class-2 conditions, so the nested
+                # Int in rhs must run with it true. Maxima's block binds
+                # its locals DYNAMICALLY, which is Block's semantics; the
+                # name is the global itself and must NOT take the
+                # With/Module local prefix (ticket 08), or the binding
+                # would shadow nothing.
+                return (f"block([{RENAME['$UseGamma']} : true], "
+                        f"{translate(','.join(parts[1:]), ctx)})")
+            if binds != "{$ShowSteps=False,$StepCounter=Null}":
                 raise GenError(f"{ctx['key']} r{ctx['n']}: unlisted Block "
                                f"bindings {parts[0].strip()!r}")
             return translate(",".join(parts[1:]), ctx)
@@ -800,6 +812,37 @@ def translate_atom(s, ctx):
             k = j
             while k < L and s[k] in " \t":
                 k += 1
+            if k < L and s[k] == "[" and name == "Derivative":
+                # class 8 / 9.1 (RESTRUCTURE handler "derivative"):
+                # Mathematica's curried formal derivative
+                # Derivative[n][f][u] -> %mr_derivative(n, f, u), which
+                # builds Maxima's derivative noun 'diff(f(u), u, n) (order
+                # 0: f(u)); the design is on
+                # .scratch/class-ports/issues/01 ("DESIGN"). Exactly three
+                # bracket groups, nothing else: a bare Derivative[n] (an
+                # operator value) has no Maxima reading here, so it is
+                # loud, never a half-translated call.
+                groups, t = [], k
+                while t < L and s[t] == "[" and len(groups) < 3:
+                    depth, u = 0, t
+                    while u < L:
+                        if s[u] == "[":
+                            depth += 1
+                        elif s[u] == "]":
+                            depth -= 1
+                            if depth == 0:
+                                break
+                        u += 1
+                    groups.append(s[t+1:u])
+                    t = u + 1
+                if len(groups) != 3 or any(not g.strip() or "," in g
+                                           for g in groups):
+                    raise GenError(f"{ctx['key']} r{ctx['n']}: Derivative is "
+                                   f"not the curried Derivative[n][f][u] form: "
+                                   f"{s[i:t][:60]!r}")
+                out.append("%mr_derivative(" + ", ".join(
+                    translate(g, ctx) for g in groups) + ")")
+                i = t; continue
             if k < L and s[k] == "[":
                 # find the matching ]
                 depth, t = 0, k
@@ -1210,6 +1253,27 @@ ACCEPTED_RISKS = {
     ("rit", 1, "risk:Pi-arg:ReduceInertTrig"),
     ("rit", 2, "risk:Pi-arg:ReduceInertTrig"),
     ("rit", 2, "risk:numeric-or-negated-arg:Complex"),
+    # Class 8 (2026-09-25): the 17 class-8 G-9 risk rules
+    # (probes/matcher/02-construct-census.out lists them under "LHS
+    # evaluation effects"; the matcher-substrate spec left them to this
+    # port). Every one is a special function whose FIRST argument is a
+    # numeric order/parameter and whose SECOND is a pattern expression:
+    # ExpIntegralE[1, b_.*x_], Gamma[0, b_.*x_], PolyGamma[0, a_.+b_.*x_],
+    # Zeta[2, a_.+b_.*x_], PolyLog[2, c_.*(a_.+b_.*x_)]. The reader flags
+    # ANY numeric argument of a function head; Mathematica evaluates these
+    # functions only at special values of the second argument (a number,
+    # 0, Infinity, ...), and a pattern is none of them, so the LHS is stored
+    # exactly as written -- the shape the reader emits. (The flag's real
+    # targets, Sin[-x_] -> -Sin[x_] and the like, rewrite on the argument
+    # that carries the pattern; none of these do.)
+    ("8_3", 3, "risk:numeric-or-negated-arg:ExpIntegralE"),
+    ("8_6", 2, "risk:numeric-or-negated-arg:Gamma"),
+    ("8_6", 18, "risk:numeric-or-negated-arg:PolyGamma"),
+    ("8_6", 19, "risk:numeric-or-negated-arg:PolyGamma"),
+    ("8_7", 1, "risk:numeric-or-negated-arg:Zeta"),
+    ("8_7", 3, "risk:numeric-or-negated-arg:Zeta"),
+    *(("8_8", _r, "risk:numeric-or-negated-arg:PolyLog")
+      for _r in (11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22)),
 }
 
 
@@ -1719,6 +1783,24 @@ def emit_head(head, arglist, ctx):
         fn = {"EllipticF": "elliptic_f", "EllipticE": "elliptic_e",
               "EllipticPi": "elliptic_pi"}[head]
         return f"{fn}({', '.join(arglist)})"
+    if head == "PolyGamma":
+        # class 8 (RESTRUCTURE handler "polygamma"): PolyGamma[n, z] ->
+        # psi[n](z), Maxima's subscripted polygamma (mr-tree reads it back
+        # as PolyGamma). diff closes for every order, negative included
+        # (probes/answer-side/04-class8-answer-side-identities.out A8/A9).
+        if len(arglist) != 2:
+            raise GenError(f"{key} r{n}: PolyGamma arity {len(arglist)}")
+        return f"psi[{arglist[0].strip()}]({arglist[1].strip()})"
+    if head == "Zeta":
+        # class 8 (RESTRUCTURE handler "zeta"): 1-arg -> Riemann's native
+        # zeta; 2-arg is the Hurwitz zeta, which Maxima lacks symbolically
+        # (probe 04 A16/A17), emitted as the corpus's own head Zeta(s, z) --
+        # an inert noun, the AppellF1 precedent. Any other arity is loud.
+        if len(arglist) == 1:
+            return f"zeta({arglist[0].strip()})"
+        if len(arglist) == 2:
+            return f"Zeta({arglist[0].strip()}, {arglist[1].strip()})"
+        raise GenError(f"{key} r{n}: Zeta arity {len(arglist)}")
     if head == "LogGamma":
         # Structural rewrite (RESTRUCTURE handler "loggamma"), not a
         # rename: LogGamma[v] -> log(gamma(v)). loggamma itself is an
@@ -2264,8 +2346,20 @@ NINE_ONE = ("Rubi/IntegrationRules/9 Miscellaneous/"
             "9.1 Integrand simplification rules.m")
 NINE_ONE_TOTAL = 28
 
+# 9.1 Derivative integration rules (Rubi.m L354, the last file inside the
+# $LoadElementaryFunctionRules block, right after class 8) belongs to the
+# class-8 port (section-9 spec 2026-09-22 §0.3.3; its only corpus is
+# "8 Special functions/8.10 Formal derivatives.mac"). It is generated with
+# class 8 under the key 9_1d: its own key would be 9_1, which the legacy
+# class-1 file above already owns (mr_rules_9_1), and class 9 skips it for
+# the same reason (load_class_files).
+NINE_ONE_DERIV = ("Rubi/IntegrationRules/9 Miscellaneous/"
+                  "9.1 Derivative integration rules.m")
+NINE_ONE_DERIV_KEY = "9_1d"
+NINE_ONE_DERIV_TOTAL = 21
+
 def configure(class_num):
-    """Point the generator at class <class_num> (1, 2, 3, 4, 6 or 9)."""
+    """Point the generator at class <class_num> (1, 2, 3, 4, 6, 8 or 9)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
@@ -2291,9 +2385,14 @@ def configure(class_num):
     # BOTH branches of 9.3's nine single-line
     # If[TrueQ[$LoadShowSteps], …] wrappers (unwrap_showsteps_line keeps
     # only the plain branch — 9 fewer records, 95 - 9 = 86).
+    # class 8: 328 — the census's 307 over the nine loaded "8 " files plus
+    # 9.1 Derivative integration rules' 21 (NINE_ONE_DERIV below), no
+    # adjustment: 0 LoadShowSteps lines over the ten .m files (measured
+    # 2026-09-25, probes/translation/09-class8-syntax-census.out).
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
                       3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),
-                      6: 390, 9: 86}[class_num]
+                      6: 390, 8: 307 + NINE_ONE_DERIV_TOTAL,
+                      9: 86}[class_num]
 
 
 def _emit_source(rel_m, key, only, total, load_lines, note=""):
@@ -2498,6 +2597,14 @@ def main(class_num=None):
             total = _emit_source(NINE_ONE, "9_1", only, total, load_lines,
                                  " (legacy 9.1, end of the class-1 table)")
             table_terms.append("mr_rules_9_1")
+    if CLASS == 8:
+        if not (RUBI / NINE_ONE_DERIV).exists():
+            raise GenError(f"9.1 Derivative source missing: {NINE_ONE_DERIV}")
+        if not only or only == NINE_ONE_DERIV_KEY:
+            total = _emit_source(NINE_ONE_DERIV, NINE_ONE_DERIV_KEY, only,
+                                 total, load_lines,
+                                 " (9.1 Derivative, Rubi.m L354)")
+            table_terms.append(f"mr_rules_{NINE_ONE_DERIV_KEY}")
     expected = EXPECTED_TOTAL
     note = (f"OK (== {expected})" if (total == expected and not only)
             else ("partial (--only)" if only
