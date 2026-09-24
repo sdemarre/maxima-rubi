@@ -2359,7 +2359,7 @@ NINE_ONE_DERIV_KEY = "9_1d"
 NINE_ONE_DERIV_TOTAL = 21
 
 def configure(class_num):
-    """Point the generator at class <class_num> (1, 2, 3, 4, 6, 8 or 9)."""
+    """Point the generator at class <class_num> (1, 2, 3, 4, 5, 6, 8 or 9)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
@@ -2389,8 +2389,17 @@ def configure(class_num):
     # 9.1 Derivative integration rules' 21 (NINE_ONE_DERIV below), no
     # adjustment: 0 LoadShowSteps lines over the ten .m files (measured
     # 2026-09-25, probes/translation/09-class8-syntax-census.out).
+    # class 5: 667 — the 01 census's 665 plus 2: 5.3.7 carries two
+    # single-line If[TrueQ[$LoadShowSteps], <ShowStep rule>, <plain rule>]
+    # wrappers (L30/L31, the Int[u_*v_^n_., x] quadratic-discriminant pair)
+    # that the census's rule_runs glues onto the rule before them, while
+    # unwrap_showsteps_line makes each its own (plain) record. The
+    # generator-side count is the closure probe's (measured 2026-09-25,
+    # probes/translation/10-class5-syntax-census.out: 15 files, 667 rules,
+    # 2 LoadShowSteps lines).
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
                       3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),
+                      5: 667,
                       6: 390, 8: 307 + NINE_ONE_DERIV_TOTAL,
                       9: 86}[class_num]
 
