@@ -264,9 +264,11 @@ Green: `Results: 57 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
 empty-leftover lock, +2 at Plan 2: the Power-exponent Optional
 default, +4 at spec §3.8: the flat-absorb committed-tail prune — two
 committed-tail locks, one lock that an uncommitted tail still
-enumerates, one cost test), `Results: 58 passed, 0 failed` (mr-tree;
+enumerates, one cost test), `Results: 84 passed, 0 failed` (mr-tree;
 46, +5 at Plan 2: CRE input and the booleans, +7 at the inert-trig
-substrate, `53dc578`: the six inert trig heads) and
+substrate, `53dc578`: the six inert trig heads, +26 at the class-8 port,
+2026-09-25: user-function heads, Hurwitz `Zeta`, the formal-derivative
+noun as the curried `Derivative` tree, and their round trips) and
 `Results: 106 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
