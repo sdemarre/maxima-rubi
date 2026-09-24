@@ -298,8 +298,10 @@ units and the condition-assignment idiom):
 `Results: 1292 passed, 0 failed`, re-measured 2026-09-23 at Task 14 (1293
 on the class-ports base `cd0a421`, after tickets 14/15); at the class-8
 port's Step 4 (2026-09-25: `%mr_derivative`, FunctionOfExpnQ and
-FunctionOfQ's general arm, SubstForAux, 38 checks):
-**`Results: 1331 passed, 0 failed`**. The
+FunctionOfQ's general arm, SubstForAux, 38 checks): `Results: 1331
+passed, 0 failed`; with its capture fixes, the formal-derivative CalculusQ
+reading and the 9.1 Derivative end-to-end targets (19 checks, three older
+checks re-pointed): **`Results: 1350 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load

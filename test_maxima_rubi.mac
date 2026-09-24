@@ -147,6 +147,7 @@ run_all_tests() := block([],
   test_class8_cluster_a(),
   test_class8_cluster_b(),
   test_class8_cluster_c(),
+  test_class8_e2e(),
   test_census(),
   print(""),
   print("========================================"),
@@ -2540,7 +2541,13 @@ test_class2_cluster_a() := block([],
    check_bool("powerQ bare x", is(%mr_powerQ(x) = false)),
    check_bool("powerQ sum", is(%mr_powerQ(a + b*x) = false)),
    check_bool("calculusQ integrate noun", is(%mr_calculusQ(integrate(f(x), x)) = true)),
-   check_bool("calculusQ diff noun", is(%mr_calculusQ(diff(f(x), x)) = true)),
+   /* class 8 (2026-09-25): a diff noun of the formal-derivative shape,
+      diff(f(x), x), is Mathematica's EVALUATED Derivative[1][f][x] -- not
+      calculus (Rubi's $CalculusFunctions has D, not Derivative[n][f]); a
+      partial-derivative noun is the shape that stays calculus */
+   check_bool("calculusQ diff noun (partial)", is(%mr_calculusQ(diff(f(x, y), x)) = true)),
+   check_bool("calculusQ formal derivative is not calculus",
+              is(%mr_calculusQ(diff(f(x), x)) = false)),
    check_bool("calculusQ product", is(%mr_calculusQ(f*x) = false)),
    check_bool("hyperbolicQ sinh", is(%mr_hyperbolicQ(sinh(x)) = true)),
    check_bool("hyperbolicQ sin", is(%mr_hyperbolicQ(sin(x)) = false)),
@@ -2790,8 +2797,13 @@ test_class3_cluster_a() := block([],
      integrate(f(x), x)) = false) — a documented divergence on an
      input no call site produces (the rules emit no product heads,
      mr_int results carry closed forms or the integrate noun). */
-  check_bool("iffQ diff noun",
-             is(%mr_inverseFunctionFreeQ(diff(f(x), x), x) = false)),
+  check_bool("iffQ diff noun (partial)",
+             is(%mr_inverseFunctionFreeQ(diff(f(x, y), x), x) = false)),
+  /* class 8 (2026-09-25): diff(f(x), x) is the formal derivative
+     Derivative[1][f][x], which Rubi's InverseFunctionFreeQ walks into (its
+     head is not a calculus head): inverse-function-free */
+  check_bool("iffQ formal derivative is inverse-function-free",
+             is(%mr_inverseFunctionFreeQ(diff(f(x), x), x) = true)),
   check_bool("iffQ evaluated const integral",
              is(%mr_inverseFunctionFreeQ(integrate(f(a), x), x) = true)),
   check_bool("iffQ hypergeometric",
@@ -3984,8 +3996,12 @@ test_try_pure_tan_subst() := block([],
             %mr_calculusFreeQ(1 + 'unintegrable[f(x), x], x)),
   check_bool("cfq: an integrate noun in another variable",
              %mr_calculusFreeQ(1 + 'integrate(f(y), y), x)),
-  check_not("cfq: a diff noun nested under exp",
-            %mr_calculusFreeQ(exp('diff(f(x), x)), x)),
+  check_not("cfq: a (partial) diff noun nested under exp",
+            %mr_calculusFreeQ(exp('diff(f(x, y), x)), x)),
+  /* class 8 (2026-09-25): the formal derivative Derivative[1][f][x] is no
+     calculus head */
+  check_bool("cfq: a formal derivative under exp is calculus-free",
+             %mr_calculusFreeQ(exp('diff(f(x), x)), x)),
   /* SubstFor[w,v,u,x] = SimplifyIntegrand[w SubstFor[v,u,x], x]: the
      half-angle integrand reaches Int normalized (without the
      SimplifyIntegrand it was 1/((x^2+1)*(3+2*(1/(x^2+1)-x^2/(x^2+1))))). */
@@ -4679,6 +4695,18 @@ test_class8_cluster_b() := block([],
             %mr_functionOfQ(f(x)*g(x), x/(1 + f(x)^2*g(x)^2), x)),
   check_bool("foq: a polynomial in ProductLog(x) is a function of it (8.9 r44)",
              %mr_functionOfQ(lambert_w(x), 1 + lambert_w(x)^2, x)),
+  /* CalculusQ: the formal-derivative noun is Mathematica's evaluated
+     Derivative[n][f][v], not an unevaluated D */
+  check_not("calculusQ: the formal derivative 'diff(f(x),x,1) is not calculus",
+            %mr_calculusQ('diff(f(x), x, 1))),
+  check_not("calculusQ: nor at a composite point",
+            %mr_calculusQ(%mr_derivative(1, F, f(x)*g(x)))),
+  check_bool("calculusQ: an integrate noun still is", %mr_calculusQ('integrate(f(x), x))),
+  check_bool("calculusQ: a mixed diff noun still is", %mr_calculusQ('diff(f(x, y), x, 1))),
+  check("foe: F'(f g) is a function of f g (its point)",
+        %mr_functionOfExpnQ(%mr_derivative(1, F, f(x)*g(x)), f(x)*g(x), x), 1),
+  check_bool("foq: F'(f g) (g f' + f g') -- u = F'(f g) -- is a function of f g (9.1 r9)",
+             %mr_functionOfQ(f(x)*g(x), %mr_derivative(1, F, f(x)*g(x)), x)),
   check_bool("foq: cos(f'(x)) is a function of f'(x) (9.1 r8)",
              %mr_functionOfQ(%mr_derivative(1, f, x), cos(%mr_derivative(1, f, x)), x)),
   check_not("foq: the trig arm is unchanged (odd sin power vs cos)",
@@ -4708,6 +4736,9 @@ test_class8_cluster_c() := block([],
         %mr_substForAux(3*lambert_w(x)^2, lambert_w(x), x), 3*x^2),
   check("sfa: a formal derivative -> x inside a function",
         %mr_substForAux(cos('diff(f(x), x, 1)), 'diff(f(x), x, 1), x), cos(x)),
+  check_bool("sf: F'(f g) for v = f g is F'(x) (9.1 r9's chain rule)",
+        is(%mr_substFor(f(x)*g(x), %mr_derivative(1, F, f(x)*g(x)), x)
+           = %mr_derivative(1, F, x))),
   check("sf: 1/(1+f^2 g^2) for v = f g is 1/(1+x^2)",
         ratsimp(%mr_substFor(f(x)*g(x), 1/(1 + f(x)^2*g(x)^2), x) - 1/(1 + x^2)), 0),
   check("sf: a polynomial in ProductLog(x)",
@@ -4716,6 +4747,67 @@ test_class8_cluster_c() := block([],
         ratsimp(%mr_substFor(2*f(x)*g(x), f(x)^2*g(x)^2, x) - x^2/4), 0),
   check("sf: the power branch is unchanged (x^2 -> x)",
         ratsimp(%mr_substFor(x^2, x^4 + 1, x) - (x^2 + 1)), 0),
+  true
+)$
+
+/* ---- class 8 end to end: 9.1 Derivative rules on a local table ----
+   The 8.10 Formal derivatives integrands through rules/class8/9_1d.mac
+   (and 1.1.1.1 for Int[1/x]), on a table built here and restored after
+   (Layer A never calls mr_load_all). What each target exercises:
+     r1   Int[Derivative[n][f][x]] -- the curried tree, order n-1 back;
+     r19  f' g + f g' -- ONE capture f_ bound as a value (Derivative[1][f_])
+          and as a head (f_[x_]): mr-tree's user-function heads;
+     r9   F'(f g) (g f' + f g') -> F(f g): FunctionOfQ's general arm
+          through the formal-derivative noun at a composite point, SubstFor
+          -> SubstForAux, then r1 on F'(x); and the capture fix -- the
+          repl applies the bound head F, which rubi's own parameter f once
+          shadowed ((integrand)(x) came back);
+     r4   sin(a+b x) f'' -- the IGtQ[n,0] integration by parts, twice.
+   On the FULL table the f' g + f g' target does NOT reach r19: 1.4.1 r7 (a
+   bare-u_ body exception, issue 07) splits the sum first, where Rubi's
+   specificity order would try r19 -- recorded on
+   .scratch/class-ports/issues/01, not asserted here. */
+/* mr_nested_fallback is bound false here: Layer A runs with the nested
+   integrate fall-through on (see the note after run_all_tests), and a
+   nested give-up must read as the unintegrable marker the corpus's
+   CannotIntegrate answers are, as in the driver's rules-only default. */
+test_class8_e2e() := block([mr_c8_saved, mr_c8_ok, mr_c8_r, mr_c8_e,
+                            mr_nested_fallback : false],
+  print("--- class 8 end to end: 9.1 Derivative rules ---"),
+  mr_c8_saved : mr_rule_table,
+  mr_c8_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class8/9_1d.mac", 'mr_witness_9_1d),
+    true),
+  check_bool("9_1d e2e: rule files load", is(mr_c8_ok # [])),
+  if mr_c8_ok # [] then (
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_9_1d]),
+    check_bool("9_1d r1: Int f'(x) = f(x)",
+               is(rubi(%mr_derivative(1, f, x), x) = f(x))),
+    check_bool("9_1d r1: Int f^(n)(x) = f^(n-1)(x)",
+               is(rubi(%mr_derivative(n, f, x), x) = %mr_derivative(n - 1, f, x))),
+    check_bool("9_1d r1: Int f^(-1)(x) = f^(-2)(x) (a formal antiderivative)",
+               is(rubi(%mr_derivative(-1, f, x), x) = %mr_derivative(-2, f, x))),
+    check_bool("9_1d + 1.1.1.1: Int f'/f = log(f(x))",
+               is(rubi(%mr_derivative(1, f, x)/f(x), x) = log(f(x)))),
+    check_bool("9_1d r19: Int g f' + f g' = f(x) g(x)",
+               is(rubi(g(x)*%mr_derivative(1, f, x) + f(x)*%mr_derivative(1, g, x), x)
+                  = f(x)*g(x))),
+    check_bool("9_1d r20: Int (g f' - f g')/g^2 = f(x)/g(x)",
+               is(rubi((g(x)*%mr_derivative(1, f, x) - f(x)*%mr_derivative(1, g, x))/g(x)^2, x)
+                  = f(x)/g(x))),
+    check_bool("9_1d r9 + r1: Int F'(f g) (g f' + f g') = F(f(x) g(x))",
+               is(rubi(%mr_derivative(1, F, f(x)*g(x))
+                       *(g(x)*%mr_derivative(1, f, x) + f(x)*%mr_derivative(1, g, x)), x)
+                  = F(f(x)*g(x)))),
+    mr_c8_r : rubi(sin(a + b*x)*%mr_derivative(2, f, x), x),
+    mr_c8_e : sin(a + b*x)*%mr_derivative(1, f, x) - b*f(x)*cos(a + b*x)
+              - b^2*mr_unintegrable(f(x)*sin(a + b*x), x),
+    /* expand, not ratsimp: ratsimp leaves the two subscripted
+       'unintegrable kernels uncancelled, expand cancels them (measured) */
+    check("9_1d r4 twice: Int sin(a+b x) f''(x), the corpus's answer",
+          expand(mr_c8_r - mr_c8_e), 0)),
+  mr_rule_table : mr_c8_saved,
   true
 )$
 

@@ -24,7 +24,7 @@ geteqR(mm, nm) := block([],
 
 /* Package noun forms (house rule 10 — distinct from the fall-through
  * integrate noun and from corpus-expected nouns). */
-mr_unintegrable(f, x) := 'unintegrable[f, x]$
+mr_unintegrable(%mr_top_f, x) := 'unintegrable[%mr_top_f, x]$
 
 /* Rubi's finite Sum, concretized (2026-08-25 divergence fix). Maxima
    evaluates function arguments eagerly, so the generator hands the
@@ -221,15 +221,15 @@ depth_level : 0$
    integrand to Maxima's integrate (mr_int under mr_nested_fallback,
    rubi_fallback). Every cap hit is counted in mr_depth_cap_hits for the
    run's .caps census (exact seen test design 3.3). */
-%mr_top_body(f, x, fb) := block([ans],
+%mr_top_body(%mr_top_f, x, %mr_top_fb) := block([%mr_top_ans],
   depth_level : depth_level + 1,
   if depth_level > mr_max_depth then (
     depth_level : depth_level - 1,
     mr_depth_cap_hits : mr_depth_cap_hits + 1,
-    if fb then return(integrate(f, x))
-    else return(mr_unintegrable(f, x))
+    if %mr_top_fb then return(integrate(%mr_top_f, x))
+    else return(mr_unintegrable(%mr_top_f, x))
   ),
-  if member(f, %mr_seen) then (
+  if member(%mr_top_f, %mr_seen) then (
     depth_level : depth_level - 1,
     /* A re-dispatch of an integrand already on the dispatch path is
        a pure rule loop (static table, deterministic matcher -> the
@@ -249,7 +249,7 @@ depth_level : 0$
        lines are queued) is inherent to bare integrate in a batch —
        vanilla Maxima integrate dies identically — and is not
        regressed or fixed here. */
-    if fb then return(integrate(f, x))
+    if %mr_top_fb then return(integrate(%mr_top_f, x))
     /* fb = false (the rules-only default): DECLINE THE RULE instead of
        answering the noun -- the seen-cut fall-through, half of the pair
        with mr_giveup_last (maxima_rubi_dispatch.lisp).
@@ -281,25 +281,25 @@ depth_level : 0$
        the seen guard returns. That branch is untouched. */
     else error("mr_seen_cut")
   ),
-  %mr_seen : cons(f, %mr_seen),
+  %mr_seen : cons(%mr_top_f, %mr_seen),
   /* One dispatch on MR-MATCH (maxima_rubi_dispatch.lisp
      %mr_dispatch_tree): Mathematica matching semantics, so the
      compensating rescans of the defmatch runner (passes 2-4) are gone
      (matcher substrate spec section 3.5). mr_model_flags (spec 3.6,
      the G-5 arm) binds radexpand:false and logexpand:false around the
      dispatch, so the intermediate integrands keep Mathematica's shape. */
-  ans : if mr_model_flags
+  %mr_top_ans : if mr_model_flags
         then block([radexpand : false, logexpand : false],
-                   %mr_dispatch_tree(f, x, mr_rule_table, depth_level))
-        else %mr_dispatch_tree(f, x, mr_rule_table, depth_level),
+                   %mr_dispatch_tree(%mr_top_f, x, mr_rule_table, depth_level))
+        else %mr_dispatch_tree(%mr_top_f, x, mr_rule_table, depth_level),
   %mr_seen : rest(%mr_seen),
   depth_level : depth_level - 1,
-  if ans = false then (
-    if fb then integrate(f, x)
-    else mr_unintegrable(f, x)
-  ) else ans)$
+  if %mr_top_ans = false then (
+    if %mr_top_fb then integrate(%mr_top_f, x)
+    else mr_unintegrable(%mr_top_f, x)
+  ) else %mr_top_ans)$
 
-mr_top(f, x, fb) := %mr_top_body(f, x, fb)$
+mr_top(%mr_top_f, x, %mr_top_fb) := %mr_top_body(%mr_top_f, x, %mr_top_fb)$
 
 /* Nested sub-integral entry: every generated replacement calls mr_int by
  * name. What a nested call with no route (no rule, the seen test, the
@@ -312,7 +312,7 @@ mr_top(f, x, fb) := %mr_top_body(f, x, fb)$
  * ratsimp seen comparison had declared a loop — the rules-only arm is
  * the new baseline, the fall-through arm is the like-for-like comparison
  * with P0/P5b. */
-mr_int(f, x) := mr_top(f, x, mr_nested_fallback)$
+mr_int(%mr_top_f, x) := mr_top(%mr_top_f, x, mr_nested_fallback)$
 
 /* Two-arg rubi is the rules-only entry (fast no-answer noun on a
  * 0-firing). The integrate fall-through is the separate explicit entry
@@ -322,8 +322,8 @@ mr_int(f, x) := mr_top(f, x, mr_nested_fallback)$
  * "Too few arguments supplied to rubi(f, x, fb)") — and no variadic
  * syntax (`b...` is a parse error; `argc`/`arglist` have no manual
  * entries), so the two modes must have distinct names. */
-rubi(f, x) := mr_top(f, x, false)$
-rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
+rubi(%mr_top_f, x) := mr_top(%mr_top_f, x, false)$
+rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
 
 /* ===================== predicate cluster 1 (T5) =====================
  * Ports of Rubi IntegrationUtilityFunctions.m (pinned clone, read-only)
@@ -3579,7 +3579,7 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
        where the substitution needs the quartic). Rubi's SubstPower
        is Map over every subpart (IntegrationUtilityFunctions.m:6142),
        so walk args generically. */
-    apply(op(u), map(lambda([z], %mr_substPower(z, x, n)), args(u)))))$
+    funmake(op(u), map(lambda([z], %mr_substPower(z, x, n)), args(u)))))$
 
 /* Rubi :5980  SubstFor[v, u, x] — u (a function of v) with v replaced
    by x. The algebraic surface: an atom is a plain subst, x^n is the
@@ -3940,11 +3940,32 @@ mr_use_gamma_flag : false$
    summed/integrated object depends on the variable. */
 %mr_calculusQ(u) := block([s],
   if atom(u) then false
+  /* Class 8 (2026-09-25): Maxima's formal-derivative noun
+     'diff(f(v), v, n) is Mathematica's EVALUATED Derivative[n][f][v],
+     whose head Derivative[n][f] is not in $CalculusFunctions -- only an
+     unevaluated D is. In Maxima a diff noun of that shape is always the
+     evaluated form (diff evaluates eagerly and leaves the noun only for an
+     undeclared function). Rubi's FunctionOfExpnQ, for one, maps into it
+     (9.1 r9 on F'(f(x) g(x)) (g f' + f g'): the 8.10 chain-rule family);
+     any other diff noun stays calculus. */
+  elseif %mr_formalDerivativeQ(u) then false
   else (
     s : string(op(u)),
     is(member(s, ["integrate", "diff", "sum", "product",
                   "mr_int", "mr_subst", "unintegrable"]) = true)
   ))$
+
+/* True for Maxima's formal-derivative noun 'diff(f(v), v, n): three
+   arguments, the first a one-argument call on the differentiation variable
+   -- the shape mr-tree reads as Rubi's Derivative[n][f][v]
+   (maxima_rubi_tree.lisp derivative-form-p; class 8, 2026-09-25). */
+%mr_formalDerivativeQ(%mr_fdq_u) := block([inflag : true, %mr_fdq_a],
+  if atom(%mr_fdq_u) or string(op(%mr_fdq_u)) # "diff" then false
+  else (
+    %mr_fdq_a : args(%mr_fdq_u),
+    is(length(%mr_fdq_a) = 3) and not atom(first(%mr_fdq_a))
+    and is(length(args(first(%mr_fdq_a))) = 1)
+    and is(first(args(first(%mr_fdq_a))) = second(%mr_fdq_a))))$
 
 /* Rubi HyperbolicQ — the six hyperbolic heads (the
    FunctionOfExponential machinery's explicit-exponential detection).
@@ -4581,6 +4602,20 @@ mr_use_gamma_flag : false$
    ((x+1)^5 — x^5 is a binomial, a = 0), sqrt nodes, minus-wrapped
    powers, other function heads. Quotients are stored as products of
    an inverse-power factor, which the product branch above handles. */
+/* The generic-head rebuild is funmake(op(u), args), not apply (class 8,
+   2026-09-25, all 16 such sites in this file): apply EVALUATES the operator
+   symbol, and Maxima binds parameters and lambda variables dynamically, so
+   a free function whose name is a live variable -- the 8.10 corpus's f, g,
+   F, u -- was applied as that variable's VALUE: f(x)*'diff(g(x),x,1)
+   through this function's lambda([f], ...) came back f(x)(x), and each
+   9.3 r62 pass nested it again until the depth cap (measured on the class-8
+   smoke, rubi_verbose trace). funmake builds the call without evaluating
+   the operator and otherwise agrees with apply on every operator kind the
+   rebuilds meet (+, *, ^, sqrt, unary minus, a subscripted li[2]/psi[1],
+   the diff noun at a negative order, natives, the inert %mr_i* heads,
+   lists, equations -- measured 2026-09-25, build
+   branch_5_50_base_84_g4204fb669). The capture of a SYMBOL inside the
+   integrand by a same-named parameter is ticket 17's wider problem. */
 %mr_normalizeIntegrandFactorBase(u, x) := block([v],
   if atom(u) then u
   else if %mr_binomialQ(u, x) then
@@ -4598,7 +4633,7 @@ mr_use_gamma_flag : false$
     then %mr_unifySum(u, x)
     else %mr_normalizeIntegrandFactorBase(v, x)
   )
-  else apply(op(u), map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u))))$
+  else funmake(op(u), map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u))))$
 
 /* Rubi :2007  NormalizeIntegrandFactor. The .m's last branch maps
    #/x^min without Simplify while the integer-power branch maps
@@ -5001,7 +5036,7 @@ mr_use_gamma_flag : false$
        must become sin(x)). Comma-form lambda (the colon form is a
        parse error) and no slash-star opener sequence inside a comment
        (Maxima nests comments), MEASURED 2026-08-28 (5.50.0/SBCL). */
-    apply(op(u), map(lambda([p], %mr_foEFunctionAux(p, x, st)), args(u)))))$
+    funmake(op(u), map(lambda([p], %mr_foEFunctionAux(p, x, st)), args(u)))))$
 
 %mr_functionExpand(u) := block([n, z],
   if not atom(u) and is(op(u) = gamma_incomplete)
@@ -5432,7 +5467,7 @@ mr_use_gamma_flag : false$
   else if is(op(v) = 'sinc) then sin(part(v, 1))/part(v, 1)
   else if is(op(v) = "[") then
     map(lambda([z], %mr_sincReplace(z)), %mr_parts_list(v))
-  else apply(op(v), map(lambda([z], %mr_sincReplace(z)), args(v))))$
+  else funmake(op(v), map(lambda([z], %mr_sincReplace(z)), args(v))))$
 
 /* Rubi :7450-7462  DerivativeDivides[y, u, x] — if y is not a*x (a
    x-free), y is easy to differentiate (PolynomialQ[y,x] ? the
@@ -5542,7 +5577,7 @@ mr_use_gamma_flag : false$
   else if is(op(u) = "[") then
     map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
       %mr_parts_list(u))
-  else apply(op(u), map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
+  else funmake(op(u), map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
     args(u))))$
 
 /* Rubi :6056-6063  SubstForFractionalPowerOfLinear[u, x] — the 4-list
@@ -5668,7 +5703,7 @@ mr_use_gamma_flag : false$
    ),
    if is(dead = true) then false
    else if is(op(u) = "[") then [res, v, n]
-   else [apply(op(u), res), v, n])$
+   else [funmake(op(u), res), v, n])$
 
 /* Rubi's inert-trig rewrite functions, ported as generated rewrite tables
    (inert-trig substrate design 3.2): every one of their clauses --
@@ -5917,7 +5952,7 @@ mr_use_gamma_flag : false$
     elseif op(u) = coth then %i * %mr_reduceInertTrig(%mr_icot, %mr_dta_v)
     elseif op(u) = sech then %mr_reduceInertTrig(%mr_isec, %mr_dta_v)
     else %i * %mr_reduceInertTrig(%mr_icsc, %mr_dta_v))
-  else apply(op(u),
+  else funmake(op(u),
              map(lambda([%mr_dta_t], %mr_deactivateTrigAux(%mr_dta_t, x)),
                  args(u))))$
 
@@ -6386,7 +6421,7 @@ mr_use_gamma_flag : false$
                         trigexpand(apply(%mr_sft_h,
                           [ratsimp(part(%mr_sft_u, 1)/%mr_sft_v)*'%mr_sft_y]))),
       if atom(%mr_sft_t) then %mr_sft_t
-      else apply(op(%mr_sft_t),
+      else funmake(op(%mr_sft_t),
                  map(lambda([%mr_sft_p],
                             %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
                      args(%mr_sft_t)))))
@@ -6394,7 +6429,7 @@ mr_use_gamma_flag : false$
     %mr_sft_t : %mr_foq_halfPair(%mr_sft_u, %mr_sft_v),
     if %mr_sft_t # false
     then %mr_sft_s/2*%mr_substForTrig(%mr_sft_t, %mr_sft_s, %mr_sft_c, %mr_sft_v)
-    else apply(op(%mr_sft_u),
+    else funmake(op(%mr_sft_u),
                map(lambda([%mr_sft_p],
                           %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
                    args(%mr_sft_u)))))$
@@ -6734,7 +6769,7 @@ mr_use_gamma_flag : false$
        then x^(part(%mr_pisa_u, 2) / part(%mr_pisa_v, 2))
        else %mr_polynomialInSubstAux(part(%mr_pisa_u, 1), %mr_pisa_v, x)
               ^part(%mr_pisa_u, 2))
-  else apply(op(%mr_pisa_u),
+  else funmake(op(%mr_pisa_u),
              map(lambda([%mr_pisa_t],
                         %mr_polynomialInSubstAux(%mr_pisa_t, %mr_pisa_v, x)),
                  %mr_args_in(%mr_pisa_u))))$
@@ -6798,7 +6833,7 @@ mr_use_gamma_flag : false$
   then %mr_pvs_u
   elseif %mr_powerQ(%mr_pvs_u) and freeof(x, part(%mr_pvs_u, 1) / x) then
     x^(part(%mr_pvs_u, 2) / %mr_pvs_m)
-  else apply(op(%mr_pvs_u),
+  else funmake(op(%mr_pvs_u),
              map(lambda([%mr_pvs_t],
                         %mr_powerVariableSubst(%mr_pvs_t, %mr_pvs_m, x)),
                  %mr_args_in(%mr_pvs_u))))$
@@ -6908,7 +6943,7 @@ mr_use_gamma_flag : false$
     else %mr_squareRootOfQuadraticSubst(
            part(%mr_sqs_u, 1), %mr_sqs_vv, %mr_sqs_xx, x)^part(%mr_sqs_u, 2)
   )
-  else apply(op(%mr_sqs_u),
+  else funmake(op(%mr_sqs_u),
              map(lambda([%mr_sqs_t],
                         %mr_squareRootOfQuadraticSubst(
                           %mr_sqs_t, %mr_sqs_vv, %mr_sqs_xx, x)),
@@ -7168,7 +7203,7 @@ if not integerp(lcm(1, 1)) then load("functs")$
    Mathematica's Map on a compound node under inflag : true). */
 %mr_divideDegreesOfFactors(%mr_ddof_u, %mr_ddof_n) := block([inflag : true],
   if %mr_productQ(%mr_ddof_u) then
-    apply(op(%mr_ddof_u),
+    funmake(op(%mr_ddof_u),
           map(lambda([%mr_ddof_f],
                       %mr_leadBase(%mr_ddof_f) ^ (%mr_leadDegree(%mr_ddof_f) / %mr_ddof_n)),
               %mr_args_in(%mr_ddof_u)))
@@ -7194,7 +7229,7 @@ if not integerp(lcm(1, 1)) then load("functs")$
 %mr_absurdNumberFactors(%mr_anf_u) := block([inflag : true],
   if %mr_absurdNumberQ(%mr_anf_u) then %mr_anf_u
   elseif %mr_productQ(%mr_anf_u) then
-    apply(op(%mr_anf_u), map(%mr_absurdNumberFactors, %mr_args_in(%mr_anf_u)))
+    funmake(op(%mr_anf_u), map(%mr_absurdNumberFactors, %mr_args_in(%mr_anf_u)))
   else %mr_numericFactor(%mr_anf_u))$
 
 /* Rubi :1926-1931  NonabsurdNumberFactors[u] — the product of u's factors
@@ -7202,7 +7237,7 @@ if not integerp(lcm(1, 1)) then load("functs")$
 %mr_nonabsurdNumberFactors(%mr_nanf_u) := block([inflag : true],
   if %mr_absurdNumberQ(%mr_nanf_u) then 1
   elseif %mr_productQ(%mr_nanf_u) then
-    apply(op(%mr_nanf_u), map(%mr_nonabsurdNumberFactors, %mr_args_in(%mr_nanf_u)))
+    funmake(op(%mr_nanf_u), map(%mr_nonabsurdNumberFactors, %mr_args_in(%mr_nanf_u)))
   else %mr_nonnumericFactors(%mr_nanf_u))$
 
 /* Rubi :1934-1940  FactorAbsurdNumber[m] — m's prime factorization as a
@@ -7601,7 +7636,7 @@ if not integerp(lcm(1, 1)) then load("functs")$
               %mr_divideDegreesOfFactors(second(%mr_fols_lst), first(%mr_fols_lst)) * x,
               %mr_fols_a, %mr_fols_b, x) ^ first(%mr_fols_lst)
     )
-    else apply(op(%mr_fols_u),
+    else funmake(op(%mr_fols_u),
                map(lambda([%mr_fols_e], %mr_functionOfLinearSubst(%mr_fols_e, %mr_fols_a, %mr_fols_b, x)),
                    %mr_args_in(%mr_fols_u)))
   ))$
