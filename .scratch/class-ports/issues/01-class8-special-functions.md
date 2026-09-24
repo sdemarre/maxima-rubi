@@ -248,3 +248,81 @@ answer is `F(<composite>)` or `f(sin(x))*g(%e^x)` (11 entries: 48, 79-81,
 the package answer is form-identical to the expected text (N14). A chain-rule
 normaliser in the zero chain would lift this, but it changes verification for
 every class and is left as a follow-up question, not part of this port.
+
+### 2026-09-25 — Steps 2-7 complete (branch `class-ports`)
+
+Build `branch_5_50_base_84_g4204fb669`, SBCL 2.6.7. Steps 8-9 (baseline and
+package corpus runs) are the coordinator's.
+
+- **Step 2** (`0c99f7a`): 7 RENAME rows (the natives), HypergeometricPFQ
+  -> hypergeometric, and three emitter handlers (PolyGamma, Zeta,
+  Derivative). The generator's `load_class_files` comment-strips Rubi.m
+  (the 8.10 Bessel line). Byte-identity EMPTY for 1/2/3/4/6/9 + rewrites —
+  after fixing a PRE-EXISTING abort (`a6713a4`): on the base `cd0a421`,
+  `--class 1` and `--class 3` died on `drop_comment_only_lines`' join
+  guard (7df5f9d), so that gate could not run at all.
+- **Step 3** (`2424269`): 328 rules = 307 (9 files) + 21 (9.1 Derivative as
+  `rules/class8/9_1d.mac`, key `9_1d` — `9_1` belongs to the legacy
+  class-1 file). The 17 class-8 G-9 risk rules accepted with reasoning;
+  `Block[{$UseGamma = True}, …]` is a dynamic `block([mr_use_gamma_flag :
+  true], …)`. P3 static 24/0. 8.9 r44 (bare `u_`) lands in the tail.
+  Upstream quirk, ported faithfully: 8.4 r29 and 8.5 r29 test
+  `MemberQ[{SinIntegral, CosIntegral}, x]` — `x`, not the head capture
+  `F` — so both rules are dead in Rubi and here.
+- **Step 4** (`f85c9ec`, `3b0f000`, `37b2e3a`): mr-tree (user-function heads
+  by name; `'diff(f(u),u,n)` <-> `(((Derivative n) f) u)`), then
+  `%mr_derivative`, `%mr_functionOfExpnQ` + FunctionOfQ's general arm,
+  `%mr_substForAux` + SubstFor's general fallback, `%mr_formalDerivativeQ`
+  in CalculusQ, and TWO CAPTURE TRAPS the 8.10 integrands hit (rubi/mr_int
+  took the integrand as a parameter named `f`; `apply(op(u), …)` evaluated
+  an operator symbol like `f` — now `funmake`). Layer A 1293 -> 1350/0;
+  mr-tree 58 -> 84/0.
+- **Step 5**: P3 24/0 (with Step 3). No raw `$` in the class-8 files.
+- **Step 6** (`e96ec4c`): `mr_load_all` loads class 8 then `9_1d` after
+  class 6 / class 4's subset, before 9.3; tail gains 8.9 r44. Table 4,325.
+  Core rebuilt in the `mr-ports` worktree: `rules=4325`, fingerprint
+  `412bfc4f5e433d077041d4f882b43a4a` (the driver's fingerprint agrees:
+  `test_driver_core_pin` 7/0). Rule-table order 14/0.
+- **Step 7**: `HEAD_REWRITES` — `GAMMA(`/`Ei(` arity-dispatched, six new
+  native rows, and two structural rewrites (`Derivative(A)(B)(C)` ->
+  `%mr_derivative(A, B, C)`, `Psi(n,z)` -> `psi[n](z)`); unit
+  `test/test_head_rewrites.py` 20 -> 47/0. No-op, measured over EVERY entry
+  without Maxima (`probes/corpus/16-class8-head-rewrite-noop.out`): 0
+  normalized texts differ from `cd0a421` in sections 1/2/3/6; section 8's
+  rewrite totals equal the Step-1 census (Derivative 320, Psi 77, GAMMA 18 +
+  690, Ei 472 + 334, ProductLog 1695, …). Slice A/B
+  (`probes/corpus/17-class8-slice-ab.out`, 53 entries of classes 1/2/3/6 on
+  a core built at `cd0a421` vs the class-8 core): 0 PASS->FAIL, 2 FAIL->PASS
+  (2.2 e1/e2 `contains-noun -> expected`, class 8's 8.8 polylog rules
+  finishing class-2 sub-integrals — the rubi_verbose trace shows 8_8 firing
+  twice). The 3-per-file class-8 slice: 17/30 PASS (15 verified, 2
+  expected), 12 contains-noun (8.2/8.4/8.5/8.8 first entries: nested
+  sub-integrals need the unported trig class), 1 unverified (8.7 e1).
+
+**Findings for Step 9 / follow-ups.**
+
+1. **Issue 07 meets 9.1.** On the full table `f'(x) g(x) + f(x) g'(x)`
+   does not reach 9.1 r19: `1.4.1 r7` (a bare-`u_` BODY exception, issue 07)
+   splits the sum first, where Rubi's specificity order tries r19 first;
+   each term is then unintegrable. On a 9_1d-only table r19 answers
+   `f(x) g(x)` (Layer A `test_class8_e2e`). Expect the 8.10 product-rule
+   entries to fail until issue 07 / ticket 09 settle bare-`u_` placement.
+2. **9.3 r36 is now live.** `FunctionOfQ[x^(m+1), u, x]` was always false
+   under the port's old general arm; it is Rubi-faithful now. Whether it
+   moves class 1-6 entries is a Step-9 A/B question.
+3. **Three older Layer A checks flipped to the faithful reading**
+   (`calculusQ`/`inverseFunctionFreeQ`/`calculusFreeQ` on `diff(f(x), x)`):
+   under the Derivative design that noun is Mathematica's evaluated
+   `Derivative[1][f][x]`, not an unevaluated `D`.
+4. **The capture fixes reach every class** (the renamed entry parameters,
+   `funmake` at 16 rebuild sites). Measured neutral on 53 accepted-class
+   entries and Layer A; the class-wide A/B is Step 9's. Ticket 17 (symbols
+   in the integrand shadowed by utility parameters) remains open.
+5. **Verification ceilings** (probe 04): the composite-argument chain rule
+   (11 8.10 entries), 2-arg `Zeta` (inert), `psi[-k]` (no float).
+
+**Decided by judgment** (recorded here, not asked): the `9_1d` key; `Zeta`
+2-arg as an inert noun; SubstFor's new fallback gated on FunctionOfExpnQ
+(old `subst` kept otherwise); FunctionOfQ's hyperbolic arms left unported
+(still decline); `funmake` for every generic-head rebuild rather than only
+the class-8 paths; the Derivative representation (above).

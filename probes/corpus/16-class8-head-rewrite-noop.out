@@ -1,0 +1,41 @@
+head-rewrite no-op check: normalize_heads at cd0a421 vs the working tree
+
+== 1 Algebraic functions: 25697 entries, 51764 texts, 0 differ from cd0a421
+   class-8 driver rewrites: {}
+
+== 2 Exponentials: 965 entries, 1932 texts, 0 differ from cd0a421
+   class-8 driver rewrites: {'expintegral_ei(': 237, 'gamma_incomplete(': 191}
+
+== 3 Logarithms: 3085 entries, 6201 texts, 0 differ from cd0a421
+   class-8 driver rewrites: {'expintegral_chi(': 8, 'expintegral_ci(': 8, 'expintegral_ei(': 220, 'expintegral_li(': 22, 'expintegral_shi(': 8, 'expintegral_si(': 8, 'gamma_incomplete(': 304}
+
+== 4 Trig functions: 22472 entries, 45186 texts, 245 differ from cd0a421
+   class-8 driver rewrites: {'expintegral_ci(': 738, 'expintegral_ei(': 6, 'expintegral_si(': 742, 'fresnel_c(': 333, 'fresnel_s(': 322, 'gamma_incomplete(': 462}
+   e.g. 4.1.10 (c+d x)^m (a+b sin)^n.mac: '-(c+d*x)^(5/2)*cos(a+b*x)/b+5/2*d*(c+d*x)^(3/2)*sin(a+b*x)/b^2-15/4*d^'
+        -> '-(c+d*x)^(5/2)*cos(a+b*x)/b+5/2*d*(c+d*x)^(3/2)*sin(a+b*x)/b^2-15/4*d^'
+   e.g. 4.1.10 (c+d x)^m (a+b sin)^n.mac: '-(c+d*x)^(3/2)*cos(a+b*x)/b-3/2*d^(3/2)*cos(a-b*c/d)*FresnelS(sqrt(2/%'
+        -> '-(c+d*x)^(3/2)*cos(a+b*x)/b-3/2*d^(3/2)*cos(a-b*c/d)*fresnel_s(sqrt(2/'
+
+== 5 Inverse trig functions: 4585 entries, 9212 texts, 373 differ from cd0a421
+   class-8 driver rewrites: {'expintegral_ci(': 386, 'expintegral_si(': 380, 'fresnel_c(': 403, 'fresnel_s(': 383, 'gamma_incomplete(': 92, 'hypergeometric(': 36}
+   e.g. 5.2.2 (d x)^m (a+b arccos(c x))^n.mac: '-1/80*FresnelC(sqrt(10/%pi)*sqrt(acos(a*x)))*sqrt(1/10*%pi)/a^5-1/16*F'
+        -> '-1/80*fresnel_c(sqrt(10/%pi)*sqrt(acos(a*x)))*sqrt(1/10*%pi)/a^5-1/16*'
+   e.g. 5.2.2 (d x)^m (a+b arccos(c x))^n.mac: '-1/64*FresnelC(2*sqrt(2/%pi)*sqrt(acos(a*x)))*sqrt(1/2*%pi)/a^4-1/16*F'
+        -> '-1/64*fresnel_c(2*sqrt(2/%pi)*sqrt(acos(a*x)))*sqrt(1/2*%pi)/a^4-1/16*'
+
+== 6 Hyperbolic functions: 5080 entries, 10186 texts, 0 differ from cd0a421
+   class-8 driver rewrites: {'expintegral_chi(': 611, 'expintegral_ci(': 32, 'expintegral_ei(': 6, 'expintegral_shi(': 605, 'expintegral_si(': 32, 'gamma_incomplete(': 266}
+
+== 7 Inverse hyperbolic functions: 6552 entries, 13176 texts, 62 differ from cd0a421
+   class-8 driver rewrites: {'expintegral_chi(': 561, 'expintegral_ci(': 6, 'expintegral_shi(': 545, 'expintegral_si(': 3, 'fresnel_c(': 36, 'fresnel_s(': 36, 'gamma_incomplete(': 178, 'hypergeometric(': 38}
+   e.g. 7.1.2 (d x)^m (a+b arcsinh(c x))^n.mac: 'x^(1+m)*asinh(a*x)^2/(1+m)-2*a*x^(2+m)*asinh(a*x)*hypergeometric([1/2,'
+        -> 'x^(1+m)*asinh(a*x)^2/(1+m)-2*a*x^(2+m)*asinh(a*x)*hypergeometric([1/2,'
+   e.g. 7.1.4a (f x)^m (d+c^2 d x^2)^p (a+b arcsinh(c x))^n.mac: '5*d*x^(1+m)*(d+c^2*d*x^2)^(3/2)*(a+b*asinh(c*x))/((4+m)*(6+m))+x^(1+m)'
+        -> '5*d*x^(1+m)*(d+c^2*d*x^2)^(3/2)*(a+b*asinh(c*x))/((4+m)*(6+m))+x^(1+m)'
+
+== 8 Special functions: 1949 entries, 3898 texts, 1769 differ from cd0a421
+   class-8 driver rewrites: {'%mr_derivative(': 320, 'expintegral_chi(': 257, 'expintegral_ci(': 272, 'expintegral_e(': 334, 'expintegral_ei(': 472, 'expintegral_li(': 28, 'expintegral_shi(': 261, 'expintegral_si(': 280, 'factorial(': 2, 'fresnel_c(': 418, 'fresnel_s(': 424, 'gamma(': 18, 'gamma_incomplete(': 690, 'hypergeometric(': 137, 'lambert_w(': 1695, 'log_gamma(': 22, 'psi[': 77}
+   e.g. 8.1 Error functions.mac: '2*b*x*HypergeometricPFQ([1/2,1/2],[3/2,3/2],-b^2*x^2)/sqrt(%pi)'
+        -> '2*b*x*hypergeometric([1/2,1/2],[3/2,3/2],-b^2*x^2)/sqrt(%pi)'
+   e.g. 8.1 Error functions.mac: '2*%e^c*b*x*HypergeometricPFQ([1/2,1],[3/2,3/2],b^2*x^2)/sqrt(%pi)'
+        -> '2*%e^c*b*x*hypergeometric([1/2,1],[3/2,3/2],b^2*x^2)/sqrt(%pi)'
