@@ -462,7 +462,21 @@ def _drop_would_join_runs(lines, is_comment):
                 while j < n and is_comment[j]:
                     j += 1
                 nxt = lines[j] if j < n else ""
-                if not nxt.startswith("Int["):
+                # Fix 2026-09-25 (class-8 port): the guard tripped on
+                # shapes that join nothing, and --class 1 / --class 3
+                # aborted, so the byte-identity gate could not run at all.
+                # Measured over the pinned clone: 1.1.3.1 L82 (a
+                # commented-out rule, then a BLANK line), 1.2.1.2 L78/L90
+                # (a one-line comment, then a MULTI-line comment opening at
+                # column 0) and 3.5 L45 (a comment, then the single-line
+                # If[TrueQ[$LoadShowSteps], Int[...]] wrapper that
+                # unwrap_showsteps_line reopens on Int[). A next line that
+                # is blank once its comment text is stripped is the run
+                # separator rule_runs honours; the ShowSteps wrapper opens
+                # a run exactly as Int[ does.
+                if (strip_comments(nxt).strip()
+                        and not nxt.startswith("Int[")
+                        and not nxt.startswith("If[TrueQ[$LoadShowSteps]")):
                     return True
                 cur_open, depth, dangling = False, 0, False
             continue

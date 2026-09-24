@@ -61,6 +61,34 @@ except SystemExit:
 check("A2.1 fix round 2: a rule not opening on column-0 Int[ raises "
       "GenError instead of silently joining two runs",
       a21_join_outcome, "SystemExit")
+# 2026-09-25 (class-8 port): a comment-only line followed by a BLANK line
+# (1.1.3.1 L82, a commented-out rule) is not a join -- the blank line is the
+# separator -- and must not raise; it tripped --class 1 / --class 3.
+comment_then_blank = ("Int[u_,x_Symbol] := u /; FreeQ[u,x]\n"
+                      "(* Int[w_,x_Symbol] := w *)\n"
+                      "\n"
+                      "Int[v_,x_Symbol] := v /; FreeQ[v,x]\n")
+try:
+    out = g.drop_comment_only_lines(comment_then_blank)
+    runs_after = len(g.rule_runs(g.strip_comments(out)))
+except SystemExit:
+    runs_after = "SystemExit"
+check("A2.1 guard: a comment-only line before a blank line is no join",
+      runs_after, 2)
+# ... nor before a comment opening at column 0 that runs over several lines
+# (1.2.1.2 L78/L90), nor before the single-line ShowSteps wrapper (3.5 L45).
+for label, nxt in (("a multi-line comment", "(* Int[w_,x_Symbol] :=\n  w *)\n"),
+                   ("the ShowSteps wrapper",
+                    "If[TrueQ[$LoadShowSteps], Int[v_,x_Symbol] := v /; FreeQ[v,x], "
+                    "Int[v_,x_Symbol] := v /; FreeQ[v,x]]\n")):
+    try:
+        g.drop_comment_only_lines("Int[u_,x_Symbol] := u /; FreeQ[u,x]\n"
+                                  "(* a note *)\n" + nxt)
+        outcome = "no exception raised"
+    except SystemExit:
+        outcome = "SystemExit"
+    check(f"A2.1 guard: a comment-only line before {label} is no join",
+          outcome, "no exception raised")
 
 # A2.2 -- the multi-line ShowSteps wrapper keeps its plain branch only.
 wrapped = ("If[TrueQ[$LoadShowSteps],\n\n"
