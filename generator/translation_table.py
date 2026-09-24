@@ -277,6 +277,33 @@ RENAME = {
     "Erfc": "erfc",
     "SinIntegral": "expintegral_si", "CosIntegral": "expintegral_ci",
     "ExpIntegralE": "expintegral_e",
+    # class 5 (2026-09-25): the two inverse-trig heads the earlier classes
+    # never met, NATIVE spellings. Both differentiate through the harness
+    # zero chain and float-evaluate on their real domain |z| >= 1, and
+    # their conventions are Mathematica's -- asec(z) = acos(1/z), acsc(z) =
+    # asin(1/z) -- build branch_5_50_base_84_g4204fb669
+    # (probes/answer-side/05-class5-answer-side-identities.out A5/A6,
+    # E5-E8, C1/C2/C4-C6). mr-tree already maps both heads. Census: 31
+    # rules each (probes/translation/10-class5-syntax-census.out).
+    "ArcSec": "asec", "ArcCsc": "acsc",
+    # class 5: Mathematica's polynomial discriminant, 5.3.7 r27/r28 (the
+    # two ShowSteps rules; the quadratic v of Int[u_*v_^n_., x]). The
+    # native poly_discriminant equals Mathematica's Discriminant on a
+    # symbolic quadratic (b^2-4ac) and cubic (probe 05 D1-D3).
+    "Discriminant": "poly_discriminant",
+    # class 5 utility rows. ExpandExpression is ported since class 1 (the
+    # ExpandIntegrand catch-all) and first called by a rule here (5.1.5
+    # r9/r10); the other four are the class's Step-4 ports: HalfIntegerQ
+    # (8 rules, 5.1.3/5.1.4), and the 5.3.7 r27/r28 trio --
+    # InverseFunctionOfLinear, SubstForInverseFunction (3-arg) and Head
+    # (EqQ[Head[tmp], ArcTan]: op() of the call, compared with the bare
+    # head atom, which this table renames to the same native symbol --
+    # probe 05 H1-H3).
+    "ExpandExpression": "%mr_expandExpression",
+    "HalfIntegerQ": "%mr_halfIntegerQ",
+    "InverseFunctionOfLinear": "%mr_inverseFunctionOfLinear",
+    "SubstForInverseFunction": "%mr_substForInverseFunction",
+    "Head": "%mr_head",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.
