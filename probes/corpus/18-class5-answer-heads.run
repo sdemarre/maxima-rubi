@@ -1,0 +1,10 @@
+#!/bin/sh
+# probes/corpus/18-class5-answer-heads.run — class-5 answer-head census
+# driver (docs/class-porting.md Step 1(b)). Reuses the class-6 probe's
+# curated + discovery passes (probes/corpus/12-class6-answer-heads.py takes
+# the section as its argument).
+#
+#   sh probes/corpus/18-class5-answer-heads.run
+cd "$(dirname "$0")/../.." || exit 1
+python3 probes/corpus/12-class6-answer-heads.py "5 Inverse trig functions" > probes/corpus/18-class5-answer-heads.out
+echo "wrote probes/corpus/18-class5-answer-heads.out"
