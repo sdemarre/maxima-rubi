@@ -46,7 +46,8 @@ from translation_table import RENAME, RESTRUCTURE
 # class-6 `Integral -> "noun"` row did exactly that on 2026-09-20 and
 # produced `noun(expr, x)` in 8 rules. Guarded at the head boundary below.
 HANDLER_ONLY = frozenset({"noun", "block", "cmp", "if", "switch",
-                          "loggamma", "power", "plus", "times"})
+                          "loggamma", "power", "plus", "times",
+                          "polygamma", "zeta", "derivative"})
 import mma_reader as rd  # the evaluated-FullForm reader (spec 3.4)
 from fractions import Fraction
 
@@ -2202,7 +2203,11 @@ def load_class_files(rubi):
     $LoadElementaryFunctionRules block) — the gated flag is not a filter
     (dropping it is a no-op for class 1: the gated block holds no "1 "
     files)."""
-    order = parse_load_rules((rubi / "Rubi" / "Rubi.m").read_text())
+    # strip_comments first (class 8, 2026-09-25): Rubi.m L352 is a
+    # commented-out LoadRules for "8.10 Bessel functions", the only one in
+    # the pinned Rubi.m; the raw parse would generate its 3 dead rules.
+    # A no-op for every other class (the byte-identity gate).
+    order = parse_load_rules(strip_comments((rubi / "Rubi" / "Rubi.m").read_text()))
     out = []
     for parts, gated in order:
         if not parts or not parts[0].startswith(CLASS_PREFIX):

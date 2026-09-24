@@ -259,6 +259,24 @@ RENAME = {
     # 5-arg overload and FunctionOfLinearSubst are internal, not
     # generated-rule tokens).
     "FunctionOfLinear": "%mr_functionOfLinear",
+    # class 8 (2026-09-25): the special-function heads, NATIVE spellings
+    # (the naming trap: the public names carry underscores). Each one
+    # differentiates through the harness zero chain and float-evaluates,
+    # build branch_5_50_base_84_g4204fb669
+    # (probes/answer-side/04-class8-answer-side-identities.out A1-A7,
+    # E1-E5): d/dz fresnel_s(z) = sin(%pi z^2/2), fresnel_c -> cos(..),
+    # erfc -> -2 %e^-z^2/sqrt(%pi), expintegral_si -> sin(z)/z,
+    # expintegral_ci -> cos(z)/z, expintegral_e(n,z) -> -expintegral_e(n-1,z),
+    # lambert_w -> lambert_w(z)/(z (1+lambert_w(z))). mr-tree's +functions+
+    # already maps all seven, so patterns need nothing new. Census counts
+    # (rules): ProductLog 44, FresnelS/FresnelC 28 each, Erfc 22,
+    # SinIntegral/CosIntegral 14 each, ExpIntegralE 10
+    # (probes/translation/09-class8-syntax-census.out).
+    "ProductLog": "lambert_w",
+    "FresnelS": "fresnel_s", "FresnelC": "fresnel_c",
+    "Erfc": "erfc",
+    "SinIntegral": "expintegral_si", "CosIntegral": "expintegral_ci",
+    "ExpIntegralE": "expintegral_e",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.
@@ -299,6 +317,34 @@ RESTRUCTURE = {
     "EllipticF": "elliptic_f", "EllipticE": "elliptic_e",
     "EllipticPi": "elliptic_pi",
     "Hypergeometric2F1": "hypergeometric",   # list-form args
+    # class 8 (2026-09-25): the generalized pFq, 16 rules. Rubi writes
+    # HypergeometricPFQ[{a..}, {b..}, z] and Maxima's native takes the
+    # same shape with lists, hypergeometric([a..], [b..], z) — the list
+    # braces translate to brackets on their own, so the row is a 1:1
+    # rename. diff closes (d/dz 3F3([1,1,1],[2,2,2],z) =
+    # 3F3([2,2,2],[3,3,3],z)/8, probe 04 A13) and it float-evaluates (E9).
+    "HypergeometricPFQ": "hypergeometric",
+    # class 8 (2026-09-25): PolyGamma[n, z] -> psi[n](z), Maxima's
+    # SUBSCRIPTED polygamma (mr-tree's +subscripted+ reads psi[n](z) back
+    # as PolyGamma). An emitter case, not a rename: the order becomes the
+    # subscript. diff closes for every order the rules emit, negative
+    # included (psi[-2] -> psi[-1], probe 04 A8/A9). Handler name only.
+    "PolyGamma": "polygamma",
+    # class 8 (2026-09-25): Zeta, arity-dispatched in the emitter. 1-arg is
+    # Riemann's zeta (native `zeta`); 2-arg is the HURWITZ zeta, which
+    # Maxima does not have symbolically (describe("hurwitz", inexact) finds
+    # nothing; `zeta` is 1-argument) — so it is emitted as the corpus's own
+    # head Zeta(s, z), an inert noun (the AppellF1 precedent): identical
+    # answers cancel in the zero chain, a different form cannot verify
+    # (probe 04 A16/A17). Handler name only.
+    "Zeta": "zeta",
+    # class 8 / 9.1 (2026-09-25): Mathematica's formal derivative
+    # Derivative[n][f][u] -> %mr_derivative(n, f, u), which builds Maxima's
+    # own derivative noun 'diff(f(u), u, n) (order 0: f(u)). The design
+    # and its measurements: .scratch/class-ports/issues/01 ("DESIGN"),
+    # probes/answer-side/04 D1-D3, N1-N17. A curried-call emitter case in
+    # translate_atom. Handler name only.
+    "Derivative": "derivative",
     # AppellF1: emit the SAME head the corpus expected answers use
     # (the .mac files carry AppellF1[...]). Maxima has no AppellF1
     # builtin, so both sides of the zero-test carry the identical
