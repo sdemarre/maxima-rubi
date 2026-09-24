@@ -144,6 +144,9 @@ run_all_tests() := block([],
   test_section9_g6a(),
   test_section9_g6b(),
   test_section9_condassign(),
+  test_class8_cluster_a(),
+  test_class8_cluster_b(),
+  test_class8_cluster_c(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4596,6 +4599,123 @@ test_with_local_capture_all() := block([mr_wl_saved, mr_wl_ok, mr_wl_f,
     and is(mr_i2_resid(mr_wl_f, mr_wl_r, [x = 1.1, r = 2.2, s = 1.9]) < 1.0e-12)),
   check_bool("With locals: 1/(r+s x^5) is the same answer with r, s renamed p, q",
     is(mr_wl_r # false) and is(mr_wl_r = mr_wl_q)),
+  true
+)$
+
+/* ---- class 8 cluster A: the formal derivative, %mr_derivative ----
+   docs/class-porting.md Step 4. Rubi's Derivative[n][f][u] (9.1
+   Derivative integration rules, 21 rules, now part of the class-8 port) is
+   Maxima's own derivative noun 'diff(f(u), u, n), order 0 being f(u)
+   (.scratch/class-ports/issues/01, "DESIGN";
+   probes/answer-side/04-class8-answer-side-identities.out N1-N17). The
+   generator emits %mr_derivative(n, f, u) for every Derivative[a][b][c]
+   in a condition or replacement (rules/class8/9_1d.mac, 23 sites). */
+test_class8_cluster_a() := block([],
+  print("--- class 8 cluster A: %mr_derivative (Derivative[n][f][u]) ---"),
+  check_bool("deriv: order 1 is Maxima's own noun 'diff(f(x),x,1)",
+             is(%mr_derivative(1, f, x) = 'diff(f(x), x, 1))),
+  check_bool("deriv: order 1 is what diff(f(x), x) returns",
+             is(%mr_derivative(1, f, x) = diff(f(x), x))),
+  check_bool("deriv: order 0 is f(x) itself", is(%mr_derivative(0, f, x) = f(x))),
+  check_bool("deriv: a symbolic order m-1 stays a noun",
+             is(%mr_derivative(m - 1, f, x) = 'diff(f(x), x, m - 1))),
+  check_bool("deriv: a negative order (a formal antiderivative) is holdable",
+             is(%mr_derivative(-1, f, x) = 'diff(f(x), x, -1))),
+  check_bool("deriv: a composite point is Maxima's own subst spelling",
+             is(%mr_derivative(1, F, f(x)*g(x))
+                = subst(f(x)*g(x), x, 'diff(F(x), x, 1)))),
+  check("deriv: d/dx of order 1 is order 2",
+        ratsimp(diff(%mr_derivative(1, f, x), x) - %mr_derivative(2, f, x)), 0),
+  check("deriv: d/dx of order m-1 is order m",
+        ratsimp(diff(%mr_derivative(m - 1, f, x), x) - %mr_derivative(m, f, x)), 0),
+  check("deriv: d/dx of order -1 is f(x)",
+        ratsimp(diff(%mr_derivative(-1, f, x), x) - f(x)), 0),
+  /* 8.1 r52/r68/r69 and 8.2 r53 compare a bound head capture with a head
+     list: the list's bare names read as the same noun operators the
+     dispatcher binds (the class-6 memberQ precedent) */
+  check_bool("memberQ: erf(u)'s operator is in the 8.1 head list",
+             %mr_memberQ([erf, erfc, erfi, fresnel_s, fresnel_c, expintegral_ei,
+                          expintegral_si, expintegral_ci, expintegral_shi,
+                          expintegral_chi], op(erf(x)))),
+  check_bool("memberQ: fresnel_c(u)'s operator is in the 8.2 head list",
+             %mr_memberQ([fresnel_s, fresnel_c], op(fresnel_c(x)))),
+  check_not("memberQ: erf(u)'s operator is not in the Fresnel list",
+            %mr_memberQ([fresnel_s, fresnel_c], op(erf(x)))),
+  true
+)$
+
+/* ---- class 8 cluster B: FunctionOfExpnQ, and FunctionOfQ's `_` arm ----
+   Rubi FunctionOfQ[v, u, x] (IntegrationUtilityFunctions.m L4443-4481)
+   switches on Head[v]: the circular and hyperbolic heads go to their own
+   tests, EVERYTHING ELSE to FunctionOfExpnQ[u, v, x] =!= False
+   (L4486-4516). The port answered false for that `_` arm (deviation (a)),
+   and every class-8 v takes it: ProductLog[x] (8.9 r44), f[x]*g[x] and
+   Derivative[n-1][f][x] (9.1 r8-r18). FunctionOfExpnQ returns the degree
+   of u in v (1 for v itself, the gcd over a sum or function's arguments,
+   0 for a v-free atom) or False. The hyperbolic arms stay unported. */
+test_class8_cluster_b() := block([],
+  print("--- class 8 cluster B: FunctionOfExpnQ / FunctionOfQ's general arm ---"),
+  check("foe: v itself is degree 1", %mr_functionOfExpnQ(f(x)*g(x), f(x)*g(x), x), 1),
+  check("foe: an atom other than x is degree 0", %mr_functionOfExpnQ(a, f(x), x), 0),
+  check("foe: x itself is not a function of v", %mr_functionOfExpnQ(x, f(x), x), false),
+  check("foe: a power of v", %mr_functionOfExpnQ(lambert_w(x)^3, lambert_w(x), x), 3),
+  check("foe: a product of powers matching v's factors",
+        %mr_functionOfExpnQ(f(x)^2*g(x)^2, f(x)*g(x), x), 2),
+  check("foe: a sum takes the gcd of its terms' degrees",
+        %mr_functionOfExpnQ(1 + f(x)^2*g(x)^2, f(x)*g(x), x), 2),
+  check("foe: 1/(1+f^2 g^2) is a function of f g",
+        %mr_functionOfExpnQ(1/(1 + f(x)^2*g(x)^2), f(x)*g(x), x), 2),
+  check("foe: a stray x makes it False",
+        %mr_functionOfExpnQ(x/(1 + f(x)^2*g(x)^2), f(x)*g(x), x), false),
+  check("foe: a free factor is dropped",
+        %mr_functionOfExpnQ(3*lambert_w(x)^2, lambert_w(x), x), 2),
+  check("foe: a formal derivative is a function of itself",
+        %mr_functionOfExpnQ(cos('diff(f(x), x, 1)), 'diff(f(x), x, 1), x), 1),
+  check("foe: f(x) is not a function of f'(x)",
+        %mr_functionOfExpnQ(f(x)*'diff(f(x), x, 1), 'diff(f(x), x, 1), x), false),
+  check_bool("foq: 1/(1+f^2 g^2) is a function of f g (the `_` arm)",
+             %mr_functionOfQ(f(x)*g(x), 1/(1 + f(x)^2*g(x)^2), x)),
+  check_not("foq: x/(1+f^2 g^2) is not",
+            %mr_functionOfQ(f(x)*g(x), x/(1 + f(x)^2*g(x)^2), x)),
+  check_bool("foq: a polynomial in ProductLog(x) is a function of it (8.9 r44)",
+             %mr_functionOfQ(lambert_w(x), 1 + lambert_w(x)^2, x)),
+  check_bool("foq: cos(f'(x)) is a function of f'(x) (9.1 r8)",
+             %mr_functionOfQ(%mr_derivative(1, f, x), cos(%mr_derivative(1, f, x)), x)),
+  check_not("foq: the trig arm is unchanged (odd sin power vs cos)",
+            %mr_functionOfQ(cos(x), sin(x)*(a - b*sin(x)^2), x)),
+  check_not("foq: the hyperbolic arm still declines (unported)",
+            %mr_functionOfQ(cosh(x), sinh(x)^2, x)),
+  true
+)$
+
+/* ---- class 8 cluster C: SubstForAux, SubstFor's general fallback ----
+   Rubi SubstFor[v, u, x] (L5980-6002) ends, after its atom / inert / free-
+   factor / trig / hyperbolic arms, in SubstForAux[u, v, x] (L6004-6023):
+   v -> x structurally, a power of v -> the power of x, a product u matched
+   factor-for-factor against a product v. The port's last arm was
+   subst(x, v, u), which cannot see a product v inside a power of it
+   (probe 04 N17: f(x)*g(x) is not found in f(x)^2*g(x)^2). The fallback
+   now takes SubstForAux (after the free-factor step) when u IS a function
+   of v (FunctionOfExpnQ not False), and keeps subst otherwise. */
+test_class8_cluster_c() := block([],
+  print("--- class 8 cluster C: SubstForAux / SubstFor's general fallback ---"),
+  check("sfa: v itself -> x", %mr_substForAux(f(x)*g(x), f(x)*g(x), x), x),
+  check("sfa: a power of a product v -> the power of x",
+        %mr_substForAux(f(x)^2*g(x)^2, f(x)*g(x), x), x^2),
+  check("sfa: inside a sum and a reciprocal",
+        ratsimp(%mr_substForAux(1/(1 + f(x)^2*g(x)^2), f(x)*g(x), x) - 1/(1 + x^2)), 0),
+  check("sfa: a free factor is kept",
+        %mr_substForAux(3*lambert_w(x)^2, lambert_w(x), x), 3*x^2),
+  check("sfa: a formal derivative -> x inside a function",
+        %mr_substForAux(cos('diff(f(x), x, 1)), 'diff(f(x), x, 1), x), cos(x)),
+  check("sf: 1/(1+f^2 g^2) for v = f g is 1/(1+x^2)",
+        ratsimp(%mr_substFor(f(x)*g(x), 1/(1 + f(x)^2*g(x)^2), x) - 1/(1 + x^2)), 0),
+  check("sf: a polynomial in ProductLog(x)",
+        ratsimp(%mr_substFor(lambert_w(x), 1 + lambert_w(x)^3, x) - (1 + x^3)), 0),
+  check("sf: a free factor of v scales the variable",
+        ratsimp(%mr_substFor(2*f(x)*g(x), f(x)^2*g(x)^2, x) - x^2/4), 0),
+  check("sf: the power branch is unchanged (x^2 -> x)",
+        ratsimp(%mr_substFor(x^2, x^4 + 1, x) - (x^2 + 1)), 0),
   true
 )$
 

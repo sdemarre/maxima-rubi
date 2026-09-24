@@ -3607,6 +3607,17 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
     then subst((x - part(L, 1))/part(L, 2), x, u)
     else subst(x, v, u)
   )
+  /* Class 8 (2026-09-25): Rubi's last arm is SubstForAux[u,v,x] (L6004),
+     after SubstFor[NonfreeFactors[v,x], u, x/FreeFactors[v,x]]. The plain
+     subst below cannot see a product v inside a power of it (f(x)*g(x) in
+     f(x)^2*g(x)^2 -- probes/answer-side/04-class8-answer-side-identities
+     N17). SubstForAux is taken when u IS a function of v (Rubi calls
+     SubstFor only then: every call site sits behind a FunctionOfQ or an
+     equivalent test); otherwise the old subst stands, so a caller that
+     leaned on subst's partial matching sees no change. */
+  else if %mr_functionOfExpnQ(u, %mr_nonfreeFactors(v, x), x) # false then
+    subst(x/%mr_freeFactors(v, x), x,
+          %mr_substForAux(u, %mr_nonfreeFactors(v, x), x))
   else subst(x, v, u))$
 
 /* Rubi :5976  SubstFor[w,v,u,x] := SimplifyIntegrand[w*SubstFor[v,u,x],x].
@@ -6326,7 +6337,16 @@ mr_use_gamma_flag : false$
   elseif %mr_productQ(%mr_foq_v) and %mr_neQ(%mr_freeFactors(%mr_foq_v, %mr_foq_x), 1)
   then %mr_functionOfQ(%mr_nonfreeFactors(%mr_foq_v, %mr_foq_x), %mr_foq_u, %mr_foq_x,
                        %mr_foq_pure)
-  elseif not %mr_trigQ(%mr_foq_v) then false
+  /* Class 8 (2026-09-25): Rubi's Switch sends every head other than the
+     twelve circular/hyperbolic ones to FunctionOfExpnQ[u,v,x] =!= False
+     (L4443-4481). The port answered false there; class 8's v's take that
+     arm (ProductLog[x], 8.9 r44; f[x]*g[x] and Derivative[n-1][f][x],
+     9.1 r8-r18) -- and so does 9.3 r36's x^(m+1), which was dead until
+     now. The HYPERBOLIC arms (FunctionOfSinhQ, ...) remain unported
+     (deviation (a)): a hyperbolic v still declines, as before. */
+  elseif %mr_hyperbolicQ(%mr_foq_v) then false
+  elseif not %mr_trigQ(%mr_foq_v)
+  then is(%mr_functionOfExpnQ(%mr_foq_u, %mr_foq_v, %mr_foq_x) # false)
   else (
     %mr_foq_h : op(%mr_foq_v),
     %mr_foq_w : part(%mr_foq_v, 1),
@@ -7587,3 +7607,110 @@ if not integerp(lcm(1, 1)) then load("functs")$
   ))$
 
 mr_witness_utils() := true$
+
+/* ======================================================================
+   Class 8 (special functions) and 9.1 Derivative integration rules
+   (2026-09-25). docs/class-porting.md Step 4; the census and the design:
+   .scratch/class-ports/issues/01-class8-special-functions.md.
+   ====================================================================== */
+
+/* Rubi's formal derivative Derivative[n][f][u] (Mathematica's evaluated
+   form of D[f[u], {u, n}] for an undefined f). The port's representation
+   is Maxima's OWN derivative noun 'diff(f(u), u, n) -- what diff returns
+   for an undeclared function -- with order 0 meaning f(u), as
+   Derivative[0][f] is f. Built with funmake, so nothing evaluates: diff()
+   itself refuses a negative order ("order of derivative must be a
+   nonnegative integer"), but the noun holds one, and diff of the noun
+   increments it -- the formal antiderivatives Derivative[-k][f][x] of 9.1
+   r3/r6/r7 and the 8.10 corpus. MEASURED 2026-09-25 on
+   branch_5_50_base_84_g4204fb669: probes/answer-side/
+   04-class8-answer-side-identities.out N1-N17. A composite point u gives
+   'diff(f(u), u, n), the same spelling Maxima's subst produces (N12). */
+%mr_derivative(%mr_dv_n, %mr_dv_f, %mr_dv_u) :=
+  if %mr_dv_n = 0 then funmake(%mr_dv_f, [%mr_dv_u])
+  else funmake(nounify(diff), [funmake(%mr_dv_f, [%mr_dv_u]), %mr_dv_u, %mr_dv_n])$
+
+/* The gcd of FunctionOfExpnQ's degrees: integers, 0 (a v-free term) or
+   rationals (u[[2]]/v[[2]] of a fractional power). Mathematica's GCD of
+   rationals is gcd(numerators)/lcm(denominators); Maxima's gcd is a
+   polynomial gcd, so it is built from num/denom. */
+%mr_gcdDegrees(%mr_gd_l) := block([%mr_gd_n : 0, %mr_gd_d : 1, %mr_gd_e],
+  for %mr_gd_e in %mr_gd_l do (
+    %mr_gd_n : gcd(%mr_gd_n, num(%mr_gd_e)),
+    %mr_gd_d : lcm(%mr_gd_d, denom(%mr_gd_e))),
+  %mr_gd_n / %mr_gd_d)$
+
+/* Rubi FunctionOfExpnQ[u, v, x] (IntegrationUtilityFunctions.m
+   L4486-4516): if u is a function of v, the degree of u in v (1 for v
+   itself, 0 for an x-free atom, the gcd over the arguments of a sum or a
+   function); else false. Mathematica's Apply[List, u] is args(u); First /
+   Rest of a product are first() / rest() of the Maxima product -- both
+   products are in Maxima's canonical factor order, so factor k of u and
+   factor k of v correspond exactly when the Mathematica ones do.
+   inflag:true reads the internal form (1/x is x^-1, a/b is a*b^-1), as
+   the .m's Power/Times tests do. */
+%mr_functionOfExpnQ(%mr_fe_u, %mr_fe_v, %mr_fe_x) :=
+  block([inflag : true, %mr_fe_d1, %mr_fe_d2, %mr_fe_l, %mr_fe_q],
+  if is(%mr_fe_u = %mr_fe_v) then 1
+  elseif atom(%mr_fe_u) then (if is(%mr_fe_u = %mr_fe_x) then false else 0)
+  elseif %mr_calculusQ(%mr_fe_u) then false
+  elseif %mr_powerQ(%mr_fe_u) and freeof(%mr_fe_x, part(%mr_fe_u, 2)) then (
+    if %mr_eqQ(part(%mr_fe_u, 1), %mr_fe_v)
+    then (if integerp(part(%mr_fe_u, 2)) then part(%mr_fe_u, 2) else 1)
+    elseif %mr_powerQ(%mr_fe_v) and freeof(%mr_fe_x, part(%mr_fe_v, 2))
+           and %mr_eqQ(part(%mr_fe_u, 1), part(%mr_fe_v, 1)) then (
+      if %mr_rationalQ(part(%mr_fe_v, 2)) then (
+        if %mr_rationalQ(part(%mr_fe_u, 2))
+           and integerp(part(%mr_fe_u, 2)/part(%mr_fe_v, 2))
+           and (is(part(%mr_fe_v, 2) > 0) or is(part(%mr_fe_u, 2) < 0))
+        then part(%mr_fe_u, 2)/part(%mr_fe_v, 2) else false)
+      else (
+        %mr_fe_q : %mr_simp(part(%mr_fe_u, 2)/part(%mr_fe_v, 2)),
+        if integerp(%mr_fe_q) then %mr_fe_q else false))
+    else %mr_functionOfExpnQ(part(%mr_fe_u, 1), %mr_fe_v, %mr_fe_x))
+  elseif %mr_productQ(%mr_fe_u) and %mr_neQ(%mr_freeFactors(%mr_fe_u, %mr_fe_x), 1)
+  then %mr_functionOfExpnQ(%mr_nonfreeFactors(%mr_fe_u, %mr_fe_x), %mr_fe_v, %mr_fe_x)
+  elseif %mr_productQ(%mr_fe_u) and %mr_productQ(%mr_fe_v) then (
+    %mr_fe_d1 : %mr_functionOfExpnQ(first(%mr_fe_u), first(%mr_fe_v), %mr_fe_x),
+    if %mr_fe_d1 = false then false
+    else (
+      %mr_fe_d2 : %mr_functionOfExpnQ(rest(%mr_fe_u), rest(%mr_fe_v), %mr_fe_x),
+      if is(%mr_fe_d1 = %mr_fe_d2)
+         and freeof(%mr_fe_x, %mr_simp(%mr_fe_u/%mr_fe_v^%mr_fe_d1))
+      then %mr_fe_d1 else false))
+  else (
+    %mr_fe_l : map(lambda([%mr_fe_w], %mr_functionOfExpnQ(%mr_fe_w, %mr_fe_v, %mr_fe_x)),
+                   args(%mr_fe_u)),
+    if member(false, %mr_fe_l) then false
+    else %mr_gcdDegrees(%mr_fe_l)))$
+
+/* Rubi SubstForAux[u, v, x] (L6004-6023): u, a function of v, with v
+   replaced by x. The general (last) arm rebuilds u from its mapped
+   arguments with funmake, never apply: apply(diff, ...) would EVALUATE a
+   formal-derivative noun (and error on a negative order); an argument
+   list that comes back unchanged returns u itself. */
+%mr_substForAux(%mr_sa_u, %mr_sa_v, %mr_sa_x) :=
+  block([inflag : true, %mr_sa_a, %mr_sa_b],
+  if is(%mr_sa_u = %mr_sa_v) then %mr_sa_x
+  elseif atom(%mr_sa_u) then (
+    if %mr_powerQ(%mr_sa_v) and freeof(%mr_sa_x, part(%mr_sa_v, 2))
+       and %mr_eqQ(%mr_sa_u, part(%mr_sa_v, 1))
+    then %mr_sa_x^%mr_simp(1/part(%mr_sa_v, 2))
+    else %mr_sa_u)
+  elseif %mr_powerQ(%mr_sa_u) and freeof(%mr_sa_x, part(%mr_sa_u, 2)) then (
+    if %mr_eqQ(part(%mr_sa_u, 1), %mr_sa_v) then %mr_sa_x^part(%mr_sa_u, 2)
+    elseif %mr_powerQ(%mr_sa_v) and freeof(%mr_sa_x, part(%mr_sa_v, 2))
+           and %mr_eqQ(part(%mr_sa_u, 1), part(%mr_sa_v, 1))
+    then %mr_sa_x^%mr_simp(part(%mr_sa_u, 2)/part(%mr_sa_v, 2))
+    else %mr_substForAux(part(%mr_sa_u, 1), %mr_sa_v, %mr_sa_x)^part(%mr_sa_u, 2))
+  elseif %mr_productQ(%mr_sa_u) and %mr_neQ(%mr_freeFactors(%mr_sa_u, %mr_sa_x), 1)
+  then %mr_freeFactors(%mr_sa_u, %mr_sa_x)
+       * %mr_substForAux(%mr_nonfreeFactors(%mr_sa_u, %mr_sa_x), %mr_sa_v, %mr_sa_x)
+  elseif %mr_productQ(%mr_sa_u) and %mr_productQ(%mr_sa_v)
+  then %mr_substForAux(first(%mr_sa_u), first(%mr_sa_v), %mr_sa_x)
+  else (
+    %mr_sa_a : args(%mr_sa_u),
+    %mr_sa_b : map(lambda([%mr_sa_w], %mr_substForAux(%mr_sa_w, %mr_sa_v, %mr_sa_x)),
+                   %mr_sa_a),
+    if is(%mr_sa_a = %mr_sa_b) then %mr_sa_u
+    else funmake(op(%mr_sa_u), %mr_sa_b)))$

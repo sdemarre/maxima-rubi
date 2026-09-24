@@ -295,7 +295,11 @@ trap in `mr_sum`'s own locals, 5 targets, and in the generated With/Module
 locals of every class, 2 targets): `Results: 1179 passed, 0 failed`; at the
 section-9 port (branch `section9-port`, its Tasks 1-12b: the 9.2/9.3 utility
 units and the condition-assignment idiom):
-**`Results: 1292 passed, 0 failed`**, re-measured 2026-09-23 at Task 14. The
+`Results: 1292 passed, 0 failed`, re-measured 2026-09-23 at Task 14 (1293
+on the class-ports base `cd0a421`, after tickets 14/15); at the class-8
+port's Step 4 (2026-09-25: `%mr_derivative`, FunctionOfExpnQ and
+FunctionOfQ's general arm, SubstForAux, 38 checks):
+**`Results: 1331 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
