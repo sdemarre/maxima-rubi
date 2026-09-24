@@ -97,12 +97,16 @@ check_bool("mr_rule_table = body handles followed by tail handles, nothing lost"
 check_bool("the tail is non-empty",
   is(length(mr_rule_table_tail_handles) > 0))$
 
-check_bool("the tail is the eight bridge records, then 9.3's eleven, in load order",
+/* Class 8 (2026-09-25): 8.9's bare-u_ record r44 (Int[u_, x] /;
+   FunctionOfQ[ProductLog[x], u, x]) sits between class 4's bridge records
+   and 9.3's, section 8 loading after section 4 and before 9.3. */
+check_bool("the tail is the eight bridge records, then 8.9 r44, then 9.3's eleven, in load order",
   is(mr_rule_table_tail_handles =
      [_mr_rule_4_1_0_1_r1,
       _mr_rule_4_7_5_r21, _mr_rule_4_7_5_r22, _mr_rule_4_7_5_r47,
       _mr_rule_4_7_5_r48, _mr_rule_4_7_5_r58, _mr_rule_4_7_5_r71,
       _mr_rule_4_7_5_r72,
+      _mr_rule_8_9_r44,
       _mr_rule_9_3_r9, _mr_rule_9_3_r37, _mr_rule_9_3_r38, _mr_rule_9_3_r51,
       _mr_rule_9_3_r55, _mr_rule_9_3_r56, _mr_rule_9_3_r57, _mr_rule_9_3_r62,
       _mr_rule_9_3_r63, _mr_rule_9_3_r66, _mr_rule_9_3_r67]))$
@@ -147,6 +151,20 @@ check_bool("9.2's body follows 9.1 (legacy) and precedes class 2",
   and is(mr_pos(last(mr_rules_9_2)) + 1 = mr_pos(first(mr_rules_2_1))))$
 check_bool("9.3's body is the last body entry",
   is(last(mr_rule_table_body_handles) = last(mr_rules_9_3)))$
+/* Class 8 (2026-09-25): its nine bodies in Rubi.m order, then 9.1
+   Derivative (9_1d), contiguous, after class 6 and before 9.3's body. */
+check_bool("class 8's bodies (8.1..8.9) then 9.1 Derivative follow class 6 and precede 9.3",
+  is(mr_pos(first(mr_rules_8_1)) > mr_pos(last(mr_rules_6_7_9)))
+  and is(sublist(mr_rule_table, lambda([mr_h],
+            member(mr_h, flatten([mr_rules_8_1, mr_rules_8_2, mr_rules_8_3,
+                                  mr_rules_8_4, mr_rules_8_5, mr_rules_8_6,
+                                  mr_rules_8_7, mr_rules_8_8, mr_rules_8_9,
+                                  mr_rules_9_1d]))))
+         = flatten([mr_rules_8_1, mr_rules_8_2, mr_rules_8_3, mr_rules_8_4,
+                    mr_rules_8_5, mr_rules_8_6, mr_rules_8_7, mr_rules_8_8,
+                    mr_rules_8_9, mr_rules_9_1d]))
+  and is(mr_pos(last(mr_rules_9_1d)) + 1 = mr_pos(first(mr_rules_9_3))))$
+print("table length after mr_load_all: ", length(mr_rule_table))$
 
 /* The universal cross-check, over EVERY handle mr_load_all() actually
    registered (3,903 at Task 8; 3,909 with Task 9's six; 3,910 with Task
