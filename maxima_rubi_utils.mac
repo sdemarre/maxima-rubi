@@ -3302,6 +3302,10 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
       if not atom(f) and op(f) = "^"
       then (base : part(f, 1), ok : true)
       else if not atom(f) and op(f) = "/" and is(num(f) = 1)
+        /* a reciprocal of an ATOM (1/x) has no op: op(x) is a part error
+           that aborted the whole ExpandIntegrand (class-6 attribution,
+           2026-09-25: Int[(x^2-1)/x], Int[(b/x^2+a)/x] -> unintegrable) */
+        and not atom(denom(f))
         and op(denom(f)) = "^"
         and integerp(part(denom(f), 2))
         and is(part(denom(f), 2) > 0)

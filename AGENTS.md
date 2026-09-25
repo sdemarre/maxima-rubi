@@ -349,7 +349,9 @@ native inverse-hyperbolic heads in every class (ticket
 `.scratch/class-ports/issues/18`, 8 checks): `Results: 1527 passed, 0
 failed`; with the two-argument `Expand[u, x]` -> `%mr_expand` in every class
 (ticket `.scratch/class-ports/issues/19`, 2_3 r58/r65, 7 checks):
-**`Results: 1534 passed, 0 failed`**. The
+`Results: 1534 passed, 0 failed`; with ExpandIntegrand's reciprocal-atom
+guard (the class-6 attribution's fix A, 6 checks): **`Results: 1540
+passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
