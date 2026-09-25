@@ -457,7 +457,19 @@ test_rewrite() := block([h1, h2, tbl],
           "(F (Alternatives (Pattern |_t3_r3_a| (Blank)) (Pattern |_t3_r3_b| (Blank))) (Pattern x (Blank)))",
           true, _mr_repl_t3_r2)),
         []),
+  /* Class 4 (2026-09-25): the 3-argument walk, for a ONE-argument function
+     (TrigSimplifyAux[u]). The pattern binds (H u); cond and repl see
+     x = false. */
+  h1 : %mr_defrewrite("t3", 4, "(H (Times (Pattern |_t3_r4_a| (Blank)) (Pattern |_t3_r4_u| (Blank))))",
+                      _mr_cond_t3_r4, _mr_repl_t3_r4),
+  check("rewrite (3 args): a one-argument record fires, x is false",
+        %mr_rewrite("H", [h1], 3*y), [3, y, false]),
+  check("rewrite (3 args): no record matches -> u unchanged",
+        %mr_rewrite("H", [h1], y), y),
+  check("rewrite: 2 args is an error", errcatch(%mr_rewrite("H", [h1])), []),
   true)$
+_mr_cond_t3_r4(mm, x) := true$
+_mr_repl_t3_r4(mm, x) := [geteqR(mm, '_t3_r4_a), geteqR(mm, '_t3_r4_u), x]$
 
 test_records()$
 test_dispatch()$

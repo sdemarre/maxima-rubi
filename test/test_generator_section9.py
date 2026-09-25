@@ -168,5 +168,14 @@ check("12b hoist: with no initialised local, the condition's order stands",
                              "9_3", 18),
       "{r=A[x], q=B[x]}")
 
+# Class 4 (2026-09-25): `===` (SameQ, TrigSimplifyAux's conds) is Maxima's
+# syntactic `=` under is(); the walk used to emit `==` + `=` = `==`, which
+# this build cannot parse.
+g.CLASS, g.CLASS_PREFIX = 4, "4 "
+cond = g.clean_cond("a===-b", "t4", 1)
+body = g.emit_rule(("Int[a_*b_,x_Symbol]", "a", cond), "t4", 1, {"a", "b"})
+check("class 4: === emits a single =", "_mr_t4_r1_a=-_mr_t4_r1_b" in body, True)
+check("class 4: no == left from ===", "==" in body, False)
+
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

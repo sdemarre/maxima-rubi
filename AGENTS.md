@@ -277,7 +277,7 @@ enumerates, one cost test), `Results: 84 passed, 0 failed` (mr-tree;
 substrate, `53dc578`: the six inert trig heads, +26 at the class-8 port,
 2026-09-25: user-function heads, Hurwitz `Zeta`, the formal-derivative
 noun as the curried `Derivative` tree, and their round trips) and
-`Results: 106 passed, 0 failed`
+`Results: 109 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
@@ -287,7 +287,9 @@ switch defaults; +8 more by 2026-09-18, not attributed here; +5 at the
 inert-trig substrate, `e9642a6`: the rewrite records; +9 at ticket 15,
 2026-09-23: the `mr_inert_leak_misfire` inert-leak misfire; +26 at ticket
 14, 2026-09-23: the `mr_last_resort_tier` tail tier and the
-`mr_general_after_giveups` general body, 13 each).
+`mr_general_after_giveups` general body, 13 each; +3 at the class-4
+port's Step 4, 2026-09-25: the 3-argument `%mr_rewrite` walk of a
+one-argument function).
 
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the
@@ -316,7 +318,12 @@ rule files end to end on sibling tables, 37 checks):
 `Results: 1387 passed, 0 failed`; at the class-7 port's Step 4 (2026-09-25:
 no utility to port, class-7 rule files end to end on sibling tables — the
 native inverse-hyperbolic heads and the asech/acsch rows, 13 checks):
-**`Results: 1400 passed, 0 failed`**. The
+`Results: 1400 passed, 0 failed`; at the class-4 port's Step 4 cluster
+(a) (2026-09-25: ComplexFreeQ, InertTrigQ's MemberQ reading, ExpandTrig,
+KnownTrigIntegrandQ and its four wrappers, TrigSimplify(Q) over the
+generated TrigSimplifyAux table, DeactivateTrig on a sum and a quotient,
+which FixInertTrigFunction clause fires, 35 checks):
+**`Results: 1435 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -369,7 +376,8 @@ ticket `.scratch/class-ports/issues/08`).
 
 The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
 guard, pure Python: `python3 test/test_generator_section9.py` — green
-**`Results: 26 passed, 0 failed`** (2026-09-25, the class-8 port: 23 after
+**`Results: 28 passed, 0 failed`** (2026-09-25, the class-4 port's Step 4:
++2, `===` (SameQ) emits Maxima's single `=`. Before: 26, the class-8 port: 23 after
 `7df5f9d`'s two `drop_comment_only_lines` join-guard checks, +3 for the
 guard's fix in `a6713a4` — a comment-only line before a blank line, before
 a multi-line comment, before the single-line ShowSteps wrapper; the guard

@@ -152,6 +152,7 @@ run_all_tests() := block([],
   test_class5_cluster_b(),
   test_class5_e2e(),
   test_class7_e2e(),
+  test_class4_cluster_a(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4928,6 +4929,103 @@ test_class5_e2e() := block([mr_c5_saved, mr_c5_ok, mr_c5_r],
                is(abs(float(subst(x = 0.3, diff(mr_c5_r, x) - (1 + x + x^2)*asin(x))))
                   < 1.0e-12))),
   mr_rule_table : mr_c5_saved,
+  true
+)$
+
+/* ---- class 4, Step 4 cluster (a): the inert-representation utilities ----
+   docs/class-porting.md Step 4; .scratch/class-ports/issues/05 (Step 1's
+   adjudication). The utilities the class-4 rule files call and the
+   inert-trig substrate did not port:
+   - ComplexFreeQ (4.1.10 r9-r11, L226);
+   - InertTrigQ's MemberQ reading (L6160): a HEAD is inert-trig, an
+     application of one is not (MemberQ[{sin,...}, sin[x]] is False);
+   - ExpandTrig, 2- and 3-argument (50 rules, L3362-3370);
+   - Known{Sine,Secant,Tangent,Cotangent}IntegrandQ over KnownTrigIntegrandQ
+     (the 4.7.1-4.7.3 normalization rules, L7368-7391);
+   - TrigSimplifyQ / TrigSimplify / TrigSimplifyRecur and TrigSimplifyAux's
+     31 clauses, a generated rewrite table (mr_rw_tsa) walked with the
+     3-argument %mr_rewrite (4.7.5 r66, L2702-2946). */
+test_class4_cluster_a() := block([mr_c4a_r],
+  print("--- class 4 cluster (a): inert-representation utilities ---"),
+  errcatch(%mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                            'mr_witness_inert_trig_rewrites)),
+  /* ComplexFreeQ */
+  check_bool("complexFreeQ: a real product", %mr_complexFreeQ(2*a*x)),
+  check_bool("complexFreeQ: an integer", %mr_complexFreeQ(3)),
+  check_not("complexFreeQ: %i", %mr_complexFreeQ(%i)),
+  check_not("complexFreeQ: an imaginary coefficient", %mr_complexFreeQ(2*%i*f)),
+  check_not("complexFreeQ: a complex sum inside a call", %mr_complexFreeQ(sin(a + %i*b))),
+  /* InertTrigQ, MemberQ semantics */
+  check_bool("inertTrigQ: the head %mr_icsc", %mr_inertTrigQ(%mr_icsc)),
+  check_not("inertTrigQ: an APPLICATION of an inert head is not a member",
+            %mr_inertTrigQ(%mr_isin(x))),
+  /* ExpandTrig */
+  mr_c4a_r : %mr_expandTrig(%mr_isin(x)^2*(a*%mr_icos(x) + b*%mr_isin(x)), x),
+  check_bool("expandTrig: expanded to a sum, activated",
+             %mr_sumQ(mr_c4a_r) and %mr_inertTrigFreeQ(mr_c4a_r)
+             and is(ratsimp(mr_c4a_r - sin(x)^2*(a*cos(x) + b*sin(x))) = 0)),
+  mr_c4a_r : %mr_expandTrig(%mr_icsc(x), (a + b*%mr_isin(x))^2, x),
+  check_bool("expandTrig (3 args): the activated factor distributed over the expansion",
+             %mr_sumQ(mr_c4a_r) and is(length(mr_c4a_r) = 3)
+             and %mr_inertTrigFreeQ(mr_c4a_r)
+             and is(ratsimp(mr_c4a_r - csc(x)*(a + b*sin(x))^2) = 0)),
+  check("expandTrig (3 args): a non-sum expansion is multiplied",
+        %mr_expandTrig(%mr_icsc(x), 2*%mr_isin(x), x), 2*csc(x)*sin(x)),
+  /* KnownTrigIntegrandQ and its four wrappers */
+  check_bool("knownSine: 1", %mr_knownSineIntegrandQ(1, x)),
+  check_bool("knownSine: (a+b sin(e+f x))^m",
+             %mr_knownSineIntegrandQ((a + b*%mr_isin(e + f*x))^m, x)),
+  check_bool("knownSine: (a+b cos)^m (A+B cos)",
+             %mr_knownSineIntegrandQ((a + b*%mr_icos(2*x))^m*(3 + 4*%mr_icos(2*x)), x)),
+  check_bool("knownSine: A + C sin^2",
+             %mr_knownSineIntegrandQ(3 + 5*%mr_isin(x)^2, x)),
+  check_bool("knownSine: A + B cos + C cos^2",
+             %mr_knownSineIntegrandQ(1 + 2*%mr_icos(x) + 5*%mr_icos(x)^2, x)),
+  check_not("knownSine: a tan integrand is not a sine integrand",
+            %mr_knownSineIntegrandQ((a + b*%mr_itan(x))^m, x)),
+  check_not("knownSine: x sin(x) is not known",
+            %mr_knownSineIntegrandQ(x*%mr_isin(x), x)),
+  check_not("knownSine: two different arguments",
+            %mr_knownSineIntegrandQ((a + b*%mr_isin(x))^m*(3 + 4*%mr_isin(2*x)), x)),
+  check_bool("knownTangent: (a+b tan)^m", %mr_knownTangentIntegrandQ((a + b*%mr_itan(x))^m, x)),
+  check_not("knownTangent: not cot", %mr_knownTangentIntegrandQ((a + b*%mr_icot(x))^m, x)),
+  check_bool("knownCotangent: (a+b cot)^m", %mr_knownCotangentIntegrandQ((a + b*%mr_icot(x))^m, x)),
+  check_bool("knownSecant: csc", %mr_knownSecantIntegrandQ((a + b*%mr_icsc(x))^(-2), x)),
+  check_not("knownSecant: an active sec is not inert",
+            %mr_knownSecantIntegrandQ((a + b*sec(x))^m, x)),
+  /* TrigSimplify */
+  check("trigSimplifyAux: a cos^2 + a sin^2 + v = a + v (clause 2)",
+        %mr_trigSimplifyAux(a*%mr_icos(z)^2 + a*%mr_isin(z)^2 + v), a + v),
+  check("trigSimplifyAux: 1 - sin^2 = cos^2, activated (clause 6)",
+        %mr_trigSimplifyAux(1 - %mr_isin(z)^2), cos(z)^2),
+  check("trigSimplifyAux: 1 + tan^2 = sec^2 (clause 8)",
+        %mr_trigSimplifyAux(1 + %mr_itan(z)^2), sec(z)^2),
+  check("trigSimplifyAux: no clause applies -> unchanged (the catch-all, clause 30)",
+        %mr_trigSimplifyAux(x^2 + 1), x^2 + 1),
+  check("trigSimplify: bottom-up, then activated",
+        %mr_trigSimplify(%mr_isin(x)^3*(1 - %mr_isin(x)^2)), sin(x)^3*cos(x)^2),
+  check_bool("trigSimplifyQ: it simplifies",
+             %mr_trigSimplifyQ(%mr_isin(x)^3*(1 - %mr_isin(x)^2))),
+  check_not("trigSimplifyQ: nothing to simplify",
+            %mr_trigSimplifyQ(%mr_isin(x)^3*(2 - %mr_isin(x)^2))),
+  check_bool("tsa table has the 31 clauses",
+             is(listp(mr_rw_tsa) and length(mr_rw_tsa) = 31)),
+  /* Carried from the inert-trig substrate (ticket 05): DeactivateTrig on a
+     SUM and on a QUOTIENT of trig calls (no committed target before), and
+     WHICH FixInertTrigFunction clause fires -- a walk over the one-record
+     table answers exactly what the full table answers. */
+  check("deactivateTrig: a sum maps head for head",
+        %mr_deactivateTrig(sin(x) + cos(x), x), %mr_isin(x) + %mr_icos(x)),
+  mr_c4a_r : %mr_deactivateTrig((sin(x) + cos(x))/(1 + tan(x)), x),
+  check_bool("deactivateTrig: a quotient is inert and round-trips",
+             freeof(sin, cos, tan, mr_c4a_r) and not %mr_inertTrigFreeQ(mr_c4a_r)
+             and is(%mr_activateTrig(mr_c4a_r) = (sin(x) + cos(x))/(1 + tan(x)))),
+  check("fitf: csc^2 sin -> 1/sin is fitf clause 3 alone",
+        %mr_rewrite("FixInertTrigFunction", [_mr_rw_fitf_r3], %mr_icsc(x)^2*%mr_isin(x), x),
+        %mr_fixInertTrigFunction(%mr_icsc(x)^2*%mr_isin(x), x)),
+  check("fitf: the free factor is clause 1 alone (its recursion re-enters the full table)",
+        %mr_rewrite("FixInertTrigFunction", [_mr_rw_fitf_r1], 3*%mr_icsc(x)^2*%mr_isin(x), x),
+        3/%mr_isin(x)),
   true
 )$
 

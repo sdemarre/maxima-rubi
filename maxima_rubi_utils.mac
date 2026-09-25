@@ -5888,13 +5888,17 @@ mr_use_gamma_flag : false$
 
 /* Rubi InertTrigQ[f_] := MemberQ[{sin,cos,tan,cot,sec,csc},f]
    (IntegrationUtilityFunctions.m L6160). Takes a HEAD, as upstream does:
-   rules bind F_ over an inert head and test this on the binding. The
-   %mr_hyperbolicQ shape (atom u -> u, else op(u)) is deliberate — the atom
-   branch was wrong there until 2026-09-20 and this one is faithful from the
-   start. */
+   rules bind F_ over an inert head and test this on the binding.
+   Class 4 (2026-09-25): MemberQ's own semantics, the head SYMBOL only. The
+   substrate read an application through its op() (the %mr_hyperbolicQ
+   shape), but MemberQ[{sin,...}, sin[x]] is False -- and TrigSimplifyAux's
+   first clause (L2723) calls InertTrigQ[v] on an EXPRESSION v, so that
+   clause never fires in Rubi and must not fire here. Every other caller
+   (the seven class-4 InertTrigQ[F] rules) passes a head capture, unchanged
+   by this. Rubi's 2- and 3-argument forms (L6162-6167) have no caller in
+   the rules and are not ported. */
 %mr_inertTrigQ(u) := block([],
-  is(member(if atom(u) then u else op(u),
-            [%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc]) = true))$
+  is(atom(u) and member(u, [%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc]) = true))$
 
 /* Rubi InertTrigFreeQ[u_] := FreeQ[u,sin] && ... && FreeQ[u,csc] (L6173).
    An EXPRESSION test, unlike InertTrigQ. */
@@ -7848,3 +7852,89 @@ mr_witness_utils() := true$
                     %mr_sfa_a),
     if is(%mr_sfa_a = %mr_sfa_b) then %mr_sfa_u
     else funmake(op(%mr_sfa_u), %mr_sfa_b)))$
+
+/* ===================== class 4 (2026-09-25) ==========================
+ * Step 4 cluster (a): the inert-representation utilities the class-4 rule
+ * files call and the inert-trig substrate did not port
+ * (.scratch/class-ports/issues/05, Step 1). Parameters and locals carry
+ * the %mr_ prefix (the capture rule, ticket 17). */
+
+/* Rubi ComplexFreeQ[u] (L226): an atom is complex-free unless it is a
+   ComplexNumberQ; otherwise every part must be. Mathematica's Complex[a, b]
+   is an ATOM; Maxima's 2*%i / a+%i*b is a product or sum whose walk reaches
+   the atom %i, so "no %i anywhere" is the same test (a float imaginary
+   part, 2.0*%i, carries %i too). */
+%mr_complexFreeQ(%mr_cfq_u) := is(freeof(%i, %mr_cfq_u))$
+
+/* Rubi ExpandTrig (L3362-3370):
+     ExpandTrig[u_,x_Symbol] := ActivateTrig[ExpandIntegrand[u,x]]
+     ExpandTrig[u_,v_,x_Symbol] := With[{w=ExpandTrig[v,x],z=ActivateTrig[u]},
+       If[SumQ[w], Map[Function[z*#],w], z*w]]
+   Variadic on the two arities (Maxima functions are fixed-arity). The
+   3-argument Map distributes z over the terms of w; Maxima keeps the mapped
+   sum as a sum of products (map over "+" re-simplifies each term only). */
+%mr_expandTrig([%mr_et_args]) := block([%mr_et_w, %mr_et_z],
+  if length(%mr_et_args) = 2 then
+    %mr_activateTrig(%mr_expandIntegrand(first(%mr_et_args), second(%mr_et_args)))
+  elseif length(%mr_et_args) = 3 then (
+    %mr_et_w : %mr_expandTrig(second(%mr_et_args), third(%mr_et_args)),
+    %mr_et_z : %mr_activateTrig(first(%mr_et_args)),
+    if %mr_sumQ(%mr_et_w)
+    then map(lambda([%mr_et_t], %mr_et_z*%mr_et_t), %mr_et_w)
+    else %mr_et_z*%mr_et_w)
+  else error("%mr_expandTrig: expected 2 or 3 arguments, found",
+             length(%mr_et_args)))$
+
+/* Rubi KnownTrigIntegrandQ[list,u,x] (L7384-7391): u===1, or u matches one
+   of six shapes in func_[e_.+f_.*x] with func a member of list -- the
+   integrands the 4.1/4.3/4.5 files know how to finish. The MatchQ
+   pattern strings and cond lambdas are the generator's own translation of
+   the six MatchQ calls (emit_rule over `MatchQ[u, <pattern> /; <cond>]`,
+   2026-09-25), with Rubi's free `list` and `x` bound to this function's
+   parameters. `func` is a head capture: the dispatcher binds it to the
+   %mr_i* operator SYMBOL (mr-binding-value), which is what `list` holds. */
+%mr_knownTrigIntegrandQ(%mr_kti_list, %mr_kti_u, %mr_kti_x) := block([],
+  is(%mr_kti_u = 1)
+  or %mr_matchQ(%mr_kti_u, "(Power (Plus (Optional (Pattern |_mr_kti_r1mq1_a| (Blank))) (Times (Optional (Pattern |_mr_kti_r1mq1_b| (Blank))) ((Pattern |_mr_kti_r1mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r1mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r1mq1_f| (Blank)))))))) (Optional (Pattern |_mr_kti_r1mq1_m| (Blank))))", [%mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r1mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_a, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_b, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_m, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Times (Plus (Optional (Pattern |_mr_kti_r2mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r2mq1_B| (Blank))) ((Pattern |_mr_kti_r2mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r2mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r2mq1_f| (Blank)))))))) (Power (Plus (Optional (Pattern |_mr_kti_r2mq1_a| (Blank))) (Times (Optional (Pattern |_mr_kti_r2mq1_b| (Blank))) ((Pattern |_mr_kti_r2mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r2mq1_e| (Blank))) (Times (MRArg 2) (Optional (Pattern |_mr_kti_r2mq1_f| (Blank)))))))) (Optional (Pattern |_mr_kti_r2mq1_m| (Blank)))))", [%mr_kti_x, %mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r2mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_a, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_b, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_B, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_m, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Plus (Optional (Pattern |_mr_kti_r3mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r3mq1_C| (Blank))) (Power ((Pattern |_mr_kti_r3mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r3mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r3mq1_f| (Blank)))))) 2)))", [%mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r3mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r3mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r3mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r3mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r3mq1_C, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Plus (Optional (Pattern |_mr_kti_r4mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r4mq1_B| (Blank))) ((Pattern |_mr_kti_r4mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r4mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r4mq1_f| (Blank))))))) (Times (Optional (Pattern |_mr_kti_r4mq1_C| (Blank))) (Power ((Pattern |_mr_kti_r4mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r4mq1_e| (Blank))) (Times (MRArg 2) (Optional (Pattern |_mr_kti_r4mq1_f| (Blank)))))) 2)))", [%mr_kti_x, %mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r4mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_B, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_C, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Times (Plus (Optional (Pattern |_mr_kti_r5mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r5mq1_C| (Blank))) (Power ((Pattern |_mr_kti_r5mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r5mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r5mq1_f| (Blank)))))) 2))) (Power (Plus (Optional (Pattern |_mr_kti_r5mq1_a| (Blank))) (Times (Optional (Pattern |_mr_kti_r5mq1_b| (Blank))) ((Pattern |_mr_kti_r5mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r5mq1_e| (Blank))) (Times (MRArg 2) (Optional (Pattern |_mr_kti_r5mq1_f| (Blank)))))))) (Optional (Pattern |_mr_kti_r5mq1_m| (Blank)))))", [%mr_kti_x, %mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r5mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_a, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_b, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_C, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_m, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Times (Plus (Optional (Pattern |_mr_kti_r6mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r6mq1_B| (Blank))) ((Pattern |_mr_kti_r6mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r6mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r6mq1_f| (Blank))))))) (Times (Optional (Pattern |_mr_kti_r6mq1_C| (Blank))) (Power ((Pattern |_mr_kti_r6mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r6mq1_e| (Blank))) (Times (MRArg 2) (Optional (Pattern |_mr_kti_r6mq1_f| (Blank)))))) 2))) (Power (Plus (Optional (Pattern |_mr_kti_r6mq1_a| (Blank))) (Times (Optional (Pattern |_mr_kti_r6mq1_b| (Blank))) ((Pattern |_mr_kti_r6mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r6mq1_e| (Blank))) (Times (MRArg 3) (Optional (Pattern |_mr_kti_r6mq1_f| (Blank)))))))) (Optional (Pattern |_mr_kti_r6mq1_m| (Blank)))))", [%mr_kti_x, %mr_kti_x, %mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r6mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_a, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_b, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_B, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_C, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_m, %mr_mqb)))))$
+
+/* Rubi L7368-7381: the four callers the 4.7.1-4.7.3 normalization rules
+   use; the lists are the INERT heads (Rubi's lowercase {sin,cos} ...). */
+%mr_knownSineIntegrandQ(%mr_ksi_u, %mr_ksi_x) :=
+  %mr_knownTrigIntegrandQ([%mr_isin, %mr_icos], %mr_ksi_u, %mr_ksi_x)$
+%mr_knownTangentIntegrandQ(%mr_kti2_u, %mr_kti2_x) :=
+  %mr_knownTrigIntegrandQ([%mr_itan], %mr_kti2_u, %mr_kti2_x)$
+%mr_knownCotangentIntegrandQ(%mr_kci_u, %mr_kci_x) :=
+  %mr_knownTrigIntegrandQ([%mr_icot], %mr_kci_u, %mr_kci_x)$
+%mr_knownSecantIntegrandQ(%mr_kse_u, %mr_kse_x) :=
+  %mr_knownTrigIntegrandQ([%mr_isec, %mr_icsc], %mr_kse_u, %mr_kse_x)$
+
+/* Rubi TrigSimplify (L2702-2721):
+     TrigSimplifyQ[u_] := ActivateTrig[u]=!=TrigSimplify[u]
+     TrigSimplify[u_] := ActivateTrig[TrigSimplifyRecur[u]]
+     TrigSimplifyRecur[u_] := If[AtomQ[u], u,
+       If[Head[u]===If, u, TrigSimplifyAux[Map[TrigSimplifyRecur,u]]]]
+   TrigSimplifyAux is the generated rewrite table mr_rw_tsa
+   (rules/utils/inert_trig_rewrites.mac, 31 clauses), a ONE-argument
+   function, so its walk is the 3-argument %mr_rewrite. Map works on
+   FullForm's level 1, i.e. Maxima's internal form: inflag:true reads a-b
+   as a + (-1)*b and a/b as a*b^(-1), the shapes the clauses are written
+   against. The Head[u]===If branch has no Maxima counterpart in an
+   integrand (a conditional is never an integrand factor here) and is not
+   ported. */
+%mr_trigSimplifyAux(%mr_tsa_u) :=
+  %mr_rewrite("TrigSimplifyAux", mr_rw_tsa, %mr_tsa_u)$
+%mr_trigSimplifyRecur(%mr_tsr_u) := block([inflag : true],
+  if atom(%mr_tsr_u) then %mr_tsr_u
+  else %mr_trigSimplifyAux(
+         funmake(op(%mr_tsr_u),
+                 map(lambda([%mr_tsr_t], %mr_trigSimplifyRecur(%mr_tsr_t)),
+                     args(%mr_tsr_u)))))$
+%mr_trigSimplify(%mr_ts_u) :=
+  %mr_activateTrig(%mr_trigSimplifyRecur(%mr_ts_u))$
+%mr_trigSimplifyQ(%mr_tsq_u) :=
+  is(%mr_activateTrig(%mr_tsq_u) # %mr_trigSimplify(%mr_tsq_u))$

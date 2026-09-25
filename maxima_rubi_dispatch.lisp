@@ -635,15 +635,22 @@ statically)."
 %mr_defrewrite handles) in order; the first record whose pattern binds
 (head u x) and whose cond accepts answers with its repl's value. U
 unchanged when none does -- Mathematica's own behaviour for a call with no
-applicable definition, which is what the callers rely on."
-  (unless (= (length args) 4)
-    (merror (intl:gettext "%mr_rewrite: expected 4 args, found ~A") (length args)))
-  (destructuring-bind (head table u x) args
+applicable definition, which is what the callers rely on.
+
+%mr_rewrite(head, table, u) walks a ONE-argument function's table: the
+pattern binds (head u), and the cond and repl get false for x (class 4,
+2026-09-25: TrigSimplifyAux[u], whose clauses never read x)."
+  (unless (member (length args) '(3 4))
+    (merror (intl:gettext "%mr_rewrite: expected 3 or 4 args, found ~A") (length args)))
+  (destructuring-bind (head table u &optional (x nil x-p)) args
     (unless ($listp table)
       (merror (intl:gettext "%mr_rewrite: the table is not a list: ~M") table))
-    (let ((expr (list (mr-match:sym head)
-                       (mr-tree:max->tree u)
-                       (mr-tree:max->tree x))))
+    (let ((expr (if x-p
+                    (list (mr-match:sym head)
+                          (mr-tree:max->tree u)
+                          (mr-tree:max->tree x))
+                    (list (mr-match:sym head)
+                          (mr-tree:max->tree u)))))
       (with-mr-switches
         (dolist (h (cdr table) u)
           (let* ((rw (mr-rewrite-of h))

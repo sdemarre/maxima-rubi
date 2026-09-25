@@ -889,6 +889,15 @@ def translate_atom(s, ctx):
         # and mixes with and/or correctly: `n = 2 and q` values as
         # (n = 2) and q. Translate `==` to `=`. (This build's negation is
         # `#`, not `#=`; no class-1 source uses `#=`, so no mapping yet.)
+        # Class 4 (2026-09-25): `===` (SameQ) is the same syntactic
+        # identity -- Maxima's `=` under is() compares the simplified forms
+        # structurally, which is what SameQ tests (the %mr_unsameQ reading
+        # of `=!=`, section 9 A2.3). Read as ONE three-character token;
+        # without this the walk below emitted `==` + `=`, i.e. `==`, which
+        # this build cannot parse. No rule file uses `===`; the first
+        # generated uses are TrigSimplifyAux's conds (mr_rw_tsa).
+        if s[i:i+3] == "===":
+            out.append("="); i += 3; continue
         if s[i:i+2] == "==":
             out.append("="); i += 2; continue
         ch = s[i]
@@ -2451,6 +2460,16 @@ REWRITE_FUNCTIONS = [
     # and L5028 are identical in the source and both stay, since the table
     # is faithful to the file). MEASURED 2026-09-20 over the pinned clone: 5.
     ("eiq", "EulerIntegrandQ", 5),
+    # Class 4 (2026-09-25, .scratch/class-ports/issues/05): TrigSimplifyAux,
+    # the worker of TrigSimplify (4.7.5 r66's TrigSimplifyQ/TrigSimplify,
+    # IntegrationUtilityFunctions.m L2702-2946). 31 clauses in the
+    # comment-stripped source (the file carries eleven more inside nested
+    # (* ... *) comments, which strip_comments removes); clause 30 is the
+    # bare TrigSimplifyAux[u_] := u, which bare_clause moves to the table's
+    # end, behind clause 31 (Mathematica tries it last too). MEASURED
+    # 2026-09-25 over the pinned clone: 31. A ONE-argument function: its
+    # wrapper walks the table with the 3-argument %mr_rewrite.
+    ("tsa", "TrigSimplifyAux", 31),
 ]
 
 
