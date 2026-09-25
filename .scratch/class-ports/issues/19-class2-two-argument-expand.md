@@ -1,6 +1,6 @@
 # Class 2's 2_3 r58/r65 emit a two-argument expand(u, x) that errors: both records always misfire
 
-Status: needs-triage
+Status: fixed (2026-09-25, branch `class-ports-fixes`)
 Type: bug (two class-2 records can never answer)
 Filed: 2026-09-25 (class-4 port, Step 4 — ticket 05)
 
@@ -35,3 +35,18 @@ byte-for-byte except a closed exception list, so the two repls need an
 exception entry, and class 2's record should be re-measured (the two records
 become live). Left for a decision because it changes accepted class-2
 output.
+
+## Resolution (2026-09-25, branch `class-ports-fixes`)
+
+Made general rather than per class: the emitter (`generator/generate_rules.py` `emit_head`) maps EVERY
+two-argument `Expand[u, x]` to `%mr_expand(u, x)`; a one-argument `Expand` keeps the RENAME row
+`expand`. `CLASS_RENAME[4]` (which mapped every class-4 `Expand`, all three of them two-argument) is
+gone, and `CLASS_RENAME` is empty. Regenerating every class (1-9, `--rewrites`) changes only
+`rules/class2/2_3.mac` r58/r65; class 4's three sites are byte-identical.
+
+- P3 static gate: one more closed exception, `undo_expand2` (`%mr_expand(` -> `expand(` on the new
+  body), 2 sites pinned. `Results: 28 passed, 0 failed`.
+- Layer A `test_expand_two_arg` (7 checks, 3 RED on the old `2_3.mac`): r58 accepts `2^x (1+3^x)^2` and
+  its repl now answers (it errored with the expop message), derivative checked at two points; likewise
+  r65 on `2^x 5^x (1+3^x)^2`; `rubi` end to end on a `2_1 + 2_3` table. Layer A 1527 -> 1534.
+- Class 2's record re-measure is still owed; a slice A/B is `probes/corpus/27-class-ports-fixes-slice-ab`.

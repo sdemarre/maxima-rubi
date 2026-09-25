@@ -30,6 +30,8 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
        - the native inverse-hyperbolic heads (ticket 18, 2026-09-25): an
          atanh( / asinh( / acosh( call is undone to the %mr_ shim call the
          base emitted, count pinned
+       - the two-argument Expand (ticket 19, 2026-09-25): a %mr_expand( call
+         is undone to the expand( the base emitted, count pinned
        - the 29 manual 9.1 rules and the 52 rules that had a workaround
          emitter (no defmatch in the base) are exempt;
   4. the generator's reader self-test is green;
@@ -104,6 +106,11 @@ LOCAL_BASE_SPELLING = {"D": "diff"}
 # compared rules (class 1's 51 and class 3's 2, all in repl lines).
 NATIVE_HEADS = ("atanh", "asinh", "acosh")
 NATIVE_HEAD_SITES = 53
+# Two-argument Expand (.scratch/class-ports/issues/19, 2026-09-25): Rubi's
+# Expand[u, x] emits %mr_expand(u, x) in every class, where the base emitted
+# Maxima's expand(u, x) -- an expop error, so the rule always misfired.
+# Undone on the new body before the comparison; class 2's 2_3 r58/r65.
+EXPAND2_SITES = 2
 # user decision 2026-09-12 (Plan 2 writing session): move all 227 inner
 # conditions, including those whose locals integrate (IntHide -> mr_int);
 # their extra cost is watched by the P5 median-wall gate.
@@ -273,6 +280,15 @@ def undo_native_heads(s, stats):
     return s
 
 
+def undo_expand2(s, stats):
+    """The new expression line with each %mr_expand( call back in the base
+    spelling expand( (ticket 19; the generator emits %mr_expand only for a
+    two-argument Expand). Counts the sites."""
+    s, n = re.subn(r"%mr_expand\(", "expand(", s)
+    stats["expand2"] += n
+    return s
+
+
 def redo_juxtaposition(s, stats):
     """The base body line with the generator's juxtaposition fix applied: a
     `)`/`]` followed by a spaced `(` becomes `)*(`. Counts the sites."""
@@ -439,7 +455,7 @@ def main(argv):
     counts_ok, lists_ok = [], []
     stats = dict(identical=0, guard=0, moved=0, matchq_old=0, workaround=0, nine=0,
                  no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, notequal=0, juxta=0,
-                 local_prefix=0, native_heads=0)
+                 local_prefix=0, native_heads=0, expand2=0)
     unexplained, entry_locals, bad_moves = [], [], []
     for rel in files:
         old = git_show(a.base, rel)
@@ -493,10 +509,10 @@ def main(argv):
                 continue
             try:
                 lines = [redo_juxtaposition(parts[0][2], stats), redo_juxtaposition(parts[1][2], stats),
-                         undo_native_heads(undo_fixes(undo_local_prefix(parts[2][2], key, n, stats),
-                                                      stats), stats),
-                         undo_native_heads(undo_fixes(undo_local_prefix(parts[3][2], key, n, stats),
-                                                      stats), stats)]
+                         undo_expand2(undo_native_heads(undo_fixes(
+                             undo_local_prefix(parts[2][2], key, n, stats), stats), stats), stats),
+                         undo_expand2(undo_native_heads(undo_fixes(
+                             undo_local_prefix(parts[3][2], key, n, stats), stats), stats), stats)]
             except ValueError as e:
                 unexplained.append("%s: translation-fix undo: %s" % (rid, e))
                 continue
@@ -582,6 +598,8 @@ def main(argv):
     g.check("native inverse-hyperbolic heads undone to the %%mr_ shims: %d sites"
             % NATIVE_HEAD_SITES,
             stats["native_heads"] == NATIVE_HEAD_SITES, str(stats["native_heads"]))
+    g.check("two-argument %%mr_expand(u, x) undone to expand(u, x): %d sites" % EXPAND2_SITES,
+            stats["expand2"] == EXPAND2_SITES, str(stats["expand2"]))
     for rid in entry_locals:
         print("INFO: moved inner condition with a package entry in its locals: %s%s" % (
             rid, " (resolved)" if rid in RESOLVED_ENTRY_LOCALS else " (UNRESOLVED)"))

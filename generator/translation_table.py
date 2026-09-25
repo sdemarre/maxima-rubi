@@ -364,22 +364,21 @@ RENAME = {
 # Per-class overrides of RENAME, consulted first by the generator's
 # translate_token (generate_rules.py) for the class being generated only.
 #
-# class 7 (2026-09-25) held ArcTanh / ArcSinh / ArcCosh -> the native heads;
-# the shared RENAME rows emit the natives for every class since ticket
-# .scratch/class-ports/issues/18 (option 1), so the row is gone.
-#
-# class 4 (2026-09-25): Expand -> %mr_expand. Rubi's Expand is 2-argument in
-# all three class-4 uses (4.1.1.1 r1 -- sin^n, n odd, the Cos substitution
-# -- 4.1.7 r58, 4.3.1.3 r2: Expand[u, x]), and Maxima's expand(u, x) is the
-# 3-argument expand(expr, p, n) short of one: "expand: expop must be a
-# nonnegative integer; found: x", a repl error the dispatcher reads as a
-# misfire (measured 2026-09-25, the class-4 slice). %mr_expand drops the
-# pattern argument (maxima_rubi_utils.mac). Class 2's 2_3 r58/r65 carry the
-# same 2-argument expand; they keep it (byte-identity of the accepted class)
-# and are ticketed (.scratch/class-ports/issues/19).
-CLASS_RENAME = {
-    4: {"Expand": "%mr_expand"},
-}
+# Empty since 2026-09-25. It held two rows:
+# - class 7: ArcTanh / ArcSinh / ArcCosh -> the native heads. The shared
+#   RENAME rows now emit the natives for every class (ticket
+#   .scratch/class-ports/issues/18, option 1).
+# - class 4: Expand -> %mr_expand. Rubi's two-argument Expand[u, x] (expand
+#   the parts of u that contain x) is not Maxima's expand(u, x) -- that is
+#   the 3-argument expand(expr, p, n) short of one: "expand: expop must be a
+#   nonnegative integer; found: x", a repl error the dispatcher reads as a
+#   misfire (probes/maxima/probe-class4-expand-two-arg.out E1). The emitter
+#   (generate_rules.py emit_head) now maps EVERY two-argument Expand to
+#   %mr_expand, which drops the pattern argument, whatever the class: class
+#   4's three sites (4.1.1.1 r1, 4.1.7 r58, 4.3.1.3 r2, unchanged text) and
+#   class 2's 2_3 r58/r65 (ticket .scratch/class-ports/issues/19). A
+#   one-argument Expand keeps the RENAME row, expand.
+CLASS_RENAME = {}
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.
 RESTRUCTURE = {

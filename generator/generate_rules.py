@@ -613,8 +613,8 @@ def translate_token(tok, ctx):
     if tok in ("True", "False"):
         return "true" if tok == "True" else "false"
     if tok in CLASS_RENAME.get(globals().get("CLASS"), {}):
-        # a per-class override (translation_table.py CLASS_RENAME) --
-        # consulted before the shared RENAME rows
+        # a per-class override (translation_table.py CLASS_RENAME, empty
+        # since 2026-09-25) -- consulted before the shared RENAME rows
         return CLASS_RENAME[CLASS][tok]
     if tok in RENAME or tok in RESTRUCTURE:
         return table_translate(tok)
@@ -1606,6 +1606,13 @@ def emit_head(head, arglist, ctx):
         if len(arglist) != 2:
             raise GenError(f"{key} r{n}: Complex arity {len(arglist)}")
         return f"({arglist[0]} + {arglist[1]}*%i)"
+    if head == "Expand" and len(arglist) == 2:
+        # Rubi's Expand[u, x] (expand the parts of u containing x) is not
+        # Maxima's expand(u, x), an error (expop must be a nonnegative
+        # integer); %mr_expand drops the pattern argument
+        # (translation_table.py CLASS_RENAME note; tickets
+        # .scratch/class-ports/issues/05 and 19). Every class.
+        return f"%mr_expand({', '.join(arglist)})"
     if head == "FreeQ":
         # FreeQ[e, x] -> freeof(x, e); FreeQ[{a,b}, x] -> and of freeof.
         # (FIX F7) the arg list may arrive as [a, b] (braces already

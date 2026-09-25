@@ -346,8 +346,10 @@ parametric and branch-identity controls, the `mr_eqq_symbolic` switch both
 ways, 1_2_1_2 r107 on 1.2.1.2 e1926, 5.3.7 r27/r28 and 7.3.7 r25/r26 on a
 shifted quadratic, 24 checks): `Results: 1519 passed, 0 failed`; with the
 native inverse-hyperbolic heads in every class (ticket
-`.scratch/class-ports/issues/18`, 8 checks): **`Results: 1527 passed, 0
-failed`**. The
+`.scratch/class-ports/issues/18`, 8 checks): `Results: 1527 passed, 0
+failed`; with the two-argument `Expand[u, x]` -> `%mr_expand` in every class
+(ticket `.scratch/class-ports/issues/19`, 2_3 r58/r65, 7 checks):
+**`Results: 1534 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -381,10 +383,12 @@ failed` (2026-09-25, the class-7 port's Step 3: one more check-7 line,
 `post-P0 class 7: 712 rules over 21 files`; 5,906 pattern strings; still
 26 at the class-4 port's Step 3, 2026-09-25, whose check-7 line moves from
 `8 rules over 2 files` — the substrate's subset — to `post-P0 class 4:
-2080 rules over 56 files`; 7,990 pattern strings). Now **`Results: 27
-passed, 0 failed`** (2026-09-25, ticket `.scratch/class-ports/issues/18`:
+2080 rules over 56 files`; 7,990 pattern strings). Then `Results: 27
+passed, 0 failed` (2026-09-25, ticket `.scratch/class-ports/issues/18`:
 the native `atanh`/`asinh`/`acosh` heads are one more closed exception,
-`undo_native_heads`, its 53 class-1/3 sites pinned).
+`undo_native_heads`, its 53 class-1/3 sites pinned). Now **`Results: 28
+passed, 0 failed`** (2026-09-25, ticket `.scratch/class-ports/issues/19`:
+the two-argument `Expand` -> `%mr_expand`, `undo_expand2`, class 2's 2 sites).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
