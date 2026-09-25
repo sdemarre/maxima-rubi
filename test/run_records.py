@@ -61,7 +61,7 @@ SWITCH_DEFAULTS = {"mr_flat_wide": "false",
                    "mr_inert_leak_misfire": "true",
                    "mr_last_resort_tier": "true",
                    "mr_general_after_giveups": "true",
-                   "mr_max_depth": "16",
+                   "mr_max_depth": "32",
                    "mr_eqq_symbolic": "true"}
 # mr_max_depth is the one INTEGER switch (a positive depth cap); the rest
 # are booleans. Both kinds are read from the record's filter: line, so the

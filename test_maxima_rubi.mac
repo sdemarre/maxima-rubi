@@ -3133,11 +3133,11 @@ test_run_switches() := block(
   saved_cap : mr_max_depth,
   saved_hits : mr_depth_cap_hits,
 
-  /* defaults: rules-only, cap 16 (the dispatcher's defmvars). The
+  /* defaults: rules-only, cap 32 (the dispatcher's defmvars). The
      fall-through default is the value captured at load, before the suite
      bound it true for the behavioural checks (see the comment there). */
   check("mr_nested_fallback defaults to false", mr_default_nested_fallback, false),
-  check("mr_max_depth defaults to 16", saved_cap, 16),
+  check("mr_max_depth defaults to 32", saved_cap, 32),
   /* the give-up reordering: on by default, the other half of the pair with
      the seen-cut fall-through (test_seen_cut_fallthrough below) */
   check("mr_giveup_last defaults to true", mr_default_giveup_last, true),

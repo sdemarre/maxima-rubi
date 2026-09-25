@@ -201,11 +201,15 @@ is an improper list."
         ((member (caar e) +mr-inert-ops+ :test #'eq) t)
         (t (loop for tail on (cdr e) thereis (mr-carries-inert-p (car tail))))))
 
-(defmvar $mr_max_depth 16
+(defmvar $mr_max_depth 32
   "Run switch: the dispatch depth cap. mr_top counts nested dispatches in
 depth_level and takes the cap branch beyond this many; every cap hit is
 counted in mr_depth_cap_hits (the run's .caps census). Rubi's own step
-counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).")
+counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).
+Raised 16 -> 32 on 2026-09-25 (user decision): the class-4 routes of 10
+class-6 entries re-enter the inert-trig bridge on every hop and hit 16; at
+64, 7 of the 10 verify (class-6 attribution, branch class6-attribution,
+probes/class-ports/07-depthcap-64.out).")
 
 (defmvar $mr_eqq_symbolic t
   "Run switch: true (default) = EqQ/NeQ (%mr_eqQ / %mr_neQ,
