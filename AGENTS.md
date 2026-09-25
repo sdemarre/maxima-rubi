@@ -339,7 +339,12 @@ r1's Expand row, the Pi-shifted and Complex[0, fz] arguments, the accepted
 G-9 flags binding, the r66/r70 tail records, a 4.7.1 normalization record,
 17 checks): `Results: 1486 passed, 0 failed`; with DeactivateTrig's
 fast-path clause (the generated mr_rw_dt, 9 checks):
-**`Results: 1495 passed, 0 failed`**. The
+`Results: 1495 passed, 0 failed`; with the EqQ/NeQ symbolic zero test
+(2026-09-25, branch `class-ports-fixes`,
+`.scratch/matcher-translation-fixes/issues/03`: the g12 shapes, the
+parametric and branch-identity controls, the `mr_eqq_symbolic` switch both
+ways, 1_2_1_2 r107 on 1.2.1.2 e1926, 5.3.7 r27/r28 and 7.3.7 r25/r26 on a
+shifted quadratic, 24 checks): **`Results: 1519 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -521,6 +526,11 @@ three migration switches (`mr_flat_wide` false, `mr_cond_retry` true,
 are set per run with `MR_SWITCHES` (space-separated
 `<switch>=true|false`), e.g.
 `MR_SWITCHES="mr_model_flags=false" python3 test/launch_class_shards.py …`.
+Every later `defmvar` run switch rides the same plumbing (`test/run_records.py`
+SWITCHES); the latest, `mr_eqq_symbolic` (default true, 2026-09-25), selects
+the EqQ/NeQ zero test — false is the syntactic `is(u - v = 0)` of every
+earlier record (`.scratch/matcher-translation-fixes/issues/03`,
+`probes/matcher/26-eqq-symbolic-zero-test.out`).
 The driver assigns them in every entry text and ends its `filter:`
 line with `switches: …`; the mergers refuse shards that state no arm
 or two arms. A launch first deletes the previous run's shard files and

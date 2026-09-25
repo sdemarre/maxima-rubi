@@ -152,6 +152,7 @@ run_all_tests() := block([],
   test_class5_cluster_b(),
   test_class5_e2e(),
   test_class7_e2e(),
+  test_eqq_symbolic(),
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
@@ -4891,10 +4892,9 @@ test_class5_cluster_b() := block([],
    class-8 e2e shape), with the nested integrate fall-through Layer A binds
    on: 5.3.7 r27/r28 (the ports above), 5.5.1 r1/r2 (the asec/acsc rows),
    5.1.5 r9 (the ExpandExpression row). Each answer is checked by its
-   derivative. NOTE: r27/r28 reach only quadratics whose discriminant
-   identity closes syntactically (1+x^2 here): %mr_eqQ does not expand
-   (.scratch/matcher-translation-fixes/issues/03), so a shifted quadratic
-   such as 4x^2+4x+2 declines -- recorded on ticket 02, not pinned here. */
+   derivative. The shifted quadratic (4x^2+4x+2), which declined while
+   %mr_eqQ was syntactic, is pinned in test_eqq_symbolic below
+   (.scratch/matcher-translation-fixes/issues/03). */
 test_class5_e2e() := block([mr_c5_saved, mr_c5_ok, mr_c5_r],
   print("--- class 5 end to end: 5.3.7 r27/r28, 5.5.1, 5.1.5 r9 ---"),
   mr_c5_saved : mr_rule_table,
@@ -5381,6 +5381,84 @@ test_class7_e2e() := block([mr_c7_saved, mr_c7_ok, mr_c7_r, mr_c7_d],
                freeof('unintegrable, mr_c7_r)
                and mr_c7_d(x*%e^atanh(x)/(1 - x^2)^2, [0.3, 0.7]))),
   mr_rule_table : mr_c7_saved,
+  true
+)$
+
+/* ---- EqQ / NeQ: the symbolic zero test (mr_eqq_symbolic) --------------
+   .scratch/matcher-translation-fixes/issues/03, user decision 2026-09-25:
+   EqQ[u, v] reads u - v zero when it is syntactically 0 or identically 0
+   by the zero chain's exact symbolic stages (ratsimp, ratsimp(expand),
+   factor, ratsimp(factor)); NeQ is its negation. A zero for SOME parameter
+   values -- a generic product, a branch identity radcan would close -- stays
+   nonzero. With the switch off the old syntactic reading is back (the g12
+   checks then RED). End to end: 1_2_1_2 r107 declines on class 1's g12
+   factorable quadratic (1.2.1.2 e1926, whose answers divided by an
+   expression that expands to 0), and 5.3.7 r27/r28 / 7.3.7 r25/r26 fire on
+   a SHIFTED quadratic (probes/matcher/25). */
+test_eqq_symbolic() := block([mr_eq_saved, mr_eq_ok, mr_eq_r, mr_eq_g12, mr_eq_d],
+  print("--- EqQ / NeQ: the symbolic zero test ---"),
+  mr_eq_g12 : c*d^3*e - d*e*(c*d^2 + a*e^2) + a*d*e^3,
+  check_bool("eqQ: g12's unexpanded coefficient (expands to 0) is zero",
+             %mr_eqQ(mr_eq_g12, 0)),
+  check_not("neQ: g12's unexpanded coefficient is not nonzero", %mr_neQ(mr_eq_g12, 0)),
+  check_bool("eqQ: c d^2 - b d e + a e^2 at g12's binding (a d e, c d^2 + a e^2, c d e)",
+             %mr_eqQ((c*d*e)*d^2 - (c*d^2 + a*e^2)*d*e + (a*d*e)*e^2, 0)),
+  check_bool("eqQ: the shifted quadratic's discriminant identity 16(2x+1)^2 - (-8x-4)^2",
+             %mr_eqQ(16*(2*x + 1)^2 - (-(8*x) - 4)^2, 0)),
+  check_bool("eqQ: a removable rational identity (a^2-b^2)/(a-b) = a + b",
+             %mr_eqQ((a^2 - b^2)/(a - b), a + b)),
+  check_bool("eqQ: (1+i a)(1-i a) = 1 + a^2", %mr_eqQ((1 + %i*a)*(1 - %i*a), 1 + a^2)),
+  check_not("eqQ: a generic product a b c is not zero (the 2026-08-24 over-firing)",
+            %mr_eqQ(a*b*c, 0)),
+  check_bool("neQ: a - b is nonzero", %mr_neQ(a, b)),
+  check_not("eqQ: c d^2 - b d e + a e^2 with free parameters is not zero",
+            %mr_eqQ(c*d^2 - b*d*e + a*e^2, 0)),
+  check_not("eqQ: sqrt(a b) vs sqrt(a) sqrt(b) (a branch identity) is not zero",
+            %mr_eqQ(sqrt(a*b), sqrt(a)*sqrt(b))),
+  check_not("eqQ: log(a b) vs log(a) + log(b) (a branch identity) is not zero",
+            %mr_eqQ(log(a*b), log(a) + log(b))),
+  check_not("eqQ: (a b)^m vs a^m b^m (a branch identity) is not zero",
+            %mr_eqQ((a*b)^m, a^m*b^m)),
+  check_not("eqQ: sin^2 + cos^2 - 1 is outside the stages (not zero)",
+            %mr_eqQ(sin(x)^2 + cos(x)^2, 1)),
+  check_bool("eqQ: numbers and atoms unchanged", %mr_eqQ(2, 2) and not %mr_eqQ(1, 2)
+             and %mr_eqQ(a, a) and not %mr_eqQ(a, 0) and %mr_neQ(m, -1)),
+  mr_eqq_symbolic : false,
+  check_not("switch off: g12's unexpanded coefficient reads nonzero (the old reading)",
+            %mr_eqQ(mr_eq_g12, 0)),
+  check_bool("switch off: NeQ of it reads true (the old reading)", %mr_neQ(mr_eq_g12, 0)),
+  mr_eqq_symbolic : true,
+  mr_eq_saved : mr_rule_table,
+  mr_eq_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/1_2_1_2.mac", 'mr_witness_1_2_1_2),
+    %mr_load_sibling("rules/class5/5_3_7.mac", 'mr_witness_5_3_7),
+    %mr_load_sibling("rules/class7/7_3_7.mac", 'mr_witness_7_3_7),
+    true),
+  check_bool("eqQ e2e: rule files load", is(mr_eq_ok # [])),
+  if mr_eq_ok # [] then (
+    check_not("1_2_1_2 r107 declines on 1.2.1.2 e1926 (NeQ[c d^2 - b d e + a e^2, 0] is false)",
+              %mr_rule_accept(_mr_rule_1_2_1_2_r107,
+                (a*d*e + (c*d^2 + a*e^2)*x + c*d*e*x^2)^(3/2)/(d + e*x)^4, x)),
+    check_bool("1_2_1_2 r107 still accepts the generic (d+ex)^-4 (a+bx+cx^2)^(3/2)",
+               listp(%mr_rule_accept(_mr_rule_1_2_1_2_r107,
+                       (a + b*x + c*x^2)^(3/2)/(d + e*x)^4, x))),
+    mr_eqq_symbolic : false,
+    check_bool("switch off: r107 accepts e1926 (the misroute)",
+               listp(%mr_rule_accept(_mr_rule_1_2_1_2_r107,
+                       (a*d*e + (c*d^2 + a*e^2)*x + c*d*e*x^2)^(3/2)/(d + e*x)^4, x))),
+    mr_eqq_symbolic : true,
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_5_3_7]),
+    check("5_3_7 r27 on a shifted quadratic: Int e^atan(2x+1)/(4x^2+4x+2)",
+          rubi(%e^atan(1 + 2*x)/(4*x^2 + 4*x + 2), x), %e^atan(1 + 2*x)/2),
+    check("5_3_7 r28 on a shifted quadratic: Int e^acot(2x+1)/(4x^2+4x+2)",
+          rubi(%e^acot(1 + 2*x)/(4*x^2 + 4*x + 2), x), -%e^acot(1 + 2*x)/2),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_7_3_7]),
+    check("7_3_7 r25 on a shifted quadratic: Int e^atanh(2x+1)/(-4x^2-4x)",
+          rubi(%e^atanh(1 + 2*x)/(-4*x^2 - 4*x), x), %e^atanh(1 + 2*x)/2),
+    check("7_3_7 r26 on a shifted quadratic: Int e^acoth(2x+1)/(-4x^2-4x)",
+          rubi(%e^acoth(1 + 2*x)/(-4*x^2 - 4*x), x), %e^acoth(1 + 2*x)/2)),
+  mr_rule_table : mr_eq_saved,
   true
 )$
 

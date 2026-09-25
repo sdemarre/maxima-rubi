@@ -395,10 +395,74 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
   * a misfired rule already returned. NeQ stays "not provably zero" (a
   * symbolic m must let the power rule fire), which is independent of the
   * EqQ reading. */
-%mr_eqQ(u, v) := %mr_b(u - v = 0)$
-%mr_neQ(u, v) := block([z],
-  z : is(u - v = 0),
-  if z = true then false else true)$
+/* Under the run switch mr_eqq_symbolic (default true, user decision
+ * 2026-09-25, .scratch/matcher-translation-fixes/issues/03) the syntactic
+ * test is only the FIRST stage: a u - v that is not syntactically 0 is also
+ * read zero when it is IDENTICALLY zero by the exact symbolic stages of the
+ * harness's zero chain (test/corpus_driver.py zero_chain) -- ratsimp,
+ * ratsimp(expand), factor, ratsimp(factor), in its two orders. Rubi's
+ * PossibleZeroQ reads such a difference zero (an unexpanded bound
+ * coefficient, c*d^3*e - d*e*(c*d^2+a*e^2) + a*d*e^3; a shifted quadratic's
+ * discriminant identity, 16*(2*x+1)^2 - (-8*x-4)^2).
+ *
+ * Not ported from the chain, on measurement
+ * (probes/matcher/26-eqq-symbolic-zero-test.out):
+ *   - its two-point NUMERIC stage (the user's decision: no numerical tricks);
+ *   - its radcan(rat()) fallback: radcan closes BRANCH identities --
+ *     sqrt(a*b) - sqrt(a)*sqrt(b), log(a*b) - log(a) - log(b),
+ *     (a*b)^m - a^m*b^m, sqrt(x^2+2*x+1) - x - 1 all read 0 -- which hold
+ *     only for some parameter values, where Rubi's EqQ reads False. The
+ *     ratsimp/expand/factor stages treat every kernel as independent and
+ *     close none of them.
+ * So the "zero for some parameter values" reading the 2026-08-24 history
+ * rules out stays False: a*b*c, a - b, c*d^2 - b*d*e + a*e^2 are nonzero
+ * rational functions.
+ *
+ * Cost (probe 26 C): the stages run only when the syntactic test fails on
+ * a difference that is not a number, an atom or an EXPANDED polynomial in
+ * variable symbols (%mr_expanded_polyp, maxima_rubi_dispatch.lisp: in the
+ * simplifier's collected form, so zero iff syntactically 0 -- b^2 - 4*a*c,
+ * m + 1, b*c - a*d end here). Then ratsimp, which is CANONICAL on a rational
+ * function of variable symbols: a nonzero ratsimp whose kernels
+ * (showratvars) are all variable symbols ends the test; the other stages
+ * run only on differences with other kernels (radicals, functions, %i,
+ * %pi). Every chain is errcatch'd: a crash in a chain is a chain that did
+ * not close. */
+%mr_symbolicZeroQ(%mr_eq_d) := block([%mr_eq_r],
+  if atom(%mr_eq_d) or numberp(%mr_eq_d) or %mr_expanded_polyp(%mr_eq_d) then false
+  else (
+    %mr_eq_r : errcatch(ratsimp(%mr_eq_d)),
+    if %mr_eq_r = [] then %mr_zeroChainQ(%mr_eq_d, %mr_eq_d)
+    else if %mr_b(part(%mr_eq_r, 1) = 0) then true
+    else if errcatch(every(%mr_isVarSym, showratvars(part(%mr_eq_r, 1)))) = [true]
+      then false
+    else %mr_zeroChainQ(%mr_eq_d, part(%mr_eq_r, 1))))$
+
+/* The chain's two orders: ratsimp-first (from r0 = ratsimp(d), already
+   computed), then factor-first from d. The harness runs factor-first
+   first; the reading is the same -- any stage closing is a zero -- and the
+   ratsimp-first order is the cheap one. */
+%mr_zeroChainQ(%mr_eq_d, %mr_eq_r0) := block([%mr_eq_z],
+  %mr_eq_z : errcatch(block([%mr_eq_s],
+        %mr_eq_s : %mr_eq_r0, if %mr_b(%mr_eq_s = 0) then return(true),
+        %mr_eq_s : ratsimp(expand(%mr_eq_s)), if %mr_b(%mr_eq_s = 0) then return(true),
+        %mr_eq_s : factor(%mr_eq_s), if %mr_b(%mr_eq_s = 0) then return(true),
+        %mr_eq_s : ratsimp(factor(%mr_eq_s)), %mr_b(%mr_eq_s = 0))),
+  if %mr_eq_z # [] and part(%mr_eq_z, 1) = true then true
+  else (
+    %mr_eq_z : errcatch(block([%mr_eq_s],
+          %mr_eq_s : factor(%mr_eq_d), if %mr_b(%mr_eq_s = 0) then return(true),
+          %mr_eq_s : ratsimp(%mr_eq_s), if %mr_b(%mr_eq_s = 0) then return(true),
+          %mr_eq_s : ratsimp(expand(%mr_eq_s)), if %mr_b(%mr_eq_s = 0) then return(true),
+          %mr_eq_s : ratsimp(factor(%mr_eq_s)), %mr_b(%mr_eq_s = 0))),
+    if %mr_eq_z # [] and part(%mr_eq_z, 1) = true then true else false))$
+
+%mr_eqQ(u, v) := block([%mr_eq_d],
+  %mr_eq_d : u - v,
+  if %mr_b(%mr_eq_d = 0) then true
+  else if mr_eqq_symbolic = true then %mr_symbolicZeroQ(%mr_eq_d)
+  else false)$
+%mr_neQ(u, v) := not %mr_eqQ(u, v)$
 
 /* ---- simp / together shims ----------------------------------------
  * simplify and together are UNBOUND in this build (measured, T2/T4;

@@ -207,6 +207,58 @@ depth_level and takes the cap branch beyond this many; every cap hit is
 counted in mr_depth_cap_hits (the run's .caps census). Rubi's own step
 counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).")
 
+(defmvar $mr_eqq_symbolic t
+  "Run switch: true (default) = EqQ/NeQ (%mr_eqQ / %mr_neQ,
+maxima_rubi_utils.mac) read u - v as zero when it is syntactically 0 OR
+identically zero by the exact symbolic stages of the harness's zero chain
+(ratsimp, ratsimp(expand), factor, ratsimp(factor), in its two orders; not
+its numeric stage, not its radcan fallback); false = the syntactic test
+alone, is(u - v = 0), the reading every record before 2026-09-25 ran.
+
+WHY (.scratch/matcher-translation-fixes/issues/03, user decision
+2026-09-25). An unexpanded bound coefficient made an identically-zero
+difference read nonzero: 1_2_1_2 r107's NeQ[c d^2 - b d e + a e^2, 0] fired
+on class 1's factorable quadratics and divided by an expression that
+expands to 0, and 5.3.7 r27/r28 / 7.3.7 r25/r26 declined on a shifted
+quadratic. Rubi's PossibleZeroQ reads those zero. A zero for SOME
+parameter values (a*b*c, a - b) stays nonzero, as in Rubi.")
+
+;; The EqQ fast path (%mr_symbolicZeroQ, maxima_rubi_utils.mac): an
+;; EXPANDED polynomial -- a number, a variable symbol, a product of numbers
+;; and integer powers of variable symbols, or a sum of such terms -- is in
+;; the simplifier's collected form, where like terms have already combined,
+;; so it is zero iff it is syntactically 0: ratsimp could not close it (it
+;; treats every kernel as independent, as this reading does). Variable
+;; symbols are %mr_isVarSym's: not %pi %e %i inf minf true false unknown
+;; %lambda undefined und. Anything else (a sum inside a product, a quotient
+;; of sums, a radical, a function call, a CRE) returns false: not decided
+;; here, the zero chain's stages run.
+(defun mr-poly-var-p (x)
+  (and (symbolp x) x (not (eq x t))
+       (not (member x '($%pi $%e $%i $inf $minf $true $false $unknown
+                        $%lambda $undefined $und)
+                    :test #'eq))))
+
+(defun mr-poly-factor-p (f)
+  (or (mnump f)
+      (mr-poly-var-p f)
+      (and (consp f) (consp (car f)) (eq (caar f) 'mexpt)
+           (mr-poly-var-p (cadr f)) (integerp (caddr f)))))
+
+(defun mr-poly-term-p (u)
+  (or (mr-poly-factor-p u)
+      (and (consp u) (consp (car u)) (eq (caar u) 'mtimes)
+           (every #'mr-poly-factor-p (cdr u)))))
+
+(defun $%mr_expanded_polyp (u)
+  "True when U is an expanded polynomial (Laurent, integer exponents) in
+variable symbols with numeric coefficients, in simplified form."
+  (if (or (mr-poly-term-p u)
+          (and (consp u) (consp (car u)) (eq (caar u) 'mplus)
+               (every #'mr-poly-term-p (cdr u))))
+      t
+      nil))
+
 ;; Maxima variables the utils define before this file loads (declared here
 ;; so their references compile as special).
 (defvar $rubi_verbose nil)
