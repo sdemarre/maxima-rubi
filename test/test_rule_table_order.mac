@@ -179,6 +179,23 @@ check_bool("class 5's bodies (5.1.1..5.5.2) follow class 3 and precede class 6, 
          = flatten(mr_c5_lists))
   and is(mr_pos(last(mr_rules_5_5_2)) + 1 = mr_pos(first(mr_rules_6_1_10)))
   and is(length(flatten(mr_c5_lists)) = 667))$
+/* Class 7 (2026-09-25): its twenty-one bodies in Rubi.m order (7.1.1 ..
+   7.5.2), contiguous, right after class 6's last list (6_7_9) -- the
+   class-4 bridge lists between them have empty bodies -- and right before
+   class 8's first (8_1): section 7 loads after section 6 and before
+   section 8. Class 7 has no bare-u_ record, so the tail is unchanged. */
+mr_c7_lists : [mr_rules_7_1_1, mr_rules_7_1_2, mr_rules_7_1_3, mr_rules_7_1_4,
+               mr_rules_7_1_5, mr_rules_7_1_6, mr_rules_7_2_1, mr_rules_7_2_2,
+               mr_rules_7_2_3, mr_rules_7_2_4, mr_rules_7_2_5, mr_rules_7_2_6,
+               mr_rules_7_3_1, mr_rules_7_3_2, mr_rules_7_3_3, mr_rules_7_3_4,
+               mr_rules_7_3_5, mr_rules_7_3_6, mr_rules_7_3_7, mr_rules_7_5_1,
+               mr_rules_7_5_2]$
+check_bool("class 7's bodies (7.1.1..7.5.2) follow class 6 and precede class 8, contiguous",
+  is(mr_pos(first(mr_rules_7_1_1)) = mr_pos(last(mr_rules_6_7_9)) + 1)
+  and is(sublist(mr_rule_table, lambda([mr_h], member(mr_h, flatten(mr_c7_lists))))
+         = flatten(mr_c7_lists))
+  and is(mr_pos(last(mr_rules_7_5_2)) + 1 = mr_pos(first(mr_rules_8_1)))
+  and is(length(flatten(mr_c7_lists)) = 712))$
 print("table length after mr_load_all: ", length(mr_rule_table))$
 
 /* The universal cross-check, over EVERY handle mr_load_all() actually

@@ -195,7 +195,7 @@ depend on the rule table's contents at their point in the suite:
 maxima --very-quiet -b test/test_rule_table_order.mac
 ```
 
-Green: `Results: 15 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
+Green: `Results: 16 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
 plan's Task 9, when class 4's bridge subset put the first real `_tail`
 lists in the table; +1 at Task 10's fix round 1: r72 is the tail's only
 give-up record; +3 at Task 11, section-9's 9.2/9.3; +2 at ticket 14,
@@ -205,7 +205,10 @@ nine bodies then 9.1 Derivative's (`9_1d`), contiguous, after class 6 and
 before 9.3; the tail gains 8.9 r44 between the bridge and 9.3; the run
 prints the table length, 4,325; +1 at the class-5 port, 2026-09-25: class
 5's fifteen bodies, contiguous, right after class 3's last list and right
-before class 6's first, 667 handles; table length 4,992) — both handle lists
+before class 6's first, 667 handles; table length 4,992; +1 at the class-7
+port, 2026-09-25: class 7's twenty-one bodies, contiguous, right after
+class 6's last list and right before class 8's first, 712 handles; table
+length 5,704) — both handle lists
 are defined lists and the body list is non-empty; `mr_rule_table` equals
 the body handles followed by the tail handles with nothing lost; the tail
 is non-empty; the tail is the eight bridge records in LoadRules order
