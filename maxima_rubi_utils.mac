@@ -2241,7 +2241,14 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
  * Rubi :1152  RemoveContent[u,x] := with v = NonfreeFactors[u,x],
  *   w = Together[v]: if EqQ[FreeFactors[w,x],1] then Aux[v,x]
  *   else Aux[NonfreeFactors[w,x],x] */
-%mr_nonfreeFactors(u, x) := block([r, i, t],
+/* Class 4 (2026-09-25): both read u with inflag:true, i.e. Rubi's
+   ProductQ reading -- a quotient x/2 or a/(b x) is Times[...] with Power[.,
+   -1] factors, as in Mathematica. Without it op(x/2) is "/", neither "-"
+   nor "*", and FreeFactors[x/2] answered 1 (NonfreeFactors x/2): found by
+   SubstFor[Sinh[x]/2, u, x] (test_class4_free_factors). A negation is
+   (-1)*u internally, so the "-" branches below are kept for a caller that
+   passes a non-simplified form only. */
+%mr_nonfreeFactors(u, x) := block([inflag : true, r, i, t],
   if atom(u) then (
     if freeof(x, u) then 1 else u
   )
@@ -2258,7 +2265,7 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
   )
   else if freeof(x, u) then 1 else u)$
 
-%mr_freeFactors(u, x) := block([r, i, t],
+%mr_freeFactors(u, x) := block([inflag : true, r, i, t],
   if atom(u) then (
     if freeof(x, u) then u else 1
   )
@@ -3598,6 +3605,12 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
   else if not atom(%mr_nonfreeFactors(v, x))
     and is(member(op(%mr_nonfreeFactors(v, x)), [sin, cos, tan, cot]) = true)
   then %mr_substForTrigHead(v, u, x)
+  /* Class 4 (2026-09-25): the six HYPERBOLIC Switch arms (L5993-5998) ->
+     SubstForHyperbolic (%mr_substForHypHead, with FunctionOfQ's hyperbolic
+     arms at the end of this file). */
+  else if not atom(%mr_nonfreeFactors(v, x))
+    and %mr_hyperbolicQ(%mr_nonfreeFactors(v, x))
+  then %mr_substForHypHead(v, u, x)
   else if not atom(v) and op(v) = "^"
     and is(part(v, 1) = x) and freeof(x, part(v, 2))
   then %mr_substPower(u, x, 1/part(v, 2))
@@ -6166,8 +6179,11 @@ mr_use_gamma_flag : false$
  *      %i*product, i.e. a hyperbolic integrand with NO constant term, c=0).
  *      Those integrands decline here; Mathematica takes the same turn and
  *      Rubi answers them through the hyperbolic branches.
+ *      CLOSED at the class-4 port (2026-09-25): the hyperbolic arms are
+ *      ported (%mr_functionOfSinhQ ..., end of this file).
  *  (b) SubstFor's trig branch covers Sin/Cos/Tan/Cot -- the four heads
- *      the six bridge records pass. Sec/Csc and the six hyperbolic heads
+ *      the six bridge records pass (and, since the class-4 port, the six
+ *      hyperbolic heads, %mr_substForHypHead). Sec/Csc
  *      fall through to the pre-existing algebraic port below. UNREACHABLE
  *      from the ported records (none passes such a head); if it were
  *      reached it would NOT decline -- it would mis-substitute, through
@@ -6234,15 +6250,19 @@ mr_use_gamma_flag : false$
   %mr_foq_r)$
 
 /* The (Cos[v/2], Sin[v/2]) factor pair of FunctionOfSinQ / SubstForTrig:
-   u with the pair removed, or false (deviation (c) above). */
-%mr_foq_halfPair(%mr_hp_u, %mr_hp_v) := block([inflag : true, %mr_hp_c, %mr_hp_s, %mr_hp_k],
+   u with the pair removed, or false (deviation (c) above). The optional
+   third and fourth arguments name the pair's heads (class 4, 2026-09-25:
+   FunctionOfSinhQ / SubstForHyperbolic's (Cosh[v/2], Sinh[v/2]) pair). */
+%mr_foq_halfPair(%mr_hp_u, %mr_hp_v, [%mr_hp_heads]) :=
+  block([inflag : true, %mr_hp_c, %mr_hp_s, %mr_hp_k, %mr_hp_ch, %mr_hp_sh],
+  [%mr_hp_ch, %mr_hp_sh] : if %mr_hp_heads = [] then [cos, sin] else %mr_hp_heads,
   %mr_hp_c : false, %mr_hp_s : false,
   if atom(%mr_hp_u) or op(%mr_hp_u) # "*" then false
   else (
     for %mr_hp_k in args(%mr_hp_u) do (
-      if not atom(%mr_hp_k) and op(%mr_hp_k) = cos and %mr_hp_c = false
+      if not atom(%mr_hp_k) and op(%mr_hp_k) = %mr_hp_ch and %mr_hp_c = false
          and %mr_eqQ(part(%mr_hp_k, 1), %mr_hp_v/2) then %mr_hp_c : %mr_hp_k,
-      if not atom(%mr_hp_k) and op(%mr_hp_k) = sin and %mr_hp_s = false
+      if not atom(%mr_hp_k) and op(%mr_hp_k) = %mr_hp_sh and %mr_hp_s = false
          and %mr_eqQ(part(%mr_hp_k, 1), %mr_hp_v/2) then %mr_hp_s : %mr_hp_k),
     if %mr_hp_c = false or %mr_hp_s = false then false
     else %mr_hp_u/(%mr_hp_c*%mr_hp_s)))$
@@ -6381,9 +6401,26 @@ mr_use_gamma_flag : false$
      (L4443-4481). The port answered false there; class 8's v's take that
      arm (ProductLog[x], 8.9 r44; f[x]*g[x] and Derivative[n-1][f][x],
      9.1 r8-r18) -- and so does 9.3 r36's x^(m+1), which was dead until
-     now. The HYPERBOLIC arms (FunctionOfSinhQ, ...) remain unported
-     (deviation (a)): a hyperbolic v still declines, as before. */
-  elseif %mr_hyperbolicQ(%mr_foq_v) then false
+     now. Class 4 (2026-09-25): the HYPERBOLIC arms are ported (deviation
+     (a) is closed) -- eighteen 4.7.5 records pass a Sinh/Cosh/Tanh/Coth v
+     (%mr_functionOfSinhQ ... below). */
+  elseif %mr_hyperbolicQ(%mr_foq_v) then (
+    %mr_foq_h : op(%mr_foq_v),
+    %mr_foq_w : part(%mr_foq_v, 1),
+    if %mr_foq_pure then (
+      if %mr_foq_h = sinh or %mr_foq_h = csch
+      then %mr_pureFunctionOfHypQ([sinh, csch], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cosh or %mr_foq_h = sech
+      then %mr_pureFunctionOfHypQ([cosh, sech], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = tanh
+      then %mr_pureFunctionOfHypQ([tanh, coth], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_pureFunctionOfHypQ([coth], %mr_foq_u, %mr_foq_w, %mr_foq_x))
+    else (
+      if %mr_foq_h = sinh or %mr_foq_h = csch
+      then %mr_functionOfSinhQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cosh or %mr_foq_h = sech
+      then %mr_functionOfCoshQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_functionOfTanhQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)))
   elseif not %mr_trigQ(%mr_foq_v)
   then is(%mr_functionOfExpnQ(%mr_foq_u, %mr_foq_v, %mr_foq_x) # false)
   else (
@@ -7938,3 +7975,193 @@ mr_witness_utils() := true$
   %mr_activateTrig(%mr_trigSimplifyRecur(%mr_ts_u))$
 %mr_trigSimplifyQ(%mr_tsq_u) :=
   is(%mr_activateTrig(%mr_tsq_u) # %mr_trigSimplify(%mr_tsq_u))$
+
+/* ---- class 4 Step 4 cluster (b): FunctionOfQ's and SubstFor's HYPERBOLIC
+ * arms (IntegrationUtilityFunctions.m L4443-4481's Sinh..Csch cases,
+ * L4713-4751, L4761-4842, L4844-4861, L5993-5998, L6039-6050), the
+ * substrate's deviation (a). Eighteen 4.7.5 records call FunctionOfQ and
+ * SubstFor with a hyperbolic v (r5/r6/r9/r10/r15/r16/r19/r20/r27/r28/r31/
+ * r32/r37-r40/r43/r44). Line-for-line mirrors of the circular ports above
+ * (%mr_pureFunctionOfTrigQ, %mr_functionOfSinQ/CosQ/TanQ, %mr_oddTrigPowerQ,
+ * %mr_substForTrig, %mr_substForTrigHead), with the same three stamped
+ * readings: inflag:true where op/args/part walk; deviation (c)'s
+ * position-free (Cosh[v/2], Sinh[v/2]) pair; FindTrigFactor as ported.
+ * Rubi's ReapList/Sow collection of the non-FunctionOfTanhQ factors is the
+ * sublist below (the %mr_functionOfTanQ reading). */
+
+/* Rubi PureFunctionOf{Sinh,Cosh,Tanh,Coth}Q (L4713-4751). */
+%mr_pureFunctionOfHypQ(%mr_pfh_heads, %mr_pfh_u, %mr_pfh_v, %mr_pfh_x) :=
+  block([inflag : true, %mr_pfh_k, %mr_pfh_r],
+  if atom(%mr_pfh_u) then is(not(%mr_pfh_u = %mr_pfh_x))
+  elseif %mr_calculusQ(%mr_pfh_u) then false
+  elseif %mr_hyperbolicQ(%mr_pfh_u) and %mr_eqQ(part(%mr_pfh_u, 1), %mr_pfh_v)
+  then is(member(op(%mr_pfh_u), %mr_pfh_heads) = true)
+  else (
+    %mr_pfh_r : true,
+    for %mr_pfh_k in args(%mr_pfh_u) do
+      if %mr_pfh_r and not %mr_pureFunctionOfHypQ(%mr_pfh_heads, %mr_pfh_k,
+                                                  %mr_pfh_v, %mr_pfh_x)
+      then %mr_pfh_r : false,
+    %mr_pfh_r))$
+
+/* Rubi FunctionOfSinhQ[u,v,x] (L4761-4794). */
+%mr_functionOfSinhQ(%mr_fshq_u, %mr_fshq_v, %mr_fshq_x) :=
+  block([inflag : true, %mr_fshq_l, %mr_fshq_h],
+  if atom(%mr_fshq_u) then is(not(%mr_fshq_u = %mr_fshq_x))
+  elseif %mr_calculusQ(%mr_fshq_u) then false
+  elseif %mr_hyperbolicQ(%mr_fshq_u)
+         and %mr_integerQuotientQ(part(%mr_fshq_u, 1), %mr_fshq_v) then (
+    if %mr_oddQuotientQ(part(%mr_fshq_u, 1), %mr_fshq_v)
+    then is(member(op(%mr_fshq_u), [sinh, csch]) = true)
+    else is(member(op(%mr_fshq_u), [cosh, sech]) = true))
+  elseif %mr_integerPowerQ(%mr_fshq_u) and %mr_hyperbolicQ(part(%mr_fshq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fshq_u, 1, 1), %mr_fshq_v) then (
+    if evenp(part(%mr_fshq_u, 2)) then true
+    else %mr_functionOfSinhQ(part(%mr_fshq_u, 1), %mr_fshq_v, %mr_fshq_x))
+  elseif %mr_productQ(%mr_fshq_u) then (
+    %mr_fshq_h : %mr_foq_halfPair(%mr_fshq_u, %mr_fshq_v, cosh, sinh),
+    if %mr_fshq_h # false then %mr_functionOfSinhQ(%mr_fshq_h, %mr_fshq_v, %mr_fshq_x)
+    else (
+      %mr_fshq_l : %mr_findTrigFactor(sinh, csch, %mr_fshq_u, %mr_fshq_v, false),
+      if listp(%mr_fshq_l) and %mr_evenQuotientQ(first(%mr_fshq_l), %mr_fshq_v)
+      then %mr_functionOfSinhQ(cosh(%mr_fshq_v)*second(%mr_fshq_l), %mr_fshq_v, %mr_fshq_x)
+      else (
+        %mr_fshq_l : %mr_findTrigFactor(cosh, sech, %mr_fshq_u, %mr_fshq_v, false),
+        if listp(%mr_fshq_l) and %mr_oddQuotientQ(first(%mr_fshq_l), %mr_fshq_v)
+        then %mr_functionOfSinhQ(cosh(%mr_fshq_v)*second(%mr_fshq_l), %mr_fshq_v, %mr_fshq_x)
+        else (
+          %mr_fshq_l : %mr_findTrigFactor(tanh, coth, %mr_fshq_u, %mr_fshq_v, true),
+          if listp(%mr_fshq_l)
+          then %mr_functionOfSinhQ(cosh(%mr_fshq_v)*second(%mr_fshq_l), %mr_fshq_v, %mr_fshq_x)
+          else %mr_foq_all(%mr_functionOfSinhQ, %mr_fshq_u, %mr_fshq_v, %mr_fshq_x)))))
+  else %mr_foq_all(%mr_functionOfSinhQ, %mr_fshq_u, %mr_fshq_v, %mr_fshq_x))$
+
+/* Rubi FunctionOfCoshQ[u,v,x] (L4798-4822). */
+%mr_functionOfCoshQ(%mr_fchq_u, %mr_fchq_v, %mr_fchq_x) :=
+  block([inflag : true, %mr_fchq_l],
+  if atom(%mr_fchq_u) then is(not(%mr_fchq_u = %mr_fchq_x))
+  elseif %mr_calculusQ(%mr_fchq_u) then false
+  elseif %mr_hyperbolicQ(%mr_fchq_u)
+         and %mr_integerQuotientQ(part(%mr_fchq_u, 1), %mr_fchq_v)
+  then is(member(op(%mr_fchq_u), [cosh, sech]) = true)
+  elseif %mr_integerPowerQ(%mr_fchq_u) and %mr_hyperbolicQ(part(%mr_fchq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fchq_u, 1, 1), %mr_fchq_v) then (
+    if evenp(part(%mr_fchq_u, 2)) then true
+    else %mr_functionOfCoshQ(part(%mr_fchq_u, 1), %mr_fchq_v, %mr_fchq_x))
+  elseif %mr_productQ(%mr_fchq_u) then (
+    %mr_fchq_l : %mr_findTrigFactor(sinh, csch, %mr_fchq_u, %mr_fchq_v, false),
+    if listp(%mr_fchq_l)
+    then %mr_functionOfCoshQ(sinh(%mr_fchq_v)*second(%mr_fchq_l), %mr_fchq_v, %mr_fchq_x)
+    else (
+      %mr_fchq_l : %mr_findTrigFactor(tanh, coth, %mr_fchq_u, %mr_fchq_v, true),
+      if listp(%mr_fchq_l)
+      then %mr_functionOfCoshQ(sinh(%mr_fchq_v)*second(%mr_fchq_l), %mr_fchq_v, %mr_fchq_x)
+      else %mr_foq_all(%mr_functionOfCoshQ, %mr_fchq_u, %mr_fchq_v, %mr_fchq_x)))
+  else %mr_foq_all(%mr_functionOfCoshQ, %mr_fchq_u, %mr_fchq_v, %mr_fchq_x))$
+
+/* Rubi FunctionOfTanhQ[u,v,x] (L4826-4841). */
+%mr_functionOfTanhQ(%mr_fthq_u, %mr_fthq_v, %mr_fthq_x) :=
+  block([inflag : true, %mr_fthq_l, %mr_fthq_k],
+  if atom(%mr_fthq_u) then is(not(%mr_fthq_u = %mr_fthq_x))
+  elseif %mr_calculusQ(%mr_fthq_u) then false
+  elseif %mr_hyperbolicQ(%mr_fthq_u)
+         and %mr_integerQuotientQ(part(%mr_fthq_u, 1), %mr_fthq_v)
+  then is(member(op(%mr_fthq_u), [tanh, coth]) = true)
+       or %mr_evenQuotientQ(part(%mr_fthq_u, 1), %mr_fthq_v)
+  elseif %mr_powerQ(%mr_fthq_u) and evenp(part(%mr_fthq_u, 2))
+         and %mr_hyperbolicQ(part(%mr_fthq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fthq_u, 1, 1), %mr_fthq_v) then true
+  elseif %mr_powerQ(%mr_fthq_u) and evenp(part(%mr_fthq_u, 2))
+         and %mr_sumQ(part(%mr_fthq_u, 1))
+  then %mr_functionOfTanhQ(expand(part(%mr_fthq_u, 1)^2), %mr_fthq_v, %mr_fthq_x)
+  elseif %mr_productQ(%mr_fthq_u) then (
+    %mr_fthq_l : sublist(args(%mr_fthq_u),
+                         lambda([%mr_fthq_k],
+                                not %mr_functionOfTanhQ(%mr_fthq_k, %mr_fthq_v, %mr_fthq_x))),
+    if %mr_fthq_l = [] then true
+    else is(length(%mr_fthq_l) = 2)
+         and %mr_oddHyperbolicPowerQ(first(%mr_fthq_l), %mr_fthq_v, %mr_fthq_x)
+         and %mr_oddHyperbolicPowerQ(second(%mr_fthq_l), %mr_fthq_v, %mr_fthq_x))
+  else %mr_foq_all(%mr_functionOfTanhQ, %mr_fthq_u, %mr_fthq_v, %mr_fthq_x))$
+
+/* Rubi OddHyperbolicPowerQ[u,v,x] (L4844-4861). */
+%mr_oddHyperbolicPowerQ(%mr_ohp_u, %mr_ohp_v, %mr_ohp_x) :=
+  block([inflag : true, %mr_ohp_l, %mr_ohp_k],
+  if atom(%mr_ohp_u) then false
+  elseif is(member(op(%mr_ohp_u), [sinh, cosh, sech, csch]) = true)
+  then %mr_oddQuotientQ(part(%mr_ohp_u, 1), %mr_ohp_v)
+  elseif %mr_powerQ(%mr_ohp_u)
+  then integerp(part(%mr_ohp_u, 2)) and oddp(part(%mr_ohp_u, 2))
+       and %mr_oddHyperbolicPowerQ(part(%mr_ohp_u, 1), %mr_ohp_v, %mr_ohp_x)
+  elseif %mr_productQ(%mr_ohp_u) then (
+    if %mr_neQ(%mr_freeFactors(%mr_ohp_u, %mr_ohp_x), 1)
+    then %mr_oddHyperbolicPowerQ(%mr_nonfreeFactors(%mr_ohp_u, %mr_ohp_x), %mr_ohp_v, %mr_ohp_x)
+    else (
+      %mr_ohp_l : sublist(args(%mr_ohp_u),
+                          lambda([%mr_ohp_k],
+                                 not %mr_functionOfTanhQ(%mr_ohp_k, %mr_ohp_v, %mr_ohp_x))),
+      if %mr_ohp_l = [] then true
+      else is(length(%mr_ohp_l) = 1)
+           and %mr_oddHyperbolicPowerQ(first(%mr_ohp_l), %mr_ohp_v, %mr_ohp_x)))
+  elseif %mr_sumQ(%mr_ohp_u)
+  then %mr_foq_all(%mr_oddHyperbolicPowerQ, %mr_ohp_u, %mr_ohp_v, %mr_ohp_x)
+  else false)$
+
+/* Rubi SubstForHyperbolic[u,sinh,cosh,v,x] (L6039-6050): u, a function of
+   Hyper[v], with Sinh[v] -> sinh, Cosh[v] -> cosh. A multiple angle
+   Hyper[k v] is TrigExpand'ed first (Maxima's trigexpand expands the
+   hyperbolic heads too; %mr_sfy_y is the .m's x). */
+%mr_substForHyperbolic(%mr_sfy_u, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v) :=
+  block([inflag : true, %mr_sfy_h, %mr_sfy_t, %mr_sfy_p],
+  if atom(%mr_sfy_u) then %mr_sfy_u
+  elseif %mr_hyperbolicQ(%mr_sfy_u)
+         and %mr_integerQuotientQ(part(%mr_sfy_u, 1), %mr_sfy_v) then (
+    %mr_sfy_h : op(%mr_sfy_u),
+    if %mr_eqQ(part(%mr_sfy_u, 1), %mr_sfy_v) then (
+      if %mr_sfy_h = sinh then %mr_sfy_s
+      elseif %mr_sfy_h = cosh then %mr_sfy_c
+      elseif %mr_sfy_h = tanh then %mr_sfy_s/%mr_sfy_c
+      elseif %mr_sfy_h = coth then %mr_sfy_c/%mr_sfy_s
+      elseif %mr_sfy_h = sech then 1/%mr_sfy_c
+      else 1/%mr_sfy_s)
+    else (
+      %mr_sfy_t : subst(%mr_sfy_v, '%mr_sfy_y,
+                        trigexpand(apply(%mr_sfy_h,
+                          [ratsimp(part(%mr_sfy_u, 1)/%mr_sfy_v)*'%mr_sfy_y]))),
+      if atom(%mr_sfy_t) then %mr_sfy_t
+      else funmake(op(%mr_sfy_t),
+                 map(lambda([%mr_sfy_p],
+                            %mr_substForHyperbolic(%mr_sfy_p, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v)),
+                     args(%mr_sfy_t)))))
+  else (
+    %mr_sfy_t : %mr_foq_halfPair(%mr_sfy_u, %mr_sfy_v, cosh, sinh),
+    if %mr_sfy_t # false
+    then %mr_sfy_s/2*%mr_substForHyperbolic(%mr_sfy_t, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v)
+    else funmake(op(%mr_sfy_u),
+               map(lambda([%mr_sfy_p],
+                          %mr_substForHyperbolic(%mr_sfy_p, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v)),
+                   args(%mr_sfy_u)))))$
+
+/* Rubi SubstFor[v,u,x]'s FreeFactors + Switch[Head[v], Sinh..Csch] arms
+   (L5980-5998): SubstFor[NonfreeFactors[v,x], u, x/FreeFactors[v,x]] with
+   the head's (sinh, cosh) pair in that scaled variable, as Rubi writes
+   them (the Sech/Csch pairs included; no class-4 record passes those). */
+%mr_substForHypHead(%mr_shh_v, %mr_shh_u, %mr_shh_x) :=
+  block([inflag : true, %mr_shh_w, %mr_shh_y, %mr_shh_h, %mr_shh_a],
+  %mr_shh_w : %mr_nonfreeFactors(%mr_shh_v, %mr_shh_x),
+  %mr_shh_y : %mr_shh_x/%mr_freeFactors(%mr_shh_v, %mr_shh_x),
+  %mr_shh_h : op(%mr_shh_w),
+  %mr_shh_a : part(%mr_shh_w, 1),
+  if %mr_shh_h = sinh
+  then %mr_substForHyperbolic(%mr_shh_u, %mr_shh_y, sqrt(1 + %mr_shh_y^2), %mr_shh_a)
+  elseif %mr_shh_h = cosh
+  then %mr_substForHyperbolic(%mr_shh_u, sqrt(-1 + %mr_shh_y^2), %mr_shh_y, %mr_shh_a)
+  elseif %mr_shh_h = tanh
+  then %mr_substForHyperbolic(%mr_shh_u, %mr_shh_y/sqrt(1 - %mr_shh_y^2),
+                              1/sqrt(1 - %mr_shh_y^2), %mr_shh_a)
+  elseif %mr_shh_h = coth
+  then %mr_substForHyperbolic(%mr_shh_u, 1/sqrt(-1 + %mr_shh_y^2),
+                              %mr_shh_y/sqrt(-1 + %mr_shh_y^2), %mr_shh_a)
+  elseif %mr_shh_h = sech
+  then %mr_substForHyperbolic(%mr_shh_u, 1/sqrt(-1 + %mr_shh_y^2), 1/%mr_shh_y, %mr_shh_a)
+  else %mr_substForHyperbolic(%mr_shh_u, 1/%mr_shh_y, 1/sqrt(1 + %mr_shh_y^2), %mr_shh_a))$

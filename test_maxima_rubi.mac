@@ -153,6 +153,8 @@ run_all_tests() := block([],
   test_class5_e2e(),
   test_class7_e2e(),
   test_class4_cluster_a(),
+  test_class4_free_factors(),
+  test_class4_cluster_b(),
   test_census(),
   print(""),
   print("========================================"),
@@ -3894,8 +3896,10 @@ test_function_of_q() := block([],
              %mr_functionOfQ(tan(x), 1 + tan(x)^2, x, true)),
   check_not("foq: pure tan rejects sec^2",
             %mr_functionOfQ(tan(x), sec(x)^2, x, true)),
-  check_not("foq: a hyperbolic v declines (deviation (a), not ported)",
-            %mr_functionOfQ(cosh(x), sinh(x)^2, x)),
+  /* class 4 (2026-09-25): FunctionOfQ's hyperbolic arms are ported
+     (test_class4_cluster_b); this target declined before. */
+  check_bool("foq: a hyperbolic v (an even sinh power is a function of cosh)",
+             %mr_functionOfQ(cosh(x), sinh(x)^2, x)),
   /* SubstFor[v,u,x]: x is BOTH the integration variable v is a function
      of and the symbol v is replaced by (Rubi's own convention). */
   check("sft: cos(x) -> x takes sin^2 to 1-x^2",
@@ -4716,8 +4720,10 @@ test_class8_cluster_b() := block([],
              %mr_functionOfQ(%mr_derivative(1, f, x), cos(%mr_derivative(1, f, x)), x)),
   check_not("foq: the trig arm is unchanged (odd sin power vs cos)",
             %mr_functionOfQ(cos(x), sin(x)*(a - b*sin(x)^2), x)),
-  check_not("foq: the hyperbolic arm still declines (unported)",
-            %mr_functionOfQ(cosh(x), sinh(x)^2, x)),
+  /* class 4 (2026-09-25): the hyperbolic arms are ported
+     (test_class4_cluster_b) -- this target declined until then */
+  check_bool("foq: the hyperbolic arm (ported at class 4)",
+             %mr_functionOfQ(cosh(x), sinh(x)^2, x)),
   true
 )$
 
@@ -5026,6 +5032,111 @@ test_class4_cluster_a() := block([mr_c4a_r],
   check("fitf: the free factor is clause 1 alone (its recursion re-enters the full table)",
         %mr_rewrite("FixInertTrigFunction", [_mr_rw_fitf_r1], 3*%mr_icsc(x)^2*%mr_isin(x), x),
         3/%mr_isin(x)),
+  true
+)$
+
+/* ---- class 4: FreeFactors / NonfreeFactors on a QUOTIENT ---------------
+   Rubi FreeFactors[u,x] := If[ProductQ[u], Map[If[FreeQ[#,x],#,1]&, u],
+   If[FreeQ[u,x], u, 1]] (and NonfreeFactors the complement). A quotient
+   x/2 is Times[1/2, x] -- a product -- in Mathematica, and in Maxima's
+   internal form too; the port read op() without inflag, where x/2 is the
+   "/" operator, so FreeFactors[x/2] answered 1 (and NonfreeFactors x/2).
+   Found by class 4's cluster (b) (SubstFor[Sinh[x]/2, u, x]); class 4
+   calls them 214 times, many on v/d. Pre-existing, reaching classes 1-9
+   through the utilities (RemoveContent, FunctionOfQ, SubstFor). */
+test_class4_free_factors() := block([],
+  print("--- FreeFactors / NonfreeFactors on a quotient ---"),
+  check("freeFactors: x/2", %mr_freeFactors(x/2, x), 1/2),
+  check("nonfreeFactors: x/2", %mr_nonfreeFactors(x/2, x), x),
+  check("freeFactors: a sin(x)/b", %mr_freeFactors(a*sin(x)/b, x), a/b),
+  check("nonfreeFactors: a sin(x)/b", %mr_nonfreeFactors(a*sin(x)/b, x), sin(x)),
+  check("freeFactors: a/(b x)", %mr_freeFactors(a/(b*x), x), a/b),
+  check("nonfreeFactors: a/(b x)", %mr_nonfreeFactors(a/(b*x), x), 1/x),
+  check("freeFactors: -3 x (unchanged)", %mr_freeFactors(-3*x, x), -3),
+  check("nonfreeFactors: -3 x (unchanged)", %mr_nonfreeFactors(-3*x, x), x),
+  check("freeFactors: -x (unchanged)", %mr_freeFactors(-x, x), -1),
+  check("freeFactors: a sum is not a product (unchanged)", %mr_freeFactors(2*x + 2, x), 1),
+  check("freeFactors: x-free (unchanged)", %mr_freeFactors(a/b, x), a/b),
+  check("nonfreeFactors: x-free (unchanged)", %mr_nonfreeFactors(a/b, x), 1),
+  true
+)$
+
+/* ---- class 4, Step 4 cluster (b): FunctionOfQ's and SubstFor's hyperbolic
+   arms (L4443-4481's Sinh..Csch cases, FunctionOf{Sinh,Cosh,Tanh}Q
+   L4761-4842, PureFunctionOf{Sinh,Cosh,Tanh,Coth}Q L4713-4751,
+   OddHyperbolicPowerQ L4844, SubstFor's Sinh..Csch arms L5980-6004 and
+   SubstForHyperbolic L6039). Eighteen 4.7.5 records (r5/r6/r9/r10/r15/r16/
+   r19/r20/r27/r28/r31/r32/r37-r40/r43/r44) call FunctionOfQ and SubstFor
+   with a hyperbolic v; before this port FunctionOfQ answered false there
+   (the substrate's deviation (a)). The end-to-end targets run 4.7.5 r5
+   (Int[u_*Cosh[c_.*(a_.+b_.*x_)],x], the pure-Sinh derivative-divides
+   record) and r37 on sibling tables. */
+test_class4_cluster_b() := block([mr_c4b_saved, mr_c4b_ok, mr_c4b_r],
+  print("--- class 4 cluster (b): FunctionOfQ / SubstFor, hyperbolic arms ---"),
+  check_bool("foq: pure sinh accepts 1 + sinh^2",
+             %mr_functionOfQ(sinh(x), 1 + sinh(x)^2, x, true)),
+  check_not("foq: pure sinh rejects cosh^2",
+            %mr_functionOfQ(sinh(x), cosh(x)^2, x, true)),
+  check_bool("foq: pure sinh accepts csch",
+             %mr_functionOfQ(sinh(2*x), csch(2*x)*sinh(2*x)^3, x, true)),
+  check_bool("foq: sinh accepts an even cosh power",
+             %mr_functionOfQ(sinh(x), cosh(x)^2, x)),
+  check_not("foq: sinh rejects an odd cosh power",
+            %mr_functionOfQ(sinh(x), cosh(x)^3, x)),
+  check_bool("foq: sinh accepts sinh(3x) (an odd multiple)",
+             %mr_functionOfQ(sinh(x), sinh(3*x), x)),
+  check_bool("foq: cosh accepts sinh^2 cosh^3",
+             %mr_functionOfQ(cosh(x), sinh(x)^2*cosh(x)^3, x)),
+  check_not("foq: cosh rejects sinh^3 cosh",
+            %mr_functionOfQ(cosh(x), sinh(x)^3*cosh(x), x)),
+  check_bool("foq: tanh accepts sech^2 (an even power)",
+             %mr_functionOfQ(tanh(x), sech(x)^2, x)),
+  check_bool("foq: tanh accepts sinh cosh (two odd powers)",
+             %mr_functionOfQ(tanh(x), sinh(x)*cosh(x), x)),
+  check_not("foq: pure tanh rejects sech^2",
+            %mr_functionOfQ(tanh(x), sech(x)^2, x, true)),
+  check_bool("foq: pure coth accepts 1 + coth^2",
+             %mr_functionOfQ(coth(x), 1 + coth(x)^2, x, true)),
+  check_bool("foq: a free factor of a hyperbolic v is dropped",
+             %mr_functionOfQ(sinh(x)/3, sinh(x)^2, x, true)),
+  check("sfh: sinh(x) -> x takes cosh^2 to 1 + x^2",
+        ratsimp(%mr_substFor(sinh(x), cosh(x)^2, x) - (1 + x^2)), 0),
+  check("sfh: cosh(x) -> x takes sinh^2 to x^2 - 1",
+        ratsimp(%mr_substFor(cosh(x), sinh(x)^2, x) - (x^2 - 1)), 0),
+  check("sfh: tanh(x) -> x takes sech^2 to 1 - x^2",
+        ratsimp(%mr_substFor(tanh(x), sech(x)^2, x) - (1 - x^2)), 0),
+  check("sfh: coth(x) -> x takes csch^2 to x^2 - 1",
+        ratsimp(%mr_substFor(coth(x), csch(x)^2, x) - (x^2 - 1)), 0),
+  check("sfh: a multiple angle is expanded first",
+        ratsimp(%mr_substFor(sinh(x), cosh(2*x), x) - (1 + 2*x^2)), 0),
+  check("sfh: a free factor of v scales the variable",
+        ratsimp(%mr_substFor(sinh(x)/2, sinh(x)^2, x) - 4*x^2), 0),
+  check("sfh: the 4-argument form multiplies and simplifies",
+        ratsimp(%mr_substFor(1, sinh(x), cosh(x)^2, x) - (1 + x^2)), 0),
+  mr_c4b_ok : errcatch(
+    %mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                     'mr_witness_inert_trig_rewrites),
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/1_4_1.mac", 'mr_witness_1_4_1),
+    %mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1),
+    %mr_load_sibling("rules/class4/4_7_5.mac", 'mr_witness_4_7_5),
+    true),
+  check_bool("class 4 cluster (b): rule files load", is(mr_c4b_ok # [])),
+  if mr_c4b_ok # [] then (
+    mr_c4b_saved : mr_rule_table,
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_4_1, mr_rules_9_1,
+                             mr_rules_4_7_5]),
+    mr_c4b_r : %mr_rule_apply(_mr_rule_4_7_5_r5, cosh(2*x)*(1 + sinh(2*x)^2), x),
+    check_bool("4_7_5 r5: Int cosh(2x)(1+sinh(2x)^2) by the Sinh substitution",
+               is(mr_c4b_r # false) and freeof('unintegrable, 'mr_int, mr_c4b_r)
+               and is(ratsimp(exponentialize(diff(mr_c4b_r, x)
+                                             - cosh(2*x)*(1 + sinh(2*x)^2))) = 0)),
+    mr_c4b_r : %mr_rule_apply(_mr_rule_4_7_5_r37, cosh(x)^3*sinh(x)^2, x),
+    check_bool("4_7_5 r37: Int cosh^3 sinh^2 by the Sinh substitution",
+               is(mr_c4b_r # false) and freeof('unintegrable, 'mr_int, mr_c4b_r)
+               and is(ratsimp(exponentialize(diff(mr_c4b_r, x)
+                                             - cosh(x)^3*sinh(x)^2)) = 0)),
+    mr_rule_table : mr_c4b_saved),
   true
 )$
 

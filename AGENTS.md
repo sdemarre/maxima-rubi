@@ -323,7 +323,10 @@ native inverse-hyperbolic heads and the asech/acsch rows, 13 checks):
 KnownTrigIntegrandQ and its four wrappers, TrigSimplify(Q) over the
 generated TrigSimplifyAux table, DeactivateTrig on a sum and a quotient,
 which FixInertTrigFunction clause fires, 35 checks):
-**`Results: 1435 passed, 0 failed`**. The
+`Results: 1435 passed, 0 failed`; at its cluster (b) (FunctionOfQ's and
+SubstFor's hyperbolic arms, 4.7.5 r5/r37 on a sibling table, and
+FreeFactors/NonfreeFactors on a quotient, 35 checks, one older target
+re-pointed): **`Results: 1470 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
