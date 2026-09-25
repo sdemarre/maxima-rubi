@@ -1,0 +1,38 @@
+#!/bin/sh
+# probes/translation/13-class4-callee-sweep.run -- the class-4 port's Step-5
+# static sweep: every function name the generated class-4 rule files and
+# the generated rewrite tables CALL (a word followed by "(", comments and the
+# rules' own _mr_ cond/repl names excluded; Maxima's operators and the six
+# inert heads -- undefined BY DESIGN -- dropped) is checked for a definition
+# in the loaded package: a Lisp function, a Maxima := function or macro, a
+# simplifier/operator property, or a variable holding a lambda. An UNBOUND
+# name is a call the package cannot answer (a cond reads it as a decline, a
+# repl as a misfire). The mr_witness_* names are the per-file load witnesses,
+# defined by the file itself (this sweep loads only the rewrite tables).
+#
+#   sh probes/translation/13-class4-callee-sweep.run
+cd "$(dirname "$0")/../.." || exit 1
+W=$(mktemp -d)
+cat rules/class4/*.mac rules/utils/inert_trig_rewrites.mac \
+  | grep -v '^ \*\|^/\*' | grep -oE '[%A-Za-z_][A-Za-z_0-9%]*\(' \
+  | sed 's/($//' | grep -v '^_mr_' | sort -u \
+  | grep -vxE 'not|is|block|if|lambda|and|or|%mr_isin|%mr_icos|%mr_itan|%mr_icot|%mr_isec|%mr_icsc' \
+  > "$W/names"
+{
+  echo 'load("maxima_rubi.mac")$'
+  echo '%mr_load_sibling("rules/utils/inert_trig_rewrites.mac", '"'"'mr_witness_inert_trig_rewrites)$'
+  echo ':lisp (defun $mr_defd (s) (let ((v (and (boundp s) (symbol-value s)))) (if (or (fboundp s) (mget s (quote mexpr)) (mget s (quote mmacro)) (get s (quote operators)) (getl s (quote (mfexpr* mfexpr*s))) (and (consp v) (consp (car v)) (eq (caar v) (quote lambda))) (get ($verbify s) (quote operators)) (fboundp ($verbify s)) (mget ($verbify s) (quote mexpr))) t nil)))'
+  printf 'mr_names : ['
+  sed "s/^/'/" "$W/names" | paste -sd, -
+  echo ']$'
+  echo 'print("names swept:", length(mr_names))$'
+  echo 'for n in mr_names do if not mr_defd(n) then print("UNBOUND", n)$'
+  echo 'print("control (false, true):", mr_defd(nosuchfn_xyz), mr_defd(%mr_expandTrig))$'
+} > "$W/sweep.mac"
+{
+  echo "# class-4 callee sweep, $(date -u +%F)"
+  maxima --very-quiet --batch-string='print(build_info())$' < /dev/null 2>&1 | grep -v '^print'
+  maxima --very-quiet -b "$W/sweep.mac" < /dev/null 2>&1 | grep '^names swept\|^UNBOUND\|^control'
+} > probes/translation/13-class4-callee-sweep.out
+rm -rf "$W"
+echo "wrote probes/translation/13-class4-callee-sweep.out"
