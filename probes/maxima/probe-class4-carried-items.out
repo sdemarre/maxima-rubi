@@ -1,0 +1,14 @@
+# probe-class4-carried-items output, 2026-09-25
+%build_info("branch_5_50_base_84_g4204fb669","2026-08-31 13:27:47",
+            "x86_64-pc-linux-gnu","SBCL","2.6.7","/home/serge/.maxima","/tmp",
+R1 default radexpand: true  (a*sin(x)^2)^(3/2) reads as 
+                     a^(3/2)*sin(x)^2*abs(sin(x)) 
+R2 sqrt(b*sin(x)^2) reads as sqrt(b)*abs(sin(x)) 
+block([radexpand:false],
+R3 radexpand:false, the same text reads as (a*sin(x)^2)^(3/2) 
+load("maxima_rubi.mac")
+
+== M: repl misfires (rubi_verbose) per rule, over the probe's ten integrands ==
+integrands run: 10
+repl misfires: 0
+rules fired: 41
