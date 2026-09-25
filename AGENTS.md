@@ -347,7 +347,10 @@ re-measured 2026-09-23 at Task 14). Then `Results: 24 passed, 0 failed`
 failed` (2026-09-25, the class-5 port's Step 3: one more check-7 line,
 `post-P0 class 5: 667 rules over 15 files`). Now **`Results: 26 passed, 0
 failed`** (2026-09-25, the class-7 port's Step 3: one more check-7 line,
-`post-P0 class 7: 712 rules over 21 files`; 5,906 pattern strings).
+`post-P0 class 7: 712 rules over 21 files`; 5,906 pattern strings; still
+26 at the class-4 port's Step 3, 2026-09-25, whose check-7 line moves from
+`8 rules over 2 files` — the substrate's subset — to `post-P0 class 4:
+2080 rules over 56 files`; 7,990 pattern strings).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
@@ -358,9 +361,9 @@ fixes' 1,283 integer comparisons, 10 `notequal` and 1 juxtaposition), the
 reader self-test
 (`python3 generator/mma_reader.py`), and every pattern string preparing
 in `MR-MATCH`. Regeneration is byte-identical:
-`python3 generator/generate_rules.py --class <1|2|3|5|6|7|8|9>` and `--rewrites`
-leave `git status --porcelain rules/` empty (as does `--class 4` against
-the committed class-4 files; every class prefixes its With/Module
+`python3 generator/generate_rules.py --class <1|2|3|4|5|6|7|8|9>` and `--rewrites`
+leave `git status --porcelain rules/` empty (class 4 whole since the
+class-4 port, 2,080 rules; every class prefixes its With/Module
 locals `_mr_<key>_r<n>_<name>` — class 4 since `de51845`, the rest since
 ticket `.scratch/class-ports/issues/08`).
 

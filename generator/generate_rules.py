@@ -1380,38 +1380,17 @@ BARE_U_BODY_EXCEPTIONS = {
 }
 
 
-# Class 4 is emitted as a SUBSET (inert-trig substrate plan, Task 9): only
-# the bridge's bare-u_ records, not section 4's ~2,070 body rules, which need
-# the class-4 Step-1 token closure no one has adjudicated yet. Per source key,
-# the run numbers (1-based, the same n every handle and the static gate use)
-# of the records emitted. Every other run of the file is skipped; numbering
-# is NOT compacted, so a handle keeps its source clause number when the rest
-# of the file is ported later. Each listed record is asserted bare-u_ at
-# generation time -- a reference-clone bump that moves a run fails loudly
-# instead of emitting the wrong rule.
-#   4_1_0_1 r1  Int[u_,x_Symbol] := Int[DeactivateTrig[u,x],x] /;
-#               FunctionOfTrigOfLinearQ[u,x] -- the bridge (4.1.0.1.m L4,
-#               the If[TrueQ[$LoadShowSteps], ...] wrapper that
-#               unwrap_showsteps_line recovers).
-#   4_7_5 r21/r22  the Cot/Tan Subst forms (4.7.5.m L24/L25).
-#   4_7_5 r47/r48  the Sin/Cos derivative-divides forms (L50/L51).
-#   4_7_5 r58   the Tan Subst form under InverseFunctionFreeQ (L61).
-#   4_7_5 r71   the half-angle Weierstrass substitution (L74; Task 10) --
-#               its trial Int sits in a Block[{$ShowSteps = False,
-#               $StepCounter = Null}, ...], which translate() emits as the
-#               body alone (the IntHide precedent; see the "Block" case).
-#   4_7_5 r72   Int[u_,x_Symbol] := With[{v=ActivateTrig[u]},
-#               CannotIntegrate[v,x]] /; Not[InertTrigFreeQ[u]] (L76; Task
-#               10 fix round 1, ruling R26) -- the file's LAST record: the
-#               integrand the bridge admitted and nothing finished is given
-#               up RE-ACTIVATED, so the unintegrable noun carries no inert
-#               head. It must stay last in the tail.
-# 4_7_5 r66/r70 (L69/L73 -- TrigSimplify, ExpandTrig) are bare-u_ too but
-# NOT wrapped; they are class-4 port work, outside this subset.
-CLASS4_SUBSET = {
-    "4_1_0_1": (1,),
-    "4_7_5": (21, 22, 47, 48, 58, 71, 72),
-}
+# Class 4 was emitted as a SUBSET from the inert-trig substrate (plan Task 9,
+# 2026-09-21) until the class-4 port (2026-09-25, .scratch/class-ports/
+# issues/05): CLASS4_SUBSET listed the eight bare-u_ records the substrate
+# needed (4_1_0_1 r1, the DeactivateTrig bridge; 4_7_5 r21/r22/r47/r48/r58,
+# the Subst catch-alls; r71, the half-angle Weierstrass substitution, whose
+# Block[{$ShowSteps = False, $StepCounter = Null}, ...] translate() emits as
+# the body alone -- the "Block" case; r72, the re-activating CannotIntegrate
+# give-up, 4.7.5's last record). The class is now emitted whole; the handle
+# numbers were never compacted, so those eight records keep their names, and
+# they stay in the tail with 4_7_5 r66/r70 (TrigSimplify, ExpandTrig), the
+# class's other bare-u_ records (bare_int_clause below).
 
 
 _INT_X_UNTYPED = re.compile(r"^Int\[(.*),\s*x_\]$", re.DOTALL)
@@ -2240,10 +2219,7 @@ def emit_file(rel_m, runs, key=None):
     body = []
     rule_names = []
     tail_names = []
-    subset = CLASS4_SUBSET.get(key) if CLASS == 4 else None
     for n, run in enumerate(runs, start=1):
-        if subset is not None and n not in subset:
-            continue
         # FIX F3: rule_runs yields LISTS OF LINES; join the run and split it
         # the way the census does.
         text = "\n".join(run)
@@ -2279,10 +2255,6 @@ def emit_file(rel_m, runs, key=None):
                 body.append(f" * {ln.strip()}")
             body.append(" */")
         handle_name = f"_mr_rule_{key}_r{n}"
-        if subset is not None and not bare_int_clause(lhs, key, n):
-            raise GenError(f"{key} r{n}: listed in CLASS4_SUBSET but not a "
-                           f"bare-u_ Int record -- the source moved; "
-                           f"re-measure the subset")
         if bare_int_clause(lhs, key, n) and (key, n) not in BARE_U_BODY_EXCEPTIONS:
             tail_names.append(handle_name)
         else:
@@ -2295,13 +2267,7 @@ def emit_file(rel_m, runs, key=None):
         # (still every class as of Task 8) regenerates byte-identically
         # (inert-trig substrate design 3.3).
         body.append(f"mr_rules_{key}_tail : [ {', '.join(tail_names)} ]$")
-    n_emitted = len(runs) if subset is None else len(subset)
-    if subset is not None and len(rule_names) + len(tail_names) != n_emitted:
-        raise GenError(f"{key}: CLASS4_SUBSET lists {n_emitted} runs, "
-                       f"{len(rule_names) + len(tail_names)} emitted "
-                       f"(a listed run number is past the file's "
-                       f"{len(runs)} runs)")
-    body.append(f"mr_rules_count_{key} : {n_emitted}$")
+    body.append(f"mr_rules_count_{key} : {len(runs)}$")
     body.append(f"mr_witness_{key}() := true$")
     return header + "\n".join(body) + "\n"
 
@@ -2324,9 +2290,6 @@ def load_class_files(rubi):
         if not parts or not parts[0].startswith(CLASS_PREFIX):
             continue
         rel = "Rubi/IntegrationRules/" + "/".join(parts) + ".m"
-        # class 4: only the files CLASS4_SUBSET names (see there)
-        if CLASS == 4 and key_of(rel) not in CLASS4_SUBSET:
-            continue
         # class 9: "9.1 Derivative integration rules" belongs to class 8
         # (spec §0.3.3, ticket 01), not class 9. Its key is "9_1" -- the
         # SAME key as the legacy class-1 file (NINE_ONE, "9.1 Integrand
@@ -2403,11 +2366,14 @@ def configure(class_num):
     # so unwrap_showsteps_line finds nothing to recover and the census
     # and the emitter agree exactly
     # (probes/translation/05-class6-syntax-census.out).
-    # class 4: 8 — NOT the section's 2,080 (spec 0.3): only the
-    # CLASS4_SUBSET records, the bridge and six of 4.7.5's substitution
-    # catch-alls (inert-trig substrate plan, Task 9; r71, Task 10) and
-    # 4.7.5's re-activating give-up r72 (Task 10 fix round 1). It grows with the
-    # subset until the class-4 port replaces it with the full total.
+    # class 4: 2,080 — the 01 census's 2,073 plus 7: section 4 carries seven
+    # single-line If[TrueQ[$LoadShowSteps], …] wrappers (4.1.0.1 L4, the
+    # bridge; 4.7.5 L24/L25/L50/L51/L61/L74; L75 is commented out), which
+    # the census parser does not count and unwrap_showsteps_line makes
+    # records of their own (measured 2026-09-25,
+    # probes/translation/12-class4-syntax-census.out: 56 files, 2,080
+    # rules). It was 8 while CLASS4_SUBSET emitted only the inert-trig
+    # substrate's tail records.
     # class 9: 86 — 19 (9.2 Piecewise linear functions) + 67 (9.3
     # Miscellaneous integration rules), spec 2026-09-22 A3.
     # `grep -c '^Int\['` over the two .m files gives 95, not 86: it counts
@@ -2434,7 +2400,7 @@ def configure(class_num):
     # 2 LoadShowSteps lines). The four .m files of the section's tree that
     # Rubi.m does not load are never read (the loaded-files walk).
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
-                      3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),
+                      3: 334, 4: 2080,
                       5: 667,
                       6: 390, 7: 712, 8: 307 + NINE_ONE_DERIV_TOTAL,
                       9: 86}[class_num]
@@ -2452,12 +2418,6 @@ def _emit_source(rel_m, key, only, total, load_lines, note=""):
     out = OUT / f"{key}.mac"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(emit_file(rel_m, runs, key))
-    if CLASS == 4:
-        n = len(CLASS4_SUBSET[key])
-        print(f"  {key}: {n} of {len(runs)} rules (CLASS4_SUBSET){note}")
-        load_lines.append(f"%mr_load_sibling(\"rules/class{CLASS}/{key}.mac\", "
-                          f"'mr_witness_{key})$")
-        return total + n
     print(f"  {key}: {len(runs)} rules{note}")
     load_lines.append(f"%mr_load_sibling(\"rules/class{CLASS}/{key}.mac\", "
                       f"'mr_witness_{key})$")
