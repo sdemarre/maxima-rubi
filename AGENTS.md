@@ -195,7 +195,7 @@ depend on the rule table's contents at their point in the suite:
 maxima --very-quiet -b test/test_rule_table_order.mac
 ```
 
-Green: `Results: 16 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
+Green: `Results: 18 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
 plan's Task 9, when class 4's bridge subset put the first real `_tail`
 lists in the table; +1 at Task 10's fix round 1: r72 is the tail's only
 give-up record; +3 at Task 11, section-9's 9.2/9.3; +2 at ticket 14,
@@ -208,13 +208,19 @@ prints the table length, 4,325; +1 at the class-5 port, 2026-09-25: class
 before class 6's first, 667 handles; table length 4,992; +1 at the class-7
 port, 2026-09-25: class 7's twenty-one bodies, contiguous, right after
 class 6's last list and right before class 8's first, 712 handles; table
-length 5,704) — both handle lists
+length 5,704; +2 at the class-4 port, 2026-09-25: class 4's fifty-six
+bodies, contiguous, right after class 3's last list and right before class
+5's first, 2,070 handles, and every record `mr_load_all` registered —
+`1..%mr_rule_count()`, not the table — is in `mr_rule_table`; the tail
+gains 4.7.5 r66/r70; the bare-`u_` check iterates every registered handle;
+table length 7,776) — both handle lists
 are defined lists and the body list is non-empty; `mr_rule_table` equals
 the body handles followed by the tail handles with nothing lost; the tail
-is non-empty; the tail is the eight bridge records in LoadRules order
-(`4_1_0_1` r1 first, then `4_7_5` r21/r22/r47/r48/r58/r71/r72 — r71, the
+is non-empty; the tail is class 4's ten bare-`u_` records in LoadRules order
+(`4_1_0_1` r1 first, then `4_7_5` r21/r22/r47/r48/r58/r66/r70/r71/r72 — r66/r70,
+TrigSimplify and ExpandTrig, since the class-4 port; r71, the
 Weierstrass record, since Task 10; r72, the re-activating CannotIntegrate
-give-up, since its fix round 1) followed by 9.3's eleven bare-`u_`
+give-up, since its fix round 1), then 8.9 r44, then 9.3's eleven bare-`u_`
 records in file order (Task 11), r67 — Rubi's own final `CannotIntegrate`
 catch-all — last and closing the tail; the tail's give-ups
 (`%mr_giveup_handles`) are exactly `4_7_5` r72 and `9_3` r67; every tail
@@ -225,7 +231,7 @@ source file, after its own tail record r63, so registration order no
 longer matches table order and only list position is asserted); 9.2's
 body sits right after 9.1 (class 1's last list) and before class 2, and
 9.3's body is the last body entry; and every bare-`u_` Int record
-anywhere in the loaded table (read via the debug entry
+anywhere among the registered handles (read via the debug entry
 `%mr_rule_pattern_text(handle)`, `maxima_rubi_dispatch.lisp`) is either
 in the tail or one of the six named exceptions
 (`generator/generate_rules.py` `BARE_U_BODY_EXCEPTIONS`,
@@ -277,7 +283,7 @@ enumerates, one cost test), `Results: 84 passed, 0 failed` (mr-tree;
 substrate, `53dc578`: the six inert trig heads, +26 at the class-8 port,
 2026-09-25: user-function heads, Hurwitz `Zeta`, the formal-derivative
 noun as the curried `Derivative` tree, and their round trips) and
-`Results: 109 passed, 0 failed`
+`Results: 119 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
@@ -289,7 +295,8 @@ inert-trig substrate, `e9642a6`: the rewrite records; +9 at ticket 15,
 14, 2026-09-23: the `mr_last_resort_tier` tail tier and the
 `mr_general_after_giveups` general body, 13 each; +3 at the class-4
 port's Step 4, 2026-09-25: the 3-argument `%mr_rewrite` walk of a
-one-argument function).
+one-argument function; +10 at its Step 6: `%mr_rule_count`, and class-4
+BODY records — the inert-leak exemption and their give-up-last tiers).
 
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the

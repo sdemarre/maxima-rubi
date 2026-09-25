@@ -272,6 +272,16 @@ runs at load."
                           *mr-rules*)
       (fill-pointer *mr-rules*))))
 
+(defmfun |$%MR_RULE_COUNT| (&rest args)
+  "%mr_rule_count(): the number of rule records %mr_defrule has registered,
+i.e. the largest handle -- every handle is 1..%mr_rule_count(). For the
+real-table gate (test/test_rule_table_order.mac, class 4, 2026-09-25): a
+registered record that mr_load_all forgot to put in mr_rule_table is then
+seen, not only the ones the table holds."
+  (unless (null args)
+    (merror (intl:gettext "%mr_rule_count: expected no arguments, found ~A") (length args)))
+  (fill-pointer *mr-rules*))
+
 (defun mr-rule-of (handle)
   (if (and (integerp handle) (<= 1 handle (fill-pointer *mr-rules*)))
       (aref *mr-rules* (1- handle))

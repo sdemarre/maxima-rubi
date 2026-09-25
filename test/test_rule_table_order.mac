@@ -33,6 +33,10 @@ check_bool(test_name, actual) := block([v],
   true)$
 
 load("maxima_rubi.mac")$
+/* the eager milestone-1 core's records (rules/class1/1_1_1_1.mac, loaded by
+   maxima_rubi.mac itself): mr_load_all() loads that file again, and the
+   table holds the second registration's handles */
+mr_n_eager : %mr_rule_count()$
 mr_load_all()$
 
 /* The same structural definition generator/generate_rules.py's
@@ -100,12 +104,15 @@ check_bool("the tail is non-empty",
 /* Class 8 (2026-09-25): 8.9's bare-u_ record r44 (Int[u_, x] /;
    FunctionOfQ[ProductLog[x], u, x]) sits between class 4's bridge records
    and 9.3's, section 8 loading after section 4 and before 9.3. */
-check_bool("the tail is the eight bridge records, then 8.9 r44, then 9.3's eleven, in load order",
+/* Class 4 (2026-09-25): the whole class is ported; its two other bare-u_
+   records, 4.7.5 r66 (TrigSimplify) and r70 (ExpandTrig), join the tail in
+   file order, between r58 and r71. */
+check_bool("the tail is class 4's ten bare-u_ records, then 8.9 r44, then 9.3's eleven, in load order",
   is(mr_rule_table_tail_handles =
      [_mr_rule_4_1_0_1_r1,
       _mr_rule_4_7_5_r21, _mr_rule_4_7_5_r22, _mr_rule_4_7_5_r47,
-      _mr_rule_4_7_5_r48, _mr_rule_4_7_5_r58, _mr_rule_4_7_5_r71,
-      _mr_rule_4_7_5_r72,
+      _mr_rule_4_7_5_r48, _mr_rule_4_7_5_r58, _mr_rule_4_7_5_r66,
+      _mr_rule_4_7_5_r70, _mr_rule_4_7_5_r71, _mr_rule_4_7_5_r72,
       _mr_rule_8_9_r44,
       _mr_rule_9_3_r9, _mr_rule_9_3_r37, _mr_rule_9_3_r38, _mr_rule_9_3_r51,
       _mr_rule_9_3_r55, _mr_rule_9_3_r56, _mr_rule_9_3_r57, _mr_rule_9_3_r62,
@@ -164,24 +171,49 @@ check_bool("class 8's bodies (8.1..8.9) then 9.1 Derivative follow class 6 and p
                     mr_rules_8_5, mr_rules_8_6, mr_rules_8_7, mr_rules_8_8,
                     mr_rules_8_9, mr_rules_9_1d]))
   and is(mr_pos(last(mr_rules_9_1d)) + 1 = mr_pos(first(mr_rules_9_3))))$
+/* Class 4 (2026-09-25): its fifty-six bodies in Rubi.m order (4.1.0.1 ..
+   4.7.9), contiguous, right after class 3's last list (3_5) and right
+   before class 5's first (5_1_1): Rubi.m loads section 4 after section 3
+   and before sections 5 and 6. 2,070 body handles (2,080 rules less the
+   ten tail records). */
+mr_c4_lists : [mr_rules_4_1_0_1, mr_rules_4_1_0_2, mr_rules_4_1_0_3,
+  mr_rules_4_1_1_1, mr_rules_4_1_1_2, mr_rules_4_1_1_3, mr_rules_4_1_2_1,
+  mr_rules_4_1_2_2, mr_rules_4_1_2_3, mr_rules_4_1_3_1, mr_rules_4_1_4_1,
+  mr_rules_4_1_4_2, mr_rules_4_1_5, mr_rules_4_1_6, mr_rules_4_1_7,
+  mr_rules_4_1_8, mr_rules_4_1_9, mr_rules_4_1_10, mr_rules_4_1_11,
+  mr_rules_4_1_12, mr_rules_4_1_13, mr_rules_4_3_1_1, mr_rules_4_3_1_2,
+  mr_rules_4_3_1_3, mr_rules_4_3_2_1, mr_rules_4_3_2_3, mr_rules_4_3_3_1,
+  mr_rules_4_3_4_1, mr_rules_4_3_4_2, mr_rules_4_3_7, mr_rules_4_3_9,
+  mr_rules_4_3_10, mr_rules_4_3_11, mr_rules_4_3_12, mr_rules_4_5_1_1,
+  mr_rules_4_5_1_2, mr_rules_4_5_1_3, mr_rules_4_5_1_4, mr_rules_4_5_2_1,
+  mr_rules_4_5_2_2, mr_rules_4_5_3_1, mr_rules_4_5_4_1, mr_rules_4_5_4_2,
+  mr_rules_4_5_7, mr_rules_4_5_9, mr_rules_4_5_10, mr_rules_4_5_11,
+  mr_rules_4_7_1, mr_rules_4_7_2, mr_rules_4_7_3, mr_rules_4_7_4,
+  mr_rules_4_7_5, mr_rules_4_7_6, mr_rules_4_7_7, mr_rules_4_7_8,
+  mr_rules_4_7_9]$
+check_bool("class 4's bodies (4.1.0.1..4.7.9) follow class 3 and precede class 5, contiguous",
+  is(mr_pos(first(mr_rules_4_1_0_1)) = mr_pos(last(mr_rules_3_5)) + 1)
+  and is(sublist(mr_rule_table, lambda([mr_h], member(mr_h, flatten(mr_c4_lists))))
+         = flatten(mr_c4_lists))
+  and is(mr_pos(last(mr_rules_4_7_9)) + 1 = mr_pos(first(mr_rules_5_1_1)))
+  and is(length(flatten(mr_c4_lists)) = 2070))$
 /* Class 5 (2026-09-25): its fifteen bodies in Rubi.m order (5.1.1 ..
-   5.5.2), contiguous, right after class 3's last list (3_5) and right
-   before class 6's first (6_1_10) -- section 5 loads after section 4
-   (whose ported bridge bodies are empty) and before section 6. Class 5
-   has no bare-u_ record, so the tail is unchanged. */
+   5.5.2), contiguous, right after class 4's last list (4_7_9; class 3's
+   3_5 until the class-4 port) and right before class 6's first (6_1_10) --
+   section 5 loads after section 4 and before section 6. Class 5 has no
+   bare-u_ record, so the tail is unchanged. */
 mr_c5_lists : [mr_rules_5_1_1, mr_rules_5_1_2, mr_rules_5_1_3, mr_rules_5_1_4,
                mr_rules_5_1_5, mr_rules_5_1_6, mr_rules_5_3_1, mr_rules_5_3_2,
                mr_rules_5_3_3, mr_rules_5_3_4, mr_rules_5_3_5, mr_rules_5_3_6,
                mr_rules_5_3_7, mr_rules_5_5_1, mr_rules_5_5_2]$
-check_bool("class 5's bodies (5.1.1..5.5.2) follow class 3 and precede class 6, contiguous",
-  is(mr_pos(first(mr_rules_5_1_1)) = mr_pos(last(mr_rules_3_5)) + 1)
+check_bool("class 5's bodies (5.1.1..5.5.2) follow class 4 and precede class 6, contiguous",
+  is(mr_pos(first(mr_rules_5_1_1)) = mr_pos(last(mr_rules_4_7_9)) + 1)
   and is(sublist(mr_rule_table, lambda([mr_h], member(mr_h, flatten(mr_c5_lists))))
          = flatten(mr_c5_lists))
   and is(mr_pos(last(mr_rules_5_5_2)) + 1 = mr_pos(first(mr_rules_6_1_10)))
   and is(length(flatten(mr_c5_lists)) = 667))$
 /* Class 7 (2026-09-25): its twenty-one bodies in Rubi.m order (7.1.1 ..
-   7.5.2), contiguous, right after class 6's last list (6_7_9) -- the
-   class-4 bridge lists between them have empty bodies -- and right before
+   7.5.2), contiguous, right after class 6's last list (6_7_9) and right before
    class 8's first (8_1): section 7 loads after section 6 and before
    section 8. Class 7 has no bare-u_ record, so the tail is unchanged. */
 mr_c7_lists : [mr_rules_7_1_1, mr_rules_7_1_2, mr_rules_7_1_3, mr_rules_7_1_4,
@@ -199,11 +231,19 @@ check_bool("class 7's bodies (7.1.1..7.5.2) follow class 6 and precede class 8, 
 print("table length after mr_load_all: ", length(mr_rule_table))$
 
 /* The universal cross-check, over EVERY handle mr_load_all() actually
-   registered (3,903 at Task 8; 3,909 with Task 9's six; 3,910 with Task
-   10's r71; 3,911 with r72; +86 with Task 11's 9.2/9.3): a bare-u_ record
-   must be in the tail or be one of the six named exceptions -- anywhere
-   else fails it. */
-mr_bad_bare : sublist(mr_rule_table,
+   registered -- 1..%mr_rule_count(), not the table (class 4, 2026-09-25,
+   the inert-trig substrate's carried item: iterating mr_rule_table could
+   not see a _tail list mr_load_all forgot, which never enters the table).
+   Every registered record is in the table (nothing loaded is forgotten),
+   and a bare-u_ record must be in the tail or be one of the six named
+   exceptions -- anywhere else fails it. */
+mr_registered : makelist(mr_i, mr_i, 1, %mr_rule_count())$
+print("registered rule records: ", length(mr_registered), " (", mr_n_eager,
+      " by the eager core, superseded)")$
+check_bool("every rule record mr_load_all registered is in mr_rule_table (none forgotten)",
+  is(sort(copylist(mr_rule_table))
+     = makelist(mr_i, mr_i, mr_n_eager + 1, %mr_rule_count())))$
+mr_bad_bare : sublist(mr_registered,
   lambda([mr_h],
     mr_bare_u_pattern_p(%mr_rule_pattern_text(mr_h))
     and not(member(mr_h, mr_rule_table_tail_handles))
