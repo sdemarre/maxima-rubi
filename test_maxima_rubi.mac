@@ -158,6 +158,7 @@ run_all_tests() := block([],
   test_ei_reciprocal_atom(),
   test_substfor_unexpanded_arg(),
   test_values_trim(),
+  test_subst_simp_switch(),
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
@@ -5646,6 +5647,27 @@ test_values_trim() := block([mr_vt_ok],
   check_bool("values trim: an ordinary global is untouched",
              block([], mr_vt_probe_global : 7, member('mr_vt_probe_global, values))),
   kill(mr_vt_probe_global),
+  true
+)$
+
+/* ---- Subst: plain subst by default (run switch mr_subst_simp) ------------
+   %mr_subst ran %mr_simp (ratsimp, ratsimp(expand), factor) on every
+   substituted result since milestone 1; on the class-4 routes that inflated
+   answers to megabytes (class-6 attribution's fix D). User decision
+   2026-09-25: plain subst by default, the old pass behind the switch. */
+test_subst_simp_switch() := block([mr_ss_saved],
+  print("--- Subst: plain subst unless mr_subst_simp ---"),
+  mr_ss_saved : mr_subst_simp,
+  check("mr_subst_simp defaults to false", mr_ss_saved, false),
+  mr_subst_simp : false,
+  check("plain subst keeps the substituted form unexpanded",
+        %mr_subst((x+1)^2 + x, x, a+b), (a+b+1)^2 + a + b),
+  mr_subst_simp : true,
+  check("mr_subst_simp: true simplifies the substituted result",
+        is(%mr_subst((x+1)^2 + x, x, a+b) # (a+b+1)^2 + a + b), true),
+  check("mr_subst_simp: true and false agree up to simplification",
+        ratsimp(%mr_subst((x+1)^2 + x, x, a+b) - ((a+b+1)^2 + a + b)), 0),
+  mr_subst_simp : mr_ss_saved,
   true
 )$
 

@@ -227,6 +227,17 @@ expands to 0, and 5.3.7 r27/r28 / 7.3.7 r25/r26 declined on a shifted
 quadratic. Rubi's PossibleZeroQ reads those zero. A zero for SOME
 parameter values (a*b*c, a - b) stays nonzero, as in Rubi.")
 
+(defmvar $mr_subst_simp nil
+  "Run switch: false (default) = %mr_subst (Rubi's Subst[u, x, v],
+maxima_rubi_utils.mac) is Maxima's plain subst(v, x, u); true = the
+milestone-1 reading (58596c3) that runs %mr_simp (ratsimp, ratsimp(expand),
+factor) on every substituted result. User decision 2026-09-25: on the
+class-4 routes that pass inflated answers to 5 KB - 7 MB (log arguments of
+degree 15-44 in tanh), so verification timed out or the process died; the
+plain subst recovered 54 of 97 class-6 timeouts and broke 0 of 120 sampled
+class-6 PASS entries (class-6 attribution, branch class6-attribution,
+probes/class-ports/18-fixD-timeout.out, 19-fixD-pass-sample.out).")
+
 ;; The EqQ fast path (%mr_symbolicZeroQ, maxima_rubi_utils.mac): an
 ;; EXPANDED polynomial -- a number, a variable symbol, a product of numbers
 ;; and integer powers of variable symbols, or a sum of such terms -- is in

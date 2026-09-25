@@ -2459,9 +2459,12 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
  * flag) are Task 7 scope; a dummy x inside a noun WOULD be replaced by
  * this port — the 1.1.1.1 rule-5 antiderivative is a closed form, so
  * no dummy occurs in this cluster's usage. */
+/* The %mr_simp pass is the run switch mr_subst_simp (default false, user
+   decision 2026-09-25; maxima_rubi_dispatch.lisp's defmvar has the
+   evidence): on the class-4 routes it inflated answers to megabytes. */
 %mr_subst(u, x, v) := block([r],
   r : subst(v, x, u),
-  %mr_simp(r))$
+  if mr_subst_simp = true then %mr_simp(r) else r)$
 
 /* ===================== predicate cluster F (Task 7a) ====================
  * LinearPairQ / PerfectSquareQ / RationalFunctionQ / SplitProduct /

@@ -355,7 +355,10 @@ passed, 0 failed`; with SubstForTrig/SubstForHyperbolic on an unexpanded
 argument (its fix C, cured by the symbolic EqQ, 5 checks): `Results:
 1545 passed, 0 failed`; with the rule-record globals kept off Maxima's
 `values` list (the class-1 attribution's fix V, `%mr_trim_rule_values`, 4
-checks): **`Results: 1549 passed, 0 failed`**. The
+checks): `Results: 1549 passed, 0 failed` (the depth-cap default 16 -> 32,
+fix E, changes one check's expectation); with `%mr_subst` a plain `subst`
+unless the run switch `mr_subst_simp` (fix D, 4 checks): **`Results: 1553
+passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
