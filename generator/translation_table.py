@@ -230,6 +230,35 @@ RENAME = {
     # the class-2 corpus headers assume it false) — a VARIABLE, not a
     # function (the SimplifyFlag precedent):
     "$UseGamma": "mr_use_gamma_flag",
+    # section 9 (2026-09-22): 9.2's gate and 9.3's Divides
+    # (maxima_rubi_utils.mac, task-2 brief).
+    "PiecewiseLinearQ": "%mr_piecewiseLinearQ",
+    "Divides": "%mr_divides",
+    # section 9 G2a (2026-09-22, task-3 brief): EulerIntegrandQ (a
+    # generated rewrite table) and its two hand-ported callers.
+    "EulerIntegrandQ": "%mr_eulerIntegrandQ",
+    "SimplerIntegrandQ": "%mr_simplerIntegrandQ",
+    # section 9 G2b (2026-09-22, task-4 brief): SubstForFractionalPowerQ,
+    # PolynomialInQ, PolynomialInSubst (the AuxQ/Aux helpers are internal,
+    # not generated-rule tokens).
+    "SubstForFractionalPowerQ": "%mr_substForFractionalPowerQ",
+    "PolynomialInQ": "%mr_polynomialInQ",
+    "PolynomialInSubst": "%mr_polynomialInSubst",
+    # section 9 G3 (2026-09-22, task-5 brief): PowerVariableExpn (the
+    # Degree/Subst helpers are internal, not generated-rule tokens).
+    "PowerVariableExpn": "%mr_powerVariableExpn",
+    # section 9 G4 (2026-09-22, task-6 brief): FunctionOfSquareRootOfQuadratic
+    # (the 3-arg overload and SquareRootOfQuadraticSubst are internal,
+    # not generated-rule tokens -- the census shows only the 2-arg call).
+    "FunctionOfSquareRootOfQuadratic": "%mr_functionOfSquareRootOfQuadratic",
+    # section 9 G5 (2026-09-22, task-7 brief): SubstForFractionalPowerOf-
+    # QuotientOfLinears (FractionalPowerOfQuotientOfLinears is internal,
+    # not a generated-rule token).
+    "SubstForFractionalPowerOfQuotientOfLinears": "%mr_substForFractionalPowerOfQuotientOfLinears",
+    # section 9 G6b (2026-09-22, task-9 brief): FunctionOfLinear (the
+    # 5-arg overload and FunctionOfLinearSubst are internal, not
+    # generated-rule tokens).
+    "FunctionOfLinear": "%mr_functionOfLinear",
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.

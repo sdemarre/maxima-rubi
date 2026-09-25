@@ -1,0 +1,42 @@
+/* probes/section9/01-giveup-ordering.mac -- the A6.1 witness: 9.3's
+   non-give-up bare-`u_` tail records win a race Mathematica would not have
+   run, because mr_giveup_last defers classes 1/2/3's Unintegrable markers
+   to a second pass.
+
+   Two corpus entries whose expected answer is Unintegrable and whose Rubi
+   step count is 0, i.e. Rubi applies NO rule:
+     3 Logarithms/3.4 e635 (L814)  (a+b*log(c*(d+e/(f+g*x))^p))^n
+     3 Logarithms/3.4 e104 (L141)  1/(x*log(c*(a+b*x^2)^p))
+
+   Run from a rules core with 01-giveup-ordering.run, which runs this file
+   three times: on the REFERENCE core (master c95c6ed, 3,911 rules), on the
+   BRANCH core (3,997), and on the branch core with MR_GIVEUP_LAST=false.
+   The deciding rule is the LAST `fired` line of each trace (mr-verbose
+   prints `fired` AFTER the replacement has been computed, so the outermost
+   firing prints last). */
+display2d : false$
+linel : 100000$
+mr_flat_wide : false$
+mr_cond_retry : true$
+mr_model_flags : true$
+mr_nested_fallback : false$
+mr_max_depth : 16$
+mr_giveup_last : if is(sconcat(mr_probe_giveup_last) = "false") then false else true$
+print("build:", build_info())$
+print("rules:", length(mr_rule_table), " mr_giveup_last:", mr_giveup_last)$
+mr_probe(mr_label, mr_f) := block([mr_r],
+  rubi_verbose : true,
+  print("-- TRACE", mr_label),
+  mr_r : errcatch(rubi(mr_f, x)),
+  rubi_verbose : false,
+  print("ANSWER", mr_label, "|", mr_r),
+  /* top-level noun (driver class no-answer, a PASS class) vs a marker
+     buried inside a partial reduction (contains-noun, FAIL) */
+  print("TOPLEVEL_NOUN", mr_label, "|",
+        if mr_r = [] then "error"
+        else if atom(first(mr_r)) then "atom"
+        else is(sconcat(op(first(mr_r))) = "unintegrable")),
+  print("CARRIES_MARKER", mr_label, "|",
+        if mr_r = [] then "error" else not freeof('unintegrable, first(mr_r))))$
+mr_probe("3.4-e635", (a+b*log(c*(d+e/(f+g*x))^p))^n)$
+mr_probe("3.4-e104", 1/(x*log(c*(a+b*x^2)^p)))$

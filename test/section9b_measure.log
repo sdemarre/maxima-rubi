@@ -1,0 +1,255 @@
+2026-09-24 23:54:29 CEST host check
+ 23:54:29 up 15:44,  4 users,  load average: 0,29, 0,17, 0,12
+%CPU COMMAND
+ 5.8 claude
+ 3.7 opencode
+ 0.3 node
+ 0.3 dockerd
+ 0.2 npm exec @playw
+built test/mr_rules.core (129262464 bytes) rules=3997 fingerprint=d251f4bff5afb506c402c7bf97e49005
+2026-09-24 23:54:33 CEST branch core: fingerprint d251f4bff5afb506c402c7bf97e49005 (3997 rules, cd0a421)
+2026-09-24 23:54:33 CEST start 2 Exponentials -> test/corpus_class2.s9b.out
+=== class2 queue plan ===
+entries: 965  units: 965  workers: 24  cap: 30s  timed by /home/serge/src/maxima-rubi/test/corpus_class2.s9-ref.out: 965  untimed (run first): 0
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 2473  estimated wall: 2.2 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/corpus_class2.shard00.out .. corpus_class2.shard23.out  pids: /home/serge/src/maxima-rubi/test/corpus_class2.shard-pids  log: /home/serge/src/maxima-rubi/test/corpus_class2.shard-queue.log
+removed 49 files of the previous run
+launched the queue: pid 122045; pids in /home/serge/src/maxima-rubi/test/corpus_class2.shard-pids; log /home/serge/src/maxima-rubi/test/corpus_class2.shard-queue.log
+2026-09-24 21:54:33 UTC watcher: waiting for pids: 122045
+2026-09-24 21:58:33 UTC watcher: all shards exited; merging
+2026-09-24 23:58:34 CEST merged test/corpus_class2.s9b.out
+Results: 758 passed, 207 failed
+base: test/corpus_class2.s9-ref.out (965 entries)
+new:  test/corpus_class2.s9b.out (965 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS    715
+PASS->FAIL      1
+FAIL->PASS     43
+FAIL->FAIL    206
+
+=== class transitions (changed only) ===
+   42  deferred -> verified
+   11  contains-noun -> timeout
+    8  deferred -> contains-noun
+    3  deferred -> unverified
+    3  deferred -> timeout
+    1  error -> timeout
+    1  contains-noun -> verified
+    1  no-answer -> contains-noun
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0    16  2 Exponentials/2.1 u (F^(c (a+b x)))^n.mac
+    1    27  2 Exponentials/2.3 Exponential functions.mac
+
+=== PASS->FAIL (1) ===
+  no-answer     -> contains-noun t=0.4s -> t=1.0s 2 Exponentials/2.3 Exponential functions.mac e758
+
+=== FAIL->PASS (43) ===
+  deferred      -> verified      t=0.5s -> t=1.1s 2 Exponentials/2.1 u (F^(c (a+b x)))^n.mac e19
+  deferred      -> verified      t=2.0s -> t=4.4s 2 Exponentials/2.1 u (F^(c (a+b x)))^n.mac e55
+2026-09-24 23:58:34 CEST start 3 Logarithms -> test/corpus_class3.s9b.out
+=== class3 queue plan ===
+entries: 3085  units: 3085  workers: 24  cap: 30s  timed by /home/serge/src/maxima-rubi/test/corpus_class3.s9-ref.out: 3085  untimed (run first): 0
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 20758  estimated wall: 14.9 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/corpus_class3.shard00.out .. corpus_class3.shard23.out  pids: /home/serge/src/maxima-rubi/test/corpus_class3.shard-pids  log: /home/serge/src/maxima-rubi/test/corpus_class3.shard-queue.log
+removed 49 files of the previous run
+launched the queue: pid 127144; pids in /home/serge/src/maxima-rubi/test/corpus_class3.shard-pids; log /home/serge/src/maxima-rubi/test/corpus_class3.shard-queue.log
+2026-09-24 21:58:34 UTC watcher: waiting for pids: 127144
+2026-09-24 22:16:34 UTC watcher: all shards exited; merging
+2026-09-25 00:16:34 CEST merged test/corpus_class3.s9b.out
+Results: 1692 passed, 1393 failed
+base: test/corpus_class3.s9-ref.out (3085 entries)
+new:  test/corpus_class3.s9b.out (3085 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS   1670
+PASS->FAIL      3
+FAIL->PASS     22
+FAIL->FAIL   1390
+
+=== class transitions (changed only) ===
+   79  contains-noun -> timeout
+   17  contains-noun -> verified
+    7  deferred -> timeout
+    5  deferred -> verified
+    4  deferred -> contains-noun
+    3  no-answer -> contains-noun
+    1  contains-noun -> unexpected
+    1  contains-noun -> unverified
+    1  deferred -> unverified
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     9  3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac
+    0     3  3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac
+    0     2  3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac
+    3     8  3 Logarithms/3.5 Logarithm functions.mac
+
+=== PASS->FAIL (3) ===
+  no-answer     -> contains-noun t=0.6s -> t=1.4s 3 Logarithms/3.5 Logarithm functions.mac e286
+  no-answer     -> contains-noun t=0.3s -> t=0.9s 3 Logarithms/3.5 Logarithm functions.mac e287
+2026-09-25 00:16:34 CEST start 6 Hyperbolic functions -> test/corpus_class6.s9b.out
+=== class6 queue plan ===
+entries: 5080  units: 5080  workers: 24  cap: 30s  timed by /home/serge/src/maxima-rubi/test/corpus_class6.s9-ref.out: 5080  untimed (run first): 0
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 22331  estimated wall: 16.0 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/corpus_class6.shard00.out .. corpus_class6.shard23.out  pids: /home/serge/src/maxima-rubi/test/corpus_class6.shard-pids  log: /home/serge/src/maxima-rubi/test/corpus_class6.shard-queue.log
+removed 49 files of the previous run
+launched the queue: pid 140684; pids in /home/serge/src/maxima-rubi/test/corpus_class6.shard-pids; log /home/serge/src/maxima-rubi/test/corpus_class6.shard-queue.log
+2026-09-24 22:16:34 UTC watcher: waiting for pids: 140684
+2026-09-24 22:56:34 UTC watcher: all shards exited; merging
+2026-09-25 00:56:34 CEST merged test/corpus_class6.s9b.out
+Results: 2474 passed, 2606 failed
+base: test/corpus_class6.s9-ref.out (5080 entries)
+new:  test/corpus_class6.s9b.out (5080 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS   1589
+PASS->FAIL     41
+FAIL->PASS    885
+FAIL->FAIL   2565
+
+=== class transitions (changed only) ===
+  430  deferred -> verified
+  429  contains-noun -> verified
+  412  deferred -> timeout
+  394  contains-noun -> timeout
+  305  deferred -> contains-noun
+   53  deferred -> unverified
+   36  contains-noun -> unverified
+   35  no-answer -> contains-noun
+   10  deferred -> expected
+    8  contains-noun -> expected
+    7  timeout -> verified
+    5  contains-noun -> deferred
+    3  expected -> timeout
+    3  verified -> timeout
+    1  unverified -> verified
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    4     4  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac
+    3     3  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac
+2026-09-25 00:56:34 CEST start 1 Algebraic functions -> test/corpus_class1.s9b.out
+=== class1 queue plan ===
+entries: 25697  units: 25697  workers: 24  cap: 30s  timed by /home/serge/src/maxima-rubi/test/corpus_class1.s9-ref.out: 25697  untimed (run first): 0
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 161237  estimated wall: 112.5 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/corpus_class1.shard00.out .. corpus_class1.shard23.out  pids: /home/serge/src/maxima-rubi/test/corpus_class1.shard-pids  log: /home/serge/src/maxima-rubi/test/corpus_class1.shard-queue.log
+removed 49 files of the previous run
+launched the queue: pid 164195; pids in /home/serge/src/maxima-rubi/test/corpus_class1.shard-pids; log /home/serge/src/maxima-rubi/test/corpus_class1.shard-queue.log
+2026-09-24 22:56:34 UTC watcher: waiting for pids: 164195
+2026-09-25 01:04:34 UTC watcher: all shards exited; merging
+2026-09-25 03:04:35 CEST merged test/corpus_class1.s9b.out
+Results: 18400 passed, 7297 failed
+base: test/corpus_class1.s9-ref.out (25697 entries)
+new:  test/corpus_class1.s9b.out (25697 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS  18151
+PASS->FAIL     19
+FAIL->PASS    249
+FAIL->FAIL   7278
+
+=== class transitions (changed only) ===
+  244  contains-noun -> timeout
+  191  deferred -> contains-noun
+  143  deferred -> verified
+   94  contains-noun -> verified
+   59  deferred -> timeout
+   43  contains-noun -> unverified
+   17  verified -> timeout
+   12  contains-noun -> expected
+    4  deferred -> unverified
+    2  timeout -> contains-noun
+    2  no-answer -> contains-noun
+    1  error -> contains-noun
+    1  contains-noun -> deferred
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     5  1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac
+    1    31  1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac
+    0     1  1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.5 P(x) (a+b x)^m (c+d x)^n.mac
+    0     6  1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.4 (e x)^m (a+b x^2)^p (c+d x^2)^q.mac
+2026-09-25 03:04:35 CEST paired class 2: 70 entries
+=== class2 queue plan ===
+entries: 70  units: 70  workers: 12  cap: 30s  timed by (no --prev): 0  untimed (run first): 70
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 0  estimated wall: 0.0 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/section9b_paired_class2.ref/shard00.out .. shard11.out  pids: /home/serge/src/maxima-rubi/test/section9b_paired_class2.ref/pids  log: /home/serge/src/maxima-rubi/test/section9b_paired_class2.ref/queue.log
+removed 0 files of the previous run
+launched the queue: pid 273232; pids in /home/serge/src/maxima-rubi/test/section9b_paired_class2.ref/pids; log /home/serge/src/maxima-rubi/test/section9b_paired_class2.ref/queue.log
+=== class2 queue plan ===
+entries: 70  units: 70  workers: 12  cap: 30s  timed by (no --prev): 0  untimed (run first): 70
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 0  estimated wall: 0.0 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/section9b_paired_class2.new/shard00.out .. shard11.out  pids: /home/serge/src/maxima-rubi/test/section9b_paired_class2.new/pids  log: /home/serge/src/maxima-rubi/test/section9b_paired_class2.new/queue.log
+removed 0 files of the previous run
+launched the queue: pid 273252; pids in /home/serge/src/maxima-rubi/test/section9b_paired_class2.new/pids; log /home/serge/src/maxima-rubi/test/section9b_paired_class2.new/queue.log
+2026-09-25 03:06:05 CEST paired class 2 done
+2026-09-25 03:06:05 CEST paired class 3: 118 entries
+=== class3 queue plan ===
+entries: 118  units: 118  workers: 12  cap: 30s  timed by (no --prev): 0  untimed (run first): 118
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 0  estimated wall: 0.0 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/section9b_paired_class3.ref/shard00.out .. shard11.out  pids: /home/serge/src/maxima-rubi/test/section9b_paired_class3.ref/pids  log: /home/serge/src/maxima-rubi/test/section9b_paired_class3.ref/queue.log
+removed 0 files of the previous run
+launched the queue: pid 274516; pids in /home/serge/src/maxima-rubi/test/section9b_paired_class3.ref/pids; log /home/serge/src/maxima-rubi/test/section9b_paired_class3.ref/queue.log
+=== class3 queue plan ===
+entries: 118  units: 118  workers: 12  cap: 30s  timed by (no --prev): 0  untimed (run first): 118
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 0  estimated wall: 0.0 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/section9b_paired_class3.new/shard00.out .. shard11.out  pids: /home/serge/src/maxima-rubi/test/section9b_paired_class3.new/pids  log: /home/serge/src/maxima-rubi/test/section9b_paired_class3.new/queue.log
+removed 0 files of the previous run
+launched the queue: pid 274536; pids in /home/serge/src/maxima-rubi/test/section9b_paired_class3.new/pids; log /home/serge/src/maxima-rubi/test/section9b_paired_class3.new/queue.log
+2026-09-25 03:10:35 CEST paired class 3 done
+2026-09-25 03:10:35 CEST paired class 6: 2131 entries
+=== class6 queue plan ===
+entries: 2131  units: 2131  workers: 12  cap: 30s  timed by (no --prev): 0  untimed (run first): 2131
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 0  estimated wall: 0.0 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/section9b_paired_class6.ref/shard00.out .. shard11.out  pids: /home/serge/src/maxima-rubi/test/section9b_paired_class6.ref/pids  log: /home/serge/src/maxima-rubi/test/section9b_paired_class6.ref/queue.log
+removed 0 files of the previous run
+launched the queue: pid 276504; pids in /home/serge/src/maxima-rubi/test/section9b_paired_class6.ref/pids; log /home/serge/src/maxima-rubi/test/section9b_paired_class6.ref/queue.log
+=== class6 queue plan ===
+entries: 2131  units: 2131  workers: 12  cap: 30s  timed by (no --prev): 0  untimed (run first): 2131
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 0  estimated wall: 0.0 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/section9b_paired_class6.new/shard00.out .. shard11.out  pids: /home/serge/src/maxima-rubi/test/section9b_paired_class6.new/pids  log: /home/serge/src/maxima-rubi/test/section9b_paired_class6.new/queue.log
+removed 0 files of the previous run
+launched the queue: pid 276524; pids in /home/serge/src/maxima-rubi/test/section9b_paired_class6.new/pids; log /home/serge/src/maxima-rubi/test/section9b_paired_class6.new/queue.log
+2026-09-25 03:59:06 CEST paired class 6 done
+2026-09-25 03:59:06 CEST paired class 1: 813 entries
+=== class1 queue plan ===
+entries: 813  units: 813  workers: 12  cap: 30s  timed by (no --prev): 0  untimed (run first): 813
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 0  estimated wall: 0.0 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/section9b_paired_class1.ref/shard00.out .. shard11.out  pids: /home/serge/src/maxima-rubi/test/section9b_paired_class1.ref/pids  log: /home/serge/src/maxima-rubi/test/section9b_paired_class1.ref/queue.log
+removed 0 files of the previous run
+launched the queue: pid 300402; pids in /home/serge/src/maxima-rubi/test/section9b_paired_class1.ref/pids; log /home/serge/src/maxima-rubi/test/section9b_paired_class1.ref/queue.log
+=== class1 queue plan ===
+entries: 813  units: 813  workers: 12  cap: 30s  timed by (no --prev): 0  untimed (run first): 813
+job-seconds: 0  (one entry per unit)
+estimated core-seconds: 0  estimated wall: 0.0 min (= core-seconds/workers + largest unit; timed entries only)
+switches: mr_flat_wide=false mr_cond_retry=true mr_model_flags=true mr_nested_fallback=false mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=16
+outputs: /home/serge/src/maxima-rubi/test/section9b_paired_class1.new/shard00.out .. shard11.out  pids: /home/serge/src/maxima-rubi/test/section9b_paired_class1.new/pids  log: /home/serge/src/maxima-rubi/test/section9b_paired_class1.new/queue.log
+removed 0 files of the previous run
+launched the queue: pid 300426; pids in /home/serge/src/maxima-rubi/test/section9b_paired_class1.new/pids; log /home/serge/src/maxima-rubi/test/section9b_paired_class1.new/queue.log
+2026-09-25 04:17:36 CEST paired class 1 done
+2026-09-25 04:17:36 CEST ALL DONE

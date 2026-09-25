@@ -144,6 +144,12 @@ Two layers, one reading protocol. Every run ends with
 assertions print `PASS:`/`FAIL:` above it, and a run can also die
 mid-way with a Maxima error, in which case no `Results:` line is
 printed at all, which is itself a failure.
+**A Lisp error inside a test section is NOT a missing `Results:` line**: Maxima
+prints `Maxima encountered a Lisp error` / `Automatically continuing`, abandons
+the rest of that section's `block`, and the run still ends in a clean-looking
+`Results:` line with the section's remaining checks simply absent (measured
+2026-09-23, dispatch suite: 7 checks vanished and the count still read 71/0).
+Grep for `Lisp error` too, and compare the PASS count with the expected figure.
 
 **Layer A — unit suite** (the per-change gate), one batch run:
 
@@ -189,24 +195,57 @@ depend on the rule table's contents at their point in the suite:
 maxima --very-quiet -b test/test_rule_table_order.mac
 ```
 
-Green: `Results: 8 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
+Green: `Results: 13 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
 plan's Task 9, when class 4's bridge subset put the first real `_tail`
 lists in the table; +1 at Task 10's fix round 1: r72 is the tail's only
-give-up record) — both handle lists are defined
-lists and the body list is non-empty; `mr_rule_table` equals the body
-handles followed by the tail handles with nothing lost; the tail is
-non-empty; the tail is exactly the eight bridge records in LoadRules order
+give-up record; +3 at Task 11, section-9's 9.2/9.3; +2 at ticket 14,
+2026-09-23: the dispatcher's tail and general-body MARKS equal the tail
+list and 9.3's body list) — both handle lists
+are defined lists and the body list is non-empty; `mr_rule_table` equals
+the body handles followed by the tail handles with nothing lost; the tail
+is non-empty; the tail is the eight bridge records in LoadRules order
 (`4_1_0_1` r1 first, then `4_7_5` r21/r22/r47/r48/r58/r71/r72 — r71, the
 Weierstrass record, since Task 10; r72, the re-activating CannotIntegrate
-give-up, last, since its fix round 1); `4_7_5` r72 is the tail's only
-give-up record (`%mr_giveup_handles`); every tail
-handle's pattern is bare-`u_`; every tail handle is registered after
-every body handle; and every bare-`u_` Int record anywhere in the loaded table
-(read via the debug entry `%mr_rule_pattern_text(handle)`,
-`maxima_rubi_dispatch.lisp`) is either in the tail or one of the six
-named exceptions (`generator/generate_rules.py`
-`BARE_U_BODY_EXCEPTIONS`, `.scratch/class-ports/issues/07-bare-u-
-records-mid-table.md`).
+give-up, since its fix round 1) followed by 9.3's eleven bare-`u_`
+records in file order (Task 11), r67 — Rubi's own final `CannotIntegrate`
+catch-all — last and closing the tail; the tail's give-ups
+(`%mr_giveup_handles`) are exactly `4_7_5` r72 and `9_3` r67; every tail
+handle's pattern is bare-`u_`; every tail handle sits after every body
+handle **by list position** in `mr_rule_table` (spec A3: since Task 11,
+9.3 interleaves — its body records r64/r65 are registered, in the
+source file, after its own tail record r63, so registration order no
+longer matches table order and only list position is asserted); 9.2's
+body sits right after 9.1 (class 1's last list) and before class 2, and
+9.3's body is the last body entry; and every bare-`u_` Int record
+anywhere in the loaded table (read via the debug entry
+`%mr_rule_pattern_text(handle)`, `maxima_rubi_dispatch.lisp`) is either
+in the tail or one of the six named exceptions
+(`generator/generate_rules.py` `BARE_U_BODY_EXCEPTIONS`,
+`.scratch/class-ports/issues/07-bare-u-records-mid-table.md`).
+
+**Section 9 — end to end** (the per-change gate for `rules/class9/` and the
+section-9 utilities; spec `docs/superpowers/specs/2026-09-22-section9-port-design.md`).
+Runs the RED-on-master targets through the real `mr_load_all` table, so it
+lives outside Layer A like the rule-table gate:
+
+```sh
+maxima --very-quiet -b test/test_section9_e2e.mac < /dev/null
+```
+
+Green: `Results: 9 passed, 0 failed` (4 at Task 12, spec amendment A5; +2 at
+Task 12b, the r18/r22/r23/r24 condition-assignment idiom; re-measured
+2026-09-23 at Task 14; +1 at ticket 15, the inert-trig leak witness
+`(2*tanh(1+3*x))^(7/2)`, RED with `mr_inert_leak_misfire:false`; +2 at
+ticket 14, 3.4 e635/e104 answer the TOP-LEVEL `unintegrable` noun, RED with
+`mr_last_resort_tier` and `mr_general_after_giveups` both false). Each
+answer target answers, carries no noun and no leaked `_mr_` rule local, and
+verifies numerically at `x = 0.3` and `x = 0.7`; the two issue-14 checks
+instead require the top-level `unintegrable` noun.
+**Redirect stdin from `/dev/null`**: a rule set that drives SBCL into a fatal error (heap
+exhaustion is reachable from here — `.scratch/class-ports/issues/11`) lands in
+the `ldb` debugger, which then waits on an inherited stdin and is
+indistinguishable from a hang. `timeout` does not help either — maxima forks
+`sbcl`, so kill the process GROUP (`setsid` + `killpg`) instead.
 
 **Matcher substrate — unit suites** (the per-change gate for
 `maxima_rubi_match.lisp` / `maxima_rubi_tree.lisp` /
@@ -228,14 +267,17 @@ committed-tail locks, one lock that an uncommitted tail still
 enumerates, one cost test), `Results: 58 passed, 0 failed` (mr-tree;
 46, +5 at Plan 2: CRE input and the booleans, +7 at the inert-trig
 substrate, `53dc578`: the six inert trig heads) and
-`Results: 71 passed, 0 failed`
+`Results: 106 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
 MatchQ pattern prepare rejects is an error, +8 at the final review:
 MatchQ part folding and an out-of-range part error, +1 at Plan 3: the
 switch defaults; +8 more by 2026-09-18, not attributed here; +5 at the
-inert-trig substrate, `e9642a6`: the rewrite records).
+inert-trig substrate, `e9642a6`: the rewrite records; +9 at ticket 15,
+2026-09-23: the `mr_inert_leak_misfire` inert-leak misfire; +26 at ticket
+14, 2026-09-23: the `mr_last_resort_tier` tail tier and the
+`mr_general_after_giveups` general body, 13 each).
 
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the
@@ -248,7 +290,10 @@ re-activating give-up, 4 targets): `Results: 1168 passed, 0 failed`; at
 its final fix wave (the class-4 With-local capture trap, 4 targets,
 `de51845`): `Results: 1172 passed, 0 failed`; at ticket 08 (the capture
 trap in `mr_sum`'s own locals, 5 targets, and in the generated With/Module
-locals of every class, 2 targets): `Results: 1179 passed, 0 failed`. The
+locals of every class, 2 targets): `Results: 1179 passed, 0 failed`; at the
+section-9 port (branch `section9-port`, its Tasks 1-12b: the 9.2/9.3 utility
+units and the condition-assignment idiom):
+**`Results: 1292 passed, 0 failed`**, re-measured 2026-09-23 at Task 14. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -267,9 +312,12 @@ Superseded: `Results: 21 passed, 0 failed` measured 2026-09-21 at the
 inert-trig plan's Task 9 (20 before it; class 4's bridge subset adds one
 check-7 line, the post-P0 class total `post-P0 class 4: 6 rules over 2
 files`; Task 10 keeps 21 and moves that line to `7 rules over 2 files`,
-its fix round 1 to `8 rules over 2 files`). Now `Results: 22 passed, 0
+its fix round 1 to `8 rules over 2 files`); then `Results: 22 passed, 0
 failed` (2026-09-21, ticket 08): the With/Module local prefixing is one more
 closed exception, `undo_local_prefix`, its 1,602 declarations pinned.
+Now **`Results: 23 passed, 0 failed`** (2026-09-22, the section-9 port's
+Task 10: one more check-7 line, `post-P0 class 9: 86 rules over 2 files`;
+re-measured 2026-09-23 at Task 14).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
@@ -285,6 +333,15 @@ leave `git status --porcelain rules/` empty (as does `--class 4` against
 the committed class-4 files; every class prefixes its With/Module
 locals `_mr_<key>_r<n>_<name>` — class 4 since `de51845`, the rest since
 ticket `.scratch/class-ports/issues/08`).
+
+The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
+guard, pure Python: `python3 test/test_generator_section9.py` — green
+**`Results: 21 passed, 0 failed`** (re-measured 2026-09-23 at Task 14;
+13 at Task 1: 11 at the task; +2 at its fix round 1:
+the two-comments-on-one-line guard on `drop_comment_only_lines` and the
+bounded, loud `GenError` on a wrapper missing its `SimplifyFlag` line in
+`unwrap_showsteps_multiline`; +8 at Task 12b, the condition-assignment
+idiom's recogniser, hoist order and `GenError` paths).
 
 **Matcher substrate — regression suite** (spec section 4 P1/P2 gates:
 the probe-02 round trip over all 7,444 Rubi LHSs in narrow and wide

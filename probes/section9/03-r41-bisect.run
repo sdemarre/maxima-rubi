@@ -1,0 +1,34 @@
+#!/bin/sh
+# probes/section9/03-r41-bisect.run -- spec A6.3 / ticket 16.
+# One BRANCH-core Maxima process per arm under `timeout -k`; an arm that does
+# not return inside the budget is recorded HUNG (Maxima has no per-call
+# timeout, and the blocking arms never return). 16 arms, ~10 min.
+#
+#   sh probes/section9/03-r41-bisect.run [budget-seconds]     (default 90)
+cd "$(dirname "$0")/../.." || exit 1
+BUDGET=${1:-90}
+NEW=test/mr_rules.core
+M=probes/section9/03-r41-bisect.mac
+arm() {
+  tmp=$(mktemp "${TMPDIR:-/tmp}/mr-s9-probe03-XXXXXX.mac")
+  printf 'mr_probe_arm : "%s"$\n' "$1" > "$tmp"
+  cat "$M" >> "$tmp"
+  # -k 5: SBCL in the blocking arms does not act on SIGTERM (it never
+  # reaches a safepoint), so escalate to SIGKILL 5 s later or the arm leaks a
+  # process and the command substitution waits for it forever.
+  out=$(timeout -k 5 "$BUDGET" sbcl --tls-limit 100000 --core "$NEW" --noinform \
+        --very-quiet -b "$tmp" </dev/null 2>&1 | grep '^ARM ')
+  rm -f "$tmp"
+  [ -n "$out" ] && echo "$out" || echo "ARM $1 | HUNG (no return inside ${BUDGET}s)"
+}
+{
+  echo "# section-9 probe 03: which 9.3 record blocks 1.3.1 e190"
+  echo "# tree $(git rev-parse --short HEAD), $(date +%F), budget ${BUDGET}s"
+  [ -f "$NEW" ] && awk '/^fingerprint |^rules /{print "# branch core stamp: " $0}' "$NEW.stamp"
+  for a in none-removed all-9_3-out body-out tail-out body-first-28 \
+           block-r30-r36 block-r39-r45 block-r46-r53 block-r54-r65 \
+           only-r39 only-r40 only-r41 only-r42 only-r43 only-r44 only-r45; do
+    arm "$a"
+  done
+} > probes/section9/03-r41-bisect.out 2>&1
+echo "wrote probes/section9/03-r41-bisect.out"

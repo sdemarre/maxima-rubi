@@ -1,0 +1,28 @@
+#!/bin/sh
+# probes/section9/01-giveup-ordering.run -- spec A6.1 / ticket 14.
+# Three rules-core runs (~1 min total), stdin /dev/null (AGENTS.md ldb trap).
+#
+#   sh probes/section9/01-giveup-ordering.run
+cd "$(dirname "$0")/../.." || exit 1
+REF=../mr-s9-ref/test/mr_rules.core
+NEW=test/mr_rules.core
+M=probes/section9/01-giveup-ordering.mac
+arm() {  # $1 core  $2 label  $3 mr_giveup_last
+  echo "=== $2 (core $1, mr_giveup_last=$3)"
+  [ -f "$1" ] || { echo "MISSING CORE $1 -- see spec A6 for how it was built"; return; }
+  awk '/^fingerprint |^rules /{print "  stamp: " $0}' "$1.stamp"
+  tmp=$(mktemp "${TMPDIR:-/tmp}/mr-s9-probe01-XXXXXX.mac")
+  printf 'mr_probe_giveup_last : %s$\n' "$3" > "$tmp"
+  cat "$M" >> "$tmp"
+  sbcl --tls-limit 100000 --core "$1" --noinform --very-quiet -b "$tmp" </dev/null 2>&1 \
+    | grep -E '^(build:|rules:|-- TRACE|ANSWER|TOPLEVEL_NOUN|CARRIES_MARKER)|rubi: rule [0-9_]+ r[0-9]+ fired'
+  rm -f "$tmp"
+}
+{
+  echo "# section-9 probe 01: the give-up ordering witness"
+  echo "# tree $(git rev-parse --short HEAD), $(date +%F)"
+  arm "$REF" reference true
+  arm "$NEW" branch true
+  arm "$NEW" branch-giveup-last-false false
+} > probes/section9/01-giveup-ordering.out 2>&1
+echo "wrote probes/section9/01-giveup-ordering.out"

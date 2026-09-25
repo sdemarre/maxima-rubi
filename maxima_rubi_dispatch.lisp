@@ -69,10 +69,11 @@ binding only.")
 and logexpand:false around the dispatch (the G-5 arm); false = Maxima
 defaults.")
 
-;;; The two RUN switches (exact seen test design
+;;; The RUN switches (exact seen test design
 ;;; docs/superpowers/specs/2026-09-15-matcher-seen-test-intpart-design.md
-;;; 3.3). Unlike the three migration switches above these are not
-;;; hard-wired by p6_hardwire.py: they stay run parameters.
+;;; 3.3; mr_giveup_last and mr_inert_leak_misfire joined later). Unlike the
+;;; three migration switches above these are not hard-wired by
+;;; p6_hardwire.py: they stay run parameters.
 
 (defmvar $mr_nested_fallback nil
   "Run switch: false (default) = a nested Int call that finds no rule,
@@ -108,6 +109,98 @@ is half of a PAIR with the seen-cut fall-through (maxima_rubi_utils.mac,
 the record's 30 s cap: 318 verified, with 300/300 control entries
 unchanged.")
 
+(defmvar $mr_inert_leak_misfire t
+  "Run switch: true (default) = in the inert-trig domain a non-class-4
+rule whose answer carries an inert trig head is a MISFIRE (declined like a
+leaked boolean) and the walk goes on; false = the answer stands.
+
+The inert domain is an integrand carrying one of Rubi's six inert trig heads
+(%mr_isin ... %mr_icsc); it exists only below the class-4 deactivation
+bridge (4_1_0_1 r1, Int[u_,x] := Int[DeactivateTrig[u,x],x]). Class-4
+records re-activate as they emit and are exempt.
+
+WHY. The port has only class 4's bridge subset, all in the TAIL, so general
+records reach the deactivated integrand before any class-4 one. Most are
+sound there: what they emit outside the recursive mr_int is x-free (9_1's
+pull-outs) or a substitution of it (9_3 r51, FunctionOfLinear), and the
+recursion's own answer is re-activated. 9_3 r41
+(Int[u_.*(a_.*v_^m_.)^p_,x]) is not: its prefactor keeps v -- an inert
+head -- OUTSIDE mr_int, and it reaches the answer (ticket 15). In
+Mathematica a specific 4.x rule outranks r41 there. By induction on the
+recursion, declining every such answer keeps every answer in the inert
+domain inert-free.
+
+MEASURED 2026-09-23 (probes/section9/07, 08): over the 286 leaking class-6
+entries a non-class-4 record fires on an inert integrand in all 284 that
+finish (9_3 r41 in 280). The first guard, offering such an integrand to
+class-4 records ONLY, stopped every leak but cost 650 class-6 PASSes
+against 209 gained: 9_3 r51 fires inertly in 612 of those 650, and the
+9.1 pull-outs in most of the rest -- they are what section 9 bought for
+class 6. This misfire rule was prototyped over the 859 entries that guard
+changed: +151 / -4 against the unguarded branch, zero leaks.")
+
+(defmvar $mr_last_resort_tier t
+  "Run switch: true (default) = under mr_giveup_last the walk has FOUR
+passes: ordinary rules; the specific give-ups; the TAIL's ordinary
+records (%mr_mark_tail); the tail's give-ups. false = the two passes of
+mr_giveup_last alone, the tail's ordinary records in pass 1. Ignored when
+mr_giveup_last is false (the single walk in load order).
+
+The tail is the bare-u_ records mr_load_all puts after every body list:
+Int[u_,x_Symbol] is Mathematica's LEAST specific pattern, so every specific
+rule -- a give-up included -- outranks it there. Class-4 tail records are
+exempt from pass 3 and stay in pass 1 -- unless mr_general_after_giveups
+moves 9.3's body there too, when they follow it: they are the inert-trig bridge,
+guarded by their domain conditions, tried there before this switch
+existed; only their give-up (4_7_5 r72, the re-activating CannotIntegrate)
+waits for pass 4, AFTER 9.3's tail, where it was before this switch too
+(pass 2 of mr_giveup_last, behind 9.3's ordinary tail in pass 1).
+
+WHY (ticket 14). Under mr_giveup_last alone, 9.3's ten ordinary tail
+records (pass 1) ran before the 72 Unintegrable markers of classes 1-3
+(pass 2); Mathematica's specificity order puts the markers first. MEASURED
+in the section-9 A/B: 189 PASS->FAIL, the whole of class 3's -96 (e.g. 3.4
+e635: 9_3 r51 substitutes, then the marker fires INSIDE, contains-noun,
+instead of 3_4 r39 at the top). Turning mr_giveup_last off instead loses
+64 of a seeded 2,000-entry class-1 PASS sample
+(probes/section9/06-giveup-switch-control.out).")
+
+(defmvar $mr_general_after_giveups t
+  "Run switch: true (default) = the ordinary records %mr_mark_general flags
+(9.3's BODY, marked by mr_load_all) wait with the tail's ordinary records,
+in pass 3 of the mr_last_resort_tier walk, behind the specific give-ups;
+false = they stay in pass 1. Needs mr_giveup_last; a flagged
+give-up stays in pass 2. Under this switch the class-4 bridge's ordinary
+tail records lose their pass-1 exemption and join pass 3 too, in table
+order -- i.e. still after 9.3's body, as in the load order.
+
+WHY (ticket 14). The tail tier alone leaves 49 give-up-bucket entries
+whose top-level rule is a 9.3 BODY record -- r52 Int[u_/x,x], r54, r46,
+r53, r49 -- general patterns that Mathematica's specificity order puts
+behind the class-1-3 Unintegrable markers (probes/section9/09). The order
+is then Mathematica's by specificity class: specific rules, specific
+give-ups, the general body, every bare-u_ record in load order, the bare-u_
+give-ups. Moving the body WITHOUT the bridge put 4_1_0_1 r1 ahead of 9.3's
+body and cost 24 class-6 answers to the inert route's expense (probe 10's
+first run: 0.8-5 s -> timeout). MEASURED with the bridge moved too
+(probes/section9/10-general-body.out, same core, paired, tail tier on in
+both arms): the give-up bucket +51 / -0 (178 of 214 PASS), probe 06's
+2,000 class-1 control unchanged, section 9's 1,132 gains +2 / -1 (the -1
+expected -> timeout at 29.8 s).")
+
+(defparameter +mr-inert-ops+
+  '($%mr_isin $%mr_icos $%mr_itan $%mr_icot $%mr_isec $%mr_icsc)
+  "The Maxima operators of Rubi's six inert trig heads (maxima_rubi_tree.lisp).")
+
+(defun mr-carries-inert-p (e)
+  "True when the Maxima expression E contains an inert trig head. A CRE is
+read through its general form: its kernels sit in the header, and its body
+is an improper list."
+  (cond ((or (atom e) (atom (car e))) nil)
+        ((eq (caar e) 'mrat) (mr-carries-inert-p ($ratdisrep e)))
+        ((member (caar e) +mr-inert-ops+ :test #'eq) t)
+        (t (loop for tail on (cdr e) thereis (mr-carries-inert-p (car tail))))))
+
 (defmvar $mr_max_depth 16
   "Run switch: the dispatch depth cap. mr_top counts nested dispatches in
 depth_level and takes the cap branch beyond this many; every cap hit is
@@ -130,7 +223,14 @@ counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).")
 ;;; Maxima lists of handles.
 
 (defstruct (mr-rule (:constructor make-mr-rule (key n pattern pattern-text cond repl giveup)))
-  key n pattern pattern-text cond repl giveup)
+  key n pattern pattern-text cond repl giveup
+  (tail nil)      ; set by %mr_mark_tail: a bare-u_ tail record (mr_load_all)
+  (general nil))  ; set by %mr_mark_general: a general body record
+
+(defun mr-class4-rule-p (rule)
+  "True when RULE is a class-4 record (its key starts \"4_\")."
+  (let ((key (mr-rule-key rule)))
+    (and (stringp key) (> (length key) 1) (string= "4_" key :end2 2))))
 
 (defun mr-form-has-symbol-p (sym form)
   "True when SYM occurs anywhere in the cons tree FORM."
@@ -315,6 +415,9 @@ decline or misfire)."
                (mr-verbose "rubi: rule ~A r~A declined on ~M with ~M~%" key n f mm) nil)
               ((and $%mr_boolcheck (mr-contains-boolean-p r))
                (mr-verbose "rubi: rule ~A r~A misfire (boolean leaked) on ~M with ~M~%" key n f mm) nil)
+              ((and $mr_inert_leak_misfire (not (mr-class4-rule-p rule))
+                    (mr-carries-inert-p r) (mr-carries-inert-p f))
+               (mr-verbose "rubi: rule ~A r~A misfire (inert head leaked) on ~M with ~M~%" key n f mm) nil)
               (t
                (mr-verbose "rubi: rule ~A r~A fired on ~M with ~M~%" key n f mm) r))))))
 
@@ -333,6 +436,13 @@ give-up rules (mr-rule-giveup: the replacement answers Rubi's Unintegrable
 marker) and pass 2 tries them, so a give-up catch-all can only win once
 every ordinary rule has declined. See the $mr_giveup_last docstring for what
 that buys and why it changes no Rubi semantics.
+
+Under mr_last_resort_tier (the default) the tail records mr_load_all marks
+(%mr_mark_tail) wait further: FOUR passes -- ordinary, specific give-up,
+tail ordinary, tail give-up (mr-rule-tier; see that switch's docstring).
+Under mr_general_after_giveups (the default) 9.3's general body
+(%mr_mark_general) and the class-4 bridge join the tail's ordinary records
+in pass 3, in table order.
 
 The reordering is done HERE, over the table the caller hands in, rather than
 by baking a second reordered table at load: test_maxima_rubi.mac swaps its
@@ -355,16 +465,79 @@ handles (33 of 3,513 in class 1) and only runs when pass 1 found nothing."
               (dolist (h (cdr table) nil)
                 (let ((r (mr-apply-rule (mr-rule-of h) expr pre f x)))
                   (when r (return r))))
-              (let ((deferred nil))
+              ;; tiers 0-3: ordinary, give-up, tail ordinary, tail give-up
+              ;; (without mr_last_resort_tier: ordinary, give-up only)
+              (let ((later (vector nil nil nil nil)))
                 (or (dolist (h (cdr table) nil)
-                      (let ((rule (mr-rule-of h)))
-                        (if (mr-rule-giveup rule)
-                            (push rule deferred)
+                      (let* ((rule (mr-rule-of h))
+                             (tier (mr-rule-tier rule)))
+                        (if (plusp tier)
+                            (push rule (aref later tier))
                             (let ((r (mr-apply-rule rule expr pre f x)))
                               (when r (return r))))))
-                    (dolist (rule (nreverse deferred) nil)
-                      (let ((r (mr-apply-rule rule expr pre f x)))
-                        (when r (return r))))))))))))
+                    (loop for tier from 1 to 3
+                          thereis (dolist (rule (nreverse (aref later tier)) nil)
+                                    (let ((r (mr-apply-rule rule expr pre f x)))
+                                      (when r (return r)))))))))))))
+
+(defun mr-rule-tier (rule)
+  "The pass of %mr_dispatch_tree's give-up-last walk RULE runs in: 0
+ordinary, 1 give-up, 2 tail ordinary (and, under
+$mr_general_after_giveups, general ordinary), 3 tail give-up (see
+$mr_last_resort_tier; without it, a tail record is 0 or 1)."
+  (let ((giveup (mr-rule-giveup rule)))
+    (cond ((and $mr_last_resort_tier (mr-rule-tail rule))
+           (cond (giveup 3)
+                 ;; the bridge stays in pass 1 -- unless the general body
+                 ;; moved behind the give-ups, when it must follow it there
+                 ;; to keep its place after 9.3's body (probe 10)
+                 ((and (mr-class4-rule-p rule) (not $mr_general_after_giveups)) 0)
+                 (t 2)))
+          (giveup 1)
+          ((and $mr_general_after_giveups (mr-rule-general rule)) 2)
+          (t 0))))
+
+(defmfun |$%MR_MARK_TAIL| (&rest args)
+  "%mr_mark_tail(handles): mark the rules of HANDLES as bare-u_ TAIL
+records (the last-resort tier of $mr_last_resort_tier); the number marked.
+mr_load_all calls it on mr_rule_table_tail_handles."
+  (unless (and (= (length args) 1) ($listp (car args)))
+    (merror (intl:gettext "%mr_mark_tail: expected one list of handles, found ~M") (cons '(mlist) args)))
+  (let ((rules (mapcar #'mr-rule-of (cdar args))))
+    (dolist (rule rules (length rules))
+      (setf (mr-rule-tail rule) t))))
+
+(defmfun |$%MR_MARK_GENERAL| (&rest args)
+  "%mr_mark_general(handles): mark the rules of HANDLES as GENERAL body
+records (see $mr_general_after_giveups); the number marked. mr_load_all
+calls it on 9.3's body list."
+  (unless (and (= (length args) 1) ($listp (car args)))
+    (merror (intl:gettext "%mr_mark_general: expected one list of handles, found ~M") (cons '(mlist) args)))
+  (let ((rules (mapcar #'mr-rule-of (cdar args))))
+    (dolist (rule rules (length rules))
+      (setf (mr-rule-general rule) t))))
+
+(defmfun |$%MR_GENERAL_HANDLES| (&rest args)
+  "%mr_general_handles(table): the handles of TABLE marked as general body
+records, in table order -- for tests and probes."
+  (unless (= (length args) 1)
+    (merror (intl:gettext "%mr_general_handles: expected 1 arg, found ~A") (length args)))
+  (let ((table (car args)))
+    (unless ($listp table)
+      (merror (intl:gettext "%mr_general_handles: the table is not a list: ~M") table))
+    (cons '(mlist simp)
+          (remove-if-not (lambda (h) (mr-rule-general (mr-rule-of h))) (cdr table)))))
+
+(defmfun |$%MR_TAIL_HANDLES| (&rest args)
+  "%mr_tail_handles(table): the handles of TABLE marked as tail records, in
+table order -- for tests and probes."
+  (unless (= (length args) 1)
+    (merror (intl:gettext "%mr_tail_handles: expected 1 arg, found ~A") (length args)))
+  (let ((table (car args)))
+    (unless ($listp table)
+      (merror (intl:gettext "%mr_tail_handles: the table is not a list: ~M") table))
+    (cons '(mlist simp)
+          (remove-if-not (lambda (h) (mr-rule-tail (mr-rule-of h))) (cdr table)))))
 
 (defmfun |$%MR_GIVEUP_HANDLES| (&rest args)
   "%mr_giveup_handles(table): the handles of TABLE whose rule is a give-up

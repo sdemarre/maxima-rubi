@@ -382,6 +382,150 @@ def unwrap_showsteps_lines(text):
     """Map unwrap_showsteps_line over the comment-stripped .m text."""
     return "\n".join(unwrap_showsteps_line(ln) for ln in text.split("\n"))
 
+_COMMENT_ONLY_LINE = re.compile(r"\s*\(\*(?:(?!\*\)).)*\*\)\s*")
+
+def drop_comment_only_lines(text):
+    r"""Spec 2026-09-22 A2.1: a whole-line Mathematica comment (9.2 r12's
+    `(* ILtQ[n,0] && ILtQ[m,0] || *)` inside a multi-line condition) is
+    dropped ENTIRELY, not just its comment text -- strip_comments leaves a
+    blank line in its place, and rule_runs splits a run at a blank line, so
+    the condition would be cut in half. Applied to the raw .m text before
+    strip_comments, for every class (measured neutral on classes 1/2/3/6,
+    probe 08 part C; Step 5 re-proves it). An inline comment (anything else
+    on the line besides the comment) is left untouched, for strip_comments
+    to handle.
+
+    Fix round 1 (task review finding 1): the regex's inner run is
+    `(?:(?!\*\)).)*`, not a bare `.*` -- a bare `.*` is greedy across the
+    WHOLE line, so `(* a *) code (* b *)` fullmatches (the `.*` swallows
+    ` code (* b ` too) and the real code between the two comments is
+    silently dropped. The negative-lookahead run stops at the FIRST `*)`,
+    so the line only fullmatches when that first `*)` is also the last
+    character run before end-of-line (mod trailing whitespace) -- i.e. the
+    line is exactly one comment and nothing else, no second `*)` (comment
+    or code) anywhere after it. No 9.2/9.3 source line has two comments on
+    one line (checked, see the fix-round-1 report), so this had no
+    observed case in the port; the fix guards the general function.
+
+    Fix round 2 (final review, section-9 port): dropping a line -- rather
+    than blanking it, as strip_comments would -- loses whatever separator
+    role that line was playing. That is harmless when the comment sits
+    INSIDE a rule whose brackets are not yet balanced (9.2 r12: the run so
+    far is `FreeQ[m,x] && (`, an unclosed paren, so the rule plainly is
+    not over) -- rule_runs was never going to see a legitimate boundary
+    there anyway once the line is gone. It is NOT harmless when the
+    comment sits between two rules whose brackets ARE balanced at that
+    point (rule A is syntactically complete): there, dropping is safe
+    only because the NEXT surviving line reopens its own run on the
+    literal column-0 `Int[` marker, which forcibly closes whatever came
+    before and starts fresh regardless of what got dropped. Two rules
+    separated ONLY by a comment-only line (no blank line) rely on exactly
+    that today (measured neutral on classes 1/2/3/4/6/9,
+    test/check_generated_rules.py) -- but nothing requires the NEXT rule
+    to be so well-behaved in classes not yet ported (5/7/8), e.g. an
+    indented continuation that does not start with `Int[`. Guard it
+    directly: walk the lines tracking bracket depth and whether the run
+    in progress dangles on a bare ':=' (rule_runs' own exception, a
+    comment between ':=' and the rhs); at a comment-only line where the
+    enclosing rule is balanced and not dangling, dropping is safe only if
+    the next surviving line starts with `Int[` -- otherwise two runs would
+    be joined (or one silently lost), and that is a GenError, not a
+    silent corruption."""
+    lines = text.split("\n")
+    is_comment = [bool(_COMMENT_ONLY_LINE.fullmatch(ln)) for ln in lines]
+    if _drop_would_join_runs(lines, is_comment):
+        raise GenError(
+            "drop_comment_only_lines: a comment-only line sits between two "
+            "balanced, non-dangling rule runs whose next line does not "
+            "reopen on Int[ -- dropping it would join or lose a run")
+    return "\n".join(ln for ln, c in zip(lines, is_comment) if not c)
+
+_BRACKET_DELTA = {"[": 1, "(": 1, "{": 1, "]": -1, ")": -1, "}": -1}
+
+def _bracket_delta(line):
+    return sum(_BRACKET_DELTA.get(ch, 0) for ch in line)
+
+def _drop_would_join_runs(lines, is_comment):
+    """See drop_comment_only_lines' fix-round-2 note. `depth` tracks
+    bracket balance since the run's own `Int[` opener; `dangling` mirrors
+    rule_runs' "ends in a bare ':='" exception."""
+    cur_open, depth, dangling = False, 0, False
+    n = len(lines)
+    for i, line in enumerate(lines):
+        if line.startswith("Int["):
+            cur_open, depth = True, _bracket_delta(line)
+            dangling = line.rstrip().endswith(":=")
+            continue
+        if is_comment[i]:
+            if cur_open and depth == 0 and not dangling:
+                j = i + 1
+                while j < n and is_comment[j]:
+                    j += 1
+                nxt = lines[j] if j < n else ""
+                if not nxt.startswith("Int["):
+                    return True
+                cur_open, depth, dangling = False, 0, False
+            continue
+        if not cur_open:
+            continue
+        if line.strip() == "" and depth == 0 and not dangling:
+            cur_open, depth, dangling = False, 0, False
+            continue
+        depth += _bracket_delta(line)
+        dangling = line.rstrip().endswith(":=")
+    return False
+
+_SHOWSTEPS_IF_MULTILINE = "If[TrueQ[$LoadShowSteps],"
+
+def unwrap_showsteps_multiline(text):
+    """Spec 2026-09-22 A2.2: the multi-line
+        If[TrueQ[$LoadShowSteps],
+        <blank>
+        <ShowStep rule ending in ".../;\\nSimplifyFlag,">
+        <blank>
+        <plain rule>]
+    wrapper (nine in 9.3) -- the single-line unwrapper above
+    (unwrap_showsteps_line, class-3 decision C6b: keep the plain branch)
+    does not see it. Reduces each wrapper to its plain branch, dropping one
+    trailing ']' (the If's own closer) from the branch's last line.
+    Scoped to class 9 in _emit_source: applied to class 1 it would drop
+    1_4_1 r7, since that file's ShowSteps wrapper carries BOTH branches as
+    separate rules (ticket 07) rather than this reduce-to-one shape."""
+    lines = text.split("\n")
+    out, i, n = [], 0, len(lines)
+    while i < n:
+        if lines[i].strip() == _SHOWSTEPS_IF_MULTILINE:
+            wrapper_start = i
+            i += 1
+            # Fix round 1 (task review finding 2): bounded -- an
+            # unbounded `while not ...: i += 1` runs off the end of
+            # `lines` (a raw IndexError) when a wrapper is missing its
+            # `SimplifyFlag,` line; fail loudly instead.
+            while i < n and not lines[i].strip().startswith("SimplifyFlag"):
+                i += 1
+            if i >= n:
+                raise GenError(
+                    "unwrap_showsteps_multiline: no 'SimplifyFlag' line "
+                    "found after the If[TrueQ[$LoadShowSteps], wrapper "
+                    f"opened at source line {wrapper_start + 1}")
+            i += 1
+            while i < n and not lines[i].strip():
+                i += 1
+            blk = []
+            while i < n and lines[i].strip():
+                blk.append(lines[i])
+                i += 1
+            if not blk or not blk[-1].rstrip().endswith("]"):
+                raise GenError(
+                    "unwrap_showsteps_multiline: the plain branch does not "
+                    f"end in ']': {blk[-1] if blk else ''!r}")
+            blk[-1] = blk[-1].rstrip()[:-1]
+            out += blk
+            continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
 def split_top_power(s):
     """(base, exp) if s is a top-level power `base^exp`; else (None, None)."""
     s = s.strip()
@@ -728,9 +872,17 @@ def translate_atom(s, ctx):
 
 def _relation_items(s):
     """Partition the depth-0 text of s into a complete item sequence
-    [start, end, kind]: relational ops ("op": = <= >= < > == #= !=), chain
-    terminators ("stop": ';', ',', ' and ', ' or '), and the term runs
-    between them ("term")."""
+    [start, end, kind]: relational ops ("op": = <= >= < > == #= != =!=),
+    chain terminators ("stop": ';', ',', ' and ', ' or '), and the term
+    runs between them ("term").
+
+    Spec 2026-09-22 A2.3: `=!=` (Rubi's UnsameQ, 9.3's only use) is read as
+    ONE three-character op, checked before the two-character ops below --
+    without this, the walk reads it as the single-char op `=` followed by
+    the two-char op `!=` (two adjacent "op" items, no "term" between them),
+    which the `!=` lone-relation guard in _expand_chains then rejects as
+    "outside a lone relation". `===` (SameQ) is a different three-character
+    sequence (no `!`) and is untouched by this check."""
     items = []
     i = 0
     n = len(s)
@@ -753,7 +905,9 @@ def _relation_items(s):
         if depth == 0:
             two = s[i:i+2]
             hit = None
-            if two in ("==", "#=", "<=", ">=", "!="):
+            if s[i:i+3] == "=!=":
+                hit = (i, i + 3, "op")
+            elif two in ("==", "#=", "<=", ">=", "!="):
                 hit = (i, i + 2, "op")
             elif ch in "<>=" and s[i-1:i] != ":":
                 hit = (i, i + 1, "op")
@@ -812,6 +966,29 @@ def _expand_chains(s):
         out.append(ch)
         i += 1
     s = "".join(out)
+    # FIX (spec 2026-09-22 A2.3): Rubi's `=!=` (UnsameQ), 9.3's only use
+    # (the NormalizeIntegrand record `v=!=u`) -- a SYNTACTIC test, unlike
+    # `!=` below (Unequal, a value test). `%mr_unsameQ(L, R)` is
+    # `not is(L = R)` (maxima_rubi_utils.mac). Mirrors the `!=` pass
+    # exactly -- same lone-relation guard, same spacing handling, loud on
+    # `=!=` inside a chain (Mathematica's chained UnsameQ has no
+    # class-1-9 site) -- and runs FIRST: its token is three characters, and
+    # _relation_items reads it as one "op" item only when it is checked
+    # ahead of the two-character `!=`/`==` ops (see _relation_items).
+    items = _relation_items(s)
+    for i in range(len(items) - 1, -1, -1):
+        if items[i][2] != "op" or s[items[i][0]:items[i][1]] != "=!=":
+            continue
+        if not (0 < i < len(items) - 1 and items[i-1][2] == "term"
+                and items[i+1][2] == "term") \
+                or (i >= 2 and items[i-2][2] == "op") \
+                or (i + 2 < len(items) and items[i+2][2] == "op"):
+            raise GenError(f"`=!=` outside a lone relation: {s!r}")
+        lt = s[items[i-1][0]:items[i-1][1]]
+        rt = s[items[i+1][0]:items[i+1][1]]
+        s = (s[:items[i-1][0]] + lt[:len(lt) - len(lt.lstrip())]
+             + "%mr_unsameQ(" + lt.strip() + ", " + rt.strip() + ")"
+             + rt[len(rt.rstrip()):] + s[items[i+1][1]:])
     # FIX (matcher translation fixes design 3.1): Mathematica's `!=`
     # (Unequal) passed through the walk as the characters `!` `=`, which
     # Maxima reads as a factorial and an equation -- `k != 1` is `k! = 1`
@@ -1129,11 +1306,25 @@ CLASS4_SUBSET = {
 }
 
 
+_INT_X_UNTYPED = re.compile(r"^Int\[(.*),\s*x_\]$", re.DOTALL)
+
+def _normalize_int_x(lhs):
+    """Spec 2026-09-22 A2.4: 9.3's final give-up is written `Int[u_,x_]`,
+    not `Int[u_,x_Symbol]` -- the dispatcher always passes a symbol as x,
+    so the two match the same calls here. Read only the exact untyped
+    `x_` in the SECOND argument position (a already-typed `x_Symbol` LHS,
+    every class 1-6 rule, does not match: the trailing literal is `]`
+    right after `x_`, which `x_Symbol]` is not), so this is a no-op on
+    every existing rule."""
+    m = _INT_X_UNTYPED.match(lhs.strip())
+    return f"Int[{m.group(1)}, x_Symbol]" if m else lhs
+
 def bare_int_clause(lhs, key, n):
     """True when the Int rule's integrand argument is the most general Int
     pattern there is: a bare named Blank, (Pattern <name> (Blank)) -- no
     head, no Optional, no type restriction. See BARE_U_BODY_EXCEPTIONS
     above for how such a record is routed."""
+    lhs = _normalize_int_x(lhs)
     ev = _evaluated(lhs, key, n, "LHS")
     return (isinstance(ev, tuple) and len(ev) == 3 and ev[0] == "Int"
             and isinstance(ev[1], tuple) and len(ev[1]) == 3
@@ -1634,6 +1825,132 @@ def split_inner_condition(rhs):
     return head, decls, body[:last], body[last+2:]
 
 
+# Rubi's condition-assignment idiom. An assignment `name=<expr>` in a rule
+# condition, with no `==`/`=!=`/`<=`/`>=`/`:=` in front of the `=`. The name
+# is a plain Mathematica symbol, so the lookbehind rejects a suffix match.
+_COND_ASSIGN = re.compile(r"(?<![A-Za-z0-9$_])([A-Za-z][A-Za-z0-9]*)\s*=(?![=!])")
+
+
+def _scope_bare_locals(decls):
+    """The names a raw .m With/Module locals list declares WITHOUT an
+    initialiser ({q,r} -> ['q','r']; {v=…, d} -> ['d'])."""
+    d = decls.strip()
+    if not (d.startswith("{") and d.endswith("}")):
+        return []
+    out = []
+    for p in split_top(d[1:-1], ","):
+        parts = split_top(p.strip(), "=")
+        if len(parts) == 1 and parts[0].strip():
+            out.append(parts[0].strip())
+    return out
+
+
+def _condition_assignments(cond, bare, key, n, where):
+    """Rubi's condition-assignment idiom -> [(name, raw rhs text), …] in the
+    order the condition evaluates them.
+
+    The idiom is a `/;` test that BINDS a name the replacement then reads
+    (9.3 .m :145, :177, :185, :193 — the only four sites in the pinned
+    clone, `grep -rn "FalseQ\\[[a-zA-Z]*=" reference/rubi/.../IntegrationRules/`):
+
+        Module[{q,r}, q*r*Subst[…] /;
+          Not[FalseQ[r=Divides[y^m,v^m,x]]] &&
+          Not[FalseQ[q=DerivativeDivides[y,u,x]]]]
+
+    Maxima's `=` is EQUALITY, not assignment, so emitting the assignment
+    verbatim builds an equation object: %mr_falseQ of an equation is never
+    true, the guard is vacuous and the record fires on every integrand its
+    pattern matches, while the replacement's q and r stay unbound symbols
+    that multiply the answer (.scratch/class-ports/issues/13).
+
+    Recognised STRUCTURALLY — an assignment to a BARE local of the
+    enclosing With/Module scope — never by rule number, so a later class
+    carrying the idiom is handled too. Any other assignment in a condition
+    (to a capture, to an already-initialised local, or anywhere outside a
+    scope at all) has no such placement and is a GenError rather than a
+    silent equation."""
+    out = []
+    for m in _COND_ASSIGN.finditer(cond):
+        name = m.group(1)
+        if name not in bare:
+            raise GenError(
+                f"{key} r{n}: assignment to {name!r} in {where} — not a bare "
+                f"local of an enclosing With/Module scope, so it has no "
+                f"faithful Maxima placement (issue 13)")
+        i, depth = m.end(), 0
+        while i < len(cond):
+            ch = cond[i]
+            if ch in "[({":
+                depth += 1
+            elif ch in "])}":
+                if depth == 0:
+                    break
+                depth -= 1
+            elif depth == 0 and (ch == "," or cond.startswith("&&", i)
+                                 or cond.startswith("||", i)):
+                break
+            i += 1
+        rhs = cond[m.end():i].strip()
+        if not rhs:
+            raise GenError(f"{key} r{n}: empty assignment right-hand side "
+                           f"for {name!r} in {where}")
+        out.append((name, rhs))
+    names = [nm for nm, _ in out]
+    if len(set(names)) != len(names):
+        raise GenError(f"{key} r{n}: {where} assigns a name twice ({names}) "
+                       f"— the replacement cannot repeat that order")
+    return out
+
+
+def _hoist_scope_assigns(decls, cassigns, key, n):
+    """The repl's copy of a raw .m locals list, with each condition
+    assignment repeated as a scope initialiser. The cond and the repl are
+    separate Maxima functions, so the condition's binding cannot reach the
+    replacement: each evaluates the assignments itself.
+
+    ORDER (fix round 1). Mathematica enters the scope first — every
+    declaration with an initialiser is evaluated at that point — and
+    evaluates the `/;` condition afterwards, so the condition's
+    assignments come LAST. The declarations therefore keep their own
+    relative order and the condition assignments follow, in the
+    condition's order. _scope_block emits the list as sequential
+    `name : value` statements, so `Module[{v=f[x], q}, … /;
+    Not[FalseQ[q=g[v]]]]` emits `v : f(x)` before `q : g(v)` and g reads
+    a bound v. Leading with the condition assignments instead (the first
+    cut here) emitted `q : g(v)` first, off an unbound v.
+
+    Output-neutral on the four upstream sites, which are all
+    `Module[{q,r}]` with no initialised local: `rest` is empty there and
+    the emitted list is the same either way."""
+    d = decls.strip()
+    if not (d.startswith("{") and d.endswith("}")):
+        raise GenError(f"{key} r{n}: locals not a list: {d[:40]!r}")
+    done = {nm for nm, _ in cassigns}
+    rest = [p.strip() for p in split_top(d[1:-1], ",")
+            if split_top(p.strip(), "=")[0].strip() not in done]
+    return "{" + ", ".join(rest + [f"{nm}={rhs}" for nm, rhs in cassigns]) + "}"
+
+
+def _assign_in_test(test, cassigns, ctx, key, n):
+    """The cond's copy: the assignments stay exactly where the condition
+    puts them, so Maxima's short-circuiting `and` evaluates them in the
+    upstream `&&` order and skips the ones after the first false test
+    (measured: `is(not(f(r:g(false))) and not(f(q:h(7))))` never calls h).
+    `=` becomes `:`; an argument-position assignment is legal Maxima and
+    values to the assigned value (`f(a : b)` parses and binds)."""
+    for name in dict.fromkeys(nm for nm, _ in cassigns):
+        mapped = (ctx.get("locals") or {}).get(name, name)
+        want = sum(1 for nm, _ in cassigns if nm == name)
+        pat = re.compile(r"(?<![A-Za-z0-9_$])" + re.escape(mapped)
+                         + r"\s*=(?![=<>])")
+        test, cnt = pat.subn(mapped + " : ", test)
+        if cnt != want:
+            raise GenError(f"{key} r{n}: the translated condition has {cnt} "
+                           f"assignment site(s) for {mapped!r}, expected "
+                           f"{want}")
+    return test
+
+
 def emit_rule(run, key, n, rule_vars, fname=None):
     """One rule run (lhs, rhs, cond) -> its cond and repl functions and its
     %mr_defrule registration, as Maxima text (spec 3.4). rule_vars is the
@@ -1650,6 +1967,9 @@ def emit_rule(run, key, n, rule_vars, fname=None):
     %mr_rewrite's `(eq cond-fn t)` branch accepts every binding for it."""
     lhs, rhs, cond = run
     if fname is None:
+        # A2.4: 9.3's `Int[u_,x_]` give-up read as `Int[u_,x_Symbol]` --
+        # a no-op on every already-typed class 1-6 LHS (_normalize_int_x).
+        lhs = _normalize_int_x(lhs)
         if not re.match(r"^Int\[(.*),\s*x_Symbol\]$", lhs.strip(), re.DOTALL):
             raise GenError(f"{key} r{n}: cannot strip Int[...]: {lhs!r}")
     # prefix_locals: every class renames its With/Module locals (ticket
@@ -1661,6 +1981,11 @@ def emit_rule(run, key, n, rule_vars, fname=None):
         pattern = pattern_sexp(lhs, key, n, rule_vars)
     else:
         pattern = rewrite_pattern_sexp(lhs, key, n, rule_vars, fname)
+    # An assignment in the OUTER condition binds nothing any scope
+    # declares, so it has no faithful placement: loud, never an equation
+    # (see _condition_assignments).
+    if cond:
+        _condition_assignments(cond, [], key, n, "the outer condition")
     base_cond = (translate(drop_optionals(cond, rule_vars), ctx)
                  if cond else "true")
     # M-cas-simp (3.5 r10, class-3 deferred campaign C6): the .m cond
@@ -1687,7 +2012,15 @@ def emit_rule(run, key, n, rule_vars, fname=None):
         repl_txt = translate(drop_optionals(rhs, rule_vars), ctx)
     else:
         head, decls, body, inner_cond = inner
-        repl_txt = translate(drop_optionals(f"{head}[{decls},{body}]",
+        # Rubi's condition-assignment idiom (issue 13): the repl repeats
+        # the condition's assignments as scope initialisers, the cond
+        # performs them in place.
+        cassigns = _condition_assignments(
+            inner_cond, _scope_bare_locals(decls), key, n,
+            "the inner condition")
+        decls_repl = (_hoist_scope_assigns(decls, cassigns, key, n)
+                      if cassigns else decls)
+        repl_txt = translate(drop_optionals(f"{head}[{decls_repl},{body}]",
                                             rule_vars), ctx)
         # the cond's copy of the scope takes the same local names as the
         # repl's (prefixed; see _push_scope_locals)
@@ -1697,6 +2030,8 @@ def emit_rule(run, key, n, rule_vars, fname=None):
         locals_, assigns = _scope_locals(
             head, translate(drop_optionals(decls, rule_vars), ctx), key, n)
         test = translate(drop_optionals(inner_cond, rule_vars), ctx)
+        if cassigns:
+            test = _assign_in_test(test, cassigns, ctx, key, n)
         if ctx["prefix_locals"]:
             ctx["locals"] = saved
         # parenthesized: the outer cond may be an `or` chain
@@ -1862,6 +2197,16 @@ def load_class_files(rubi):
         # class 4: only the files CLASS4_SUBSET names (see there)
         if CLASS == 4 and key_of(rel) not in CLASS4_SUBSET:
             continue
+        # class 9: "9.1 Derivative integration rules" belongs to class 8
+        # (spec §0.3.3, ticket 01), not class 9. Its key is "9_1" -- the
+        # SAME key as the legacy class-1 file (NINE_ONE, "9.1 Integrand
+        # simplification rules.m", a different .m that happens to share
+        # the number) -- so skipping it here is what keeps that key
+        # exclusive to class 1; see the GenError guard in main() for the
+        # case where this exclusion is ever removed or another class-9
+        # file collides.
+        if CLASS == 9 and key_of(rel) == "9_1":
+            continue
         out.append(rel)
     return out
 
@@ -1901,7 +2246,7 @@ NINE_ONE = ("Rubi/IntegrationRules/9 Miscellaneous/"
 NINE_ONE_TOTAL = 28
 
 def configure(class_num):
-    """Point the generator at class <class_num> (1, 2, 3, 4 or 6)."""
+    """Point the generator at class <class_num> (1, 2, 3, 4, 6 or 9)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
@@ -1921,13 +2266,25 @@ def configure(class_num):
     # catch-alls (inert-trig substrate plan, Task 9; r71, Task 10) and
     # 4.7.5's re-activating give-up r72 (Task 10 fix round 1). It grows with the
     # subset until the class-4 port replaces it with the full total.
+    # class 9: 86 — 19 (9.2 Piecewise linear functions) + 67 (9.3
+    # Miscellaneous integration rules), spec 2026-09-22 A3.
+    # `grep -c '^Int\['` over the two .m files gives 95, not 86: it counts
+    # BOTH branches of 9.3's nine single-line
+    # If[TrueQ[$LoadShowSteps], …] wrappers (unwrap_showsteps_line keeps
+    # only the plain branch — 9 fewer records, 95 - 9 = 86).
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
                       3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),
-                      6: 390}[class_num]
+                      6: 390, 9: 86}[class_num]
 
 
 def _emit_source(rel_m, key, only, total, load_lines, note=""):
-    text = unwrap_showsteps_lines(strip_comments((RUBI / rel_m).read_text()))
+    # A2.1: every class, before strip_comments. A2.2: class 9 only, after
+    # strip_comments and before unwrap_showsteps_lines (applied to class 1
+    # it would drop 1_4_1 r7 -- see unwrap_showsteps_multiline).
+    stripped = strip_comments(drop_comment_only_lines((RUBI / rel_m).read_text()))
+    if CLASS == 9:
+        stripped = unwrap_showsteps_multiline(stripped)
+    text = unwrap_showsteps_lines(stripped)
     runs = rule_runs(text)
     out = OUT / f"{key}.mac"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -1965,6 +2322,12 @@ REWRITE_FUNCTIONS = [
     ("uitf", "UnifyInertTrigFunction", 75),
     ("fitf", "FixInertTrigFunction", 61),
     ("rit", "ReduceInertTrig", 4),
+    # Section 9 (spec 2026-09-22 A1): EulerIntegrandQ's five
+    # `EulerIntegrandQ[<pattern>, x_Symbol] := True/False [/; cond]` clauses
+    # (IntegrationUtilityFunctions.m L5017, L5022, L5028, L5034, L5038; L5022
+    # and L5028 are identical in the source and both stay, since the table
+    # is faithful to the file). MEASURED 2026-09-20 over the pinned clone: 5.
+    ("eiq", "EulerIntegrandQ", 5),
 ]
 
 
@@ -2085,6 +2448,13 @@ def main(class_num=None):
         key = key_of(rel_m)
         if only and key != only:
             continue
+        # class 9: a class-9 key silently overwriting a class-1 file
+        # (rules/class1/9_1.mac, the legacy "9.1 Integrand simplification
+        # rules" port) would define a second mr_rules_9_1 and neither
+        # loader would notice -- loud instead (Task 10).
+        if CLASS == 9 and (ROOT / "rules" / "class1" / f"{key}.mac").exists():
+            raise GenError(f"class-9 key {key} collides with "
+                           f"rules/class1/{key}.mac")
         total = _emit_source(rel_m, key, only, total, load_lines)
         table_terms.append(f"mr_rules_{key}")
     if CLASS == 1:

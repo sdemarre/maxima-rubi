@@ -1,0 +1,74 @@
+#!/bin/sh
+# probes/section9/05-timing-ab.run -- spec A6.3 / ticket 16: the ALTERNATING
+# SEQUENTIAL timing A/B of the seven class-1 PASS->FAIL entries that the
+# section-9 measurement left as `timeout` on the branch at 12 workers.
+#
+# METHOD, and why it is this and not the paired rerun: a timing claim needs
+# alternating sequential runs, never a concurrent pair (memory:
+# timing-ab-alternate-not-concurrent; AGENTS.md's cpu-cap section measures a
+# 1.35x CPU inflation from SMT at 24 workers). So: ONE entry at a time, ONE
+# Maxima process at a time, reference core then branch core, at a 120 s cpu
+# cap -- four times the standing 30 s cap, so an entry that merely got
+# slower still finishes and reports its cost.
+#
+# Writes probes/section9/05-timing-ab.out, which test/section9_attribution.py
+# reads to split the `cap` and `cost` buckets. ~10 min on a quiet host.
+#
+#   sh probes/section9/05-timing-ab.run
+set -u
+cd "$(dirname "$0")/../.." || exit 1
+REF=../mr-s9-ref/test/mr_rules.core
+NEW=test/mr_rules.core
+OUT=probes/section9/05-timing-ab.out
+CAP=120
+WORK=${TMPDIR:-/tmp}/mr-s9-probe05
+SECTION="1 Algebraic functions"
+
+[ -f "$REF" ] || { echo "MISSING reference core $REF -- see spec A6"; exit 1; }
+[ -f "$NEW" ] || { echo "MISSING branch core $NEW -- run sh test/build_rules_core.sh"; exit 1; }
+rm -rf "$WORK"; mkdir -p "$WORK"
+
+# The seven entries, in the shared T3 result-line format the subset path
+# reads (the class field must be the literal `timeout`, which is what
+# run_corpus_queue.py --class selects on; see test/section9_changed.py).
+cat > "$WORK/entries.txt" <<'ENTRIES'
+timeout        t=   30.1s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e335 L0
+timeout        t=   30.0s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e404 L0
+timeout        t=   30.1s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1154 L0
+timeout        t=   30.0s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e585 L0
+timeout        t=   30.1s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.9 P(x) (d+e x)^m (a+b x+c x^2)^p.mac e61 L0
+timeout        t=   30.1s 1 Algebraic functions/1.3 Miscellaneous/1.3.1 Rational functions.mac e190 L0
+timeout        t=   30.1s 1 Algebraic functions/1.3 Miscellaneous/1.3.1 Rational functions.mac e238 L0
+ENTRIES
+
+{
+  echo "# probes/section9/05-timing-ab.run -- ALTERNATING SEQUENTIAL timing A/B."
+  echo "# One entry at a time, one process at a time: reference core then branch"
+  echo "# core, ${CAP} s cpu cap, shipping switches. Never the concurrent pair:"
+  echo "# a timing claim needs alternating sequential runs"
+  echo "# (memory: timing-ab-alternate-not-concurrent)."
+  echo "# tree $(git rev-parse --short HEAD), $(date +%F)"
+  awk '/^fingerprint |^rules /{print "# reference core: " $0}' "$REF.stamp"
+  awk '/^fingerprint |^rules /{print "# branch core:    " $0}' "$NEW.stamp"
+  echo
+} > "$OUT"
+
+i=0
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  i=$((i + 1))
+  printf '%s\n' "$line" > "$WORK/one.out"
+  for arm in ref new; do
+    [ "$arm" = ref ] && core=$REF || core=$NEW
+    d="$WORK/e${i}_$arm"; rm -rf "$d"; mkdir -p "$d"
+    MR_RULES_CORE_PATH="$PWD/$core" python3 test/run_corpus_queue.py "$SECTION" \
+      --entries-from "$WORK/one.out" --class timeout --out-dir "$d" \
+      --workers 1 --cap "$CAP" --launch > "$d/plan.txt" 2>&1 || exit 1
+    for pid in $(awk '{print $2}' "$d/pids"); do
+      while kill -0 "$pid" 2>/dev/null; do sleep 5; done
+    done
+    printf '%s  ' "$arm" >> "$OUT"
+    grep -h -E '^\S+\s+t=' "$d"/shard*.out >> "$OUT"
+  done
+done < "$WORK/entries.txt"
+echo "wrote $OUT"

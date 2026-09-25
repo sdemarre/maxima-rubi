@@ -1,0 +1,21 @@
+# section-9 probe 10: 9.3 general body after the give-ups (ticket 14), tail vs body, same core
+# tree 7040502, 2026-09-23, 12+12 workers concurrently, 30 s cpu cap
+# core: fingerprint 2f4d4a76e55b09cfb874624e1cd5ffad
+# core: git_rev 704050283e5132f22698e26b2f9a4fb6df27801f
+# core: rules 3997
+# host at end: 22.15 29.13 28.23 6/1775 862559
+
+== giveup bucket: 214 entries finished in both arms
+  PASS tail 127  body 178   P->F 0  F->P 51
+      49  contains-noun -> no-answer
+       2  timeout -> no-answer
+
+== control: 2000 entries finished in both arms
+  PASS tail 1999  body 1999   P->F 0  F->P 0
+
+== section-9 gains: 1132 entries finished in both arms
+  PASS tail 1116  body 1117   P->F 1  F->P 2
+       2  timeout -> verified
+       1  expected -> timeout
+    LOST expected -> timeout  29.8s -> 30.1s  1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.6 (g x)^m (a+b x^2)^p (c+d x^2)^q (e+f x^2)^r.mac e19
+

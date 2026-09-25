@@ -1,0 +1,121 @@
+/* test/test_section9_e2e.mac -- the section-9 port end to end, on the REAL
+ * mr_load_all table (outside Layer A: Layer A never calls mr_load_all).
+ * Every target was measured RED on master (spec 2026-09-22 A4,
+ * probes/rubi/06-section9-red-targets.out).
+ *
+ * From the repo root:  maxima --very-quiet -b test/test_section9_e2e.mac
+ * Ends with a Results: line; a missing Results line is a failure. */
+display2d : false$
+linel : 10000$
+tests_passed : 0$
+tests_failed : 0$
+check_bool(test_name, actual) := block([v],
+  v : is(actual),
+  if v = true then (tests_passed : tests_passed + 1, print("  PASS: ", test_name))
+  else (tests_failed : tests_failed + 1, print("  FAIL: ", test_name),
+        print("    actual:   ", actual)),
+  true)$
+load("maxima_rubi.mac")$
+mr_load_all()$
+
+/* |F'(x) - f(x)| at a point: the answer verifies numerically. */
+mr_e2e_resid(mr_f, mr_F, mr_pt) :=
+  abs(float(subst(mr_pt, diff(mr_F, x) - mr_f)))$
+/* No rule-local symbol escaped into the answer, and no inert trig head
+   (%mr_isin .. %mr_icsc, issue 15) is loose in it either -- those are
+   OPERATORS, not variables, so a `listofvars` check alone cannot see them.
+   Deviation from the brief, added 2026-09-22: 9.3 r18/r22/r23/r24 multiply
+   their answer by two UNBOUND locals (`_mr_9_3_r18_q*_mr_9_3_r18_r*...`,
+   issue 13), which `freeof` of 'unintegrable / 'mr_int does not see. Every
+   generated rule local is named `_mr_<key>_r<n>_<name>`, so the local check
+   is "no variable starts `_mr_`"; the head check is a `freeof` over the six
+   inert trig operators. */
+mr_e2e_no_locals(mr_F) := block([mr_vs],
+  mr_vs : sublist(listofvars(mr_F),
+                  lambda([mr_v], block([mr_s], mr_s : sconcat(mr_v),
+                    is(slength(mr_s) > 4 and substring(mr_s, 1, 5) = "_mr_")))),
+  is(length(mr_vs) = 0)
+  and is(freeof(%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc,
+                mr_F)))$
+mr_e2e_ok(mr_f, mr_F) :=
+  listp(mr_F) and is(length(mr_F) = 1)
+  and freeof('unintegrable, 'mr_int, first(mr_F))
+  and mr_e2e_no_locals(first(mr_F))
+  and is(mr_e2e_resid(mr_f, first(mr_F), [x = 0.3]) < 1.0e-10)
+  and is(mr_e2e_resid(mr_f, first(mr_F), [x = 0.7]) < 1.0e-10)$
+
+mr_e2e_targets : [
+  ["9.2 r1: atan(tan(x))",                                   atan(tan(x))],
+  ["9.3 derivative-divides: 2.3 e733",                       (1 + %e^x)/(%e^x + x)],
+  ["9.3 derivative-divides: product numerator",              %e^x*(1 + x)/(x*%e^x + 1)],
+  /* Task 12b fix round 1: an END-TO-END route through one of the four
+     condition-assignment records (issue 13), so an over-strict guard
+     cannot leave them silently dead. Traced with rubi_verbose (2026-09-22,
+     build branch_5_50_base_84_g4204fb669):
+       rule 9_3 r18 fired on ((%e^x+1)*(x+%e^x)^2)/((x+%e^x)^2+1) with
+         [v = x+%e^x, m = 2, y = x+%e^x, n = 2, b = 1, a = 1, p = -1,
+          u = %e^x+1]
+     i.e. Divides[y^2,v^2,x] = 1 and DerivativeDivides[y,u,x] = 1, and the
+     record answers y - atan(y) with y = x + %e^x. r17 (the same family
+     without the v^m factor) declines first, so this really is r18. */
+  ["9.3 r18: the condition-assignment idiom, end to end",
+   (%e^x + 1)*(x + %e^x)^2/((x + %e^x)^2 + 1)],
+  /* Spec A4's integrand for this record is 1/(x + sqrt((1+x)/(1-x))). It
+     routes through 9_3 r38 correctly, but the rational integral the
+     substitution leaves, 2*x/((x^2+1)*(x^3+x^2+x-1)), EXHAUSTS the SBCL
+     heap in the class-1 rules -- on master too, so a pre-existing class-1
+     cost, not a section-9 one (amendment A5). This integrand reaches the
+     SAME record (9_3 r38, verbose-traced) and is equally RED on master. */
+  ["9.3 SubstForFractionalPowerOfQuotientOfLinears",         1/(1 + sqrt((1 + x)/(1 - x)))],
+  /* Issue 15: a numeric instance of 6.3.2 e13 (b*tanh(c+d*x))^(7/2). The
+     bridge 4_1_0_1 r1 deactivates tanh^(7/2); with mr_inert_leak_misfire
+     false, 9_3 r41 fires on (-%i*%mr_itan(..))^(7/2) and its prefactor
+     leaks %mr_itan into the answer (measured 2026-09-23, this file's
+     target RED with the switch off); with it on, r41's inert-headed answer
+     is a misfire and the walk goes on to a record that answers cleanly. The
+     leaking route is the one probes/section9/02-inert-leak.out traces for
+     the symbolic entry. */
+  ["9.3 r41's inert-leaking answer is declined (issue 15)",  (2*tanh(1 + 3*x))^(7/2)]
+]$
+for mr_t in mr_e2e_targets do (
+  mr_ans : errcatch(rubi(second(mr_t), x)),
+  print("    ", first(mr_t), " -> ", mr_ans),
+  check_bool(sconcat(first(mr_t), ": answers, no noun, verifies at x = 0.3, 0.7"),
+             mr_e2e_ok(second(mr_t), mr_ans)))$
+
+/* Issue 13's witness (9.3 r18's condition-assignment idiom, .m :145). The
+   record's pattern matches this integrand, but DerivativeDivides declines
+   on it, so the faithful outcome is no answer at all -- what `rubi`
+   returns is NOT the assertion here. Ported with Maxima's `=` the guard
+   was vacuous and the answer came back as a degree-49/48 rational
+   multiplied by the two UNBOUND rule locals `_mr_9_3_r18_q*_mr_9_3_r18_r`.
+   The assertion is the ticket's: no rule local escapes into the answer. */
+mr_i13 : ((sqrt(x) + 1)*x - 2*sqrt(x) - 2)/(sqrt(x) + 1)^2$
+mr_ans : errcatch(rubi(mr_i13, x))$
+print("     issue 13 witness -> ", mr_ans)$
+check_bool("issue 13 witness: no rule local (_mr_...) escapes into the answer",
+           listp(mr_ans) and is(length(mr_ans) = 1)
+           and mr_e2e_no_locals(first(mr_ans)))$
+
+/* Issue 14's witnesses: corpus answer Unintegrable, so the faithful outcome
+   is the TOP-LEVEL noun -- the specific marker (3_4 r39 / 3_4 r14) wins at
+   the top. With mr_last_resort_tier and mr_general_after_giveups both false,
+   9.3's bare-u_ tail (9_3 r51 on e635) and general body (9_3 r52 on e104)
+   run first and the marker fires INSIDE the reduced integral
+   (probes/section9/01-giveup-ordering.out; measured RED 2026-09-23). */
+mr_top_noun(mr_f) := block([mr_a],
+  mr_a : errcatch(rubi(mr_f, x)),
+  print("     ", mr_f, " -> ", mr_a),
+  listp(mr_a) and is(length(mr_a) = 1) and not atom(first(mr_a))
+  /* the driver's own top-level noun test (test/corpus_driver.py
+     build_text): the subscripted noun's op compares as a string */
+  and is(string(op(first(mr_a))) = "unintegrable"))$
+check_bool("issue 14: 3.4 e635 answers the top-level Unintegrable noun",
+           mr_top_noun((a + b*log(c*(d + e/(f + g*x))^p))^n))$
+check_bool("issue 14: 3.4 e104 answers the top-level Unintegrable noun",
+           mr_top_noun(1/(x*log(c*(a + b*x^2)^p))))$
+
+print("")$
+print("========================================")$
+print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$
+print("========================================")$

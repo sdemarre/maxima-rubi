@@ -1,0 +1,221 @@
+# section-9 probe 08: class 6 paired, before/after the inert-domain guard (ticket 15; mr_inert_leak_misfire)
+# tree c13e213, 2026-09-23, 12+12 workers concurrently, 30 s cpu cap
+# pre core:  fingerprint fa583d5fb2effbaa5c5406198ad21fb7
+# pre core:  git_rev 933a9410d3a83bcd9726481efae2d4629db1e63c
+# pre core:  rules 3997
+# post core: fingerprint 0fe237ca1d1ca24015a09ba15076e58d
+# post core: git_rev c13e213ad3125eb9e3f15441c8a26d91b1e96183
+# post core: rules 3997
+# entries: 5080
+# host at end: 12.03 23.78 27.07 3/1698 719451
+inert-leak answers, pre: 280
+inert-leak answers, post: 0
+
+base: /tmp/mr-s9-probe08/pre/all.timeout30s.out (5080 entries)
+new:  /tmp/mr-s9-probe08/post/all.timeout30s.out (5080 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS   2224
+PASS->FAIL      4
+FAIL->PASS    164
+FAIL->FAIL   2688
+
+=== class transitions (changed only) ===
+  113  error -> verified
+   52  error -> deferred
+   32  error -> contains-noun
+   32  error -> timeout
+   31  error -> expected
+   13  error -> no-answer
+    7  error -> unverified
+    7  timeout -> verified
+    4  verified -> timeout
+    2  contains-noun -> timeout
+    2  timeout -> contains-noun
+    1  timeout -> unverified
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     7  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac
+    0    35  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac
+    1     1  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac
+    0     6  6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac
+    1     0  6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac
+    0    21  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac
+    1     0  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac
+    0    51  6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac
+    0     2  6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac
+    1    19  6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac
+    0    22  6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac
+
+=== PASS->FAIL (4) ===
+  verified      -> timeout       t=29.7s -> t=30.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e212
+  verified      -> timeout       t=30.0s -> t=30.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e185
+  verified      -> timeout       t=29.7s -> t=30.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e190
+  verified      -> timeout       t=28.4s -> t=30.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e51
+
+=== FAIL->PASS (164) ===
+  error         -> no-answer     t=2.9s -> t=2.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e139
+  error         -> no-answer     t=2.8s -> t=2.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e140
+  error         -> no-answer     t=3.0s -> t=3.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e144
+  error         -> no-answer     t=2.9s -> t=2.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e145
+  error         -> no-answer     t=2.9s -> t=2.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e149
+  error         -> no-answer     t=2.9s -> t=2.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e150
+  error         -> no-answer     t=3.0s -> t=3.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e151
+  error         -> verified      t=4.1s -> t=7.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e7
+  error         -> verified      t=4.5s -> t=8.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e8
+  error         -> verified      t=4.0s -> t=7.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e9
+  error         -> verified      t=4.2s -> t=7.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e10
+  error         -> verified      t=3.4s -> t=6.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e11
+  error         -> verified      t=4.2s -> t=7.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e12
+  error         -> verified      t=3.9s -> t=7.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e13
+  error         -> verified      t=4.4s -> t=8.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e14
+  error         -> verified      t=4.7s -> t=8.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e15
+  error         -> verified      t=4.5s -> t=8.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e16
+  error         -> verified      t=4.0s -> t=7.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e17
+  error         -> verified      t=4.1s -> t=7.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e18
+  error         -> verified      t=3.8s -> t=6.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e19
+  error         -> verified      t=4.0s -> t=7.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e20
+  error         -> verified      t=3.8s -> t=6.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e21
+  error         -> verified      t=4.3s -> t=8.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e22
+  error         -> verified      t=4.1s -> t=7.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e23
+  error         -> verified      t=4.3s -> t=8.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e24
+  error         -> verified      t=3.9s -> t=6.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e25
+  error         -> verified      t=3.9s -> t=7.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e26
+  error         -> verified      t=3.4s -> t=6.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e27
+  error         -> verified      t=3.9s -> t=7.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e28
+  error         -> verified      t=3.7s -> t=7.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e29
+  error         -> verified      t=4.2s -> t=8.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e30
+  error         -> verified      t=3.7s -> t=6.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e31
+  error         -> verified      t=3.6s -> t=6.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e32
+  error         -> verified      t=3.8s -> t=7.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e33
+  error         -> verified      t=3.9s -> t=7.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e34
+  error         -> verified      t=3.6s -> t=7.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e35
+  error         -> verified      t=3.8s -> t=6.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e36
+  error         -> verified      t=10.4s -> t=24.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e146
+  error         -> verified      t=10.0s -> t=23.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e147
+  error         -> verified      t=13.2s -> t=22.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e149
+  error         -> verified      t=6.2s -> t=14.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e150
+  error         -> verified      t=6.7s -> t=17.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e151
+  timeout       -> verified      t=30.1s -> t=29.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e147
+  error         -> no-answer     t=3.4s -> t=3.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e142
+  error         -> no-answer     t=3.4s -> t=3.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e143
+  error         -> no-answer     t=2.6s -> t=3.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e147
+  error         -> no-answer     t=2.9s -> t=3.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e148
+  error         -> no-answer     t=3.8s -> t=3.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e149
+  error         -> no-answer     t=3.9s -> t=3.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e150
+  error         -> verified      t=1.1s -> t=1.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e13
+  error         -> verified      t=1.5s -> t=1.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e14
+  error         -> verified      t=1.2s -> t=1.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e15
+  error         -> verified      t=1.0s -> t=1.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e16
+  error         -> verified      t=1.2s -> t=1.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e17
+  error         -> verified      t=1.3s -> t=3.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e18
+  error         -> verified      t=1.2s -> t=1.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e19
+  error         -> verified      t=1.4s -> t=1.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e20
+  error         -> expected      t=0.5s -> t=0.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e22
+  error         -> expected      t=0.6s -> t=0.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e23
+  error         -> verified      t=7.8s -> t=13.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e33
+  error         -> verified      t=8.1s -> t=14.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e34
+  error         -> verified      t=7.3s -> t=15.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e35
+  error         -> verified      t=11.9s -> t=16.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e36
+  error         -> expected      t=0.8s -> t=0.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e40
+  error         -> expected      t=1.8s -> t=2.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e151
+  error         -> expected      t=1.7s -> t=2.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e152
+  error         -> expected      t=1.6s -> t=2.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e153
+  error         -> expected      t=1.7s -> t=2.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e154
+  error         -> expected      t=1.8s -> t=4.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e155
+  error         -> expected      t=1.9s -> t=3.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e156
+  error         -> verified      t=1.1s -> t=1.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e1
+  error         -> verified      t=1.4s -> t=1.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e2
+  error         -> verified      t=1.1s -> t=1.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e3
+  error         -> verified      t=1.1s -> t=1.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e4
+  error         -> verified      t=1.1s -> t=1.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e5
+  error         -> verified      t=2.9s -> t=4.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e6
+  error         -> verified      t=1.2s -> t=1.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e7
+  error         -> verified      t=1.3s -> t=1.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e8
+  error         -> verified      t=1.8s -> t=2.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e9
+  error         -> verified      t=1.7s -> t=2.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e10
+  error         -> verified      t=1.2s -> t=1.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e11
+  error         -> verified      t=1.2s -> t=1.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e12
+  error         -> verified      t=1.8s -> t=2.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e13
+  error         -> verified      t=2.2s -> t=2.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e14
+  error         -> expected      t=0.5s -> t=0.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e15
+  error         -> expected      t=0.5s -> t=0.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e16
+  error         -> verified      t=2.1s -> t=2.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e22
+  error         -> verified      t=1.8s -> t=2.8s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e23
+  error         -> verified      t=1.7s -> t=2.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e24
+  error         -> verified      t=1.8s -> t=2.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e25
+  error         -> verified      t=1.8s -> t=3.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e26
+  error         -> verified      t=1.7s -> t=2.8s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e27
+  error         -> expected      t=0.6s -> t=0.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e28
+  error         -> verified      t=1.3s -> t=1.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e29
+  error         -> verified      t=1.2s -> t=1.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e30
+  error         -> verified      t=2.7s -> t=4.2s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e31
+  error         -> verified      t=1.2s -> t=1.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e32
+  error         -> verified      t=2.0s -> t=3.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e44
+  error         -> verified      t=1.8s -> t=2.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e45
+  error         -> verified      t=1.6s -> t=2.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e46
+  error         -> verified      t=1.7s -> t=2.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e47
+  error         -> verified      t=2.0s -> t=2.8s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e48
+  error         -> verified      t=1.8s -> t=2.8s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e49
+  error         -> expected      t=0.7s -> t=0.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e50
+  error         -> expected      t=0.6s -> t=0.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e51
+  error         -> expected      t=0.6s -> t=0.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e52
+  error         -> expected      t=0.6s -> t=0.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e53
+  error         -> expected      t=0.6s -> t=0.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e54
+  error         -> expected      t=0.9s -> t=0.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e55
+  error         -> expected      t=1.1s -> t=0.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e56
+  error         -> expected      t=0.9s -> t=0.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e57
+  error         -> expected      t=0.9s -> t=0.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e58
+  error         -> expected      t=1.1s -> t=1.1s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e59
+  error         -> expected      t=1.1s -> t=1.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e60
+  timeout       -> verified      t=30.1s -> t=29.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e61
+  error         -> expected      t=2.0s -> t=2.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e156
+  error         -> expected      t=1.5s -> t=2.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e157
+  error         -> expected      t=1.8s -> t=2.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e158
+  error         -> expected      t=1.9s -> t=2.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e159
+  error         -> expected      t=3.1s -> t=6.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e160
+  error         -> expected      t=2.1s -> t=2.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e161
+  timeout       -> verified      t=30.1s -> t=29.3s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e45
+  timeout       -> verified      t=30.1s -> t=29.6s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e158
+  error         -> verified      t=3.7s -> t=7.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e7
+  error         -> verified      t=4.3s -> t=7.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e8
+  error         -> verified      t=3.5s -> t=6.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e9
+  error         -> verified      t=4.2s -> t=8.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e10
+  error         -> verified      t=4.3s -> t=8.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e11
+  error         -> verified      t=4.6s -> t=8.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e12
+  error         -> verified      t=5.0s -> t=8.8s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e13
+  error         -> verified      t=3.9s -> t=7.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e14
+  error         -> verified      t=4.8s -> t=8.4s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e15
+  error         -> verified      t=3.4s -> t=7.4s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e16
+  error         -> verified      t=4.3s -> t=7.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e17
+  error         -> verified      t=4.3s -> t=7.8s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e18
+  error         -> verified      t=4.6s -> t=9.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e19
+  error         -> verified      t=4.2s -> t=8.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e20
+  error         -> verified      t=11.4s -> t=26.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e36
+  error         -> verified      t=11.1s -> t=24.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e37
+  error         -> verified      t=9.7s -> t=24.7s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e38
+  error         -> verified      t=7.8s -> t=17.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e40
+  error         -> verified      t=8.4s -> t=19.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e41
+  timeout       -> verified      t=30.1s -> t=28.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e47
+  error         -> verified      t=2.2s -> t=2.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e91
+  error         -> expected      t=2.3s -> t=2.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e92
+  error         -> expected      t=11.9s -> t=22.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e126
+  timeout       -> verified      t=30.1s -> t=29.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e128
+  error         -> verified      t=5.4s -> t=10.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e544
+  error         -> verified      t=5.7s -> t=10.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e545
+  error         -> verified      t=4.9s -> t=8.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e546
+  error         -> verified      t=4.8s -> t=10.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e547
+  error         -> verified      t=4.3s -> t=8.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e548
+  error         -> verified      t=4.9s -> t=10.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e549
+  error         -> verified      t=4.9s -> t=10.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e550
+  error         -> verified      t=5.9s -> t=10.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e551
+  error         -> verified      t=5.0s -> t=9.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e552
+  error         -> verified      t=4.7s -> t=8.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e553
+  error         -> verified      t=4.7s -> t=9.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e554
+  error         -> verified      t=4.0s -> t=8.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e555
+  error         -> verified      t=4.7s -> t=9.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e556
+  error         -> verified      t=4.8s -> t=8.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e557
+  error         -> verified      t=5.4s -> t=9.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e558
+  error         -> verified      t=5.3s -> t=9.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e559
+  timeout       -> verified      t=30.0s -> t=29.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e989

@@ -88,3 +88,17 @@ __pycache__/
 /test/class3_campaign_wait.log
 /test/class3_premerge.out
 /test/corpus_class3_35_c6bpre.out
+
+# Section-9 port paired A/B run dirs (per-shard .out/.caps, pids, source,
+# merge/wait logs) for classes 1/2/3/6 -- disposable. The committed record
+# is each class's merged section9_changed_class<N>.timeout30s.out, plus
+# the .new/queue.log the attribution script reads
+# (test/section9_attribution.py).
+/test/section9_paired_class*/*
+!/test/section9_paired_class*/section9_changed_class*.timeout30s.out
+!/test/section9_paired_class6.new/queue.log
+# The post-ticket-14/15 re-measure's paired run dirs: only each class's
+# merged section9b_changed_class<N>.timeout30s.out is kept
+# (test/section9b_attribution.py).
+/test/section9b_paired_class*/*
+!/test/section9b_paired_class*/section9b_changed_class*.timeout30s.out

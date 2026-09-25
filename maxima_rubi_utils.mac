@@ -5216,7 +5216,13 @@ mr_use_gamma_flag : false$
  * MEASURED 2026-08-29 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7
  * (fresh TLS-flagged process; the full session is in the task-5 report):
  *  - lcm(2,3) STAYS A NOUN; the working LCM id is abs(d*n)/gcd(d, n)
- *    (gcd(4,6) = 2 evaluates, abs(2*3)/gcd(2,3) = 6);
+ *    (gcd(4,6) = 2 evaluates, abs(2*3)/gcd(2,3) = 6). True as measured
+ *    here (2026-08-29, before "functs" was ever loaded); since the
+ *    guarded `load("functs")` this file's section 9 adds at :6956,
+ *    lcm is a noun no longer once this file has finished loading, but
+ *    %mr_fractionalPowerOfLinear below (this file's twin at line
+ *    ~5476) keeps the abs(d*n)/gcd(d, n) stand-in rather than switch to
+ *    lcm(d, n), so its measured baseline does not move;
  *  - denominator(3/2) STAYS A NOUN while denom(3/2) = 2 / denom(2/3) = 3
  *    / denom(1/2) = 2 / denom(-2/3) = 3 evaluate — denom is the
  *    Denominator reading (the negative-rational "-" wrapper included);
@@ -5471,8 +5477,13 @@ mr_use_gamma_flag : false$
    SAME base); the CalculusQ decline; else the parts scan. The scan's
    Throw[False] is the flag + bare return() idiom (return(value) is
    loop-level — the line-81 note). LCM = abs(d*n)/gcd(d, n) (lcm is a
-   noun — measured); Denominator = denom (denominator is a noun —
-   measured). */
+   noun — measured, before "functs" was loaded); Denominator = denom
+   (denominator is a noun — measured). Since the guarded
+   `load("functs")` this file's section 9 adds at :6956, lcm is no
+   longer a noun once this file has finished loading; the
+   abs(d*n)/gcd(d, n) stand-in stays here anyway (its twin's note at
+   this file's line ~5218) so this function's measured baseline does
+   not move. */
 %mr_fractionalPowerOfLinear(u, n, v, x) := block([i, e, d, lst],
   if atom(u) or freeof(x, u) then [n, v]
   else if %mr_calculusQ(u) then false
@@ -6487,5 +6498,1092 @@ mr_use_gamma_flag : false$
        and is(member(op(%mr_tpt_u), [atan, acot, atanh, acoth]) = true)
        and is(length(%mr_tpt_u) = 1)
        and %mr_tpt_arg(part(%mr_tpt_u, 1), %mr_tpt_x)))$
+
+/* ===================== section 9 (2026-09-22 A2.3) ====================
+ * Rubi's UnsameQ (=!=): structural inequality. is(a = b) is Maxima's
+ * SYNTACTIC identity of the simplified forms, which is what SameQ tests;
+ * no ev, so no capture (spec 2026-09-22 A2.3). */
+%mr_unsameQ(%mr_usq_a, %mr_usq_b) := not is(%mr_usq_a = %mr_usq_b)$
+
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :7430-7448 PiecewiseLinearQ / Divides -- 9.2's gate (all 19 of
+ * 9.2's rules call PiecewiseLinearQ) and 9.3's Divides. */
+
+/* Rubi :7434 F_[G_[v_]] pair table: MemberQ[{{ArcTanh,Tanh}, ...},{F,G}].
+   Native atan/acot/atanh/acoth operator names -- NOT %mr_atanh (this
+   file's line-3125 evaluating shim, unrelated to the native atanh/acoth
+   Maxima binds and corpus integrands carry). */
+%mr_plq_fgQ(%mr_plq_u, %mr_plq_x) := block([inflag : true, %mr_plq_g],
+  if atom(%mr_plq_u) or not is(length(%mr_plq_u) = 1) then false
+  else (
+    %mr_plq_g : part(%mr_plq_u, 1),
+    not atom(%mr_plq_g) and is(length(%mr_plq_g) = 1)
+    and is(member([op(%mr_plq_u), op(%mr_plq_g)],
+                  [[atanh, tanh], [atanh, coth], [acoth, coth], [acoth, tanh],
+                   [atan, tan], [atan, cot], [acot, cot], [acot, tan]]) = true)
+    and %mr_linearQ(part(%mr_plq_g, 1), %mr_plq_x)))$
+
+/* Rubi :7434 F_^(v_): a kept power node (the line-3903 note: an
+   exponent-1 or sqrt argument is stripped/re-headed before this sees
+   it, matching the .m's own Power[F,v] requirement) with an x-free
+   base and a linear exponent. */
+%mr_plq_powFV(%mr_plq_p, %mr_plq_x) := block([inflag : true],
+  %mr_powerQ(%mr_plq_p)
+  and freeof(%mr_plq_x, part(%mr_plq_p, 1))
+  and %mr_linearQ(part(%mr_plq_p, 2), %mr_plq_x))$
+
+/* Rubi :7434 Log[c_.*F_^(v_)] /; FreeQ[{F,c},x] && LinearQ[v,x]: Times is
+   flat, so c_. absorbs EVERY x-free factor of the log argument, and the
+   match holds iff its x-dependent factors are exactly one F^v. The
+   non-free-factors accounting is %mr_tpt_nonfree (line 6459, TryPureTanSubst's
+   port, immediately above): it already binds inflag : true and prefixes
+   its own locals/params, so it is called here rather than reimplemented
+   (fix round 1, task review finding 1). */
+%mr_plq_logArgQ(%mr_plq_w, %mr_plq_x) := block([%mr_plq_nf],
+  %mr_plq_nf : %mr_tpt_nonfree(%mr_plq_w, %mr_plq_x),
+  is(length(%mr_plq_nf) = 1) and %mr_plq_powFV(first(%mr_plq_nf), %mr_plq_x))$
+
+/* Rubi :7434-7440 PiecewiseLinearQ[u,x], the 2-arg predicate: LinearQ,
+   or the Log[c F^v] shape, or one of the eight F[G[v]] pairs. The .m's
+   commented-out (* && Not[MonomialQ[u,x]] *) stays out -- not live
+   upstream (task-2 brief step 3). */
+%mr_plq_core(%mr_plq_u, %mr_plq_x) := block([inflag : true],
+  %mr_linearQ(%mr_plq_u, %mr_plq_x)
+  or (not atom(%mr_plq_u) and is(op(%mr_plq_u) = log)
+      and is(length(%mr_plq_u) = 1)
+      and %mr_plq_logArgQ(part(%mr_plq_u, 1), %mr_plq_x))
+  or %mr_plq_fgQ(%mr_plq_u, %mr_plq_x))$
+
+/* Rubi :7430-7433 PiecewiseLinearQ[u,x] / PiecewiseLinearQ[u,v,x]: one
+   Maxima function with a rest argument, since Rubi overloads the name
+   by arity. One rest element is the 2-arg form; two is (u,v,x) =
+   plq(u,x) and plq(v,x). Any other rest length is a caller error, not a
+   silent first()/second() failure on a short list (fix round 1, task
+   review finding 2). */
+%mr_piecewiseLinearQ(%mr_plq_u, [%mr_plq_r]) := block([%mr_plq_x],
+  if length(%mr_plq_r) = 2 then (
+    %mr_plq_x : second(%mr_plq_r),
+    %mr_plq_core(%mr_plq_u, %mr_plq_x)
+      and %mr_plq_core(first(%mr_plq_r), %mr_plq_x)
+  )
+  elseif length(%mr_plq_r) = 1 then (
+    %mr_plq_x : first(%mr_plq_r),
+    %mr_plq_core(%mr_plq_u, %mr_plq_x)
+  )
+  else error("%mr_piecewiseLinearQ: expected (u, x) or (u, v, x), got ",
+             length(%mr_plq_r) + 1, " total argument(s)"))$
+
+/* Rubi :7443-7448 Divides[y,u,x]: the quotient u/y when it is free of x,
+   else False. %mr_simp is a pure rewrite of its argument (no ev), so
+   capture trap 1 does not apply; x stays unprefixed (house rule: the
+   integration variable itself). */
+%mr_divides(%mr_div_y, %mr_div_u, x) := block([%mr_div_v],
+  %mr_div_v : %mr_simp(%mr_div_u / %mr_div_y),
+  if freeof(x, %mr_div_v) then %mr_div_v else false)$
+
+/* ===================== section 9 (2026-09-22 A2) ======================
+ * Rubi :5017-5039 EulerIntegrandQ, :804-819 SimplerIntegrandQ, :821-835
+ * CancelCommonFactors. */
+
+/* Rubi :5017-5039 EulerIntegrandQ: its five clauses are the generated
+   rewrite table mr_rw_eiq (rules/utils/inert_trig_rewrites.mac); every
+   clause answers True or False, the last unconditionally. */
+%mr_eulerIntegrandQ(%mr_eiq_u, x) :=
+  is(%mr_rewrite("EulerIntegrandQ", mr_rw_eiq, %mr_eiq_u, x) = true)$
+
+/* Rubi :821-835 CancelCommonFactors[u,v]: {u1,v1} are u and v with their
+   common factors cancelled one at a time. ProductQ/First/Rest/MemberQ
+   read under inflag : true (capture trap 2): First[u] is first(u),
+   Rest[u] is %mr_rest_in(u), MemberQ[v,f] is member(f, %mr_args_in(v)).
+   DeleteCases[v,f,1,1] removes ONE occurrence of f from v's factor list
+   and rebuilds the product; delete(f,v,1) does the same and, via its own
+   Times reconstruction, already collapses a one-factor remainder to that
+   bare factor and an empty remainder to 1 -- both call sites here delete
+   from a v (or u) already known ProductQ, so delete always sees a
+   genuine multi-factor Times. */
+%mr_cancelCommonFactors(%mr_ccf_u, %mr_ccf_v) := block([inflag : true],
+  if %mr_productQ(%mr_ccf_u) then (
+    if %mr_productQ(%mr_ccf_v) then (
+      if member(first(%mr_ccf_u), %mr_args_in(%mr_ccf_v)) then
+        %mr_cancelCommonFactors(%mr_rest_in(%mr_ccf_u),
+                                 delete(first(%mr_ccf_u), %mr_ccf_v, 1))
+      else block([%mr_ccf_r],
+        %mr_ccf_r : %mr_cancelCommonFactors(%mr_rest_in(%mr_ccf_u), %mr_ccf_v),
+        [first(%mr_ccf_u) * first(%mr_ccf_r), second(%mr_ccf_r)])
+    ) else (
+      if member(%mr_ccf_v, %mr_args_in(%mr_ccf_u)) then
+        [delete(%mr_ccf_v, %mr_ccf_u, 1), 1]
+      else [%mr_ccf_u, %mr_ccf_v]
+    )
+  ) else (
+    if %mr_productQ(%mr_ccf_v) then (
+      if member(%mr_ccf_u, %mr_args_in(%mr_ccf_v)) then
+        [1, delete(%mr_ccf_u, %mr_ccf_v, 1)]
+      else [%mr_ccf_u, %mr_ccf_v]
+    ) else [%mr_ccf_u, %mr_ccf_v]
+  ))$
+
+/* Rubi :804-819 SimplerIntegrandQ[u,v,x]: the two commented-out lines
+   (the Head/Length short circuit) stay out, not live upstream. LeafCount
+   is %mr_leafCount, Apply[Plus,RationalFunctionExponents[..]] is the sum
+   of %mr_rationalFunctionExponents's 2-element list.
+   Deviation: %mr_leafCount counts differently from Mathematica's
+   LeafCount (measured 2026-09-22: 7 for both 1/(x^2+1) and x/(x^3+1),
+   where Mathematica gives 7 and 9), so the 6/10 threshold can decide
+   differently near the boundary. */
+%mr_simplerIntegrandQ(%mr_sic_u, %mr_sic_v, x) := block(
+  [%mr_sic_lst, %mr_sic_u1, %mr_sic_v1],
+  %mr_sic_lst : %mr_cancelCommonFactors(%mr_sic_u, %mr_sic_v),
+  %mr_sic_u1 : first(%mr_sic_lst),
+  %mr_sic_v1 : second(%mr_sic_lst),
+  if %mr_leafCount(%mr_sic_u1) < 6/10 * %mr_leafCount(%mr_sic_v1) then true
+  elseif %mr_rationalFunctionQ(%mr_sic_u1, x) then
+    (if %mr_rationalFunctionQ(%mr_sic_v1, x) then
+       is(apply("+", %mr_rationalFunctionExponents(%mr_sic_u1, x))
+          < apply("+", %mr_rationalFunctionExponents(%mr_sic_v1, x)))
+     else true)
+  else false)$
+
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :1815 SubstForFractionalPowerQ, :1822 SubstForFractionalPowerAuxQ,
+ * :3223 PolynomialInQ, :3227 PolynomialInAuxQ, :3275 PolynomialInSubst,
+ * :3280 PolynomialInSubstAux. */
+
+/* Rubi :1815 SubstForFractionalPowerQ[u,v,x]: True unless u has a
+   fractional-power subexpression whose base is not v (Catch/Scan/
+   Throw[False] over u's arguments, else True). Scan[..Throw[False]];True
+   is every() over the internal-args list (capture trap 2, %mr_args_in);
+   every([]) = true matches the empty-Scan default. */
+%mr_substForFractionalPowerQ(%mr_sffpq_u, %mr_sffpq_v, x) := block([inflag : true],
+  if atom(%mr_sffpq_u) or freeof(x, %mr_sffpq_u) then true
+  elseif %mr_fractionalPowerQ(%mr_sffpq_u) then
+    %mr_substForFractionalPowerAuxQ(%mr_sffpq_u, %mr_sffpq_v, x)
+  else every(
+    lambda([%mr_sffpq_t],
+           %mr_substForFractionalPowerQ(%mr_sffpq_t, %mr_sffpq_v, x)),
+    %mr_args_in(%mr_sffpq_u)))$
+
+/* Rubi :1822 SubstForFractionalPowerAuxQ[u,v,x]: True iff some
+   subexpression of u is a fractional power of exactly v. Scan[..
+   Throw[True]];False is some() over the internal-args list; some([]) =
+   false matches the empty-Scan default. */
+%mr_substForFractionalPowerAuxQ(%mr_sffpaq_u, %mr_sffpaq_v, x) := block(
+  [inflag : true],
+  if atom(%mr_sffpaq_u) then false
+  elseif %mr_fractionalPowerQ(%mr_sffpaq_u)
+         and %mr_eqQ(part(%mr_sffpaq_u, 1), %mr_sffpaq_v) then true
+  else some(
+    lambda([%mr_sffpaq_t],
+           %mr_substForFractionalPowerAuxQ(%mr_sffpaq_t, %mr_sffpaq_v, x)),
+    %mr_args_in(%mr_sffpaq_u)))$
+
+/* Rubi :3227 PolynomialInAuxQ[u,v,x]: u===v is is(u = v) (SameQ, the
+   %mr_unsameQ precedent, this file's line ~6495); IGtQ is %mr_iGtQ (the
+   RESTRUCTURE "cmp" path's ported positive-integer test,
+   maxima_rubi_utils.mac:711, used by the same-base exponent-ratio and
+   exponent-positivity checks); SumQ/ProductQ's Scan[..Throw[False]];True
+   is every() over the internal-args list (capture trap 2). */
+%mr_polynomialInAuxQ(%mr_piaq_u, %mr_piaq_v, x) := block([inflag : true],
+  if is(%mr_piaq_u = %mr_piaq_v) then true
+  elseif atom(%mr_piaq_u) then not is(%mr_piaq_u = x)
+  elseif %mr_powerQ(%mr_piaq_u) then
+    (if %mr_powerQ(%mr_piaq_v)
+        and is(part(%mr_piaq_u, 1) = part(%mr_piaq_v, 1))
+       then %mr_iGtQ(part(%mr_piaq_u, 2) / part(%mr_piaq_v, 2), 0)
+       else %mr_iGtQ(part(%mr_piaq_u, 2), 0)
+              and %mr_polynomialInAuxQ(part(%mr_piaq_u, 1), %mr_piaq_v, x))
+  elseif %mr_sumQ(%mr_piaq_u) or %mr_productQ(%mr_piaq_u) then
+    every(lambda([%mr_piaq_t], %mr_polynomialInAuxQ(%mr_piaq_t, %mr_piaq_v, x)),
+          %mr_args_in(%mr_piaq_u))
+  else false)$
+
+/* Rubi :3223 PolynomialInQ[u,v,x]. */
+%mr_polynomialInQ(%mr_piq_u, %mr_piq_v, x) :=
+  %mr_polynomialInAuxQ(%mr_piq_u,
+    %mr_nonfreeFactors(%mr_nonfreeTerms(%mr_piq_v, x), x), x)$
+
+/* Rubi :3280 PolynomialInSubstAux[u,v,x]: the else-branch Map[Function[
+   ..],u] is, under inflag : true, apply(op(u), map(f, args(u))) (capture
+   trap 2, the house idiom cited at this file's line ~9). */
+%mr_polynomialInSubstAux(%mr_pisa_u, %mr_pisa_v, x) := block([inflag : true],
+  if is(%mr_pisa_u = %mr_pisa_v) then x
+  elseif atom(%mr_pisa_u) then %mr_pisa_u
+  elseif %mr_powerQ(%mr_pisa_u) then
+    (if %mr_powerQ(%mr_pisa_v)
+        and is(part(%mr_pisa_u, 1) = part(%mr_pisa_v, 1))
+       then x^(part(%mr_pisa_u, 2) / part(%mr_pisa_v, 2))
+       else %mr_polynomialInSubstAux(part(%mr_pisa_u, 1), %mr_pisa_v, x)
+              ^part(%mr_pisa_u, 2))
+  else apply(op(%mr_pisa_u),
+             map(lambda([%mr_pisa_t],
+                        %mr_polynomialInSubstAux(%mr_pisa_t, %mr_pisa_v, x)),
+                 %mr_args_in(%mr_pisa_u))))$
+
+/* Rubi :3275 PolynomialInSubst[u,v,x]: ReplaceAll[...,{x->...}] is a
+   single-target subst (Maxima's subst is simultaneous, matching
+   Mathematica's ReplaceAll here since there is only the one x-rule). */
+%mr_polynomialInSubst(%mr_pis_u, %mr_pis_v, x) := block([%mr_pis_w],
+  %mr_pis_w : %mr_nonfreeTerms(%mr_pis_v, x),
+  subst((x - %mr_freeTerms(%mr_pis_v, x)) / %mr_freeFactors(%mr_pis_w, x), x,
+        %mr_polynomialInSubstAux(%mr_pis_u,
+          %mr_nonfreeFactors(%mr_pis_w, x), x)))$
+
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :4976 PowerVariableExpn, :4985 PowerVariableDegree, :5001
+ * PowerVariableSubst. */
+
+/* Rubi :4985 PowerVariableDegree[u,m,c,x]: threads {m,c} through u's
+   arguments (Catch[Module[{lst={m,c}}, Scan[..If[AtomQ[lst],
+   Throw[False]]],u]; lst]), false at the first argument that declines
+   (capture trap 2: the found-flag while loop over %mr_args_in(u), the
+   %mr_simplerQ_scan precedent, this file's line ~1182). u[[1]]/x is the
+   power's base over x (FreeQ[u[[1]]/x,x] asks whether the base is c*x);
+   m===u[[2]] and c===u[[1]]/x are SameQ, is(a = b) (capture trap 3, the
+   %mr_polynomialInAuxQ precedent). GCD is gcd on the two integers. */
+%mr_powerVariableDegree(%mr_pvd_u, %mr_pvd_m, %mr_pvd_c, x) := block(
+  [inflag : true, %mr_pvd_args, %mr_pvd_i, %mr_pvd_n, %mr_pvd_lst, %mr_pvd_ok],
+  if freeof(x, %mr_pvd_u) then [%mr_pvd_m, %mr_pvd_c]
+  elseif atom(%mr_pvd_u) or %mr_calculusQ(%mr_pvd_u) then false
+  elseif %mr_powerQ(%mr_pvd_u) and freeof(x, part(%mr_pvd_u, 1) / x) then (
+    if %mr_eqQ(%mr_pvd_m, 0)
+       or (is(%mr_pvd_m = part(%mr_pvd_u, 2))
+           and is(%mr_pvd_c = part(%mr_pvd_u, 1) / x))
+    then [part(%mr_pvd_u, 2), part(%mr_pvd_u, 1) / x]
+    elseif integerp(part(%mr_pvd_u, 2)) and integerp(%mr_pvd_m)
+           and gcd(%mr_pvd_m, part(%mr_pvd_u, 2)) > 1
+           and is(%mr_pvd_c = part(%mr_pvd_u, 1) / x)
+    then [gcd(%mr_pvd_m, part(%mr_pvd_u, 2)), %mr_pvd_c]
+    else false
+  )
+  else (
+    %mr_pvd_args : %mr_args_in(%mr_pvd_u),
+    %mr_pvd_n : length(%mr_pvd_args),
+    %mr_pvd_i : 0,
+    %mr_pvd_lst : [%mr_pvd_m, %mr_pvd_c],
+    %mr_pvd_ok : true,
+    while %mr_pvd_ok and %mr_pvd_i < %mr_pvd_n do (
+      %mr_pvd_i : %mr_pvd_i + 1,
+      %mr_pvd_lst : %mr_powerVariableDegree(part(%mr_pvd_args, %mr_pvd_i),
+                      first(%mr_pvd_lst), second(%mr_pvd_lst), x),
+      if atom(%mr_pvd_lst) then %mr_pvd_ok : false
+    ),
+    if %mr_pvd_ok then %mr_pvd_lst else false
+  ))$
+
+/* Rubi :5001 PowerVariableSubst[u,m,x]: the else-branch Map[Function[..],
+   u] is, under inflag : true, apply(op(u), map(f, args(u))) (capture
+   trap 2, the house idiom cited at this file's line ~9). */
+%mr_powerVariableSubst(%mr_pvs_u, %mr_pvs_m, x) := block([inflag : true],
+  if freeof(x, %mr_pvs_u) or atom(%mr_pvs_u) or %mr_calculusQ(%mr_pvs_u)
+  then %mr_pvs_u
+  elseif %mr_powerQ(%mr_pvs_u) and freeof(x, part(%mr_pvs_u, 1) / x) then
+    x^(part(%mr_pvs_u, 2) / %mr_pvs_m)
+  else apply(op(%mr_pvs_u),
+             map(lambda([%mr_pvs_t],
+                        %mr_powerVariableSubst(%mr_pvs_t, %mr_pvs_m, x)),
+                 %mr_args_in(%mr_pvs_u))))$
+
+/* Rubi :4976 PowerVariableExpn[u,m,x]: With[{lst=PowerVariableDegree[u,m,
+   1,x]}, ...] is a plain local (no recomputation hazard: lst is bound
+   once from the call's own arguments, none of them named lst). */
+%mr_powerVariableExpn(%mr_pve_u, %mr_pve_m, x) := block([%mr_pve_lst],
+  if not integerp(%mr_pve_m) then false
+  else (
+    %mr_pve_lst : %mr_powerVariableDegree(%mr_pve_u, %mr_pve_m, 1, x),
+    if atom(%mr_pve_lst) then false
+    else [x^(%mr_pve_m / first(%mr_pve_lst))
+            * %mr_powerVariableSubst(%mr_pve_u, first(%mr_pve_lst), x),
+          first(%mr_pve_lst), second(%mr_pve_lst)]
+  ))$
+
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :5071 FunctionOfSquareRootOfQuadratic (2-arg entry, its :5102
+ * 3-arg overload) and :5119 SquareRootOfQuadraticSubst. */
+
+/* Rubi :5071 the exclusion MatchQ[u, x^m_.*(a_+b_.*x^n_.)^p_ /;
+   FreeQ[{a,b,m,n,p},x]]: neither Times-level factor carries its own
+   Optional dot (only the nested m_./n_. do), so the pattern requires u
+   to be EXACTLY a two-factor product -- one factor a bare x or x^m
+   (m free of x), the other a kept power (a+b*x^n)^p with p free of x.
+   BinomialQ[w,x] (%mr_binomialQ, :549) is exactly the a+b*x^n test, so
+   the remaining structural work is picking out the two factors; a
+   three-term sum such as x^2+x+1 is not a BinomialQ base, so it does
+   not exclude (the c>0 target below depends on this). */
+%mr_fosq_excludedQ(%mr_fosqx_u, x) := block(
+  [inflag : true, %mr_fosqx_facs, %mr_fosqx_xf, %mr_fosqx_pw, %mr_fosqx_t],
+  if not %mr_productQ(%mr_fosqx_u) then false
+  else (
+    %mr_fosqx_facs : %mr_args_in(%mr_fosqx_u),
+    if not is(length(%mr_fosqx_facs) = 2) then false
+    else (
+      %mr_fosqx_xf : false, %mr_fosqx_pw : false,
+      for %mr_fosqx_t in %mr_fosqx_facs do (
+        if is(%mr_fosqx_t = x)
+           or (%mr_powerQ(%mr_fosqx_t) and is(part(%mr_fosqx_t, 1) = x)
+               and freeof(x, part(%mr_fosqx_t, 2)))
+        then %mr_fosqx_xf : %mr_fosqx_t
+        elseif %mr_powerQ(%mr_fosqx_t) and freeof(x, part(%mr_fosqx_t, 2))
+        then %mr_fosqx_pw : %mr_fosqx_t
+      ),
+      if %mr_fosqx_xf = false or %mr_fosqx_pw = false then false
+      else %mr_binomialQ(part(%mr_fosqx_pw, 1), x)
+    )
+  ))$
+
+/* Rubi :5102 FunctionOfSquareRootOfQuadratic[u,v,x] (the 3-arg
+   overload): the Catch[Scan[..Throw[False]]] thread over u's arguments
+   is, under inflag : true, the %mr_powerVariableDegree precedent (this
+   file's line ~6732) -- a found-flag while loop over %mr_args_in(u)
+   threading the single-element list forward and stopping at the first
+   atom (False) result. u===v in the power branch is is(u = v) (SameQ,
+   the %mr_unsameQ precedent). */
+%mr_functionOfSquareRootOfQuadraticAux(%mr_fosqa_u, %mr_fosqa_v, x) := block(
+  [inflag : true, %mr_fosqa_args, %mr_fosqa_n, %mr_fosqa_i, %mr_fosqa_lst,
+   %mr_fosqa_ok],
+  if atom(%mr_fosqa_u) or freeof(x, %mr_fosqa_u) then [%mr_fosqa_v]
+  elseif %mr_powerQ(%mr_fosqa_u) and freeof(x, part(%mr_fosqa_u, 2)) then (
+    if %mr_fractionQ(part(%mr_fosqa_u, 2))
+       and is(denom(part(%mr_fosqa_u, 2)) = 2)
+       and %mr_polynomialQ(part(%mr_fosqa_u, 1), x)
+       and is(%mr_degree(part(%mr_fosqa_u, 1), x) = 2)
+    then (
+      if %mr_falseQ(%mr_fosqa_v) or is(part(%mr_fosqa_u, 1) = %mr_fosqa_v)
+      then [part(%mr_fosqa_u, 1)]
+      else false
+    )
+    else %mr_functionOfSquareRootOfQuadraticAux(
+           part(%mr_fosqa_u, 1), %mr_fosqa_v, x)
+  )
+  elseif %mr_productQ(%mr_fosqa_u) or %mr_sumQ(%mr_fosqa_u) then (
+    %mr_fosqa_args : %mr_args_in(%mr_fosqa_u),
+    %mr_fosqa_n : length(%mr_fosqa_args),
+    %mr_fosqa_i : 0,
+    %mr_fosqa_lst : [%mr_fosqa_v],
+    %mr_fosqa_ok : true,
+    while %mr_fosqa_ok and %mr_fosqa_i < %mr_fosqa_n do (
+      %mr_fosqa_i : %mr_fosqa_i + 1,
+      %mr_fosqa_lst : %mr_functionOfSquareRootOfQuadraticAux(
+                        part(%mr_fosqa_args, %mr_fosqa_i),
+                        first(%mr_fosqa_lst), x),
+      if atom(%mr_fosqa_lst) then %mr_fosqa_ok : false
+    ),
+    if %mr_fosqa_ok then %mr_fosqa_lst else false
+  )
+  else false)$
+
+/* Rubi :5119 SquareRootOfQuadraticSubst[u,vv,xx,x]: the else-branch
+   Map[Function[..],u] is, under inflag : true, apply(op(u), map(f,
+   args(u))) (capture trap 2, the house idiom cited at this file's
+   line ~9). */
+%mr_squareRootOfQuadraticSubst(%mr_sqs_u, %mr_sqs_vv, %mr_sqs_xx, x) :=
+  block([inflag : true],
+  if atom(%mr_sqs_u) or freeof(x, %mr_sqs_u) then
+    (if is(%mr_sqs_u = x) then %mr_sqs_xx else %mr_sqs_u)
+  elseif %mr_powerQ(%mr_sqs_u) and freeof(x, part(%mr_sqs_u, 2)) then (
+    if %mr_fractionQ(part(%mr_sqs_u, 2))
+       and is(denom(part(%mr_sqs_u, 2)) = 2)
+       and %mr_polynomialQ(part(%mr_sqs_u, 1), x)
+       and is(%mr_degree(part(%mr_sqs_u, 1), x) = 2)
+    then %mr_sqs_vv^num(part(%mr_sqs_u, 2))
+    else %mr_squareRootOfQuadraticSubst(
+           part(%mr_sqs_u, 1), %mr_sqs_vv, %mr_sqs_xx, x)^part(%mr_sqs_u, 2)
+  )
+  else apply(op(%mr_sqs_u),
+             map(lambda([%mr_sqs_t],
+                        %mr_squareRootOfQuadraticSubst(
+                          %mr_sqs_t, %mr_sqs_vv, %mr_sqs_xx, x)),
+                 %mr_args_in(%mr_sqs_u))))$
+
+/* Rubi :5071-5100 FunctionOfSquareRootOfQuadratic[u,x] (the 2-arg
+   entry): the three Euler-substitution branches (c>0, a>0, else) in
+   upstream order, tagged 2/1/3. FullSimplify in the third branch is
+   ratsimp (the translation table's row); Simplify is %mr_simp. */
+%mr_functionOfSquareRootOfQuadratic(%mr_fosq_u, x) := block(
+  [inflag : true, %mr_fosq_lst, %mr_fosq_tmp, %mr_fosq_a, %mr_fosq_b,
+   %mr_fosq_c, %mr_fosq_sqrt, %mr_fosq_q, %mr_fosq_r],
+  if %mr_fosq_excludedQ(%mr_fosq_u, x) then false
+  else (
+    %mr_fosq_lst : %mr_functionOfSquareRootOfQuadraticAux(%mr_fosq_u, false, x),
+    if atom(%mr_fosq_lst) or %mr_falseQ(first(%mr_fosq_lst)) then false
+    else (
+      %mr_fosq_tmp : first(%mr_fosq_lst),
+      %mr_fosq_a : %mr_coeff(%mr_fosq_tmp, x, 0),
+      %mr_fosq_b : %mr_coeff(%mr_fosq_tmp, x, 1),
+      %mr_fosq_c : %mr_coeff(%mr_fosq_tmp, x, 2),
+      if (%mr_eqQ(%mr_fosq_a, 0) and %mr_eqQ(%mr_fosq_b, 0))
+         or %mr_eqQ(%mr_fosq_b^2 - 4*%mr_fosq_a*%mr_fosq_c, 0)
+      then false
+      elseif %mr_posQ(%mr_fosq_c) then (
+        %mr_fosq_sqrt : %mr_rt(%mr_fosq_c, 2),
+        %mr_fosq_q : %mr_fosq_a*%mr_fosq_sqrt + %mr_fosq_b*x
+                       + %mr_fosq_sqrt*x^2,
+        %mr_fosq_r : %mr_fosq_b + 2*%mr_fosq_sqrt*x,
+        [%mr_simp(%mr_squareRootOfQuadraticSubst(%mr_fosq_u,
+                    %mr_fosq_q / %mr_fosq_r, (-%mr_fosq_a + x^2) / %mr_fosq_r,
+                    x)
+                  * %mr_fosq_q / %mr_fosq_r^2),
+         %mr_simp(%mr_fosq_sqrt*x + sqrt(%mr_fosq_tmp)),
+         2]
+      )
+      elseif %mr_posQ(%mr_fosq_a) then (
+        %mr_fosq_sqrt : %mr_rt(%mr_fosq_a, 2),
+        %mr_fosq_q : %mr_fosq_c*%mr_fosq_sqrt - %mr_fosq_b*x
+                       + %mr_fosq_sqrt*x^2,
+        %mr_fosq_r : %mr_fosq_c - x^2,
+        [%mr_simp(%mr_squareRootOfQuadraticSubst(%mr_fosq_u,
+                    %mr_fosq_q / %mr_fosq_r,
+                    (-%mr_fosq_b + 2*%mr_fosq_sqrt*x) / %mr_fosq_r, x)
+                  * %mr_fosq_q / %mr_fosq_r^2),
+         %mr_simp((-%mr_fosq_sqrt + sqrt(%mr_fosq_tmp)) / x),
+         1]
+      )
+      else (
+        %mr_fosq_sqrt : %mr_rt(%mr_fosq_b^2 - 4*%mr_fosq_a*%mr_fosq_c, 2),
+        %mr_fosq_r : %mr_fosq_c - x^2,
+        [%mr_simp(-%mr_fosq_sqrt
+                  * %mr_squareRootOfQuadraticSubst(%mr_fosq_u,
+                      -%mr_fosq_sqrt*x / %mr_fosq_r,
+                      -(%mr_fosq_b*%mr_fosq_c + %mr_fosq_c*%mr_fosq_sqrt
+                         + (-%mr_fosq_b + %mr_fosq_sqrt)*x^2)
+                        / (2*%mr_fosq_c*%mr_fosq_r),
+                      x)
+                  * x / %mr_fosq_r^2),
+         ratsimp(2*%mr_fosq_c*sqrt(%mr_fosq_tmp)
+                   / (%mr_fosq_b - %mr_fosq_sqrt + 2*%mr_fosq_c*x)),
+         3]
+      )
+    )
+  ))$
+
+/* ===================== section 9 (2026-09-22 A1) ======================
+ * Rubi :1801 SubstForFractionalPowerOfQuotientOfLinears, :1831
+ * FractionalPowerOfQuotientOfLinears (G5). */
+
+/* lcm is a NOUN until "functs" is loaded (describe("lcm", exact):
+   "load (\"functs\") loads this function" -- measured 2026-09-22;
+   integerp(lcm(1,1)) is false unloaded, true once loaded -- the
+   witness this guard reads). Loaded once, guarded, so re-loading this
+   file after functs is already present is a no-op. */
+if not integerp(lcm(1, 1)) then load("functs")$
+
+/* Rubi :1831-1840  FractionalPowerOfQuotientOfLinears[u,n,v,x] — the
+   first (depth-first, parts order) fractional power of a NON-LINEAR
+   quotient-of-linears base found in u: {LCM[Denominator[exponent], n],
+   base}; the {n,v} identity on atom/x-free; the CalculusQ decline; the
+   v-equality guard (the LCM accumulates only for the SAME base); else
+   the parts scan. This is %mr_fractionalPowerOfLinear's twin (this
+   file's line ~5476) with the extra QuotientOfLinearsQ-and-not-LinearQ
+   guard in place of the plain LinearQ test, and a genuine lcm() call
+   in place of abs(d*n)/gcd(d,n) (that port's LCM stand-in predates
+   loading "functs"; the guard above makes the noun-free lcm available
+   here). The scan's Throw[False] is the flag + bare return() idiom
+   (the line-81 note); inflag : true reads u's internal Times/Plus/
+   Power args, matching Mathematica's Scan over ALL of a node's parts
+   (a Power node's exponent is scanned too, not only its base). */
+%mr_fractionalPowerOfQuotientOfLinears(%mr_fpql_u, %mr_fpql_n, %mr_fpql_v, x) :=
+  block([inflag : true, %mr_fpql_i, %mr_fpql_e, %mr_fpql_d, %mr_fpql_lst],
+  if atom(%mr_fpql_u) or freeof(x, %mr_fpql_u) then [%mr_fpql_n, %mr_fpql_v]
+  elseif %mr_calculusQ(%mr_fpql_u) then false
+  elseif %mr_fractionalPowerQ(%mr_fpql_u)
+         and %mr_quotientOfLinearsQ(part(%mr_fpql_u, 1), x)
+         and not %mr_linearQ(part(%mr_fpql_u, 1), x)
+         and (%mr_falseQ(%mr_fpql_v) or %mr_eqQ(part(%mr_fpql_u, 1), %mr_fpql_v))
+  then (
+    %mr_fpql_e : %mr_fractionalPowerExpon(%mr_fpql_u),
+    %mr_fpql_d : denom(%mr_fpql_e),
+    [lcm(%mr_fpql_d, %mr_fpql_n), part(%mr_fpql_u, 1)]
+  )
+  else (
+    %mr_fpql_lst : [%mr_fpql_n, %mr_fpql_v],
+    for %mr_fpql_i : 1 thru length(%mr_fpql_u) do (
+      %mr_fpql_lst : %mr_fractionalPowerOfQuotientOfLinears(
+                       part(%mr_fpql_u, %mr_fpql_i),
+                       part(%mr_fpql_lst, 1), part(%mr_fpql_lst, 2), x),
+      if atom(%mr_fpql_lst) then return()
+    ),
+    if atom(%mr_fpql_lst) then false else %mr_fpql_lst
+  ))$
+
+/* Rubi :1801-1811  SubstForFractionalPowerOfQuotientOfLinears[u,x] —
+   the 4-list contract: {v,n,(a+b*x)/(c+d*x),b*c-a*d} where v is u with
+   every ((a+b*x)/(c+d*x))^(m/n) replaced by x^m and x by
+   (-a+c*x^n)/(b-d*x^n), times x^(n-1)/(b-d*x^n)^2, all Simplify'd
+   (= %mr_simp); NonfreeFactors/FreeFactors split v. False decline when
+   FractionalPowerOfQuotientOfLinears finds no such quotient (the
+   {n,False} identity — lst[[2]] atom) or when d = 0 (the quotient
+   collapsed to a plain linear, EqQ guard). This is
+   %mr_substForFractionalPowerOfLinear's twin (line ~5549): the located
+   base is a quotient, so its four QuotientOfLinearsParts coefficients
+   replace the plain linear's two, and the substitution target w is the
+   quotient's own inverse-map value in place of -a/b + x^n/b. */
+%mr_substForFractionalPowerOfQuotientOfLinears(%mr_sffpoql_u, x) := block(
+  [%mr_sffpoql_lst, %mr_sffpoql_n, %mr_sffpoql_tmp, %mr_sffpoql_a,
+   %mr_sffpoql_b, %mr_sffpoql_c, %mr_sffpoql_d, %mr_sffpoql_l],
+  %mr_sffpoql_lst : %mr_fractionalPowerOfQuotientOfLinears(%mr_sffpoql_u, 1, false, x),
+  if atom(%mr_sffpoql_lst) or atom(part(%mr_sffpoql_lst, 2)) then false
+  else (
+    %mr_sffpoql_n : part(%mr_sffpoql_lst, 1),
+    %mr_sffpoql_tmp : part(%mr_sffpoql_lst, 2),
+    %mr_sffpoql_lst : %mr_quotientOfLinearsParts(%mr_sffpoql_tmp, x),
+    %mr_sffpoql_a : part(%mr_sffpoql_lst, 1),
+    %mr_sffpoql_b : part(%mr_sffpoql_lst, 2),
+    %mr_sffpoql_c : part(%mr_sffpoql_lst, 3),
+    %mr_sffpoql_d : part(%mr_sffpoql_lst, 4),
+    if %mr_eqQ(%mr_sffpoql_d, 0) then false
+    else (
+      %mr_sffpoql_l : %mr_simp(
+        x^(%mr_sffpoql_n - 1)
+        * %mr_substForFractionalPower(%mr_sffpoql_u, %mr_sffpoql_tmp,
+            %mr_sffpoql_n,
+            (-%mr_sffpoql_a + %mr_sffpoql_c*x^%mr_sffpoql_n)
+              / (%mr_sffpoql_b - %mr_sffpoql_d*x^%mr_sffpoql_n), x)
+        / (%mr_sffpoql_b - %mr_sffpoql_d*x^%mr_sffpoql_n)^2),
+      [%mr_nonfreeFactors(%mr_sffpoql_l, x), %mr_sffpoql_n, %mr_sffpoql_tmp,
+       %mr_freeFactors(%mr_sffpoql_l, x)
+         * (%mr_sffpoql_b*%mr_sffpoql_c - %mr_sffpoql_a*%mr_sffpoql_d)]
+    )
+  ))$
+
+/* ===================== section 9 (2026-09-22 A1), G6a =================
+ * The factor utilities under FunctionOfLinear (Rubi :1281-:1975,
+ * :3025-:3160, :4224): LeadFactor/RemainingFactors/LeadBase/LeadDegree,
+ * MonomialFactor/MinimumDegree, DivideDegreesOfFactors, the absurd-number
+ * family, Smallest/FactorOrder/MostMainFactorPosition, and CommonFactors. */
+
+/* Rubi :1281-1290  LeadFactor[u] — the leading factor of a product,
+   recursing into First[u]; for a purely-imaginary complex number (Re = 0)
+   whose Im is not 1, the leading factor of the imaginary part (I is not
+   itself counted as a factor); else u itself. inflag : true reads the
+   internal Times args (this file's house idiom). */
+%mr_leadFactor(%mr_lf_u) := block([inflag : true],
+  if %mr_productQ(%mr_lf_u) then %mr_leadFactor(first(%mr_lf_u))
+  elseif %mr_complexNumberQ(%mr_lf_u) and is(realpart(%mr_lf_u) = 0) then
+    (if is(imagpart(%mr_lf_u) = 1) then %mr_lf_u
+     else %mr_leadFactor(imagpart(%mr_lf_u)))
+  else %mr_lf_u)$
+
+/* Rubi :1296-1305  RemainingFactors[u] — the product without its leading
+   factor: RemainingFactors[First[u]] * Rest[u] for a product (the .m's
+   own recursion on First[u], not just Rest[u], matters only when First[u]
+   is itself a purely-imaginary complex number); the complex/else branches
+   mirror LeadFactor's. */
+%mr_remainingFactors(%mr_rf_u) := block([inflag : true],
+  if %mr_productQ(%mr_rf_u) then
+    %mr_remainingFactors(first(%mr_rf_u)) * %mr_rest_in(%mr_rf_u)
+  elseif %mr_complexNumberQ(%mr_rf_u) and is(realpart(%mr_rf_u) = 0) then
+    (if is(imagpart(%mr_rf_u) = 1) then 1
+     else %i * %mr_remainingFactors(imagpart(%mr_rf_u)))
+  else 1)$
+
+/* Rubi :1311-1319  LeadBase[u] — the base of LeadFactor[u]. */
+%mr_leadBase(%mr_lb_u) := block([inflag : true, %mr_lb_v],
+  %mr_lb_v : %mr_leadFactor(%mr_lb_u),
+  if %mr_powerQ(%mr_lb_v) then part(%mr_lb_v, 1) else %mr_lb_v)$
+
+/* Rubi :1323-1331  LeadDegree[u] — the degree (exponent) of LeadFactor[u],
+   or 1 when the leading factor is not itself a power. */
+%mr_leadDegree(%mr_ld_u) := block([inflag : true, %mr_ld_v],
+  %mr_ld_v : %mr_leadFactor(%mr_ld_u),
+  if %mr_powerQ(%mr_ld_v) then part(%mr_ld_v, 2) else 1)$
+
+/* Rubi :3112-3132  MonomialFactor[u,x] — {n,v} where x^n*v == u and n is
+   free of x. The atom/Power/Product/Sum cases follow the .m literally;
+   the Power case's IntegerQ branch reads u's own exponent (u[[2]]), not
+   MonomialFactor's; the Sum case's Scan is the for-loop starting at the
+   second mapped {deg,v} pair (this file's house idiom for Scan under
+   inflag : true, e.g. line 5523). */
+%mr_monomialFactor(%mr_mf_u, x) := block(
+  [inflag : true, %mr_mf_lst1, %mr_mf_lst2, %mr_mf_lst, %mr_mf_deg, %mr_mf_i],
+  if atom(%mr_mf_u) then
+    (if is(%mr_mf_u = x) then [1, 1] else [0, %mr_mf_u])
+  elseif %mr_powerQ(%mr_mf_u) then (
+    if integerp(part(%mr_mf_u, 2)) then (
+      %mr_mf_lst1 : %mr_monomialFactor(part(%mr_mf_u, 1), x),
+      [first(%mr_mf_lst1) * part(%mr_mf_u, 2),
+       second(%mr_mf_lst1) ^ part(%mr_mf_u, 2)]
+    )
+    elseif is(part(%mr_mf_u, 1) = x) and freeof(x, part(%mr_mf_u, 2))
+      then [part(%mr_mf_u, 2), 1]
+    else [0, %mr_mf_u]
+  )
+  elseif %mr_productQ(%mr_mf_u) then (
+    %mr_mf_lst1 : %mr_monomialFactor(first(%mr_mf_u), x),
+    %mr_mf_lst2 : %mr_monomialFactor(%mr_rest_in(%mr_mf_u), x),
+    [first(%mr_mf_lst1) + first(%mr_mf_lst2),
+     second(%mr_mf_lst1) * second(%mr_mf_lst2)]
+  )
+  elseif %mr_sumQ(%mr_mf_u) then (
+    %mr_mf_lst : map(lambda([%mr_mf_e], %mr_monomialFactor(%mr_mf_e, x)),
+                      %mr_args_in(%mr_mf_u)),
+    %mr_mf_deg : first(first(%mr_mf_lst)),
+    for %mr_mf_i : 2 thru length(%mr_mf_lst) do
+      %mr_mf_deg : %mr_minimumDegree(%mr_mf_deg, first(part(%mr_mf_lst, %mr_mf_i))),
+    if %mr_eqQ(%mr_mf_deg, 0) or (%mr_rationalQ(%mr_mf_deg) and is(%mr_mf_deg < 0))
+    then [0, %mr_mf_u]
+    else [%mr_mf_deg,
+          apply("+", map(lambda([%mr_mf_e],
+                                 x ^ (first(%mr_mf_e) - %mr_mf_deg) * second(%mr_mf_e)),
+                          %mr_mf_lst))]
+  )
+  else [0, %mr_mf_u])$
+
+/* Rubi :3138-3152  MinimumDegree[deg1,deg2] — the .m's OrderedQ[{d1,d2}]
+   tie-break is %mr_orderedQ (ported, this file's line 1060); Simplify is
+   %mr_simp (the zero-chain, this file's line ~429). */
+%mr_minimumDegree(%mr_mdeg_d1, %mr_mdeg_d2) := block([%mr_mdeg_d],
+  if %mr_rationalQ(%mr_mdeg_d1) then
+    (if %mr_rationalQ(%mr_mdeg_d2) then min(%mr_mdeg_d1, %mr_mdeg_d2) else %mr_mdeg_d1)
+  elseif %mr_rationalQ(%mr_mdeg_d2) then %mr_mdeg_d2
+  else (
+    %mr_mdeg_d : %mr_simp(%mr_mdeg_d1 - %mr_mdeg_d2),
+    if %mr_rationalQ(%mr_mdeg_d) then
+      (if is(%mr_mdeg_d > 0) then %mr_mdeg_d2 else %mr_mdeg_d1)
+    else
+      (if %mr_orderedQ(%mr_mdeg_d1, %mr_mdeg_d2) then %mr_mdeg_d1 else %mr_mdeg_d2)
+  ))$
+
+/* Rubi :4224-4230  DivideDegreesOfFactors[u,n] — the base of each factor
+   of u raised to its degree divided by n; Map over a product preserves
+   the Times head (apply(op(u), map(f, args(u))), the house idiom for
+   Mathematica's Map on a compound node under inflag : true). */
+%mr_divideDegreesOfFactors(%mr_ddof_u, %mr_ddof_n) := block([inflag : true],
+  if %mr_productQ(%mr_ddof_u) then
+    apply(op(%mr_ddof_u),
+          map(lambda([%mr_ddof_f],
+                      %mr_leadBase(%mr_ddof_f) ^ (%mr_leadDegree(%mr_ddof_f) / %mr_ddof_n)),
+              %mr_args_in(%mr_ddof_u)))
+  else %mr_leadBase(%mr_ddof_u) ^ (%mr_leadDegree(%mr_ddof_u) / %mr_ddof_n))$
+
+/* ---- the absurd-number family, Rubi :1905-1975 ---------------------- */
+
+/* Rubi :1905-1913  AbsurdNumberQ[u] — a rational number, a positive
+   rational raised to a fractional power, or a product of absurd numbers.
+   The .m's binary u_*v_ pattern is, over Maxima's flat "*" node, every
+   top-level factor being absurd (%mr_everyQ over %mr_args_in). */
+%mr_absurdNumberQ(%mr_anq_u) := block([inflag : true],
+  if %mr_rationalQ(%mr_anq_u) then true
+  elseif %mr_powerQ(%mr_anq_u) then
+    %mr_rationalQ(part(%mr_anq_u, 1)) and is(part(%mr_anq_u, 1) > 0)
+      and %mr_fractionQ(part(%mr_anq_u, 2))
+  elseif %mr_productQ(%mr_anq_u) then
+    %mr_everyQ(%mr_absurdNumberQ, %mr_args_in(%mr_anq_u))
+  else false)$
+
+/* Rubi :1918-1923  AbsurdNumberFactors[u] — the product of u's absurd-
+   number factors. */
+%mr_absurdNumberFactors(%mr_anf_u) := block([inflag : true],
+  if %mr_absurdNumberQ(%mr_anf_u) then %mr_anf_u
+  elseif %mr_productQ(%mr_anf_u) then
+    apply(op(%mr_anf_u), map(%mr_absurdNumberFactors, %mr_args_in(%mr_anf_u)))
+  else %mr_numericFactor(%mr_anf_u))$
+
+/* Rubi :1926-1931  NonabsurdNumberFactors[u] — the product of u's factors
+   that are not absurd numbers. */
+%mr_nonabsurdNumberFactors(%mr_nanf_u) := block([inflag : true],
+  if %mr_absurdNumberQ(%mr_nanf_u) then 1
+  elseif %mr_productQ(%mr_nanf_u) then
+    apply(op(%mr_nanf_u), map(%mr_nonabsurdNumberFactors, %mr_args_in(%mr_nanf_u)))
+  else %mr_nonnumericFactors(%mr_nanf_u))$
+
+/* Rubi :1934-1940  FactorAbsurdNumber[m] — m's prime factorization as a
+   list of [prime, exponent] pairs, denominator primes carrying a negative
+   exponent. MEASURED 2026-09-22 (branch_5_50_base_84_g4204fb669/SBCL):
+   ifactors(n) factors a POSITIVE integer n > 1 (ifactors(6) = [[2,1],
+   [3,1]]) and ifactors(1) = [] (NOT Mathematica's FactorInteger[1] =
+   {{1,1}}); a numerator or denominator of 1 contributes no pairs, and
+   the whole-m-is-1 (or -1) case is the only place the {{1,1}} (or
+   {{-1,1}}) identity is needed, handled by the empty-merge special case
+   below. A negative m gets a leading [-1,1] pair (FactorInteger's own
+   sign convention). The power branch reads m's own exponent (m[[2]]);
+   the product branch's Flatten[Map[...],1] is apply(append, map(...))
+   over %mr_args_in, and Sort[...,#1[[1]]<#2[[1]]&] is the exact sort
+   comparator the brief specifies. */
+%mr_factorAbsurdNumber(%mr_fan_m) := block(
+  [inflag : true, %mr_fan_sgn, %mr_fan_nu, %mr_fan_de, %mr_fan_l1, %mr_fan_l2,
+   %mr_fan_merged, %mr_fan_p, %mr_fan_q],
+  if %mr_rationalQ(%mr_fan_m) then (
+    %mr_fan_sgn : if is(%mr_fan_m < 0) then -1 else 1,
+    %mr_fan_nu : abs(num(%mr_fan_m)),
+    %mr_fan_de : abs(denom(%mr_fan_m)),
+    %mr_fan_l1 : if is(%mr_fan_nu = 1) then [] else ifactors(%mr_fan_nu),
+    %mr_fan_l2 : map(lambda([%mr_fan_p], [first(%mr_fan_p), -second(%mr_fan_p)]),
+                      if is(%mr_fan_de = 1) then [] else ifactors(%mr_fan_de)),
+    %mr_fan_merged : append(%mr_fan_l1, %mr_fan_l2),
+    if is(%mr_fan_merged = []) then
+      %mr_fan_merged : (if is(%mr_fan_sgn = -1) then [[-1, 1]] else [[1, 1]])
+    elseif is(%mr_fan_sgn = -1) then
+      %mr_fan_merged : cons([-1, 1], %mr_fan_merged),
+    sort(%mr_fan_merged, lambda([%mr_fan_p, %mr_fan_q], first(%mr_fan_p) < first(%mr_fan_q)))
+  )
+  elseif %mr_powerQ(%mr_fan_m) then
+    map(lambda([%mr_fan_p], [first(%mr_fan_p), second(%mr_fan_p) * part(%mr_fan_m, 2)]),
+        %mr_factorAbsurdNumber(part(%mr_fan_m, 1)))
+  else
+    %mr_combineExponents(
+      sort(apply(append, map(%mr_factorAbsurdNumber, %mr_args_in(%mr_fan_m))),
+           lambda([%mr_fan_p, %mr_fan_q], first(%mr_fan_p) < first(%mr_fan_q)))))$
+
+/* Rubi :1943-1947  CombineExponents[lst] — a sorted [prime,exponent] list
+   with equal-prime pairs merged (added) into one. */
+%mr_combineExponents(%mr_ce_lst) := block([],
+  if length(%mr_ce_lst) < 2 then %mr_ce_lst
+  elseif is(first(first(%mr_ce_lst)) = first(second(%mr_ce_lst))) then
+    %mr_combineExponents(
+      cons([first(first(%mr_ce_lst)), second(first(%mr_ce_lst)) + second(second(%mr_ce_lst))],
+           rest(%mr_ce_lst, 2)))
+  else cons(first(%mr_ce_lst), %mr_combineExponents(rest(%mr_ce_lst))))$
+
+/* Rubi :1950-1956  AbsurdNumberGCD[seq__] — DEVIATION (spec, the brief's
+   Interfaces list): the pinned Rubi only ever calls this through
+   Apply[AbsurdNumberGCD, lst], so the port takes ONE Maxima list in place
+   of the variadic seq__. A one-element list is its own element (the
+   .m's Length[lst]==1 base case); otherwise the gcd of the first element's
+   factorization against the gcd of the rest. */
+%mr_absurdNumberGCD(%mr_agcd_lst) := block([%mr_agcd_rest],
+  if is(length(%mr_agcd_lst) = 1) then first(%mr_agcd_lst)
+  else (
+    %mr_agcd_rest : %mr_absurdNumberGCD(rest(%mr_agcd_lst)),
+    %mr_absurdNumberGCDList(%mr_factorAbsurdNumber(first(%mr_agcd_lst)),
+                             %mr_factorAbsurdNumber(%mr_agcd_rest))
+  ))$
+
+/* Rubi :1959-1975  AbsurdNumberGCDList[lst1,lst2] — the gcd of two
+   [prime,exponent] factorizations: an exhausted list contributes only its
+   partner's negative-exponent (denominator) primes; equal leading primes
+   keep the smaller exponent; otherwise the smaller leading prime is
+   dropped (kept only if its own exponent is negative, i.e. it is a
+   denominator prime the gcd must still carry). */
+%mr_absurdNumberGCDList(%mr_agcdl_l1, %mr_agcdl_l2) := block([%mr_agcdl_p],
+  if is(%mr_agcdl_l1 = []) then
+    apply("*", map(lambda([%mr_agcdl_p], first(%mr_agcdl_p) ^ min(second(%mr_agcdl_p), 0)),
+                    %mr_agcdl_l2))
+  elseif is(%mr_agcdl_l2 = []) then
+    apply("*", map(lambda([%mr_agcdl_p], first(%mr_agcdl_p) ^ min(second(%mr_agcdl_p), 0)),
+                    %mr_agcdl_l1))
+  elseif is(first(first(%mr_agcdl_l1)) = first(first(%mr_agcdl_l2))) then
+    (if is(second(first(%mr_agcdl_l1)) <= second(first(%mr_agcdl_l2))) then
+       first(first(%mr_agcdl_l1)) ^ second(first(%mr_agcdl_l1))
+         * %mr_absurdNumberGCDList(rest(%mr_agcdl_l1), rest(%mr_agcdl_l2))
+     else
+       first(first(%mr_agcdl_l1)) ^ second(first(%mr_agcdl_l2))
+         * %mr_absurdNumberGCDList(rest(%mr_agcdl_l1), rest(%mr_agcdl_l2)))
+  elseif is(first(first(%mr_agcdl_l1)) < first(first(%mr_agcdl_l2))) then
+    (if is(second(first(%mr_agcdl_l1)) < 0) then
+       first(first(%mr_agcdl_l1)) ^ second(first(%mr_agcdl_l1))
+         * %mr_absurdNumberGCDList(rest(%mr_agcdl_l1), %mr_agcdl_l2)
+     else
+       %mr_absurdNumberGCDList(rest(%mr_agcdl_l1), %mr_agcdl_l2))
+  else
+    (if is(second(first(%mr_agcdl_l2)) < 0) then
+       first(first(%mr_agcdl_l2)) ^ second(first(%mr_agcdl_l2))
+         * %mr_absurdNumberGCDList(%mr_agcdl_l1, rest(%mr_agcdl_l2))
+     else
+       %mr_absurdNumberGCDList(%mr_agcdl_l1, rest(%mr_agcdl_l2))))$
+
+/* Rubi :3092-3101  Smallest — the smaller of two numbers when they agree
+   in sign, else 0; Smallest[lst] folds Smallest over a list. */
+%mr_smallest(%mr_sm_n1, %mr_sm_n2) := block([],
+  if is(%mr_sm_n1 > 0) then
+    (if is(%mr_sm_n2 > 0) then min(%mr_sm_n1, %mr_sm_n2) else 0)
+  else (if is(%mr_sm_n2 > 0) then 0 else max(%mr_sm_n1, %mr_sm_n2)))$
+
+%mr_smallestList(%mr_sml_lst) := block([%mr_sml_num, %mr_sml_e],
+  %mr_sml_num : first(%mr_sml_lst),
+  for %mr_sml_e in rest(%mr_sml_lst) do %mr_sml_num : %mr_smallest(%mr_sml_num, %mr_sml_e),
+  %mr_sml_num)$
+
+/* Rubi :3082-3090  FactorOrder[u,v] — 0 if u and v are both 1, -1/1 if
+   only one of them is 1, else Mathematica's Order[u,v] (1 before, 0
+   equal, -1 after in canonical order). DEVIATION (spec A1): Maxima's
+   canonical order (orderlessp) stands in for Mathematica's Order; ported
+   as orderlessp/is(u=v) per the brief. */
+%mr_factorOrder(%mr_fo_u, %mr_fo_v) := block([],
+  if is(%mr_fo_u = 1) then (if is(%mr_fo_v = 1) then 0 else -1)
+  elseif is(%mr_fo_v = 1) then 1
+  else (if orderlessp(%mr_fo_u, %mr_fo_v) then 1
+        elseif is(%mr_fo_u = %mr_fo_v) then 0
+        else -1))$
+
+/* Rubi :3076-3080  MostMainFactorPosition[lst] — the position of the
+   factor most main (FactorOrder-earliest) in lst, starting from the
+   sentinel factor 1 (which every real factor is FactorOrder-before). */
+%mr_mostMainFactorPosition(%mr_mmfp_lst) := block(
+  [%mr_mmfp_factor : 1, %mr_mmfp_num : 1, %mr_mmfp_i],
+  for %mr_mmfp_i : 1 thru length(%mr_mmfp_lst) do
+    if is(%mr_factorOrder(part(%mr_mmfp_lst, %mr_mmfp_i), %mr_mmfp_factor) > 0) then (
+      %mr_mmfp_factor : part(%mr_mmfp_lst, %mr_mmfp_i),
+      %mr_mmfp_num : %mr_mmfp_i
+    ),
+  %mr_mmfp_num)$
+
+/* Rubi :3025-3051  CommonFactors[lst] — an (n+1)-element list whose first
+   element is the product of the factors common to every term of lst and
+   whose remaining elements are each term divided by the common factor.
+   Map2/ReapList are NOT ported (spec A1): the .m's Map2 is Maxima's
+   two-list map (measured to apply element-wise, this file's line
+   ~7100-probe); the While[True,...,Return[...]] loop is a for-loop with
+   a return, matching the house idiom (e.g. this file's line ~6979); the
+   .m's nested If-chain, where the THIRD branch's lst4=Map[LeadDegree,...]
+   assignment runs unconditionally once the first two branches decline
+   (a plain statement between two Ifs, not itself a condition), is ported
+   as the %mr_cf_isLog flag guarding entry to the log branch, with lst4
+   computed only in the surviving elses -- semantically identical to the
+   .m's fall-through, since the log branch's own lst4 (the per-term
+   ratio, a DIFFERENT variable reused under the same name upstream) is
+   never read once that branch is skipped. ReplacePart[lst,e,k] is a
+   makelist copy with index k replaced (never a destructive part-set).
+   Apply[SameQ,lst3] (every element syntactically identical) is
+   %mr_everyQ against is(# = first(lst3)) (the %mr_unsameQ SameQ
+   precedent, this file's line ~6495). The Log branch's First[#] (the
+   log's own argument) is first(%mr_args_in(#)).
+   FIX ROUND 1 (Task 8 fix round 1, 2026-09-22): the brief's "FullSimplify
+   there is ratsimp" is WRONG for this ratio specifically -- MEASURED:
+   ratsimp(log(8)/log(4)) stays the unsimplified quotient log(8)/log(4)
+   (not 3/2), so with ratsimp the log branch's EveryQ[RationalQ,...] gate
+   never passes for any two DIFFERENT log arguments and the branch was
+   dead code (commonFactors([log(4),log(8)]) came out [1,log(4),log(8)]
+   -- no common log factor extracted at all, via the MostMainFactorPosition
+   fallback, which is wrong: upstream's FullSimplify recognizes log(8)/
+   log(4) = 3/2 and extracts log(2)). This is exactly the gap
+   %mr_logRatio(base, F) already closes for commensurable positive-
+   integer bases (this file's line ~4801, written for the same FullSimplify/
+   ratsimp gap in FunctionOfExponential's TestAux) -- reused here rather
+   than reinvented: %mr_logRatio(first(%mr_args_in(e)), first(%mr_args_in(
+   first(lst3)))) gives the exact rational log(e's argument)/log(first
+   lst3's argument), or false when the arguments are not commensurable
+   (MEASURED: %mr_logRatio(8,4) = 3/2, %mr_logRatio(6,4) = false, matching
+   FullSimplify's own decline on non-commensurable bases); %mr_rationalQ
+   (false) = false, so the EveryQ[RationalQ,...] gate still correctly
+   declines non-commensurable inputs. GCD of the (possibly fractional)
+   ratio list is the numerator-gcd over denominator-lcm identity
+   (Mathematica's GCD on rationals), since Maxima's gcd/lcm are
+   integer-only. MEASURED 2026-09-22: apply(gcd, [1,3]) is the noun
+   spmod(1,3), NOT 1 -- gcd is also a Maxima OPTION VARIABLE (its default
+   algorithm name, "spmod"), and apply evaluates its function-position
+   argument, so the bare symbol gcd resolves to that option value before
+   apply ever sees it; gcd(1,3) direct-called (no apply) is unaffected
+   (evaluates to 1) since a direct call resolves the function cell, not
+   the value cell. apply("gcd", ...) (the quoted-string form, the same
+   idiom this file already uses for apply("+", ...) / apply("*", ...))
+   sidesteps the value-cell read and gives 1 for TWO arguments -- but
+   gcd's real signature (? gcd) is gcd(p1, p2, x1, ...), a BINARY gcd
+   plus optional POLYNOMIAL VARIABLES, not a variadic numeric gcd: three
+   or more numeric arguments (apply("gcd", [1,3,2])) fail "gcd: improper
+   argument: 2" (2 is read as a variable spec). lcm(expr1, ..., exprn)
+   (functs) IS genuinely variadic, so apply("lcm", ...) is fine for any
+   length; gcd is folded pairwise instead, lreduce("gcd", ...) (the
+   quoted-string form again -- lreduce(gcd, ...), unquoted, hits the
+   same value-cell trap and silently builds spmod(spmod(...),...)
+   nouns). */
+%mr_commonFactors(%mr_cf_lst) := block(
+  [%mr_cf_lst1, %mr_cf_lst2, %mr_cf_lst3, %mr_cf_lst4, %mr_cf_bases,
+   %mr_cf_common, %mr_cf_base, %mr_cf_num, %mr_cf_isLog, %mr_cf_ratios,
+   %mr_cf_i, %mr_cf_dummy, %mr_cf_result, %mr_cf_e, %mr_cf_p, %mr_cf_q],
+  %mr_cf_lst1 : map(%mr_nonabsurdNumberFactors, %mr_cf_lst),
+  %mr_cf_lst2 : map(%mr_absurdNumberFactors, %mr_cf_lst),
+  %mr_cf_num : %mr_absurdNumberGCD(%mr_cf_lst2),
+  %mr_cf_common : %mr_cf_num,
+  %mr_cf_lst2 : map(lambda([%mr_cf_e], %mr_cf_e / %mr_cf_num), %mr_cf_lst2),
+  %mr_cf_result : for %mr_cf_dummy : 1 while true do (
+    %mr_cf_lst3 : map(%mr_leadFactor, %mr_cf_lst1),
+    if %mr_everyQ(lambda([%mr_cf_e], is(%mr_cf_e = first(%mr_cf_lst3))), %mr_cf_lst3)
+    then (
+      %mr_cf_common : %mr_cf_common * first(%mr_cf_lst3),
+      %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+    )
+    else (
+      %mr_cf_isLog : false,
+      if %mr_everyQ(lambda([%mr_cf_e],
+                           %mr_logQ(%mr_cf_e)
+                             and integerp(first(%mr_args_in(%mr_cf_e)))
+                             and is(first(%mr_args_in(%mr_cf_e)) > 0)),
+                    %mr_cf_lst3)
+      then (
+        %mr_cf_ratios : map(lambda([%mr_cf_e],
+                                    %mr_logRatio(first(%mr_args_in(%mr_cf_e)),
+                                                 first(%mr_args_in(first(%mr_cf_lst3))))),
+                             %mr_cf_lst3),
+        if %mr_everyQ(%mr_rationalQ, %mr_cf_ratios) then %mr_cf_isLog : true
+      ),
+      if %mr_cf_isLog then (
+        %mr_cf_num : lreduce("gcd", map(num, %mr_cf_ratios)) / apply("lcm", map(denom, %mr_cf_ratios)),
+        %mr_cf_common : %mr_cf_common
+          * log(first(%mr_args_in(first(%mr_cf_lst3))) ^ %mr_cf_num),
+        %mr_cf_lst2 : map(lambda([%mr_cf_p, %mr_cf_q], %mr_cf_p * %mr_cf_q / %mr_cf_num),
+                           %mr_cf_lst2, %mr_cf_ratios),
+        %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+      )
+      else (
+        %mr_cf_lst4 : map(%mr_leadDegree, %mr_cf_lst1),
+        %mr_cf_bases : map(%mr_leadBase, %mr_cf_lst1),
+        if %mr_everyQ(lambda([%mr_cf_e], is(%mr_cf_e = first(%mr_cf_bases))), %mr_cf_bases)
+           and %mr_everyQ(%mr_rationalQ, %mr_cf_lst4)
+        then (
+          %mr_cf_num : %mr_smallestList(%mr_cf_lst4),
+          %mr_cf_base : first(%mr_cf_bases),
+          if not is(%mr_cf_num = 0) then %mr_cf_common : %mr_cf_common * %mr_cf_base ^ %mr_cf_num,
+          %mr_cf_lst2 : map(lambda([%mr_cf_p, %mr_cf_q], %mr_cf_p * %mr_cf_base ^ (%mr_cf_q - %mr_cf_num)),
+                             %mr_cf_lst2, %mr_cf_lst4),
+          %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+        )
+        elseif is(length(%mr_cf_lst1) = 2)
+           and %mr_eqQ(first(%mr_cf_bases) + second(%mr_cf_bases), 0)
+           and %mr_neQ(first(%mr_cf_lst1), 1)
+           and integerp(first(%mr_cf_lst4))
+           and %mr_fractionQ(second(%mr_cf_lst4))
+        then (
+          %mr_cf_num : min(first(%mr_cf_lst4), second(%mr_cf_lst4)),
+          %mr_cf_base : second(%mr_cf_bases),
+          if not is(%mr_cf_num = 0) then %mr_cf_common : %mr_cf_common * %mr_cf_base ^ %mr_cf_num,
+          %mr_cf_lst2 : [first(%mr_cf_lst2) * (-1) ^ first(%mr_cf_lst4), second(%mr_cf_lst2)],
+          %mr_cf_lst2 : map(lambda([%mr_cf_p, %mr_cf_q], %mr_cf_p * %mr_cf_base ^ (%mr_cf_q - %mr_cf_num)),
+                             %mr_cf_lst2, %mr_cf_lst4),
+          %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+        )
+        elseif is(length(%mr_cf_lst1) = 2)
+           and %mr_eqQ(first(%mr_cf_bases) + second(%mr_cf_bases), 0)
+           and %mr_neQ(second(%mr_cf_lst1), 1)
+           and integerp(second(%mr_cf_lst4))
+           and %mr_fractionQ(first(%mr_cf_lst4))
+        then (
+          %mr_cf_num : min(first(%mr_cf_lst4), second(%mr_cf_lst4)),
+          %mr_cf_base : first(%mr_cf_bases),
+          if not is(%mr_cf_num = 0) then %mr_cf_common : %mr_cf_common * %mr_cf_base ^ %mr_cf_num,
+          %mr_cf_lst2 : [first(%mr_cf_lst2), second(%mr_cf_lst2) * (-1) ^ second(%mr_cf_lst4)],
+          %mr_cf_lst2 : map(lambda([%mr_cf_p, %mr_cf_q], %mr_cf_p * %mr_cf_base ^ (%mr_cf_q - %mr_cf_num)),
+                             %mr_cf_lst2, %mr_cf_lst4),
+          %mr_cf_lst1 : map(%mr_remainingFactors, %mr_cf_lst1)
+        )
+        else (
+          %mr_cf_num : %mr_mostMainFactorPosition(%mr_cf_lst3),
+          %mr_cf_lst2 : makelist(
+                          if %mr_cf_i = %mr_cf_num
+                          then part(%mr_cf_lst3, %mr_cf_num) * part(%mr_cf_lst2, %mr_cf_num)
+                          else part(%mr_cf_lst2, %mr_cf_i),
+                          %mr_cf_i, 1, length(%mr_cf_lst2)),
+          %mr_cf_lst1 : makelist(
+                          if %mr_cf_i = %mr_cf_num
+                          then %mr_remainingFactors(part(%mr_cf_lst1, %mr_cf_num))
+                          else part(%mr_cf_lst1, %mr_cf_i),
+                          %mr_cf_i, 1, length(%mr_cf_lst1))
+        )
+      )
+    ),
+    if %mr_everyQ(lambda([%mr_cf_e], is(%mr_cf_e = 1)), %mr_cf_lst1)
+    then return(cons(%mr_cf_common, %mr_cf_lst2))
+  ),
+  %mr_cf_result)$
+
+/* ==== Section 9 (9.2 + 9.3) utilities: spec 2026-09-22 ==== */
+
+/* Rubi :4169-4175  FunctionOfLinear[u,x] — if u(x) is equivalent to an
+   expression of the form f(a+b*x) and not the case a=0, b=1, returns
+   [f(x),a,b]; else false. The With[{lst=...}] binding is the aux call
+   below with the initial a/b/flag all false. */
+%mr_functionOfLinear(%mr_fol_u, x) := block([inflag : true, %mr_fol_lst],
+  %mr_fol_lst : %mr_functionOfLinearAux(%mr_fol_u, false, false, x, false),
+  if atom(%mr_fol_lst) or %mr_falseQ(first(%mr_fol_lst))
+     or (is(first(%mr_fol_lst) = 0) and is(second(%mr_fol_lst) = 1))
+  then false
+  else [%mr_functionOfLinearSubst(%mr_fol_u, first(%mr_fol_lst), second(%mr_fol_lst), x),
+        first(%mr_fol_lst), second(%mr_fol_lst)])$
+
+/* Rubi :4176-4205  FunctionOfLinear[u,a,b,x,flag] — the 5-arg overload:
+   thread a running [a,b] pair through u's structure until every leaf is
+   free of x or the pattern fails (an atom result signals failure and the
+   Catch/Scan of :4198-4202 short-circuits the whole call to False; ported
+   as the inner block's early return(false), which return exits, matching
+   the Catch/Throw). The PowerQ branch (:4193-4194) recurses on
+   Log[u[[1]]]*u[[2]] when the base is free of x. The :4196-4199
+   ProductQ/MonomialFactor branch's true arm is dead code upstream
+   (If[False && ...] always falls to its own else, False) — not ported;
+   only the false-arm's decline (ProductQ[u] and a nonzero monomial
+   degree) is kept. */
+%mr_functionOfLinearAux(%mr_fola_u, %mr_fola_a, %mr_fola_b, x, %mr_fola_flag) := block(
+  [inflag : true, %mr_fola_lst, %mr_fola_e, %mr_fola_sflag],
+  if freeof(x, %mr_fola_u) then [%mr_fola_a, %mr_fola_b]
+  elseif %mr_calculusQ(%mr_fola_u) then false
+  elseif %mr_linearQ(%mr_fola_u, x) then (
+    /* WORKAROUND (ticket .scratch/class-ports/issues/10-mr-coeff-drops-
+       nonatomic-constant-terms.md): %mr_coeff(u,x,0) drops a degree-0
+       term that is x-free but not an atom (e.g. log(4) in log(4)*(2*x+1),
+       the exact form the PowerQ branch below recurses into for a
+       non-%e base) -- MEASURED, %mr_coeff(log(4)+x,x,0) = 0. ratcoef(u,
+       x,n), verified on this file's actual cases (a symbolic a+b*x, an
+       integer 2+3*x, the log(4)*(2*x+1) product form, and an %e-bearing
+       constant/coefficient), gives the correct degree-0 and degree-1
+       terms in every case and is used here in %mr_coeff's place; u is
+       already gated %mr_linearQ so ratcoef's polynomial-in-x reading
+       applies. Do not carry this substitution to any other port -- the
+       general fix belongs to ticket 10. */
+    if %mr_falseQ(%mr_fola_a) then
+      [ratcoef(%mr_fola_u, x, 0), ratcoef(%mr_fola_u, x, 1)]
+    else (
+      %mr_fola_lst : %mr_commonFactors([%mr_fola_b, ratcoef(%mr_fola_u, x, 1)]),
+      if %mr_eqQ(ratcoef(%mr_fola_u, x, 0), 0) and not %mr_fola_flag
+        then [0, first(%mr_fola_lst)]
+      elseif %mr_eqQ(%mr_fola_b * ratcoef(%mr_fola_u, x, 0)
+                       - %mr_fola_a * ratcoef(%mr_fola_u, x, 1), 0)
+        then [%mr_fola_a / second(%mr_fola_lst), first(%mr_fola_lst)]
+      else [0, 1]
+    )
+  )
+  elseif %mr_powerQ(%mr_fola_u) and freeof(x, part(%mr_fola_u, 1)) then
+    %mr_functionOfLinearAux(log(part(%mr_fola_u, 1)) * part(%mr_fola_u, 2),
+                             %mr_fola_a, %mr_fola_b, x, false)
+  else (
+    %mr_fola_lst : if %mr_productQ(%mr_fola_u) then %mr_monomialFactor(%mr_fola_u, x)
+                   else [0, %mr_fola_u],
+    if %mr_productQ(%mr_fola_u) and %mr_neQ(first(%mr_fola_lst), 0) then false
+    else (
+      %mr_fola_sflag : %mr_sumQ(%mr_fola_u),
+      block([%mr_fola_acc : [%mr_fola_a, %mr_fola_b]],
+        for %mr_fola_e in %mr_args_in(%mr_fola_u) do (
+          %mr_fola_acc : %mr_functionOfLinearAux(%mr_fola_e, first(%mr_fola_acc),
+                                                  second(%mr_fola_acc), x, %mr_fola_sflag),
+          if atom(%mr_fola_acc) then return(false)
+        ),
+        %mr_fola_acc)
+    )
+  ))$
+
+/* Rubi :4206-4222  FunctionOfLinearSubst[u,a,b,x] — substitutes x back
+   into u = f(a+b*x) to recover f(x). The PowerQ branch's E^FullSimplify[
+   ...] (:4213) is %e^ratsimp(...) (the brief's exact reading: this
+   occurrence, unlike CommonFactors' log-ratio gate, is a plain rational
+   simplification of an additive/multiplicative exponent expression,
+   which ratsimp closes). Map[Function[...],u] (:4219) under inflag : true
+   is apply(op(u), map(...)), the house idiom (this file's line ~3582). */
+%mr_functionOfLinearSubst(%mr_fols_u, %mr_fols_a, %mr_fols_b, x) := block(
+  [inflag : true, %mr_fols_lst, %mr_fols_tmp],
+  if freeof(x, %mr_fols_u) then %mr_fols_u
+  elseif %mr_linearQ(%mr_fols_u, x) then (
+    /* WORKAROUND (ticket 10, same as %mr_functionOfLinearAux above):
+       ratcoef(u,x,n) in place of %mr_coeff(u,x,n), u already gated
+       %mr_linearQ. */
+    %mr_fols_tmp : ratcoef(%mr_fols_u, x, 1),
+    %mr_fols_tmp : if is(%mr_fols_tmp = %mr_fols_b) then 1 else %mr_fols_tmp / %mr_fols_b,
+    ratcoef(%mr_fols_u, x, 0) - %mr_fols_a * %mr_fols_tmp + %mr_fols_tmp * x
+  )
+  elseif %mr_powerQ(%mr_fols_u) and freeof(x, part(%mr_fols_u, 1)) then
+    %e ^ ratsimp(%mr_functionOfLinearSubst(log(part(%mr_fols_u, 1)) * part(%mr_fols_u, 2),
+                                            %mr_fols_a, %mr_fols_b, x))
+  else (
+    %mr_fols_lst : if %mr_productQ(%mr_fols_u) then %mr_monomialFactor(%mr_fols_u, x)
+                   else [0, %mr_fols_u],
+    if %mr_productQ(%mr_fols_u) and %mr_neQ(first(%mr_fols_lst), 0) then (
+      if %mr_rationalQ(%mr_leadFactor(second(%mr_fols_lst)))
+         and is(%mr_leadFactor(second(%mr_fols_lst)) < 0)
+      then -%mr_functionOfLinearSubst(
+              %mr_divideDegreesOfFactors(-second(%mr_fols_lst), first(%mr_fols_lst)) * x,
+              %mr_fols_a, %mr_fols_b, x) ^ first(%mr_fols_lst)
+      else %mr_functionOfLinearSubst(
+              %mr_divideDegreesOfFactors(second(%mr_fols_lst), first(%mr_fols_lst)) * x,
+              %mr_fols_a, %mr_fols_b, x) ^ first(%mr_fols_lst)
+    )
+    else apply(op(%mr_fols_u),
+               map(lambda([%mr_fols_e], %mr_functionOfLinearSubst(%mr_fols_e, %mr_fols_a, %mr_fols_b, x)),
+                   %mr_args_in(%mr_fols_u)))
+  ))$
 
 mr_witness_utils() := true$

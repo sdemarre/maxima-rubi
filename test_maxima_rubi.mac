@@ -134,6 +134,16 @@ run_all_tests() := block([],
   test_class4_with_capture(),
   test_mr_sum_capture(),
   test_with_local_capture_all(),
+  test_section9_unsameQ(),
+  test_section9_g1(),
+  test_section9_g2a(),
+  test_section9_g2b(),
+  test_section9_g3(),
+  test_section9_g4(),
+  test_section9_g5(),
+  test_section9_g6a(),
+  test_section9_g6b(),
+  test_section9_condassign(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4233,6 +4243,327 @@ test_mr_sum_capture() := block([mr_sc_saved, mr_sc_ok, mr_sc_f, mr_sc_r,
     is(mr_sc_r # false) and is(mr_sc_r = mr_sc_q)),
   true
 )$
+
+/* Section 9 (spec 2026-09-22 A2.3): Rubi's UnsameQ (=!=), a SYNTACTIC
+   test -- 9.3's NormalizeIntegrand record, v=!=u. */
+test_section9_unsameQ() := block([],
+  print("--- section 9: UnsameQ ---"),
+  check_bool("unsameQ: different expressions", %mr_unsameQ(x + 1, x + 2)),
+  check_not("unsameQ: identical after simplification", %mr_unsameQ(x + 1, 1 + x)),
+  true)$
+
+/* Section 9, G1 (spec 2026-09-22 A1): PiecewiseLinearQ (Rubi :7430-7440)
+   and Divides (:7443). atan(tan(x)) and friends are NOT auto-simplified
+   in this build (probes/rubi/06), which is why 9.2 exists at all. */
+test_section9_g1() := block([],
+  print("--- section 9 G1: PiecewiseLinearQ / Divides ---"),
+  check_bool("plq: a linear function", %mr_piecewiseLinearQ(2*x + 3, x)),
+  check_not("plq: a quadratic", %mr_piecewiseLinearQ(x^2, x)),
+  check_bool("plq: log(c F^v), c = 2, F = e", %mr_piecewiseLinearQ(log(2*%e^x), x)),
+  check_bool("plq: log(c F^v), F = 2, v linear", %mr_piecewiseLinearQ(log(3*2^(2*x + 1)), x)),
+  check_not("plq: log(c F^v) with v not linear", %mr_piecewiseLinearQ(log(3*2^(x^2)), x)),
+  check_not("plq: log(c F^v) with c not free", %mr_piecewiseLinearQ(log(x*%e^x), x)),
+  check_bool("plq: atan(tan(linear))", %mr_piecewiseLinearQ(atan(tan(2*x + 1)), x)),
+  check_bool("plq: acot(tan(x)), a listed pair", %mr_piecewiseLinearQ(acot(tan(x)), x)),
+  check_not("plq: atan(sin(x)), not a listed pair", %mr_piecewiseLinearQ(atan(sin(x)), x)),
+  check_not("plq: atan(tan(x^2)), argument not linear", %mr_piecewiseLinearQ(atan(tan(x^2)), x)),
+  check_bool("plq 3-arg: both piecewise linear",
+             %mr_piecewiseLinearQ(atan(tan(x)), 2*x + 1, x)),
+  check_not("plq 3-arg: the second is not",
+            %mr_piecewiseLinearQ(atan(tan(x)), x^2, x)),
+  check("divides: (x+1)/(2x+2) is free of x", %mr_divides(2*x + 2, x + 1, x), 1/2),
+  check("divides: x^2/x is not free of x", %mr_divides(x, x^2, x), false),
+  check("divides: 3x/(a x)", %mr_divides(a*x, 3*x, x), 3/a),
+  true)$
+
+/* Section 9, G2a (spec 2026-09-22 A1). EulerIntegrandQ (Rubi :5017-5039)
+   is five Name[pattern] := True/False /; cond clauses, generated into
+   rules/utils/inert_trig_rewrites.mac as mr_rw_eiq (the inert-trig
+   rewrite machinery, design 3.2). SimplerIntegrandQ :804,
+   CancelCommonFactors :821. */
+test_section9_g2a() := block([],
+  print("--- section 9 G2a: EulerIntegrandQ / SimplerIntegrandQ ---"),
+  errcatch(%mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                            'mr_witness_inert_trig_rewrites)),
+  check_bool("eiq: (x+sqrt(Q))^-1, Q quadratic not binomial",
+             %mr_eulerIntegrandQ(1/(x + sqrt(x^2 + 2*x + 3)), x)),
+  check_not("eiq: (x+sqrt(x^2+1))^-1, Q binomial and p rational",
+            %mr_eulerIntegrandQ(1/(x + sqrt(x^2 + 1)), x)),
+  check_bool("eiq: (x+sqrt(x^2+1))^q, p not rational",
+             %mr_eulerIntegrandQ((x + sqrt(x^2 + 1))^q, x)),
+  check_bool("eiq: sqrt(Q)*(x+sqrt(Q))^-2, clause 2",
+             %mr_eulerIntegrandQ(sqrt(x^2 + 2*x + 3)/(x + sqrt(x^2 + 2*x + 3))^2, x)),
+  check_bool("eiq: sqrt(x^2+1)/(x^2+x+1), clause 4",
+             %mr_eulerIntegrandQ(sqrt(x^2 + 1)/(x^2 + x + 1), x)),
+  check_not("eiq: x^2, the catch-all False", %mr_eulerIntegrandQ(x^2, x)),
+  check("ccf: a common factor x cancels",
+        %mr_cancelCommonFactors(2*x*sin(x), x*cos(x)), [2*sin(x), cos(x)]),
+  check("ccf: a negative numeric coefficient survives the cancellation",
+        %mr_cancelCommonFactors(-2*x*sin(x), x*cos(x)), [-2*sin(x), cos(x)]),
+  check("ccf: u is a factor of v", %mr_cancelCommonFactors(x, x*cos(x)), [1, cos(x)]),
+  check("ccf: v is a factor of u", %mr_cancelCommonFactors(x*sin(x), x), [sin(x), 1]),
+  check("ccf: nothing in common", %mr_cancelCommonFactors(sin(x), cos(x)), [sin(x), cos(x)]),
+  check_bool("sic: x is simpler than a large product",
+             %mr_simplerIntegrandQ(x, (x^5 + x^4 + x^3 + x^2 + x + 1)^3*sin(x), x)),
+  check_not("sic: the large product is not simpler than x",
+            %mr_simplerIntegrandQ((x^5 + x^4 + x^3 + x^2 + x + 1)^3*sin(x), x, x)),
+  check_bool("sic: rational functions compare by exponent sums (2 < 4)",
+             %mr_simplerIntegrandQ(1/(x^2 + 1), x/(x^3 + 1), x)),
+  true)$
+
+/* Section 9, G2b (spec 2026-09-22 A1): SubstForFractionalPowerQ (Rubi
+   :1815, AuxQ :1822), PolynomialInQ (:3223, AuxQ :3227), PolynomialInSubst
+   (:3275, Aux :3280). */
+test_section9_g2b() := block([],
+  print("--- section 9 G2b: SubstForFractionalPowerQ / PolynomialIn ---"),
+  check_bool("sffpq: the only fractional power has base v",
+             %mr_substForFractionalPowerQ(x*sqrt(2 + 3*x), 2 + 3*x, x)),
+  check_not("sffpq: a fractional power of another base",
+            %mr_substForFractionalPowerQ(x*sqrt(1 + x^2), 2 + 3*x, x)),
+  check_bool("sffpq: no fractional power at all",
+             %mr_substForFractionalPowerQ(x^2 + 1, 2 + 3*x, x)),
+  check_bool("piq: a polynomial in log(x)",
+             %mr_polynomialInQ(log(x)^2 + 3*log(x) + 1, log(x), x)),
+  check_not("piq: a bare x is not", %mr_polynomialInQ(x*log(x), log(x), x)),
+  check_bool("piq: a polynomial in x^2 through 1+2x^2",
+             %mr_polynomialInQ(x^4 + x^2, 1 + 2*x^2, x)),
+  check_not("piq: x^3 is not a power of x^2",
+            %mr_polynomialInQ(x^3 + x^2, x^2 + 1, x)),
+  check("pis: x^4+x^2 in t = 1+2x^2",
+        ratsimp(%mr_polynomialInSubst(x^4 + x^2, 1 + 2*x^2, x)
+                - (((x - 1)/2)^2 + (x - 1)/2)), 0),
+  check("pis: a polynomial in log(x)",
+        ratsimp(%mr_polynomialInSubst(log(x)^2 + 3*log(x), log(x), x) - (x^2 + 3*x)), 0),
+  true)$
+
+/* Section 9, G3 (spec 2026-09-22 A1): PowerVariableExpn (Rubi :4976),
+   PowerVariableDegree (:4985), PowerVariableSubst (:5001). (2*x)^4
+   auto-simplifies to 16*x^4 in this build (measured), so c = 1 throughout. */
+test_section9_g3() := block([],
+  print("--- section 9 G3: PowerVariableExpn ---"),
+  check("pvd: m = 0 takes the first power's degree",
+        %mr_powerVariableDegree(sin(x^4), 0, 1, x), [4, 1]),
+  check("pve: sin(x^4), m = 2 -> x sin(x^2)",
+        %mr_powerVariableExpn(sin(x^4), 2, x), [x*sin(x^2), 2, 1]),
+  check("pve: two powers with a common gcd",
+        %mr_powerVariableExpn(sin(x^4)*cos(x^6), 2, x), [x*sin(x^2)*cos(x^3), 2, 1]),
+  check("pve: gcd(2,3) = 1 declines", %mr_powerVariableExpn(sin(x^3), 2, x), false),
+  check("pve: m not an integer declines", %mr_powerVariableExpn(sin(x^4), 1/2, x), false),
+  true)$
+
+/* Section 9, G4 (spec 2026-09-22 A1): FunctionOfSquareRootOfQuadratic
+   (Rubi :5071, its 3-arg overload :5102), SquareRootOfQuadraticSubst
+   (:5119). The expected values are hand-derived from the upstream
+   definition (plan Task 6). */
+test_section9_g4() := block([r],
+  print("--- section 9 G4: FunctionOfSquareRootOfQuadratic ---"),
+  check("fosq: x^m (a+b x^n)^p is excluded",
+        %mr_functionOfSquareRootOfQuadratic(x^2*sqrt(x^2 + 1), x), false),
+  check("fosq: two different quadratics under roots",
+        %mr_functionOfSquareRootOfQuadratic(sqrt(x^2 + x + 1)*sqrt(x^2 + 2), x), false),
+  check("fosq: a zero discriminant declines",
+        %mr_functionOfSquareRootOfQuadratic(1/sqrt(x^2 + 2*x + 1), x), false),
+  /* c > 0 branch: a = b = c = 1, sqrt = 1, q = 1+x+x^2, r = 1+2x */
+  r : %mr_functionOfSquareRootOfQuadratic(1/(x*sqrt(x^2 + x + 1)), x),
+  check("fosq c>0: the substituted integrand", ratsimp(first(r) - 1/(x^2 - 1)), 0),
+  check("fosq c>0: the substitution", second(r), x + sqrt(x^2 + x + 1)),
+  check("fosq c>0: the branch tag", third(r), 2),
+  /* a > 0 branch: a = 1, b = 1, c = -1, sqrt = 1, r = -1-x^2 */
+  r : %mr_functionOfSquareRootOfQuadratic(1/(x*sqrt(1 + x - x^2)), x),
+  check("fosq a>0: the substituted integrand", ratsimp(first(r) - 1/(2*x - 1)), 0),
+  check("fosq a>0: the substitution",
+        ratsimp(second(r) - (sqrt(-x^2 + x + 1) - 1)/x), 0),
+  check("fosq a>0: the branch tag", third(r), 1),
+  /* else branch (neither PosQ(c) nor PosQ(a)): a=-1, b=3, c=-1,
+     discriminant = b^2-4ac = 5, sqrt = sqrt(5), r = c-x^2 = -1-x^2.
+     Hand-derived from Rubi :5071 (fix round 1, task-6 review finding 1):
+     SquareRootOfQuadraticSubst[u,-sqrt*x/r,-(b*c+c*sqrt+(-b+sqrt)*x^2)/(2*c*r),x]
+     splits u = x^(-1)*tmp^(-1/2) into xx^(-1)*vv^(-1) as in the other two
+     branches; xx*vv = sqrt(5)*x*(3+sqrt(5)+(3-sqrt(5))*x^2)/(2*(1+x^2)^2),
+     so -sqrt*(1/(xx*vv))*x/r^2 collapses to -2/(3+sqrt(5)+(3-sqrt(5))*x^2). */
+  r : %mr_functionOfSquareRootOfQuadratic(1/(x*sqrt(-1 + 3*x - x^2)), x),
+  check("fosq else: the substituted integrand",
+        ratsimp(first(r) - (-2/(3 + sqrt(5) + (3 - sqrt(5))*x^2))), 0),
+  check("fosq else: the substitution",
+        ratsimp(second(r) - 2*sqrt(-x^2 + 3*x - 1)/(2*x + sqrt(5) - 3)), 0),
+  check("fosq else: the branch tag", third(r), 3),
+  true)$
+
+/* Section 9, G5 (spec 2026-09-22 A1): SubstForFractionalPowerOfQuotient-
+   OfLinears (Rubi :1801), FractionalPowerOfQuotientOfLinears (:1831).
+   Single powers only: Maxima splits a PRODUCT of two powers of one
+   quotient into separate numerator and denominator powers (measured). */
+test_section9_g5() := block([r],
+  print("--- section 9 G5: SubstForFractionalPowerOfQuotientOfLinears ---"),
+  check("fpql: the square root of a quotient of linears",
+        %mr_fractionalPowerOfQuotientOfLinears(x*sqrt((1 + x)/(1 - x)), 1, false, x),
+        [2, (x + 1)/(1 - x)]),
+  check("fpql: a root of a LINEAR base is not one",
+        %mr_fractionalPowerOfQuotientOfLinears(x*sqrt(1 + x), 1, false, x), [1, false]),
+  r : %mr_substForFractionalPowerOfQuotientOfLinears(1/(x + sqrt((1 + x)/(1 - x))), x),
+  check("sffpoql: the substituted integrand",
+        ratsimp(first(r) - x/((x^2 + 1)*(x^3 + x^2 + x - 1))), 0),
+  check("sffpoql: n", second(r), 2),
+  check("sffpoql: the quotient", ratsimp(third(r) - (1 + x)/(1 - x)), 0),
+  check("sffpoql: b c - a d times the free factors", fourth(r), 2),
+  check("sffpoql: no quotient of linears declines",
+        %mr_substForFractionalPowerOfQuotientOfLinears(x*sqrt(1 + x), x), false),
+  true)$
+
+/* Section 9, G6a (spec 2026-09-22 A1): the helpers under FunctionOfLinear.
+   LeadFactor :1281, RemainingFactors :1296, LeadBase :1311, LeadDegree
+   :1323, MonomialFactor :3112, MinimumDegree :3138, DivideDegreesOfFactors
+   :4224, the absurd-number family :1905-1975, Smallest :3092/:3101,
+   FactorOrder :3082, MostMainFactorPosition :3076, CommonFactors :3025.
+   Maxima's internal factor order (inpart) stands in for Mathematica's
+   canonical order; measured 2026-09-22: inpart(3*x^2*y,1) = 3,
+   inpart(x^2*y,1) = x^2, orderlessp(b,x) = true. */
+test_section9_g6a() := block([],
+  print("--- section 9 G6a: factor utilities / CommonFactors ---"),
+  check("leadFactor: the numeric factor leads", %mr_leadFactor(3*x^2*y), 3),
+  check("remainingFactors: the rest", %mr_remainingFactors(3*x^2*y), x^2*y),
+  check("leadBase: x^2 y -> x", %mr_leadBase(x^2*y), x),
+  check("leadDegree: x^2 y -> 2", %mr_leadDegree(x^2*y), 2),
+  check("leadFactor: 2 %i -> 2 (Re = 0, Im = 2)", %mr_leadFactor(2*%i), 2),
+  check("remainingFactors: 2 %i -> %i", %mr_remainingFactors(2*%i), %i),
+  check("monomialFactor: x^3 (1+x)", %mr_monomialFactor(x^3*(1 + x), x), [3, x + 1]),
+  check("monomialFactor: x^2 + x^3", %mr_monomialFactor(x^2 + x^3, x), [2, x + 1]),
+  check("monomialFactor: sin(x)", %mr_monomialFactor(sin(x), x), [0, sin(x)]),
+  check("monomialFactor: x^n", %mr_monomialFactor(x^n, x), [n, 1]),
+  check("monomialFactor: 2 sqrt(x)", %mr_monomialFactor(2*sqrt(x), x), [1/2, 2]),
+  check("minimumDegree: two numbers", %mr_minimumDegree(3, 5), 3),
+  check("minimumDegree: a symbol and a number", %mr_minimumDegree(n, 2), 2),
+  check("minimumDegree: n+1 vs n", %mr_minimumDegree(n + 1, n), n),
+  check("minimumDegree: n vs m, canonical order", %mr_minimumDegree(n, m), m),
+  check("divideDegreesOfFactors: x^4 y^2 / 2", %mr_divideDegreesOfFactors(x^4*y^2, 2), x^2*y),
+  check("divideDegreesOfFactors: x^3 / 3", %mr_divideDegreesOfFactors(x^3, 3), x),
+  check_bool("absurdNumberQ: 2", %mr_absurdNumberQ(2)),
+  check_bool("absurdNumberQ: sqrt(2)", %mr_absurdNumberQ(sqrt(2))),
+  check_bool("absurdNumberQ: 3 sqrt(2)", %mr_absurdNumberQ(3*sqrt(2))),
+  check_not("absurdNumberQ: x", %mr_absurdNumberQ(x)),
+  check_not("absurdNumberQ: sqrt(x)", %mr_absurdNumberQ(sqrt(x))),
+  check("absurdNumberGCD: 6, 4", %mr_absurdNumberGCD([6, 4]), 2),
+  check("absurdNumberGCD: 2 sqrt(2), 4", %mr_absurdNumberGCD([2*sqrt(2), 4]), 2^(3/2)),
+  check("smallest: two positives", %mr_smallest(2, 3), 2),
+  check("smallest: mixed signs", %mr_smallest(-2, 3), 0),
+  check("smallest: two negatives", %mr_smallest(-2, -3), -2),
+  check("smallest: a list", %mr_smallestList([3, 5, 2]), 2),
+  check("factorOrder: 1, 1", %mr_factorOrder(1, 1), 0),
+  check("factorOrder: 1 before anything", %mr_factorOrder(1, x), -1),
+  check("factorOrder: anything after 1", %mr_factorOrder(x, 1), 1),
+  check("commonFactors: 6x^2, 4x^3", %mr_commonFactors([6*x^2, 4*x^3]), [2*x^2, 3, 2*x]),
+  check("commonFactors: b, 2b", %mr_commonFactors([b, 2*b]), [b, 1, 2]),
+  check("commonFactors: a x, b x (the MostMainFactorPosition path)",
+        %mr_commonFactors([a*x, b*x]), [x, a, b]),
+  /* Task 8 fix round 1: the Log branch (upstream :3029-3033), reached
+     when every LeadFactor is Log of a positive integer and the pairwise
+     ratios are rational. Hand-derived from upstream: for
+     [log(4),log(8)], lst3 = [log(4),log(8)], ratios = [1, log(8)/log(4)]
+     = [1, 3/2] under FullSimplify (log(8) = 3 log(2), log(4) = 2 log(2));
+     GCD([1,3/2]) = 1/2; common = Log[4^(1/2)] = log(2); the quotients
+     are ratio*2/num = [2,3]. For the three-way case the ratios are
+     [1,3/2,2] (log(16) = 4 log(2)), GCD = 1/2 again, quotients [2,3,4].
+     MEASURED 2026-09-22: ratsimp(log(8)/log(4)) stays the unsimplified
+     quotient (the brief's "FullSimplify there is ratsimp" is wrong for
+     this ratio specifically -- source comment, %mr_commonFactors). */
+  check("commonFactors: log(4), log(8) (the log-ratio branch)",
+        %mr_commonFactors([log(4), log(8)]), [log(2), 2, 3]),
+  check("commonFactors: log(4), log(8), log(16) (three-way log-ratio gcd)",
+        %mr_commonFactors([log(4), log(8), log(16)]), [log(2), 2, 3, 4]),
+  true)$
+
+/* Section 9, G6b (spec 2026-09-22 A1): FunctionOfLinear (Rubi :4169, the
+   5-arg overload :4176), FunctionOfLinearSubst (:4206). Expected values
+   are hand-traced through the upstream definition (plan Task 9). */
+test_section9_g6b() := block([],
+  print("--- section 9 G6b: FunctionOfLinear ---"),
+  check("fol: sin(2x+1)^2 + cos(2x+1) -> x, a = 1, b = 2",
+        %mr_functionOfLinear(sin(2*x + 1)^2 + cos(2*x + 1), x),
+        [sin(x)^2 + cos(x), 1, 2]),
+  check("fol: sin(2x) cos(2x) -> a = 0, b = 2",
+        %mr_functionOfLinear(sin(2*x)*cos(2*x), x), [cos(x)*sin(x), 0, 2]),
+  check("fol: already in x (a = 0, b = 1) declines", %mr_functionOfLinear(sin(x), x), false),
+  check("fol: two unrelated linears reduce to x itself, declines",
+        %mr_functionOfLinear(sin(x)*cos(2*x), x), false),
+  check("fols: a linear term", %mr_functionOfLinearSubst(2*x + 3, 1, 2, x), x + 2),
+  /* Fix round 1 (ticket .scratch/class-ports/issues/10): the PowerQ/
+     %e^... branch, a non-%e base with a nonzero exponent constant.
+     Hand-derived from upstream (u(X) = 4^(2X+1) = e^(log(4)+2log(4)X),
+     so a = log(4), b = 2 log(4), f(x) = e^x; u(X) itself is f(a+bX) =
+     e^(log(4)+2log(4)X) = 4^(2X+1), confirming the triple): before the
+     ratcoef workaround, %mr_coeff(u,x,0) dropped the log(4) constant
+     term of log(4)*(2x+1) and this returned [%e^x,0,2*log(4)]. */
+  check("fol: 4^(2x+1), non-%e base, nonzero exponent constant",
+        %mr_functionOfLinear(4^(2*x + 1), x), [%e^x, log(4), 2*log(4)]),
+  check("fols: 4^(2x+1) at its own [a,b] = [log(4), 2 log(4)]",
+        %mr_functionOfLinearSubst(4^(2*x + 1), log(4), 2*log(4), x), %e^x),
+  true)$
+
+/* Rubi's condition-assignment idiom, on the generated records that carry
+   it (9.3 .m :145/:177/:185/:193 -> 9_3 r18/r22/r23/r24; the only four
+   sites in the pinned clone). Upstream r18:
+
+     Int[u_.*v_^m_.*(a_.+b_.*y_^n_)^p_.,x_Symbol] :=
+       Module[{q,r}, q*r*Subst[Int[x^m*(a+b*x^n)^p,x],x,y] /;
+         Not[FalseQ[r=Divides[y^m,v^m,x]]] &&
+         Not[FalseQ[q=DerivativeDivides[y,u,x]]]] /; FreeQ[{a,b,m,n,p},x]
+
+   The `/;` test BINDS r and q and the replacement multiplies by them.
+   Maxima's `=` is EQUALITY, so emitted verbatim the guard tests an
+   equation object -- never false, so the record fires unguarded -- and
+   the replacement's q, r stay unbound symbols in the answer
+   (.scratch/class-ports/issues/13). The generator emits `:`.
+
+   Expected values hand-derived from upstream (Rubi :7443 Divides,
+   :6947 DerivativeDivides), y = v = x^2+1, m = 1 throughout:
+     Divides[y^m,v^m,x] = (x^2+1)/(x^2+1) = 1, free of x;
+     u = x  : DerivativeDivides[x^2+1,x,x] = x/D[x^2+1,x] = 1/2, so the
+              record fires and its q*r factor is 1/2 exactly;
+     u = x^3: Exponent[u,x] = 3 =/= Exponent[y,x]-1 = 1, so
+              DerivativeDivides = False and the record must decline;
+     v = x  : Divides[x^2+1,x,x] = x/(x^2+1), not free of x, so
+              Divides = False and the record must decline -- and the
+              condition must not even reach DerivativeDivides. */
+test_section9_condassign() := block(
+    [mr_ca_saved, mr_ca_ok, mr_ca_fire, mr_ca_nodd, mr_ca_nodiv,
+     mr_ca_r22, mr_ca_res, mr_ca_ref],
+  print("--- section 9: the condition-assignment idiom (9.3 r18/r22) ---"),
+  mr_ca_saved : mr_rule_table,
+  mr_ca_ok : errcatch(
+    %mr_load_sibling("rules/class9/9_3.mac", 'mr_witness_9_3), true),
+  mr_rule_table : mr_ca_saved,
+  check_bool("condassign: rules/class9/9_3.mac loads", is(mr_ca_ok # [])),
+  mr_ca_fire : ['_mr_9_3_r18_a = 1, '_mr_9_3_r18_b = 1, '_mr_9_3_r18_m = 1,
+                '_mr_9_3_r18_n = 1, '_mr_9_3_r18_p = 1, '_mr_9_3_r18_u = x,
+                '_mr_9_3_r18_v = x^2 + 1, '_mr_9_3_r18_y = x^2 + 1],
+  mr_ca_nodd : ['_mr_9_3_r18_a = 1, '_mr_9_3_r18_b = 1, '_mr_9_3_r18_m = 1,
+                '_mr_9_3_r18_n = 1, '_mr_9_3_r18_p = 1, '_mr_9_3_r18_u = x^3,
+                '_mr_9_3_r18_v = x^2 + 1, '_mr_9_3_r18_y = x^2 + 1],
+  mr_ca_nodiv : ['_mr_9_3_r18_a = 1, '_mr_9_3_r18_b = 1, '_mr_9_3_r18_m = 1,
+                 '_mr_9_3_r18_n = 1, '_mr_9_3_r18_p = 1, '_mr_9_3_r18_u = x,
+                 '_mr_9_3_r18_v = x, '_mr_9_3_r18_y = x^2 + 1],
+  /* r22 is the same idiom on the trinomial LHS; n2 = 2 n and w = y are
+     its extra outer tests, satisfied here, so only the idiom decides. */
+  mr_ca_r22 : ['_mr_9_3_r22_a = 1, '_mr_9_3_r22_b = 1, '_mr_9_3_r22_c = 1,
+               '_mr_9_3_r22_m = 1, '_mr_9_3_r22_n = 1, '_mr_9_3_r22_n2 = 2,
+               '_mr_9_3_r22_p = 1, '_mr_9_3_r22_u = x^3,
+               '_mr_9_3_r22_v = x^2 + 1, '_mr_9_3_r22_w = x^2 + 1,
+               '_mr_9_3_r22_y = x^2 + 1],
+  check_bool("condassign: 9_3 r18 cond fires when Divides and DerivativeDivides both answer",
+             _mr_cond_9_3_r18(mr_ca_fire, x)),
+  check_not("condassign: 9_3 r18 cond declines when DerivativeDivides is False",
+            _mr_cond_9_3_r18(mr_ca_nodd, x)),
+  check_not("condassign: 9_3 r18 cond declines when Divides is False",
+            _mr_cond_9_3_r18(mr_ca_nodiv, x)),
+  check_not("condassign: 9_3 r22 cond declines when DerivativeDivides is False",
+            _mr_cond_9_3_r22(mr_ca_r22, x)),
+  mr_ca_res : _mr_repl_9_3_r18(mr_ca_fire, x),
+  mr_ca_ref : %mr_subst(mr_int(x*(x + 1), x), x, x^2 + 1),
+  check_bool("condassign: 9_3 r18 repl answer is free of the rule locals q and r",
+             freeof('_mr_9_3_r18_q, '_mr_9_3_r18_r, mr_ca_res)),
+  check("condassign: 9_3 r18 repl multiplies by q*r = 1/2",
+        ratsimp(mr_ca_res / mr_ca_ref), 1/2),
+  true)$
 
 /* The generated With/Module locals, every class (ticket 08, section C).
  * 1.1.3.1 r13 binds block([r, s, k, u]) and runs its nested mr_int and

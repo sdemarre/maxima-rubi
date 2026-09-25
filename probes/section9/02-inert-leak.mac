@@ -1,0 +1,43 @@
+/* probes/section9/02-inert-leak.mac -- the A6.2 witness: a class-9 BODY
+   record fires INSIDE the class-4 inert-trig domain and its prefactor is
+   never re-activated, so an inert head reaches the answer.
+
+   Corpus entry 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 e13
+   (L24): (b*tanh(c+d*x))^(7/2), whose expected answer is a closed form in
+   7 steps and which VERIFIES on the reference core.
+
+   Run with 02-inert-leak.run on the reference core and the branch core.
+   INERT_HEADS mirrors test/corpus_driver.py's list: an answer carrying any
+   of them is classified `error` by the driver
+   (test/test_driver_inert_leak.py). */
+display2d : false$
+linel : 100000$
+mr_flat_wide : false$
+mr_cond_retry : true$
+mr_model_flags : true$
+mr_nested_fallback : false$
+mr_giveup_last : true$
+mr_max_depth : 16$
+print("build:", build_info())$
+print("rules:", length(mr_rule_table))$
+mr_heads : ['%mr_isin, '%mr_icos, '%mr_itan, '%mr_icot, '%mr_isec, '%mr_icsc]$
+mr_probe(mr_label, mr_f) := block([mr_r, mr_leaked],
+  rubi_verbose : true,
+  print("-- TRACE", mr_label),
+  mr_r : errcatch(rubi(mr_f, x)),
+  rubi_verbose : false,
+  print("ANSWER", mr_label, "|", mr_r),
+  mr_leaked : if mr_r = [] then ['error]
+              else sublist(mr_heads, lambda([mr_h], not freeof(mr_h, first(mr_r)))),
+  print("INERT_LEAK", mr_label, "|", mr_leaked),
+  /* A CHEAP indicator only -- one ratsimp, NOT test/corpus_driver.py's
+     zero chain (which adds factor/radcan(rat()) stages and the corpus
+     expected answer as a secondary check). The authoritative verdict for
+     this entry is the record: `verified` on the reference core,
+     `error` (inert leak) on the branch. A `false` here on the reference
+     core means only that one ratsimp does not close it. */
+  print("RATSIMP_SELF_DIFF_ZERO", mr_label, "|",
+        if mr_r # [] and mr_leaked = []
+          then is(ratsimp(diff(first(mr_r), x) - mr_f) = 0)
+          else "not attempted (leak or error)"))$
+mr_probe("6.3.2-e13", (b*tanh(c+d*x))^(7/2))$
