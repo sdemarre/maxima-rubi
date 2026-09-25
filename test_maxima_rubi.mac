@@ -159,6 +159,7 @@ run_all_tests() := block([],
   test_substfor_unexpanded_arg(),
   test_values_trim(),
   test_subst_simp_switch(),
+  test_gtq_real_reading(),
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
@@ -5668,6 +5669,66 @@ test_subst_simp_switch() := block([mr_ss_saved],
   check("mr_subst_simp: true and false agree up to simplification",
         ratsimp(%mr_subst((x+1)^2 + x, x, a+b) - ((a+b+1)^2 + a + b)), 0),
   mr_subst_simp : mr_ss_saved,
+  true
+)$
+
+/* ---- GtQ / LtQ / GeQ / LeQ: Rubi's real-number reading ------------------
+   Rubi (IntegrationUtilityFunctions.m :403-:475) reads GtQ[u, v] as a
+   NUMERIC comparison: u, v explicit real numbers or N[Together[.]] a Real;
+   anything else is False, never unknown. The generator emitted is(u > v),
+   which is unknown on a symbol, so GtQ[a,0] AND Not[GtQ[a,0]] both
+   rejected (matcher-translation-fixes issue 02; probes/gtq/). User decision
+   2026-09-25: Rubi's reading by default; the run switch mr_gtq_facts adds
+   Maxima's is() (the facts database, assume()) as an OR. The rows below are
+   probes/gtq/02-facts-probe.out's, Rubi column. */
+test_gtq_real_reading() := block([mr_gq_saved, mr_gq_ok],
+  print("--- GtQ/LtQ/GeQ/LeQ: Rubi's real-number reading ---"),
+  mr_gq_saved : mr_gtq_facts,
+  check("mr_gtq_facts defaults to false", mr_gq_saved, false),
+  mr_gtq_facts : false,
+  check("GtQ(a, 0) on a symbol is false", %mr_gtQ(a, 0), false),
+  check("Not GtQ(a, 0) on a symbol is true", not %mr_gtQ(a, 0), true),
+  check("LtQ(a, 0) on a symbol is false", %mr_ltQ(a, 0), false),
+  check("GeQ(a, a) is false (not numeric)", %mr_geQ(a, a), false),
+  check("LtQ(a, a+1) is false (not numeric)", %mr_ltQ(a, a+1), false),
+  check("GtQ(2, 0)", %mr_gtQ(2, 0), true),
+  check("GtQ(-3/2, 0)", %mr_gtQ(-3/2, 0), false),
+  check("LeQ(-1, -1)", %mr_leQ(-1, -1), true),
+  check("GtQ(%pi, 3)", %mr_gtQ(%pi, 3), true),
+  check("GtQ(sqrt(2)-1, 0)", %mr_gtQ(sqrt(2)-1, 0), true),
+  check("LtQ(sqrt(2), 3/2)", %mr_ltQ(sqrt(2), 3/2), true),
+  check("GtQ(%i, 0) is false (complex)", %mr_gtQ(%i, 0), false),
+  check("GtQ(1+%i, 0) is false (complex)", %mr_gtQ(1+%i, 0), false),
+  check("GtQ(%i^2, -2) (= -1 > -2)", %mr_gtQ(%i^2, -2), true),
+  check("GtQ(a^2+1, 0) is false (Rubi's N[] is not Real)", %mr_gtQ(a^2+1, 0), false),
+  check("GtQ(exp(a), 0) is false", %mr_gtQ(exp(a), 0), false),
+  check("GtQ((a^2-1)/(a-1)-a, 0) is true (Together cancels a)",
+        %mr_gtQ((a^2-1)/(a-1)-a, 0), true),
+  check("GtQ(exp(1000), 0) is true (bfloat past float overflow)", %mr_gtQ(exp(1000), 0), true),
+  check("GtQ(2^1100, 2^1100-1)", %mr_gtQ(2^1100, 2^1100-1), true),
+  check("GtQ three-argument chain 3 > 2 > 1", %mr_gtQ(3, 2, 1), true),
+  check("LtQ three-argument chain 1 < 3 < 2 is false", %mr_ltQ(1, 3, 2), false),
+  check("GtQ three-argument chain with a symbol is false", %mr_gtQ(3, a, 1), false),
+  /* the facts switch: Rubi's reading OR is() */
+  mr_gtq_facts : true,
+  check("facts: GtQ(a^2+1, 0) is true through is()", %mr_gtQ(a^2+1, 0), true),
+  check("facts: GtQ(a, 0) without a fact is still false", %mr_gtQ(a, 0), false),
+  assume(mr_gq_pos > 0),
+  check("facts: GtQ(mr_gq_pos, 0) under assume() is true", %mr_gtQ(mr_gq_pos, 0), true),
+  mr_gtq_facts : false,
+  check("no facts: GtQ(mr_gq_pos, 0) under assume() is false (Rubi ignores assumptions)",
+        %mr_gtQ(mr_gq_pos, 0), false),
+  forget(mr_gq_pos > 0),
+  mr_gtq_facts : mr_gq_saved,
+  /* the generated emission: 1_1_2_1 r18's Not[GtQ[a, 0]] now accepts a
+     symbolic a (the bare is(a > 0) was unknown and rejected it) */
+  mr_gq_ok : errcatch(%mr_load_sibling("rules/class1/1_1_2_1.mac", 'mr_witness_1_1_2_1), true),
+  check_bool("GtQ: rule file 1_1_2_1 loads", is(mr_gq_ok # [])),
+  if mr_gq_ok # [] then (
+    check("1_1_2_1 r18: Not[GtQ[a, 0]] accepts a symbolic a",
+          _mr_cond_1_1_2_1_r18([_mr_1_1_2_1_r18_a = a, _mr_1_1_2_1_r18_b = b], x), true),
+    check("1_1_2_1 r18: Not[GtQ[a, 0]] declines a = 2",
+          _mr_cond_1_1_2_1_r18([_mr_1_1_2_1_r18_a = 2, _mr_1_1_2_1_r18_b = b], x), false)),
   true
 )$
 

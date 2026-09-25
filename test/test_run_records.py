@@ -303,14 +303,14 @@ def main():
           == ("  switches: mr_flat_wide=false mr_cond_retry=false "
               "mr_model_flags=true mr_nested_fallback=false "
               "mr_giveup_last=true mr_inert_leak_misfire=true mr_last_resort_tier=true mr_general_after_giveups=true mr_max_depth=32 "
-              "mr_eqq_symbolic=true mr_subst_simp=false"),
+              "mr_eqq_symbolic=true mr_subst_simp=false mr_gtq_facts=false"),
           f"{got} {p.stderr[-400:]}")
     check("entry text assigns the switches before the rubi call",
           got is not None and got["text"].startswith(
               "mr_flat_wide : false$\nmr_cond_retry : false$\nmr_model_flags : true$\n"
               "mr_nested_fallback : false$\nmr_giveup_last : true$\n"
               "mr_inert_leak_misfire : true$\nmr_last_resort_tier : true$\nmr_general_after_giveups : true$\nmr_max_depth : 32$\n"
-              "mr_eqq_symbolic : true$\nmr_subst_simp : false$\n"
+              "mr_eqq_symbolic : true$\nmr_subst_simp : false$\nmr_gtq_facts : false$\n"
               "mr_depth_cap_hits : 0$\nmr_f: x^2$\n"),
           f"{got and got['text'][:200]!r}")
     check("the entry text prints the depth-cap count",

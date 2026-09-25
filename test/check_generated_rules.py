@@ -32,6 +32,9 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
          base emitted, count pinned
        - the two-argument Expand (ticket 19, 2026-09-25): a %mr_expand( call
          is undone to the expand( the base emitted, count pinned
+       - Rubi's real comparisons (matcher-translation-fixes issue 02,
+         2026-09-25): %mr_gtQ/%mr_ltQ/%mr_leQ/%mr_geQ(A, B) undone to
+         is(A op B), count pinned
        - the 29 manual 9.1 rules and the 52 rules that had a workaround
          emitter (no defmatch in the base) are exempt;
   4. the generator's reader self-test is green;
@@ -88,6 +91,13 @@ ENTRY_CALL = re.compile(r"\b(mr_int|mr_top|rubi|rubi_fallback)\(")
 # counts every emitted site.
 INT_CMP_UNDO = {"%mr_iGtQ": ">", "%mr_iLtQ": "<", "%mr_iLeQ": "<=", "%mr_iGeQ": ">="}
 INT_CMP_SITES = 1283
+# Rubi's real comparisons (matcher-translation-fixes issue 02, user decision
+# 2026-09-25): GtQ/LtQ/GeQ/LeQ emit the named two-valued entries %mr_gtQ ...
+# where the base emitted is(A op B). Undone on the new body before the
+# comparison, like the integer comparisons; the count is the sites in the
+# compared rules.
+REAL_CMP_UNDO = {"%mr_gtQ": ">", "%mr_ltQ": "<", "%mr_leQ": "<=", "%mr_geQ": ">="}
+REAL_CMP_SITES = 1944
 NOTEQUAL_SITES = 10
 JUXTA_SITES = 1
 # The With/Module local prefixing (.scratch/class-ports/issues/08): the
@@ -230,9 +240,10 @@ def call_args(s, open_idx):
 
 def undo_fixes(s, stats):
     """The new body line in its base spelling: %mr_iGtQ(A, B) -> is(A > B)
-    (likewise %mr_iLtQ <, %mr_iLeQ <=, %mr_iGeQ >=) and notequal(A, B) ->
+    (likewise %mr_iLtQ <, %mr_iLeQ <=, %mr_iGeQ >=; and the real comparisons
+    %mr_gtQ/%mr_ltQ/%mr_leQ/%mr_geQ the same way) and notequal(A, B) ->
     A != B; the generator emits both calls as NAME(A, B). Counts the sites."""
-    names = list(INT_CMP_UNDO) + ["notequal"]
+    names = list(INT_CMP_UNDO) + list(REAL_CMP_UNDO) + ["notequal"]
     pat = re.compile(r"(?<![A-Za-z0-9_%])(" + "|".join(re.escape(n) for n in names) + r")\(")
     while True:
         m = pat.search(s)
@@ -244,6 +255,8 @@ def undo_fixes(s, stats):
         a, b = args[0], args[1][1:]
         if m.group(1) == "notequal":
             rep, key = "%s != %s" % (a, b), "notequal"
+        elif m.group(1) in REAL_CMP_UNDO:
+            rep, key = "is(%s %s %s)" % (a, REAL_CMP_UNDO[m.group(1)], b), "real_cmp"
         else:
             rep, key = "is(%s %s %s)" % (a, INT_CMP_UNDO[m.group(1)], b), "int_cmp"
         s = s[:m.start()] + rep + s[end:]
@@ -454,7 +467,7 @@ def main(argv):
     files = rule_files(a.base)
     counts_ok, lists_ok = [], []
     stats = dict(identical=0, guard=0, moved=0, matchq_old=0, workaround=0, nine=0,
-                 no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, notequal=0, juxta=0,
+                 no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, real_cmp=0, notequal=0, juxta=0,
                  local_prefix=0, native_heads=0, expand2=0)
     unexplained, entry_locals, bad_moves = [], [], []
     for rel in files:
@@ -588,6 +601,9 @@ def main(argv):
             "%d + %d" % (stats["matchq_old"], stats["exempt_matchq"]))
     g.check("integer comparisons %%mr_i*Q(A, B) undone to is(A op B): %d sites" % INT_CMP_SITES,
             stats["int_cmp"] == INT_CMP_SITES, str(stats["int_cmp"]))
+    g.check("real comparisons %%mr_gtQ/ltQ/geQ/leQ(A, B) undone to is(A op B): %d sites"
+            % REAL_CMP_SITES,
+            stats["real_cmp"] == REAL_CMP_SITES, str(stats["real_cmp"]))
     g.check("notequal(A, B) undone to A != B: %d sites" % NOTEQUAL_SITES,
             stats["notequal"] == NOTEQUAL_SITES, str(stats["notequal"]))
     g.check("juxtaposition ) ( redone to )*( in the base: %d sites" % JUXTA_SITES,

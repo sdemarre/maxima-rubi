@@ -1148,6 +1148,7 @@ def _maxima_stmts(body):
     return ", ".join(segs)
 
 CMP_OPS = {"GtQ": ">", "LtQ": "<", "LeQ": "<=", "GeQ": ">="}
+REAL_CMP = {"GtQ": "%mr_gtQ", "LtQ": "%mr_ltQ", "LeQ": "%mr_leQ", "GeQ": "%mr_geQ"}
 
 # Rubi :379-:395  IGtQ[u_,n_] := IntegerQ[u] && u>n, likewise ILtQ, IGeQ,
 # ILeQ: the integer test is part of the predicate. The heads translate to
@@ -1627,13 +1628,18 @@ def emit_head(head, arglist, ctx):
             raise GenError(f"{key} r{n}: {head} arity {len(arglist)}")
         return f"{INT_CMP[head]}({arglist[0]}, {arglist[1]})"
     if head in CMP_OPS:
-        op = CMP_OPS[head]
+        # Rubi :403-:475 reads GtQ/LtQ/GeQ/LeQ numerically and two-valued
+        # (a symbol is False, never unknown): the named utils entries
+        # %mr_gtQ ... (maxima_rubi_utils.mac), not a bare is(u > v), which is
+        # unknown on a symbol and rejected Not[GtQ[a,0]] as well as GtQ[a,0]
+        # (matcher-translation-fixes issue 02, user decision 2026-09-25).
+        fn = REAL_CMP[head]
         if len(arglist) == 2:
-            return f"is({arglist[0]} {op} {arglist[1]})"
+            return f"{fn}({arglist[0]}, {arglist[1]})"
         if len(arglist) == 3:
             # Rubi :468-:470 chained form: LtQ[u,v,w] := LtQ[u,v] && LtQ[v,w]
             a, b, c = (p.strip() for p in arglist)
-            return f"is({a} {op} {b}) and is({b} {op} {c})"
+            return f"{fn}({a}, {b}) and {fn}({b}, {c})"
         raise GenError(f"{key} r{n}: {head} arity {len(arglist)}")
     if head in ("Int", "IntHide"):
         # mr_int's seen test is exact membership for every source (exact

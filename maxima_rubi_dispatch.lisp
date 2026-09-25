@@ -238,6 +238,16 @@ plain subst recovered 54 of 97 class-6 timeouts and broke 0 of 120 sampled
 class-6 PASS entries (class-6 attribution, branch class6-attribution,
 probes/class-ports/18-fixD-timeout.out, 19-fixD-pass-sample.out).")
 
+(defmvar $mr_gtq_facts nil
+  "Run switch: false (default) = GtQ/LtQ/GeQ/LeQ (%mr_gtQ ..., maxima_rubi_utils.mac)
+read Rubi's way (IntegrationUtilityFunctions.m :403-:475): a numeric
+comparison, false on anything not numerically evaluable, never unknown;
+true = that reading OR Maxima's is(u op v) = true, which honours the facts
+database (assume) and Maxima's sign reasoning (a^2+1 > 0) -- a deviation
+from Rubi, which ignores assumptions. User decision 2026-09-25
+(matcher-translation-fixes issue 02; probes/gtq/: over 8,843 corpus calls
+the two readings disagreed on 10 and changed no verdict).")
+
 ;; The EqQ fast path (%mr_symbolicZeroQ, maxima_rubi_utils.mac): an
 ;; EXPANDED polynomial -- a number, a variable symbol, a product of numbers
 ;; and integer powers of variable symbols, or a sum of such terms -- is in

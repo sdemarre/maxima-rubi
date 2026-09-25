@@ -357,8 +357,10 @@ argument (its fix C, cured by the symbolic EqQ, 5 checks): `Results:
 `values` list (the class-1 attribution's fix V, `%mr_trim_rule_values`, 4
 checks): `Results: 1549 passed, 0 failed` (the depth-cap default 16 -> 32,
 fix E, changes one check's expectation); with `%mr_subst` a plain `subst`
-unless the run switch `mr_subst_simp` (fix D, 4 checks): **`Results: 1553
-passed, 0 failed`**. The
+unless the run switch `mr_subst_simp` (fix D, 4 checks): `Results: 1553
+passed, 0 failed`; with Rubi's real-number reading of GtQ/LtQ/GeQ/LeQ and
+the run switch `mr_gtq_facts` (matcher-translation-fixes issue 02, 30
+checks): **`Results: 1583 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -395,9 +397,13 @@ failed` (2026-09-25, the class-7 port's Step 3: one more check-7 line,
 2080 rules over 56 files`; 7,990 pattern strings). Then `Results: 27
 passed, 0 failed` (2026-09-25, ticket `.scratch/class-ports/issues/18`:
 the native `atanh`/`asinh`/`acosh` heads are one more closed exception,
-`undo_native_heads`, its 53 class-1/3 sites pinned). Now **`Results: 28
-passed, 0 failed`** (2026-09-25, ticket `.scratch/class-ports/issues/19`:
+`undo_native_heads`, its 53 class-1/3 sites pinned). Then `Results: 28
+passed, 0 failed` (2026-09-25, ticket `.scratch/class-ports/issues/19`:
 the two-argument `Expand` -> `%mr_expand`, `undo_expand2`, class 2's 2 sites).
+Now **`Results: 29 passed, 0 failed`** (2026-09-25,
+`.scratch/matcher-translation-fixes/issues/02`: GtQ/LtQ/GeQ/LeQ emit the
+two-valued `%mr_gtQ`/`%mr_ltQ`/`%mr_geQ`/`%mr_leQ`, undone to `is(A op B)`,
+1,944 class-1/2/3 sites pinned).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no

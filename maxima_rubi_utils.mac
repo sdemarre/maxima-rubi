@@ -777,6 +777,62 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
 %mr_iGeQ(u, n) := if integerp(u) and is(u >= n) = true then true else false$
 %mr_iLeQ(u, n) := if integerp(u) and is(u <= n) = true then true else false$
 
+/* Rubi :403-:475  GtQ / LtQ / GeQ / LeQ[u, v] (and the three-argument
+   chains GtQ[u, v, w] := GtQ[u, v] && GtQ[v, w]): a NUMERIC comparison.
+   RealNumberQ[u] (an explicit non-complex number) -> u; else
+   N[Together[u]] with Head Real -> that float; else the predicate is False
+   -- never unknown. The generator emitted is(u > v), unknown on a symbol,
+   which rejected GtQ[a, 0] AND Not[GtQ[a, 0]] alike (matcher-translation-
+   fixes issue 02; probes/gtq/ 01-06). N -> float(), falling back to bfloat
+   when float() errors (float(exp(1000)) overflows; Mathematica's N has no
+   such range); Together -> ratsimp, tried only when float() of u itself is
+   not a float and u has a variable ((a^2-1)/(a-1)-a is 1). User decision
+   2026-09-25: this is the default; the run switch mr_gtq_facts (defmvar,
+   maxima_rubi_dispatch.lisp, default false) ORs in Maxima's own
+   is(u op v) = true, so the facts database (assume) is honoured -- a
+   documented deviation from Rubi, which ignores assumptions. */
+%mr_rc_float(%mr_rc_w) := block([errormsg : false, %mr_rc_r],
+  %mr_rc_r : errcatch(float(%mr_rc_w)),
+  if %mr_rc_r = [] then (
+    %mr_rc_r : errcatch(bfloat(%mr_rc_w)),
+    if %mr_rc_r # [] and bfloatp(first(%mr_rc_r)) then first(%mr_rc_r) else false)
+  elseif floatnump(first(%mr_rc_r)) then first(%mr_rc_r)
+  else false)$
+
+%mr_rc_num(%mr_rc_u) := block([errormsg : false, %mr_rc_r],
+  if numberp(%mr_rc_u) then %mr_rc_u
+  else (
+    %mr_rc_r : %mr_rc_float(%mr_rc_u),
+    if %mr_rc_r # false then %mr_rc_r
+    elseif listofvars(%mr_rc_u) = [] then false
+    else (
+      %mr_rc_r : errcatch(ratsimp(%mr_rc_u)),
+      if %mr_rc_r = [] then false else %mr_rc_float(first(%mr_rc_r)))))$
+
+%mr_realCmpQ(%mr_rc_op, %mr_rc_u, %mr_rc_v) := block([errormsg : false, %mr_rc_un, %mr_rc_vn, %mr_rc_r],
+  %mr_rc_un : %mr_rc_num(%mr_rc_u),
+  %mr_rc_r : if %mr_rc_un = false then false
+             else (%mr_rc_vn : %mr_rc_num(%mr_rc_v),
+                   if %mr_rc_vn = false then false
+                   else is(is(apply(%mr_rc_op, [%mr_rc_un, %mr_rc_vn])) = true)),
+  if %mr_rc_r = false and mr_gtq_facts = true then (
+    %mr_rc_r : errcatch(is(apply(%mr_rc_op, [%mr_rc_u, %mr_rc_v]))),
+    is(%mr_rc_r # [] and first(%mr_rc_r) = true))
+  else %mr_rc_r)$
+
+%mr_gtQ(%mr_rc_a, %mr_rc_b, [%mr_rc_c]) :=
+  if %mr_rc_c = [] then %mr_realCmpQ(">", %mr_rc_a, %mr_rc_b)
+  else %mr_realCmpQ(">", %mr_rc_a, %mr_rc_b) and %mr_realCmpQ(">", %mr_rc_b, first(%mr_rc_c))$
+%mr_ltQ(%mr_rc_a, %mr_rc_b, [%mr_rc_c]) :=
+  if %mr_rc_c = [] then %mr_realCmpQ("<", %mr_rc_a, %mr_rc_b)
+  else %mr_realCmpQ("<", %mr_rc_a, %mr_rc_b) and %mr_realCmpQ("<", %mr_rc_b, first(%mr_rc_c))$
+%mr_geQ(%mr_rc_a, %mr_rc_b, [%mr_rc_c]) :=
+  if %mr_rc_c = [] then %mr_realCmpQ(">=", %mr_rc_a, %mr_rc_b)
+  else %mr_realCmpQ(">=", %mr_rc_a, %mr_rc_b) and %mr_realCmpQ(">=", %mr_rc_b, first(%mr_rc_c))$
+%mr_leQ(%mr_rc_a, %mr_rc_b, [%mr_rc_c]) :=
+  if %mr_rc_c = [] then %mr_realCmpQ("<=", %mr_rc_a, %mr_rc_b)
+  else %mr_realCmpQ("<=", %mr_rc_a, %mr_rc_b) and %mr_realCmpQ("<=", %mr_rc_b, first(%mr_rc_c))$
+
 /* the distinct x-exponents of a CONFIRMED polynomial (callers gate on
  * %mr_polynomialQ), ascending — MEASURED 2026-08-23: sort() orders
  * exact rationals, member() on numbers returns a boolean, and op()

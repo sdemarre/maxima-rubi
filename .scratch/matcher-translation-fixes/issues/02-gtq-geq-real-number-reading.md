@@ -1,6 +1,6 @@
 # GtQ / LtQ / GeQ / LeQ: port Rubi's real-number reading
 
-Status: needs-triage
+Status: fixed (2026-09-25, branch class-ports-fixes)
 Type: task (measure, then decide)
 Filed: 2026-09-15 (matcher translation fixes, P5b attribution — outside the plan's four defects;
 design §1 Out: "GtQ's RealNumberQ/N reading — siblings outside the four shapes are ticketed, not fixed")
@@ -190,3 +190,22 @@ this slice.
   column) as Layer A checks. Then do a full A/B of all classes. The class-6 attribution's
   overlay-(F) estimate (49 of 190 losses) should carry over to (R) unchanged, because F = R on every
   verdict here.
+
+## Fix (2026-09-25, user decision)
+
+The user chose the investigation's recommendation: Rubi's reading (R) as the default, and
+(R) OR (F) behind a switch.
+
+- `maxima_rubi_utils.mac`: `%mr_gtQ` / `%mr_ltQ` / `%mr_geQ` / `%mr_leQ` (2 and 3 arguments) over
+  `%mr_realCmpQ`. RealNumberQ maps to `numberp`. N[Together[u]] maps to `float(u)`, falling back
+  to `bfloat` when `float` errors, and to `ratsimp` first when `u` has a variable. The result is
+  always true or false.
+- Run switch `mr_gtq_facts` (defmvar, default false, registered in `test/run_records.py`). When
+  true, the result is (R) OR `is(u op v) = true`, so `assume()` facts count. That is a documented
+  deviation from Rubi.
+- Generator: `CMP_OPS` emits the named entries (`REAL_CMP`). The P3 gate undoes them to
+  `is(A op B)`, with 1,944 class-1/2/3 sites pinned. Emitted over the whole tree: `%mr_gtQ` 1,798,
+  `%mr_ltQ` 1,592, `%mr_leQ` 161, `%mr_geQ` 82.
+- Layer A: 30 checks (the facts-probe rows in both switch values, 3-argument chains, `assume()`,
+  and 1_1_2_1 r18's `Not[GtQ[a, 0]]` on a symbolic `a`). RED first; then `Results: 1583 passed,
+  0 failed`.
