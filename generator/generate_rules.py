@@ -1278,6 +1278,31 @@ ACCEPTED_RISKS = {
     ("8_7", 3, "risk:numeric-or-negated-arg:Zeta"),
     *(("8_8", _r, "risk:numeric-or-negated-arg:PolyLog")
       for _r in (11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22)),
+    # Class 4 (2026-09-25): the 24 flags over 21 rules the class-4 Step-1
+    # dry run lists (probes/translation/12-class4-syntax-census.out part B;
+    # ticket .scratch/class-ports/issues/05, Step 1).
+    #  - Pi-arg on an INERT head (sin/tan/csc[e_.+Pi/2+f_.*x_],
+    #    [e_.+k_.*Pi+f_.*x_]): the inert heads are user symbols with no
+    #    definitions, so evaluation leaves the shifted argument alone -- the
+    #    rit r1/r2 argument above.
+    #  - Pi-arg on ACTIVE Sec/Csc (4.7.7 r19/r21, Sec[d_.+k_.*Pi+e_.*x_]):
+    #    the shift is k_.*Pi with a PATTERN coefficient; Sec/Csc
+    #    auto-evaluate only an explicit rational multiple of Pi, which a
+    #    pattern is not (the class-8 argument above).
+    #  - Complex[0, fz_] / the MatchQ pattern f1_.*Complex[0, j_]: a pattern
+    #    argument keeps Complex unevaluated -- the 9.1 L15 case.
+    *(("4_1_1_1", _r, "risk:Pi-arg:sin") for _r in (5, 26)),
+    *(("4_1_10", _r, "risk:Pi-arg:sin") for _r in (9, 12, 25, 26)),
+    *(("4_1_10", _r, "risk:numeric-or-negated-arg:Complex")
+      for _r in (3, 5, 6, 25, 27)),
+    *(("4_3_10", _r, "risk:Pi-arg:tan") for _r in (1, 2, 16)),
+    *(("4_3_10", _r, "risk:numeric-or-negated-arg:Complex")
+      for _r in (1, 3, 24)),
+    *(("4_5_10", _r, "risk:Pi-arg:csc") for _r in (1, 2)),
+    *(("4_5_10", _r, "risk:numeric-or-negated-arg:Complex")
+      for _r in (1, 3, 13)),
+    ("4_7_7", 19, "risk:Pi-arg:Sec"),
+    ("4_7_7", 21, "risk:Pi-arg:Csc"),
 }
 
 

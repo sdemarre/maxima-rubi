@@ -314,6 +314,34 @@ RENAME = {
     # E5/E6/E9, C1/C2/C4-C6). mr-tree already maps both heads. Census: 38
     # and 36 rules (probes/translation/11-class7-syntax-census.out).
     "ArcSech": "asech", "ArcCsch": "acsch",
+    # class 4 (2026-09-25): the eleven tokens the Step-1 closure left
+    # unlisted (probes/translation/12-class4-syntax-census.out; adjudicated
+    # on .scratch/class-ports/issues/05). TrigQ (11 rules, every use
+    # TrigQ[F] on a head variable) and InertTrigQ (7, every use the 1-arg
+    # InertTrigQ[F]) are ported since the inert-trig substrate; the rest
+    # are the class's Step-4 ports in maxima_rubi_utils.mac: ExpandTrig
+    # (50 rules, 2- and 3-arg), the four Known*IntegrandQ wrappers of
+    # KnownTrigIntegrandQ (22/22/8/8), ComplexFreeQ (4.1.10 r9-r11), and
+    # 4.7.5 r66's TrigSimplifyQ / TrigSimplify.
+    "TrigQ": "%mr_trigQ",
+    "InertTrigQ": "%mr_inertTrigQ",
+    "ExpandTrig": "%mr_expandTrig",
+    "KnownSineIntegrandQ": "%mr_knownSineIntegrandQ",
+    "KnownSecantIntegrandQ": "%mr_knownSecantIntegrandQ",
+    "KnownTangentIntegrandQ": "%mr_knownTangentIntegrandQ",
+    "KnownCotangentIntegrandQ": "%mr_knownCotangentIntegrandQ",
+    "ComplexFreeQ": "%mr_complexFreeQ",
+    "TrigSimplifyQ": "%mr_trigSimplifyQ",
+    "TrigSimplify": "%mr_trigSimplify",
+    # class 4: Apart, both uses ONE-argument (4.1.7 r51/r64:
+    # Apart[a*(1+Tan[e+f*x]^2)^2 + b*Tan[e+f*x]^4]^p). Its argument is a
+    # polynomial in Tan[e+f*x], on which Mathematica's Apart has no
+    # fraction to split and returns the expanded polynomial; Maxima's
+    # expand gives the same polynomial. Apart never changes a value, and
+    # the rule needs only the value (the factor's p-th power cancels, as a
+    # value, against (Sec^2)^(2p)). Maxima's partfrac needs a main variable
+    # the 1-arg form does not name.
+    "Apart": "expand",
 }
 
 # Per-class overrides of RENAME, consulted first by the generator's
