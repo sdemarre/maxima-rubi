@@ -336,6 +336,9 @@ RENAME = {
     # TrigSimplify's worker, a generated rewrite table (mr_rw_tsa,
     # rules/utils/inert_trig_rewrites.mac); its first clause recurses.
     "TrigSimplifyAux": "%mr_trigSimplifyAux",
+    # DeactivateTrig's general clause, generated with its fast-path clause
+    # into mr_rw_dt, calls the hand-ported worker by name.
+    "DeactivateTrigAux": "%mr_deactivateTrigAux",
     # class 4: Apart, both uses ONE-argument (4.1.7 r51/r64:
     # Apart[a*(1+Tan[e+f*x]^2)^2 + b*Tan[e+f*x]^4]^p). Its argument is a
     # polynomial in Tan[e+f*x], on which Mathematica's Apart has no

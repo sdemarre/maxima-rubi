@@ -2470,6 +2470,18 @@ REWRITE_FUNCTIONS = [
     # 2026-09-25 over the pinned clone: 31. A ONE-argument function: its
     # wrapper walks the table with the 3-argument %mr_rewrite.
     ("tsa", "TrigSimplifyAux", 31),
+    # Class 4 (2026-09-25): DeactivateTrig's two clauses (L6189-6195). The
+    # first is the fast path for (c+d x)^m (a+b trig[e+f x])^n: it
+    # deactivates the trig factor ALONE, so UnifyInertTrigFunction sees
+    # (a+b cos[e+f x])^n and rewrites cos as sin[e+Pi/2+f x] -- the shape
+    # 4.1.10's (c+d x)^m sin[...] rules are written against. The substrate
+    # hand-ported only the second (the general UnifyInertTrigFunction o
+    # FixInertTrigFunction o DeactivateTrigAux composition, a bare-Blank
+    # clause, so it sorts last); on the product (c+d x) cos[...] no
+    # UnifyInertTrigFunction clause binds and the cos stayed a cos no
+    # 4.1.10 rule matches (measured 2026-09-25, the class-4 slice: 4.1.10
+    # e1/e2, 4.2.10 e1/e2 contains-noun). MEASURED 2026-09-25: 2.
+    ("dt", "DeactivateTrig", 2),
 ]
 
 

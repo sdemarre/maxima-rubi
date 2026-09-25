@@ -155,6 +155,7 @@ run_all_tests() := block([],
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
+  test_class4_cluster_c(),
   test_class4_e2e(),
   test_census(),
   print(""),
@@ -5138,6 +5139,58 @@ test_class4_cluster_b() := block([mr_c4b_saved, mr_c4b_ok, mr_c4b_r],
                and is(ratsimp(exponentialize(diff(mr_c4b_r, x)
                                              - cosh(x)^3*sinh(x)^2)) = 0)),
     mr_rule_table : mr_c4b_saved),
+  true
+)$
+
+/* ---- class 4, Step 4 cluster (c): DeactivateTrig's fast-path clause ----
+   Rubi L6189-6192: DeactivateTrig[(c_.+d_.*x_)^m_.*(a_.+b_.*trig_[e_.+f_.*
+   x_])^n_., x] := (c+d x)^m (a+b DeactivateTrig[trig[e+f x],x])^n -- the
+   trig factor deactivated alone, so UnifyInertTrigFunction's
+   (a+b cos[e+f x])^n clause turns cos into sin[e+Pi/2+f x]. Both clauses
+   are now the generated table mr_rw_dt. Found by the class-4 slice: 4.1.10
+   e1/e2 and 4.2.10 e1/e2 ((c+d x)^m sin/cos(a+b x)) answered a noun. */
+test_class4_cluster_c() := block([mr_c4c_saved, mr_c4c_ok, mr_c4c_r, mr_c4c_fb],
+  print("--- class 4 cluster (c): DeactivateTrig's fast path ---"),
+  errcatch(%mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                            'mr_witness_inert_trig_rewrites)),
+  check("deactivateTrig: x cos(a+b x) -> x sin(a+Pi/2+b x) (the fast path)",
+        %mr_deactivateTrig(x*cos(a + b*x), x), x*%mr_isin(a + %pi/2 + b*x)),
+  check("deactivateTrig: the fast path is clause 1 alone",
+        %mr_rewrite("DeactivateTrig", [_mr_rw_dt_r1], (c + d*x)^2*cos(a + b*x), x),
+        (c + d*x)^2*%mr_isin(a + %pi/2 + b*x)),
+  check("deactivateTrig: (c+d x)^2 sin(a+b x) keeps sin",
+        %mr_deactivateTrig((c + d*x)^2*sin(a + b*x), x), (c + d*x)^2*%mr_isin(a + b*x)),
+  check("deactivateTrig: x cosh(x) -> x sin(i x + Pi/2) through the fast path",
+        %mr_deactivateTrig(x*cosh(x), x), x*%mr_isin(%i*x + %pi/2)),
+  check("deactivateTrig: a lone cos (clause 2, unchanged)",
+        %mr_deactivateTrig(cos(x), x), %mr_isin(x + %pi/2)),
+  check_bool("dt table has the 2 clauses, the bare one last",
+             is(mr_rw_dt = [_mr_rw_dt_r1, _mr_rw_dt_r2])),
+  mr_c4c_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1),
+    %mr_load_sibling("rules/class4/4_1_0_1.mac", 'mr_witness_4_1_0_1),
+    %mr_load_sibling("rules/class4/4_1_1_1.mac", 'mr_witness_4_1_1_1),
+    %mr_load_sibling("rules/class4/4_1_10.mac", 'mr_witness_4_1_10),
+    %mr_load_sibling("rules/class4/4_7_5.mac", 'mr_witness_4_7_5),
+    true),
+  check_bool("class 4 cluster (c): rule files load", is(mr_c4c_ok # [])),
+  if mr_c4c_ok # [] then (
+    mr_c4c_saved : mr_rule_table, mr_c4c_fb : mr_nested_fallback,
+    mr_nested_fallback : false,
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_9_1, mr_rules_4_1_0_1,
+                             mr_rules_4_1_1_1, mr_rules_4_1_10, mr_rules_4_7_5,
+                             mr_rules_4_1_0_1_tail, mr_rules_4_7_5_tail]),
+    mr_c4c_r : rubi((c + d*x)^2*sin(a + b*x), x),
+    check_bool("4.1.10: Int (c+d x)^2 sin(a+b x) (4.1.10 e2's shape)",
+               is(mr_c4c_r # false) and freeof('unintegrable, 'mr_int, mr_c4c_r)
+               and %mr_inertTrigFreeQ(mr_c4c_r)
+               and is(ratsimp(diff(mr_c4c_r, x) - (c + d*x)^2*sin(a + b*x)) = 0)),
+    mr_c4c_r : rubi(x^2*cos(x), x),
+    check_bool("4.1.10: Int x^2 cos(x) (4.2.10's shape)",
+               is(mr_c4c_r # false) and freeof('unintegrable, 'mr_int, mr_c4c_r)
+               and is(ratsimp(diff(mr_c4c_r, x) - x^2*cos(x)) = 0)),
+    mr_rule_table : mr_c4c_saved, mr_nested_fallback : mr_c4c_fb),
   true
 )$
 

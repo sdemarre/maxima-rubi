@@ -5973,18 +5973,20 @@ mr_use_gamma_flag : false$
              map(lambda([%mr_dta_t], %mr_deactivateTrigAux(%mr_dta_t, x)),
                  args(u))))$
 
-/* Rubi DeactivateTrig[u,x] (L6189-6195): UnifyInertTrigFunction o
-   FixInertTrigFunction o DeactivateTrigAux. The upstream file also carries
-   a fast-path clause ahead of this one, for (c+d x)^m (a+b trig[e+f x])^n,
-   that recurses DeactivateTrig into the trig factor alone rather than
-   walking the whole product through DeactivateTrigAux. It is NOT ported
-   here: no Layer A target distinguishes it from the general clause below,
-   which subsumes it (map/apply already walks into a product's trig factor
-   the same way), so it would be an optimisation this plan does not need
-   (brief resolution 3). */
-%mr_deactivateTrig(u, x) := block([],
-  %mr_unifyInertTrigFunction(%mr_fixInertTrigFunction(
-    %mr_deactivateTrigAux(u, x), x), x))$
+/* Rubi DeactivateTrig[u,x] (L6189-6195): its two clauses, a generated
+   rewrite table (mr_rw_dt, rules/utils/inert_trig_rewrites.mac).
+   Clause 2 is the general UnifyInertTrigFunction o FixInertTrigFunction o
+   DeactivateTrigAux composition (the substrate's hand port, which this
+   replaces). Clause 1 is the fast path for (c+d x)^m (a+b trig[e+f x])^n:
+   it deactivates the trig factor ALONE. The substrate left it out as an
+   optimisation (brief resolution 3), but it is not one: UnifyInertTrig-
+   Function has a clause for (a+b cos[e+f x])^n -- cos as sin[e+Pi/2+f x],
+   the shape 4.1.10's (c+d x)^m sin[...] rules are written against -- and
+   none for the product (c+d x) cos[...], so the general clause left a cos
+   no 4.1.10 rule matches (class 4 port, 2026-09-25: (c+d x)^2 sin(a+b x)
+   answered a noun; test_class4_cluster_c). */
+%mr_deactivateTrig(%mr_dt_u, %mr_dt_x) :=
+  %mr_rewrite("DeactivateTrig", mr_rw_dt, %mr_dt_u, %mr_dt_x)$
 
 /* ---- Task 7: FunctionOfTrigOfLinearQ + FunctionOfTrig -----------------
  * IntegrationUtilityFunctions.m L4357-4407 -- the bridge rule's condition

@@ -337,7 +337,9 @@ re-pointed): `Results: 1470 passed, 0 failed`; with the class-4 files end
 to end on a sibling table (the bridge and the 4.1/4.3/4.5 bodies, 4.1.1.1
 r1's Expand row, the Pi-shifted and Complex[0, fz] arguments, the accepted
 G-9 flags binding, the r66/r70 tail records, a 4.7.1 normalization record,
-17 checks): **`Results: 1486 passed, 0 failed`**. The
+17 checks): `Results: 1486 passed, 0 failed`; with DeactivateTrig's
+fast-path clause (the generated mr_rw_dt, 9 checks):
+**`Results: 1495 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
