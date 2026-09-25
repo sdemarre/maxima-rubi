@@ -1,0 +1,13 @@
+/* probes/class-ports/11-coth-power-pieces.mac -- localise the wrong piece of
+   the 6.4.2 (b*coth)^(4/3) answer (probe 10): numeric |r'-f| of each
+   sub-integral the trace shows, including the Subst integral at a COMPLEX
+   point (x = cot(%i*z) = -%i*coth(z) is imaginary on the real line). */
+mr_num(r, f, pts) := map(lambda([p], cabs(float(rectform(subst(x = p, subst([c = 0.2, d = 0.9], diff(r, x) - f)))))), pts)$
+f1 : coth(d*x+c)^(-2/3)$  r1 : rubi(f1, x)$
+print("P1 coth^(-2/3):", mr_num(r1, f1, [0.3, 0.7]))$
+f2 : x^(-2/3)/(1+x^2)$    r2 : rubi(f2, x)$
+print("P2 x^(-2/3)/(1+x^2) real:", mr_num(r2, f2, [0.3, 0.7]), " imaginary:", mr_num(r2, f2, [-2.1*%i, -1.3*%i]))$
+print("P2 answer:", r2)$
+f3 : 1/(1+x^6)$ r3 : rubi(f3, x)$
+print("P3 1/(1+x^6) real:", mr_num(r3, f3, [0.3, 0.7]), " complex:", mr_num(r3, f3, [0.6-0.9*%i, 0.8+0.5*%i]))$
+print("P3 answer:", r3)$

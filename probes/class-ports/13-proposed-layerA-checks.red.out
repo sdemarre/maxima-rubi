@@ -1,0 +1,14 @@
+# core /home/serge/src/mr-attr/test/mr_rules.core cap 120 hit_cap False cpu [12.977062]
+check(test_name,actual,expected):=block([],if actual = expected then (tests_passed:tests_passed+1,print("  PASS: ",test_name)) else (tests_failed:tests_failed+1,print("  FAIL: ",test_name),print("    expected: ",expected),print("    actual:   ",actual)),true)
+check_bool(test_name,actual):=block([v],v:is(actual),if v = true then (tests_passed:tests_passed+1,print("  PASS: ",test_name)) else (tests_failed:tests_failed+1,print("  FAIL: ",test_name),print("    actual:   ",actual)),true)
+  FAIL:  A1 %mr_expandIntegrand((x^2-1)/x, x) does not error 
+  FAIL:  A2 rubi((x^2-1)/x, x) 
+  FAIL:  A3 rubi((b/x^2+a)/x, x) 
+  FAIL:  B1 4_1_7 r10 cond accepts a symbolic a (Not[GtQ[a,0]]) 
+  FAIL:  B2 rubi(sqrt(a-b*x^2)/sqrt(1-x^2), x) carries no unintegrable 
+  FAIL:  B3 rubi(1/(sqrt(1-x^2)*sqrt(a-b*x^2)), x) carries no unintegrable 
+  FAIL:  B4 rubi(sqrt(a+b*sinh(e+f*x)^2), x) (6.1.7 e73) carries no unintegrable 
+  FAIL:  C1 %mr_substFor(1, cosh(c*(a+b*x)), %e^(n*cosh(a*c+b*c*x)), x) 
+  FAIL:  C2 rubi(%e^(n*cosh(a*c+b*c*x))*sinh(c*(a+b*x)), x) (6.7.1 e968) 
+print(concat("Results: ",tests_passed," passed, ",tests_failed," failed"))
+Results: 0 passed, 9 failed 

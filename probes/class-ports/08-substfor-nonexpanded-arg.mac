@@ -1,0 +1,11 @@
+/* probes/class-ports/08-substfor-nonexpanded-arg.mac -- 6.7.1 e968-e975:
+   4_7_5 r28 (Int[u*sinh(c*(a+b*x))] -> Subst[Int[SubstFor[1, cosh(c*(a+b*x))/d, u, x]]])
+   on u = %e^(n*cosh(a*c+b*c*x)): the SAME function written with the
+   argument expanded. What do FunctionOfQ / SubstFor answer? */
+print("FQ1", %mr_functionOfQ(cosh(c*(a+b*x)), %e^(n*cosh(a*c+b*c*x)), x))$
+print("SF1", %mr_substFor(1, cosh(c*(a+b*x)), %e^(n*cosh(a*c+b*c*x)), x))$
+print("FQ2", %mr_functionOfQ(cosh(c*(a+b*x)), %e^(n*cosh(c*(a+b*x))), x))$
+print("SF2", %mr_substFor(1, cosh(c*(a+b*x)), %e^(n*cosh(c*(a+b*x))), x))$
+print("FQ3", %mr_functionOfQ(cosh(a*c+b*c*x), %e^(n*cosh(c*(a+b*x))), x))$
+print("SF3", %mr_substFor(1, cosh(a*c+b*c*x), %e^(n*cosh(c*(a+b*x))), x))$
+print("R968", rubi(%e^(n*cosh(a*c+b*c*x))*sinh(c*(a+b*x)), x))$

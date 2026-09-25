@@ -1,0 +1,43 @@
+/* probes/class-ports/13-proposed-layerA-checks.mac -- the proposed Layer-A
+   checks for fixes A, B, C (class-6 PASS->FAIL attribution of the class
+   8/5/7/4 ports). RED on the class-ports core (4ed1877) as is; GREEN with
+   the runtime overlays fix-A/fix-B/fix-C loaded first. Run through
+   probes/class-ports/run_text.py so the core's rule table is present:
+     python3 probes/class-ports/run_text.py test/mr_rules.core 120 FILE */
+tests_passed : 0$
+tests_failed : 0$
+check(test_name, actual, expected) := block([],
+  if actual = expected then (tests_passed : tests_passed + 1, print("  PASS: ", test_name))
+  else (tests_failed : tests_failed + 1, print("  FAIL: ", test_name),
+        print("    expected: ", expected), print("    actual:   ", actual)), true)$
+check_bool(test_name, actual) := block([v],
+  v : is(actual),
+  if v = true then (tests_passed : tests_passed + 1, print("  PASS: ", test_name))
+  else (tests_failed : tests_failed + 1, print("  FAIL: ", test_name), print("    actual:   ", actual)), true)$
+
+/* A: ExpandIntegrand on a polynomial over a BARE x (maxima_rubi_utils.mac
+   %mr_ei_linear_power_at, op(denom(f)) on the atom x). */
+check_bool("A1 %mr_expandIntegrand((x^2-1)/x, x) does not error",
+  not(errcatch(%mr_expandIntegrand((x^2-1)/x, x)) = []))$
+check("A2 rubi((x^2-1)/x, x)", rubi((x^2-1)/x, x), x^2/2-log(x))$
+check("A3 rubi((b/x^2+a)/x, x)", rubi((b/x^2+a)/x, x), a*log(x)-b/(2*x^2))$
+
+/* B: Not[GtQ[a,0]] on a symbol reads True (Rubi GtQ: N[Together[a]] not Real
+   -> False). 4.1.7 r10 and 1.1.2.3's Not[GtQ[a,0]] elliptic reductions. */
+check_bool("B1 4_1_7 r10 cond accepts a symbolic a (Not[GtQ[a,0]])",
+  _mr_cond_4_1_7_r10([_mr_4_1_7_r10_a = a, _mr_4_1_7_r10_b = -b,
+                      _mr_4_1_7_r10_e = %i*e, _mr_4_1_7_r10_f = %i*f], x))$
+check_bool("B2 rubi(sqrt(a-b*x^2)/sqrt(1-x^2), x) carries no unintegrable",
+  freeof(unintegrable, rubi(sqrt(a-b*x^2)/sqrt(1-x^2), x)))$
+check_bool("B3 rubi(1/(sqrt(1-x^2)*sqrt(a-b*x^2)), x) carries no unintegrable",
+  freeof(unintegrable, rubi(1/(sqrt(1-x^2)*sqrt(a-b*x^2)), x)))$
+check_bool("B4 rubi(sqrt(a+b*sinh(e+f*x)^2), x) (6.1.7 e73) carries no unintegrable",
+  freeof(unintegrable, rubi(sqrt(a+b*sinh(e+f*x)^2), x)))$
+
+/* C: SubstForHyperbolic when the argument is the same linear form written
+   differently (c*(a+b*x) vs a*c+b*c*x). */
+check("C1 %mr_substFor(1, cosh(c*(a+b*x)), %e^(n*cosh(a*c+b*c*x)), x)",
+  %mr_substFor(1, cosh(c*(a+b*x)), %e^(n*cosh(a*c+b*c*x)), x), %e^(n*x))$
+check("C2 rubi(%e^(n*cosh(a*c+b*c*x))*sinh(c*(a+b*x)), x) (6.7.1 e968)",
+  rubi(%e^(n*cosh(a*c+b*c*x))*sinh(c*(a+b*x)), x), %e^(n*cosh(b*c*x+a*c))/(b*c*n))$
+print(concat("Results: ", tests_passed, " passed, ", tests_failed, " failed"))$

@@ -1,0 +1,28 @@
+/* probes/class-ports/fix-B-gtq-reading.mac -- RUNTIME PATCH (probe only, not
+   applied to the tree). Every generated rule condition's real comparison
+   is(A op B), op in > < >= <= (the generator's CMP_OPS emission,
+   generator/generate_rules.py, GtQ/LtQ/GeQ/LeQ), is rewritten to the
+   two-valued (is(A op B) = true), so an UNDECIDED comparison reads as
+   Rubi's False and Not[GtQ[a,0]] on a symbol reads True (Rubi
+   IntegrationUtilityFunctions.m GtQ/GeQ: N[Together[u]] not Real -> False).
+   Walks every _mr_cond_* function's body bottom-up; redefines it. */
+%mr_fixcmp_p(e) := not atom(e) and op(e) = 'is and length(args(e)) = 1
+    and not atom(first(args(e)))
+    and member(op(first(args(e))), [">", "<", ">=", "<="])$
+%mr_fixcmp(e) := if %mr_fixcmp_p(e) then (e = true) else e$
+%mr_fixcmp_count : 0$
+%mr_fixcmp_one(fname) := block([simp : false, def, body, nb],
+  def : apply(fundef, [fname]),
+  body : part(def, 2),
+  nb : scanmap(%mr_fixcmp, body, bottomup),
+  if not(nb = body) then (
+    %mr_fixcmp_count : %mr_fixcmp_count + 1,
+    apply(":=", [part(def, 1), nb])))$
+%mr_fixcmp_errors : 0$
+for f in functions do
+  if not atom(f) then
+    block([nm : string(op(f))],
+      if is(slength(nm) > 9) and is(substring(nm, 1, 10) = "_mr_cond_") then
+        if errcatch(%mr_fixcmp_one(op(f))) = [] then
+          %mr_fixcmp_errors : %mr_fixcmp_errors + 1)$
+print("FIX-B redefined cond functions:", %mr_fixcmp_count, " errors:", %mr_fixcmp_errors)$
