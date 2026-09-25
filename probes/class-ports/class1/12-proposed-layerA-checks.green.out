@@ -1,0 +1,12 @@
+check(test_name,actual,expected):=block([],if actual = expected then (tests_passed:tests_passed+1,print("  PASS: ",test_name)) else (tests_failed:tests_failed+1,print("  FAIL: ",test_name),print("    expected: ",expected),print("    actual:   ",actual)),true)
+check_bool(test_name,actual):=block([v],v:is(actual),if v = true then (tests_passed:tests_passed+1,print("  PASS: ",test_name)) else (tests_failed:tests_failed+1,print("  FAIL: ",test_name),print("    actual:   ",actual)),true)
+  PASS:  V1 no _mr_rule_* global in values after mr_load_all 
+  PASS:  V2 the rule-record globals stay bound (test_rule_table_order reads them) 
+  PASS:  V3 values holds fewer than 1000 entries after mr_load_all 
+  PASS:  E1 %mr_eqQ(4*(1-sqrt(3))^3 - 8*(5-3^(3/2)), 0) 
+  PASS:  E2 not %mr_neQ(q*p*(r^2-s) - p*(q*r^2-q*s), 0) 
+  PASS:  E3 1_1_3_7 r28 (Rubi 1.1.3.7 L32, EllipticE) accepts a=1, b=4, c=1-sqrt(3), d=4^(1/3) 
+  PASS:  E4 1_1_1_2 r37 declines b c - a d = 0 written unexpanded 
+  PASS:  E5 rubi(x^3/((1-x)^(1/3)*(2-x)^(1/3)), x) (1.1.1.3 e864) carries no unintegrable 
+print(concat("Results: ",tests_passed," passed, ",tests_failed," failed"))
+Results: 8 passed, 0 failed 

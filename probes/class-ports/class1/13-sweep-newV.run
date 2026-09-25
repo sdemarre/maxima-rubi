@@ -1,0 +1,16 @@
+#!/bin/sh
+# probes/class-ports/class1/13-sweep-newV.run -- all 524 class-1 PASS->FAIL
+# timeouts, ONE Maxima process at a time, 30 s cpu (the corpus cap), on the
+# class-ports core with values_trim.lisp (fix V) loaded: which of them the
+# class-ports CODE answers within the standard cap once the `values`
+# scan cost is removed. Output 13-sweep-newV.out (c1.py ab lines).
+set -u
+cd "$(dirname "$0")/../../.." || exit 1
+P=probes/class-ports/class1
+NEW=test/mr_rules.core
+{
+  echo "# $P/13-sweep-newV.run -- $(date -u '+%F %H:%M UTC'), tree $(git rev-parse --short HEAD), 30 s cpu"
+  awk '/^fingerprint |^rules /{print "# new core: " $0}' "$NEW.stamp"
+  python3 $P/c1.py ab $P/c1-pf-timeout.entries 30 newV=$NEW+$P/overlay-values-trim.mac
+} < /dev/null > $P/13-sweep-newV.out 2>&1
+echo done >> $P/13-sweep-newV.out

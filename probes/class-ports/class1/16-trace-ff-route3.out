@@ -1,0 +1,118 @@
+## arm newV
+# entry 1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e855  integrand sqrt(1+c*x)/(sqrt(b*x)*sqrt(1-c*x))
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.064972]
+fired    1_1_1_3 r44  1/(sqrt(b*x)*sqrt(1-c*x)*sqrt(c*x+1))
+fired    1_1_1_3 r44  1/(sqrt(b*x)*sqrt(1-c*x)*sqrt(c*x+1))
+fired    1_1_1_3 r44  1/(sqrt(b*x)*sqrt(1-c*x)*sqrt(c*x+1))
+
+## arm v-ff
+# entry 1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e855  integrand sqrt(1+c*x)/(sqrt(b*x)*sqrt(1-c*x))
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [2.61088]
+fired    1_1_3_1 r33  1/sqrt(1-c^2*x^4)
+fired    1_1_2_3 r48  sqrt(c*x^2+1)/sqrt(1-c*x^2)
+fired    1_2_2_3 r57  (c*x^2+1)/sqrt(1-c^2*x^4)
+fired    1_1_3_2 r49  x^2/sqrt(1-c^2*x^4)
+fired    9_1 r12  (c*x^2)/(b*sqrt(1-c^2*x^4))
+fired    1_4_1 r34  (c*sqrt(x))/(b*sqrt(1-c^2*x^2))
+fired    1_1_3_8 r30  (c*sqrt(b*x))/(b*sqrt(1-c^2*x^2))
+fired    1_1_1_6 r1  (c*sqrt(b*x))/(b*sqrt(1-c*x)*sqrt(c*x+1))
+fired    1_4_1 r18  (c*x)/(sqrt(b*x)*sqrt(1-c*x)*sqrt(c*x+1))
+fired    1_1_1_3 r44  1/(sqrt(b*x)*sqrt(1-c*x)*sqrt(c*x+1))
+fired    1_4_1 r7  (c*x)/(sqrt(b*x)*sqrt(1-c*x)*sqrt(c*x+1))+1/(sqrt(b*x)*sqrt(1-c*x)*sqrt(c*x+1))
+fired    1_1_1_3 r64  sqrt(c*x+1)/(sqrt(b*x)*sqrt(1-c*x))
+RUBI-CPU 2.5442080000000002 
+ANSWER-LEN 182 UNINT false 
+ANSWER (2*elliptic_f(asin((sqrt(c)*sqrt(b*x))/sqrt(b)),-1))/(sqrt(b)*sqrt(c))-((2*elliptic_f(asin(sqrt(c)*sqrt(x)),-1)-2*elliptic_e(asin(sqrt(c)*sqrt(x)),-1))*sqrt(b*x))/(b*sqrt(c)*sqrt(x)) 
+
+## arm newV
+# entry 1.3 Miscellaneous/1.3.1 Rational functions.mac e135  integrand x^2/(a+8*x-8*x^2+4*x^3-x^4)^2
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.097745]
+fired    1_1_2_1 r10  1/(x^2-sqrt(4-4*(-a-3))/2+1)
+fired    1_1_2_1 r10  1/(x^2+sqrt(4-4*(-a-3))/2+1)
+fired    1_2_2_3 r24  (2-2*x^2)/(x^4+2*x^2-a-3)
+fired    1_2_2_2 r13  x^2/(x^4+2*x^2-a-3)^2
+fired    1_3_3 r10  x^2/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))
+fired    1_1_2_1 r13  1/(-x^2+4*a+16)
+fired    1_2_1_1 r12  1/(x^2+2*x-a-3)
+fired    1_2_1_1 r8  1/(x^2+2*x-a-3)^2
+fired    1_2_2_2 r1  x/(x^4+2*x^2-a-3)^2
+fired    1_3_3 r10  x/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))
+fired    1_1_2_1 r10  1/(x^2-sqrt(4-4*(-a-3))/2+1)
+fired    1_1_2_1 r10  1/(x^2+sqrt(4-4*(-a-3))/2+1)
+fired    1_2_2_3 r24  (-(2*x^2)-2*(-a-3)-2*(4-4*(-a-3))+4)/(x^4+2*x^2-a-3)
+fired    1_2_2_1 r5  1/(x^4+2*x^2-a-3)^2
+fired    1_3_3 r10  1/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))
+fired    1_4_1 r7  x^2/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))+(2*x)/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))+1/(x^8+4*x^6+(-(2*a)-2)*x^4+...
+fired    1_3_3 r10  (x^2+2*x+1)/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+a^2+6*a+9)
+
+## arm v-ff
+# entry 1.3 Miscellaneous/1.3.1 Rational functions.mac e135  integrand x^2/(a+8*x-8*x^2+4*x^3-x^4)^2
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [5.205633]
+fired    1_1_2_1 r10  1/(x^2-sqrt(4-4*(-a-3))/2+1)
+fired    1_1_2_1 r10  1/(x^2+sqrt(4-4*(-a-3))/2+1)
+fired    1_2_2_3 r24  (2-2*x^2)/(x^4+2*x^2-a-3)
+fired    1_2_2_2 r13  x^2/(x^4+2*x^2-a-3)^2
+fired    1_3_3 r10  x^2/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))
+fired    1_1_2_2 r39  (2*(-(4*a)-12)*x)/(x^2-sqrt(4-4*(-a-3))/2+1)
+fired    1_1_2_2 r39  (2*(-(4*a)-12)*x)/(x^2+sqrt(4-4*(-a-3))/2+1)
+fired    1_2_2_2 r25  (2*(-(4*a)-12)*x)/(x^4+2*x^2-a-3)
+fired    1_2_2_2 r15  (2*x)/(x^4+2*x^2-a-3)^2
+fired    1_3_3 r10  x/(x^8/2+2*x^6-a*x^4-x^4-2*a*x^2-6*x^2+a^2/2+3*a+9/2)
+fired    1_4_1 r18  (2*x)/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))
+fired    1_1_2_1 r10  1/(x^2-sqrt(4-4*(-a-3))/2+1)
+fired    1_1_2_1 r10  1/(x^2+sqrt(4-4*(-a-3))/2+1)
+fired    1_2_2_3 r24  (-(2*x^2)-2*(-a-3)-2*(4-4*(-a-3))+4)/(x^4+2*x^2-a-3)
+fired    1_2_2_1 r5  1/(x^4+2*x^2-a-3)^2
+fired    1_3_3 r10  1/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))
+fired    1_4_1 r7  x^2/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))+(2*x)/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+9*((a^2+6*a)/9+1))+1/(x^8+4*x^6+(-(2*a)-2)*x^4+...
+fired    1_3_3 r10  (x^2+2*x+1)/(x^8+4*x^6+(-(2*a)-2)*x^4+(-(4*a)-12)*x^2+a^2+6*a+9)
+fired    1_2_2_5 r10  x^2/(-x^4+4*x^3-8*x^2+8*x+a)^2
+RUBI-CPU 5.150714000000001 
+ANSWER-LEN 9345 UNINT false 
+ANSWER -((sqrt(-((sqrt(4*a+16)-2)/2))*sqrt((sqrt(4*a+16)+2)/2)*((2*hypergeometric([1,1],[2],-(((2*sqrt(4*a+16)+2*a+10)*x^2+(-(4*sqrt(4*a+16))-4*a-20)*x+2*sqrt(4*a+16)+2*a+10)/(a*(sqrt(4*a+16)+6)+7*sqrt(4*a+16)+26)))-2*hypergeometric([1,1],[2],((-(2*sqrt(4*a+16))+2*a+10)*x^2+(4*sqrt(4*a+16)-4*a-20)*x-2*sqrt(4*a+16)+2*a+10)/(7*sqrt(4*a+16)+a*(sqrt(4*a+16)-6)-26)))*sqrt(4*a+16)+(-(4*hypergeometric([1,1],[2],-(((2*sqrt(4*a+16)+2*a+10)*x^2+(-(4*sqrt(4*a+16))-4*a-20)*x+2*sqrt(4*a+16)+2*a+10)/(a*(sqrt(4*a+16)+6)+7*sqrt(4*a+16)+26))))-4*hypergeometric([1,1],[2],((-(2*sqrt(4*a+16))+2*a+10)*x^2+(4*sqrt(...
+
+## arm newV
+# entry 1.3 Miscellaneous/1.3.2 Algebraic functions.mac e681  integrand (9+2*x-9*sqrt(x))/(x-3*sqrt(x))^(1/3)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.108632]
+fired    1_1_3_1 r31  1/sqrt(x^3-1)
+fired    1_1_3_1 r31  1/sqrt(x^3-1)
+fired    1_1_3_1 r31  1/sqrt(x^3-1)
+fired    1_1_3_1 r31  1/sqrt(x^3-1)
+fired    1_1_3_1 r31  1/sqrt(x^3-1)
+fired    9_3 r67  (sqrt(3)+1)/sqrt(x^3-1)-x/sqrt(x^3-1)
+fired    1_1_3_7 r45  (-x+sqrt(3)+1)/sqrt(x^3-1)
+fired    1_1_3_2 r46  x/sqrt(x^3-1)
+fired    1_1_2_1 r27  1/(1-9*x^2)^(1/3)
+fired    1_2_1_1 r13  1/(x/3-x^2/9)^(1/3)
+fired    1_2_1_1 r16  1/(x^2-3*x)^(1/3)
+fired    1_1_1_2 r30  1/((x-3)^(1/3)*x^(1/3))
+fired    1_1_1_2 r19  x^(2/3)/(x-3)^(1/3)
+fired    1_1_1_2 r19  x^(5/3)/(x-3)^(1/3)
+fired    1_1_1_2 r19  x^(8/3)/(x-3)^(1/3)
+
+## arm v-ff
+# entry 1.3 Miscellaneous/1.3.2 Algebraic functions.mac e681  integrand (9+2*x-9*sqrt(x))/(x-3*sqrt(x))^(1/3)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [1.40342]
+fired    1_1_3_2 r107  x^10/(1-x^3/3)^(1/3)
+fired    1_1_3_2 r108  x^10/(x^3-3)^(1/3)
+fired    1_1_3_2 r111  x^10/(sqrt(x^6)-3)^(1/3)
+fired    9_1 r12  (2*x^10)/(sqrt(x^6)-3)^(1/3)
+fired    1_4_1 r34  (2*x^(5/6))/(sqrt(x)-3)^(1/3)
+fired    1_1_3_2 r107  x^7/(1-x^3/3)^(1/3)
+fired    1_1_3_2 r108  x^7/(x^3-3)^(1/3)
+fired    1_1_3_2 r84  x^3/(x^(3/2)-3)^(1/3)
+fired    1_1_3_2 r112  x^3/(sqrt(x^3)-3)^(1/3)
+fired    9_1 r12  (9*x^3)/(sqrt(x^3)-3)^(1/3)
+fired    1_4_1 r34  (9*x^(1/3))/(sqrt(x)-3)^(1/3)
+fired    1_1_3_2 r107  x^4/(1-x^3/3)^(1/3)
+fired    1_1_3_2 r108  x^4/(x^3-3)^(1/3)
+fired    1_1_3_2 r111  x^4/(sqrt(x^6)-3)^(1/3)
+fired    9_1 r12  (9*x^4)/(sqrt(x^6)-3)^(1/3)
+fired    1_4_1 r34  9/((sqrt(x)-3)^(1/3)*x^(1/6))
+fired    1_4_1 r7  (2*x^(5/6))/(sqrt(x)-3)^(1/3)-(9*x^(1/3))/(sqrt(x)-3)^(1/3)+9/((sqrt(x)-3)^(1/3)*x^(1/6))
+fired    1_2_3_4 r99  (2*x-9*sqrt(x)+9)/((sqrt(x)-3)^(1/3)*x^(1/6))
+fired    1_3_3 r18  (2*x-9*sqrt(x)+9)/(x-3*sqrt(x))^(1/3)
+RUBI-CPU 1.356413 
+ANSWER-LEN 388 UNINT false 
+ANSWER ((sqrt(x)-3)^(1/3)*x^(1/6)*((12*hypergeometric([1/3,11/3],[14/3],sqrt(x)/3)*(-((sqrt(x)-3)/3))^(1/3)*x^(11/6))/(11*(sqrt(x)-3)^(1/3))-(27*hypergeometric([1/3,8/3],[11/3],sqrt(x)/3)*(-((sqrt(x^(1/3))*x^(1/3)-3)/3))^(1/3)*x^(4/3))/(4*(sqrt(x^(1/3))*x^(1/3)-3)^(1/3))+(54*hypergeometric([1/3,5/3],[8/3],sqrt(x)/3)*(-((sqrt(x)-3)/3))^(1/3)*x^(5/6))/(5*(sqrt(x)-3)^(1/3))))/(x-3*sqrt(x))^(1/3) 
+

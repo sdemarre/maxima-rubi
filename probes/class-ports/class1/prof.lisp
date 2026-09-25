@@ -1,0 +1,10 @@
+;;; probes/class-ports/class1/prof.lisp -- sb-sprof around a Maxima form, for probes.
+(in-package :maxima)
+(require :sb-sprof)
+(defmfun $mr_c1_prof (form)
+  (let (r)
+    (sb-sprof:with-profiling (:max-samples 200000 :sample-interval 0.002 :mode :cpu :report nil)
+      (setq r (meval form)))
+    (let ((*standard-output* *standard-output*))
+      (sb-sprof:report :type :flat :max 45))
+    r))

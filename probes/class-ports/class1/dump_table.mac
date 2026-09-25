@@ -1,0 +1,10 @@
+/* probes/class-ports/class1/dump_table.mac -- print "TBL <pos> <key> r<n>
+   <tail> <general> <handle>" for every handle of mr_rule_table, in table order. */
+block([i : 0, r],
+  for h in mr_rule_table do (
+    i : i + 1,
+    r : ?aref(?\*mr\-rules\*, h - 1),
+    printf(true, "TBL ~d ~a r~d ~a ~a ~d~%", i, ?mr\-rule\-key(r), ?mr\-rule\-n(r),
+           if ?mr\-rule\-tail(r) = true then "T" else "-",
+           if ?mr\-rule\-general(r) = true then "G" else "-", h)),
+  i);

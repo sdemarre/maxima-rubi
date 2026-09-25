@@ -1,0 +1,60 @@
+=== 05-prof-e863.mac on ../../../mr-attr-base/test/mr_rules.core
+# core /home/serge/src/mr-attr-base/test/mr_rules.core cap 120 hit_cap False cpu [1.619119]
+Total sampling time: 1.522 seconds
+   2    433  56.9    433  56.9    433  56.9        -  SB-KERNEL:%MEMBER-EQ
+   4    100  13.1    134  17.6    533  70.0        -  DELETE
+   6     43   5.7     43   5.7    576  75.7        -  EQ
+   8     35   4.6     35   4.6    611  80.3        -  SB-KERNEL:%LAST1
+  10     22   2.9     24   3.2    633  83.2        -  SB-IMPL::GET3
+  12     19   2.5     20   2.6    652  85.7        -  GETL
+  14     14   1.8    774 101.7    666  87.5        -  MEVAL1
+  16      4   0.5      4   0.5    670  88.0        -  SYMBOL-PLIST
+  18      3   0.4    612  80.4    673  88.4        -  MSET
+  20      3   0.4    432  56.8    676  88.8        -  MEVALARGS
+  22      3   0.4      4   0.5    679  89.2        -  SB-IMPL::GET-INFO-VALUE
+  24      3   0.4      3   0.4    682  89.6        -  MR-TREE::TREE-SYMBOL->MAXIMA
+=== 05b-prof-e863-trim.mac on ../../../mr-attr-base/test/mr_rules.core
+# core /home/serge/src/mr-attr-base/test/mr_rules.core cap 120 hit_cap False cpu [0.479885]
+VALUES-TRIM 4384 -> 387
+Total sampling time: 0.402 seconds
+   2     49  24.4     49  24.4     49  24.4        -  SB-KERNEL:%MEMBER-EQ
+   4     20  10.0     23  11.4     69  34.3        -  SB-IMPL::GET3
+   6     15   7.5     17   8.5     84  41.8        -  GETL
+   8     10   5.0     13   6.5     94  46.8        -  DELETE
+  10      7   3.5    206 102.5    101  50.2        -  MEVAL1
+  12      7   3.5      7   3.5    108  53.7        -  SYMBOL-PLIST
+  14      5   2.5    122  60.7    113  56.2        -  MEVALARGS
+  16      4   2.0      4   2.0    117  58.2        -  EQ
+  18      3   1.5    202 100.5    120  59.7        -  MEVAL
+  20      3   1.5      5   2.5    123  61.2        -  MR-MATCH::MATCH-FLAT
+  22      3   1.5      5   2.5    126  62.7        -  SET
+=== 05-prof-e863.mac on ../../test/mr_rules.core
+# core /home/serge/src/mr-attr/test/mr_rules.core cap 120 hit_cap False cpu [3.114898]
+Total sampling time: 2.982 seconds
+   2    877  58.8    877  58.8    877  58.8        -  SB-KERNEL:%MEMBER-EQ
+   4    229  15.4    285  19.1   1106  74.2        -  DELETE
+   6     89   6.0     89   6.0   1195  80.1        -  EQ
+   8     83   5.6     83   5.6   1278  85.7        -  SB-KERNEL:%LAST1
+  10     33   2.2     39   2.6   1311  87.9        -  GETL
+  12     30   2.0     33   2.2   1341  89.9        -  SB-IMPL::GET3
+  14     17   1.1   1506 101.0   1358  91.1        -  MEVAL1
+  16      8   0.5      8   0.5   1366  91.6        -  SYMBOL-PLIST
+  18      7   0.5    904  60.6   1373  92.1        -  MEVALP1
+  20      5   0.3      5   0.3   1378  92.4        -  MR-MATCH::M1
+  22      4   0.3   1493 100.1   1382  92.7        -  MLAMBDA
+  24      4   0.3    718  48.2   1386  93.0        -  MUNBIND
+=== 05b-prof-e863-trim.mac on ../../test/mr_rules.core
+# core /home/serge/src/mr-attr/test/mr_rules.core cap 120 hit_cap False cpu [0.621862]
+VALUES-TRIM 8401 -> 625
+Total sampling time: 0.532 seconds
+   2     60  22.6     60  22.6     60  22.6        -  SB-KERNEL:%MEMBER-EQ
+   4     35  13.2     37  13.9     95  35.7        -  SB-IMPL::GET3
+   6     22   8.3     30  11.3    117  44.0        -  DELETE
+   8     16   6.0     17   6.4    133  50.0        -  GETL
+  10     15   5.6    280 105.3    148  55.6        -  MEVAL1
+  12     10   3.8     10   3.8    158  59.4        -  EQ
+  14      5   1.9    269 101.1    163  61.3        -  (LAMBDA (PROG) :IN "/home/serge/src/external/maxima/src/mlisp.lisp")
+  16      5   1.9     12   4.5    168  63.2        -  SIMPLIFYA
+  18      4   1.5    193  72.6    172  64.7        -  MEVALP1
+  20      4   1.5      6   2.3    176  66.2        -  EQTEST
+  22      4   1.5      4   1.5    180  67.7        -  SYMBOL-PLIST

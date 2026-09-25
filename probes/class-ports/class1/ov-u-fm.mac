@@ -1,0 +1,269 @@
+/* probe overlay: master (cd0a421-line, mr-attr-base) definitions of %mr_substPower %mr_normalizeIntegrandFactorBase %mr_foEFunctionAux %mr_sincReplace %mr_substForFractionalPower %mr_mofl_walk %mr_polynomialInSubstAux %mr_powerVariableSubst %mr_squareRootOfQuadraticSubst %mr_divideDegreesOfFactors %mr_absurdNumberFactors %mr_nonabsurdNumberFactors %mr_functionOfLinearSubst %mr_substForTrig %mr_deactivateTrigAux */
+%mr_substPower(u, x, n) := block([],
+  if atom(u) then (
+    if is(u = x) then x^n else u
+  )
+  else if numberp(u) then u
+  else if not atom(u) and op(u) = "^" then (
+    if is(part(u, 1) = x) and freeof(x, part(u, 2))
+    then x^(n*part(u, 2))
+    else %mr_substPower(part(u, 1), x, n)
+         ^%mr_substPower(part(u, 2), x, n)
+  )
+  else if not atom(u) and op(u) = "*"
+  then apply("*", map(lambda([z], %mr_substPower(z, x, n)),
+    %mr_parts_list(u)))
+  else if not atom(u) and op(u) = "+"
+  then apply("+", map(lambda([z], %mr_substPower(z, x, n)),
+    %mr_parts_list(u)))
+  else if not atom(u) and op(u) = "/"
+  then %mr_substPower(part(u, 1), x, n)
+       /%mr_substPower(part(u, 2), x, n)
+  else if not atom(u) and op(u) = "-"
+  then -%mr_substPower(part(u, 1), x, n)
+  else if not atom(u) and op(u) = "["
+  then map(lambda([z], %mr_substPower(z, x, n)), %mr_parts_list(u))
+  else (
+    
+    apply(op(u), map(lambda([z], %mr_substPower(z, x, n)), args(u)))))$
+
+%mr_normalizeIntegrandFactorBase(u, x) := block([v],
+  if atom(u) then u
+  else if %mr_binomialQ(u, x) then
+    if %mr_binomialMatchQ(u, x) then u else %mr_expandToSum(u, x)
+  else if %mr_trinomialQ(u, x) then
+    if %mr_trinomialMatchQ(u, x) then u else %mr_expandToSum(u, x)
+  else if not atom(u) and is(op(u) = "*") then
+    apply("*", map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u)))
+  else if %mr_polynomialQ(u, x) and is(%mr_degree(u, x) <= 4) then
+    %mr_expandToSum(u, x)
+  else if %mr_sumQ(u) then (
+    v : %mr_togetherSimplify(u),
+    if %mr_sumQ(v) or %mr_xpwsumP(v, x)
+       or is(%mr_leafCount(v) > %mr_leafCount(u) + 2)
+    then %mr_unifySum(u, x)
+    else %mr_normalizeIntegrandFactorBase(v, x)
+  )
+  else apply(op(u), map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u))))$
+
+%mr_foEFunctionAux(u, x, st) := block([F, v, tmp],
+  F : part(st, 2), v : part(st, 3),
+  if atom(u) then u
+  else if %mr_powerQ(u) and freeof(x, part(u, 1))
+        and %mr_linearQ(part(u, 2), x) then (
+    
+    if %mr_eqQ(%mr_coeff(v, x, 0), 0) then
+      part(u, 1)^%mr_coeff(part(u, 2), x, 0)
+      *x^%mr_fullSimplify(log(part(u, 1))*%mr_coeff(part(u, 2), x, 1)
+                          /(log(F)*%mr_coeff(v, x, 1)))
+    else
+      x^%mr_fullSimplify(log(part(u, 1))*%mr_coeff(part(u, 2), x, 1)
+                         /(log(F)*%mr_coeff(v, x, 1)))
+  )
+  
+  else if not atom(u) and %mr_hyperbolicQ(u)
+        and %mr_linearQ(part(u, 1), x) then (
+    
+    tmp : x^%mr_fullSimplify(%mr_coeff(part(u, 1), x, 1)
+                             /(log(F)*%mr_coeff(v, x, 1))),
+    if is(op(u) = sinh) then tmp/2 - 1/(2*tmp)
+    else if is(op(u) = cosh) then tmp/2 + 1/(2*tmp)
+    else if is(op(u) = tanh) then (tmp - 1/tmp)/(tmp + 1/tmp)
+    else if is(op(u) = coth) then (tmp + 1/tmp)/(tmp - 1/tmp)
+    else if is(op(u) = sech) then 2/(tmp + 1/tmp)
+    else if is(op(u) = csch) then 2/(tmp - 1/tmp)
+    else u
+  )
+  else if %mr_powerQ(u) and freeof(x, part(u, 1))
+        and %mr_sumQ(part(u, 2)) then (
+    
+    %mr_foEFunctionAux(part(u, 1)^part(part(u, 2), 1), x, st)
+    *%mr_foEFunctionAux(part(u, 1)^rest(part(u, 2)), x, st)
+  )
+  else (
+    
+    apply(op(u), map(lambda([p], %mr_foEFunctionAux(p, x, st)), args(u)))))$
+
+%mr_sincReplace(v) := block([],
+  if atom(v) then v
+  else if is(op(v) = 'sinc) then sin(part(v, 1))/part(v, 1)
+  else if is(op(v) = "[") then
+    map(lambda([z], %mr_sincReplace(z)), %mr_parts_list(v))
+  else apply(op(v), map(lambda([z], %mr_sincReplace(z)), args(v))))$
+
+%mr_substForFractionalPower(u, v, n, w, x) := block([e],
+  if atom(u) then (
+    if is(u = x) then w else u
+  )
+  else if %mr_fractionalPowerQ(u) and %mr_eqQ(part(u, 1), v) then (
+    e : %mr_fractionalPowerExpon(u),
+    x^(n*e)
+  )
+  else if is(op(u) = "[") then
+    map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
+      %mr_parts_list(u))
+  else apply(op(u), map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
+    args(u))))$
+
+%mr_mofl_walk(u, v, n, x) := block([i, r, res, dead],
+   res : [],
+   dead : false,
+   for i : 1 thru length(u) do (
+     r : %mr_functionOfLog_aux(part(u, i), v, n, x),
+     if atom(r) then (
+       dead : true,
+       return()
+     ),
+     v : part(r, 2),
+     n : part(r, 3),
+     res : append(res, [part(r, 1)])
+   ),
+   if is(dead = true) then false
+   else if is(op(u) = "[") then [res, v, n]
+   else [apply(op(u), res), v, n])$
+
+%mr_polynomialInSubstAux(%mr_pisa_u, %mr_pisa_v, x) := block([inflag : true],
+  if is(%mr_pisa_u = %mr_pisa_v) then x
+  elseif atom(%mr_pisa_u) then %mr_pisa_u
+  elseif %mr_powerQ(%mr_pisa_u) then
+    (if %mr_powerQ(%mr_pisa_v)
+        and is(part(%mr_pisa_u, 1) = part(%mr_pisa_v, 1))
+       then x^(part(%mr_pisa_u, 2) / part(%mr_pisa_v, 2))
+       else %mr_polynomialInSubstAux(part(%mr_pisa_u, 1), %mr_pisa_v, x)
+              ^part(%mr_pisa_u, 2))
+  else apply(op(%mr_pisa_u),
+             map(lambda([%mr_pisa_t],
+                        %mr_polynomialInSubstAux(%mr_pisa_t, %mr_pisa_v, x)),
+                 %mr_args_in(%mr_pisa_u))))$
+
+%mr_powerVariableSubst(%mr_pvs_u, %mr_pvs_m, x) := block([inflag : true],
+  if freeof(x, %mr_pvs_u) or atom(%mr_pvs_u) or %mr_calculusQ(%mr_pvs_u)
+  then %mr_pvs_u
+  elseif %mr_powerQ(%mr_pvs_u) and freeof(x, part(%mr_pvs_u, 1) / x) then
+    x^(part(%mr_pvs_u, 2) / %mr_pvs_m)
+  else apply(op(%mr_pvs_u),
+             map(lambda([%mr_pvs_t],
+                        %mr_powerVariableSubst(%mr_pvs_t, %mr_pvs_m, x)),
+                 %mr_args_in(%mr_pvs_u))))$
+
+%mr_squareRootOfQuadraticSubst(%mr_sqs_u, %mr_sqs_vv, %mr_sqs_xx, x) :=
+  block([inflag : true],
+  if atom(%mr_sqs_u) or freeof(x, %mr_sqs_u) then
+    (if is(%mr_sqs_u = x) then %mr_sqs_xx else %mr_sqs_u)
+  elseif %mr_powerQ(%mr_sqs_u) and freeof(x, part(%mr_sqs_u, 2)) then (
+    if %mr_fractionQ(part(%mr_sqs_u, 2))
+       and is(denom(part(%mr_sqs_u, 2)) = 2)
+       and %mr_polynomialQ(part(%mr_sqs_u, 1), x)
+       and is(%mr_degree(part(%mr_sqs_u, 1), x) = 2)
+    then %mr_sqs_vv^num(part(%mr_sqs_u, 2))
+    else %mr_squareRootOfQuadraticSubst(
+           part(%mr_sqs_u, 1), %mr_sqs_vv, %mr_sqs_xx, x)^part(%mr_sqs_u, 2)
+  )
+  else apply(op(%mr_sqs_u),
+             map(lambda([%mr_sqs_t],
+                        %mr_squareRootOfQuadraticSubst(
+                          %mr_sqs_t, %mr_sqs_vv, %mr_sqs_xx, x)),
+                 %mr_args_in(%mr_sqs_u))))$
+
+%mr_divideDegreesOfFactors(%mr_ddof_u, %mr_ddof_n) := block([inflag : true],
+  if %mr_productQ(%mr_ddof_u) then
+    apply(op(%mr_ddof_u),
+          map(lambda([%mr_ddof_f],
+                      %mr_leadBase(%mr_ddof_f) ^ (%mr_leadDegree(%mr_ddof_f) / %mr_ddof_n)),
+              %mr_args_in(%mr_ddof_u)))
+  else %mr_leadBase(%mr_ddof_u) ^ (%mr_leadDegree(%mr_ddof_u) / %mr_ddof_n))$
+
+%mr_absurdNumberFactors(%mr_anf_u) := block([inflag : true],
+  if %mr_absurdNumberQ(%mr_anf_u) then %mr_anf_u
+  elseif %mr_productQ(%mr_anf_u) then
+    apply(op(%mr_anf_u), map(%mr_absurdNumberFactors, %mr_args_in(%mr_anf_u)))
+  else %mr_numericFactor(%mr_anf_u))$
+
+%mr_nonabsurdNumberFactors(%mr_nanf_u) := block([inflag : true],
+  if %mr_absurdNumberQ(%mr_nanf_u) then 1
+  elseif %mr_productQ(%mr_nanf_u) then
+    apply(op(%mr_nanf_u), map(%mr_nonabsurdNumberFactors, %mr_args_in(%mr_nanf_u)))
+  else %mr_nonnumericFactors(%mr_nanf_u))$
+
+%mr_functionOfLinearSubst(%mr_fols_u, %mr_fols_a, %mr_fols_b, x) := block(
+  [inflag : true, %mr_fols_lst, %mr_fols_tmp],
+  if freeof(x, %mr_fols_u) then %mr_fols_u
+  elseif %mr_linearQ(%mr_fols_u, x) then (
+    
+    %mr_fols_tmp : ratcoef(%mr_fols_u, x, 1),
+    %mr_fols_tmp : if is(%mr_fols_tmp = %mr_fols_b) then 1 else %mr_fols_tmp / %mr_fols_b,
+    ratcoef(%mr_fols_u, x, 0) - %mr_fols_a * %mr_fols_tmp + %mr_fols_tmp * x
+  )
+  elseif %mr_powerQ(%mr_fols_u) and freeof(x, part(%mr_fols_u, 1)) then
+    %e ^ ratsimp(%mr_functionOfLinearSubst(log(part(%mr_fols_u, 1)) * part(%mr_fols_u, 2),
+                                            %mr_fols_a, %mr_fols_b, x))
+  else (
+    %mr_fols_lst : if %mr_productQ(%mr_fols_u) then %mr_monomialFactor(%mr_fols_u, x)
+                   else [0, %mr_fols_u],
+    if %mr_productQ(%mr_fols_u) and %mr_neQ(first(%mr_fols_lst), 0) then (
+      if %mr_rationalQ(%mr_leadFactor(second(%mr_fols_lst)))
+         and is(%mr_leadFactor(second(%mr_fols_lst)) < 0)
+      then -%mr_functionOfLinearSubst(
+              %mr_divideDegreesOfFactors(-second(%mr_fols_lst), first(%mr_fols_lst)) * x,
+              %mr_fols_a, %mr_fols_b, x) ^ first(%mr_fols_lst)
+      else %mr_functionOfLinearSubst(
+              %mr_divideDegreesOfFactors(second(%mr_fols_lst), first(%mr_fols_lst)) * x,
+              %mr_fols_a, %mr_fols_b, x) ^ first(%mr_fols_lst)
+    )
+    else apply(op(%mr_fols_u),
+               map(lambda([%mr_fols_e], %mr_functionOfLinearSubst(%mr_fols_e, %mr_fols_a, %mr_fols_b, x)),
+                   %mr_args_in(%mr_fols_u)))
+  ))$
+
+%mr_substForTrig(%mr_sft_u, %mr_sft_s, %mr_sft_c, %mr_sft_v) :=
+  block([inflag : true, %mr_sft_h, %mr_sft_t, %mr_sft_p],
+  if atom(%mr_sft_u) then %mr_sft_u
+  elseif %mr_trigQ(%mr_sft_u) and %mr_integerQuotientQ(part(%mr_sft_u, 1), %mr_sft_v) then (
+    %mr_sft_h : op(%mr_sft_u),
+    if %mr_eqQ(part(%mr_sft_u, 1), %mr_sft_v) then (
+      if %mr_sft_h = sin then %mr_sft_s
+      elseif %mr_sft_h = cos then %mr_sft_c
+      elseif %mr_sft_h = tan then %mr_sft_s/%mr_sft_c
+      elseif %mr_sft_h = cot then %mr_sft_c/%mr_sft_s
+      elseif %mr_sft_h = sec then 1/%mr_sft_c
+      else 1/%mr_sft_s)
+    else (
+      %mr_sft_t : subst(%mr_sft_v, '%mr_sft_y,
+                        trigexpand(apply(%mr_sft_h,
+                          [ratsimp(part(%mr_sft_u, 1)/%mr_sft_v)*'%mr_sft_y]))),
+      if atom(%mr_sft_t) then %mr_sft_t
+      else apply(op(%mr_sft_t),
+                 map(lambda([%mr_sft_p],
+                            %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
+                     args(%mr_sft_t)))))
+  else (
+    %mr_sft_t : %mr_foq_halfPair(%mr_sft_u, %mr_sft_v),
+    if %mr_sft_t # false
+    then %mr_sft_s/2*%mr_substForTrig(%mr_sft_t, %mr_sft_s, %mr_sft_c, %mr_sft_v)
+    else apply(op(%mr_sft_u),
+               map(lambda([%mr_sft_p],
+                          %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
+                   args(%mr_sft_u)))))$
+
+%mr_deactivateTrigAux(u, x) := block([%mr_dta_v],
+  if atom(u) then u
+  elseif %mr_trigQ(u) and %mr_linearQ([part(u, 1)], x) then (
+    %mr_dta_v : %mr_expandToSum(part(u, 1), x),
+    if op(u) = sin then %mr_reduceInertTrig(%mr_isin, %mr_dta_v)
+    elseif op(u) = cos then %mr_reduceInertTrig(%mr_icos, %mr_dta_v)
+    elseif op(u) = tan then %mr_reduceInertTrig(%mr_itan, %mr_dta_v)
+    elseif op(u) = cot then %mr_reduceInertTrig(%mr_icot, %mr_dta_v)
+    elseif op(u) = sec then %mr_reduceInertTrig(%mr_isec, %mr_dta_v)
+    else %mr_reduceInertTrig(%mr_icsc, %mr_dta_v))
+  elseif %mr_hyperbolicQ(u) and %mr_linearQ([part(u, 1)], x) then (
+    %mr_dta_v : %mr_expandToSum(%i * part(u, 1), x),
+    if op(u) = sinh then -%i * %mr_reduceInertTrig(%mr_isin, %mr_dta_v)
+    elseif op(u) = cosh then %mr_reduceInertTrig(%mr_icos, %mr_dta_v)
+    elseif op(u) = tanh then -%i * %mr_reduceInertTrig(%mr_itan, %mr_dta_v)
+    elseif op(u) = coth then %i * %mr_reduceInertTrig(%mr_icot, %mr_dta_v)
+    elseif op(u) = sech then %mr_reduceInertTrig(%mr_isec, %mr_dta_v)
+    else %i * %mr_reduceInertTrig(%mr_icsc, %mr_dta_v))
+  else apply(op(u),
+             map(lambda([%mr_dta_t], %mr_deactivateTrigAux(%mr_dta_t, x)),
+                 args(u))))$
+

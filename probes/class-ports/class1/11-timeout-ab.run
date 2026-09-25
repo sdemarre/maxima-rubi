@@ -1,0 +1,23 @@
+#!/bin/sh
+# probes/class-ports/class1/11-timeout-ab.run -- ALTERNATING SEQUENTIAL timing
+# A/B of 35 class-1 PASS->FAIL timeouts (every 17th of the 524, plus the four
+# whose base-record time is under 14 s), ONE Maxima process at a time, 120 s
+# cpu cap, shipping switches, per entry the arms in order
+#   ref  = master core d251f4bf (3,997 rules)
+#   new  = class-ports core 4daae7ac (7,776 rules)
+#   newV = new + values_trim.lisp (the 7,776 _mr_rule_* globals leave `values`)
+#   refV = ref + values_trim.lisp
+# Output: 11-timeout-ab.out (c1.py ab lines: class, entry cpu, rubi cpu).
+set -u
+cd "$(dirname "$0")/../../.." || exit 1
+P=probes/class-ports/class1
+REF=../mr-attr-base/test/mr_rules.core
+NEW=test/mr_rules.core
+V=$P/overlay-values-trim.mac
+{
+  echo "# $P/11-timeout-ab.run -- $(date -u '+%F %H:%M UTC'), tree $(git rev-parse --short HEAD), 120 s cpu, arms alternate per entry"
+  awk '/^fingerprint |^rules /{print "# ref core: " $0}' "$REF.stamp"
+  awk '/^fingerprint |^rules /{print "# new core: " $0}' "$NEW.stamp"
+  python3 $P/c1.py ab $P/c1-pf-timeout-sample35.entries 120 ref=$REF new=$NEW newV=$NEW+$V refV=$REF+$V
+} < /dev/null > $P/11-timeout-ab.out 2>&1
+echo done >> $P/11-timeout-ab.out

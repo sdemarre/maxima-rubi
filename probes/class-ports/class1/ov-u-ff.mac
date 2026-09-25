@@ -1,0 +1,32 @@
+/* probe overlay: master (cd0a421-line, mr-attr-base) definitions of %mr_nonfreeFactors %mr_freeFactors */
+%mr_nonfreeFactors(u, x) := block([r, i, t],
+  if atom(u) then (
+    if freeof(x, u) then 1 else u
+  )
+  
+  elseif op(u) = "-" then %mr_nonfreeFactors(part(u, 1), x)
+  elseif op(u) = "*" then (
+    r : 1,
+    for i : 1 thru length(u) do (
+      t : part(u, i),
+      if is(freeof(x, t)) = false then r : r * t
+    ),
+    r
+  )
+  else if freeof(x, u) then 1 else u)$
+
+%mr_freeFactors(u, x) := block([r, i, t],
+  if atom(u) then (
+    if freeof(x, u) then u else 1
+  )
+  elseif op(u) = "-" then -%mr_freeFactors(part(u, 1), x)
+  elseif op(u) = "*" then (
+    r : 1,
+    for i : 1 thru length(u) do (
+      t : part(u, i),
+      if freeof(x, t) then r : r * t
+    ),
+    r
+  )
+  else if freeof(x, u) then u else 1)$
+

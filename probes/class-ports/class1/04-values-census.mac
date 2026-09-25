@@ -1,0 +1,8 @@
+/* probes/class-ports/class1/04-values-census.mac -- the size of Maxima's
+   `values` infolist in a core, and how much of it is rule-record globals
+   (_mr_rule_<key>_r<n>), cond/repl-free handles lists (mr_rules_*), other. */
+block([v : values, nrule, nlist],
+  nrule : length(sublist(v, lambda([s], symbolp(s) and is(ssearch("_mr_rule_", string(s)) = 1)))),
+  nlist : length(sublist(v, lambda([s], symbolp(s) and is(ssearch("mr_rules_", string(s)) = 1)))),
+  print("VALUES", length(v), "RULE-GLOBALS", nrule, "HANDLE-LISTS", nlist,
+        "FUNCTIONS", length(functions)))$

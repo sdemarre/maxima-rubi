@@ -1,0 +1,88 @@
+PASS->FAIL 534: new timeout 524, new answer-class 10
+
+sequential A/B (11-timeout-ab.out, 35 timeouts, 33 PASS in all four arms), medians:
+  new/ref 1.71   newV/refV 1.16   ref/refV 3.46   new(seq)/base-record 1.33
+
+   9  FF-E EqQ/NeQ syntactic (fix E)
+        1.1.1.3 e863   new contains-noun
+        1.1.1.3 e864   new contains-noun
+        1.1.1.3 e865   new contains-noun
+        1.1.1.3 e866   new contains-noun
+        1.1.1.3 e867   new contains-noun
+        1.1.1.3 e869   new contains-noun
+        1.1.1.3 e870   new contains-noun
+        1.1.1.5 e14    new unverified
+        1.2.1.2 e2005  new unverified
+   1  FF-S seen-test cut on an ancestor (1.1.3.3 e271)
+        1.1.3.3 e271   new contains-noun
+   5  FF-route/verify (timeout)
+        1.1.1.3 e855   base  10.3s; newV timeout 30.1s
+        1.2.2.2 e848   base  12.2s; newV verified 20.3s
+        1.2.3.2 e549   base  12.2s; newV verified 24.2s
+        1.3.1 e135     base  18.4s; newV timeout 30.1s
+        1.3.2 e681     base   5.4s; newV timeout 30.1s
+   3  V-cost (measured)
+        1.1.3.8 e227   ref  18.4s new  32.3s newV  5.6s refV  4.7s
+        1.2.1.3 e2368  ref  23.0s new  34.7s newV  7.1s refV  7.1s
+        1.2.3.4 e64    ref  19.8s new  34.1s newV  6.9s refV  6.1s
+  65  V-cost (modelled)
+        1.1.1.3 e3066  base  25.7s -> predicted new  34.2s; newV 12.7s
+        1.1.2.4 e98    base  24.8s -> predicted new  33.0s; newV  6.4s
+        1.1.2.4 e106   base  23.7s -> predicted new  31.6s; newV  5.3s
+        1.1.2.4 e430   base  26.8s -> predicted new  35.7s; newV  6.7s
+        1.1.2.4 e435   base  24.5s -> predicted new  32.6s; newV  6.3s
+        1.1.2.4 e436   base  28.4s -> predicted new  37.8s; newV  7.1s
+        1.1.2.4 e452   base  29.1s -> predicted new  38.7s; newV  5.1s
+        1.1.2.4 e453   base  24.0s -> predicted new  32.0s; newV  5.0s
+        1.1.2.4 e457   base  23.3s -> predicted new  31.0s; newV  4.9s
+        1.1.2.4 e458   base  23.2s -> predicted new  30.9s; newV  4.8s
+        1.1.2.4 e459   base  24.3s -> predicted new  32.4s; newV  4.9s
+        1.1.2.4 e460   base  24.7s -> predicted new  32.9s; newV  4.7s
+        ... 53 more
+  28  V-noise (measured)
+        1.1.1.2 e1729  ref  13.6s new  23.2s newV  4.5s refV  3.8s
+        1.1.2.2 e293   ref  13.8s new  22.5s newV  4.3s refV  3.8s
+        1.1.2.2 e310   ref  13.5s new  22.5s newV  4.6s refV  3.9s
+        1.1.2.4 e373   ref  13.6s new  23.3s newV  4.5s refV  4.0s
+        1.1.2.4 e390   ref  13.7s new  23.5s newV  4.6s refV  3.8s
+        1.1.2.4 e446   ref  15.3s new  23.7s newV  4.6s refV  4.5s
+        1.1.3.2 e652   ref  13.6s new  22.8s newV  4.5s refV  3.7s
+        1.1.3.2 e692   ref  12.5s new  21.7s newV  4.1s refV  3.4s
+        1.1.3.3 e58    ref  14.3s new  23.0s newV  4.5s refV  4.2s
+        1.1.3.8 e152   ref  12.5s new  21.4s newV  4.2s refV  3.5s
+        1.1.3.8 e489   ref  13.9s new  24.3s newV  5.0s refV  4.0s
+        1.1.4.3 e193   ref  14.3s new  24.4s newV  4.7s refV  4.1s
+        1.1.4.3 e210   ref  14.6s new  25.1s newV  4.9s refV  4.2s
+        1.2.1.2 e401   ref  16.4s new  28.3s newV  5.2s refV  4.5s
+        1.2.1.2 e1931  ref  16.5s new  27.1s newV  6.1s refV  5.4s
+        1.2.1.3 e418   ref  14.1s new  24.2s newV  4.6s refV  4.0s
+        1.2.1.3 e1029  ref  16.3s new  28.6s newV  5.5s refV  4.6s
+        1.2.1.9 e308   ref  16.9s new  29.0s newV  5.8s refV  4.8s
+        1.2.2.2 e319   ref  13.7s new  22.9s newV  4.3s refV  4.0s
+        1.2.2.2 e336   ref  14.2s new  23.9s newV  4.5s refV  4.1s
+        1.2.2.2 e687   ref  15.1s new  26.1s newV  4.9s refV  4.4s
+        1.2.2.2 e704   ref  15.2s new  26.0s newV  5.1s refV  4.4s
+        1.2.2.2 e721   ref  15.4s new  26.2s newV  5.2s refV  4.5s
+        1.2.2.2 e759   ref  15.2s new  26.4s newV  5.3s refV  4.4s
+        1.2.2.2 e776   ref  15.7s new  26.2s newV  5.1s refV  4.5s
+        1.2.2.3 e145   ref  13.6s new  23.3s newV  4.6s refV  4.0s
+        1.2.2.6 e88    ref  13.9s new  23.7s newV  4.6s refV  3.8s
+        1.3.1 e394     ref  13.8s new  23.7s newV  4.6s refV  4.0s
+ 423  V-noise (modelled)
+        1.1.1.3 e171   base  17.9s -> predicted new  23.8s; newV  5.3s
+        1.1.1.3 e172   base  17.9s -> predicted new  23.8s; newV  5.3s
+        1.1.1.3 e880   base  20.8s -> predicted new  27.7s; newV  4.9s
+        1.1.1.3 e3090  base  17.7s -> predicted new  23.6s; newV  5.9s
+        1.1.1.4 e77    base  16.0s -> predicted new  21.3s; newV  3.8s
+        1.1.1.6 e26    base  15.1s -> predicted new  20.1s; newV  3.8s
+        1.1.1.7 e9     base  16.9s -> predicted new  22.5s; newV  4.8s
+        1.1.1.7 e14    base  19.7s -> predicted new  26.2s; newV  5.6s
+        1.1.1.7 e24    base  22.2s -> predicted new  29.6s; newV  6.4s
+        1.1.2.2 e288   base  17.3s -> predicted new  23.0s; newV  4.2s
+        1.1.2.2 e289   base  17.3s -> predicted new  23.0s; newV  4.5s
+        1.1.2.2 e290   base  17.3s -> predicted new  23.0s; newV  4.4s
+        ... 411 more
+
+values-scan cost (fix V) total 519; FreeFactors-exposed (ticket 20) total 15
+fix E recovers 9/10 answer entries (10-fixE-answer.out)
+fix V: 13-sweep-newV PASS 521/524 timeouts at 30 s cpu
