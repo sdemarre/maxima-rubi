@@ -768,3 +768,38 @@ evidence but are smaller in scale. §6's "every PASS->FAIL attributed" is met,
 each cause by a committed probe under `probes/section9/`; its "all gates green"
 is met (A6.5). The acceptance decision, and the merge, are the user's, and this
 amendment recommends the two fixes first.
+
+### A7. The re-measure after tickets 14 and 15 (2026-09-25) — §6 acceptance, final
+
+Branch core `cd0a421` (3,997 rules, fingerprint `d251f4bff5afb506c402c7bf97e49005`), queue
+runner, 24 workers, 30 s cpu cap, against the unchanged `.s9-ref` baselines (core `0182d32c`).
+Build `branch_5_50_base_84_g4204fb669`. Script `test/section9b_measure.sh`, log
+`test/section9b_measure.log`; records `test/corpus_class{1,2,3,6}.s9b.out`; A/Bs
+`test/section9b_ab_class<N>.out`; attribution `test/section9b_attribution.{py,out}`.
+
+| class | baseline | pre-fix `.s9` | now `.s9b` | PASS→FAIL | FAIL→PASS |
+|---|---:|---:|---:|---:|---:|
+| 1 | 18,170 | 18,409 | **18,400** | 19 | 249 |
+| 2 | 716 | 749 | **758** | 1 | 43 |
+| 3 | 1,673 | 1,577 | **1,692** | 3 | 22 |
+| 6 | 1,630 | 2,281 | **2,474** | 41 | 885 |
+| total | 22,189 | 23,016 | **23,324** | 64 | 1,199 |
+
+Class 3's A6 loss (−96 against the baseline, the give-up ordering) is gone: +19 now. Inert-trig
+leaks in the class-6 run: 0 (driver stderr, `inert-leak` lines).
+
+Every one of the 64 PASS→FAIL is attributed, and **none is new**: each entry was already FAIL
+in the pre-fix `.s9` record and attributed in A6.
+
+- **noise, 14**: the paired rerun (both cores at once, 12 workers each) has the branch PASS the
+  entry or the reference FAIL it.
+- **timeout, 9**: the six class-1 entries are A6.3's sequential timing set, i.e. probe 05's
+  entries (ticket 16, `9_3 r41` cost; 1.3.1 e190/e238 and the four 1.2.1 entries at 25–30 s in
+  the reference). The three class-6 entries (6.1.3 e69/e73/e80) take 29.2–29.6 s in the
+  reference, so they sit on the cap. No new sequential timing A/B was run for them.
+- **carried, 41**: no-answer → contains-noun, i.e. the corpus answer is Unintegrable and the
+  branch returns a partial answer with an interior noun. 1.3.2 e760/e761, 2.3 e758 and 3.5
+  e286/e287/e290 are six of A6.4's ten route entries. The 35 class-6 entries (6.1.1, 6.2.1,
+  6.3.1, 6.4.1, 6.7.1) are ticket 14's unrecovered residue: bridge-routed entries where
+  Mathematica would use a specific section-4 rule. They are the class-4 port's to settle
+  (ticket 05).

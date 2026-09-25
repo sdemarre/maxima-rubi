@@ -1,0 +1,979 @@
+base: test/corpus_class6.s9-ref.out (5080 entries)
+new:  test/corpus_class6.s9b.out (5080 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS   1589
+PASS->FAIL     41
+FAIL->PASS    885
+FAIL->FAIL   2565
+
+=== class transitions (changed only) ===
+  430  deferred -> verified
+  429  contains-noun -> verified
+  412  deferred -> timeout
+  394  contains-noun -> timeout
+  305  deferred -> contains-noun
+   53  deferred -> unverified
+   36  contains-noun -> unverified
+   35  no-answer -> contains-noun
+   10  deferred -> expected
+    8  contains-noun -> expected
+    7  timeout -> verified
+    5  contains-noun -> deferred
+    3  expected -> timeout
+    3  verified -> timeout
+    1  unverified -> verified
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    4     4  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac
+    3     3  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac
+    0   124  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac
+    1   129  6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac
+    5     0  6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac
+    0     2  6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.3 (e x)^m (a+b cosh(c+d x^n))^p.mac
+    0    73  6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac
+    0    57  6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac
+   14     0  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac
+    0    52  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac
+    1    48  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac
+    8     0  6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac
+    0    48  6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac
+    0    16  6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac
+    0     1  6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.2 (e x)^m (a+b sech(c+d x^n))^p.mac
+    0    39  6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac
+    1    23  6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac
+    0     4  6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac
+    0    67  6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac
+    0    15  6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac
+    4   180  6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac
+
+=== PASS->FAIL (41) ===
+  no-answer     -> contains-noun t=1.1s -> t=3.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e72
+  no-answer     -> contains-noun t=1.4s -> t=4.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e112
+  no-answer     -> contains-noun t=1.3s -> t=4.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e155
+  no-answer     -> contains-noun t=1.2s -> t=4.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e156
+  expected      -> timeout       t=29.6s -> t=30.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac e69
+  expected      -> timeout       t=29.2s -> t=30.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac e73
+  expected      -> timeout       t=29.5s -> t=30.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac e80
+  verified      -> timeout       t=29.9s -> t=30.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e339
+  no-answer     -> contains-noun t=0.6s -> t=1.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e68
+  no-answer     -> contains-noun t=0.6s -> t=1.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e69
+  no-answer     -> contains-noun t=1.2s -> t=4.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e115
+  no-answer     -> contains-noun t=1.3s -> t=4.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e154
+  no-answer     -> contains-noun t=1.4s -> t=4.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e155
+  no-answer     -> contains-noun t=1.2s -> t=7.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e22
+  no-answer     -> contains-noun t=1.2s -> t=14.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e23
+  no-answer     -> contains-noun t=1.2s -> t=2.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e25
+  no-answer     -> contains-noun t=1.1s -> t=2.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e26
+  no-answer     -> contains-noun t=1.1s -> t=3.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e27
+  no-answer     -> contains-noun t=1.1s -> t=3.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e28
+  no-answer     -> contains-noun t=1.3s -> t=5.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e48
+  no-answer     -> contains-noun t=0.8s -> t=2.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e49
+  no-answer     -> contains-noun t=0.7s -> t=2.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e56
+  no-answer     -> contains-noun t=0.7s -> t=6.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e57
+  no-answer     -> contains-noun t=1.3s -> t=5.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e61
+  no-answer     -> contains-noun t=1.3s -> t=8.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e62
+  no-answer     -> contains-noun t=1.3s -> t=10.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e66
+  no-answer     -> contains-noun t=1.3s -> t=24.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e67
+  verified      -> timeout       t=29.1s -> t=30.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e191
+  no-answer     -> contains-noun t=1.3s -> t=5.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e32
+  no-answer     -> contains-noun t=0.8s -> t=2.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e33
+  no-answer     -> contains-noun t=0.7s -> t=2.2s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e40
+  no-answer     -> contains-noun t=0.7s -> t=6.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e41
+  no-answer     -> contains-noun t=1.3s -> t=5.2s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e45
+  no-answer     -> contains-noun t=1.2s -> t=8.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e46
+  no-answer     -> contains-noun t=1.2s -> t=11.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e50
+  no-answer     -> contains-noun t=1.3s -> t=24.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e51
+  verified      -> timeout       t=28.9s -> t=30.0s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e55
+  no-answer     -> contains-noun t=1.0s -> t=4.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1014
+  no-answer     -> contains-noun t=1.0s -> t=4.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1015
+  no-answer     -> contains-noun t=1.6s -> t=6.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1016
+  no-answer     -> contains-noun t=1.5s -> t=6.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1017
+
+=== FAIL->PASS (885) ===
+  timeout       -> verified      t=30.1s -> t=3.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e202
+  timeout       -> verified      t=30.0s -> t=3.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e231
+  contains-noun -> verified      t=18.5s -> t=3.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e236
+  contains-noun -> verified      t=6.2s -> t=23.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e246
+  contains-noun -> verified      t=0.8s -> t=1.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac e57
+  contains-noun -> verified      t=0.6s -> t=2.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac e88
+  contains-noun -> verified      t=0.3s -> t=1.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac e89
+  deferred      -> verified      t=1.0s -> t=7.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e7
+  deferred      -> verified      t=1.0s -> t=8.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e8
+  deferred      -> verified      t=1.0s -> t=6.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e9
+  deferred      -> verified      t=1.0s -> t=7.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e10
+  deferred      -> verified      t=1.0s -> t=6.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e11
+  deferred      -> verified      t=1.0s -> t=7.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e12
+  deferred      -> verified      t=1.0s -> t=6.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e13
+  deferred      -> verified      t=1.0s -> t=7.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e14
+  deferred      -> verified      t=1.0s -> t=7.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e15
+  deferred      -> verified      t=1.0s -> t=7.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e16
+  deferred      -> verified      t=1.0s -> t=6.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e17
+  deferred      -> verified      t=1.0s -> t=7.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e18
+  deferred      -> verified      t=1.0s -> t=6.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e19
+  deferred      -> verified      t=1.0s -> t=7.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e20
+  deferred      -> verified      t=1.0s -> t=6.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e21
+  deferred      -> verified      t=1.0s -> t=7.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e22
+  deferred      -> verified      t=0.9s -> t=7.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e23
+  deferred      -> verified      t=0.9s -> t=8.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e24
+  deferred      -> verified      t=0.9s -> t=6.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e25
+  deferred      -> verified      t=0.9s -> t=7.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e26
+  deferred      -> verified      t=0.9s -> t=6.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e27
+  deferred      -> verified      t=1.0s -> t=7.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e28
+  deferred      -> verified      t=0.9s -> t=6.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e29
+  deferred      -> verified      t=0.9s -> t=7.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e30
+  contains-noun -> verified      t=1.3s -> t=6.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e31
+  contains-noun -> verified      t=1.3s -> t=6.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e32
+  contains-noun -> verified      t=1.3s -> t=6.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e33
+  contains-noun -> verified      t=1.4s -> t=6.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e34
+  contains-noun -> verified      t=1.4s -> t=6.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e35
+  contains-noun -> verified      t=1.4s -> t=6.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e36
+  deferred      -> verified      t=2.6s -> t=11.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e40
+  contains-noun -> verified      t=8.8s -> t=6.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e41
+  contains-noun -> verified      t=8.3s -> t=3.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e42
+  contains-noun -> verified      t=2.6s -> t=2.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e43
+  contains-noun -> verified      t=8.5s -> t=20.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e44
+  contains-noun -> verified      t=8.3s -> t=29.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e45
+  contains-noun -> verified      t=4.4s -> t=23.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e46
+  deferred      -> verified      t=2.6s -> t=23.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e47
+  contains-noun -> verified      t=4.3s -> t=25.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e52
+  contains-noun -> verified      t=4.6s -> t=27.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e54
+  deferred      -> verified      t=2.7s -> t=29.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e55
+  deferred      -> verified      t=1.2s -> t=6.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e66
+  deferred      -> verified      t=1.2s -> t=6.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e67
+  deferred      -> verified      t=1.2s -> t=6.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e68
+  deferred      -> verified      t=2.7s -> t=20.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e72
+  contains-noun -> verified      t=8.9s -> t=15.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e73
+  contains-noun -> verified      t=8.7s -> t=10.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e74
+  contains-noun -> verified      t=2.7s -> t=9.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e75
+  deferred      -> verified      t=1.1s -> t=10.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e99
+  deferred      -> verified      t=1.8s -> t=2.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e115
+  deferred      -> verified      t=1.9s -> t=2.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e119
+  deferred      -> verified      t=2.0s -> t=9.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e129
+  deferred      -> verified      t=4.4s -> t=2.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e136
+  deferred      -> verified      t=0.8s -> t=23.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e146
+  deferred      -> verified      t=0.8s -> t=23.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e147
+  deferred      -> verified      t=0.8s -> t=21.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e149
+  deferred      -> verified      t=0.9s -> t=13.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e150
+  deferred      -> verified      t=0.8s -> t=16.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e151
+  contains-noun -> verified      t=1.1s -> t=4.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e152
+  contains-noun -> verified      t=1.1s -> t=4.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e153
+  contains-noun -> verified      t=1.1s -> t=4.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e154
+  contains-noun -> verified      t=1.1s -> t=4.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e155
+  contains-noun -> verified      t=1.2s -> t=4.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e156
+  contains-noun -> verified      t=1.1s -> t=4.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e157
+  deferred      -> verified      t=2.6s -> t=6.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e159
+  deferred      -> verified      t=2.6s -> t=6.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e161
+  deferred      -> verified      t=2.6s -> t=5.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e163
+  deferred      -> verified      t=2.6s -> t=9.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e164
+  deferred      -> verified      t=1.6s -> t=0.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e165
+  deferred      -> verified      t=2.4s -> t=4.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e166
+  deferred      -> verified      t=2.6s -> t=6.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e168
+  deferred      -> verified      t=2.6s -> t=8.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e170
+  deferred      -> verified      t=2.6s -> t=13.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e171
+  deferred      -> verified      t=2.6s -> t=6.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e172
+  deferred      -> verified      t=2.7s -> t=7.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e173
+  deferred      -> verified      t=2.7s -> t=6.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e174
+  deferred      -> verified      t=2.7s -> t=15.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e175
+  deferred      -> verified      t=1.5s -> t=0.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e176
+  deferred      -> verified      t=2.5s -> t=5.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e177
+  deferred      -> verified      t=2.7s -> t=7.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e179
+  deferred      -> verified      t=2.8s -> t=8.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e181
+  deferred      -> verified      t=2.7s -> t=7.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e182
+  deferred      -> verified      t=1.6s -> t=0.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e183
+  deferred      -> verified      t=2.9s -> t=8.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e184
+  deferred      -> verified      t=2.9s -> t=8.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e185
+  deferred      -> verified      t=1.7s -> t=0.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e186
+  deferred      -> verified      t=2.7s -> t=20.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e187
+  deferred      -> verified      t=2.7s -> t=6.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e189
+  deferred      -> verified      t=2.8s -> t=6.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e191
+  deferred      -> verified      t=1.6s -> t=0.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e193
+  deferred      -> verified      t=2.6s -> t=5.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e194
+  deferred      -> verified      t=2.8s -> t=14.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e196
+  deferred      -> verified      t=2.8s -> t=9.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e201
+  deferred      -> verified      t=1.7s -> t=0.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e203
+  deferred      -> verified      t=2.7s -> t=12.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e204
+  contains-noun -> verified      t=8.8s -> t=21.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e209
+  contains-noun -> verified      t=2.6s -> t=6.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e211
+  contains-noun -> verified      t=8.5s -> t=15.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e212
+  contains-noun -> verified      t=8.4s -> t=19.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e213
+  contains-noun -> verified      t=4.4s -> t=7.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e214
+  deferred      -> verified      t=2.6s -> t=14.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e215
+  contains-noun -> verified      t=8.6s -> t=17.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e216
+  contains-noun -> verified      t=4.5s -> t=16.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e219
+  contains-noun -> verified      t=2.6s -> t=7.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e221
+  contains-noun -> verified      t=4.4s -> t=8.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e222
+  contains-noun -> verified      t=4.3s -> t=24.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e223
+  contains-noun -> verified      t=4.5s -> t=8.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e224
+  deferred      -> verified      t=2.6s -> t=25.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e225
+  contains-noun -> verified      t=4.5s -> t=9.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e226
+  contains-noun -> verified      t=4.3s -> t=16.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e227
+  contains-noun -> verified      t=8.9s -> t=26.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e229
+  contains-noun -> verified      t=2.6s -> t=5.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e231
+  contains-noun -> verified      t=8.8s -> t=16.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e232
+  contains-noun -> verified      t=4.6s -> t=8.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e234
+  contains-noun -> verified      t=2.7s -> t=8.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e239
+  contains-noun -> verified      t=8.9s -> t=17.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e240
+  contains-noun -> verified      t=4.6s -> t=9.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e242
+  contains-noun -> verified      t=8.9s -> t=20.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e244
+  contains-noun -> verified      t=9.0s -> t=20.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e245
+  deferred      -> verified      t=1.9s -> t=20.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e246
+  deferred      -> verified      t=1.8s -> t=18.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e247
+  deferred      -> verified      t=1.9s -> t=19.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e248
+  deferred      -> verified      t=1.9s -> t=22.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e250
+  deferred      -> verified      t=1.9s -> t=21.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e252
+  contains-noun -> verified      t=2.4s -> t=11.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e1
+  contains-noun -> verified      t=3.1s -> t=6.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e3
+  deferred      -> verified      t=1.4s -> t=17.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e14
+  contains-noun -> verified      t=6.5s -> t=20.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e16
+  contains-noun -> verified      t=3.1s -> t=5.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e25
+  contains-noun -> verified      t=3.0s -> t=10.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e27
+  contains-noun -> verified      t=5.3s -> t=7.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e29
+  contains-noun -> verified      t=4.2s -> t=5.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e31
+  contains-noun -> verified      t=3.0s -> t=4.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e37
+  contains-noun -> verified      t=3.0s -> t=5.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e39
+  contains-noun -> verified      t=5.4s -> t=9.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e41
+  contains-noun -> verified      t=17.2s -> t=21.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e44
+  deferred      -> verified      t=0.8s -> t=3.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e60
+  deferred      -> verified      t=0.8s -> t=1.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e61
+  deferred      -> verified      t=0.8s -> t=2.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e62
+  deferred      -> verified      t=0.9s -> t=3.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e63
+  deferred      -> verified      t=0.9s -> t=2.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e64
+  deferred      -> verified      t=0.9s -> t=2.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e65
+  contains-noun -> verified      t=5.3s -> t=20.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e72
+  contains-noun -> verified      t=1.3s -> t=3.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e73
+  contains-noun -> verified      t=3.0s -> t=11.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e74
+  contains-noun -> verified      t=1.3s -> t=20.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e84
+  deferred      -> verified      t=0.9s -> t=2.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e88
+  deferred      -> verified      t=0.9s -> t=4.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e90
+  deferred      -> verified      t=0.8s -> t=4.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e91
+  deferred      -> verified      t=0.9s -> t=6.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e92
+  deferred      -> verified      t=0.9s -> t=2.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e93
+  deferred      -> verified      t=0.9s -> t=4.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e95
+  deferred      -> verified      t=0.9s -> t=4.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e96
+  deferred      -> verified      t=0.9s -> t=22.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e97
+  contains-noun -> verified      t=4.3s -> t=19.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e102
+  contains-noun -> verified      t=5.5s -> t=14.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e103
+  contains-noun -> verified      t=1.3s -> t=4.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e104
+  contains-noun -> verified      t=3.0s -> t=10.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e105
+  contains-noun -> verified      t=4.4s -> t=15.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e112
+  contains-noun -> verified      t=5.5s -> t=13.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e113
+  contains-noun -> verified      t=1.3s -> t=3.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e114
+  contains-noun -> verified      t=5.5s -> t=25.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e120
+  contains-noun -> verified      t=4.5s -> t=19.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e121
+  contains-noun -> verified      t=5.6s -> t=13.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e122
+  contains-noun -> verified      t=1.5s -> t=11.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e123
+  deferred      -> verified      t=0.8s -> t=2.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e125
+  deferred      -> verified      t=0.9s -> t=4.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e126
+  deferred      -> verified      t=0.8s -> t=4.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e127
+  deferred      -> verified      t=0.9s -> t=6.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e129
+  contains-noun -> verified      t=9.3s -> t=18.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e143
+  contains-noun -> verified      t=4.5s -> t=24.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e144
+  contains-noun -> verified      t=2.2s -> t=4.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e146
+  contains-noun -> verified      t=3.7s -> t=28.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e147
+  contains-noun -> verified      t=5.4s -> t=24.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e148
+  deferred      -> verified      t=5.3s -> t=19.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e149
+  contains-noun -> verified      t=3.9s -> t=8.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e154
+  contains-noun -> verified      t=4.0s -> t=8.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e164
+  contains-noun -> verified      t=1.7s -> t=6.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e192
+  contains-noun -> verified      t=4.1s -> t=17.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e222
+  contains-noun -> verified      t=5.2s -> t=13.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e223
+  contains-noun -> verified      t=4.2s -> t=11.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e224
+  contains-noun -> verified      t=4.6s -> t=8.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e226
+  contains-noun -> verified      t=5.6s -> t=9.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e227
+  contains-noun -> verified      t=4.6s -> t=9.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e228
+  timeout       -> verified      t=30.1s -> t=4.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e230
+  contains-noun -> verified      t=5.0s -> t=9.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e235
+  contains-noun -> verified      t=2.9s -> t=7.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e239
+  contains-noun -> verified      t=3.0s -> t=7.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e240
+  deferred      -> verified      t=0.9s -> t=7.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e265
+  deferred      -> expected      t=0.8s -> t=27.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e268
+  deferred      -> expected      t=0.9s -> t=12.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e274
+  deferred      -> verified      t=2.9s -> t=7.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e276
+  deferred      -> verified      t=2.9s -> t=7.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e277
+  deferred      -> verified      t=2.9s -> t=6.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e278
+  deferred      -> verified      t=2.9s -> t=6.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e279
+  deferred      -> verified      t=1.8s -> t=0.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e280
+  deferred      -> verified      t=2.7s -> t=7.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e281
+  deferred      -> verified      t=3.0s -> t=8.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e282
+  contains-noun -> verified      t=1.3s -> t=8.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e283
+  contains-noun -> verified      t=1.3s -> t=3.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e285
+  deferred      -> verified      t=13.6s -> t=21.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e298
+  contains-noun -> verified      t=1.8s -> t=5.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e311
+  contains-noun -> verified      t=2.2s -> t=9.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e317
+  contains-noun -> verified      t=2.2s -> t=6.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e319
+  contains-noun -> verified      t=1.4s -> t=3.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e324
+  contains-noun -> verified      t=1.8s -> t=7.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e326
+  contains-noun -> verified      t=2.2s -> t=13.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e328
+  deferred      -> verified      t=2.9s -> t=6.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e349
+  deferred      -> verified      t=2.8s -> t=6.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e350
+  deferred      -> verified      t=2.9s -> t=6.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e351
+  contains-noun -> verified      t=2.2s -> t=28.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e357
+  contains-noun -> verified      t=2.2s -> t=12.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e358
+  contains-noun -> verified      t=1.3s -> t=3.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e359
+  contains-noun -> verified      t=1.4s -> t=4.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e360
+  contains-noun -> verified      t=1.8s -> t=14.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e361
+  contains-noun -> verified      t=1.3s -> t=20.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e370
+  contains-noun -> verified      t=1.4s -> t=22.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e371
+  contains-noun -> verified      t=1.8s -> t=15.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e372
+  contains-noun -> verified      t=2.2s -> t=12.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e377
+  contains-noun -> verified      t=2.2s -> t=7.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e378
+  contains-noun -> verified      t=1.3s -> t=3.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e379
+  contains-noun -> verified      t=1.5s -> t=4.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e380
+  contains-noun -> verified      t=1.8s -> t=13.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e381
+  contains-noun -> verified      t=2.2s -> t=12.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e387
+  contains-noun -> verified      t=2.3s -> t=6.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e388
+  contains-noun -> verified      t=1.3s -> t=3.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e389
+  contains-noun -> verified      t=1.4s -> t=12.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e390
+  contains-noun -> verified      t=2.3s -> t=12.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e396
+  contains-noun -> verified      t=2.3s -> t=5.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e397
+  contains-noun -> verified      t=1.4s -> t=11.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e398
+  timeout       -> verified      t=30.1s -> t=0.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e417
+  contains-noun -> expected      t=1.9s -> t=5.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e419
+  contains-noun -> expected      t=1.6s -> t=3.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e420
+  contains-noun -> expected      t=1.8s -> t=5.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e422
+  contains-noun -> expected      t=1.6s -> t=3.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e423
+  contains-noun -> verified      t=4.3s -> t=6.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e425
+  contains-noun -> verified      t=5.4s -> t=21.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e464
+  contains-noun -> verified      t=1.3s -> t=3.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e465
+  contains-noun -> verified      t=1.3s -> t=20.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e476
+  contains-noun -> verified      t=4.3s -> t=20.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e485
+  contains-noun -> verified      t=5.5s -> t=13.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e486
+  contains-noun -> verified      t=1.4s -> t=3.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e487
+  contains-noun -> verified      t=5.4s -> t=28.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e488
+  contains-noun -> verified      t=4.4s -> t=22.4s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e496
+  contains-noun -> verified      t=5.6s -> t=13.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e497
+  contains-noun -> verified      t=1.3s -> t=3.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e498
+  contains-noun -> verified      t=5.5s -> t=22.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e499
+  contains-noun -> verified      t=5.5s -> t=22.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e508
+  contains-noun -> verified      t=1.3s -> t=11.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e509
+  contains-noun -> verified      t=9.2s -> t=21.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e522
+  contains-noun -> verified      t=9.4s -> t=21.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e523
+  contains-noun -> expected      t=9.3s -> t=23.3s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e524
+  contains-noun -> expected      t=9.2s -> t=22.2s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e525
+  contains-noun -> verified      t=0.6s -> t=2.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.3 (e x)^m (a+b cosh(c+d x^n))^p.mac e54
+  contains-noun -> verified      t=0.3s -> t=1.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.3 (e x)^m (a+b cosh(c+d x^n))^p.mac e55
+  contains-noun -> verified      t=1.0s -> t=7.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e15
+  contains-noun -> verified      t=1.0s -> t=8.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e16
+  contains-noun -> verified      t=1.1s -> t=7.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e17
+  contains-noun -> verified      t=0.9s -> t=7.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e18
+  contains-noun -> verified      t=1.0s -> t=6.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e19
+  contains-noun -> verified      t=1.0s -> t=13.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e20
+  contains-noun -> verified      t=1.1s -> t=11.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e21
+  contains-noun -> verified      t=1.1s -> t=14.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e22
+  deferred      -> verified      t=2.9s -> t=10.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e24
+  deferred      -> verified      t=2.8s -> t=7.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e25
+  deferred      -> verified      t=2.7s -> t=12.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e28
+  deferred      -> verified      t=2.9s -> t=17.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e29
+  deferred      -> verified      t=2.9s -> t=17.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e30
+  deferred      -> verified      t=2.9s -> t=20.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e31
+  deferred      -> verified      t=2.8s -> t=19.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e54
+  deferred      -> verified      t=2.9s -> t=14.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e55
+  deferred      -> verified      t=2.8s -> t=26.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e59
+  deferred      -> verified      t=4.2s -> t=11.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e73
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e121
+  contains-noun -> verified      t=1.0s -> t=3.7s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e122
+  contains-noun -> verified      t=1.0s -> t=3.7s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e123
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e125
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e126
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e127
+  contains-noun -> verified      t=1.0s -> t=8.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e128
+  contains-noun -> verified      t=1.0s -> t=8.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e129
+  contains-noun -> verified      t=1.0s -> t=7.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e130
+  contains-noun -> verified      t=1.1s -> t=14.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e131
+  contains-noun -> verified      t=1.0s -> t=11.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e132
+  contains-noun -> verified      t=1.0s -> t=13.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e133
+  contains-noun -> verified      t=1.0s -> t=3.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e134
+  contains-noun -> verified      t=1.0s -> t=3.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e135
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e136
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e137
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e138
+  contains-noun -> verified      t=1.0s -> t=4.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e139
+  contains-noun -> verified      t=2.7s -> t=0.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e140
+  contains-noun -> verified      t=2.7s -> t=0.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e141
+  contains-noun -> verified      t=9.0s -> t=17.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e144
+  contains-noun -> verified      t=8.9s -> t=16.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e145
+  contains-noun -> verified      t=2.7s -> t=0.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e146
+  contains-noun -> verified      t=5.1s -> t=0.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e147
+  contains-noun -> verified      t=8.9s -> t=18.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e150
+  contains-noun -> verified      t=9.0s -> t=19.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e151
+  contains-noun -> verified      t=9.4s -> t=21.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e153
+  contains-noun -> verified      t=4.8s -> t=10.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e155
+  contains-noun -> verified      t=9.6s -> t=18.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e157
+  contains-noun -> verified      t=2.9s -> t=0.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e159
+  contains-noun -> verified      t=9.5s -> t=17.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e160
+  contains-noun -> verified      t=4.9s -> t=13.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e162
+  contains-noun -> verified      t=9.7s -> t=21.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e164
+  contains-noun -> verified      t=4.7s -> t=9.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e167
+  contains-noun -> verified      t=9.3s -> t=19.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e169
+  contains-noun -> verified      t=2.8s -> t=0.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e171
+  contains-noun -> verified      t=8.9s -> t=17.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e172
+  contains-noun -> verified      t=4.8s -> t=12.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e174
+  contains-noun -> verified      t=4.7s -> t=7.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e180
+  contains-noun -> verified      t=9.0s -> t=16.7s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e182
+  contains-noun -> verified      t=2.8s -> t=5.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e183
+  contains-noun -> verified      t=9.2s -> t=24.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e185
+  contains-noun -> verified      t=9.6s -> t=20.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e188
+  deferred      -> verified      t=2.9s -> t=12.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e189
+  contains-noun -> verified      t=4.9s -> t=7.7s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e190
+  contains-noun -> verified      t=9.5s -> t=21.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e192
+  contains-noun -> verified      t=2.9s -> t=12.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e193
+  contains-noun -> verified      t=9.0s -> t=20.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e197
+  contains-noun -> verified      t=9.3s -> t=21.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e198
+  deferred      -> verified      t=1.9s -> t=20.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e199
+  deferred      -> verified      t=1.8s -> t=10.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e200
+  deferred      -> verified      t=2.0s -> t=22.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e202
+  deferred      -> verified      t=1.8s -> t=28.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e203
+  deferred      -> verified      t=1.9s -> t=28.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e205
+  contains-noun -> verified      t=1.5s -> t=6.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e219
+  deferred      -> verified      t=3.1s -> t=7.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e1
+  contains-noun -> verified      t=5.1s -> t=9.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e2
+  contains-noun -> verified      t=5.1s -> t=9.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e3
+  contains-noun -> verified      t=5.1s -> t=7.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e4
+  deferred      -> verified      t=3.1s -> t=6.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e5
+  contains-noun -> verified      t=4.9s -> t=10.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e6
+  contains-noun -> verified      t=9.5s -> t=19.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e7
+  contains-noun -> verified      t=4.9s -> t=9.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e8
+  contains-noun -> verified      t=5.5s -> t=0.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e9
+  contains-noun -> verified      t=4.7s -> t=7.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e10
+  contains-noun -> verified      t=9.5s -> t=18.7s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e11
+  contains-noun -> verified      t=4.9s -> t=13.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e12
+  deferred      -> verified      t=3.0s -> t=15.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e14
+  contains-noun -> verified      t=8.9s -> t=18.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e15
+  deferred      -> verified      t=0.9s -> t=7.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e16
+  deferred      -> verified      t=3.0s -> t=11.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e17
+  contains-noun -> verified      t=5.5s -> t=0.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e19
+  deferred      -> verified      t=3.0s -> t=16.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e21
+  deferred      -> verified      t=3.0s -> t=12.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e23
+  deferred      -> verified      t=3.0s -> t=8.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e25
+  deferred      -> verified      t=1.8s -> t=4.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e26
+  deferred      -> verified      t=0.9s -> t=7.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e27
+  deferred      -> verified      t=2.8s -> t=5.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e28
+  deferred      -> verified      t=2.9s -> t=7.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e29
+  deferred      -> verified      t=3.0s -> t=6.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e30
+  deferred      -> verified      t=3.0s -> t=9.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e31
+  deferred      -> verified      t=3.0s -> t=11.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e32
+  deferred      -> verified      t=0.9s -> t=5.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e33
+  deferred      -> verified      t=0.8s -> t=4.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e35
+  deferred      -> verified      t=0.8s -> t=1.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e36
+  deferred      -> verified      t=0.8s -> t=2.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e37
+  deferred      -> verified      t=0.9s -> t=2.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e39
+  deferred      -> verified      t=0.9s -> t=2.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e40
+  deferred      -> expected      t=0.9s -> t=6.1s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e41
+  deferred      -> verified      t=0.8s -> t=4.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e42
+  deferred      -> verified      t=0.8s -> t=2.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e44
+  deferred      -> expected      t=0.9s -> t=4.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e45
+  deferred      -> verified      t=0.8s -> t=22.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e46
+  deferred      -> verified      t=0.9s -> t=4.5s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e47
+  deferred      -> verified      t=0.9s -> t=3.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e49
+  deferred      -> verified      t=0.9s -> t=4.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e50
+  deferred      -> expected      t=0.9s -> t=6.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e51
+  deferred      -> verified      t=0.9s -> t=4.2s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e52
+  deferred      -> verified      t=0.8s -> t=2.9s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e54
+  deferred      -> verified      t=0.9s -> t=7.8s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e63
+  deferred      -> expected      t=0.9s -> t=27.7s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e65
+  deferred      -> expected      t=0.8s -> t=12.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e71
+  contains-noun -> verified      t=8.9s -> t=15.4s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e76
+  contains-noun -> verified      t=9.3s -> t=22.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e77
+  contains-noun -> verified      t=9.3s -> t=22.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e78
+  contains-noun -> verified      t=9.3s -> t=19.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e79
+  contains-noun -> verified      t=9.3s -> t=21.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e80
+  contains-noun -> verified      t=5.0s -> t=10.6s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e81
+  contains-noun -> verified      t=9.4s -> t=21.7s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e82
+  contains-noun -> verified      t=9.2s -> t=21.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e83
+  contains-noun -> expected      t=9.4s -> t=22.0s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e84
+  contains-noun -> expected      t=9.2s -> t=21.3s 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e85
+  deferred      -> verified      t=0.7s -> t=11.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e33
+  deferred      -> verified      t=0.8s -> t=12.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e34
+  deferred      -> verified      t=0.8s -> t=12.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e35
+  deferred      -> verified      t=0.8s -> t=13.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e36
+  contains-noun -> verified      t=1.1s -> t=4.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e37
+  contains-noun -> verified      t=1.1s -> t=4.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e38
+  contains-noun -> verified      t=1.1s -> t=4.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e39
+  deferred      -> verified      t=2.6s -> t=7.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e69
+  contains-noun -> verified      t=8.4s -> t=14.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e71
+  contains-noun -> verified      t=8.5s -> t=22.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e73
+  contains-noun -> verified      t=8.3s -> t=13.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e74
+  deferred      -> verified      t=2.7s -> t=5.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e76
+  contains-noun -> verified      t=8.3s -> t=13.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e78
+  deferred      -> verified      t=2.7s -> t=21.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e80
+  contains-noun -> verified      t=8.5s -> t=20.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e82
+  contains-noun -> verified      t=8.6s -> t=14.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e85
+  deferred      -> verified      t=2.7s -> t=6.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e87
+  contains-noun -> verified      t=8.6s -> t=16.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e89
+  contains-noun -> verified      t=8.6s -> t=29.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e90
+  deferred      -> verified      t=2.7s -> t=6.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e91
+  deferred      -> verified      t=2.6s -> t=5.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e93
+  deferred      -> verified      t=2.7s -> t=0.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e96
+  deferred      -> verified      t=2.6s -> t=19.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e97
+  deferred      -> verified      t=2.6s -> t=5.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e98
+  deferred      -> verified      t=2.7s -> t=25.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e99
+  deferred      -> verified      t=2.6s -> t=5.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e100
+  deferred      -> verified      t=2.7s -> t=21.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e102
+  deferred      -> verified      t=2.8s -> t=7.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e103
+  deferred      -> verified      t=2.7s -> t=6.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e104
+  deferred      -> verified      t=2.8s -> t=0.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e105
+  deferred      -> verified      t=0.8s -> t=1.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e106
+  deferred      -> verified      t=2.8s -> t=8.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e107
+  deferred      -> verified      t=2.7s -> t=12.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e108
+  contains-noun -> verified      t=4.5s -> t=15.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e115
+  deferred      -> verified      t=2.6s -> t=12.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e116
+  contains-noun -> verified      t=8.7s -> t=8.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e117
+  contains-noun -> verified      t=8.2s -> t=4.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e118
+  contains-noun -> verified      t=2.6s -> t=1.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e119
+  deferred      -> verified      t=0.8s -> t=1.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e120
+  contains-noun -> verified      t=8.5s -> t=14.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e121
+  contains-noun -> verified      t=8.3s -> t=13.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e122
+  contains-noun -> verified      t=4.5s -> t=7.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e123
+  deferred      -> verified      t=2.7s -> t=5.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e124
+  deferred      -> verified      t=2.7s -> t=26.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e134
+  contains-noun -> verified      t=9.0s -> t=20.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e135
+  contains-noun -> verified      t=8.5s -> t=16.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e136
+  contains-noun -> verified      t=2.7s -> t=10.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e137
+  deferred      -> verified      t=0.8s -> t=1.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e138
+  contains-noun -> verified      t=8.6s -> t=16.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e140
+  contains-noun -> verified      t=4.6s -> t=9.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e141
+  deferred      -> verified      t=2.8s -> t=9.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e142
+  contains-noun -> verified      t=1.8s -> t=2.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e143
+  contains-noun -> verified      t=1.7s -> t=2.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e5
+  contains-noun -> verified      t=1.9s -> t=5.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e7
+  contains-noun -> verified      t=2.8s -> t=6.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e10
+  contains-noun -> verified      t=17.5s -> t=20.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e11
+  contains-noun -> verified      t=2.9s -> t=3.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e13
+  contains-noun -> verified      t=3.2s -> t=11.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e15
+  contains-noun -> verified      t=3.0s -> t=6.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e18
+  contains-noun -> verified      t=1.6s -> t=3.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e20
+  contains-noun -> verified      t=3.0s -> t=4.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e21
+  contains-noun -> verified      t=3.2s -> t=21.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e23
+  contains-noun -> verified      t=2.7s -> t=6.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e26
+  contains-noun -> verified      t=1.5s -> t=3.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e28
+  contains-noun -> verified      t=2.9s -> t=4.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e29
+  contains-noun -> verified      t=3.1s -> t=16.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e31
+  contains-noun -> verified      t=2.8s -> t=25.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e34
+  contains-noun -> verified      t=17.4s -> t=20.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e35
+  contains-noun -> verified      t=1.5s -> t=3.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e36
+  contains-noun -> verified      t=6.5s -> t=22.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e38
+  contains-noun -> verified      t=3.3s -> t=25.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e39
+  contains-noun -> verified      t=1.5s -> t=3.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e44
+  contains-noun -> verified      t=4.5s -> t=27.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e52
+  contains-noun -> verified      t=2.2s -> t=7.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e53
+  contains-noun -> verified      t=5.4s -> t=25.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e55
+  contains-noun -> verified      t=16.8s -> t=25.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e59
+  contains-noun -> verified      t=3.9s -> t=11.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e61
+  contains-noun -> verified      t=4.0s -> t=16.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e69
+  deferred      -> verified      t=13.7s -> t=20.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e91
+  timeout       -> verified      t=30.1s -> t=0.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e94
+  timeout       -> verified      t=30.1s -> t=0.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e119
+  deferred      -> verified      t=0.9s -> t=2.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e202
+  deferred      -> verified      t=0.9s -> t=2.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e203
+  deferred      -> verified      t=0.9s -> t=2.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e204
+  deferred      -> verified      t=0.9s -> t=3.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e205
+  deferred      -> verified      t=0.9s -> t=2.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e206
+  deferred      -> verified      t=0.8s -> t=3.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e207
+  contains-noun -> verified      t=3.8s -> t=12.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e215
+  deferred      -> verified      t=3.0s -> t=15.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e217
+  deferred      -> verified      t=0.9s -> t=2.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e225
+  deferred      -> verified      t=0.9s -> t=3.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e227
+  deferred      -> verified      t=0.9s -> t=3.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e234
+  contains-noun -> verified      t=3.9s -> t=12.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e236
+  contains-noun -> verified      t=4.0s -> t=11.6s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e241
+  deferred      -> verified      t=0.9s -> t=3.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e243
+  contains-noun -> verified      t=3.9s -> t=16.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e245
+  deferred      -> verified      t=3.0s -> t=15.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e248
+  contains-noun -> verified      t=4.0s -> t=12.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e250
+  deferred      -> verified      t=0.9s -> t=5.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e252
+  deferred      -> verified      t=0.9s -> t=2.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e255
+  deferred      -> verified      t=0.8s -> t=25.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e61
+  deferred      -> verified      t=0.9s -> t=18.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e62
+  deferred      -> verified      t=0.8s -> t=15.2s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e63
+  deferred      -> verified      t=0.8s -> t=7.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e64
+  deferred      -> verified      t=0.8s -> t=1.8s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e65
+  deferred      -> verified      t=0.8s -> t=2.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e66
+  deferred      -> verified      t=0.8s -> t=3.1s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e67
+  deferred      -> verified      t=0.8s -> t=4.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e68
+  deferred      -> verified      t=0.8s -> t=7.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e69
+  deferred      -> verified      t=2.7s -> t=6.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e89
+  contains-noun -> verified      t=8.6s -> t=13.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e91
+  contains-noun -> verified      t=8.4s -> t=0.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e94
+  contains-noun -> verified      t=4.6s -> t=22.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e95
+  deferred      -> verified      t=2.6s -> t=5.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e96
+  deferred      -> verified      t=2.9s -> t=12.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e97
+  contains-noun -> verified      t=9.0s -> t=18.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e99
+  deferred      -> verified      t=1.1s -> t=2.8s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e101
+  contains-noun -> verified      t=8.7s -> t=0.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e102
+  deferred      -> verified      t=2.8s -> t=6.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e104
+  deferred      -> verified      t=2.7s -> t=7.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e105
+  deferred      -> verified      t=2.8s -> t=6.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e107
+  deferred      -> verified      t=2.5s -> t=12.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e109
+  deferred      -> verified      t=2.7s -> t=5.1s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e110
+  deferred      -> verified      t=2.7s -> t=5.1s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e112
+  deferred      -> verified      t=2.7s -> t=6.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e113
+  deferred      -> verified      t=2.8s -> t=21.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e114
+  deferred      -> verified      t=2.8s -> t=10.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e116
+  deferred      -> verified      t=2.9s -> t=5.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e119
+  deferred      -> verified      t=2.9s -> t=6.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e121
+  deferred      -> verified      t=2.6s -> t=20.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e122
+  deferred      -> verified      t=2.7s -> t=5.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e123
+  contains-noun -> verified      t=4.6s -> t=7.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e124
+  contains-noun -> verified      t=8.5s -> t=13.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e125
+  contains-noun -> verified      t=8.7s -> t=15.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e126
+  deferred      -> verified      t=0.8s -> t=1.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e127
+  contains-noun -> verified      t=2.7s -> t=1.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e128
+  contains-noun -> verified      t=8.5s -> t=4.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e129
+  contains-noun -> verified      t=9.0s -> t=8.2s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e130
+  deferred      -> verified      t=2.7s -> t=12.7s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e131
+  deferred      -> verified      t=2.8s -> t=10.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e140
+  contains-noun -> verified      t=4.8s -> t=10.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e141
+  contains-noun -> verified      t=8.9s -> t=17.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e142
+  deferred      -> verified      t=0.8s -> t=1.8s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e144
+  contains-noun -> verified      t=2.9s -> t=11.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e145
+  contains-noun -> verified      t=8.7s -> t=16.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e146
+  contains-noun -> verified      t=9.1s -> t=20.6s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e147
+  deferred      -> verified      t=2.8s -> t=26.5s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e148
+  contains-noun -> verified      t=1.8s -> t=2.8s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e150
+  deferred      -> verified      t=2.4s -> t=3.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e9
+  deferred      -> verified      t=0.9s -> t=2.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e10
+  deferred      -> verified      t=0.8s -> t=2.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e11
+  deferred      -> verified      t=0.9s -> t=3.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e12
+  deferred      -> verified      t=0.8s -> t=3.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e13
+  deferred      -> verified      t=0.9s -> t=2.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e14
+  deferred      -> verified      t=0.8s -> t=3.1s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e15
+  contains-noun -> verified      t=4.0s -> t=12.2s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e21
+  deferred      -> verified      t=0.8s -> t=3.1s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e28
+  deferred      -> verified      t=0.9s -> t=3.2s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e30
+  deferred      -> verified      t=0.9s -> t=3.2s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e35
+  contains-noun -> verified      t=4.1s -> t=12.4s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e37
+  contains-noun -> verified      t=4.3s -> t=12.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e39
+  contains-noun -> verified      t=4.1s -> t=16.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e42
+  contains-noun -> verified      t=4.2s -> t=12.9s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e44
+  deferred      -> verified      t=0.8s -> t=3.1s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e48
+  contains-noun -> verified      t=1.1s -> t=4.0s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.2 (e x)^m (a+b sech(c+d x^n))^p.mac e31
+  deferred      -> verified      t=0.7s -> t=3.5s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e7
+  deferred      -> verified      t=0.7s -> t=3.5s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e8
+  contains-noun -> verified      t=1.0s -> t=14.5s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e32
+  contains-noun -> verified      t=1.0s -> t=12.4s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e33
+  contains-noun -> verified      t=1.0s -> t=9.4s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e39
+  contains-noun -> verified      t=1.0s -> t=7.8s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e40
+  contains-noun -> verified      t=1.0s -> t=8.6s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e41
+  contains-noun -> verified      t=1.1s -> t=11.2s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e42
+  contains-noun -> verified      t=1.1s -> t=13.9s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e43
+  contains-noun -> verified      t=1.0s -> t=12.0s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e44
+  contains-noun -> verified      t=1.0s -> t=4.1s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e45
+  contains-noun -> verified      t=1.0s -> t=3.9s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e46
+  contains-noun -> verified      t=1.0s -> t=3.9s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e47
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e48
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e49
+  contains-noun -> verified      t=1.0s -> t=3.8s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e50
+  contains-noun -> verified      t=1.0s -> t=3.9s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e51
+  contains-noun -> verified      t=9.8s -> t=19.0s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e53
+  contains-noun -> verified      t=2.8s -> t=6.6s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e55
+  contains-noun -> verified      t=9.2s -> t=25.5s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e56
+  contains-noun -> verified      t=5.0s -> t=19.2s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e58
+  contains-noun -> verified      t=9.3s -> t=19.2s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e61
+  contains-noun -> verified      t=2.8s -> t=5.4s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e63
+  contains-noun -> verified      t=9.0s -> t=17.2s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e64
+  contains-noun -> verified      t=4.8s -> t=8.6s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e66
+  deferred      -> verified      t=2.8s -> t=20.8s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e75
+  deferred      -> verified      t=0.8s -> t=14.4s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e85
+  deferred      -> verified      t=0.8s -> t=14.6s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e86
+  contains-noun -> verified      t=9.5s -> t=20.1s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e104
+  contains-noun -> verified      t=4.8s -> t=10.0s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e106
+  contains-noun -> verified      t=5.6s -> t=12.0s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e108
+  contains-noun -> verified      t=4.6s -> t=7.7s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e109
+  contains-noun -> verified      t=9.5s -> t=23.5s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e111
+  contains-noun -> verified      t=4.7s -> t=11.0s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e113
+  contains-noun -> verified      t=9.3s -> t=20.1s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e115
+  contains-noun -> verified      t=4.6s -> t=8.9s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e117
+  contains-noun -> verified      t=5.2s -> t=11.4s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e119
+  contains-noun -> verified      t=4.5s -> t=8.1s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e120
+  contains-noun -> verified      t=9.2s -> t=22.6s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e122
+  contains-noun -> verified      t=18.5s -> t=21.4s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e11
+  contains-noun -> verified      t=18.3s -> t=26.3s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e35
+  deferred      -> verified      t=20.9s -> t=27.8s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e59
+  timeout       -> verified      t=30.0s -> t=23.2s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e79
+  contains-noun -> verified      t=2.6s -> t=6.4s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e103
+  contains-noun -> verified      t=1.7s -> t=2.6s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e105
+  deferred      -> verified      t=1.4s -> t=17.6s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e116
+  deferred      -> verified      t=0.9s -> t=3.2s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e170
+  deferred      -> verified      t=0.9s -> t=3.1s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e171
+  deferred      -> verified      t=0.9s -> t=3.3s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e172
+  deferred      -> verified      t=0.8s -> t=3.1s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e173
+  deferred      -> verified      t=0.8s -> t=2.9s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e174
+  deferred      -> verified      t=0.8s -> t=3.2s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e175
+  contains-noun -> verified      t=9.0s -> t=18.9s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e183
+  deferred      -> verified      t=2.9s -> t=13.4s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e185
+  deferred      -> verified      t=0.9s -> t=3.3s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e199
+  contains-noun -> verified      t=9.0s -> t=18.2s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e201
+  contains-noun -> verified      t=4.1s -> t=11.3s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e206
+  deferred      -> verified      t=0.8s -> t=3.4s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e208
+  contains-noun -> verified      t=9.3s -> t=23.3s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e210
+  deferred      -> verified      t=3.1s -> t=14.1s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e213
+  contains-noun -> verified      t=3.9s -> t=11.8s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e215
+  deferred      -> verified      t=0.9s -> t=4.6s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e217
+  contains-noun -> verified      t=1.3s -> t=4.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e12
+  contains-noun -> verified      t=1.4s -> t=6.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e20
+  contains-noun -> verified      t=1.6s -> t=5.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e58
+  contains-noun -> verified      t=1.5s -> t=6.7s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e63
+  deferred      -> verified      t=0.9s -> t=6.8s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e7
+  deferred      -> verified      t=0.9s -> t=7.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e8
+  deferred      -> verified      t=0.9s -> t=5.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e9
+  deferred      -> verified      t=0.9s -> t=7.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e10
+  deferred      -> verified      t=0.9s -> t=6.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e11
+  deferred      -> verified      t=0.9s -> t=7.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e12
+  deferred      -> verified      t=1.0s -> t=7.8s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e13
+  deferred      -> verified      t=0.9s -> t=6.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e14
+  deferred      -> verified      t=0.9s -> t=7.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e15
+  deferred      -> verified      t=0.9s -> t=6.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e16
+  deferred      -> verified      t=0.9s -> t=7.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e17
+  deferred      -> verified      t=1.0s -> t=6.4s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e18
+  deferred      -> verified      t=1.0s -> t=7.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e19
+  deferred      -> verified      t=0.9s -> t=7.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e20
+  deferred      -> verified      t=0.8s -> t=23.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e36
+  deferred      -> verified      t=0.8s -> t=20.4s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e37
+  deferred      -> verified      t=0.8s -> t=21.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e38
+  deferred      -> verified      t=0.8s -> t=16.4s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e40
+  deferred      -> verified      t=0.9s -> t=16.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e41
+  contains-noun -> verified      t=1.1s -> t=4.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e42
+  contains-noun -> verified      t=1.2s -> t=4.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e43
+  contains-noun -> verified      t=1.1s -> t=4.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e44
+  contains-noun -> verified      t=1.2s -> t=4.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e45
+  contains-noun -> verified      t=1.1s -> t=4.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e46
+  contains-noun -> verified      t=1.2s -> t=4.4s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e47
+  contains-noun -> verified      t=1.1s -> t=4.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e48
+  deferred      -> verified      t=1.1s -> t=26.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e51
+  deferred      -> verified      t=1.2s -> t=19.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e52
+  deferred      -> verified      t=1.1s -> t=11.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e53
+  deferred      -> verified      t=1.1s -> t=14.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e54
+  deferred      -> verified      t=1.1s -> t=28.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e55
+  deferred      -> verified      t=1.1s -> t=11.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e56
+  deferred      -> verified      t=1.0s -> t=14.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e57
+  deferred      -> verified      t=0.8s -> t=15.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e58
+  deferred      -> verified      t=0.8s -> t=14.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e59
+  deferred      -> verified      t=0.8s -> t=14.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e60
+  deferred      -> verified      t=0.8s -> t=14.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e61
+  contains-noun -> verified      t=5.1s -> t=4.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e66
+  contains-noun -> verified      t=8.2s -> t=6.7s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e67
+  contains-noun -> verified      t=4.4s -> t=10.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e68
+  deferred      -> verified      t=2.6s -> t=22.7s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e69
+  deferred      -> verified      t=1.1s -> t=10.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e70
+  deferred      -> verified      t=1.1s -> t=7.7s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e71
+  deferred      -> verified      t=1.0s -> t=4.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e72
+  deferred      -> verified      t=1.1s -> t=6.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e74
+  deferred      -> verified      t=2.6s -> t=6.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e85
+  deferred      -> verified      t=1.6s -> t=3.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e87
+  deferred      -> verified      t=2.5s -> t=5.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e88
+  deferred      -> verified      t=2.7s -> t=17.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e89
+  deferred      -> verified      t=2.6s -> t=5.7s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e90
+  deferred      -> verified      t=2.7s -> t=7.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e92
+  deferred      -> verified      t=2.8s -> t=6.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e94
+  deferred      -> verified      t=1.7s -> t=4.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e96
+  deferred      -> verified      t=2.6s -> t=5.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e97
+  contains-noun -> verified      t=4.4s -> t=13.7s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e102
+  contains-noun -> verified      t=8.9s -> t=16.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e104
+  contains-noun -> verified      t=4.3s -> t=7.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e106
+  contains-noun -> verified      t=5.0s -> t=9.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e107
+  contains-noun -> verified      t=8.2s -> t=23.4s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e108
+  contains-noun -> verified      t=4.5s -> t=8.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e109
+  deferred      -> verified      t=2.6s -> t=24.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e110
+  contains-noun -> verified      t=8.7s -> t=17.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e111
+  contains-noun -> verified      t=4.5s -> t=8.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e117
+  contains-noun -> verified      t=5.2s -> t=11.5s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e118
+  contains-noun -> verified      t=4.5s -> t=9.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e120
+  contains-noun -> verified      t=8.9s -> t=19.8s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e122
+  contains-noun -> verified      t=4.6s -> t=10.6s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e124
+  deferred      -> verified      t=1.2s -> t=12.7s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e1
+  contains-noun -> verified      t=1.0s -> t=2.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e2
+  deferred      -> verified      t=1.1s -> t=6.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e3
+  deferred      -> verified      t=0.9s -> t=3.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e16
+  deferred      -> verified      t=0.8s -> t=3.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e17
+  deferred      -> verified      t=0.9s -> t=3.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e18
+  deferred      -> verified      t=0.9s -> t=3.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e19
+  deferred      -> verified      t=0.9s -> t=3.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e20
+  deferred      -> verified      t=0.9s -> t=3.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e21
+  deferred      -> verified      t=0.9s -> t=3.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e22
+  deferred      -> verified      t=0.8s -> t=3.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e23
+  deferred      -> verified      t=0.8s -> t=2.9s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e24
+  deferred      -> verified      t=0.9s -> t=3.2s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e25
+  deferred      -> verified      t=0.9s -> t=3.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e26
+  deferred      -> verified      t=0.9s -> t=3.3s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e27
+  deferred      -> verified      t=4.5s -> t=29.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e53
+  contains-noun -> verified      t=2.4s -> t=6.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e96
+  contains-noun -> verified      t=4.1s -> t=11.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e97
+  unverified    -> verified      t=2.2s -> t=0.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e117
+  contains-noun -> verified      t=3.3s -> t=13.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e124
+  contains-noun -> verified      t=4.4s -> t=12.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e125
+  deferred      -> expected      t=2.7s -> t=18.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e126
+  contains-noun -> verified      t=3.3s -> t=24.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e128
+  deferred      -> verified      t=2.5s -> t=8.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e130
+  contains-noun -> verified      t=1.5s -> t=1.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e196
+  contains-noun -> verified      t=1.5s -> t=1.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e197
+  contains-noun -> verified      t=1.5s -> t=1.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e198
+  contains-noun -> verified      t=2.3s -> t=5.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e211
+  contains-noun -> verified      t=2.3s -> t=5.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e212
+  contains-noun -> verified      t=2.3s -> t=7.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e214
+  deferred      -> verified      t=1.4s -> t=3.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e216
+  deferred      -> verified      t=1.4s -> t=3.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e217
+  deferred      -> verified      t=1.4s -> t=3.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e218
+  deferred      -> verified      t=1.5s -> t=4.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e220
+  contains-noun -> verified      t=1.6s -> t=1.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e221
+  contains-noun -> verified      t=1.6s -> t=1.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e222
+  contains-noun -> verified      t=1.5s -> t=2.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e223
+  deferred      -> verified      t=1.5s -> t=3.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e240
+  deferred      -> verified      t=1.5s -> t=3.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e241
+  contains-noun -> verified      t=4.7s -> t=9.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e245
+  contains-noun -> verified      t=4.7s -> t=11.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e246
+  contains-noun -> verified      t=4.9s -> t=10.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e247
+  contains-noun -> verified      t=4.7s -> t=10.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e248
+  contains-noun -> verified      t=4.8s -> t=11.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e249
+  contains-noun -> verified      t=1.6s -> t=7.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e544
+  contains-noun -> verified      t=1.6s -> t=8.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e545
+  contains-noun -> verified      t=1.7s -> t=7.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e546
+  contains-noun -> verified      t=1.6s -> t=7.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e547
+  contains-noun -> verified      t=1.6s -> t=6.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e548
+  contains-noun -> verified      t=1.6s -> t=7.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e549
+  contains-noun -> verified      t=1.6s -> t=7.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e550
+  contains-noun -> verified      t=1.6s -> t=8.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e551
+  contains-noun -> verified      t=1.6s -> t=8.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e552
+  contains-noun -> verified      t=1.5s -> t=6.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e553
+  contains-noun -> verified      t=1.5s -> t=7.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e554
+  contains-noun -> verified      t=1.6s -> t=6.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e555
+  contains-noun -> verified      t=1.5s -> t=7.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e556
+  contains-noun -> verified      t=1.5s -> t=7.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e557
+  contains-noun -> verified      t=1.5s -> t=8.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e558
+  contains-noun -> verified      t=1.6s -> t=7.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e559
+  deferred      -> verified      t=1.9s -> t=20.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e566
+  deferred      -> verified      t=1.9s -> t=20.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e567
+  contains-noun -> verified      t=2.4s -> t=1.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e570
+  contains-noun -> verified      t=3.5s -> t=1.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e571
+  deferred      -> verified      t=1.9s -> t=20.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e573
+  deferred      -> verified      t=2.0s -> t=4.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e574
+  deferred      -> verified      t=2.1s -> t=4.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e575
+  deferred      -> verified      t=2.1s -> t=4.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e577
+  deferred      -> verified      t=0.9s -> t=3.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e586
+  deferred      -> verified      t=0.9s -> t=10.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e619
+  deferred      -> verified      t=0.9s -> t=11.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e627
+  contains-noun -> verified      t=0.9s -> t=4.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e628
+  deferred      -> verified      t=0.8s -> t=5.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e629
+  deferred      -> verified      t=0.8s -> t=3.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e630
+  deferred      -> verified      t=0.8s -> t=9.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e631
+  deferred      -> verified      t=0.8s -> t=7.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e632
+  deferred      -> verified      t=0.9s -> t=15.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e633
+  deferred      -> verified      t=0.9s -> t=11.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e637
+  contains-noun -> verified      t=0.9s -> t=4.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e638
+  deferred      -> verified      t=0.8s -> t=4.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e639
+  deferred      -> verified      t=0.9s -> t=3.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e640
+  deferred      -> verified      t=0.8s -> t=9.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e641
+  deferred      -> verified      t=0.9s -> t=7.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e642
+  deferred      -> verified      t=0.8s -> t=16.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e643
+  contains-noun -> verified      t=1.1s -> t=5.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e648
+  deferred      -> verified      t=0.9s -> t=20.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e649
+  deferred      -> verified      t=0.9s -> t=27.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e650
+  deferred      -> verified      t=0.8s -> t=10.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e657
+  contains-noun -> verified      t=1.1s -> t=5.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e658
+  deferred      -> verified      t=0.8s -> t=1.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e659
+  deferred      -> verified      t=0.9s -> t=2.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e660
+  deferred      -> verified      t=0.8s -> t=3.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e661
+  deferred      -> verified      t=0.8s -> t=3.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e662
+  deferred      -> verified      t=0.8s -> t=5.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e663
+  deferred      -> verified      t=0.9s -> t=29.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e666
+  deferred      -> verified      t=0.9s -> t=10.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e667
+  contains-noun -> verified      t=1.1s -> t=4.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e668
+  deferred      -> verified      t=0.9s -> t=6.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e669
+  deferred      -> verified      t=0.9s -> t=2.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e670
+  deferred      -> verified      t=0.9s -> t=7.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e671
+  deferred      -> verified      t=0.9s -> t=4.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e672
+  deferred      -> verified      t=0.9s -> t=9.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e673
+  contains-noun -> verified      t=1.1s -> t=3.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e674
+  deferred      -> verified      t=0.9s -> t=11.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e675
+  deferred      -> verified      t=0.8s -> t=7.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e677
+  deferred      -> verified      t=0.8s -> t=11.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e678
+  deferred      -> verified      t=0.8s -> t=15.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e679
+  deferred      -> verified      t=0.9s -> t=9.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e681
+  deferred      -> verified      t=0.8s -> t=6.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e686
+  deferred      -> verified      t=0.9s -> t=5.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e687
+  contains-noun -> verified      t=2.9s -> t=7.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e688
+  deferred      -> verified      t=1.9s -> t=4.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e691
+  deferred      -> verified      t=3.0s -> t=14.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e693
+  contains-noun -> verified      t=9.2s -> t=25.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e697
+  deferred      -> verified      t=3.0s -> t=15.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e700
+  contains-noun -> verified      t=2.9s -> t=16.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e702
+  deferred      -> verified      t=1.9s -> t=10.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e704
+  contains-noun -> verified      t=3.6s -> t=14.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e715
+  deferred      -> verified      t=2.0s -> t=9.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e732
+  deferred      -> verified      t=2.3s -> t=14.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e733
+  deferred      -> verified      t=0.9s -> t=3.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e742
+  deferred      -> verified      t=0.9s -> t=2.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e749
+  deferred      -> verified      t=1.0s -> t=19.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e750
+  deferred      -> verified      t=1.1s -> t=5.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e757
+  contains-noun -> verified      t=2.9s -> t=9.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e783
+  contains-noun -> verified      t=5.6s -> t=15.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e786
+  deferred      -> verified      t=0.9s -> t=2.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e808
+  deferred      -> verified      t=0.9s -> t=3.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e809
+  deferred      -> verified      t=0.9s -> t=4.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e810
+  deferred      -> verified      t=1.0s -> t=2.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e811
+  deferred      -> verified      t=1.0s -> t=2.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e812
+  deferred      -> verified      t=1.0s -> t=3.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e813
+  deferred      -> verified      t=0.9s -> t=2.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e814
+  deferred      -> verified      t=0.9s -> t=2.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e815
+  deferred      -> verified      t=0.9s -> t=3.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e816
+  deferred      -> verified      t=1.0s -> t=2.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e817
+  deferred      -> verified      t=1.0s -> t=4.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e818
+  deferred      -> verified      t=1.0s -> t=3.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e819
+  deferred      -> verified      t=0.9s -> t=2.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e820
+  deferred      -> verified      t=0.9s -> t=3.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e821
+  deferred      -> verified      t=0.9s -> t=6.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e822
+  deferred      -> verified      t=1.0s -> t=2.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e823
+  deferred      -> verified      t=1.0s -> t=2.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e824
+  deferred      -> verified      t=1.0s -> t=3.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e825
+  deferred      -> verified      t=1.0s -> t=29.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e832
+  contains-noun -> verified      t=9.8s -> t=21.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e838
+  deferred      -> verified      t=3.4s -> t=9.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e839
+  deferred      -> verified      t=1.5s -> t=22.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e856
+  deferred      -> expected      t=0.6s -> t=2.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e893
+  deferred      -> verified      t=0.4s -> t=1.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e894
+  deferred      -> expected      t=0.6s -> t=2.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e897
+  deferred      -> verified      t=0.4s -> t=1.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e898
+  deferred      -> verified      t=1.5s -> t=0.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e967
+  deferred      -> verified      t=1.7s -> t=0.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e968
+  deferred      -> verified      t=1.6s -> t=0.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e969
+  deferred      -> verified      t=1.5s -> t=0.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e973
+  deferred      -> verified      t=1.6s -> t=0.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e974
+  deferred      -> verified      t=1.6s -> t=0.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e975
+  deferred      -> verified      t=2.9s -> t=0.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e979
+  deferred      -> verified      t=2.8s -> t=0.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e980
+  deferred      -> verified      t=2.7s -> t=0.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e981
+  deferred      -> verified      t=2.8s -> t=0.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e982
+  deferred      -> verified      t=1.8s -> t=12.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e983
+  deferred      -> verified      t=6.1s -> t=1.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e984
+  deferred      -> verified      t=3.2s -> t=7.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e985
+  deferred      -> verified      t=3.2s -> t=8.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e986
+  deferred      -> verified      t=8.0s -> t=1.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e988
+  deferred      -> verified      t=6.1s -> t=1.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e990
+  deferred      -> verified      t=10.5s -> t=2.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e991
+  deferred      -> verified      t=10.9s -> t=3.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e992
+  contains-noun -> verified      t=9.4s -> t=1.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e993
+  contains-noun -> verified      t=13.2s -> t=2.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e994
+  deferred      -> verified      t=1.7s -> t=8.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e996
+  deferred      -> verified      t=3.1s -> t=7.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e997
+  deferred      -> verified      t=3.0s -> t=10.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e998
+  deferred      -> verified      t=3.0s -> t=0.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e999
+  deferred      -> verified      t=2.8s -> t=0.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1000
+  deferred      -> verified      t=2.9s -> t=6.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1001
+  deferred      -> verified      t=2.8s -> t=0.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1002
+  contains-noun -> verified      t=2.8s -> t=4.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1018
+  contains-noun -> verified      t=9.1s -> t=0.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1019
+  contains-noun -> verified      t=3.8s -> t=0.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1020
+  contains-noun -> verified      t=2.2s -> t=9.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1021
+  contains-noun -> verified      t=2.8s -> t=14.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1022
+  contains-noun -> verified      t=6.6s -> t=1.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1023
+  contains-noun -> verified      t=10.5s -> t=2.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1024
+  contains-noun -> verified      t=10.8s -> t=3.3s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1025
+  contains-noun -> verified      t=8.1s -> t=1.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1026
+  contains-noun -> verified      t=8.5s -> t=1.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1027
+  contains-noun -> verified      t=3.5s -> t=9.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1028
+  deferred      -> verified      t=2.8s -> t=7.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1034
+  contains-noun -> verified      t=8.7s -> t=18.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1035
+  deferred      -> verified      t=2.8s -> t=7.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1036
+  contains-noun -> verified      t=7.2s -> t=23.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1047
+  deferred      -> verified      t=5.3s -> t=21.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1048
