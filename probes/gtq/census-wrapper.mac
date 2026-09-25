@@ -1,0 +1,38 @@
+/* probes/gtq/census-wrapper.mac -- the GtQ-family census wrapper (probe
+   only).  Needs probes/gtq/gtq-readings.mac.  The overlay
+   (make_census_overlay.py) routes every emitted comparison site here.
+
+   %mr_gtq_arm : "cur" | "F" | "R"   which value the site returns:
+     cur  the current emission is(u op v), unprotected (three-valued, an
+          error propagates exactly as the inline is() would);
+     F    (F) is(u op v) = true;   R  (R) strict Rubi.
+   Every call is counted by its current value (true/false/unknown/ERR) and,
+   where (F) and (R) disagree, logged (the first %mr_gtq_logmax per run):
+     GTQDIS <handle> | op | u | v | cur=<value> F=<F> R=<R>
+   GTQN lines every 2000 calls give a floor for a run the cap kills. */
+%mr_gtq_arm : "cur"$
+%mr_gtq_calls : 0$
+%mr_gtq_dis : 0$
+%mr_gtq_logmax : 400$
+%mr_gtq_cnt : [0, 0, 0, 0]$  /* cur = true, false, unknown, ERR */
+%mr_gtq_W(op, u, v, h) := block([errormsg : false, c, f, r],
+  %mr_gtq_calls : %mr_gtq_calls + 1,
+  if mod(%mr_gtq_calls, 2000) = 0 then print("GTQN", %mr_gtq_calls, %mr_gtq_dis),
+  c : errcatch(is(apply(op, [u, v]))),
+  c : if c = [] then 'ERR else first(c),
+  if c = true then %mr_gtq_cnt[1] : %mr_gtq_cnt[1] + 1
+  elseif c = false then %mr_gtq_cnt[2] : %mr_gtq_cnt[2] + 1
+  elseif c = 'ERR then %mr_gtq_cnt[4] : %mr_gtq_cnt[4] + 1
+  else %mr_gtq_cnt[3] : %mr_gtq_cnt[3] + 1,
+  f : %mr_gtq_F(op, u, v),
+  r : %mr_gtq_R(op, u, v),
+  if f # r then (
+    %mr_gtq_dis : %mr_gtq_dis + 1,
+    if %mr_gtq_dis <= %mr_gtq_logmax then
+      printf(true, "GTQDIS ~a | ~a | ~a | ~a | cur=~a F=~a R=~a~%",
+             h, op, string(u), string(v), string(c), f, r)),
+  if %mr_gtq_arm = "F" then f
+  elseif %mr_gtq_arm = "R" then r
+  else is(apply(op, [u, v])))$
+%mr_gtq_summary() := printf(true, "GTQSUM arm=~a calls=~a dis=~a cur_true=~a cur_false=~a cur_unknown=~a cur_err=~a~%",
+  %mr_gtq_arm, %mr_gtq_calls, %mr_gtq_dis, %mr_gtq_cnt[1], %mr_gtq_cnt[2], %mr_gtq_cnt[3], %mr_gtq_cnt[4])$

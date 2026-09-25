@@ -1,0 +1,51 @@
+/* probes/gtq/gtq-readings.mac -- the candidate readings of Rubi's
+   GtQ/LtQ/GeQ/LeQ[u, v] (probe only; not loaded by the package).
+
+   OP is the Maxima relation operator as a string: ">", "<", ">=", "<=".
+
+   %mr_gtq_cur(op, u, v)  the CURRENT emission: is(u op v), three-valued
+                          (true / false / unknown), errors propagate.
+   %mr_gtq_F(op, u, v)    (F) facts-aware two-valued: is(u op v) = true;
+                          unknown -> false, an error -> false.
+   %mr_gtq_R(op, u, v)    (R) strict Rubi (reference/rubi/Rubi/
+                          IntegrationUtilityFunctions.m:403-475):
+                          RealNumberQ[u] (an explicit non-complex number)
+                          -> u itself, else N[Together[u]] with Head Real
+                          -> that float, else the whole predicate is
+                          False; then the numeric comparison.
+     RealNumberQ  -> numberp (integer, rational, float, bigfloat; %i,
+                     1+%i, %pi are not numberp).
+     N[Together[]]-> float(u); when that is not a float and u has a
+                     variable, float(ratsimp(u)) (Together can cancel a
+                     symbol away: (a^2-1)/(a-1)-a -> 1).  floatnump is
+                     Head Real.  A float() that ERRORS (overflow:
+                     float(exp(1000))) falls back to bfloat (N is
+                     arbitrary-range in Mathematica); an error there too
+                     reads False.
+*/
+
+%mr_gtq_cur(op, u, v) := is(apply(op, [u, v]))$
+
+%mr_gtq_F(op, u, v) := block([errormsg : false, r],
+  r : errcatch(is(apply(op, [u, v]))),
+  is(r # [] and first(r) = true))$
+
+%mr_gtq_fl(w) := block([errormsg : false, r],
+  r : errcatch(float(w)),
+  if r = [] then (r : errcatch(bfloat(w)),
+                  if r # [] and bfloatp(first(r)) then first(r) else false)
+  elseif floatnump(first(r)) then first(r) else false)$
+
+%mr_gtq_num(u) := block([errormsg : false, r],
+  if numberp(u) then u
+  else (r : %mr_gtq_fl(u),
+        if r # false then r
+        elseif listofvars(u) = [] then false
+        else (r : errcatch(ratsimp(u)),
+              if r = [] then false else %mr_gtq_fl(first(r)))))$
+
+%mr_gtq_R(op, u, v) := block([un, vn],
+  un : %mr_gtq_num(u),
+  if un = false then false
+  else (vn : %mr_gtq_num(v),
+        if vn = false then false else is(apply(op, [un, vn]))))$

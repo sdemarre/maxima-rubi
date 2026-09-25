@@ -1,0 +1,236 @@
+run: 2026-09-25T15:52:56Z
+batch("probes/gtq/02-facts-probe.mac")
+load("probes/gtq/gtq-readings.mac")
+display2d:false
+linel:200
+print("build:",(build_info())@version,(build_info())@timestamp,(build_info())@lisp_name,(build_info())@lisp_version)
+build: branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 SBCL 2.6.7 
+%p_val(op,u,v):=block([errormsg:false,r],r:errcatch(is(apply(op,[u,v]))),if r = [] then 'ERR else first(r))
+%p_notval(op,u,v):=block([errormsg:false,r],r:errcatch(not is(apply(op,[u,v]))),if r = [] then 'ERR else first(r))
+%p_disp(val):=block([errormsg:false,r],if val = 'ERR then "r" else (r:errcatch(is(val) = true),if r # [] and first(r) then "A" else "r"))
+%p_tf(b):=if b then "T" else "F"
+%p_bad:0
+%p_short(s):=if slength(s) > 30 then concat(substring(s,1,28),"..") else s
+%p_row(ctx,op,u,v,rubi):=block([iv,nv,f,rr],iv:%p_val(op,u,v),nv:%p_notval(op,u,v),f:%mr_gtq_F(op,u,v),rr:%mr_gtq_R(op,u,v),if not rr = rubi then %p_bad:%p_bad+1,
+       printf(true,"~8a ~a~40t ~8a ~8a ~a/~a     ~a ~a ~a  ~a~a~%",ctx,%p_short(concat(op,"(",string(u),", ",string(v),")")),string(iv),string(nv),%p_disp(iv),%p_disp(nv),%p_tf(f),%p_tf(rr),
+              %p_tf(rubi),if f = rubi then "" else "F#rubi",if rr = rubi then "" else "  R#rubi(!)"))
+shapes:[[">",a,0,false],["<",a,0,false],[">=",a,0,false],["<=",a,0,false],[">",-a,0,false],[">=",a,a,false],["<",a,a+1,false],[">",m+1,0,false],[">",2,0,true],[">",-3/2,0,false],["<",-3/2,-1,true],
+        [">=",0,0,true],[">",0.5,0,true],["<",1/3,0.3333,false],["<=",-1,-1,true],[">",%pi,3,true],[">",%e-3,0,false],[">",sqrt(2)-1,0,true],["<",sqrt(2),3/2,true],[">",log(2),0,true],
+        [">",-%pi/2,-2,true],[">",sin(1),0,true],[">",%i,0,false],["<",%i,0,false],[">",1+%i,0,false],[">",sqrt(-2),0,false],[">",%i^2,-2,true],[">",log(-1),0,false],[">",a+%i,0,false],
+        [">",%i*a,0,false],["<",%i*a,0,false],[">",sqrt(-a),0,false],[">",a^2+1,0,false],[">=",a^2,0,false],[">",a^2,0,false],[">",exp(a),0,false],[">",b^2-4*a*c,0,false],[">",abs(a)+1,0,false],
+        [">",sqrt(a),0,false],[">=",sqrt(a),0,false],[">",a^b,0,false],[">",log(a),0,false],[">",a*b,0,false],[">",(a^2-1)/(a-1)-a,0,true],[">",n-1,0,false],[">=",n-1,0,false],[">",2*n+1,0,false],
+        [">",2^1100,0,true],[">",2^1100,2^1100-1,true],[">",exp(1000),0,true]]
+print("")
+ 
+print("context  site                                    is       not(is)  disp+/-  F R rubi")
+context  site                                    is       not(is)  disp+/-  F R rubi 
+for s in shapes do %p_row("none",s[1],s[2],s[3],s[4])
+none     >(a, 0)                         unknown  unknown  r/r     F F F  
+none     <(a, 0)                         unknown  unknown  r/r     F F F  
+none     >=(a, 0)                        unknown  unknown  r/r     F F F  
+none     <=(a, 0)                        unknown  unknown  r/r     F F F  
+none     >(-a, 0)                        unknown  unknown  r/r     F F F  
+none     >=(a, a)                        true     false    A/r     T F F  F#rubi
+none     <(a, a+1)                       true     false    A/r     T F F  F#rubi
+none     >(m+1, 0)                       unknown  unknown  r/r     F F F  
+none     >(2, 0)                         true     false    A/r     T T T  
+none     >(-(3/2), 0)                    false    true     r/A     F F F  
+none     <(-(3/2), -1)                   true     false    A/r     T T T  
+none     >=(0, 0)                        true     false    A/r     T T T  
+none     >(0.5, 0)                       true     false    A/r     T T T  
+none     <(1/3, 0.3333)                  false    true     r/A     F F F  
+none     <=(-1, -1)                      true     false    A/r     T T T  
+none     >(%pi, 3)                       true     false    A/r     T T T  
+none     >(%e-3, 0)                      false    true     r/A     F F F  
+none     >(sqrt(2)-1, 0)                 true     false    A/r     T T T  
+none     <(sqrt(2), 3/2)                 true     false    A/r     T T T  
+none     >(log(2), 0)                    true     false    A/r     T T T  
+none     >(-(%pi/2), -2)                 true     false    A/r     T T T  
+none     >(sin(1), 0)                    true     false    A/r     T T T  
+none     >(%i, 0)                        false    true     r/A     F F F  
+none     <(%i, 0)                        false    true     r/A     F F F  
+none     >(%i+1, 0)                      false    true     r/A     F F F  
+none     >(sqrt(2)*%i, 0)                false    true     r/A     F F F  
+none     >(-1, -2)                       true     false    A/r     T T T  
+none     >(log(-1), 0)                   false    true     r/A     F F F  
+none     >(a+%i, 0)                      false    true     r/A     F F F  
+none     >(%i*a, 0)                      false    true     r/A     F F F  
+none     <(%i*a, 0)                      false    true     r/A     F F F  
+none     >(sqrt(-a), 0)                  unknown  unknown  r/r     F F F  
+none     >(a^2+1, 0)                     true     false    A/r     T F F  F#rubi
+none     >=(a^2, 0)                      true     false    A/r     T F F  F#rubi
+none     >(a^2, 0)                       unknown  unknown  r/r     F F F  
+none     >(%e^a, 0)                      true     false    A/r     T F F  F#rubi
+none     >(b^2-4*a*c, 0)                 unknown  unknown  r/r     F F F  
+none     >(abs(a)+1, 0)                  true     false    A/r     T F F  F#rubi
+none     >(sqrt(a), 0)                   unknown  unknown  r/r     F F F  
+none     >=(sqrt(a), 0)                  true     false    A/r     T F F  F#rubi
+none     >(a^b, 0)                       unknown  unknown  r/r     F F F  
+none     >(log(a), 0)                    unknown  unknown  r/r     F F F  
+none     >(a*b, 0)                       unknown  unknown  r/r     F F F  
+none     >((a^2-1)/(a-1)-a, 0)           true     false    A/r     T T T  
+none     >(n-1, 0)                       unknown  unknown  r/r     F F F  
+none     >=(n-1, 0)                      unknown  unknown  r/r     F F F  
+none     >(2*n+1, 0)                     unknown  unknown  r/r     F F F  
+none     >(1358298529049385849277351..   true     false    A/r     T T T  
+none     >(1358298529049385849277351..   true     false    A/r     T T T  
+none     >(%e^1000, 0)                   true     false    A/r     T T T  
+supcontext(ca)
+assume(a > 0)
+print("")
+ 
+print("-- facts:",facts())
+-- facts: [a > 0] 
+for s in shapes do %p_row("a>0",s[1],s[2],s[3],s[4])
+a>0      >(a, 0)                         true     false    A/r     T F F  F#rubi
+a>0      <(a, 0)                         false    true     r/A     F F F  
+a>0      >=(a, 0)                        true     false    A/r     T F F  F#rubi
+a>0      <=(a, 0)                        false    true     r/A     F F F  
+a>0      >(-a, 0)                        false    true     r/A     F F F  
+a>0      >=(a, a)                        true     false    A/r     T F F  F#rubi
+a>0      <(a, a+1)                       true     false    A/r     T F F  F#rubi
+a>0      >(m+1, 0)                       unknown  unknown  r/r     F F F  
+a>0      >(2, 0)                         true     false    A/r     T T T  
+a>0      >(-(3/2), 0)                    false    true     r/A     F F F  
+a>0      <(-(3/2), -1)                   true     false    A/r     T T T  
+a>0      >=(0, 0)                        true     false    A/r     T T T  
+a>0      >(0.5, 0)                       true     false    A/r     T T T  
+a>0      <(1/3, 0.3333)                  false    true     r/A     F F F  
+a>0      <=(-1, -1)                      true     false    A/r     T T T  
+a>0      >(%pi, 3)                       true     false    A/r     T T T  
+a>0      >(%e-3, 0)                      false    true     r/A     F F F  
+a>0      >(sqrt(2)-1, 0)                 true     false    A/r     T T T  
+a>0      <(sqrt(2), 3/2)                 true     false    A/r     T T T  
+a>0      >(log(2), 0)                    true     false    A/r     T T T  
+a>0      >(-(%pi/2), -2)                 true     false    A/r     T T T  
+a>0      >(sin(1), 0)                    true     false    A/r     T T T  
+a>0      >(%i, 0)                        false    true     r/A     F F F  
+a>0      <(%i, 0)                        false    true     r/A     F F F  
+a>0      >(%i+1, 0)                      false    true     r/A     F F F  
+a>0      >(sqrt(2)*%i, 0)                false    true     r/A     F F F  
+a>0      >(-1, -2)                       true     false    A/r     T T T  
+a>0      >(log(-1), 0)                   false    true     r/A     F F F  
+a>0      >(a+%i, 0)                      false    true     r/A     F F F  
+a>0      >(%i*a, 0)                      false    true     r/A     F F F  
+a>0      <(%i*a, 0)                      false    true     r/A     F F F  
+a>0      >(sqrt(-a), 0)                  false    true     r/A     F F F  
+a>0      >(a^2+1, 0)                     true     false    A/r     T F F  F#rubi
+a>0      >=(a^2, 0)                      true     false    A/r     T F F  F#rubi
+a>0      >(a^2, 0)                       true     false    A/r     T F F  F#rubi
+a>0      >(%e^a, 0)                      true     false    A/r     T F F  F#rubi
+a>0      >(b^2-4*a*c, 0)                 unknown  unknown  r/r     F F F  
+a>0      >(abs(a)+1, 0)                  true     false    A/r     T F F  F#rubi
+a>0      >(sqrt(a), 0)                   true     false    A/r     T F F  F#rubi
+a>0      >=(sqrt(a), 0)                  true     false    A/r     T F F  F#rubi
+a>0      >(a^b, 0)                       true     false    A/r     T F F  F#rubi
+a>0      >(log(a), 0)                    unknown  unknown  r/r     F F F  
+a>0      >(a*b, 0)                       unknown  unknown  r/r     F F F  
+a>0      >((a^2-1)/(a-1)-a, 0)           true     false    A/r     T T T  
+a>0      >(n-1, 0)                       unknown  unknown  r/r     F F F  
+a>0      >=(n-1, 0)                      unknown  unknown  r/r     F F F  
+a>0      >(2*n+1, 0)                     unknown  unknown  r/r     F F F  
+a>0      >(1358298529049385849277351..   true     false    A/r     T T T  
+a>0      >(1358298529049385849277351..   true     false    A/r     T T T  
+a>0      >(%e^1000, 0)                   true     false    A/r     T T T  
+killcontext(ca)
+supcontext(cn)
+declare(n,integer)
+assume(n > 0)
+print("")
+ 
+print("-- facts:",facts())
+-- facts: [kind(n,integer),n > 0] 
+for s in shapes do %p_row("n int>0",s[1],s[2],s[3],s[4])
+n int>0  >(a, 0)                         unknown  unknown  r/r     F F F  
+n int>0  <(a, 0)                         unknown  unknown  r/r     F F F  
+n int>0  >=(a, 0)                        unknown  unknown  r/r     F F F  
+n int>0  <=(a, 0)                        unknown  unknown  r/r     F F F  
+n int>0  >(-a, 0)                        unknown  unknown  r/r     F F F  
+n int>0  >=(a, a)                        true     false    A/r     T F F  F#rubi
+n int>0  <(a, a+1)                       true     false    A/r     T F F  F#rubi
+n int>0  >(m+1, 0)                       unknown  unknown  r/r     F F F  
+n int>0  >(2, 0)                         true     false    A/r     T T T  
+n int>0  >(-(3/2), 0)                    false    true     r/A     F F F  
+n int>0  <(-(3/2), -1)                   true     false    A/r     T T T  
+n int>0  >=(0, 0)                        true     false    A/r     T T T  
+n int>0  >(0.5, 0)                       true     false    A/r     T T T  
+n int>0  <(1/3, 0.3333)                  false    true     r/A     F F F  
+n int>0  <=(-1, -1)                      true     false    A/r     T T T  
+n int>0  >(%pi, 3)                       true     false    A/r     T T T  
+n int>0  >(%e-3, 0)                      false    true     r/A     F F F  
+n int>0  >(sqrt(2)-1, 0)                 true     false    A/r     T T T  
+n int>0  <(sqrt(2), 3/2)                 true     false    A/r     T T T  
+n int>0  >(log(2), 0)                    true     false    A/r     T T T  
+n int>0  >(-(%pi/2), -2)                 true     false    A/r     T T T  
+n int>0  >(sin(1), 0)                    true     false    A/r     T T T  
+n int>0  >(%i, 0)                        false    true     r/A     F F F  
+n int>0  <(%i, 0)                        false    true     r/A     F F F  
+n int>0  >(%i+1, 0)                      false    true     r/A     F F F  
+n int>0  >(sqrt(2)*%i, 0)                false    true     r/A     F F F  
+n int>0  >(-1, -2)                       true     false    A/r     T T T  
+n int>0  >(log(-1), 0)                   false    true     r/A     F F F  
+n int>0  >(a+%i, 0)                      false    true     r/A     F F F  
+n int>0  >(%i*a, 0)                      false    true     r/A     F F F  
+n int>0  <(%i*a, 0)                      false    true     r/A     F F F  
+n int>0  >(sqrt(-a), 0)                  unknown  unknown  r/r     F F F  
+n int>0  >(a^2+1, 0)                     true     false    A/r     T F F  F#rubi
+n int>0  >=(a^2, 0)                      true     false    A/r     T F F  F#rubi
+n int>0  >(a^2, 0)                       unknown  unknown  r/r     F F F  
+n int>0  >(%e^a, 0)                      true     false    A/r     T F F  F#rubi
+n int>0  >(b^2-4*a*c, 0)                 unknown  unknown  r/r     F F F  
+n int>0  >(abs(a)+1, 0)                  true     false    A/r     T F F  F#rubi
+n int>0  >(sqrt(a), 0)                   unknown  unknown  r/r     F F F  
+n int>0  >=(sqrt(a), 0)                  true     false    A/r     T F F  F#rubi
+n int>0  >(a^b, 0)                       unknown  unknown  r/r     F F F  
+n int>0  >(log(a), 0)                    unknown  unknown  r/r     F F F  
+n int>0  >(a*b, 0)                       unknown  unknown  r/r     F F F  
+n int>0  >((a^2-1)/(a-1)-a, 0)           true     false    A/r     T T T  
+n int>0  >(n-1, 0)                       unknown  unknown  r/r     F F F  
+n int>0  >=(n-1, 0)                      unknown  unknown  r/r     F F F  
+n int>0  >(2*n+1, 0)                     true     false    A/r     T F F  F#rubi
+n int>0  >(1358298529049385849277351..   true     false    A/r     T T T  
+n int>0  >(1358298529049385849277351..   true     false    A/r     T T T  
+n int>0  >(%e^1000, 0)                   true     false    A/r     T T T  
+killcontext(cn)
+print("-- after killcontext, facts:",facts()," featurep(n,integer):",featurep(n,integer))
+-- after killcontext, facts: []  featurep(n,integer): false 
+print("")
+ 
+print("-- connectives on unknown:")
+-- connectives on unknown: 
+print("  true and unknown  ->",true and unknown)
+  true and unknown  -> unknown 
+print("  unknown and false ->",unknown and false)
+  unknown and false -> false 
+print("  true or unknown   ->",true or unknown)
+  true or unknown   -> true 
+print("  not unknown       ->",not unknown)
+  not unknown       -> unknown 
+print("  is(not unknown)   ->",is(not unknown))
+  is(not unknown)   -> unknown 
+print("  cond  freeof(x,a) and not(is(a > 0))  ->",freeof(x,a) and not is(a > 0))
+  cond  freeof(x,a) and not(is(a > 0))  -> unknown 
+print("")
+ 
+print("-- prederror:",prederror)
+-- prederror: false 
+block([prederror:true,errormsg:false],print("  prederror:true, errcatch(is(a > 0)) ->",errcatch(is(a > 0))))
+  prederror:true, errcatch(is(a > 0)) -> [] 
+print("")
+ 
+print("-- radexpand:false logexpand:false arm:")
+-- radexpand:false logexpand:false arm: 
+block([radexpand:false,logexpand:false],
+      for s in [[">",sqrt(a),0,false],[">=",sqrt(a^2),0,false],[">",sqrt(-2),0,false],[">",log(2),0,true],[">",a^2+1,0,false]] do %p_row("flags",s[1],s[2],s[3],s[4]))
+flags    >(sqrt(a), 0)                   unknown  unknown  r/r     F F F  
+flags    >=(sqrt(a^2), 0)                true     false    A/r     T F F  F#rubi
+flags    >(sqrt(-2), 0)                  false    true     r/A     F F F  
+flags    >(log(2), 0)                    true     false    A/r     T T T  
+flags    >(a^2+1, 0)                     true     false    A/r     T F F  F#rubi
+print("")
+ 
+print("R-vs-hand mismatches:",%p_bad)
+R-vs-hand mismatches: 0 
+"/home/serge/src/mr-gtq/probes/gtq/02-facts-probe.mac"
+-- prompt check (lines matching 'positive, negative' / 'Lisp error' / 'end of file'):
+0

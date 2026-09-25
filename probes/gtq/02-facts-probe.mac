@@ -1,0 +1,123 @@
+/* probes/gtq/02-facts-probe.mac -- how the current emission, (F) and (R)
+   read GtQ/LtQ/GeQ/LeQ on the argument shapes the rule conds receive, with
+   no facts, with assume(a > 0), and with declare(n, integer) +
+   assume(n > 0).  Run:  sh probes/gtq/02-facts-probe.run
+
+   Columns, for the site  OP(u, v)  and its negation  Not[OP(u, v)]:
+     is        the current emission's value is(u op v)   (ERR = an error)
+     not(is)   the current negated emission's value      (ERR = an error)
+     disp+ / disp-   the dispatcher's verdict on each (is(v) = true accepts,
+               false / unknown / an error rejects: maxima_rubi_dispatch.lisp
+               mr-accept + mr-true-p) -- A accept, r reject
+     F         (F) is(u op v) = true   [Not[] reads not F]
+     R         (R) strict Rubi reading [Not[] reads not R]
+     rubi      Rubi's value, derived BY HAND from IntegrationUtilityFunctions.m
+               :403-475 (no Mathematica here) -- the probe checks R = rubi
+     F=R       whether (F) agrees with Rubi.
+   Rubi ignores assumptions, so the rubi column is the same in every
+   context.  The "is" column never prompts: stdin is /dev/null, and a prompt
+   would read EOF and print a Lisp error (the .run greps for one). */
+
+load("probes/gtq/gtq-readings.mac")$
+display2d : false$
+linel : 200$
+print("build:", build_info()@version, build_info()@timestamp, build_info()@lisp_name,
+      build_info()@lisp_version)$
+
+/* the two-valued / error-tagged evaluators */
+%p_val(op, u, v) := block([errormsg : false, r],
+  r : errcatch(is(apply(op, [u, v]))),
+  if r = [] then 'ERR else first(r))$
+%p_notval(op, u, v) := block([errormsg : false, r],
+  r : errcatch(not(is(apply(op, [u, v])))),
+  if r = [] then 'ERR else first(r))$
+%p_disp(val) := block([errormsg : false, r],
+  if val = 'ERR then "r"
+  else (r : errcatch(is(val) = true), if r # [] and first(r) then "A" else "r"))$
+%p_tf(b) := if b then "T" else "F"$
+%p_bad : 0$
+%p_short(s) := if slength(s) > 30 then concat(substring(s, 1, 28), "..") else s$
+%p_row(ctx, op, u, v, rubi) := block([iv, nv, f, rr],
+  iv : %p_val(op, u, v), nv : %p_notval(op, u, v),
+  f : %mr_gtq_F(op, u, v), rr : %mr_gtq_R(op, u, v),
+  if not(rr = rubi) then %p_bad : %p_bad + 1,
+  printf(true, "~8a ~a~40t ~8a ~8a ~a/~a     ~a ~a ~a  ~a~a~%",
+         ctx, %p_short(concat(op, "(", string(u), ", ", string(v), ")")),
+         string(iv), string(nv), %p_disp(iv), %p_disp(nv),
+         %p_tf(f), %p_tf(rr), %p_tf(rubi),
+         if f = rubi then "" else "F#rubi",
+         if rr = rubi then "" else "  R#rubi(!)"))$
+
+/* shape list: [op, u, v, Rubi value by hand] */
+shapes : [
+  /* bare symbols */
+  [">", a, 0, false], ["<", a, 0, false], [">=", a, 0, false], ["<=", a, 0, false],
+  [">", -a, 0, false], [">=", a, a, false], ["<", a, a + 1, false], [">", m + 1, 0, false],
+  /* rationals, integers, floats */
+  [">", 2, 0, true], [">", -3/2, 0, false], ["<", -3/2, -1, true], [">=", 0, 0, true],
+  [">", 0.5, 0, true], ["<", 1/3, 0.3333, false], ["<=", -1, -1, true],
+  /* %pi / %e / sqrt / log constants */
+  [">", %pi, 3, true], [">", %e - 3, 0, false], [">", sqrt(2) - 1, 0, true],
+  ["<", sqrt(2), 3/2, true], [">", log(2), 0, true], [">", -%pi/2, -2, true],
+  [">", sin(1), 0, true],
+  /* complex constants: Head Complex -> False */
+  [">", %i, 0, false], ["<", %i, 0, false], [">", 1 + %i, 0, false],
+  [">", sqrt(-2), 0, false], [">", %i^2, -2, true], [">", log(-1), 0, false],
+  [">", a + %i, 0, false], [">", %i*a, 0, false], ["<", %i*a, 0, false], [">", sqrt(-a), 0, false],
+  /* symbolic sums / products / powers */
+  [">", a^2 + 1, 0, false], [">=", a^2, 0, false], [">", a^2, 0, false],
+  [">", exp(a), 0, false], [">", b^2 - 4*a*c, 0, false], [">", abs(a) + 1, 0, false],
+  [">", sqrt(a), 0, false], [">=", sqrt(a), 0, false], [">", a^b, 0, false],
+  [">", log(a), 0, false], [">", a*b, 0, false], [">", (a^2 - 1)/(a - 1) - a, 0, true],
+  [">", n - 1, 0, false], [">=", n - 1, 0, false], [">", 2*n + 1, 0, false],
+  /* huge numbers: exact integer, and a constant whose float overflows */
+  [">", 2^1100, 0, true], [">", 2^1100, 2^1100 - 1, true], [">", exp(1000), 0, true]
+]$
+
+print("")$
+print("context  site                                    is       not(is)  disp+/-  F R rubi")$
+for s in shapes do %p_row("none", s[1], s[2], s[3], s[4])$
+
+supcontext(ca)$
+assume(a > 0)$
+print("")$
+print("-- facts:", facts())$
+for s in shapes do %p_row("a>0", s[1], s[2], s[3], s[4])$
+killcontext(ca)$
+
+supcontext(cn)$
+declare(n, integer)$
+assume(n > 0)$
+print("")$
+print("-- facts:", facts())$
+for s in shapes do %p_row("n int>0", s[1], s[2], s[3], s[4])$
+killcontext(cn)$
+print("-- after killcontext, facts:", facts(), " featurep(n,integer):", featurep(n, integer))$
+
+/* how and / or / not combine an unknown (the cond body is a conjunction) */
+print("")$
+print("-- connectives on unknown:")$
+print("  true and unknown  ->", true and unknown)$
+print("  unknown and false ->", unknown and false)$
+print("  true or unknown   ->", true or unknown)$
+print("  not unknown       ->", not unknown)$
+print("  is(not unknown)   ->", is(not unknown))$
+print("  cond  freeof(x,a) and not(is(a > 0))  ->", freeof(x, a) and not(is(a > 0)))$
+
+/* prederror: the documented error switch; the package leaves it false */
+print("")$
+print("-- prederror:", prederror)$
+block([prederror : true, errormsg : false],
+  print("  prederror:true, errcatch(is(a > 0)) ->", errcatch(is(a > 0))))$
+
+/* the switches the harness sets (radexpand:false, logexpand:false under
+   mr_model_flags) on the sqrt / log shapes */
+print("")$
+print("-- radexpand:false logexpand:false arm:")$
+block([radexpand : false, logexpand : false],
+  for s in [[">", sqrt(a), 0, false], [">=", sqrt(a^2), 0, false], [">", sqrt(-2), 0, false],
+            [">", log(2), 0, true], [">", a^2 + 1, 0, false]] do
+    %p_row("flags", s[1], s[2], s[3], s[4]))$
+
+print("")$
+print("R-vs-hand mismatches:", %p_bad)$

@@ -1,0 +1,9 @@
+#!/bin/sh
+# probes/gtq/02-facts-probe.run -- run 02-facts-probe.mac (plain Maxima, no
+# rule files) from the worktree root; stdin /dev/null, so an asksign prompt
+# would hit EOF and show up as a Lisp error / "Is ... positive" line.
+cd "$(dirname "$0")/../.." || exit 1
+date -u '+run: %Y-%m-%dT%H:%M:%SZ'
+maxima --very-quiet -b probes/gtq/02-facts-probe.mac < /dev/null 2>&1
+echo "-- prompt check (lines matching 'positive, negative' / 'Lisp error' / 'end of file'):"
+maxima --very-quiet -b probes/gtq/02-facts-probe.mac < /dev/null 2>&1 | grep -c -i 'positive, negative\|lisp error\|end of file\|nonzero?'
