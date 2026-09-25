@@ -156,6 +156,7 @@ run_all_tests() := block([],
   test_native_inverse_hyperbolic(),
   test_expand_two_arg(),
   test_ei_reciprocal_atom(),
+  test_substfor_unexpanded_arg(),
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
@@ -5593,6 +5594,31 @@ test_ei_reciprocal_atom() := block([mr_ra_saved, mr_ra_ok],
     check("1_1_3_2: Int (b/x^2+a)/x = a log(x) - b/(2 x^2)",
           rubi((b/x^2 + a)/x, x), a*log(x) - b/(2*x^2))),
   mr_rule_table : mr_ra_saved,
+  true
+)$
+
+/* ---- SubstForTrig / SubstForHyperbolic: an unexpanded argument ----------
+   The class-6 attribution's fix C: the q = 1 test %mr_eqQ(part(u,1), v) of
+   %mr_substForHyperbolic (ae6b7a6) read a*c+b*c*x and c*(a+b*x) as
+   different, so cosh(v) fell into the TrigExpand branch and came back
+   unsubstituted; %mr_substForTrig has the same test. Both call %mr_eqQ, so
+   the symbolic zero test (mr_eqq_symbolic, issue 03) cures them with no
+   change of their own: pinned here, and RED with the switch off. */
+test_substfor_unexpanded_arg() := block([],
+  print("--- SubstForTrig / SubstForHyperbolic: an unexpanded argument ---"),
+  check("substForHyperbolic: cosh(a c + b c x) at v = c (a + b x) -> the cosh symbol",
+        %mr_substForHyperbolic(cosh(a*c + b*c*x), mr_sy, mr_cy, c*(a + b*x)), mr_cy),
+  check("substForHyperbolic: sinh(a c + b c x) at v = c (a + b x) -> the sinh symbol",
+        %mr_substForHyperbolic(sinh(a*c + b*c*x), mr_sy, mr_cy, c*(a + b*x)), mr_sy),
+  check("substForTrig: cos(a c + b c x) at v = c (a + b x) -> the cos symbol",
+        %mr_substForTrig(cos(a*c + b*c*x), mr_sy, mr_cy, c*(a + b*x)), mr_cy),
+  check("substForTrig: tan(a c + b c x) at v = c (a + b x) -> sin/cos",
+        %mr_substForTrig(tan(a*c + b*c*x), mr_sy, mr_cy, c*(a + b*x)), mr_sy/mr_cy),
+  mr_eqq_symbolic : false,
+  check_bool("switch off: substForHyperbolic leaves cosh(c (a + b x)) unsubstituted",
+             not freeof('cosh, %mr_substForHyperbolic(cosh(a*c + b*c*x), mr_sy, mr_cy,
+                                                      c*(a + b*x)))),
+  mr_eqq_symbolic : true,
   true
 )$
 
