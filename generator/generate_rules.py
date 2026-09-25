@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # RENAME/RESTRUCTURE were never imported at all), so translate_token's
 # table lookup would NameError/TypeError. Import under an alias.
 from translation_table import translate as table_translate
-from translation_table import RENAME, RESTRUCTURE
+from translation_table import RENAME, RESTRUCTURE, CLASS_RENAME
 
 # Values in the translation table that name an EMITTER CASE rather than a
 # Maxima function. Reaching the generic `name(args)` emission with one of
@@ -612,6 +612,10 @@ def translate_token(tok, ctx):
         return {"Pi": "%pi", "E": "%e", "I": "%i"}[tok]
     if tok in ("True", "False"):
         return "true" if tok == "True" else "false"
+    if tok in CLASS_RENAME.get(globals().get("CLASS"), {}):
+        # the class-7 native inverse-hyperbolic heads (translation_table.py
+        # CLASS_RENAME) -- consulted before the shared RENAME rows
+        return CLASS_RENAME[CLASS][tok]
     if tok in RENAME or tok in RESTRUCTURE:
         return table_translate(tok)
     # unknown identifier that is not a capture: a Maxima symbol (a, b, c, …)

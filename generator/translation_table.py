@@ -304,6 +304,37 @@ RENAME = {
     "InverseFunctionOfLinear": "%mr_inverseFunctionOfLinear",
     "SubstForInverseFunction": "%mr_substForInverseFunction",
     "Head": "%mr_head",
+    # class 7 (2026-09-25): the two inverse-hyperbolic heads the earlier
+    # classes never met, NATIVE spellings. Both differentiate through the
+    # harness zero chain, float-evaluate on their real domain (asech on
+    # (0, 1], acsch off 0), and follow Mathematica's conventions --
+    # asech(z) = acosh(1/z), acsch(z) = asinh(1/z) -- build
+    # branch_5_50_base_84_g4204fb669
+    # (probes/answer-side/06-class7-answer-side-identities.out A5/A6,
+    # E5/E6/E9, C1/C2/C4-C6). mr-tree already maps both heads. Census: 38
+    # and 36 rules (probes/translation/11-class7-syntax-census.out).
+    "ArcSech": "asech", "ArcCsch": "acsch",
+}
+
+# Per-class overrides of RENAME, consulted first by the generator's
+# translate_token (generate_rules.py) for the class being generated only.
+#
+# class 7 (2026-09-25): ArcTanh / ArcSinh / ArcCosh emit the NATIVE heads,
+# not the %mr_atanh / %mr_asinh / %mr_acosh log-form shims the RENAME rows
+# above give every other class. Section 7's rules recurse on their own
+# heads -- Int[(a+b ArcSinh[c x])^n, x] reduces to Int[x (a+b ArcSinh[c
+# x])^(n-1)/Sqrt[1+c^2 x^2], x], which a 7.1.2 rule matches on the
+# pattern's ArcSinh (mr-tree: asinh). A shim evaluates on the spot to its
+# log / product body (probes/answer-side/06 K1/K2), so the recursive
+# integrand would no longer carry the head any class-7 pattern names, and
+# 7.3.7's EqQ[Head[tmp], ArcTanh] would compare op() (atanh, probe 06 H1)
+# with %mr_atanh. The natives are bound, differentiate through the zero
+# chain and float-evaluate (probe 06 A1-A4, E1-E4); logarc is off and
+# ratsimp/radcan leave them alone (S11-S13). Classes 1/2/3/5/9 keep the
+# shims (byte-identity of their accepted records); their few recursive
+# uses are ticket .scratch/class-ports/issues/18.
+CLASS_RENAME = {
+    7: {"ArcTanh": "atanh", "ArcSinh": "asinh", "ArcCosh": "acosh"},
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.
