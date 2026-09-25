@@ -10,7 +10,7 @@ _mr_cond_4_1_1_1_r1(mm, x) := block([_mr_4_1_1_1_r1_c, _mr_4_1_1_1_r1_d, _mr_4_1
   freeof(x, _mr_4_1_1_1_r1_c) and freeof(x, _mr_4_1_1_1_r1_d)  and  %mr_iGtQ((_mr_4_1_1_1_r1_n - 1)/2, 0))$
 _mr_repl_4_1_1_1_r1(mm, x) := block([_mr_4_1_1_1_r1_c__s, _mr_4_1_1_1_r1_d__s, _mr_4_1_1_1_r1_n__s],
   _mr_4_1_1_1_r1_c__s : geteqR(mm, '_mr_4_1_1_1_r1_c), _mr_4_1_1_1_r1_d__s : geteqR(mm, '_mr_4_1_1_1_r1_d), _mr_4_1_1_1_r1_n__s : geteqR(mm, '_mr_4_1_1_1_r1_n),
-  -1/_mr_4_1_1_1_r1_d__s*%mr_subst(mr_int(expand((1 - x^2)^((_mr_4_1_1_1_r1_n__s - 1)/2), x), x), x, cos(_mr_4_1_1_1_r1_c__s + _mr_4_1_1_1_r1_d__s*x)))$
+  -1/_mr_4_1_1_1_r1_d__s*%mr_subst(mr_int(%mr_expand((1 - x^2)^((_mr_4_1_1_1_r1_n__s - 1)/2), x), x), x, cos(_mr_4_1_1_1_r1_c__s + _mr_4_1_1_1_r1_d__s*x)))$
 _mr_rule_4_1_1_1_r1 : %mr_defrule("4_1_1_1", 1, "(Int (Power (sin (Plus (Optional (Pattern |_mr_4_1_1_1_r1_c| (Blank))) (Times (Optional (Pattern |_mr_4_1_1_1_r1_d| (Blank))) (Pattern x (Blank))))) (Pattern |_mr_4_1_1_1_r1_n| (Blank))) (Pattern x (Blank Symbol)))", _mr_cond_4_1_1_1_r1, _mr_repl_4_1_1_1_r1)$
 
 _mr_cond_4_1_1_1_r2(mm, x) := block([_mr_4_1_1_1_r2_c, _mr_4_1_1_1_r2_d],

@@ -1,0 +1,10 @@
+#!/bin/sh
+# probes/maxima/probe-class4-expand-two-arg.run (from the repo root):
+#   sh probes/maxima/probe-class4-expand-two-arg.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# probe-class4-expand-two-arg output, $(date -u +%F)"
+  maxima --very-quiet -b probes/maxima/probe-class4-expand-two-arg.mac < /dev/null 2>&1 \
+    | grep -v '^read and interpret'
+} > probes/maxima/probe-class4-expand-two-arg.out
+echo "wrote probes/maxima/probe-class4-expand-two-arg.out"

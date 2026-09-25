@@ -364,8 +364,19 @@ RENAME = {
 # ratsimp/radcan leave them alone (S11-S13). Classes 1/2/3/5/9 keep the
 # shims (byte-identity of their accepted records); their few recursive
 # uses are ticket .scratch/class-ports/issues/18.
+#
+# class 4 (2026-09-25): Expand -> %mr_expand. Rubi's Expand is 2-argument in
+# all three class-4 uses (4.1.1.1 r1 -- sin^n, n odd, the Cos substitution
+# -- 4.1.7 r58, 4.3.1.3 r2: Expand[u, x]), and Maxima's expand(u, x) is the
+# 3-argument expand(expr, p, n) short of one: "expand: expop must be a
+# nonnegative integer; found: x", a repl error the dispatcher reads as a
+# misfire (measured 2026-09-25, the class-4 slice). %mr_expand drops the
+# pattern argument (maxima_rubi_utils.mac). Class 2's 2_3 r58/r65 carry the
+# same 2-argument expand; they keep it (byte-identity of the accepted class)
+# and are ticketed (.scratch/class-ports/issues/19).
 CLASS_RENAME = {
     7: {"ArcTanh": "atanh", "ArcSinh": "asinh", "ArcCosh": "acosh"},
+    4: {"Expand": "%mr_expand"},
 }
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.

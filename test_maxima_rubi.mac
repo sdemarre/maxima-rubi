@@ -155,6 +155,7 @@ run_all_tests() := block([],
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
+  test_class4_e2e(),
   test_census(),
   print(""),
   print("========================================"),
@@ -5137,6 +5138,109 @@ test_class4_cluster_b() := block([mr_c4b_saved, mr_c4b_ok, mr_c4b_r],
                and is(ratsimp(exponentialize(diff(mr_c4b_r, x)
                                              - cosh(x)^3*sinh(x)^2)) = 0)),
     mr_rule_table : mr_c4b_saved),
+  true
+)$
+
+/* ---- class 4 end to end ------------------------------------------------
+   docs/class-porting.md Step 4. The generated class-4 files through the
+   dispatcher, on a sibling table built the real table's way (every body
+   list first, class 4's in LoadRules order, then its two _tail lists), with
+   three class-1 files the algebraic steps fire from (1.1.1.1, 1.4.1, 9.1)
+   and mr_nested_fallback false, so every answer is the rules' own:
+   - the bridge + 4.1/4.3/4.5 bodies (sin^3, tan^2, sec, 1/(a+b sin));
+   - 4.1.1.1 r1 (sin^n, n odd: Subst[Int[Expand[(1-x^2)^((n-1)/2), x], x],
+     x, Cos]) -- RED until class 4's Expand row (CLASS_RENAME[4] ->
+     %mr_expand; probes/maxima/probe-class4-expand-two-arg.out E4);
+   - 4.1.10 through the Pi/2-shifted inert sin (x sin x) and the
+     Complex[0, fz] argument a deactivated sinh carries (sinh(2x)/x);
+   - 4.7.5 r5 (active cosh, the hyperbolic FunctionOfQ arm);
+   - the accepted G-9 flags binding as designed (4.1.1.1 r5, 4.1.10 r12,
+     4.7.7 r19, 4.3.10 r24's MatchQ f1_.*Complex[0, j_]);
+   - the two new tail records, 4.7.5 r66 (TrigSimplify) and r70
+     (ExpandTrig), and a 4.7.1 normalization record's KnownSineIntegrandQ.
+   Each answer carries no noun and no inert head and is checked by its
+   derivative (symbolically where trigsimp closes it, else at x = 0.3, 0.7). */
+test_class4_e2e() := block([mr_c4e_saved, mr_c4e_fb, mr_c4e_ok, mr_c4e_r, mr_c4e_keys,
+                            mr_c4e_clean, mr_c4e_num],
+  print("--- class 4 end to end ---"),
+  mr_c4e_keys : [
+    "4_1_0_1", "4_1_0_2", "4_1_0_3", "4_1_1_1", "4_1_1_2", "4_1_1_3",
+    "4_1_2_1", "4_1_2_2", "4_1_2_3", "4_1_3_1", "4_1_4_1", "4_1_4_2",
+    "4_1_5", "4_1_6", "4_1_7", "4_1_8", "4_1_9", "4_1_10", "4_1_11",
+    "4_1_12", "4_1_13", "4_3_1_1", "4_3_1_2", "4_3_1_3", "4_3_2_1",
+    "4_3_2_3", "4_3_3_1", "4_3_4_1", "4_3_4_2", "4_3_7", "4_3_9",
+    "4_3_10", "4_3_11", "4_3_12", "4_5_1_1", "4_5_1_2", "4_5_1_3",
+    "4_5_1_4", "4_5_2_1", "4_5_2_2", "4_5_3_1", "4_5_4_1", "4_5_4_2",
+    "4_5_7", "4_5_9", "4_5_10", "4_5_11", "4_7_1", "4_7_2", "4_7_3",
+    "4_7_4", "4_7_5", "4_7_6", "4_7_7", "4_7_8", "4_7_9"],
+  mr_c4e_ok : errcatch(
+    %mr_load_sibling("rules/utils/inert_trig_rewrites.mac",
+                     'mr_witness_inert_trig_rewrites),
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/1_4_1.mac", 'mr_witness_1_4_1),
+    %mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1),
+    for mr_c4e_k in mr_c4e_keys do
+      %mr_load_sibling(sconcat("rules/class4/", mr_c4e_k, ".mac"),
+                       concat('mr_witness_, mr_c4e_k)),
+    true),
+  check_bool("class 4 e2e: the 56 rule files load", is(mr_c4e_ok # [])),
+  /* an answer: no noun, no inert head */
+  mr_c4e_clean(r) := is(r # false) and freeof('unintegrable, 'mr_int, r)
+                     and %mr_inertTrigFreeQ(r),
+  /* the derivative residual of r against f at x = 0.3 and 0.7 (a, b = 3, 2) */
+  mr_c4e_num(r, f) := every(lambda([mr_c4e_p],
+      is(abs(float(rectform(subst([x = mr_c4e_p, a = 3, b = 2], diff(r, x) - f)))) < 1.0e-10)),
+    [0.3, 0.7]),
+  if mr_c4e_ok # [] then (
+    mr_c4e_saved : mr_rule_table, mr_c4e_fb : mr_nested_fallback,
+    mr_nested_fallback : false,
+    mr_rule_table : flatten(append([mr_rules_1_1_1_1, mr_rules_1_4_1, mr_rules_9_1],
+                                   map(lambda([mr_c4e_k], eval_string(sconcat("mr_rules_", mr_c4e_k))),
+                                       mr_c4e_keys),
+                                   [mr_rules_4_1_0_1_tail, mr_rules_4_7_5_tail])),
+    mr_c4e_r : rubi(sin(x)^3, x),
+    check_bool("bridge + 4.1.1.1: Int sin(x)^3",
+               mr_c4e_clean(mr_c4e_r) and is(trigsimp(diff(mr_c4e_r, x) - sin(x)^3) = 0)),
+    mr_c4e_r : rubi(sin(x)^5, x),
+    check_bool("4.1.1.1 r1 (Expand[., x]): Int sin(x)^5 is a polynomial in cos(x)",
+               mr_c4e_clean(mr_c4e_r) and freeof(sin, mr_c4e_r)
+               and is(trigsimp(diff(mr_c4e_r, x) - sin(x)^5) = 0)),
+    check("4.3.1.1: Int tan(x)^2 = tan(x) - x", rubi(tan(x)^2, x), tan(x) - x),
+    mr_c4e_r : rubi(sec(x), x),
+    check_bool("4.5.1.1: Int sec(x)",
+               mr_c4e_clean(mr_c4e_r) and mr_c4e_num(mr_c4e_r, sec(x))),
+    check("4.1.10 (the Pi/2-shifted inert sin): Int x sin(x)",
+          rubi(x*sin(x), x), sin(x) - x*cos(x)),
+    check("4.1.10 r3 (Complex[0, fz] from a deactivated sinh): Int sinh(2x)/x",
+          rubi(sinh(2*x)/x, x), expintegral_shi(2*x)),
+    check("4.7.5 r5 (active cosh, pure-Sinh FunctionOfQ): Int cosh(x) sinh(x)^2",
+          rubi(cosh(x)*sinh(x)^2, x), sinh(x)^3/3),
+    check("4.1.1.1 r5 binds sin(c + Pi/2 + d x) (Pi-arg flag)",
+          %mr_rule_apply(_mr_rule_4_1_1_1_r5, %mr_isin(c + %pi/2 + d*x), x), sin(d*x + c)/d),
+    check_bool("4.1.10 r12 binds sin(k Pi + x) with k = 1/2 (Pi-arg flag)",
+               is(member('_mr_4_1_10_r12_k = 1/2,
+                         %mr_rule_bindings(_mr_rule_4_1_10_r12, x*%mr_isin(%pi/2 + x), x)))),
+    check_bool("4.7.7 r19 binds an active sec(x + Pi/3) with k = 1/3 (Pi-arg flag)",
+               is(member('_mr_4_7_7_r19_k = 1/3,
+                         %mr_rule_bindings(_mr_rule_4_7_7_r19, 2^x*sec(x + %pi/3), x)))),
+    check("4.3.10 r24: MatchQ[f, f1_.*Complex[0, j_]] takes the hyperbolic branch",
+          %mr_rule_apply(_mr_rule_4_3_10_r24, x*%mr_itan(%i*x)^2, x),
+          -'unintegrable[x*tanh(x)^2, x]),
+    mr_c4e_r : %mr_rule_apply(_mr_rule_4_7_5_r66, %mr_isin(x)^3*(1 - %mr_isin(x)^2), x),
+    check_bool("4.7.5 r66 (TrigSimplify tail record): sin^3 (1 - sin^2)",
+               mr_c4e_clean(mr_c4e_r)
+               and is(trigsimp(diff(mr_c4e_r, x) - sin(x)^3*cos(x)^2) = 0)),
+    mr_c4e_r : %mr_rule_apply(_mr_rule_4_7_5_r70, %mr_isin(x)*(1 + %mr_icos(x))^2, x),
+    check_bool("4.7.5 r70 (ExpandTrig tail record): sin (1 + cos)^2",
+               mr_c4e_clean(mr_c4e_r)
+               and is(trigsimp(diff(mr_c4e_r, x) - sin(x)*(1 + cos(x))^2) = 0)),
+    check_bool("4.7.1 r1 accepts u (c tan)^m (d sin)^n with u a known sine integrand",
+               listp(%mr_rule_accept(_mr_rule_4_7_1_r1,
+                                     (1 + 2*%mr_isin(x))*%mr_itan(x)^(1/2)*%mr_isin(x)^2, x))),
+    check_not("4.7.1 r1 declines when u is not a known sine integrand",
+              %mr_rule_accept(_mr_rule_4_7_1_r1,
+                              x*%mr_itan(x)^(1/2)*%mr_isin(x)^2, x)),
+    mr_rule_table : mr_c4e_saved, mr_nested_fallback : mr_c4e_fb),
   true
 )$
 

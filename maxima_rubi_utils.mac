@@ -8165,3 +8165,14 @@ mr_witness_utils() := true$
   elseif %mr_shh_h = sech
   then %mr_substForHyperbolic(%mr_shh_u, 1/sqrt(-1 + %mr_shh_y^2), 1/%mr_shh_y, %mr_shh_a)
   else %mr_substForHyperbolic(%mr_shh_u, 1/%mr_shh_y, 1/sqrt(1 + %mr_shh_y^2), %mr_shh_a))$
+
+/* Rubi's Expand[u] / Expand[u, patt] (Mathematica builtin), class 4's
+   CLASS_RENAME row (generator/translation_table.py). The 2-argument form
+   expands only the parts of u that contain patt; Maxima's expand has no
+   such argument (expand(u, x) is an error: its 3-argument form reads x as
+   maxposex), so the pattern is dropped and u is expanded in full. The value
+   is the same; the shape differs only in x-free products Mathematica would
+   leave unexpanded. The three class-4 uses (4.1.1.1 r1, 4.1.7 r58,
+   4.3.1.3 r2) expand a polynomial or rational function in x or a trig
+   function, whose x-free coefficients are single symbols. */
+%mr_expand(%mr_xp_u, [%mr_xp_patt]) := expand(%mr_xp_u)$

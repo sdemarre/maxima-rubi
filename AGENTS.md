@@ -326,7 +326,11 @@ which FixInertTrigFunction clause fires, 35 checks):
 `Results: 1435 passed, 0 failed`; at its cluster (b) (FunctionOfQ's and
 SubstFor's hyperbolic arms, 4.7.5 r5/r37 on a sibling table, and
 FreeFactors/NonfreeFactors on a quotient, 35 checks, one older target
-re-pointed): **`Results: 1470 passed, 0 failed`**. The
+re-pointed): `Results: 1470 passed, 0 failed`; with the class-4 files end
+to end on a sibling table (the bridge and the 4.1/4.3/4.5 bodies, 4.1.1.1
+r1's Expand row, the Pi-shifted and Complex[0, fz] arguments, the accepted
+G-9 flags binding, the r66/r70 tail records, a 4.7.1 normalization record,
+17 checks): **`Results: 1486 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
