@@ -133,3 +133,19 @@ class 3 159 / 107, class 4 1,201 / 1,332, class 5 430 / 129, class 6 86 / 129, c
 class 8 85 / 61, class 9 59 / 35 -- plus the utilities' own calls. No rule text changes (no
 regeneration). The corpus A/B across classes is still owed; a slice A/B is
 `probes/corpus/27-class-ports-fixes-slice-ab`.
+
+2026-09-25 (branch `class-ports-fixes`) — **slice A/B** (`probes/corpus/27-class-ports-fixes-slice-ab.out`,
+73 entries, one Maxima process, 30 s cpu; base = core at class-ports `4ed1877`, fingerprint
+`4daae7ac…`; new = `d27a22b`, fingerprint `651dcdfd…`, 7,776 rules; eqqoff = new with
+`mr_eqq_symbolic=false`). base 35 PASS -> new 55 PASS: **0 PASS->FAIL, 20 FAIL->PASS, every one of them
+the EqQ fix** (eqqoff -> new shows the same 20; base -> eqqoff has none): all ten class-1 g12 entries
+(timeout / unverified / contains-noun at 8-30 s -> verified at 1-2.5 s), 1.2.1.2 e1964, five 1.2.1.3
+entries (timeout -> verified, 1.8-3.4 s), 1.1.1.3 e985/e3019, 5.3.2 e19/e30 (contains-noun ->
+expected). FAIL->FAIL moves: 1.2.1.2 e1883 unverified 17.6 s -> timeout and 1.1.1.3 e3015/e3016
+contains-noun ~20 s -> timeout (the scan's new accepting records route them onto slower routes that run
+out of the cap); 5.3.7 e53/e56/e57/e65 swap error <-> timeout at 25-30 s (at the cap, both arms).
+
+How far the reading reaches (`probes/corpus/27-class-ports-fixes-slice-select.eqq.out`: top-level
+accepting records of the entry's own section file, switch off vs on): 1.2.1.2 319 of 2,590 entries,
+1.2.1.3 145 of 2,646, 1.1.1.3 10 of 3,189, 5.3.7 12 of 153, 7.3.7 0 of 361. The full class-1/5 re-measure
+is owed before acceptance.

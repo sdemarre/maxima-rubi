@@ -1,0 +1,47 @@
+#!/bin/sh
+# probes/corpus/27-class-ports-fixes-slice-ab.run -- the slice A/B of branch
+# class-ports-fixes (the EqQ/NeQ symbolic zero test, issue
+# matcher-translation-fixes/03; the native inverse-hyperbolic heads, ticket
+# 18; the two-argument Expand, ticket 19; ExpandIntegrand's reciprocal-atom
+# guard) against class-ports 4ed1877 (the branch point).
+#
+# Three arms, ONE entry at a time (single Maxima process; 30 s cpu cap),
+# all on this tree's driver:
+#   base    a core built at 4ed1877 in a throwaway worktree (pinned);
+#   new     this tree's core, default switches;
+#   eqqoff  this tree's core, MR_SWITCHES=mr_eqq_symbolic=false (the EqQ
+#           fix off: tickets 18/19 and the guard only).
+# base -> new is the branch; eqqoff -> new isolates the EqQ fix; base ->
+# eqqoff the rest. The entries: probes/corpus/27-class-ports-fixes-slice-ab.py
+# (SLICE + the select probe's EQQ/HIT lines).
+#
+#   sh probes/corpus/27-class-ports-fixes-slice-ab.run
+cd "$(dirname "$0")/../.." || exit 1
+BASE=4ed1877
+W=$(mktemp -d)
+OUT=probes/corpus/27-class-ports-fixes-slice-ab.out
+SEL="probes/corpus/27-class-ports-fixes-slice-select.eqq.out probes/corpus/27-class-ports-fixes-slice-select.hit.out"
+git worktree add -q --detach "$W/base" "$BASE" || exit 1
+ln -s "$(readlink -f reference)" "$W/base/reference"
+(cd "$W/base" && sh test/build_rules_core.sh > "$W/base-build.log" 2>&1 < /dev/null) || { cat "$W/base-build.log"; exit 1; }
+sh test/build_rules_core.sh > "$W/new-build.log" 2>&1 < /dev/null || { cat "$W/new-build.log"; exit 1; }
+MR_RULES_CORE_PATH="$W/base/test/mr_rules.core" python3 probes/corpus/27-class-ports-fixes-slice-ab.py "$W/base.out" $SEL < /dev/null > "$W/base.log" 2>&1
+python3 probes/corpus/27-class-ports-fixes-slice-ab.py "$W/new.out" $SEL < /dev/null > "$W/new.log" 2>&1
+MR_SWITCHES="mr_eqq_symbolic=false" python3 probes/corpus/27-class-ports-fixes-slice-ab.py "$W/eqqoff.out" $SEL < /dev/null > "$W/eqqoff.log" 2>&1
+{
+  echo "# class-ports-fixes slice A/B, $(TZ=Europe/Brussels date '+%F %H:%M %Z'), tree $(git rev-parse --short HEAD)"
+  echo "# base core ($BASE): $(grep -h '^rules\|^fingerprint' "$W/base/test/mr_rules.core.stamp" | tr '\n' ' ')"
+  echo "# new core:        $(grep -h '^rules\|^fingerprint' test/mr_rules.core.stamp | tr '\n' ' ')"
+  for a in base new eqqoff; do echo "# $a: $(grep '^Results' "$W/$a.out")  $(grep '^wall' "$W/$a.out")"; done
+  echo; echo "######## base ($BASE) -> new (the branch)"
+  python3 test/ab_records.py "$W/base.out" "$W/new.out" --all
+  echo; echo "######## eqqoff -> new (the EqQ/NeQ fix alone)"
+  python3 test/ab_records.py "$W/eqqoff.out" "$W/new.out" --all
+  echo; echo "######## base ($BASE) -> eqqoff (tickets 18/19 and the reciprocal-atom guard)"
+  python3 test/ab_records.py "$W/base.out" "$W/eqqoff.out" --all
+  for a in base new eqqoff; do echo; echo "######## the $a record"; grep -v '^maxima:' "$W/$a.out"; done
+} > "$OUT"
+rm -f "$W/base/reference"
+git worktree remove --force "$W/base"
+rm -rf "$W"
+echo "wrote $OUT"
