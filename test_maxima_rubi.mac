@@ -157,6 +157,7 @@ run_all_tests() := block([],
   test_expand_two_arg(),
   test_ei_reciprocal_atom(),
   test_substfor_unexpanded_arg(),
+  test_values_trim(),
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
@@ -5619,6 +5620,32 @@ test_substfor_unexpanded_arg() := block([],
              not freeof('cosh, %mr_substForHyperbolic(cosh(a*c + b*c*x), mr_sy, mr_cy,
                                                       c*(a + b*x)))),
   mr_eqq_symbolic : true,
+  true
+)$
+
+/* ---- The rule-record globals stay out of Maxima's `values` ---------------
+   Every generated rule file assigns _mr_rule_<key>_r<n> : %mr_defrule(...),
+   and each such global lands on the `values` infolist (8,404 entries after
+   mr_load_all on class-ports). Every binding of a globally unbound variable
+   -- each cond/repl call's parameters and block locals -- scans that list
+   twice (MSET -> ADD2LNC on entry, MUNBIND -> DELETE on exit; mlisp.lisp
+   L518-594, L2523), which the class-1 attribution measured as ~74 % of
+   rubi's cpu (probes/class-ports/class1/05-prof-e863.out on branch
+   class1-attribution) and a ~1.7x slowdown from the doubled table.
+   %mr_load_sibling now drops those names from `values` after every load;
+   the symbols stay BOUND (the rule-table gate reads them). */
+test_values_trim() := block([mr_vt_ok],
+  print("--- the rule-record globals stay out of values ---"),
+  mr_vt_ok : errcatch(%mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1), true),
+  check_bool("values trim: rule file loads", is(mr_vt_ok # [])),
+  check("values trim: no _mr_rule_* name in values after a sibling load",
+        length(sublist(values, lambda([s], symbolp(s) and
+                                        is(ssearch("_mr_rule_", string(s)) = 1)))), 0),
+  check_bool("values trim: the rule-record globals stay bound",
+             integerp(_mr_rule_1_1_1_1_r1) and integerp(_mr_rule_1_1_1_1_r3)),
+  check_bool("values trim: an ordinary global is untouched",
+             block([], mr_vt_probe_global : 7, member('mr_vt_probe_global, values))),
+  kill(mr_vt_probe_global),
   true
 )$
 

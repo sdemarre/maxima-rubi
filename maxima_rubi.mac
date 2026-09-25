@@ -27,6 +27,12 @@
   ok : errcatch(load(sconcat(%mr_lib_dir, fname))),
   if ok = [] then ok : errcatch(load(fname)),
   w : apply(witness, []),
+  /* Keep the rule-record globals off `values` (every variable binding
+     walks that list twice): %mr_trim_rule_values, maxima_rubi_dispatch.lisp.
+     Only once the dispatcher is loaded -- the utils load precedes it.
+     ?fboundp returns the FUNCTION OBJECT, not true (measured 2026-09-25),
+     so it is compared with false. */
+  if ?fboundp('%mr_trim_rule_values) # false then %mr_trim_rule_values(),
   if is(w = true) = false then
     error("maxima_rubi: could not load the sibling file ", fname,
           " (witness ", string(witness), " did not return true; the load ",

@@ -334,6 +334,33 @@ seen, not only the ones the table holds."
     (merror (intl:gettext "%mr_rule_count: expected no arguments, found ~A") (length args)))
   (fill-pointer *mr-rules*))
 
+;;; The rule-record globals _mr_rule_<key>_r<n> (each generated rule file
+;;; assigns one per record) are only read by name -- the tests and the
+;;; rule-table gate; the dispatcher reads the handle lists mr_rules_<key>.
+;;; Left on Maxima's `values` infolist they cost every binding of a
+;;; globally unbound variable two walks of that list: MSET -> ADD2LNC on
+;;; entry, MUNBIND -> DELETE on exit (mlisp.lisp L518-594, L2523), and every
+;;; cond/repl call binds its parameters and block locals that way. Measured
+;;; on class-ports (8,404 names after mr_load_all): ~74 % of rubi's cpu in
+;;; %MEMBER-EQ + DELETE, a ~1.7x slowdown over a 4,387-name table (branch
+;;; class1-attribution, probes/class-ports/class1/04-values-census.out,
+;;; 05-prof-e863.out). %mr_load_sibling calls this after every load; the
+;;; symbols stay BOUND, only the infolist entry goes.
+(defmfun |$%MR_TRIM_RULE_VALUES| (&rest args)
+  "%mr_trim_rule_values(): drop every _mr_rule_* name from `values`; returns
+how many were dropped. The symbols keep their values."
+  (unless (null args)
+    (merror (intl:gettext "%mr_trim_rule_values: expected no arguments, found ~A") (length args)))
+  (let ((n0 (length (cdr $values))))
+    (setf (cdr $values)
+          (delete-if (lambda (s)
+                       (and (symbolp s)
+                            (let ((n (symbol-name s)))
+                              (and (> (length n) 10)
+                                   (string-equal "$_mr_rule_" n :end2 10)))))
+                     (cdr $values)))
+    (- n0 (length (cdr $values)))))
+
 (defun mr-rule-of (handle)
   (if (and (integerp handle) (<= 1 handle (fill-pointer *mr-rules*)))
       (aref *mr-rules* (1- handle))

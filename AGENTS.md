@@ -352,8 +352,10 @@ failed`; with the two-argument `Expand[u, x]` -> `%mr_expand` in every class
 `Results: 1534 passed, 0 failed`; with ExpandIntegrand's reciprocal-atom
 guard (the class-6 attribution's fix A, 6 checks): `Results: 1540
 passed, 0 failed`; with SubstForTrig/SubstForHyperbolic on an unexpanded
-argument (its fix C, cured by the symbolic EqQ, 5 checks): **`Results:
-1545 passed, 0 failed`**. The
+argument (its fix C, cured by the symbolic EqQ, 5 checks): `Results:
+1545 passed, 0 failed`; with the rule-record globals kept off Maxima's
+`values` list (the class-1 attribution's fix V, `%mr_trim_rule_values`, 4
+checks): **`Results: 1549 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
