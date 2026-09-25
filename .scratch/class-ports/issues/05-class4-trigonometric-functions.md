@@ -357,7 +357,7 @@ generated rewrite tables). The 65 ABSENT:
 
 **Answer side: one new driver rewrite** (Step 7). `FresnelC(` / `FresnelS(`
 are covered by the class-8 rows; `Si`/`Ci`/`Ei`/`GAMMA` by the class-2/3
-rows. **`Hypergeometric2F1(a,b,c,z)`** (3 entries, all in 4.1.1.3) has no
+rows. **`Hypergeometric2F1(a,b,c,z)`** (3 occurrences over 2 entries, both in 4.1.1.3) has no
 row: the rules emit `hypergeometric([a,b],[c],z)` (the class-8 emitter
 case), so the corpus text needs the same STRUCTURAL rewrite (a list
 reshape, not a table row — `rewrite_structural`, the Derivative/Psi

@@ -143,5 +143,28 @@ check("class 7: asech/acsch/acoth answers untouched",
 check("class 7: the six inverse-hyperbolic natives untouched",
       n("asinh(x)+acosh(x)+atanh(x)+acoth(x)+asech(x)+acsch(x)"),
       "asinh(x)+acosh(x)+atanh(x)+acoth(x)+asech(x)+acsch(x)")
+# --- class 4 (2026-09-25): one STRUCTURAL rewrite, Hypergeometric2F1(a,b,c,z)
+# -> hypergeometric([a,b],[c],z) -- the list reshape the rules' emitter case
+# makes (generator/generate_rules.py, Hypergeometric2F1). Three
+# occurrences over two corpus entries, both in 4.1.1.3 (probes/corpus/14-...).
+check("class 4: Hypergeometric2F1 reshaped to hypergeometric([a,b],[c],z)",
+      n("x*Hypergeometric2F1(1/2,1/2,3/2,x^2)"),
+      "x*hypergeometric([1/2,1/2],[3/2],x^2)")
+check("class 4: a corpus excerpt, nested parentheses in the arguments",
+      n("Hypergeometric2F1(1/2*(1-p),1/2*(1-p),1/2*(3-p),(cos(e+f*x)^2-b^2)/(1-b^2))*g"),
+      "hypergeometric([1/2*(1-p),1/2*(1-p)],[1/2*(3-p)],(cos(e+f*x)^2-b^2)/(1-b^2))*g")
+check("class 4: a Hypergeometric2F1 argument rewritten inside (FresnelC)",
+      n("Hypergeometric2F1(1,2,3,FresnelC(x))"),
+      "hypergeometric([1,2],[3],fresnel_c(x))")
+check("class 4: a wrong-arity Hypergeometric2F1 is left as written",
+      n("Hypergeometric2F1(1,2,x)"), "Hypergeometric2F1(1,2,x)")
+check("class 4: a longer name is left alone",
+      n("MyHypergeometric2F1(1,2,3,x)"), "MyHypergeometric2F1(1,2,3,x)")
+check("class 4: AppellF1 untouched (no native: the ceiling)",
+      n("AppellF1(1/2,-1/2*p,1,3/2,cos(e+f*x)^2,x)"),
+      "AppellF1(1/2,-1/2*p,1,3/2,cos(e+f*x)^2,x)")
+check("class 4: the six trig natives and Si/Ci answers",
+      n("sin(x)+cos(x)+tan(x)+cot(x)+sec(x)+csc(x)+Si(2*x)-Ci(x)"),
+      "sin(x)+cos(x)+tan(x)+cot(x)+sec(x)+csc(x)+expintegral_si(2*x)-expintegral_ci(x)")
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

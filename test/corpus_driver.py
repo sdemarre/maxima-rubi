@@ -169,6 +169,7 @@ REWRITE_LOCK = threading.Lock()
 
 _DERIVATIVE = re.compile(r"(?<![A-Za-z0-9_%])Derivative\(")
 _PSI = re.compile(r"(?<![A-Za-z0-9_%])Psi\(")
+_H2F1 = re.compile(r"(?<![A-Za-z0-9_%])Hypergeometric2F1\(")
 
 
 def rewrite_structural(text):
@@ -185,7 +186,14 @@ def rewrite_structural(text):
       Derivative( not followed by exactly three groups is left as written.
     - Psi(A, B) -> psi[A](B): PolyGamma[A, B] (A the order, negative ones
       included) as Maxima's subscripted polygamma, which differentiates
-      (probe 04 A8/A9). Only the 2-argument form."""
+      (probe 04 A8/A9). Only the 2-argument form.
+    - Hypergeometric2F1(A, B, C, Z) -> hypergeometric([A, B], [C], Z)
+      (class 4, 2026-09-25): Gauss's 2F1 as the native generalized
+      hypergeometric the rules emit for it (generator/generate_rules.py's
+      Hypergeometric2F1 case; the class-8 HypergeometricPFQ row's target,
+      which differentiates -- probes/answer-side/04 A13). Only the
+      4-argument form; three occurrences over two corpus entries, both in 4.1.1.3
+      (probes/corpus/14-class4-answer-heads.out)."""
     counts = {}
 
     def inner(t):
@@ -197,7 +205,8 @@ def rewrite_structural(text):
     out, i = [], 0
     while True:
         md, mp = _DERIVATIVE.search(text, i), _PSI.search(text, i)
-        m = min((x for x in (md, mp) if x), key=lambda x: x.start(),
+        mh = _H2F1.search(text, i)
+        m = min((x for x in (md, mp, mh) if x), key=lambda x: x.start(),
                 default=None)
         if m is None:
             out.append(text[i:])
@@ -217,6 +226,14 @@ def rewrite_structural(text):
                            + ", ".join(inner(g) for g in groups) + ")")
                 counts["%mr_derivative("] = counts.get("%mr_derivative(", 0) + 1
                 i = j
+                continue
+        elif m is mh:
+            args, k = _call_args(text, j)
+            if args is not None and len(args) == 4:
+                a, b, c, z = (inner(x) for x in args)
+                out.append(f"hypergeometric([{a},{b}],[{c}],{z})")
+                counts["hypergeometric(2F1)"] = counts.get("hypergeometric(2F1)", 0) + 1
+                i = k
                 continue
         else:
             args, k = _call_args(text, j)
