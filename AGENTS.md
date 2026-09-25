@@ -525,7 +525,7 @@ python3 test/test_ab_records.py             # Results: 6 passed, 0 failed
 python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
 python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
 python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
-python3 test/test_head_rewrites.py          # Results: 52 passed, 0 failed
+python3 test/test_head_rewrites.py          # Results: 57 passed, 0 failed
 ```
 
 `test_driver_inert_leak` guards the inert-head leak classification: an answer

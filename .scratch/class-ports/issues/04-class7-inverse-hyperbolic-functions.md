@@ -188,3 +188,81 @@ rewrites a syntactically negated argument of the odd ones — `asinh(-x) =
 argument alone. **Singular points (N1/N2):** `atanh(1)` and `acoth(1)` are
 Maxima ERRORS (`errcatch` gives `[]`), where Mathematica answers
 ComplexInfinity; `acosh(1) = asech(1) = atanh(0) = 0` (N3).
+
+### 2026-09-25 — Steps 2-7 complete (branch `class-ports`)
+
+Build `branch_5_50_base_84_g4204fb669`, SBCL 2.6.7. Steps 8-10 (baseline,
+package corpus run, close) are the coordinator's.
+
+- **Step 2** (`cd238ae`): rows `ArcSech -> asech`, `ArcCsch -> acsch`; and
+  `CLASS_RENAME` in `generator/translation_table.py`, per-class overrides
+  consulted first by `translate_token`: class 7 emits `atanh`/`asinh`/`acosh`
+  instead of the `%mr_` log-form shims (Step 1, item B). The closure probe then
+  reports 0 UNLISTED. Byte-identity EMPTY for 1/2/3/4/5/6/8/9 + rewrites.
+  Ticket 18 filed for the two earlier-class recursive shim sites.
+- **Step 3** (`a568801`): **712 rules** over 21 files (7.1.1 3, 7.1.2 7,
+  7.1.3 15, 7.1.4 30, 7.1.5 31, 7.1.6 21, 7.2.1 3, 7.2.2 7, 7.2.3 23, 7.2.4 50,
+  7.2.5 33, 7.2.6 26, 7.3.1 10, 7.3.2 24, 7.3.3 22, 7.3.4 161, 7.3.5 20, 7.3.6
+  82, 7.3.7 72, 7.5.1 36, 7.5.2 36). Generator change: `configure()`
+  (EXPECTED_TOTAL 712) plus Step 2's lookup. No bare-`u_` record. P3 static
+  25 -> **26/0** (5,906 pattern strings prepare).
+- **Step 4** (`a22e913`): nothing to port. `test_class7_e2e` pins the two
+  table decisions end to end on sibling tables (recursion on the native
+  heads: 7.1.1 -> 7.1.4, 7.3.1 -> 7.3.4, 7.3.2; 7.2.1; 7.3.7 r25/r26's
+  `EqQ[Head[tmp], ArcTanh|ArcCoth]`; the asech/acsch rows on 7.5.1). Layer A
+  1387 -> **1400/0**; RED **1393/7** with the class-7 files regenerated with
+  `CLASS_RENAME` emptied (the shims).
+- **Step 5** (with Step 3): per-file counts equal the census; no raw `$`; no
+  shim in any class-7 file; call sites atanh 252, asinh 196, acosh 266, acoth
+  248, asech 33, acsch 30, `%mr_halfIntegerQ` 4, `%mr_inverseFunctionOfLinear`
+  4, `%mr_substForInverseFunction` 2, `%mr_head` 2, `poly_discriminant` 6.
+- **Step 6** (`9ad56d8`): `mr_load_all` loads class 7 after class 6 (and the
+  empty-bodied class-4 bridge lists) and before class 8 — Rubi.m L318-341.
+  Table **5,704** (4,992 + 712); tail unchanged. Rule-table order 15 ->
+  **16/0** (class 7's bodies contiguous between `6_7_9` and `8_1`), run
+  flagless. Core rebuilt in `mr-ports`: `rules=5704`, fingerprint
+  **`dd5ebc48f9704a2393a085111f7efb03`** (driver agrees: `test_driver_core_pin`
+  7/0).
+- **Step 7**: **no `HEAD_REWRITES` row**. `test/test_head_rewrites.py` 52 ->
+  **57/0** (five class-7 corpus excerpts). No-op over every entry
+  (`probes/corpus/22-class7-head-rewrite-noop.out`, base `995bbc1`): 0 texts
+  differ in all eight sections; section 7's totals equal the Step-1 census
+  (Chi 561, Shi 545, Ci 6, Si 3, FresnelC 36, FresnelS 36, GAMMA 178,
+  HypergeometricPFQ 38). Slice A/B (`probes/corpus/23-class7-slice-ab.out`: 81
+  entries of classes 1/2/3/5/6/8 on a core built at `995bbc1` against the
+  class-7 core): **0 transitions**. The 2-per-file class-7 slice (40 entries,
+  20 files): **27/40 PASS**; 4 contains-noun (7.3.7 e1/e2 `x^m atanh(x
+  sqrt(e)/sqrt(d+e x^2))`, 7.5.1 e1/e2 `x^m asech(a x)^2`), 5 timeout (7.2.4a
+  e1, 7.5.2 e1/e2 `x^m asech(a+b x)`, 7.6.2 e1/e2), 4 unverified (7.1.5 e1/e2
+  `asinh(c x)^k/(d+e x)`, 7.3.5 e1/e2 `x^m atanh(a+b x)^2`). Not diagnosed
+  here — Step-9 triage input.
+
+Other gates at the end: section-9 e2e 9/0, mr-match 57/0, mr-tree 84/0,
+dispatch 106/0, generator section-9 unit 26/0, run-records 43/0, every
+harness guard at its figure, byte-identity EMPTY for 1/2/3/4/5/6/7/8/9 +
+rewrites.
+
+**Findings for Step 9 / follow-ups.**
+
+1. **The shims vs the natives** (Step 1 item B, decided in Step 2). Class 7
+   only; the earlier classes' recursive shim sites (3.1.3 r14, 5.3.2 r3) are
+   ticket 18, needs-triage.
+2. **EqQ's syntactic zero test limits 7.3.7 r25/r26**, the ArcTanh/ArcCoth
+   twins of class 5's 5.3.7 r27/r28: they fire on `v = 1-x^2` and decline on
+   a shifted quadratic (`probes/matcher/25-class7-eqq-shifted-quadratic.out`).
+   A class-7 site of `.scratch/matcher-translation-fixes/issues/03`, commented
+   there; no new ticket.
+3. **`atanh(1)` / `acoth(1)` are Maxima errors** (probe 06 N1/N2), where
+   Mathematica answers ComplexInfinity. A rule whose answer evaluates at such
+   a point would raise instead of returning; not observed in the slice.
+4. **No `SimplifyAntiderivative`** (class 5's finding 2 applies unchanged):
+   a class-7 answer can differ from the expected text by a piecewise constant.
+
+**Decided by judgment** (recorded here, not asked): a per-class
+`CLASS_RENAME` override rather than switching the shared rows (keeps the
+accepted classes byte-identical; the class-wide switch is ticket 18's
+option 1); the four unloaded 7.3 files excluded (Rubi excludes them; three
+are header-comment-only duplicates of loaded files, the fourth an old
+omnibus); FunctionOfQ's hyperbolic arms not ported (not reached); class 7
+placed after the class-4 bridge block in `mr_load_all` (body order is the
+same either side of that empty-bodied block).

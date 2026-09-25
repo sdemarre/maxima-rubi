@@ -125,5 +125,23 @@ check("class 5: asec/polylog answer untouched",
 check("class 5: the six inverse-trig natives untouched",
       n("asin(x)+acos(x)+atan(x)+acot(x)+asec(x)+acsc(x)"),
       "asin(x)+acos(x)+atan(x)+acot(x)+asec(x)+acsc(x)")
+# --- class 7 (2026-09-25): no new row. The section's answers are native
+# inverse-hyperbolic texts plus heads earlier rows already cover
+# (probes/corpus/21-class7-answer-heads.out); corpus excerpts, verbatim.
+check("class 7: Chi/Shi of an asinh argument, asinh kept",
+      n("+9/64*Chi(3*asinh(a*x))/a^7-5/64*Shi(asinh(a*x))/a^7"),
+      "+9/64*expintegral_chi(3*asinh(a*x))/a^7-5/64*expintegral_shi(asinh(a*x))/a^7")
+check("class 7: 2-arg GAMMA of an asinh argument",
+      n("asinh(a*x)^n*GAMMA(1+n,-3*asinh(a*x))/(3^n*a^5*(-asinh(a*x))^n)"),
+      "asinh(a*x)^n*gamma_incomplete(1+n,-3*asinh(a*x))/(3^n*a^5*(-asinh(a*x))^n)")
+check("class 7: HypergeometricPFQ of an atanh-section argument",
+      n("HypergeometricPFQ([1,13/4,13/4],[15/4,17/4],-(c+d*x)^2)/(d*e^3)"),
+      "hypergeometric([1,13/4,13/4],[15/4,17/4],-(c+d*x)^2)/(d*e^3)")
+check("class 7: asech/acsch/acoth answers untouched",
+      n("-1/4*a^4*acsch(a+b*x)/b^4+1/4*x^4*asech(a+b*x)+1/6*x^6*acoth(a*x)"),
+      "-1/4*a^4*acsch(a+b*x)/b^4+1/4*x^4*asech(a+b*x)+1/6*x^6*acoth(a*x)")
+check("class 7: the six inverse-hyperbolic natives untouched",
+      n("asinh(x)+acosh(x)+atanh(x)+acoth(x)+asech(x)+acsch(x)"),
+      "asinh(x)+acosh(x)+atanh(x)+acoth(x)+asech(x)+acsch(x)")
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)
