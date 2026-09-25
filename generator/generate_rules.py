@@ -2363,7 +2363,7 @@ NINE_ONE_DERIV_KEY = "9_1d"
 NINE_ONE_DERIV_TOTAL = 21
 
 def configure(class_num):
-    """Point the generator at class <class_num> (1, 2, 3, 4, 5, 6, 8 or 9)."""
+    """Point the generator at class <class_num> (1, 2, 3, 4, 5, 6, 7, 8 or 9)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
@@ -2401,10 +2401,17 @@ def configure(class_num):
     # generator-side count is the closure probe's (measured 2026-09-25,
     # probes/translation/10-class5-syntax-census.out: 15 files, 667 rules,
     # 2 LoadShowSteps lines).
+    # class 7: 712 — the 01 census's 710 plus 2, class 5's adjustment: 7.3.7
+    # carries two single-line If[TrueQ[$LoadShowSteps], …] wrappers (L28/L29,
+    # the ArcTanh/ArcCoth twins of 5.3.7's pair) that the census glues onto
+    # their predecessors (measured 2026-09-25,
+    # probes/translation/11-class7-syntax-census.out: 21 files, 712 rules,
+    # 2 LoadShowSteps lines). The four .m files of the section's tree that
+    # Rubi.m does not load are never read (the loaded-files walk).
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
                       3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),
                       5: 667,
-                      6: 390, 8: 307 + NINE_ONE_DERIV_TOTAL,
+                      6: 390, 7: 712, 8: 307 + NINE_ONE_DERIV_TOTAL,
                       9: 86}[class_num]
 
 
