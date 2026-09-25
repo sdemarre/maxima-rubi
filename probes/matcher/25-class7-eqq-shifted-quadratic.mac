@@ -1,0 +1,34 @@
+/* probes/matcher/25-class7-eqq-shifted-quadratic.mac -- the class-7 site of
+   .scratch/matcher-translation-fixes/issues/03 (EqQ without expansion).
+   (2026-09-25, class-7 port Step 4.)
+
+   7.3.7 r25/r26 (the ShowSteps pair Int[u_*v_^n_., x], quadratic v of
+   POSITIVE discriminant, u carrying ArcTanh/ArcCoth of a linear argument)
+   require EqQ[Discriminant[v,x]*tmp[[1]]^2 - D[v,x]^2, 0], an identity in x.
+   It cancels on simplification for v = 1-x^2 with atanh(x) (the rule fires:
+   Layer A test_class7_e2e), and does not for the shifted quadratic
+   v = -4x^2-4x = 1-(2x+1)^2 with atanh(2x+1): 16*(2x+1)^2 - (-8x-4)^2 reads
+   nonzero to %mr_eqQ, while ratsimp closes it, so the rule declines. The
+   rule table is 1_1_1_1 + 7_3_7 with the nested integrate fall-through on
+   (Layer A's setting). */
+display2d : false$
+linel : 10000$
+print("R build", build_info()@version, build_info()@timestamp)$
+load("maxima_rubi.mac")$
+mr_nested_fallback : true$
+%mr_load_sibling("rules/class7/7_3_7.mac", 'mr_witness_7_3_7)$
+%mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1)$
+mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_7_3_7])$
+print("R unshifted rubi(e^atanh(x)/(1-x^2))", rubi(%e^atanh(x)/(1 - x^2), x))$
+print("R unshifted eqQ(4*x^2 - diff(1-x^2,x)^2, 0)",
+      %mr_eqQ(poly_discriminant(1 - x^2, x)*x^2 - diff(1 - x^2, x)^2, 0))$
+print("R shifted rubi(e^atanh(2x+1)/(-4x^2-4x))",
+      rubi(%e^atanh(1 + 2*x)/(-4*x^2 - 4*x), x))$
+print("R shifted residual", poly_discriminant(-4*x^2 - 4*x, x)*(1 + 2*x)^2
+      - diff(-4*x^2 - 4*x, x)^2)$
+print("R shifted eqQ(residual, 0)",
+      %mr_eqQ(poly_discriminant(-4*x^2 - 4*x, x)*(1 + 2*x)^2
+              - diff(-4*x^2 - 4*x, x)^2, 0))$
+print("R shifted ratsimp(residual)",
+      ratsimp(poly_discriminant(-4*x^2 - 4*x, x)*(1 + 2*x)^2
+              - diff(-4*x^2 - 4*x, x)^2))$

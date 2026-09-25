@@ -77,3 +77,12 @@ cancels on simplification for `v = 1+x^2` (the rule fires; Layer A `test_class5_
 shifted quadratic: `4x^2+4x+2` with `atan(2x+1)` gives `-16*(2*x+1)^2+(8*x+4)^2`, which
 `%mr_eqQ` reads nonzero, so the rule declines. Details on
 `.scratch/class-ports/issues/02-class5-inverse-trig-functions.md` (Steps 2-7, finding 1).
+
+2026-09-25 (class-7 port, branch `class-ports`) — **a class-7 site, the ArcTanh/ArcCoth twin of the
+class-5 one.** 7.3.7 r25/r26 (`Int[u_*v_^n_., x]`, quadratic `v` of positive discriminant, `u`
+carrying ArcTanh/ArcCoth of a linear argument) require `EqQ[Discriminant[v,x]*tmp[[1]]^2 - D[v,x]^2,
+0]`. For `v = 1-x^2` with `atanh(x)` it cancels and the rule fires; for `v = -4x^2-4x` with
+`atanh(2x+1)` the residual `16*(2*x+1)^2-(-(8*x)-4)^2` reads nonzero to `%mr_eqQ` (ratsimp closes it)
+and the rule declines to the `unintegrable` noun on a 1_1_1_1 + 7_3_7 table:
+`probes/matcher/25-class7-eqq-shifted-quadratic.out` (build `branch_5_50_base_84_g4204fb669`).
+Details on `.scratch/class-ports/issues/04-class7-inverse-hyperbolic-functions.md`.

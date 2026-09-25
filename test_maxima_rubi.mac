@@ -151,6 +151,7 @@ run_all_tests() := block([],
   test_class5_cluster_a(),
   test_class5_cluster_b(),
   test_class5_e2e(),
+  test_class7_e2e(),
   test_census(),
   print(""),
   print("========================================"),
@@ -4927,6 +4928,93 @@ test_class5_e2e() := block([mr_c5_saved, mr_c5_ok, mr_c5_r],
                is(abs(float(subst(x = 0.3, diff(mr_c5_r, x) - (1 + x + x^2)*asin(x))))
                   < 1.0e-12))),
   mr_rule_table : mr_c5_saved,
+  true
+)$
+
+/* ---- class 7 end to end ------------------------------------------------
+   docs/class-porting.md Step 4. Class 7's token closure left no utility to
+   port (.scratch/class-ports/issues/04, Step 1: the class-5 ports cover
+   7.3.7's ShowSteps pair), so this section pins the class's two table
+   decisions on generated class-7 files through the dispatcher, on sibling
+   tables (the class-5 e2e shape), with the nested integrate fall-through
+   Layer A binds on:
+   - ArcTanh/ArcSinh/ArcCosh emit the NATIVE heads in class 7
+     (generator/translation_table.py CLASS_RENAME): a rule that recurses on
+     its own head (7.1.1 -> 7.1.4, 7.3.1 -> 7.3.4, 7.3.2 -> class 1)
+     reaches the next class-7 rule, and the answer keeps the head (no log
+     form); 7.3.7 r25/r26 compare op() of the call with the bare head atom
+     (EqQ[Head[tmp], ArcTanh]). With the %mr_ shims these RED (measured
+     2026-09-25: the class-7 files regenerated with CLASS_RENAME emptied);
+   - the ArcSech/ArcCsch rows (7.5.1).
+   Each answer is checked by its derivative, at two points where the
+   answer carries a polylog. */
+test_class7_e2e() := block([mr_c7_saved, mr_c7_ok, mr_c7_r, mr_c7_d],
+  print("--- class 7 end to end: native inverse-hyperbolic heads, asech/acsch ---"),
+  mr_c7_saved : mr_rule_table,
+  /* the derivative residual of mr_c7_r against f, at each point */
+  mr_c7_d(f, pts) := every(lambda([mr_c7_p],
+      is(abs(float(rectform(subst(x = mr_c7_p, diff(mr_c7_r, x) - f)))) < 1.0e-10)),
+    pts),
+  mr_c7_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class7/7_1_1.mac", 'mr_witness_7_1_1),
+    %mr_load_sibling("rules/class7/7_1_2.mac", 'mr_witness_7_1_2),
+    %mr_load_sibling("rules/class7/7_1_3.mac", 'mr_witness_7_1_3),
+    %mr_load_sibling("rules/class7/7_1_4.mac", 'mr_witness_7_1_4),
+    %mr_load_sibling("rules/class7/7_2_1.mac", 'mr_witness_7_2_1),
+    %mr_load_sibling("rules/class7/7_3_1.mac", 'mr_witness_7_3_1),
+    %mr_load_sibling("rules/class7/7_3_2.mac", 'mr_witness_7_3_2),
+    %mr_load_sibling("rules/class7/7_3_4.mac", 'mr_witness_7_3_4),
+    %mr_load_sibling("rules/class7/7_3_7.mac", 'mr_witness_7_3_7),
+    %mr_load_sibling("rules/class7/7_5_1.mac", 'mr_witness_7_5_1),
+    true),
+  check_bool("class 7 e2e: rule files load", is(mr_c7_ok # [])),
+  if mr_c7_ok # [] then (
+    check_bool("class 7 files emit no %mr_atanh/%mr_asinh/%mr_acosh shim (7_1_1 r1's replacement)",
+               freeof('%mr_asinh, fundef(_mr_repl_7_1_1_r1))
+               and not freeof('asinh, fundef(_mr_repl_7_1_1_r1))),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_7_1_1, mr_rules_7_1_2,
+                             mr_rules_7_1_3, mr_rules_7_1_4]),
+    mr_c7_r : rubi(asinh(x)^2, x),
+    check_bool("7_1_1 -> 7_1_4: Int asinh(x)^2 keeps asinh, no log form, no noun",
+               not freeof('asinh, mr_c7_r) and freeof('log, mr_c7_r)
+               and freeof('unintegrable, mr_c7_r)),
+    check("7_1_1 -> 7_1_4: Int asinh(x)^2, the derivative",
+          ratsimp(diff(mr_c7_r, x) - asinh(x)^2), 0),
+    mr_c7_r : rubi(asinh(2*x)^3, x),
+    check_bool("7_1_1 twice: Int asinh(2x)^3, the derivative at x = 0.3, 0.7",
+               freeof('unintegrable, mr_c7_r) and mr_c7_d(asinh(2*x)^3, [0.3, 0.7])),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_7_3_1, mr_rules_7_3_2,
+                             mr_rules_7_3_4]),
+    mr_c7_r : rubi(x*atanh(x), x),
+    check_bool("7_3_2: Int x atanh(x) keeps atanh, the derivative at x = 0.3, 0.7",
+               not freeof('atanh, mr_c7_r) and freeof('unintegrable, mr_c7_r)
+               and mr_c7_d(x*atanh(x), [0.3, 0.7])),
+    mr_c7_r : rubi(atanh(x)^2, x),
+    check_bool("7_3_1 -> 7_3_4: Int atanh(x)^2, the derivative at x = 0.3, 0.7",
+               freeof('unintegrable, mr_c7_r) and mr_c7_d(atanh(x)^2, [0.3, 0.7])),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_7_2_1]),
+    check("7_2_1: Int acosh(x) = x acosh(x) - sqrt(x^2-1)",
+          rubi(acosh(x), x), x*acosh(x) - sqrt(x^2 - 1)),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_7_5_1]),
+    mr_c7_r : rubi(asech(x), x),
+    check_bool("7_5_1 (the asech row): Int asech(x) keeps asech, the derivative at x = 0.3, 0.7",
+               not freeof('asech, mr_c7_r) and freeof('unintegrable, mr_c7_r)
+               and mr_c7_d(asech(x), [0.3, 0.7])),
+    mr_c7_r : rubi(acsch(3*x), x),
+    check_bool("7_5_1 (the acsch row): Int acsch(3x) keeps acsch, the derivative at x = 0.3, 0.7",
+               not freeof('acsch, mr_c7_r) and freeof('unintegrable, mr_c7_r)
+               and mr_c7_d(acsch(3*x), [0.3, 0.7])),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_7_3_7]),
+    check_bool("7_3_7 r25 (EqQ[Head[tmp], ArcTanh]): Int e^atanh(x)/(1-x^2) = e^atanh(x)",
+               is(rubi(%e^atanh(x)/(1 - x^2), x) = %e^atanh(x))),
+    check_bool("7_3_7 r26 (EqQ[Head[tmp], ArcCoth]): Int e^acoth(x)/(1-x^2) = e^acoth(x)",
+               is(rubi(%e^acoth(x)/(1 - x^2), x) = %e^acoth(x))),
+    mr_c7_r : rubi(x*%e^atanh(x)/(1 - x^2)^2, x),
+    check_bool("7_3_7 r25, n = -2 with an x factor: the derivative at x = 0.3, 0.7",
+               freeof('unintegrable, mr_c7_r)
+               and mr_c7_d(x*%e^atanh(x)/(1 - x^2)^2, [0.3, 0.7]))),
+  mr_rule_table : mr_c7_saved,
   true
 )$
 
