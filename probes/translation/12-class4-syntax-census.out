@@ -1,0 +1,485 @@
+# class-4 token closure + generator dry run, 2026-09-25
+=== class-4 port: token closure against translation_table.py ===
+files: 56   rules: 2080   LoadShowSteps lines: 8
+    27  4.1.0.1 (a sin)^m (b trg)^n
+    30  4.1.0.2 (a trg)^m (b tan)^n
+    14  4.1.0.3 (a csc)^m (b sec)^n
+    33  4.1.1.1 (a+b sin)^n
+    39  4.1.1.2 (g cos)^p (a+b sin)^m
+    28  4.1.1.3 (g tan)^p (a+b sin)^m
+    99  4.1.2.1 (a+b sin)^m (c+d sin)^n
+    95  4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n
+    38  4.1.2.3 (g sin)^p (a+b sin)^m (c+d sin)^n
+    44  4.1.3.1 (a+b sin)^m (c+d sin)^n (A+B sin)
+    19  4.1.4.1 (a+b sin)^m (A+B sin+C sin^2)
+    42  4.1.4.2 (a+b sin)^m (c+d sin)^n (A+B sin+C sin^2)
+    43  4.1.5 trig^m (a cos+b sin)^n
+    57  4.1.6 (a+b cos+c sin)^n
+    73  4.1.7 (d trig)^m (a+b (c sin)^n)^p
+     8  4.1.8 trig^m (a+b cos^p+c sin^q)^n
+    52  4.1.9 trig^m (a+b sin^n+c sin^(2 n))^p
+    33  4.1.10 (c+d x)^m (a+b sin)^n
+    22  4.1.11 (e x)^m (a+b x^n)^p sin
+    94  4.1.12 (e x)^m (a+b sin(c+d x^n))^p
+    28  4.1.13 (d+e x)^m sin(a+b x+c x^2)^n
+    13  4.3.1.1 (a+b tan)^n
+    30  4.3.1.2 (d sec)^m (a+b tan)^n
+     6  4.3.1.3 (d sin)^m (a+b tan)^n
+    58  4.3.2.1 (a+b tan)^m (c+d tan)^n
+     8  4.3.2.3 (g tan)^p (a+b tan)^m (c+d tan)^n
+    29  4.3.3.1 (a+b tan)^m (c+d tan)^n (A+B tan)
+    15  4.3.4.1 (a+b tan)^m (A+B tan+C tan^2)
+    25  4.3.4.2 (a+b tan)^m (c+d tan)^n (A+B tan+C tan^2)
+    25  4.3.7 (d trig)^m (a+b (c tan)^n)^p
+    34  4.3.9 trig^m (a+b tan^n+c tan^(2 n))^p
+    27  4.3.10 (c+d x)^m (a+b tan)^n
+    20  4.3.11 (e x)^m (a+b tan(c+d x^n))^p
+     8  4.3.12 (d+e x)^m tan(a+b x+c x^2)^n
+    20  4.5.1.1 (a+b sec)^n
+    85  4.5.1.2 (d sec)^n (a+b sec)^m
+     7  4.5.1.3 (d sin)^n (a+b sec)^m
+    24  4.5.1.4 (d tan)^n (a+b sec)^m
+    47  4.5.2.1 (a+b sec)^m (c+d sec)^n
+    46  4.5.2.2 (g sec)^p (a+b sec)^m (c+d sec)^n
+    45  4.5.3.1 (a+b sec)^m (d sec)^n (A+B sec)
+    31  4.5.4.1 (a+b sec)^m (A+B sec+C sec^2)
+    48  4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2)
+    32  4.5.7 (d trig)^m (a+b (c sec)^n)^p
+    28  4.5.9 trig^m (a+b sec^n+c sec^(2 n))^p
+    16  4.5.10 (c+d x)^m (a+b sec)^n
+    18  4.5.11 (e x)^m (a+b sec(c+d x^n))^p
+    26  4.7.1 Sine normalization rules
+    19  4.7.2 Tangent normalization rules
+    24  4.7.3 Secant normalization rules
+    50  4.7.4 (c trig)^m (d trig)^n
+    72  4.7.5 Inert trig functions
+    28  4.7.6 (c+d x)^m trig(a+b x)^n trig(a+b x)^p
+    46  4.7.7 F^(c (a+b x)) trig(d+e x)^n
+    48  4.7.8 u trig(a+b log(c x^n))^p
+   104  4.7.9 Active trig functions
+
+== head variables (pattern variables in head position) ==
+  F        uses=23
+  G        uses=8
+  H        uses=2
+
+== tokens the table translates: 102 ==
+  rules=2080 uses=4287  Int -> mr_int
+  rules=2056 uses=2064  FreeQ -> freeof
+  rules= 971 uses=2629  Sin -> sin
+  rules= 874 uses=1332  NeQ -> %mr_neQ
+  rules= 846 uses=1201  EqQ -> %mr_eqQ
+  rules= 798 uses=1462  Cos -> cos
+  rules= 705 uses= 961  IntegerQ -> integerp
+  rules= 487 uses= 579  Not -> not
+  rules= 437 uses=1438  Csc -> csc
+  rules= 396 uses= 992  Tan -> tan
+  rules= 380 uses= 435  LtQ -> cmp
+  rules= 336 uses= 337  Subst -> %mr_subst
+  rules= 328 uses= 453  Cot -> cot
+  rules= 313 uses=1182  Sqrt -> sqrt
+  rules= 309 uses= 339  GtQ -> cmp
+  rules= 289 uses= 367  IGtQ -> cmp
+  rules= 256 uses= 260  Simp -> %mr_simp
+  rules= 185 uses= 189  IntegersQ -> %mr_integersQ
+  rules= 182 uses= 356  Sec -> sec
+  rules= 158 uses= 160  FreeFactors -> %mr_freeFactors
+  rules= 144 uses= 149  With -> block
+  rules= 111 uses= 127  ActivateTrig -> %mr_activateTrig
+  rules=  97 uses= 219  Log -> log
+  rules=  80 uses=  93  ILtQ -> cmp
+  rules=  77 uses= 163  FracPart -> %mr_fracPart
+  rules=  68 uses=  68  Module -> block
+  rules=  64 uses=  70  Unintegrable -> noun
+  rules=  61 uses=  72  IntPart -> %mr_intPart
+  rules=  59 uses=  72  ExpandToSum -> %mr_expandToSum
+  rules=  50 uses=  51  LeQ -> cmp
+  rules=  46 uses=  46  FunctionOfQ -> %mr_functionOfQ
+  rules=  45 uses=  85  Rt -> %mr_rt
+  rules=  44 uses=  45  SubstFor -> %mr_substFor
+  rules=  39 uses=  39  ExpandIntegrand -> %mr_expandIntegrand
+  rules=  30 uses=  30  ExpandTrigReduce -> %mr_expandTrigReduce
+  rules=  29 uses=  50  Simplify -> %mr_simp
+  rules=  27 uses=  27  ArcSin -> asin
+  rules=  23 uses=  28  LinearQ -> %mr_linearQ
+  rules=  20 uses=  20  NonsumQ -> %mr_nonsumQ
+  rules=  18 uses=  18  BinomialQ -> %mr_binomialQ
+  rules=  15 uses=  15  GeQ -> cmp
+  rules=  14 uses=  16  FractionQ -> %mr_fractionQ
+  rules=  14 uses=  16  LinearMatchQ -> %mr_linearMatchQ
+  rules=  14 uses=  14  RationalQ -> %mr_rationalQ
+  rules=  13 uses=  14  Dist -> %mr_dist
+  rules=  13 uses=  13  EllipticPi -> elliptic_pi
+  rules=  13 uses=  14  PosQ -> %mr_posQ
+  rules=  12 uses=  12  BinomialMatchQ -> %mr_binomialMatchQ
+  rules=  12 uses=  12  Denominator -> denom
+  rules=  12 uses=  12  EllipticE -> elliptic_e
+  rules=  12 uses=  12  Hypergeometric2F1 -> hypergeometric
+  rules=  11 uses=  11  FalseQ -> %mr_falseQ
+  rules=  11 uses=  11  NegQ -> %mr_negQ
+  rules=  10 uses=  10  ArcTan -> atan
+  rules=  10 uses=  10  Coefficient -> %mr_coeff
+  rules=  10 uses=  31  Cosh -> cosh
+  rules=  10 uses=  10  EllipticF -> elliptic_f
+  rules=  10 uses=  31  Sinh -> sinh
+  rules=   9 uses=  16  ArcTanh -> %mr_atanh
+  rules=   9 uses=  10  InertTrigFreeQ -> %mr_inertTrigFreeQ
+  rules=   9 uses=  13  MatchQ -> %mr_matchQ
+  rules=   8 uses=  12  NonfreeFactors -> %mr_nonfreeFactors
+  rules=   7 uses=  14  Coth -> coth
+  rules=   7 uses=  11  FunctionOfTrig -> %mr_functionOfTrig
+  rules=   7 uses=   8  MemberQ -> %mr_memberQ
+  rules=   7 uses=   7  RemoveContent -> %mr_removeContent
+  rules=   7 uses=  14  Tanh -> tanh
+  rules=   6 uses=   6  Cancel -> %mr_cancel
+  rules=   6 uses=   6  IndependentQ -> %mr_independentQ
+  rules=   6 uses=   6  IntHide -> mr_int
+  rules=   6 uses=  12  PolynomialQ -> %mr_polynomialQ
+  rules=   6 uses=   6  TryPureTanSubst -> %mr_tryPureTanSubst
+  rules=   5 uses=   7  SumSimplerQ -> %mr_sumSimplerQ
+  rules=   4 uses=   4  DerivativeDivides -> %mr_derivativeDivides
+  rules=   4 uses=   4  ExpandTrigToExp -> %mr_expandTrigToExp
+  rules=   4 uses=   8  If -> if
+  rules=   4 uses=   4  QuadraticMatchQ -> %mr_quadraticMatchQ
+  rules=   4 uses=   4  QuadraticQ -> %mr_quadraticQ
+  rules=   4 uses=   4  SimplerQ -> %mr_simplerQ
+  rules=   3 uses=   3  AppellF1 -> AppellF1
+  rules=   3 uses=   3  Csch -> csch
+  rules=   3 uses=   3  Expand -> expand
+  rules=   3 uses=   3  InverseFunctionFreeQ -> %mr_inverseFunctionFreeQ
+  rules=   3 uses=   3  Sech -> sech
+  rules=   2 uses=   2  CosIntegral -> expintegral_ci
+  rules=   2 uses=   2  CoshIntegral -> expintegral_chi
+  rules=   2 uses=   2  QuotientOfLinearsParts -> %mr_quotientOfLinearsParts
+  rules=   2 uses=   2  QuotientOfLinearsQ -> %mr_quotientOfLinearsQ
+  rules=   2 uses=   2  SimplifyIntegrand -> %mr_simp
+  rules=   2 uses=   2  SinIntegral -> expintegral_si
+  rules=   2 uses=   2  SumQ -> %mr_sumQ
+  rules=   1 uses=   1  Abs -> abs
+  rules=   1 uses=   1  CalculusFreeQ -> %mr_calculusFreeQ
+  rules=   1 uses=   1  CannotIntegrate -> noun
+  rules=   1 uses=   1  DeactivateTrig -> %mr_deactivateTrig
+  rules=   1 uses=   1  ExpandTrigExpand -> %mr_expandTrigExpand
+  rules=   1 uses=   1  FresnelC -> fresnel_c
+  rules=   1 uses=   1  FresnelS -> fresnel_s
+  rules=   1 uses=   1  FunctionOfTrigOfLinearQ -> %mr_functionOfTrigOfLinearQ
+  rules=   1 uses=   1  PerfectSquareQ -> %mr_perfectSquareQ
+  rules=   1 uses=   2  Sign -> %mr_sign
+  rules=   1 uses=   1  SinhIntegral -> expintegral_shi
+
+== emitter-dispatched (no table row; generate_rules.py names the token as a string literal — read the case): 5 ==
+  rules=  11 uses=  11  Complex                  first at 4.1.10 (c+d x)^m (a+b sin)^n r3
+  rules=   3 uses=   6  PolyQ                    first at 4.7.7 F^(c (a+b x)) trig(d+e x)^n r44
+  rules=   2 uses=   2  IGeQ                     first at 4.7.9 Active trig functions r90
+  rules=   1 uses=   1  Block                    first at 4.7.5 Inert trig functions r71
+  rules=   1 uses=   1  Sum                      first at 4.1.7 (d trig)^m (a+b (c sin)^n)^p r43
+
+== UNLISTED tokens (adjudicate on the ticket): 11 ==
+  rules=  50 uses=  50  ExpandTrig               first at 4.1.1.1 (a+b sin)^n r12
+  rules=  22 uses=  22  KnownSecantIntegrandQ    first at 4.7.3 Secant normalization rules r1
+  rules=  22 uses=  22  KnownSineIntegrandQ      first at 4.7.1 Sine normalization rules r1
+  rules=  11 uses=  15  TrigQ                    first at 4.7.6 (c+d x)^m trig(a+b x)^n trig(a+b x)^p r18
+  rules=   8 uses=   8  KnownCotangentIntegrandQ first at 4.7.2 Tangent normalization rules r2
+  rules=   8 uses=   8  KnownTangentIntegrandQ   first at 4.7.2 Tangent normalization rules r1
+  rules=   7 uses=   7  InertTrigQ               first at 4.7.5 Inert trig functions r1
+  rules=   3 uses=   3  ComplexFreeQ             first at 4.1.10 (c+d x)^m (a+b sin)^n r9
+  rules=   2 uses=   2  Apart                    first at 4.1.7 (d trig)^m (a+b (c sin)^n)^p r51
+  rules=   1 uses=   1  TrigSimplify             first at 4.7.5 Inert trig functions r66
+  rules=   1 uses=   1  TrigSimplifyQ            first at 4.7.5 Inert trig functions r66
+
+== transitive closure through IntegrationUtilityFunctions.m ==
+utilities reached: 221  (rule-side 71, transitive-only 150)
+status: table 85  ported 71  ABSENT 65
+
+-- rule-side utilities --
+  ABSENT  ComplexFreeQ                         rules=3
+  ABSENT  ExpandTrig                           rules=50
+  ABSENT  KnownCotangentIntegrandQ             rules=8
+  ABSENT  KnownSecantIntegrandQ                rules=22
+  ABSENT  KnownSineIntegrandQ                  rules=22
+  ABSENT  KnownTangentIntegrandQ               rules=8
+  ABSENT  TrigSimplify                         rules=1
+  ABSENT  TrigSimplifyQ                        rules=1
+  ported  IGeQ                                 rules=2
+  ported  InertTrigQ                           rules=7
+  ported  PolyQ                                rules=3
+  ported  TrigQ                                rules=11
+  table   ActivateTrig                         rules=111
+  table   BinomialMatchQ                       rules=12
+  table   BinomialQ                            rules=18
+  table   CalculusFreeQ                        rules=1
+  table   DeactivateTrig                       rules=1
+  table   DerivativeDivides                    rules=4
+  table   EqQ                                  rules=846
+  table   ExpandIntegrand                      rules=39
+  table   ExpandToSum                          rules=59
+  table   ExpandTrigExpand                     rules=1
+  table   ExpandTrigReduce                     rules=30
+  table   ExpandTrigToExp                      rules=4
+  table   FalseQ                               rules=11
+  table   FracPart                             rules=77
+  table   FractionQ                            rules=14
+  table   FreeFactors                          rules=158
+  table   FreeQ                                rules=2056
+  table   FunctionOfQ                          rules=46
+  table   FunctionOfTrig                       rules=7
+  table   FunctionOfTrigOfLinearQ              rules=1
+  table   GeQ                                  rules=15
+  table   GtQ                                  rules=309
+  table   IGtQ                                 rules=289
+  table   ILtQ                                 rules=80
+  table   If                                   rules=4
+  table   IndependentQ                         rules=6
+  table   InertTrigFreeQ                       rules=9
+  table   IntHide                              rules=6
+  table   IntPart                              rules=61
+  table   IntegerQ                             rules=705
+  table   IntegersQ                            rules=185
+  table   InverseFunctionFreeQ                 rules=3
+  table   LeQ                                  rules=50
+  table   LinearMatchQ                         rules=14
+  table   LinearQ                              rules=23
+  table   LtQ                                  rules=380
+  table   MemberQ                              rules=7
+  table   NeQ                                  rules=874
+  table   NegQ                                 rules=11
+  table   NonfreeFactors                       rules=8
+  table   NonsumQ                              rules=20
+  table   Not                                  rules=487
+  table   PolynomialQ                          rules=6
+  table   PosQ                                 rules=13
+  table   QuadraticMatchQ                      rules=4
+  table   QuadraticQ                           rules=4
+  table   QuotientOfLinearsParts               rules=2
+  table   QuotientOfLinearsQ                   rules=2
+  table   RationalQ                            rules=14
+  table   RemoveContent                        rules=7
+  table   Rt                                   rules=45
+  table   Simp                                 rules=256
+  table   SimplerQ                             rules=4
+  table   SimplifyIntegrand                    rules=2
+  table   Subst                                rules=336
+  table   SubstFor                             rules=44
+  table   SumQ                                 rules=2
+  table   SumSimplerQ                          rules=5
+  table   TryPureTanSubst                      rules=6
+
+-- transitive-only utilities (reached through a utility) --
+  ABSENT  CollectRecipTerms                    via ExpandIntegrand
+  ABSENT  ContentFactorAux                     via ContentFactor
+  ABSENT  DistributeOverTerms                  via ExpandIntegrand
+  ABSENT  ExpandBinomial                       via ExpandIntegrand
+  ABSENT  Expon                                via ExpandToSum
+  ABSENT  FactorNumericGcd                     via SimpHelp
+  ABSENT  FixSimplify                          via TogetherSimplify
+  ABSENT  FractionalPowerOfSquareQ             via SmartSimplify
+  ABSENT  FractionalPowerSubexpressionQ        via SmartSimplify
+  ABSENT  FunctionOfCoshQ                      via FunctionOfQ
+  ABSENT  FunctionOfSinhQ                      via FunctionOfQ
+  ABSENT  FunctionOfTanhQ                      via FunctionOfQ
+  ABSENT  GensymSubst                          via SmartApart
+  ABSENT  HeldFormQ                            via CalculusFreeQ
+  ABSENT  InverseHyperbolicQ                   via InverseFunctionQ
+  ABSENT  InverseTrigQ                         via InverseFunctionQ
+  ABSENT  KernelSubst                          via SmartApart
+  ABSENT  KnownTrigIntegrandQ                  via KnownCotangentIntegrandQ
+  ABSENT  MakeAssocList                        via SmartApart
+  ABSENT  Map2                                 via CommonFactors
+  ABSENT  MergeFactor                          via MergeFactors
+  ABSENT  MergeFactors                         via SimpHelp
+  ABSENT  MergeableFactorQ                     via MergeFactors
+  ABSENT  NormalizeHyperbolic                  via SimpHelp
+  ABSENT  NormalizeSumFactors                  via Simp
+  ABSENT  NormalizeTogether                    via SimplifyAntiderivative
+  ABSENT  NormalizeTrig                        via SimpHelp
+  ABSENT  NthRoot                              via RtAux
+  ABSENT  OddHyperbolicPowerQ                  via FunctionOfTanhQ
+  ABSENT  PureFunctionOfCosQ                   via FunctionOfQ
+  ABSENT  PureFunctionOfCoshQ                  via FunctionOfQ
+  ABSENT  PureFunctionOfCotQ                   via FunctionOfQ
+  ABSENT  PureFunctionOfCothQ                  via FunctionOfQ
+  ABSENT  PureFunctionOfSinQ                   via FunctionOfQ
+  ABSENT  PureFunctionOfSinhQ                  via FunctionOfQ
+  ABSENT  PureFunctionOfTanQ                   via FunctionOfQ
+  ABSENT  PureFunctionOfTanhQ                  via FunctionOfQ
+  ABSENT  RealNumberQ                          via GeQ
+  ABSENT  ReapList                             via FunctionOfTanQ
+  ABSENT  RectifyCotangent                     via SimplifyAntiderivative
+  ABSENT  RectifyTangent                       via SimplifyAntiderivative
+  ABSENT  SimpFixFactor                        via SimpHelp
+  ABSENT  SimpHelp                             via Simp
+  ABSENT  SimplifyAntiderivative               via Subst
+  ABSENT  SimplifyAntiderivativeSum            via SimplifyAntiderivative
+  ABSENT  SmartDenominator                     via RectifyTangent
+  ABSENT  SmartNumerator                       via RectifyTangent
+  ABSENT  SmartSimplify                        via SimpHelp
+  ABSENT  SqrtNumberQ                          via SqrtNumberSumQ
+  ABSENT  SqrtNumberSumQ                       via IntegerQ
+  ABSENT  StopFunctionQ                        via NormalizeSumFactors
+  ABSENT  SubstAux                             via Subst
+  ABSENT  SubstForExpn                         via SmartSimplify
+  ABSENT  SubstForHyperbolic                   via SubstFor
+  ABSENT  TrigSimplifyAux                      via TrigSimplifyRecur
+  ABSENT  TrigSimplifyRecur                    via TrigSimplify
+  ABSENT  UnifyNegativeBaseFactors             via ContentFactorAux
+  ported  AbsorbMinusSign                      via NormalizeLeadTermSigns
+  ported  AbsurdNumberQ                        via FixSimplify
+  ported  AlgebraicTrigFunctionQ               via FunctionOfTrigOfLinearQ
+  ported  BinomialParts                        via BinomialQ
+  ported  CalculusQ                            via CalculusFreeQ
+  ported  CollectReciprocals                   via ExpandCleanup
+  ported  CommonFactors                        via ContentFactorAux
+  ported  ComplexNumberQ                       via ComplexFreeQ
+  ported  ContentFactor                        via NumericFactor
+  ported  DeactivateTrigAux                    via DeactivateTrig
+  ported  EasyDQ                               via DerivativeDivides
+  ported  EvenQuotientQ                        via FunctionOfSinQ
+  ported  EveryQ                               via NormalizeIntegrandFactor
+  ported  ExpandAlgebraicFunction              via ExpandExpression
+  ported  ExpandCleanup                        via ExpandIntegrand
+  ported  ExpandTrigReduceAux                  via ExpandTrigReduce
+  ported  FactorOrder                          via MostMainFactorPosition
+  ported  FindTrigFactor                       via FunctionOfSinQ
+  ported  FreeTerms                            via ExpandToSum
+  ported  FunctionOfCosQ                       via FunctionOfQ
+  ported  FunctionOfExpnQ                      via FunctionOfQ
+  ported  FunctionOfSinQ                       via FunctionOfQ
+  ported  FunctionOfTanQ                       via FunctionOfQ
+  ported  GeneralizedBinomialParts             via ExpandToSum
+  ported  GeneralizedTrinomialParts            via ExpandToSum
+  ported  IntegerQuotientQ                     via FunctionOfSinQ
+  ported  LeadBase                             via FindTrigFactor
+  ported  LeadDegree                           via FindTrigFactor
+  ported  LeadFactor                           via FindTrigFactor
+  ported  LogQ                                 via InverseFunctionQ
+  ported  MergeMonomials                       via ExpandToSum
+  ported  MinimumMonomialExponent              via NormalizeIntegrandFactor
+  ported  MonomialExponent                     via MinimumMonomialExponent
+  ported  MostMainFactorPosition               via CommonFactors
+  ported  NonfreeTerms                         via ExpandToSum
+  ported  NonnumericFactors                    via Subst
+  ported  NonrationalFunctionFactors           via ExpandExpression
+  ported  NormalizeIntegrandAux                via SimplifyIntegrand
+  ported  NormalizeIntegrandFactor             via NormalizeIntegrandAux
+  ported  NormalizeIntegrandFactorBase         via NormalizeIntegrandFactor
+  ported  NormalizeLeadTermSigns               via SimplifyIntegrand
+  ported  NormalizeTrigReduce                  via ExpandTrigReduceAux
+  ported  NumericFactor                        via Subst
+  ported  OddQuotientQ                         via FunctionOfSinQ
+  ported  OddTrigPowerQ                        via FunctionOfTanQ
+  ported  PolynomialInSubstAux                 via PolynomialInSubst
+  ported  PosAux                               via PosQ
+  ported  ProductOfLinearPowersQ               via EasyDQ
+  ported  QuotientOfLinearsP                   via QuotientOfLinearsQ
+  ported  RationalFunctionFactors              via ExpandExpression
+  ported  RemainingFactors                     via FindTrigFactor
+  ported  RemoveContentAux                     via RemoveContent
+  ported  RtAux                                via Rt
+  ported  SignOfFactor                         via NormalizeSumFactors
+  ported  SimplifyTerm                         via ExpandIntegrand
+  ported  Smallest                             via CommonFactors
+  ported  SmartApart                           via ExpandExpression
+  ported  SplitSum                             via TrigSquare
+  ported  SubstForAux                          via SubstFor
+  ported  SubstForTrig                         via SubstFor
+  ported  SumSimplerAuxQ                       via SumSimplerQ
+  ported  TogetherSimplify                     via ExpandIntegrand
+  ported  TrigSquare                           via RtAux
+  ported  TrinomialParts                       via ExpandToSum
+  ported  UnifySum                             via ExpandCleanup
+  ported  UnifyTerm                            via UnifyTerms
+  ported  UnifyTerms                           via UnifySum
+  table   AlgebraicFunctionQ                   via ExpandExpression
+  table   Coeff                                via ExpandToSum
+  table   ExpandExpression                     via ExpandIntegrand
+  table   ExpandLinearProduct                  via ExpandIntegrand
+  table   FixInertTrigFunction                 via DeactivateTrig
+  table   GeneralizedBinomialQ                 via ExpandToSum
+  table   GeneralizedTrinomialQ                via ExpandToSum
+  table   HyperbolicQ                          via FreeQ
+  table   InertReciprocalQ                     via FreeQ
+  table   IntegralFreeQ                        via Not
+  table   InverseFunctionQ                     via InverseFunctionFreeQ
+  table   MonomialQ                            via SubstAux
+  table   NormalizeIntegrand                   via ExpandIntegrand
+  table   OddQ                                 via ExpandBinomial
+  table   PolynomialDivide                     via ExpandIntegrand
+  table   PolynomialInSubst                    via PolynomialDivide
+  table   PowerOfInertTrigSumQ                 via FreeQ
+  table   PowerQ                               via Subst
+  table   ProductQ                             via FreeFactors
+  table   RationalFunctionExponents            via EasyDQ
+  table   RationalFunctionQ                    via EasyDQ
+  table   ReduceInertTrig                      via DeactivateTrigAux
+  table   SplitProduct                         via RtAux
+  table   TrinomialMatchQ                      via NormalizeIntegrandFactorBase
+  table   TrinomialQ                           via ExpandToSum
+  table   UnifyInertTrigFunction               via DeactivateTrig
+
+=== class 4: 56 loaded files, 2080 rule runs ===
+
+== A. generator errors (CLASS4_SUBSET bypassed): 154 rules ==
+    50  unlisted head 'ExpandTrig'   first at 4_1_1_1 r12
+    22  unlisted head 'KnownSineIntegrandQ'   first at 4_7_1 r1
+    22  unlisted head 'KnownSecantIntegrandQ'   first at 4_7_3 r1
+    11  unlisted head 'TrigQ'   first at 4_7_6 r18
+     8  unlisted head 'KnownTangentIntegrandQ'   first at 4_7_2 r1
+     8  unlisted head 'KnownCotangentIntegrandQ'   first at 4_7_2 r2
+     7  unlisted head 'InertTrigQ'   first at 4_7_5 r1
+     6  LHS evaluation not emulated (risk:numeric-or-negated-arg:Complex)   first at 4_1_10 r3
+     5  LHS evaluation not emulated (risk:Pi-arg:sin)   first at 4_1_1_1 r5
+     2  unlisted head 'Apart'   first at 4_1_7 r51
+     2  unlisted head 'ComplexFreeQ'   first at 4_1_10 r10
+     2  LHS evaluation not emulated (risk:Pi-arg:tan)   first at 4_3_10 r2
+     2  MatchQ pattern evaluation not emulated (risk:numeric-or-negated-arg:Complex)   first at 4_3_10 r24
+     1  LHS evaluation not emulated (risk:Pi-arg:sin, risk:numeric-or-negated-arg:Complex)   first at 4_1_10 r25
+     1  LHS evaluation not emulated (risk:Pi-arg:tan, risk:numeric-or-negated-arg:Complex)   first at 4_3_10 r1
+     1  LHS evaluation not emulated (risk:Pi-arg:csc, risk:numeric-or-negated-arg:Complex)   first at 4_5_10 r1
+     1  LHS evaluation not emulated (risk:Pi-arg:csc)   first at 4_5_10 r2
+     1  unlisted head 'TrigSimplifyQ'   first at 4_7_5 r66
+     1  LHS evaluation not emulated (risk:Pi-arg:Sec)   first at 4_7_7 r19
+     1  LHS evaluation not emulated (risk:Pi-arg:Csc)   first at 4_7_7 r21
+
+== B. G-9 risk flags on class-4 patterns: 24 (rule, flag) pairs over 21 rules ==
+    11  risk:numeric-or-negated-arg:Complex
+     6  risk:Pi-arg:sin
+     3  risk:Pi-arg:tan
+     2  risk:Pi-arg:csc
+     1  risk:Pi-arg:Sec
+     1  risk:Pi-arg:Csc
+  REFUSED   4_1_1_1 r5  risk:Pi-arg:sin  LHS: Int[sin[c_. + Pi/2 + d_.*x_], x_Symbol]
+  REFUSED   4_1_1_1 r26  risk:Pi-arg:sin  LHS: Int[1/(a_ + b_.*sin[c_. + Pi/2 + d_.*x_]), x_Symbol]
+  REFUSED   4_1_10 r3  risk:numeric-or-negated-arg:Complex  LHS: Int[sin[e_. + f_.*Complex[0, fz_]*x_]/(c_. + d_.*x_), x_Symbol]
+  REFUSED   4_1_10 r5  risk:numeric-or-negated-arg:Complex  LHS: Int[sin[e_. + f_.*Complex[0, fz_]*x_]/(c_. + d_.*x_), x_Symbol]
+  REFUSED   4_1_10 r6  risk:numeric-or-negated-arg:Complex  LHS: Int[sin[e_. + f_.*Complex[0, fz_]*x_]/(c_. + d_.*x_), x_Symbol]
+  REFUSED   4_1_10 r9  risk:Pi-arg:sin  LHS: Int[sin[e_. + Pi/2 + f_.*x_]/Sqrt[c_. + d_.*x_], x_Symbol]
+  REFUSED   4_1_10 r12  risk:Pi-arg:sin  LHS: Int[(c_. + d_.*x_)^m_.*sin[e_. + k_.*Pi + f_.*x_], x_Symbol]
+  REFUSED   4_1_10 r25  risk:Pi-arg:sin  LHS: Int[(c_. + d_.*x_)^ m_./(a_ + b_.*sin[e_. + k_.*Pi + f_.*Complex[0, fz_]*x_]), x_Symbol]
+  REFUSED   4_1_10 r25  risk:numeric-or-negated-arg:Complex  LHS: Int[(c_. + d_.*x_)^ m_./(a_ + b_.*sin[e_. + k_.*Pi + f_.*Complex[0, fz_]*x_]), x_Symbol]
+  REFUSED   4_1_10 r26  risk:Pi-arg:sin  LHS: Int[(c_. + d_.*x_)^m_./(a_ + b_.*sin[e_. + k_.*Pi + f_.*x_]), x_Symbol]
+  REFUSED   4_1_10 r27  risk:numeric-or-negated-arg:Complex  LHS: Int[(c_. + d_.*x_)^m_./(a_ + b_.*sin[e_. + f_.*Complex[0, fz_]*x_]), x_Symbol]
+  REFUSED   4_3_10 r1  risk:Pi-arg:tan  LHS: Int[(c_. + d_.*x_)^m_.*tan[e_. + k_.*Pi + f_.*Complex[0, fz_]*x_], x_Symbol]
+  REFUSED   4_3_10 r1  risk:numeric-or-negated-arg:Complex  LHS: Int[(c_. + d_.*x_)^m_.*tan[e_. + k_.*Pi + f_.*Complex[0, fz_]*x_], x_Symbol]
+  REFUSED   4_3_10 r2  risk:Pi-arg:tan  LHS: Int[(c_. + d_.*x_)^m_.*tan[e_. + k_.*Pi + f_.*x_], x_Symbol]
+  REFUSED   4_3_10 r3  risk:numeric-or-negated-arg:Complex  LHS: Int[(c_. + d_.*x_)^m_.*tan[e_. + f_.*Complex[0, fz_]*x_], x_Symbol]
+  REFUSED   4_3_10 r16  risk:Pi-arg:tan  LHS: Int[(c_. + d_.*x_)^m_./(a_ + b_.*tan[e_. + k_.*Pi + f_.*x_]), x_Symbol]
+  REFUSED   4_3_10 r24  risk:numeric-or-negated-arg:Complex  MatchQ pattern: f1_.*Complex[0, j_]
+  REFUSED   4_5_10 r1  risk:Pi-arg:csc  LHS: Int[(c_. + d_.*x_)^m_.*csc[e_. + k_.*Pi + f_.*Complex[0, fz_]*x_], x_Symbol]
+  REFUSED   4_5_10 r1  risk:numeric-or-negated-arg:Complex  LHS: Int[(c_. + d_.*x_)^m_.*csc[e_. + k_.*Pi + f_.*Complex[0, fz_]*x_], x_Symbol]
+  REFUSED   4_5_10 r2  risk:Pi-arg:csc  LHS: Int[(c_. + d_.*x_)^m_.*csc[e_. + k_.*Pi + f_.*x_], x_Symbol]
+  REFUSED   4_5_10 r3  risk:numeric-or-negated-arg:Complex  LHS: Int[(c_. + d_.*x_)^m_.*csc[e_. + f_.*Complex[0, fz_]*x_], x_Symbol]
+  REFUSED   4_5_10 r13  risk:numeric-or-negated-arg:Complex  MatchQ pattern: f1_.*Complex[0, j_]
+  REFUSED   4_7_7 r19  risk:Pi-arg:Sec  LHS: Int[F_^(c_.*(a_. + b_.*x_))*Sec[d_. + k_.*Pi + e_.*x_]^n_., x_Symbol]
+  REFUSED   4_7_7 r21  risk:Pi-arg:Csc  LHS: Int[F_^(c_.*(a_. + b_.*x_))*Csc[d_. + k_.*Pi + e_.*x_]^n_., x_Symbol]
+
+== C. bare-u_ Int records: 10 ==
+  4_1_0_1 r1
+  4_7_5 r21
+  4_7_5 r22
+  4_7_5 r47
+  4_7_5 r48
+  4_7_5 r58
+  4_7_5 r66
+  4_7_5 r70
+  4_7_5 r71
+  4_7_5 r72

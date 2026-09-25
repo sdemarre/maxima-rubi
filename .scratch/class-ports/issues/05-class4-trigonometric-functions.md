@@ -263,3 +263,103 @@ items to this port. None blocked the merge:
   - `.scratch/class-ports/issues/08`: unprefixed generated With locals in classes 1/2/3/6, and
     `mr_sum`'s own locals, which already give **silently wrong answers on master**.
   - `.scratch/corpus-harness/issues/04`: `c*'unintegrable` read as contains-noun.
+
+### 2026-09-25 — Step 1 (census) COMPLETE, closure adjudicated; status needs-triage -> ready
+
+Build `branch_5_50_base_84_g4204fb669` (2026-08-31 13:27:47), SBCL 2.6.7.
+Branch `class-ports` (worktree `mr-ports`), on top of the class-8/5/7 ports
+(`9dd5f16`).
+
+**Re-run of the committed Step-1 probes:** `probes/translation/06-class4-syntax-census`
+and `probes/corpus/14-class4-answer-heads` regenerate byte-identical apart
+from their date line (56 files / 2,073 census rules / AUTO 1,106 / MANUAL
+967; 77 corpus files / 22,472 entries). Not re-committed.
+
+**New probe:** `probes/translation/12-class4-syntax-census.{run,out}` — the
+class-5 closure script (`10-class5-table-closure.py "4 "`) and a generator
+dry run over the WHOLE class with `CLASS4_SUBSET` bypassed
+(`12-class4-generator-dryrun.py`: the emitter's own errors, every G-9 risk
+flag on a class-4 LHS or MatchQ pattern, the bare-`u_` records).
+
+**Counts.** 56 files, **2,080 rules the generator's way** (the census's 2,073
++ the seven single-line ShowSteps wrappers; the file has 8
+`LoadShowSteps` lines, one — 4.7.5 L75 — commented out). 102 tokens have
+rows; 5 are emitter-dispatched (`Complex` 11 rules, `PolyQ` 3, `IGeQ` 2,
+`Block` 1 — r71's, `Sum` 1); three head variables (`F` 23 uses, `G` 8,
+`H` 2). Ten bare-`u_` records: the eight committed tail records plus
+**4.7.5 r66** (`Int[u_,x] := Int[TrigSimplify[u],x] /; TrigSimplifyQ[u]`)
+and **r70** (`Int[u_,x] := With[{v=ExpandTrig[u,x]}, Int[v,x] /; SumQ[v]] /;
+Not[InertTrigFreeQ[u]]`) — the two the substrate left out; the tail grows
+to ten class-4 records.
+
+**UNLISTED — 11 tokens, all adjudicated:**
+
+| token | rules | disposition |
+|---|---:|---|
+| `ExpandTrig` | 50 | Step-4 port (a): `ActivateTrig[ExpandIntegrand[u,x]]` and the 3-arg `With[{w=ExpandTrig[v,x], z=ActivateTrig[u]}, If[SumQ[w], Map[z*#&, w], z*w]]` (L3362-3370) |
+| `KnownSineIntegrandQ` / `KnownSecantIntegrandQ` / `KnownTangentIntegrandQ` / `KnownCotangentIntegrandQ` | 22 / 22 / 8 / 8 | Step-4 port (a): the four wrappers over `KnownTrigIntegrandQ[list,u,x]` (L7368-7391, `u===1` or six MatchQ shapes with a `func_` head variable in the list) |
+| `TrigQ` | 11 | table row: `%mr_trigQ` is ported (substrate); every use is `TrigQ[F]` on a head variable |
+| `InertTrigQ` | 7 | table row: `%mr_inertTrigQ` is ported; every use is the 1-arg `InertTrigQ[F]` (no rule uses the 2/3-arg forms) |
+| `ComplexFreeQ` | 3 | Step-4 port (a), 4.1.10 r9/r10/r11's `ComplexFreeQ[f]` (L226: atoms not ComplexNumberQ, else every part complex-free) |
+| `Apart` | 2 | table row -> `expand`: both uses (4.1.7 r51/r64) are the ONE-argument `Apart[a*(1+Tan[e+f*x]^2)^2 + b*Tan[e+f*x]^4]^p` — a polynomial in Tan, on which Apart only expands; the value is what the rule needs (the factor cancels against `(Sec^2)^(2p)` by value) |
+| `TrigSimplifyQ`, `TrigSimplify` | 1, 1 | Step-4 port (a) for 4.7.5 r66: `TrigSimplifyQ[u] := ActivateTrig[u]=!=TrigSimplify[u]`, `TrigSimplify[u] := ActivateTrig[TrigSimplifyRecur[u]]`, and TrigSimplifyAux's clauses as a generated rewrite table (the substrate's mechanism, `REWRITE_FUNCTIONS`) |
+
+**G-9 risk flags — 24 (rule, flag) pairs over 21 rules, all to be ACCEPTED**
+(Step 2, `ACCEPTED_RISKS`, the `rit` / 9.1 L15 precedents):
+
+- `risk:Pi-arg:{sin,tan,csc}` (11): `sin[c_.+Pi/2+d_.*x_]`, `sin[e_.+k_.*Pi+f_.*x_]` —
+  the INERT heads are user symbols with no definitions, so Mathematica's
+  LHS evaluation leaves the Pi-shifted argument alone (the `rit` r1/r2
+  argument); the reader emulates the Plus/Times evaluation itself.
+- `risk:Pi-arg:{Sec,Csc}` (4.7.7 r19/r21): ACTIVE heads, but the shift is
+  `k_.*Pi` with a PATTERN coefficient — Sec/Csc auto-evaluate only an
+  explicit rational multiple of Pi, which a pattern is not (the class-8
+  argument for `PolyLog[2, c_.*…]`).
+- `risk:numeric-or-negated-arg:Complex` (11, incl. two MatchQ patterns
+  `f1_.*Complex[0, j_]`): `Complex[0, fz_]` has a pattern argument, so it
+  stays the unevaluated `Complex[0, fz_]` expression MR-MATCH matches against
+  the converter's complex atoms (the 9.1 L15 precedent, spec G-3).
+
+**Transitive closure (the CENSUS TRAP check).** 221 utilities reachable (71
+rule-side, 150 transitive-only); by the probe's name test 85 table / 71
+ported / 65 ABSENT. The substrate's three trap functions are now `table`
+(`ReduceInertTrig`, `FixInertTrigFunction`, `UnifyInertTrigFunction` — the
+generated rewrite tables). The 65 ABSENT:
+
+1. **Rule-side (8):** the seven unlisted utilities above
+   (`ComplexFreeQ`, `ExpandTrig`, `Known{Sine,Secant,Tangent,Cotangent}IntegrandQ`,
+   `TrigSimplify(Q)`), which Step 4 ports.
+2. **Reached through them (4):** `KnownTrigIntegrandQ`, `TrigSimplifyRecur`,
+   `TrigSimplifyAux` — ported with their parents; `ComplexNumberQ` is
+   ported (`%mr_complexNumberQ`).
+3. **FunctionOfQ's HYPERBOLIC arms — NEEDED by class 4** (the carried item
+   "hyperbolic branches of FunctionOfQ / SubstFor are not ported" becomes
+   port work here): `FunctionOf{Sinh,Cosh,Tanh}Q`,
+   `PureFunctionOf{Sinh,Cosh,Tanh,Coth}Q`, `OddHyperbolicPowerQ`, `ReapList`
+   (FunctionOfTanhQ's helper), and `SubstForHyperbolic` (SubstFor's
+   hyperbolic arm). 4.7.5 r5/r6/r9/r10/r15/r16/r19/r20/r27/r28/r31/r32/
+   r37-r40/r43/r44 — 18 ACTIVE-hyperbolic derivative-divides records
+   (`Int[u_*Cosh[c_.*(a_.+b_.*x_)],x] := … Subst[Int[SubstFor[1,
+   Sinh[c(a+bx)]/d, u, x],x], x, Sinh[c(a+bx)]/d] /; FunctionOfQ[Sinh[…]/d,
+   u, x, True]`) call `FunctionOfQ` and `SubstFor` with a hyperbolic `v`.
+   Step-4 port (b).
+4. **Named differently / inlined** (the class-5 reading):
+   `PureFunctionOf{Sin,Cos,Tan,Cot}Q` = the generic `%mr_pureFunctionOfTrigQ`;
+   `InverseTrigQ`/`InverseHyperbolicQ` inlined in `%mr_inverseFunctionQ`.
+5. **The algebra substrate approximated since class 1** (the rest, 41 +
+   `HeldFormQ`, `StopFunctionQ`, `Map2`, `RealNumberQ`,
+   `SqrtNumber(Sum)Q`, `NthRoot`, `NormalizeHyperbolic`/`NormalizeTrig`
+   inside SimpHelp): their parents (`Simp`, `Subst`, `ExpandIntegrand`,
+   `SmartApart`, `ContentFactor`, `Rt`, `CalculusFreeQ`) are ported as
+   wholes on Maxima's simplifier (house deviation). `SimplifyAntiderivative`
+   (RectifyTangent/Cotangent) is class 5's finding 2 again: a discontinuous
+   arctan in a class-4 answer is not rectified.
+
+**Answer side: one new driver rewrite** (Step 7). `FresnelC(` / `FresnelS(`
+are covered by the class-8 rows; `Si`/`Ci`/`Ei`/`GAMMA` by the class-2/3
+rows. **`Hypergeometric2F1(a,b,c,z)`** (3 entries, all in 4.1.1.3) has no
+row: the rules emit `hypergeometric([a,b],[c],z)` (the class-8 emitter
+case), so the corpus text needs the same STRUCTURAL rewrite (a list
+reshape, not a table row — `rewrite_structural`, the Derivative/Psi
+precedent). All three entries also carry `AppellF1`, so they stay
+unverifiable either way (the ceiling, 823 entries).
