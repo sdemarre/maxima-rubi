@@ -510,7 +510,7 @@ c5 +1, c6 +7, c7 +2, c8 +3), and FAIL->FAIL moves. Attribution
 
 **The class-4 slice** (2 per file, 152 entries over 77 files, the class-4
 core): **122/152 PASS** (13 expected, 109 verified — up from 114 before the
-DeactivateTrig fast path, measured on a scratch slice of the same entries);
+DeactivateTrig fast path in a scratch run of the same entries -- not committed);
 30 FAIL: 14 timeout (4.1.4.2, 4.1.7 — the radexpand-at-read family, item 6
 above — 4.1.9/4.2.9/4.3.9/4.4.9 the trinomial files, 4.3.1.3 e1, 4.4.1.2
 e1), 10 unverified (4.1.3.1 e1/e2, 4.1.4.1 e1, 4.5.10, 4.5.11 e1, 4.5.2.1
