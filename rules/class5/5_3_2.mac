@@ -26,7 +26,7 @@ _mr_cond_5_3_2_r3(mm, x) := block([_mr_5_3_2_r3_a, _mr_5_3_2_r3_b, _mr_5_3_2_r3_
   freeof(x, _mr_5_3_2_r3_a) and freeof(x, _mr_5_3_2_r3_b) and freeof(x, _mr_5_3_2_r3_c)  and  %mr_iGtQ(_mr_5_3_2_r3_p, 1))$
 _mr_repl_5_3_2_r3(mm, x) := block([_mr_5_3_2_r3_a__s, _mr_5_3_2_r3_b__s, _mr_5_3_2_r3_c__s, _mr_5_3_2_r3_p__s],
   _mr_5_3_2_r3_a__s : geteqR(mm, '_mr_5_3_2_r3_a), _mr_5_3_2_r3_b__s : geteqR(mm, '_mr_5_3_2_r3_b), _mr_5_3_2_r3_c__s : geteqR(mm, '_mr_5_3_2_r3_c), _mr_5_3_2_r3_p__s : geteqR(mm, '_mr_5_3_2_r3_p),
-  2*(_mr_5_3_2_r3_a__s + _mr_5_3_2_r3_b__s*atan(_mr_5_3_2_r3_c__s*x))^_mr_5_3_2_r3_p__s*%mr_atanh(1 - 2/(1 + %i*_mr_5_3_2_r3_c__s*x)) - 2*_mr_5_3_2_r3_b__s*_mr_5_3_2_r3_c__s*_mr_5_3_2_r3_p__s* mr_int((_mr_5_3_2_r3_a__s + _mr_5_3_2_r3_b__s*atan(_mr_5_3_2_r3_c__s*x))^(_mr_5_3_2_r3_p__s - 1)* %mr_atanh(1 - 2/(1 + %i*_mr_5_3_2_r3_c__s*x))/(1 + _mr_5_3_2_r3_c__s^2*x^2), x))$
+  2*(_mr_5_3_2_r3_a__s + _mr_5_3_2_r3_b__s*atan(_mr_5_3_2_r3_c__s*x))^_mr_5_3_2_r3_p__s*atanh(1 - 2/(1 + %i*_mr_5_3_2_r3_c__s*x)) - 2*_mr_5_3_2_r3_b__s*_mr_5_3_2_r3_c__s*_mr_5_3_2_r3_p__s* mr_int((_mr_5_3_2_r3_a__s + _mr_5_3_2_r3_b__s*atan(_mr_5_3_2_r3_c__s*x))^(_mr_5_3_2_r3_p__s - 1)* atanh(1 - 2/(1 + %i*_mr_5_3_2_r3_c__s*x))/(1 + _mr_5_3_2_r3_c__s^2*x^2), x))$
 _mr_rule_5_3_2_r3 : %mr_defrule("5_3_2", 3, "(Int (Times (Power (Pattern x (Blank)) -1) (Power (Plus (Optional (Pattern |_mr_5_3_2_r3_a| (Blank))) (Times (ArcTan (Times (Optional (Pattern |_mr_5_3_2_r3_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_5_3_2_r3_b| (Blank))))) (Pattern |_mr_5_3_2_r3_p| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_5_3_2_r3, _mr_repl_5_3_2_r3)$
 
 _mr_cond_5_3_2_r4(mm, x) := block([_mr_5_3_2_r4_a, _mr_5_3_2_r4_b, _mr_5_3_2_r4_c, _mr_5_3_2_r4_p],

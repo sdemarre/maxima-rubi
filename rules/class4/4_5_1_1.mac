@@ -34,7 +34,7 @@ _mr_cond_4_5_1_1_r4(mm, x) := block([_mr_4_5_1_1_r4_c, _mr_4_5_1_1_r4_d],
   freeof(x, _mr_4_5_1_1_r4_c) and freeof(x, _mr_4_5_1_1_r4_d))$
 _mr_repl_4_5_1_1_r4(mm, x) := block([_mr_4_5_1_1_r4_c__s, _mr_4_5_1_1_r4_d__s],
   _mr_4_5_1_1_r4_c__s : geteqR(mm, '_mr_4_5_1_1_r4_c), _mr_4_5_1_1_r4_d__s : geteqR(mm, '_mr_4_5_1_1_r4_d),
-  -%mr_atanh(cos(_mr_4_5_1_1_r4_c__s + _mr_4_5_1_1_r4_d__s*x))/_mr_4_5_1_1_r4_d__s)$
+  -atanh(cos(_mr_4_5_1_1_r4_c__s + _mr_4_5_1_1_r4_d__s*x))/_mr_4_5_1_1_r4_d__s)$
 _mr_rule_4_5_1_1_r4 : %mr_defrule("4_5_1_1", 4, "(Int (csc (Plus (Optional (Pattern |_mr_4_5_1_1_r4_c| (Blank))) (Times (Optional (Pattern |_mr_4_5_1_1_r4_d| (Blank))) (Pattern x (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_4_5_1_1_r4, _mr_repl_4_5_1_1_r4)$
 
 _mr_cond_4_5_1_1_r5(mm, x) := block([_mr_4_5_1_1_r5_b, _mr_4_5_1_1_r5_c, _mr_4_5_1_1_r5_d, _mr_4_5_1_1_r5_n],

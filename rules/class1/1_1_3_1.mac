@@ -146,7 +146,7 @@ _mr_cond_1_1_3_1_r18(mm, x) := block([_mr_1_1_3_1_r18_a, _mr_1_1_3_1_r18_b],
   freeof(x, _mr_1_1_3_1_r18_a) and freeof(x, _mr_1_1_3_1_r18_b)  and  %mr_negQ(_mr_1_1_3_1_r18_a/_mr_1_1_3_1_r18_b)  and  (is(_mr_1_1_3_1_r18_a > 0)  or  is(_mr_1_1_3_1_r18_b < 0)))$
 _mr_repl_1_1_3_1_r18(mm, x) := block([_mr_1_1_3_1_r18_a__s, _mr_1_1_3_1_r18_b__s],
   _mr_1_1_3_1_r18_a__s : geteqR(mm, '_mr_1_1_3_1_r18_a), _mr_1_1_3_1_r18_b__s : geteqR(mm, '_mr_1_1_3_1_r18_b),
-  1/(%mr_rt(_mr_1_1_3_1_r18_a__s, 2)*%mr_rt(-_mr_1_1_3_1_r18_b__s, 2))*%mr_atanh(%mr_rt(-_mr_1_1_3_1_r18_b__s, 2)*x/%mr_rt(_mr_1_1_3_1_r18_a__s, 2)))$
+  1/(%mr_rt(_mr_1_1_3_1_r18_a__s, 2)*%mr_rt(-_mr_1_1_3_1_r18_b__s, 2))*atanh(%mr_rt(-_mr_1_1_3_1_r18_b__s, 2)*x/%mr_rt(_mr_1_1_3_1_r18_a__s, 2)))$
 _mr_rule_1_1_3_1_r18 : %mr_defrule("1_1_3_1", 18, "(Int (Power (Plus (Pattern |_mr_1_1_3_1_r18_a| (Blank)) (Times (Optional (Pattern |_mr_1_1_3_1_r18_b| (Blank))) (Power (Pattern x (Blank)) 2))) -1) (Pattern x (Blank Symbol)))", _mr_cond_1_1_3_1_r18, _mr_repl_1_1_3_1_r18)$
 
 _mr_cond_1_1_3_1_r19(mm, x) := block([_mr_1_1_3_1_r19_a, _mr_1_1_3_1_r19_b],
@@ -154,7 +154,7 @@ _mr_cond_1_1_3_1_r19(mm, x) := block([_mr_1_1_3_1_r19_a, _mr_1_1_3_1_r19_b],
   freeof(x, _mr_1_1_3_1_r19_a) and freeof(x, _mr_1_1_3_1_r19_b)  and  %mr_negQ(_mr_1_1_3_1_r19_a/_mr_1_1_3_1_r19_b)  and  (is(_mr_1_1_3_1_r19_a < 0)  or  is(_mr_1_1_3_1_r19_b > 0)))$
 _mr_repl_1_1_3_1_r19(mm, x) := block([_mr_1_1_3_1_r19_a__s, _mr_1_1_3_1_r19_b__s],
   _mr_1_1_3_1_r19_a__s : geteqR(mm, '_mr_1_1_3_1_r19_a), _mr_1_1_3_1_r19_b__s : geteqR(mm, '_mr_1_1_3_1_r19_b),
-  -1/(%mr_rt(-_mr_1_1_3_1_r19_a__s, 2)*%mr_rt(_mr_1_1_3_1_r19_b__s, 2))*%mr_atanh(%mr_rt(_mr_1_1_3_1_r19_b__s, 2)*x/%mr_rt(-_mr_1_1_3_1_r19_a__s, 2)))$
+  -1/(%mr_rt(-_mr_1_1_3_1_r19_a__s, 2)*%mr_rt(_mr_1_1_3_1_r19_b__s, 2))*atanh(%mr_rt(_mr_1_1_3_1_r19_b__s, 2)*x/%mr_rt(-_mr_1_1_3_1_r19_a__s, 2)))$
 _mr_rule_1_1_3_1_r19 : %mr_defrule("1_1_3_1", 19, "(Int (Power (Plus (Pattern |_mr_1_1_3_1_r19_a| (Blank)) (Times (Optional (Pattern |_mr_1_1_3_1_r19_b| (Blank))) (Power (Pattern x (Blank)) 2))) -1) (Pattern x (Blank Symbol)))", _mr_cond_1_1_3_1_r19, _mr_repl_1_1_3_1_r19)$
 
 _mr_cond_1_1_3_1_r20(mm, x) := block([_mr_1_1_3_1_r20_a, _mr_1_1_3_1_r20_b],
@@ -162,7 +162,7 @@ _mr_cond_1_1_3_1_r20(mm, x) := block([_mr_1_1_3_1_r20_a, _mr_1_1_3_1_r20_b],
   freeof(x, _mr_1_1_3_1_r20_a) and freeof(x, _mr_1_1_3_1_r20_b)  and  %mr_negQ(_mr_1_1_3_1_r20_a/_mr_1_1_3_1_r20_b))$
 _mr_repl_1_1_3_1_r20(mm, x) := block([_mr_1_1_3_1_r20_a__s, _mr_1_1_3_1_r20_b__s],
   _mr_1_1_3_1_r20_a__s : geteqR(mm, '_mr_1_1_3_1_r20_a), _mr_1_1_3_1_r20_b__s : geteqR(mm, '_mr_1_1_3_1_r20_b),
-  %mr_rt(-_mr_1_1_3_1_r20_a__s/_mr_1_1_3_1_r20_b__s, 2)/_mr_1_1_3_1_r20_a__s*%mr_atanh(x/%mr_rt(-_mr_1_1_3_1_r20_a__s/_mr_1_1_3_1_r20_b__s, 2)))$
+  %mr_rt(-_mr_1_1_3_1_r20_a__s/_mr_1_1_3_1_r20_b__s, 2)/_mr_1_1_3_1_r20_a__s*atanh(x/%mr_rt(-_mr_1_1_3_1_r20_a__s/_mr_1_1_3_1_r20_b__s, 2)))$
 _mr_rule_1_1_3_1_r20 : %mr_defrule("1_1_3_1", 20, "(Int (Power (Plus (Pattern |_mr_1_1_3_1_r20_a| (Blank)) (Times (Optional (Pattern |_mr_1_1_3_1_r20_b| (Blank))) (Power (Pattern x (Blank)) 2))) -1) (Pattern x (Blank Symbol)))", _mr_cond_1_1_3_1_r20, _mr_repl_1_1_3_1_r20)$
 
 _mr_cond_1_1_3_1_r21(mm, x) := block([_mr_1_1_3_1_r21_a, _mr_1_1_3_1_r21_b, _mr_1_1_3_1_r21_n],
@@ -218,7 +218,7 @@ _mr_cond_1_1_3_1_r27(mm, x) := block([_mr_1_1_3_1_r27_a, _mr_1_1_3_1_r27_b],
   freeof(x, _mr_1_1_3_1_r27_a) and freeof(x, _mr_1_1_3_1_r27_b)  and  is(_mr_1_1_3_1_r27_a > 0)  and  %mr_posQ(_mr_1_1_3_1_r27_b))$
 _mr_repl_1_1_3_1_r27(mm, x) := block([_mr_1_1_3_1_r27_a__s, _mr_1_1_3_1_r27_b__s],
   _mr_1_1_3_1_r27_a__s : geteqR(mm, '_mr_1_1_3_1_r27_a), _mr_1_1_3_1_r27_b__s : geteqR(mm, '_mr_1_1_3_1_r27_b),
-  %mr_asinh(%mr_rt(_mr_1_1_3_1_r27_b__s, 2)*x/sqrt(_mr_1_1_3_1_r27_a__s))/%mr_rt(_mr_1_1_3_1_r27_b__s, 2))$
+  asinh(%mr_rt(_mr_1_1_3_1_r27_b__s, 2)*x/sqrt(_mr_1_1_3_1_r27_a__s))/%mr_rt(_mr_1_1_3_1_r27_b__s, 2))$
 _mr_rule_1_1_3_1_r27 : %mr_defrule("1_1_3_1", 27, "(Int (Power (Plus (Pattern |_mr_1_1_3_1_r27_a| (Blank)) (Times (Optional (Pattern |_mr_1_1_3_1_r27_b| (Blank))) (Power (Pattern x (Blank)) 2))) -1/2) (Pattern x (Blank Symbol)))", _mr_cond_1_1_3_1_r27, _mr_repl_1_1_3_1_r27)$
 
 _mr_cond_1_1_3_1_r28(mm, x) := block([_mr_1_1_3_1_r28_a, _mr_1_1_3_1_r28_b],

@@ -27,6 +27,9 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
          name declared in an expression-line block([...]) as
          _mr_<key>_r<n>_<name> is renamed back to <name> (the local Rubi
          calls D back to its old spelling diff), count pinned
+       - the native inverse-hyperbolic heads (ticket 18, 2026-09-25): an
+         atanh( / asinh( / acosh( call is undone to the %mr_ shim call the
+         base emitted, count pinned
        - the 29 manual 9.1 rules and the 52 rules that had a workaround
          emitter (no defmatch in the base) are exempt;
   4. the generator's reader self-test is green;
@@ -93,6 +96,14 @@ JUXTA_SITES = 1
 # compared rules. The unprefixed emission translated the local D to diff.
 LOCAL_PREFIX_SITES = 1602
 LOCAL_BASE_SPELLING = {"D": "diff"}
+# The native inverse-hyperbolic heads (.scratch/class-ports/issues/18, option
+# 1, user decision 2026-09-25): ArcTanh / ArcSinh / ArcCosh emit atanh /
+# asinh / acosh in every class, where the base emitted the %mr_atanh /
+# %mr_asinh / %mr_acosh log-form shims. Undone on the new body (native call
+# -> shim call) before the comparison; the count is the sites in the
+# compared rules (class 1's 51 and class 3's 2, all in repl lines).
+NATIVE_HEADS = ("atanh", "asinh", "acosh")
+NATIVE_HEAD_SITES = 53
 # user decision 2026-09-12 (Plan 2 writing session): move all 227 inner
 # conditions, including those whose locals integrate (IntHide -> mr_int);
 # their extra cost is watched by the P5 median-wall gate.
@@ -249,6 +260,16 @@ def undo_local_prefix(s, key, n, stats):
         s = re.sub(r"(?<![A-Za-z0-9_%])" + re.escape(nm) + r"(?![A-Za-z0-9_])",
                    LOCAL_BASE_SPELLING.get(base, base), s)
     stats["local_prefix"] += len(names)
+    return s
+
+
+def undo_native_heads(s, stats):
+    """The new expression line with each native inverse-hyperbolic call
+    atanh( / asinh( / acosh( back in its base shim spelling %mr_atanh( ...
+    (ticket 18). A preceding identifier character or % excludes the shim
+    itself and longer names. Counts the sites."""
+    s, n = re.subn(r"(?<![A-Za-z0-9_%])(" + "|".join(NATIVE_HEADS) + r")\(", r"%mr_\1(", s)
+    stats["native_heads"] += n
     return s
 
 
@@ -418,7 +439,7 @@ def main(argv):
     counts_ok, lists_ok = [], []
     stats = dict(identical=0, guard=0, moved=0, matchq_old=0, workaround=0, nine=0,
                  no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, notequal=0, juxta=0,
-                 local_prefix=0)
+                 local_prefix=0, native_heads=0)
     unexplained, entry_locals, bad_moves = [], [], []
     for rel in files:
         old = git_show(a.base, rel)
@@ -472,8 +493,10 @@ def main(argv):
                 continue
             try:
                 lines = [redo_juxtaposition(parts[0][2], stats), redo_juxtaposition(parts[1][2], stats),
-                         undo_fixes(undo_local_prefix(parts[2][2], key, n, stats), stats),
-                         undo_fixes(undo_local_prefix(parts[3][2], key, n, stats), stats)]
+                         undo_native_heads(undo_fixes(undo_local_prefix(parts[2][2], key, n, stats),
+                                                      stats), stats),
+                         undo_native_heads(undo_fixes(undo_local_prefix(parts[3][2], key, n, stats),
+                                                      stats), stats)]
             except ValueError as e:
                 unexplained.append("%s: translation-fix undo: %s" % (rid, e))
                 continue
@@ -556,6 +579,9 @@ def main(argv):
     g.check("With/Module locals _mr_<key>_r<n>_<name> undone to <name>: %d declarations"
             % LOCAL_PREFIX_SITES,
             stats["local_prefix"] == LOCAL_PREFIX_SITES, str(stats["local_prefix"]))
+    g.check("native inverse-hyperbolic heads undone to the %%mr_ shims: %d sites"
+            % NATIVE_HEAD_SITES,
+            stats["native_heads"] == NATIVE_HEAD_SITES, str(stats["native_heads"]))
     for rid in entry_locals:
         print("INFO: moved inner condition with a package entry in its locals: %s%s" % (
             rid, " (resolved)" if rid in RESOLVED_ENTRY_LOCALS else " (UNRESOLVED)"))

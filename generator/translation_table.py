@@ -14,13 +14,24 @@ RENAME = {
     # the "rc" spellings arccot/arcoth are unbound nouns — the corpus
     # integrands and answers use the native spellings.
     "ArcCot": "acot", "ArcCoth": "acoth",
+    # ArcTanh / ArcSinh / ArcCosh: the NATIVE heads in every class (ticket
+    # .scratch/class-ports/issues/18, option 1, user decision 2026-09-25).
+    # Until then classes 1-6/8/9 emitted the %mr_atanh / %mr_asinh /
+    # %mr_acosh log-form shims ("this binary lacks the name" -- no longer
+    # true: the natives are bound, differentiate through the zero chain and
+    # float-evaluate, probes/answer-side/06 A1-A4, E1-E4). A shim evaluates
+    # on the spot to its log / product body (probe 06 K1/K2), so a recursive
+    # Int[...] handed on no longer carried the head the class-7 patterns
+    # name (3_1_3 r14, 5_3_2 r3), and 7.3.7's EqQ[Head[tmp], ArcTanh]
+    # compares op() with the native atom. The shims stay defined
+    # (maxima_rubi_utils.mac) for their Layer A units; no rule emits them.
+    "ArcTanh": "atanh", "ArcSinh": "asinh", "ArcCosh": "acosh",
     "Denominator": "denom", "Numerator": "num", "Denom": "denom", "Numer": "num",
     "GCD": "gcd", "Mod": "mod", "Floor": "floor", "Factor": "factor",
     "Binomial": "binomial", "Cos": "cos", "Sin": "sin", "Expand": "expand",
     # shims (this binary lacks the name; %mr_ prefix, house rule 8)
     "Rt": "%mr_rt", "Sign": "%mr_sign", "Cancel": "%mr_cancel",
     "Together": "%mr_together",
-    "ArcTanh": "%mr_atanh", "ArcSinh": "%mr_asinh", "ArcCosh": "%mr_acosh",
     # ports (Rubi utilities, Task 4/5/7)
     "EqQ": "%mr_eqQ", "NeQ": "%mr_neQ", "PossibleZeroQ": "%mr_possible_zeroQ",
     "Coeff": "%mr_coeff", "Coefficient": "%mr_coeff",
@@ -353,20 +364,9 @@ RENAME = {
 # Per-class overrides of RENAME, consulted first by the generator's
 # translate_token (generate_rules.py) for the class being generated only.
 #
-# class 7 (2026-09-25): ArcTanh / ArcSinh / ArcCosh emit the NATIVE heads,
-# not the %mr_atanh / %mr_asinh / %mr_acosh log-form shims the RENAME rows
-# above give every other class. Section 7's rules recurse on their own
-# heads -- Int[(a+b ArcSinh[c x])^n, x] reduces to Int[x (a+b ArcSinh[c
-# x])^(n-1)/Sqrt[1+c^2 x^2], x], which a 7.1.2 rule matches on the
-# pattern's ArcSinh (mr-tree: asinh). A shim evaluates on the spot to its
-# log / product body (probes/answer-side/06 K1/K2), so the recursive
-# integrand would no longer carry the head any class-7 pattern names, and
-# 7.3.7's EqQ[Head[tmp], ArcTanh] would compare op() (atanh, probe 06 H1)
-# with %mr_atanh. The natives are bound, differentiate through the zero
-# chain and float-evaluate (probe 06 A1-A4, E1-E4); logarc is off and
-# ratsimp/radcan leave them alone (S11-S13). Classes 1/2/3/5/9 keep the
-# shims (byte-identity of their accepted records); their few recursive
-# uses are ticket .scratch/class-ports/issues/18.
+# class 7 (2026-09-25) held ArcTanh / ArcSinh / ArcCosh -> the native heads;
+# the shared RENAME rows emit the natives for every class since ticket
+# .scratch/class-ports/issues/18 (option 1), so the row is gone.
 #
 # class 4 (2026-09-25): Expand -> %mr_expand. Rubi's Expand is 2-argument in
 # all three class-4 uses (4.1.1.1 r1 -- sin^n, n odd, the Cos substitution
@@ -378,7 +378,6 @@ RENAME = {
 # same 2-argument expand; they keep it (byte-identity of the accepted class)
 # and are ticketed (.scratch/class-ports/issues/19).
 CLASS_RENAME = {
-    7: {"ArcTanh": "atanh", "ArcSinh": "asinh", "ArcCosh": "acosh"},
     4: {"Expand": "%mr_expand"},
 }
 

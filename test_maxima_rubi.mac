@@ -153,6 +153,7 @@ run_all_tests() := block([],
   test_class5_e2e(),
   test_class7_e2e(),
   test_eqq_symbolic(),
+  test_native_inverse_hyperbolic(),
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
@@ -5459,6 +5460,58 @@ test_eqq_symbolic() := block([mr_eq_saved, mr_eq_ok, mr_eq_r, mr_eq_g12, mr_eq_d
     check("7_3_7 r26 on a shifted quadratic: Int e^acoth(2x+1)/(-4x^2-4x)",
           rubi(%e^acoth(1 + 2*x)/(-4*x^2 - 4*x), x), %e^acoth(1 + 2*x)/2)),
   mr_rule_table : mr_eq_saved,
+  true
+)$
+
+/* ---- ArcTanh / ArcSinh / ArcCosh: the native heads in every class -----
+   .scratch/class-ports/issues/18, option 1 (user decision 2026-09-25): the
+   RENAME rows emit atanh / asinh / acosh for every class, not the
+   %mr_atanh / %mr_asinh / %mr_acosh log-form shims. A shim evaluated on the
+   spot to its log body, so a recursive Int handed on no longer carried the
+   head class 7's patterns name: 3_1_3 r14's Int[ArcSinh[Rt[e,2] x/Sqrt[d]]/x]
+   (Rubi routes it to 7.1.2) and 5_3_2 r3's ArcTanh[1-2/(1+I c x)] integrand.
+   Answers keep the head (1_1_3_1 r20/r27). The shims stay defined for their
+   own units (test_cluster_h_shims); atanh(1) errors exactly as the shim's log body
+   did (probe 06 N1). */
+test_native_inverse_hyperbolic() := block([mr_nh_saved, mr_nh_ok, mr_nh_r],
+  print("--- ArcTanh / ArcSinh / ArcCosh: native heads in every class ---"),
+  mr_nh_saved : mr_rule_table,
+  mr_nh_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/1_1_3_1.mac", 'mr_witness_1_1_3_1),
+    %mr_load_sibling("rules/class3/3_1_3.mac", 'mr_witness_3_1_3),
+    %mr_load_sibling("rules/class5/5_3_2.mac", 'mr_witness_5_3_2),
+    %mr_load_sibling("rules/class7/7_1_1.mac", 'mr_witness_7_1_1),
+    %mr_load_sibling("rules/class7/7_1_2.mac", 'mr_witness_7_1_2),
+    %mr_load_sibling("rules/class7/7_1_3.mac", 'mr_witness_7_1_3),
+    %mr_load_sibling("rules/class7/7_1_4.mac", 'mr_witness_7_1_4),
+    true),
+  check_bool("native heads: rule files load", is(mr_nh_ok # [])),
+  if mr_nh_ok # [] then (
+    check_bool("3_1_3 r14 recurses on the native asinh, no shim",
+               freeof('%mr_asinh, fundef(_mr_repl_3_1_3_r14))
+               and not freeof('asinh, fundef(_mr_repl_3_1_3_r14))),
+    check_bool("5_3_2 r3 recurses on the native atanh, no shim",
+               freeof('%mr_atanh, fundef(_mr_repl_5_3_2_r3))
+               and not freeof('atanh, fundef(_mr_repl_5_3_2_r3))),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_1_1_3_1]),
+    check("1_1_3_1 r20: Int 1/(1-x^2) = atanh(x) (was the log form)",
+          rubi(1/(1 - x^2), x), atanh(x)),
+    check("1_1_3_1 r27: Int 1/sqrt(1+x^2) = asinh(x) (was the log form)",
+          rubi(1/sqrt(1 + x^2), x), asinh(x)),
+    mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_3_1_3, mr_rules_7_1_1,
+                             mr_rules_7_1_2, mr_rules_7_1_3, mr_rules_7_1_4]),
+    mr_nh_r : rubi(log(x)/sqrt(1 + x^2), x),
+    check_bool("3_1_3 r14 -> 7.1.2: Int log(x)/sqrt(1+x^2) has no noun, keeps asinh",
+               freeof('unintegrable, mr_nh_r) and not freeof('asinh, mr_nh_r)),
+    check_bool("3_1_3 r14 -> 7.1.2: Int log(x)/sqrt(1+x^2), the derivative at x = 0.3, 0.7",
+               every(lambda([mr_nh_p],
+                        is(abs(float(rectform(subst(x = mr_nh_p, diff(mr_nh_r, x)
+                                                - log(x)/sqrt(1 + x^2))))) < 1.0e-10)),
+                     [0.3, 0.7]))),
+  check_bool("atanh(1) errors as the %mr_atanh shim did (probe 06 N1)",
+             is(errcatch(atanh(1)) = []) and is(errcatch(%mr_atanh(1)) = [])),
+  mr_rule_table : mr_nh_saved,
   true
 )$
 

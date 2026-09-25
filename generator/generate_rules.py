@@ -613,8 +613,8 @@ def translate_token(tok, ctx):
     if tok in ("True", "False"):
         return "true" if tok == "True" else "false"
     if tok in CLASS_RENAME.get(globals().get("CLASS"), {}):
-        # the class-7 native inverse-hyperbolic heads (translation_table.py
-        # CLASS_RENAME) -- consulted before the shared RENAME rows
+        # a per-class override (translation_table.py CLASS_RENAME) --
+        # consulted before the shared RENAME rows
         return CLASS_RENAME[CLASS][tok]
     if tok in RENAME or tok in RESTRUCTURE:
         return table_translate(tok)
@@ -741,9 +741,10 @@ def translate(s, ctx):
             # binds F to the Maxima operator symbol of the matched head
             # (maxima_rubi_dispatch.lisp mr-binding-value), the symbol the
             # typed native name reads as (asin reads as %asin), so the list
-            # carries the native spellings — not the %mr_ shims the RENAME
-            # table maps ArcSinh/ArcCosh/ArcTanh to (the corpus integrands
-            # carry the natives; probed 2026-08-29 and 2026-09-13).
+            # carries the native spellings (the corpus integrands carry the
+            # natives; probed 2026-08-29 and 2026-09-13) -- which the RENAME
+            # table also gives ArcSinh/ArcCosh/ArcTanh since ticket 18
+            # (2026-09-25); before it, the %mr_ log-form shims.
             parts = split_top(args, ",") if args.strip() else []
             heads = parts[0].strip() if len(parts) == 2 else ""
             names = ([h.strip() for h in heads[1:-1].split(",")]
@@ -1477,7 +1478,8 @@ def _rename_captures(ev, key, n, rule_vars):
 # carry the natives, and probed 2026-08-29 on
 # branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 asin/acos/atan/acot/asinh/
 # acosh/atanh/acoth are all bound natives with closing diffs (arccot/arcoth
-# are unbound nouns) — NOT the RENAME table's %mr_ shims.
+# are unbound nouns). (The RENAME table agrees since ticket 18, 2026-09-25;
+# it used to map the three inverse-hyperbolic heads to %mr_ shims.)
 NATIVE_FUNCTION_HEADS = {
     "ArcSin": "asin", "ArcCos": "acos", "ArcTan": "atan",
     "ArcCot": "acot", "ArcSinh": "asinh", "ArcCosh": "acosh",

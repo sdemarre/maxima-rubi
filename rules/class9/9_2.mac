@@ -50,7 +50,7 @@ _mr_cond_9_2_r6(mm, x) := block([_mr_9_2_r6_u, _mr_9_2_r6_v],
   (%mr_piecewiseLinearQ(_mr_9_2_r6_u, _mr_9_2_r6_v, x))  and  block([_mr_9_2_r6_a, _mr_9_2_r6_b], _mr_9_2_r6_a : %mr_simp(diff(_mr_9_2_r6_u, x)), _mr_9_2_r6_b : %mr_simp(diff(_mr_9_2_r6_v, x)), is(%mr_neQ(_mr_9_2_r6_b*_mr_9_2_r6_u-_mr_9_2_r6_a*_mr_9_2_r6_v, 0)  and  %mr_negQ((_mr_9_2_r6_b*_mr_9_2_r6_u-_mr_9_2_r6_a*_mr_9_2_r6_v)/_mr_9_2_r6_a)) = true))$
 _mr_repl_9_2_r6(mm, x) := block([_mr_9_2_r6_u__s, _mr_9_2_r6_v__s],
   _mr_9_2_r6_u__s : geteqR(mm, '_mr_9_2_r6_u), _mr_9_2_r6_v__s : geteqR(mm, '_mr_9_2_r6_v),
-  block([_mr_9_2_r6_a, _mr_9_2_r6_b], _mr_9_2_r6_a : %mr_simp(diff(_mr_9_2_r6_u__s, x)), _mr_9_2_r6_b : %mr_simp(diff(_mr_9_2_r6_v__s, x)), -2*%mr_atanh(sqrt(_mr_9_2_r6_v__s)/%mr_rt(-(_mr_9_2_r6_b*_mr_9_2_r6_u__s-_mr_9_2_r6_a*_mr_9_2_r6_v__s)/_mr_9_2_r6_a, 2))/(_mr_9_2_r6_a*%mr_rt(-(_mr_9_2_r6_b*_mr_9_2_r6_u__s-_mr_9_2_r6_a*_mr_9_2_r6_v__s)/_mr_9_2_r6_a, 2))))$
+  block([_mr_9_2_r6_a, _mr_9_2_r6_b], _mr_9_2_r6_a : %mr_simp(diff(_mr_9_2_r6_u__s, x)), _mr_9_2_r6_b : %mr_simp(diff(_mr_9_2_r6_v__s, x)), -2*atanh(sqrt(_mr_9_2_r6_v__s)/%mr_rt(-(_mr_9_2_r6_b*_mr_9_2_r6_u__s-_mr_9_2_r6_a*_mr_9_2_r6_v__s)/_mr_9_2_r6_a, 2))/(_mr_9_2_r6_a*%mr_rt(-(_mr_9_2_r6_b*_mr_9_2_r6_u__s-_mr_9_2_r6_a*_mr_9_2_r6_v__s)/_mr_9_2_r6_a, 2))))$
 _mr_rule_9_2_r6 : %mr_defrule("9_2", 6, "(Int (Times (Power (Pattern |_mr_9_2_r6_u| (Blank)) -1) (Power (Pattern |_mr_9_2_r6_v| (Blank)) -1/2)) (Pattern x (Blank Symbol)))", _mr_cond_9_2_r6, _mr_repl_9_2_r6)$
 
 _mr_cond_9_2_r7(mm, x) := block([_mr_9_2_r7_n, _mr_9_2_r7_u, _mr_9_2_r7_v],
@@ -75,7 +75,7 @@ _mr_cond_9_2_r9(mm, x) := block([_mr_9_2_r9_u, _mr_9_2_r9_v],
   (%mr_piecewiseLinearQ(_mr_9_2_r9_u, _mr_9_2_r9_v, x))  and  block([_mr_9_2_r9_a, _mr_9_2_r9_b], _mr_9_2_r9_a : %mr_simp(diff(_mr_9_2_r9_u, x)), _mr_9_2_r9_b : %mr_simp(diff(_mr_9_2_r9_v, x)), is(%mr_neQ(_mr_9_2_r9_b*_mr_9_2_r9_u-_mr_9_2_r9_a*_mr_9_2_r9_v, 0)  and  %mr_posQ(_mr_9_2_r9_a*_mr_9_2_r9_b)) = true))$
 _mr_repl_9_2_r9(mm, x) := block([_mr_9_2_r9_u__s, _mr_9_2_r9_v__s],
   _mr_9_2_r9_u__s : geteqR(mm, '_mr_9_2_r9_u), _mr_9_2_r9_v__s : geteqR(mm, '_mr_9_2_r9_v),
-  block([_mr_9_2_r9_a, _mr_9_2_r9_b], _mr_9_2_r9_a : %mr_simp(diff(_mr_9_2_r9_u__s, x)), _mr_9_2_r9_b : %mr_simp(diff(_mr_9_2_r9_v__s, x)), 2/%mr_rt(_mr_9_2_r9_a*_mr_9_2_r9_b, 2)*%mr_atanh(%mr_rt(_mr_9_2_r9_a*_mr_9_2_r9_b, 2)*sqrt(_mr_9_2_r9_u__s)/(_mr_9_2_r9_a*sqrt(_mr_9_2_r9_v__s)))))$
+  block([_mr_9_2_r9_a, _mr_9_2_r9_b], _mr_9_2_r9_a : %mr_simp(diff(_mr_9_2_r9_u__s, x)), _mr_9_2_r9_b : %mr_simp(diff(_mr_9_2_r9_v__s, x)), 2/%mr_rt(_mr_9_2_r9_a*_mr_9_2_r9_b, 2)*atanh(%mr_rt(_mr_9_2_r9_a*_mr_9_2_r9_b, 2)*sqrt(_mr_9_2_r9_u__s)/(_mr_9_2_r9_a*sqrt(_mr_9_2_r9_v__s)))))$
 _mr_rule_9_2_r9 : %mr_defrule("9_2", 9, "(Int (Times (Power (Pattern |_mr_9_2_r9_u| (Blank)) -1/2) (Power (Pattern |_mr_9_2_r9_v| (Blank)) -1/2)) (Pattern x (Blank Symbol)))", _mr_cond_9_2_r9, _mr_repl_9_2_r9)$
 
 _mr_cond_9_2_r10(mm, x) := block([_mr_9_2_r10_u, _mr_9_2_r10_v],
