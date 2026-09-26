@@ -118,3 +118,8 @@ blast radius):
   cited in the after-state.
 
 ## Comments
+
+- 2026-09-26: superseded and closed. No shim: the package now emits Maxima's
+  native `li[s](z)`, which `diff` and `float` both know, and the driver
+  rewrites the corpus's `polylog(A, B)` to `li[A](B)` (branch
+  `polylog-native-li`, `.scratch/polylog-native-li/issues/01`).

@@ -59,7 +59,7 @@ numerically or by the corpus harness (2026-09-26).
 ```maxima
 rubi(1/(1+x^8), x);                         /* logs and atans with nested radicals */
 rubi(sqrt(1+x^4), x);                       /* an elliptic_f term */
-rubi(x/(3+3*%e^x+%e^(2*x)), x);             /* polylog(2, ...) terms */
+rubi(x/(3+3*%e^x+%e^(2*x)), x);             /* li[2](...) terms */
 rubi(1/(x+x*log(7*x)+x*log(7*x)^2), x);     /* 2*atan((2*log(7*x)+1)/sqrt(3))/sqrt(3) */
 rubi(cos(x)*sec(4*x), x);
 rubi(asin(sqrt(x))/x, x);
@@ -82,10 +82,11 @@ rubi_verbose : 'matches$   /* print only the rules that fire */
   Maxima's own `integrate`. `rubi_fallback(f, x, true)` does, at the top level;
   nested sub-integrals follow the switch `mr_nested_fallback` either way.
 - The answer can contain Rubi's own special functions in their Maxima
-  spelling: `elliptic_f`/`elliptic_e`/`elliptic_pi`, `polylog`,
-  `expintegral_ei`/`_si`/`_ci`/`_shi`/`_chi`, `gamma_incomplete`,
-  `fresnel_s`/`fresnel_c`, `hypergeometric`. Rubi's `AppellF1` has no Maxima
-  counterpart and stays a noun.
+  spelling: `elliptic_f`/`elliptic_e`/`elliptic_pi`, the polylogarithm
+  `li[s](z)`, `expintegral_ei`/`_si`/`_ci`/`_shi`/`_chi`, `gamma_incomplete`,
+  `fresnel_s`/`fresnel_c`, `hypergeometric`, the polygamma `psi[n](z)`. Rubi's
+  `AppellF1` and the two-argument (Hurwitz) `Zeta(s, a)` have no Maxima
+  counterpart and stay nouns.
 - `rubi_verbose` is `false` by default: nothing is printed. With `true`, every
   rule tried prints its outcome, including the error message of a rule that
   misfires. With `'matches` (or the string `"matches"`), only the rules that
