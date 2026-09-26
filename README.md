@@ -80,14 +80,13 @@ in one statement and verify it in a later one (see the note after the table).
 
 | integrand | reduces `diff(r, x) - f` to 0 |
 |---|---|
-| `x/(%e^(2*x)+%e^x-1)`, `x/(%e^(2*x)+3*%e^x+3)`, `log(x^2/(x^2+1))/(x^2+1)`, `1/(x*log(7*x)^2+x*log(7*x)+x)`, `(x*acot(x))/(x^2+1)`, `x/(sqrt(x^2+1)*asinh(x))`, `li[2](1+x)/(2+x)` | `ratsimp(d)` |
-| `1/(x^8+1)` | `block([algebraic:true], ratsimp(d))` |
+| `1/(x^8+1)`, `x/(%e^(2*x)+%e^x-1)`, `x/(%e^(2*x)+3*%e^x+3)`, `log(x^2/(x^2+1))/(x^2+1)`, `1/(x*log(7*x)^2+x*log(7*x)+x)`, `(x*acot(x))/(x^2+1)`, `x/(sqrt(x^2+1)*asinh(x))`, `li[2](1+x)/(2+x)` | `radcan(d)` |
 | `sqrt(x^4+1)` | `radcan(trigexpand(d))` |
 | `cos(x)*sec(4*x)`, `1/(cosh(x)^4+1)`, `expintegral_si(2*x)*sin(5*x)` | `radcan(exponentialize(d))` |
-| `1/(sin(x)^4+1)` | Weierstrass: `block([algebraic:true], ratsimp(rectform(trigsimp(trigexpand(subst(x = 2*atan(t), d))))))` |
-| `tanh(8*x)^(1/3)` | `ratsimp(subst(tanh(8*x) = u^3, subst(sech(8*x) = sqrt(1-tanh(8*x)^2), d)))` (only `sech^2` occurs) |
-| `asin(sqrt(x))/x` | `exp(i asin y) = sqrt(1-y^2) + i y`: `block([algebraic:true], ratsimp(subst(%e^(2*%i*asin(sqrt(x))) = (sqrt(1-x)+%i*sqrt(x))^2, d)))` |
-| `asinh(sqrt(x))/x` | `exp(asinh y) = y + sqrt(y^2+1)`: `block([algebraic:true], ratsimp(subst(%e^(2*asinh(sqrt(x))) = (sqrt(x)+sqrt(x+1))^2, d)))` |
+| `1/(sin(x)^4+1)` | Weierstrass: `radcan(trigsimp(trigexpand(subst(x = 2*atan(t), d))))` |
+| `tanh(8*x)^(1/3)` | `ratsimp(subst(tanh(8*x) = u^3, subst(sech(8*x) = sqrt(1-tanh(8*x)^2), d)))`: only `sech^2` occurs, and the result is a rational function of `u` |
+| `asin(sqrt(x))/x` | `exp(i asin y) = sqrt(1-y^2) + i y`: `radcan(subst(%e^(2*%i*asin(sqrt(x))) = (sqrt(1-x)+%i*sqrt(x))^2, d))` |
+| `asinh(sqrt(x))/x` | `exp(asinh y) = y + sqrt(y^2+1)`: `radcan(subst(%e^(2*asinh(sqrt(x))) = (sqrt(x)+sqrt(x+1))^2, d))` |
 
 The run: `probes/readme-examples/01-symbolic-verification.mac` (`Results: 16
 passed, 0 failed`, 2026-09-26). Why a separate statement: `rubi` currently

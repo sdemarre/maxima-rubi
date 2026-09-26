@@ -11,41 +11,43 @@ load("maxima_rubi.mac")$
 mr_load_all()$
 display2d : false$
 
-/* The chains. Each takes the residual d and returns what it reduces to. */
-ch_ratsimp(d) := ratsimp(d)$
-ch_algebraic(d) := block([algebraic : true], ratsimp(d))$
+/* The chains. Each takes the residual d and returns what it reduces to.
+   radcan throughout (user preference 2026-09-26: ratsimp is for rational
+   forms, and these residuals carry logs, radicals and special functions);
+   ratsimp only where the substituted residual IS a rational function. */
+ch_radcan(d) := radcan(d)$
 ch_trigexpand_radcan(d) := radcan(trigexpand(d))$
 ch_exponentialize_radcan(d) := radcan(exponentialize(d))$
-/* Weierstrass x = 2*atan(t); (-1)^(1/4) in rectangular form */
-ch_weierstrass(d) := block([algebraic : true],
-  ratsimp(rectform(trigsimp(trigexpand(subst(x = 2*atan(t), d))))))$
-/* sech(u)^2 = 1 - tanh(u)^2, then tanh(8*x) = u^3 (only sech^2 occurs) */
+/* Weierstrass x = 2*atan(t) */
+ch_weierstrass(d) := radcan(trigsimp(trigexpand(subst(x = 2*atan(t), d))))$
+/* sech(u)^2 = 1 - tanh(u)^2, then tanh(8*x) = u^3 (only sech^2 occurs):
+   the result is a rational function of u, so ratsimp is the right tool */
 ch_tanh_cube(d) := ratsimp(subst(tanh(8*x) = u^3,
                      subst(sech(8*x) = sqrt(1 - tanh(8*x)^2), d)))$
 /* exp(i*asin(y)) = sqrt(1-y^2) + i*y */
-ch_exp_asin(d) := block([algebraic : true],
-  ratsimp(subst(%e^(2*%i*asin(sqrt(x))) = (sqrt(1-x) + %i*sqrt(x))^2, d)))$
+ch_exp_asin(d) :=
+  radcan(subst(%e^(2*%i*asin(sqrt(x))) = (sqrt(1-x) + %i*sqrt(x))^2, d))$
 /* exp(asinh(y)) = y + sqrt(y^2+1) */
-ch_exp_asinh(d) := block([algebraic : true],
-  ratsimp(subst(%e^(2*asinh(sqrt(x))) = (sqrt(x) + sqrt(x+1))^2, d)))$
+ch_exp_asinh(d) :=
+  radcan(subst(%e^(2*asinh(sqrt(x))) = (sqrt(x) + sqrt(x+1))^2, d))$
 
 EX : [
-  [1/(x^8+1),                          ch_algebraic],
+  [1/(x^8+1),                          ch_radcan],
   [sqrt(x^4+1),                        ch_trigexpand_radcan],
-  [x/(%e^(2*x)+%e^x-1),                ch_ratsimp],
-  [x/(%e^(2*x)+3*%e^x+3),              ch_ratsimp],
-  [log(x^2/(x^2+1))/(x^2+1),           ch_ratsimp],
-  [1/(x*log(7*x)^2+x*log(7*x)+x),      ch_ratsimp],
+  [x/(%e^(2*x)+%e^x-1),                ch_radcan],
+  [x/(%e^(2*x)+3*%e^x+3),              ch_radcan],
+  [log(x^2/(x^2+1))/(x^2+1),           ch_radcan],
+  [1/(x*log(7*x)^2+x*log(7*x)+x),      ch_radcan],
   [1/(sin(x)^4+1),                     ch_weierstrass],
   [cos(x)*sec(4*x),                    ch_exponentialize_radcan],
   [asin(sqrt(x))/x,                    ch_exp_asin],
-  [(x*acot(x))/(x^2+1),                ch_ratsimp],
+  [(x*acot(x))/(x^2+1),                ch_radcan],
   [1/(cosh(x)^4+1),                    ch_exponentialize_radcan],
   [tanh(8*x)^(1/3),                    ch_tanh_cube],
   [asinh(sqrt(x))/x,                   ch_exp_asinh],
-  [x/(sqrt(x^2+1)*asinh(x)),           ch_ratsimp],
+  [x/(sqrt(x^2+1)*asinh(x)),           ch_radcan],
   [expintegral_si(2*x)*sin(5*x),       ch_exponentialize_radcan],
-  [li[2](1+x)/(2+x),                   ch_ratsimp]
+  [li[2](1+x)/(2+x),                   ch_radcan]
 ]$
 
 print(build_info())$

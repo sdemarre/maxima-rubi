@@ -1,22 +1,22 @@
-=== probes/readme-examples/01-symbolic-verification.mac -- 2026-09-26 22:35:08 CEST, git 690e07e
+=== probes/readme-examples/01-symbolic-verification.mac -- 2026-09-26 23:17:02 CEST, git 78e50ed (+ the radcan chains)
 %build_info("branch_5_50_base_84_g4204fb669","2026-08-31 13:27:47",
             "x86_64-pc-linux-gnu","SBCL","2.6.7","/home/serge/.maxima","/tmp",
             "/home/serge/.maxima/binary/branch_5_50_base_84_g4204fb669/sbcl/2_6_7",
             false,false)
-PASS:  1  1/(x^8+1)  integrate unevaluated: true  rubi 0.52 s  ch_algebraic -> 0
-PASS:  2  sqrt(x^4+1)  integrate unevaluated: true  rubi 0.04 s  ch_trigexpand_radcan -> 0
-PASS:  3  x/(%e^(2*x)+%e^x-1)  integrate unevaluated: true  rubi 0.90 s  ch_ratsimp -> 0
-PASS:  4  x/(%e^(2*x)+3*%e^x+3)  integrate unevaluated: true  rubi 0.78 s  ch_ratsimp -> 0
-PASS:  5  log(x^2/(x^2+1))/(x^2+1)  integrate unevaluated: true  rubi 0.96 s  ch_ratsimp -> 0
-PASS:  6  1/(x*log(7*x)^2+x*log(7*x)+x)  integrate unevaluated: true  rubi 0.09 s  ch_ratsimp -> 0
-PASS:  7  1/(sin(x)^4+1)  integrate unevaluated: true  rubi 1.16 s  ch_weierstrass -> 0
+PASS:  1  1/(x^8+1)  integrate unevaluated: true  rubi 0.46 s  ch_radcan -> 0
+PASS:  2  sqrt(x^4+1)  integrate unevaluated: true  rubi 0.03 s  ch_trigexpand_radcan -> 0
+PASS:  3  x/(%e^(2*x)+%e^x-1)  integrate unevaluated: true  rubi 0.77 s  ch_radcan -> 0
+PASS:  4  x/(%e^(2*x)+3*%e^x+3)  integrate unevaluated: true  rubi 0.95 s  ch_radcan -> 0
+PASS:  5  log(x^2/(x^2+1))/(x^2+1)  integrate unevaluated: true  rubi 1.02 s  ch_radcan -> 0
+PASS:  6  1/(x*log(7*x)^2+x*log(7*x)+x)  integrate unevaluated: true  rubi 0.09 s  ch_radcan -> 0
+PASS:  7  1/(sin(x)^4+1)  integrate unevaluated: true  rubi 1.19 s  ch_weierstrass -> 0
 PASS:  8  cos(x)*sec(4*x)  integrate unevaluated: true  rubi 0.09 s  ch_exponentialize_radcan -> 0
-PASS:  9  asin(sqrt(x))/x  integrate unevaluated: true  rubi 0.95 s  ch_exp_asin -> 0
-PASS: 10  (x*acot(x))/(x^2+1)  integrate unevaluated: true  rubi 0.40 s  ch_ratsimp -> 0
-PASS: 11  1/(cosh(x)^4+1)  integrate unevaluated: true  rubi 1.28 s  ch_exponentialize_radcan -> 0
-PASS: 12  tanh(8*x)^(1/3)  integrate unevaluated: true  rubi 0.15 s  ch_tanh_cube -> 0
-PASS: 13  asinh(sqrt(x))/x  integrate unevaluated: true  rubi 0.94 s  ch_exp_asinh -> 0
-PASS: 14  x/(sqrt(x^2+1)*asinh(x))  integrate unevaluated: true  rubi 0.50 s  ch_ratsimp -> 0
-PASS: 15  expintegral_si(2*x)*sin(5*x)  integrate unevaluated: true  rubi 0.58 s  ch_exponentialize_radcan -> 0
-PASS: 16  li[2](x+1)/(x+2)  integrate unevaluated: true  rubi 0.30 s  ch_ratsimp -> 0
+PASS:  9  asin(sqrt(x))/x  integrate unevaluated: true  rubi 0.94 s  ch_exp_asin -> 0
+PASS: 10  (x*acot(x))/(x^2+1)  integrate unevaluated: true  rubi 0.40 s  ch_radcan -> 0
+PASS: 11  1/(cosh(x)^4+1)  integrate unevaluated: true  rubi 1.15 s  ch_exponentialize_radcan -> 0
+PASS: 12  tanh(8*x)^(1/3)  integrate unevaluated: true  rubi 0.14 s  ch_tanh_cube -> 0
+PASS: 13  asinh(sqrt(x))/x  integrate unevaluated: true  rubi 1.00 s  ch_exp_asinh -> 0
+PASS: 14  x/(sqrt(x^2+1)*asinh(x))  integrate unevaluated: true  rubi 0.52 s  ch_radcan -> 0
+PASS: 15  expintegral_si(2*x)*sin(5*x)  integrate unevaluated: true  rubi 0.59 s  ch_exponentialize_radcan -> 0
+PASS: 16  li[2](x+1)/(x+2)  integrate unevaluated: true  rubi 0.31 s  ch_radcan -> 0
 Results: 16 passed, 0 failed
