@@ -34,7 +34,7 @@ _mr_cond_3_1_3_r4(mm, x) := block([_mr_3_1_3_r4_c, _mr_3_1_3_r4_d, _mr_3_1_3_r4_
   freeof(x, _mr_3_1_3_r4_c) and freeof(x, _mr_3_1_3_r4_d) and freeof(x, _mr_3_1_3_r4_e)  and  %mr_eqQ(_mr_3_1_3_r4_e + _mr_3_1_3_r4_c*_mr_3_1_3_r4_d, 0))$
 _mr_repl_3_1_3_r4(mm, x) := block([_mr_3_1_3_r4_c__s, _mr_3_1_3_r4_d__s, _mr_3_1_3_r4_e__s],
   _mr_3_1_3_r4_c__s : geteqR(mm, '_mr_3_1_3_r4_c), _mr_3_1_3_r4_d__s : geteqR(mm, '_mr_3_1_3_r4_d), _mr_3_1_3_r4_e__s : geteqR(mm, '_mr_3_1_3_r4_e),
-  -1/_mr_3_1_3_r4_e__s*polylog(2, 1 - _mr_3_1_3_r4_c__s*x))$
+  -1/_mr_3_1_3_r4_e__s*li[2](1 - _mr_3_1_3_r4_c__s*x))$
 _mr_rule_3_1_3_r4 : %mr_defrule("3_1_3", 4, "(Int (Times (Log (Times (Optional (Pattern |_mr_3_1_3_r4_c| (Blank))) (Pattern x (Blank)))) (Power (Plus (Pattern |_mr_3_1_3_r4_d| (Blank)) (Times (Optional (Pattern |_mr_3_1_3_r4_e| (Blank))) (Pattern x (Blank)))) -1)) (Pattern x (Blank Symbol)))", _mr_cond_3_1_3_r4, _mr_repl_3_1_3_r4)$
 
 _mr_cond_3_1_3_r5(mm, x) := block([_mr_3_1_3_r5_a, _mr_3_1_3_r5_b, _mr_3_1_3_r5_c, _mr_3_1_3_r5_d, _mr_3_1_3_r5_e],

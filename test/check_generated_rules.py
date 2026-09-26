@@ -32,6 +32,9 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
          base emitted, count pinned
        - the two-argument Expand (ticket 19, 2026-09-25): a %mr_expand( call
          is undone to the expand( the base emitted, count pinned
+       - the native polylogarithm (polylog-native-li issue 01, 2026-09-26):
+         li[A](B) is undone to the polylog(A, B) the base emitted, count
+         pinned
        - Rubi's real comparisons (matcher-translation-fixes issue 02,
          2026-09-25): %mr_gtQ/%mr_ltQ/%mr_leQ/%mr_geQ(A, B) undone to
          is(A op B), count pinned
@@ -121,6 +124,11 @@ NATIVE_HEAD_SITES = 53
 # Maxima's expand(u, x) -- an expop error, so the rule always misfired.
 # Undone on the new body before the comparison; class 2's 2_3 r58/r65.
 EXPAND2_SITES = 2
+# The native polylogarithm (.scratch/polylog-native-li/issues/01,
+# 2026-09-26): PolyLog[s, z] emits Maxima's subscripted li[s](z) in every
+# class, where the base emitted the unknown operator polylog(s, z). Undone on
+# the new body before the comparison; class 3's sites.
+POLYLOG_SITES = 37
 # user decision 2026-09-12 (Plan 2 writing session): move all 227 inner
 # conditions, including those whose locals integrate (IntHide -> mr_int);
 # their extra cost is watched by the P5 median-wall gate.
@@ -302,6 +310,37 @@ def undo_expand2(s, stats):
     return s
 
 
+def _close(s, i, o, c):
+    """The index just past the bracket that closes s[i] == o."""
+    d = 0
+    for j in range(i, len(s)):
+        d += (s[j] == o) - (s[j] == c)
+        if d == 0:
+            return j + 1
+    raise ValueError("unbalanced %s at %d" % (o, i))
+
+
+def undo_polylog(s, stats):
+    """The new expression line with each li[A](B) back in the base spelling
+    polylog(A, B) (polylog-native-li issue 01). A preceding identifier
+    character or % excludes longer names. Counts the sites."""
+    out, k = [], 0
+    for m in re.finditer(r"(?<![A-Za-z0-9_%])li\[", s):
+        if m.start() < k:
+            continue
+        i = m.end() - 1
+        j = _close(s, i, "[", "]")
+        if j >= len(s) or s[j] != "(":
+            raise ValueError("li[...] not called at %d" % m.start())
+        e = _close(s, j, "(", ")")
+        inner = undo_polylog(s[j + 1:e - 1], stats)
+        out.append(s[k:m.start()] + "polylog(" + s[i + 1:j - 1] + ", " + inner + ")")
+        stats["polylog"] += 1
+        k = e
+    out.append(s[k:])
+    return "".join(out)
+
+
 def redo_juxtaposition(s, stats):
     """The base body line with the generator's juxtaposition fix applied: a
     `)`/`]` followed by a spaced `(` becomes `)*(`. Counts the sites."""
@@ -468,7 +507,7 @@ def main(argv):
     counts_ok, lists_ok = [], []
     stats = dict(identical=0, guard=0, moved=0, matchq_old=0, workaround=0, nine=0,
                  no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, real_cmp=0, notequal=0, juxta=0,
-                 local_prefix=0, native_heads=0, expand2=0)
+                 local_prefix=0, native_heads=0, expand2=0, polylog=0)
     unexplained, entry_locals, bad_moves = [], [], []
     for rel in files:
         old = git_show(a.base, rel)
@@ -522,10 +561,10 @@ def main(argv):
                 continue
             try:
                 lines = [redo_juxtaposition(parts[0][2], stats), redo_juxtaposition(parts[1][2], stats),
-                         undo_expand2(undo_native_heads(undo_fixes(
-                             undo_local_prefix(parts[2][2], key, n, stats), stats), stats), stats),
-                         undo_expand2(undo_native_heads(undo_fixes(
-                             undo_local_prefix(parts[3][2], key, n, stats), stats), stats), stats)]
+                         undo_polylog(undo_expand2(undo_native_heads(undo_fixes(
+                             undo_local_prefix(parts[2][2], key, n, stats), stats), stats), stats), stats),
+                         undo_polylog(undo_expand2(undo_native_heads(undo_fixes(
+                             undo_local_prefix(parts[3][2], key, n, stats), stats), stats), stats), stats)]
             except ValueError as e:
                 unexplained.append("%s: translation-fix undo: %s" % (rid, e))
                 continue
@@ -616,6 +655,8 @@ def main(argv):
             stats["native_heads"] == NATIVE_HEAD_SITES, str(stats["native_heads"]))
     g.check("two-argument %%mr_expand(u, x) undone to expand(u, x): %d sites" % EXPAND2_SITES,
             stats["expand2"] == EXPAND2_SITES, str(stats["expand2"]))
+    g.check("native li[A](B) undone to polylog(A, B): %d sites" % POLYLOG_SITES,
+            stats["polylog"] == POLYLOG_SITES, str(stats["polylog"]))
     for rid in entry_locals:
         print("INFO: moved inner condition with a package entry in its locals: %s%s" % (
             rid, " (resolved)" if rid in RESOLVED_ENTRY_LOCALS else " (UNRESOLVED)"))

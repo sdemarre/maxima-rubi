@@ -84,6 +84,14 @@ check("Psi -> psi[n](z)", n("x^2*Psi(0,a+b*x)/b"), "x^2*psi[0](a+b*x)/b")
 check("Psi negative order", n("2*Psi(-2,a+b*x)/b^3"), "2*psi[-2](a+b*x)/b^3")
 check("Psi 1-arg left as written", n("Psi(x)"), "Psi(x)")
 check("Psi inside a longer name intact", n("MyPsi(0,x)"), "MyPsi(0,x)")
+# polylog(A, B) -> li[A](B) (2026-09-26, .scratch/polylog-native-li/issues/01)
+check("polylog -> li[A](B)", n("-b*polylog(2,1-c*x)/c"), "-b*li[2](1-c*x)/c")
+check("polylog symbolic order", n("polylog(1+n,-e*x)"), "li[1+n](-e*x)")
+check("polylog nested argument",
+      n("polylog(3,-%e^(2*%i*polylog(2,x)))"), "li[3](-%e^(2*%i*li[2](x)))")
+check("polylog 1-arg left as written", n("polylog(x)"), "polylog(x)")
+check("polylog inside a longer name intact", n("mypolylog(2,x)"), "mypolylog(2,x)")
+check("li untouched", n("li[2](x)"), "li[2](x)")
 # Derivative(A)(B)(C) -> %mr_derivative(A, B, C)
 check("Derivative order 1", n("Derivative(1)(f)(x)"), "%mr_derivative(1, f, x)")
 check("Derivative symbolic order", n("Derivative(-1+m)(f)(x)"),
@@ -117,11 +125,11 @@ check("class 5: 2-arg GAMMA of an acos argument",
 check("class 5: FresnelC of sqrt(acos), acos kept",
       n("-1/80*FresnelC(sqrt(10/%pi)*sqrt(acos(a*x)))*sqrt(1/10*%pi)/a^5"),
       "-1/80*fresnel_c(sqrt(10/%pi)*sqrt(acos(a*x)))*sqrt(1/10*%pi)/a^5")
-check("class 5: asec/polylog answer untouched",
+check("class 5: asec kept, polylog -> li (polylog-native-li issue 01)",
       n("1/10*%i*asec(a*x^5)^2-1/5*asec(a*x^5)*log(1+%e^(2*%i*asec(a*x^5)))"
         "+1/10*%i*polylog(2,-%e^(2*%i*asec(a*x^5)))"),
       "1/10*%i*asec(a*x^5)^2-1/5*asec(a*x^5)*log(1+%e^(2*%i*asec(a*x^5)))"
-      "+1/10*%i*polylog(2,-%e^(2*%i*asec(a*x^5)))")
+      "+1/10*%i*li[2](-%e^(2*%i*asec(a*x^5)))")
 check("class 5: the six inverse-trig natives untouched",
       n("asin(x)+acos(x)+atan(x)+acot(x)+asec(x)+acsc(x)"),
       "asin(x)+acos(x)+atan(x)+acot(x)+asec(x)+acsc(x)")

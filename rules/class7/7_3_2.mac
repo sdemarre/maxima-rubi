@@ -10,7 +10,7 @@ _mr_cond_7_3_2_r1(mm, x) := block([_mr_7_3_2_r1_a, _mr_7_3_2_r1_b, _mr_7_3_2_r1_
   freeof(x, _mr_7_3_2_r1_a) and freeof(x, _mr_7_3_2_r1_b) and freeof(x, _mr_7_3_2_r1_c))$
 _mr_repl_7_3_2_r1(mm, x) := block([_mr_7_3_2_r1_a__s, _mr_7_3_2_r1_b__s, _mr_7_3_2_r1_c__s],
   _mr_7_3_2_r1_a__s : geteqR(mm, '_mr_7_3_2_r1_a), _mr_7_3_2_r1_b__s : geteqR(mm, '_mr_7_3_2_r1_b), _mr_7_3_2_r1_c__s : geteqR(mm, '_mr_7_3_2_r1_c),
-  _mr_7_3_2_r1_a__s*log(x) - _mr_7_3_2_r1_b__s/2*polylog(2, -_mr_7_3_2_r1_c__s*x) + _mr_7_3_2_r1_b__s/2*polylog(2, _mr_7_3_2_r1_c__s*x))$
+  _mr_7_3_2_r1_a__s*log(x) - _mr_7_3_2_r1_b__s/2*li[2](-_mr_7_3_2_r1_c__s*x) + _mr_7_3_2_r1_b__s/2*li[2](_mr_7_3_2_r1_c__s*x))$
 _mr_rule_7_3_2_r1 : %mr_defrule("7_3_2", 1, "(Int (Times (Plus (Optional (Pattern |_mr_7_3_2_r1_a| (Blank))) (Times (ArcTanh (Times (Optional (Pattern |_mr_7_3_2_r1_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_7_3_2_r1_b| (Blank))))) (Power (Pattern x (Blank)) -1)) (Pattern x (Blank Symbol)))", _mr_cond_7_3_2_r1, _mr_repl_7_3_2_r1)$
 
 _mr_cond_7_3_2_r2(mm, x) := block([_mr_7_3_2_r2_a, _mr_7_3_2_r2_b, _mr_7_3_2_r2_c],
@@ -18,7 +18,7 @@ _mr_cond_7_3_2_r2(mm, x) := block([_mr_7_3_2_r2_a, _mr_7_3_2_r2_b, _mr_7_3_2_r2_
   freeof(x, _mr_7_3_2_r2_a) and freeof(x, _mr_7_3_2_r2_b) and freeof(x, _mr_7_3_2_r2_c))$
 _mr_repl_7_3_2_r2(mm, x) := block([_mr_7_3_2_r2_a__s, _mr_7_3_2_r2_b__s, _mr_7_3_2_r2_c__s],
   _mr_7_3_2_r2_a__s : geteqR(mm, '_mr_7_3_2_r2_a), _mr_7_3_2_r2_b__s : geteqR(mm, '_mr_7_3_2_r2_b), _mr_7_3_2_r2_c__s : geteqR(mm, '_mr_7_3_2_r2_c),
-  _mr_7_3_2_r2_a__s*log(x) + _mr_7_3_2_r2_b__s/2*polylog(2, -1/(_mr_7_3_2_r2_c__s*x)) - _mr_7_3_2_r2_b__s/2*polylog(2, 1/(_mr_7_3_2_r2_c__s*x)))$
+  _mr_7_3_2_r2_a__s*log(x) + _mr_7_3_2_r2_b__s/2*li[2](-1/(_mr_7_3_2_r2_c__s*x)) - _mr_7_3_2_r2_b__s/2*li[2](1/(_mr_7_3_2_r2_c__s*x)))$
 _mr_rule_7_3_2_r2 : %mr_defrule("7_3_2", 2, "(Int (Times (Plus (Optional (Pattern |_mr_7_3_2_r2_a| (Blank))) (Times (ArcCoth (Times (Optional (Pattern |_mr_7_3_2_r2_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_7_3_2_r2_b| (Blank))))) (Power (Pattern x (Blank)) -1)) (Pattern x (Blank Symbol)))", _mr_cond_7_3_2_r2, _mr_repl_7_3_2_r2)$
 
 _mr_cond_7_3_2_r3(mm, x) := block([_mr_7_3_2_r3_a, _mr_7_3_2_r3_b, _mr_7_3_2_r3_c, _mr_7_3_2_r3_p],

@@ -51,6 +51,10 @@
   (check-conv "x!" "(Factorial x)")
   (check-conv "gamma_incomplete(a,x)" "(Gamma a x)")
   (check-conv "li[2](x)" "(PolyLog 2 x)")
+  ;; the native polylogarithm with a symbolic order and a linear argument
+  ;; (the shape the rules emit since .scratch/polylog-native-li/issues/01)
+  (check-conv "li[n](a+b*x)" "(PolyLog n (Plus a (Times b x)))")
+  (check-conv "li[n+1](c*x)" "(PolyLog (Plus 1 n) (Times c x))")
   (check-conv "psi[1](x)" "(PolyGamma 1 x)")
   (check-conv "0.1*x" "(Times 0.1d0 x)")
   (check-conv "1.5b0*x" "(Times 1.5d0 x)")
@@ -129,7 +133,9 @@
                "f(x)*g(x)" "F(f(x)*g(x))" "'foo(x)" "Log(x)" "Zeta(2,a+b*x)"
                "'diff(f(x),x,1)" "'diff(f(x),x,m)" "'diff(f(x),x,-1)"
                "'diff(g(x),x,2)*f(x)^2" "subst(f(x)*g(x), x, 'diff(F(x),x,1))"
-               "'diff(f(x,y),x,1)"))
+               "'diff(f(x,y),x,1)"
+               ;; the native polylogarithm, symbolic order
+               "li[n](a+b*x)" "li[n+1](c*x)*x^m"))
     (multiple-value-bind (ok back) (round-trips-p s)
       (check (format nil "round trip ~a" s) ok (format nil "back ~s" back))))
   ;; order 0 writes back as f(u) itself
