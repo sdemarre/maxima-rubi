@@ -391,10 +391,11 @@ classes: 61,266 of 70,385 entries PASS (87.0 %) on this core.
 attribution (`probes/class-ports/final/attribution.out`). Across all 182 losses of the final
 re-measure, the buckets are:
 - **fix A** (the ExpandIntegrand guard), 78: 35 refolded by 1_2_3_1 r11 and cut by the seen
-  test (ticket 22), 17 ending in a partial answer or an unverified form, 14 past the cap.
-- **symbolic EqQ**, 47: 37 are the zero chain's `factor()` on radical kernels (ticket 23;
-  a proposed fix, measured, recovers 36 and loses none), and 9 or 10 follow Rubi's reading into
-  a slow or noun route.
+  test (ticket 22), 17 ending in a partial answer or an unverified form, 14 past the cap, and 12
+  that pass singly near the cap (20-30x faster with the guard reverted).
+- **symbolic EqQ**, 47: 37 are the zero chain's `factor()` on radical kernels, 2 of them passing
+  singly near the cap (ticket 23; a proposed fix, measured, recovers 36 and loses none). The
+  other 10 follow Rubi's reading into a slow or noun route, 1 of them near the cap.
 - **two-valued GtQ**, 13.
 - **plain Subst**, 7.
 - **carried**, 33: class 6's pre-existing families, identified by the class-6 attribution.

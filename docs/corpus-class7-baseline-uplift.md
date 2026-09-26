@@ -187,7 +187,7 @@ class-ports-fixes commit, and timings are alternating sequential runs. Build
 `branch_5_50_base_84_g4204fb669`, 2026-09-26.
 
 19, all caused by fixes landed after the pre-fix run:
-- **fix A** (`3bb8c4f`), 10 entries: 4 past the cap, 3 refolded by 1_2_3_1 r11 and cut by the seen test (ticket 22), 3 ending in a partial answer or an unverified form.
+- **fix A** (`3bb8c4f`), 11 entries: 4 past the cap, 1 that passes singly near the cap, 3 refolded by 1_2_3_1 r11 and cut by the seen test (ticket 22), 3 ending in a partial answer or an unverified form.
 - **two-valued GtQ**, 4 entries: 3 ending in a noun or a timeout, 1 with a numerically correct answer different from Rubi's.
 - **symbolic EqQ**, 2 entries: Rubi's reading of an identically-zero condition opens a route that times out or ends in a noun.
 - **fix A and symbolic EqQ together**, 1 entry.
