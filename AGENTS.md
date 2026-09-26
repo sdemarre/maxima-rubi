@@ -360,7 +360,9 @@ fix E, changes one check's expectation); with `%mr_subst` a plain `subst`
 unless the run switch `mr_subst_simp` (fix D, 4 checks): `Results: 1553
 passed, 0 failed`; with Rubi's real-number reading of GtQ/LtQ/GeQ/LeQ and
 the run switch `mr_gtq_facts` (matcher-translation-fixes issue 02, 30
-checks): **`Results: 1583 passed, 0 failed`**. The
+checks): `Results: 1583 passed, 0 failed`; with the seen cut silenced
+(`errormsg` bound false around its raise, 2 checks, 2026-09-26): **`Results:
+1585 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load

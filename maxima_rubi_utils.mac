@@ -278,8 +278,14 @@ depth_level : 0$
 
        This is NOT the 2026-08-25 measurement above: that one made the
        fb = TRUE branch an error and lost the productive integrate results
-       the seen guard returns. That branch is untouched. */
-    else error("mr_seen_cut")
+       the seen guard returns. That branch is untouched.
+
+       errormsg is bound false around the raise: the cut is an internal
+       signal that is always caught, and Maxima otherwise prints its
+       message ("mr_seen_cut") at every cut, in interactive sessions too.
+       The binding is local to the raise; errcatch still sees the error
+       (measured 2026-09-26). */
+    else block([errormsg : false], error("mr_seen_cut"))
   ),
   %mr_seen : cons(%mr_top_f, %mr_seen),
   /* One dispatch on MR-MATCH (maxima_rubi_dispatch.lisp

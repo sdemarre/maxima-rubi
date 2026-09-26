@@ -175,6 +175,19 @@ run_all_tests() := block([],
 
 load("maxima_rubi.mac")$
 
+/* mr_t_capture(f): what calling the zero-argument function f prints, as a
+   string (test_seen_cut_fallthrough: the seen cut must be silent). A batch
+   file cannot hold a :lisp line, so it goes through with_stdout and a file
+   under maxima_tempdir. */
+mr_t_capture(mr_t_f) := block([mr_t_fn, mr_t_s, mr_t_in, mr_t_l],
+  mr_t_fn : sconcat(maxima_tempdir, "/mr_t_capture.txt"),
+  with_stdout(mr_t_fn, mr_t_f()),
+  mr_t_s : "",
+  mr_t_in : openr(mr_t_fn),
+  while (mr_t_l : readline(mr_t_in)) # false do mr_t_s : sconcat(mr_t_s, mr_t_l),
+  close(mr_t_in),
+  mr_t_s)$
+
 /* Layer A measures what the RULES compute. For the cluster and corpus
    checks below that includes the nested integrate fall-through the
    expected answers were built with: a reduction whose sub-integral Maxima
@@ -3206,6 +3219,12 @@ test_seen_cut_fallthrough() := block(
   check("rules-only: a seen cut declines the rule and the dispatch continues",
         mr_int(x^2, x), 42),
   check("the seen list is balanced after the decline", %mr_seen, []),
+  /* the cut is an internal signal, always caught: it must not print
+     (it used to print "mr_seen_cut" once per cut, 2026-09-26) */
+  %mr_seen : [],
+  check("the seen cut prints nothing",
+        mr_t_capture(lambda([], mr_int(x^2, x))), ""),
+  check_bool("the global errormsg is untouched by the cut", is(errormsg = true)),
 
   /* with no rule after it, the dispatch still ends on the noun -- the cut
      declines ONE rule, it does not invent an answer */
