@@ -1,0 +1,314 @@
+# final class-ports re-measure: PASS->FAIL attribution (182 losses)
+# core 89bec424 (c2deb32), build branch_5_50_base_84_g4204fb669, 2026-09-26
+# bucket = the change that caused the loss (see attribution.py for the rules)
+
+Findings (evidence: the files named in attribution.py's docstring)
+ * 164/182 losses reproduce singly on the final core (01-noise-final.out). Of the 18 that
+   pass singly, 15 are near-cap COST (>= 2x and >= 10 s faster with one fix reverted; the
+   sequential alternating A/B 15-alt-timing.out confirms: 1.1.1.3 e2250 25.5 s vs fix-A-off
+   0.8 s, e2436 26.0 vs 0.5, 1.1.1.2 e1007 18.4 vs EqQ-off 4.7 / proposed fix 0.1, 1.2.1.2
+   e1825 22.0 vs EqQ-off 0.2 / proposed fix 22.0), 2 are class-6 ports-era slowdowns
+   (6.3.7 e44/e180), 1 is noise (6.3.7 e34: 20.5 s here, prefix core 30.1 timeout).
+ * Every non-carried loss is caused by one of the fixes, identified by reverting it alone on
+   the final core (02-arm-*, 13-arm-revA) and confirmed by a commit bisect over cores built at
+   d0f0237/025c589/e799ea6/3bb8c4f/1ebef70 (08-bisect-*): 65 first fail at 3bb8c4f (fix A),
+   2 at d0f0237 (symbolic EqQ), 8 only after 1ebef70 (Subst / GtQ / depth). Tickets 18 and 19
+   and the values trim (V) cause none.
+ * Fix A (3bb8c4f, ExpandIntegrand reciprocal-atom guard) is correct, but the part error it
+   removes had been making the calling rule misfire into a route that verified; the expansion
+   now completes and 1_2_3_1 r11 (Int[(a+b x^-n+c x^n)^p_.], p defaulting to 1) refolds the
+   expanded sum a^2/x+2ab+b^2x into (a^2+2abx+b^2x^2)/x, which the exact seen test cuts
+   (every later rule misfires, 9_3 r67 gives up). All 65 bisected losses pass with the guard
+   reverted (09-revert-A.out); 35 traces show the r11 refold (10-trace-fixA-final.out).
+ * Symbolic EqQ (d0f0237) has a genuine COST DEFECT: the zero chain's factor() runs on
+   differences whose kernels are radicals of symbols/numbers (1_4_1 r4/r5/r6 perfect-power
+   test EqQ[Px, (Rt[a,n]+Rt[b,n] x)^n]) or `if unknown` conditionals leaked by %mr_pseudoRoot;
+   probe 03: factor() > 120 s on (a+b x)^4 (c+d x)^3; probe 04: radcan answers nonzero in
+   0.4 ms. PROPOSED FIX (fix-eqq-radcan.mac + fix-pseudoroot.mac, not applied) recovers 36
+   of the 164 final-FAIL losses and loses none of them, none of the 29 EqQ-fix wins and none
+   of a 75-entry PASS sample (14-arm-fixRP.out, 07-*); failing check 17-proposed-checks.mac
+   (RED: 4/1 then no Results line at the 90 s cap; GREEN: 7/0).
+ * Two-valued GtQ (39eba80, Rubi's reading) lets reductions fire whose conditions were
+   unknown (e.g. 5_1_4 r23 Not[LtQ[m,-1]] on a symbolic m): 5 answers are numerically
+   correct closed forms/forms the zero chain cannot close (11-numcheck-final.out), 8 end in a
+   noun or time out.
+ * Plain Subst (e67e2eb): 6 class-4 answers are numerically correct but unsimplified, so the
+   zero chain cannot close them (S-verify); 1 timeout.
+ * ONE WRONG ANSWER: 1.2.2.2 e1035, 1/(x*sqrt(a+(2+2c-2(1+c))*x^4)) -> -atanh(1)/(2 sqrt(a))
+   (infinite), needs BOTH plain Subst and two-valued GtQ (12-e1035-combos.out): the
+   unsimplified zero coefficient no longer raises the division-by-zero misfire that let
+   9_1 r2 (EqQ[b,0]) answer log(x)/sqrt(a). A degenerate corpus input.
+
+=== class 1: 85 losses (vs master record)
+   30  E-cost: zero chain factor() on radical/`if unknown` kernels -- the proposed fix recovers it
+       1.1.1.2 e1259         verified   3.0s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.2s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.1.1.2 e1274         verified  11.0s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.6s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.1.1.2 e1276         verified  12.2s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.5s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.1.1.2 e1278         verified  11.7s -> timeout        30.1s | rerun timeout 30.0s | pre veri 0.4s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.1.1.2 e1300         verified  22.0s -> timeout        30.1s | rerun timeout 30.1s | pre veri 1.0s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.1.1.2 e1302         verified  26.1s -> timeout        30.1s | rerun timeout 30.1s | pre veri 1.0s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.1.1.2 e1304         verified  25.4s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.8s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e473          verified   5.3s -> timeout        30.0s | rerun timeout 30.1s | pre veri 0.4s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e474          verified   5.7s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.3s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e488          verified   8.6s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.5s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e490          verified   9.0s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.4s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1464         verified   7.1s -> timeout        30.1s | rerun timeout 30.1s | pre veri 4.0s | E:P1 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1466         verified   7.3s -> timeout        30.1s | rerun timeout 30.1s | pre veri 3.9s | E:P1 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1482         verified  15.9s -> timeout        30.1s | rerun timeout 30.1s | pre veri 9.0s | E:P4 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1484         verified  13.8s -> timeout        30.1s | rerun timeout 30.1s | pre veri 7.3s | E:P1 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1555         verified  12.0s -> timeout        30.0s | rerun timeout 30.1s | pre veri 0.6s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1570         verified   9.8s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.6s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1785         verified   3.1s -> timeout        30.0s | rerun timeout 30.1s | pre veri 0.3s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1852         verified   7.5s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.4s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1854         verified   0.9s -> timeout        30.1s | rerun timeout 30.0s | pre veri 1.2s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.2 e1893         verified   0.6s -> timeout        30.1s | rerun timeout 30.0s | pre veri 0.8s | E:P0 A:P30 S:P30 D:P29 G:F30 | fixRP P | also recovered by A,D,S
+       1.2.1.2 e2131         verified  12.8s -> timeout        30.1s | rerun timeout 30.1s | pre veri 1.0s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.3 e1896         verified  11.7s -> timeout        30.1s | rerun timeout 30.0s | pre veri 1.1s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.3 e1905         verified  27.0s -> timeout        30.0s | rerun timeout 30.1s | pre veri 1.5s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.3 e1918         verified  11.6s -> timeout        30.0s | rerun timeout 30.1s | pre veri 1.4s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.3 e1970         verified  18.6s -> timeout        30.1s | rerun timeout 30.1s | pre veri 1.4s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.2.1.3 e1972         verified   7.9s -> timeout        30.0s | rerun timeout 30.0s | pre veri 1.2s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.3.1 e58             verified   2.4s -> timeout        30.1s | rerun timeout 30.1s | pre veri 2.9s | E:P1 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       1.3.1 e195            verified   0.7s -> error           3.0s | rerun error 2.4s | pre veri 0.9s | E:P0 A:F2 S:F2 D:F2 G:F2 | fixRP P | answer |dA/dx-f| n/a (not shown correct)
+       1.3.1 e210            verified   0.2s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.3s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+   21  A-refold: the now-completing ExpandIntegrand sum is refolded by 1_2_3_1 r11 (p_. = 1) into a quotient the seen test cuts; ends in a noun
+       1.1.1.2 e56           verified   0.4s -> deferred        0.5s | rerun deferred 0.3s | pre veri 0.5s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.1.3 e54           verified   0.4s -> deferred        1.3s | rerun deferred 0.8s | pre veri 0.6s | E:F1 A:P0 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+       1.1.1.3 e65           verified   0.4s -> contains-noun   0.5s | rerun contains-noun 0.4s | pre veri 0.6s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.2.2 e19           verified   0.4s -> contains-noun   0.6s | rerun contains-noun 0.4s | pre veri 0.6s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.2.4 e4            verified   0.5s -> contains-noun   1.2s | rerun contains-noun 0.9s | pre veri 0.7s | E:F1 A:P0 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+       1.1.2.4 e14           verified   0.6s -> contains-noun   0.6s | rerun contains-noun 0.5s | pre veri 0.7s | E:F0 A:P0 S:F0 D:F0 G:F1 | fixRP F | bisect: first FAIL at A
+       1.1.2.4 e146          verified   0.6s -> contains-noun   0.5s | rerun contains-noun 0.5s | pre veri 0.8s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.3.2 e223          verified   0.5s -> contains-noun   0.5s | rerun contains-noun 0.5s | pre veri 0.7s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.3.2 e625          verified   0.5s -> contains-noun   0.6s | rerun contains-noun 0.5s | pre veri 0.7s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.3.2 e1561         verified   0.4s -> deferred        0.5s | rerun deferred 0.5s | pre veri 0.6s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.3.2 e1818         verified   0.4s -> contains-noun   0.5s | rerun contains-noun 0.5s | pre veri 0.6s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.3.2 e2123         verified   0.4s -> contains-noun   0.5s | rerun contains-noun 0.5s | pre veri 0.6s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.3.2 e2292         verified   0.4s -> contains-noun   0.4s | rerun contains-noun 0.5s | pre veri 0.6s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.3.2 e2455         verified   0.4s -> contains-noun   0.5s | rerun contains-noun 0.5s | pre veri 0.6s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.3.2 e2525         verified   0.4s -> contains-noun   0.5s | rerun contains-noun 0.5s | pre veri 0.6s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.3.4 e4            verified   0.5s -> contains-noun   1.3s | rerun contains-noun 0.8s | pre veri 0.7s | E:F1 A:P0 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+       1.1.3.4 e14           verified   0.6s -> contains-noun   0.6s | rerun contains-noun 0.4s | pre veri 0.8s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       1.1.4.3 e6            verified   1.4s -> contains-noun   1.6s | rerun contains-noun 1.1s | pre veri 1.9s | E:F1 A:P0 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+       1.1.4.3 e17           verified   1.9s -> contains-noun   1.0s | rerun contains-noun 0.7s | pre veri 2.6s | E:F1 A:P1 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+       1.2.1.3 e658          verified   1.2s -> contains-noun   1.8s | rerun contains-noun 1.2s | pre veri 1.7s | E:F1 A:P0 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+       1.2.2.2 e150          verified   1.1s -> contains-noun   0.7s | rerun contains-noun 0.5s | pre veri 1.4s | E:F1 A:P0 S:F1 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+   11  A-cost near cap: passes singly, fix-A-free run ~20-30x faster
+       1.1.1.3 e267          verified   0.7s -> timeout        30.1s | rerun verified 28.9s | pre veri 0.9s | E:F30 A:P0 S:P27 D:P26 G:P27 | fixRP P 
+       1.1.1.3 e2250         verified   3.6s -> timeout        30.1s | rerun verified 30.0s | pre veri 4.8s | E:F30 A:P1 S:P29 D:P28 G:P30 | fixRP P 
+       1.1.1.3 e2262         verified   3.6s -> timeout        30.1s | rerun verified 28.0s | pre veri 4.9s | E:F30 A:P1 S:P28 D:F29 G:F30 | fixRP P | bisect: first FAIL at A
+       1.1.1.3 e2274         verified   3.8s -> timeout        30.1s | rerun verified 27.0s | pre veri 5.0s | E:F30 A:P1 S:P29 D:F28 G:P30 | fixRP P 
+       1.1.1.3 e2412         verified   3.5s -> timeout        30.1s | rerun verified 27.8s | pre veri 4.8s | E:F30 A:P1 S:P29 D:F29 G:F30 | fixRP P | bisect: first FAIL at A
+       1.1.1.3 e2424         verified   3.6s -> timeout        30.1s | rerun verified 29.0s | pre veri 4.9s | E:F30 A:P1 S:P30 D:F30 G:F30 | fixRP P | bisect: first FAIL at A
+       1.1.1.3 e2435         verified   3.5s -> timeout        30.1s | rerun verified 27.7s | pre veri 4.7s | E:F30 A:P1 S:P28 D:F29 G:F30 | fixRP P | bisect: first FAIL at A
+       1.1.1.3 e2436         verified   2.1s -> timeout        30.0s | rerun verified 27.6s | pre veri 2.9s | E:F30 A:P1 S:P28 D:P29 G:P30 | fixRP P 
+       1.1.1.3 e2578         verified   3.2s -> timeout        30.1s | rerun verified 21.0s | pre veri 4.5s | E:P2 A:P1 S:P21 D:F21 G:P22 | fixRP P | also recovered by E
+       1.1.1.3 e2587         verified   3.4s -> timeout        30.1s | rerun verified 20.0s | pre veri 4.5s | E:P2 A:P1 S:P21 D:F21 G:P22 | fixRP P | also recovered by E
+       1.1.2.4 e315          verified   1.0s -> timeout        30.0s | rerun verified 25.2s | pre veri 1.3s | E:P28 A:P0 S:P26 D:P27 G:P28 | fixRP P 
+    7  E-route: Rubi's EqQ reading (identically-zero condition) opens a route that times out / ends in a noun
+       1.2.1.2 e1904         verified   1.1s -> timeout        30.1s | rerun timeout 30.1s | pre veri 1.6s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       1.2.1.2 e1905         verified   0.8s -> timeout        30.1s | rerun timeout 30.1s | pre veri 1.1s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       1.2.1.3 e2217         verified  14.1s -> timeout        30.1s | rerun timeout 30.1s | pre veri 19.7s | E:P4 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       1.2.1.3 e2218         verified   4.3s -> timeout        30.0s | rerun timeout 30.1s | pre veri 6.1s | E:P2 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       1.2.1.3 e2219         verified   0.9s -> contains-noun   6.1s | rerun contains-noun 4.5s | pre veri 1.3s | E:P0 A:F4 S:F4 D:F4 G:F4 | fixRP F 
+       1.3.1 e211            verified   0.3s -> timeout        30.1s | rerun timeout 30.1s | pre veri 0.5s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       1.3.2 e606            verified  15.5s -> timeout        30.0s | rerun contains-noun 29.0s | pre veri 22.3s | E:P4 A:P4 S:F29 D:F9 G:F29 | fixRP F | also recovered by A
+    6  A-route: the now-completing expansion ends in a partial answer (noun) / unverified form
+       1.1.1.3 e2577         verified   5.0s -> timeout        30.0s | rerun timeout 30.0s | pre veri 6.7s | E:P4 A:P1 S:F30 D:F30 G:F30 | fixRP F | also recovered by E
+       1.1.1.3 e2586         verified   5.1s -> timeout        30.0s | rerun timeout 30.1s | pre veri 6.9s | E:P4 A:P1 S:F30 D:F30 G:F30 | fixRP F | also recovered by E
+       1.1.3.3 e159          verified   8.2s -> timeout        30.0s | rerun timeout 30.0s | pre veri 11.2s | E:F30 A:P3 S:F30 D:P30 G:F30 | fixRP P | also recovered by D
+       1.1.3.3 e166          verified  14.0s -> timeout        30.1s | rerun timeout 30.0s | pre veri 18.8s | E:F30 A:P4 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+       1.2.1.2 e438          expected   2.1s -> unverified      0.7s | rerun unverified 0.6s | pre expe 2.9s | E:F0 A:P1 S:F1 D:F0 G:F0 | fixRP F | answer |dA/dx-f| 2.97e-15 (correct); bisect: first FAIL at A
+       1.3.2 e605            verified  11.5s -> timeout        30.1s | rerun timeout 30.0s | pre veri 16.9s | E:P3 A:P3 S:F30 D:F11 G:F30 | fixRP F | also recovered by E
+    4  A-cost: the now-completing ExpandIntegrand route runs past the cap
+       1.1.1.3 e287          verified   0.9s -> timeout        30.0s | rerun timeout 30.0s | pre veri 1.2s | E:F30 A:P0 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+       1.1.3.3 e131          verified   4.7s -> timeout        30.1s | rerun timeout 30.1s | pre veri 6.5s | E:F30 A:P1 S:F30 D:F4 G:F30 | fixRP F | bisect: first FAIL at A
+       1.1.3.3 e138          verified   5.4s -> timeout        30.1s | rerun timeout 30.1s | pre veri 7.3s | E:F30 A:P2 S:F30 D:F4 G:F30 | fixRP F | bisect: first FAIL at A
+       1.1.3.3 e152          verified   4.9s -> timeout        30.1s | rerun timeout 30.1s | pre veri 6.6s | E:F30 A:P2 S:F30 D:F4 G:F30 | fixRP F | bisect: first FAIL at A
+    2  E-cost near cap: passes singly; symbolic-EqQ-free run much faster, the proposed fix too
+       1.1.1.2 e1007         verified   8.2s -> timeout        30.0s | rerun verified 24.3s | pre veri 5.1s | E:P7 A:P25 S:P24 D:P22 G:P24 | fixRP P 
+       1.2.1.3 e2318         verified  15.8s -> timeout        30.0s | rerun verified 24.2s | pre veri 1.5s | E:P0 A:P22 S:P23 D:P23 G:P23 | fixRP P 
+    1  G-answer: two-valued GtQ fires a reduction Rubi's corpus answer does not take (answer correct, not Rubi's)
+       1.1.1.2 e369          verified   7.8s -> unverified      0.2s | rerun unverified 0.1s | pre veri 6.3s | E:F0 A:F0 S:F0 D:F0 G:P1 | fixRP F | answer |dA/dx-f| 4.577566798522237e-16 (correct)
+    1  G-route: two-valued GtQ (Rubi's reading) fires a reduction that ends in a noun / times out
+       1.1.1.2 e370          verified   1.4s -> timeout        30.1s | rerun timeout 30.1s | pre veri 1.9s | E:F30 A:F30 S:F30 D:F30 G:P0 | fixRP F 
+    1  E-route near cap: passes singly; symbolic-EqQ-free run much faster (a different, Rubi-divergent route), the proposed fix does not help
+       1.2.1.2 e1825         verified   0.5s -> timeout        30.1s | rerun verified 26.7s | pre veri 0.6s | E:P0 A:P26 S:P26 D:P25 G:P26 | fixRP P 
+    1  S+G WRONG ANSWER: degenerate integrand (x^4 coefficient 2+2c-2(1+c) = 0) reaches 1_1_3_2 r8
+       1.2.2.2 e1035         verified   1.1s -> unverified      0.1s | rerun unverified 0.1s | pre veri 1.6s | E:F0 A:F0 S:F0 D:F0 G:F0 | fixRP F | answer |dA/dx-f| err (not shown correct)
+
+=== class 2: 3 losses (vs master record)
+    3  E-cost: zero chain factor() on radical/`if unknown` kernels -- the proposed fix recovers it
+       2.3 e256              verified  13.0s -> timeout        30.1s | rerun timeout 30.1s | pre veri 9.4s | E:P9 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       2.3 e315              verified  12.7s -> timeout        30.0s | rerun timeout 30.1s | pre veri 9.1s | E:P9 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+       2.3 e620              verified   4.4s -> timeout        30.1s | rerun timeout 30.1s | pre veri 6.4s | E:P1 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+
+=== class 3: 5 losses (vs master record)
+    3  A-route: the now-completing expansion ends in a partial answer (noun) / unverified form
+       3.1.4 e353            verified   2.9s -> contains-noun   1.0s | rerun contains-noun 0.8s | pre veri 4.0s | E:F1 A:P1 S:F1 D:F1 G:P1 | fixRP F | also recovered by G
+       3.3 e346             no-answer   2.5s -> contains-noun   1.5s | rerun contains-noun 1.0s | pre no-a 3.8s | E:F1 A:P1 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+       3.5 e289             no-answer   0.7s -> contains-noun   0.5s | rerun contains-noun 0.4s | pre no-a 1.0s | E:F0 A:P0 S:F0 D:F1 G:F0 | fixRP F | bisect: first FAIL at A
+    1  G-route: two-valued GtQ (Rubi's reading) fires a reduction that ends in a noun / times out
+       3.1.4 e361            verified   3.2s -> contains-noun   2.9s | rerun contains-noun 1.8s | pre veri 4.5s | E:F2 A:F2 S:F2 D:F2 G:P1 | fixRP F 
+    1  carried: pre-fix record FAIL
+       3.4 e497              expected  23.2s -> timeout        30.1s | rerun timeout 30.0s | pre time 30.1s | E:F30 A:F30 S:P14 D:F30 G:F30 | fixRP F 
+
+=== class 6: 46 losses (vs master record)
+   10  A-refold: the now-completing ExpandIntegrand sum is refolded by 1_2_3_1 r11 (p_. = 1) into a quotient the seen test cuts; ends in a noun
+       6.1.5 e303            verified   1.5s -> contains-noun   2.7s | rerun contains-noun 2.0s | pre veri 2.0s | E:F2 A:P0 S:F2 D:F1 G:F2 | fixRP F | bisect: first FAIL at A
+       6.1.5 e310            verified   1.4s -> contains-noun   2.7s | rerun contains-noun 2.0s | pre veri 1.9s | E:F2 A:P0 S:F2 D:F1 G:F2 | fixRP F | bisect: first FAIL at A
+       6.1.5 e314            verified   1.5s -> contains-noun   2.8s | rerun contains-noun 2.0s | pre veri 2.0s | E:F2 A:P0 S:F2 D:F1 G:F2 | fixRP F | bisect: first FAIL at A
+       6.1.5 e318            verified   1.5s -> contains-noun   2.6s | rerun contains-noun 2.0s | pre veri 2.1s | E:F2 A:P0 S:F2 D:F1 G:F2 | fixRP F | bisect: first FAIL at A
+       6.2.5 e273            verified   1.4s -> contains-noun   2.5s | rerun contains-noun 1.8s | pre veri 1.9s | E:F2 A:P0 S:F2 D:F1 G:F2 | fixRP F | bisect: first FAIL at A
+       6.2.5 e277            verified   1.4s -> contains-noun   2.5s | rerun contains-noun 1.9s | pre veri 1.9s | E:F2 A:P0 S:F2 D:F1 G:F2 | fixRP F | bisect: first FAIL at A
+       6.2.5 e281            verified   1.4s -> contains-noun   2.6s | rerun contains-noun 2.0s | pre veri 1.8s | E:F2 A:P0 S:F2 D:F1 G:F2 | fixRP F | bisect: first FAIL at A
+       6.7.1 e80             verified   1.3s -> contains-noun   0.4s | rerun contains-noun 0.4s | pre veri 0.9s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       6.7.1 e111            verified   4.6s -> contains-noun   0.5s | rerun contains-noun 0.4s | pre veri 0.9s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+       6.7.1 e908            verified   2.7s -> contains-noun   3.4s | rerun contains-noun 2.1s | pre veri 3.4s | E:F2 A:P1 S:F2 D:F1 G:F2 | fixRP F | bisect: first FAIL at A
+    7  carried: class-6 attribution: S  seen-test cycle 1_1_2_2 r5 <-> 1_2_3_1 r1 (pre-existing; after A)
+       6.1.7 e426            verified   3.5s -> contains-noun   1.6s | rerun contains-noun 1.1s | pre cont 6.1s | E:F1 A:F1 S:F1 D:F1 G:F1 | fixRP F 
+       6.7.1 e73             verified   1.9s -> contains-noun   0.5s | rerun contains-noun 0.5s | pre cont 1.6s | E:F0 A:F0 S:F0 D:F0 G:F0 | fixRP F 
+       6.7.1 e76             verified   2.2s -> contains-noun   0.5s | rerun contains-noun 0.5s | pre cont 1.8s | E:F0 A:F0 S:F0 D:F0 G:F1 | fixRP F 
+       6.7.1 e78             verified   2.8s -> contains-noun   0.6s | rerun contains-noun 0.4s | pre cont 1.9s | E:F0 A:F0 S:F0 D:F0 G:F0 | fixRP F 
+       6.7.1 e104            verified   1.3s -> contains-noun   0.5s | rerun contains-noun 0.4s | pre cont 1.6s | E:F0 A:F0 S:F0 D:F0 G:F0 | fixRP F 
+       6.7.1 e107            verified   5.7s -> contains-noun   0.6s | rerun contains-noun 0.4s | pre cont 1.8s | E:F0 A:F0 S:F0 D:F0 G:F0 | fixRP F 
+       6.7.1 e109            verified   2.8s -> contains-noun   0.5s | rerun contains-noun 0.4s | pre cont 1.8s | E:F0 A:F0 S:F0 D:F0 G:F0 | fixRP F 
+    6  carried: class-6 attribution: G  give-up form c*unintegrable (Rubi-faithful 4_5_10 r13 / 4_3_10 r24)
+       6.1.1 e26            no-answer   1.0s -> contains-noun   0.4s | rerun contains-noun 0.3s | pre cont 1.3s | E:F0 A:F0 S:F0 D:F0 G:F0 | fixRP F 
+       6.1.1 e31            no-answer   1.6s -> contains-noun   0.6s | rerun contains-noun 0.4s | pre cont 2.2s | E:F0 A:F1 S:F0 D:F1 G:F0 | fixRP F 
+       6.1.1 e36            no-answer   1.7s -> contains-noun   0.6s | rerun contains-noun 0.5s | pre cont 2.1s | E:F0 A:F0 S:F0 D:F0 G:F1 | fixRP F 
+       6.3.1 e4             no-answer   1.1s -> contains-noun   0.4s | rerun contains-noun 0.4s | pre cont 1.3s | E:F0 A:F0 S:F0 D:F0 G:F0 | fixRP F 
+       6.3.1 e9             no-answer   1.7s -> contains-noun   0.7s | rerun contains-noun 0.6s | pre cont 2.1s | E:F0 A:F0 S:F0 D:F1 G:F0 | fixRP F 
+       6.3.1 e14            no-answer   1.8s -> contains-noun   0.6s | rerun contains-noun 0.6s | pre cont 2.2s | E:F0 A:F0 S:F0 D:F1 G:F0 | fixRP F 
+    6  carried: class-6 attribution: route/runaway: new timeout
+       6.1.7 e274            expected  12.1s -> timeout        30.0s | rerun timeout 30.1s | pre time 30.1s | E:F30 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       6.2.7 e71             expected  12.6s -> timeout        30.1s | rerun timeout 30.1s | pre time 30.1s | E:F30 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       6.3.7 e193            verified  15.7s -> timeout        30.1s | rerun timeout 30.1s | pre time 30.1s | E:F30 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       6.3.7 e195            verified  15.4s -> timeout        30.1s | rerun timeout 30.1s | pre time 30.1s | E:F30 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       6.6.3 e51             verified  26.6s -> timeout        30.1s | rerun timeout 30.1s | pre time 30.1s | E:F30 A:F30 S:F30 D:F30 G:F30 | fixRP F 
+       6.6.3 e55             verified  28.2s -> timeout        30.0s | rerun contains-noun 28.0s | pre time 30.1s | E:F28 A:F29 S:F28 D:F29 G:F28 | fixRP F 
+    6  carried: class-6 attribution: W  wrong answer: bridged fractional power, Maxima radical branches (4_3_1_1); answer |dA/dx-f| err (not shown correct)
+       6.4.2 e9              verified   2.3s -> unverified      0.9s | rerun unverified 0.6s | pre unve 2.3s | E:F0 A:F1 S:F0 D:F1 G:F1 | fixRP F 
+       6.4.2 e23             verified   2.3s -> unverified      0.9s | rerun unverified 0.6s | pre unve 2.3s | E:F1 A:F1 S:F1 D:F1 G:F1 | fixRP F 
+       6.4.2 e27             verified   2.4s -> unverified      0.8s | rerun unverified 0.6s | pre unve 2.3s | E:F1 A:F1 S:F0 D:F1 G:F1 | fixRP F 
+       6.4.2 e44             verified   2.5s -> unverified     16.7s | rerun unverified 14.0s | pre unve 2.8s | E:F14 A:F14 S:F1 D:F14 G:F14 | fixRP F 
+       6.4.2 e46             verified   2.3s -> unverified      0.8s | rerun unverified 0.7s | pre unve 2.4s | E:F1 A:F1 S:F1 D:F1 G:F1 | fixRP F 
+       6.4.2 e48             verified   2.4s -> unverified      0.9s | rerun unverified 0.8s | pre unve 2.4s | E:F1 A:F1 S:F1 D:F1 G:F1 | fixRP F 
+    3  carried: class-6 attribution: D  depth cap 16 (bridge ping-pong)
+       6.6.3 e36             verified  23.2s -> contains-noun   4.2s | rerun contains-noun 2.9s | pre cont 2.6s | E:F3 A:F3 S:F3 D:F0 G:F3 | fixRP F 
+       6.6.3 e38             verified  21.0s -> contains-noun   6.6s | rerun contains-noun 4.4s | pre cont 6.7s | E:F5 A:F5 S:F5 D:F1 G:F5 | fixRP F 
+       6.6.3 e40             verified  16.4s -> contains-noun   6.3s | rerun contains-noun 4.6s | pre cont 4.1s | E:F5 A:F4 S:F5 D:F1 G:F5 | fixRP F 
+    2  carried: class-6 attribution: route/runaway: new timeout; answer |dA/dx-f| err (not shown correct)
+       6.4.2 e45             verified   2.3s -> unverified      2.4s | rerun unverified 1.8s | pre time 30.0s | E:F2 A:F2 S:F30 D:F2 G:F2 | fixRP F 
+       6.4.2 e49             verified   2.6s -> unverified     15.3s | rerun unverified 12.5s | pre time 30.1s | E:F12 A:F12 S:F30 D:F13 G:F13 | fixRP F 
+    1  A-cost: the now-completing ExpandIntegrand route runs past the cap
+       6.1.1 e360            verified   6.4s -> timeout        30.1s | rerun timeout 30.0s | pre veri 10.5s | E:F30 A:P2 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+    1  E-cost: zero chain factor() on radical/`if unknown` kernels -- the proposed fix recovers it
+       6.1.7 e305            verified   1.9s -> timeout        30.1s | rerun timeout 30.1s | pre veri 1.4s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+    1  E+A: needs both the symbolic EqQ and fix A reverted
+       6.2.5 e266            verified   1.5s -> contains-noun   2.3s | rerun contains-noun 1.6s | pre veri 2.0s | E:F2 A:F2 S:F2 D:F1 G:F2 | fixRP F | bisect: first FAIL at E
+    1  noise
+       6.3.7 e34             verified  25.5s -> timeout        30.0s | rerun verified 24.0s | pre time 30.1s | E:F30 A:P25 S:P24 D:P24 G:P24 | fixRP P | final rerun verified 24.0s (record timeout 30.0s)
+    1  carried: class-6 attribution: route/runaway: new timeout -- the ports-era slowdown; now passes singly near the cap (25.2s, base 3.1s)
+       6.3.7 e44             verified   3.1s -> timeout        30.0s | rerun verified 25.2s | pre time 30.1s | E:F30 A:P25 S:P25 D:P25 G:P25 | fixRP P 
+    1  carried: class-6 attribution: cost -- the ports-era slowdown; now passes singly near the cap (28.2s, base 5.8s)
+       6.3.7 e180            verified   5.8s -> timeout        30.1s | rerun verified 28.2s | pre time 30.1s | E:P15 A:F30 S:P28 D:F24 G:P28 | fixRP P 
+
+=== class 5: 15 losses (vs pre-fix class-ports record)
+    5  A-cost: the now-completing ExpandIntegrand route runs past the cap
+       5.3.6 e70             verified   6.1s -> timeout        30.1s | rerun timeout 30.1s | pre veri 4.9s | E:F30 A:P1 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+       5.3.6 e79             verified   9.3s -> timeout        30.1s | rerun timeout 30.1s | pre veri 7.6s | E:F30 A:P2 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+       5.3.6 e88             verified   5.9s -> timeout        30.1s | rerun timeout 30.1s | pre veri 4.9s | E:F30 A:P1 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+       5.3.6 e97             verified   6.2s -> timeout        30.1s | rerun timeout 30.1s | pre veri 5.1s | E:F30 A:P1 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+       5.3.6 e106            verified   9.1s -> timeout        30.0s | rerun timeout 30.1s | pre veri 7.6s | E:F30 A:P1 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+    4  A-route: the now-completing expansion ends in a partial answer (noun) / unverified form
+       5.1.4a e485          no-answer   4.5s -> contains-noun   3.0s | rerun contains-noun 2.1s | pre no-a 3.6s | E:F2 A:P1 S:F2 D:F2 G:F2 | fixRP F | bisect: first FAIL at A
+       5.1.4a e490          no-answer   4.8s -> contains-noun   5.7s | rerun contains-noun 4.0s | pre no-a 3.7s | E:F4 A:P1 S:F4 D:F4 G:F4 | fixRP F | bisect: first FAIL at A
+       5.1.4a e495          no-answer   4.6s -> contains-noun   8.8s | rerun contains-noun 5.9s | pre no-a 3.7s | E:F6 A:P1 S:F6 D:F6 G:F6 | fixRP F | bisect: first FAIL at A
+       5.1.4b e24            expected  21.5s -> contains-noun  10.3s | rerun contains-noun 6.9s | pre expe 17.7s | E:F7 A:P4 S:F7 D:F7 G:F7 | fixRP F | bisect: first FAIL at A
+    3  G-answer: two-valued GtQ fires a reduction Rubi's corpus answer does not take (answer correct, not Rubi's)
+       5.1.4a e276          no-answer   5.4s -> unexpected      9.1s | rerun unexpected 6.1s | pre no-a 4.3s | E:F6 A:F6 S:F6 D:F6 G:P1 | fixRP F | answer |dA/dx-f| 3.5236570605778894e-19 (correct)
+       5.1.4a e277          no-answer   5.3s -> unexpected      5.5s | rerun unexpected 3.6s | pre no-a 4.1s | E:F4 A:F4 S:F4 D:F4 G:P1 | fixRP F | answer |dA/dx-f| 4.336808689942018e-19 (correct)
+       5.1.4a e278          no-answer   3.0s -> unexpected      2.6s | rerun unexpected 1.7s | pre no-a 2.3s | E:F2 A:F2 S:F2 D:F2 G:P0 | fixRP F | answer |dA/dx-f| 1.734723475976807e-18 (correct)
+    3  G-route: two-valued GtQ (Rubi's reading) fires a reduction that ends in a noun / times out
+       5.1.4a e282          no-answer   4.8s -> timeout        30.1s | rerun contains-noun 21.3s | pre no-a 3.8s | E:F21 A:F22 S:F21 D:F22 G:P1 | fixRP F 
+       5.1.4a e283          no-answer   4.7s -> contains-noun   7.0s | rerun contains-noun 5.0s | pre no-a 3.8s | E:F5 A:F5 S:F5 D:F5 G:P1 | fixRP F 
+       5.1.4a e284          no-answer   4.8s -> contains-noun   2.1s | rerun contains-noun 1.4s | pre no-a 3.8s | E:F1 A:F1 S:F2 D:F2 G:P1 | fixRP F 
+
+=== class 7: 19 losses (vs pre-fix class-ports record)
+    4  A-cost: the now-completing ExpandIntegrand route runs past the cap
+       7.3.6 e71             verified   5.9s -> timeout        30.0s | rerun timeout 30.0s | pre veri 5.0s | E:F30 A:P1 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+       7.3.6 e81             verified   8.9s -> timeout        30.1s | rerun timeout 30.1s | pre veri 7.3s | E:F30 A:P2 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+       7.3.6 e101            verified   5.9s -> timeout        30.1s | rerun timeout 30.1s | pre veri 4.9s | E:F30 A:P1 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+       7.3.6 e111            verified   9.0s -> timeout        30.1s | rerun timeout 30.1s | pre veri 7.5s | E:F30 A:P2 S:F30 D:F30 G:F30 | fixRP F | bisect: first FAIL at A
+    3  A-refold: the now-completing ExpandIntegrand sum is refolded by 1_2_3_1 r11 (p_. = 1) into a quotient the seen test cuts; ends in a noun
+       7.1.4a e76            verified   6.1s -> contains-noun   1.6s | rerun contains-noun 1.1s | pre veri 4.7s | E:F1 A:P1 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+       7.2.4a e90            verified   8.0s -> contains-noun   2.1s | rerun contains-noun 1.4s | pre veri 6.6s | E:F2 A:P1 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+       7.3.6 e1024           verified   2.9s -> contains-noun   0.9s | rerun contains-noun 0.6s | pre veri 2.4s | E:F1 A:P0 S:F1 D:F1 G:F1 | fixRP F | bisect: first FAIL at A
+    3  G-route: two-valued GtQ (Rubi's reading) fires a reduction that ends in a noun / times out
+       7.1.4a e250          no-answer   4.7s -> contains-noun  29.5s | rerun contains-noun 20.1s | pre no-a 3.8s | E:F20 A:F21 S:F20 D:F21 G:P1 | fixRP F 
+       7.1.4a e251          no-answer   4.8s -> contains-noun   5.9s | rerun contains-noun 4.4s | pre no-a 3.9s | E:F4 A:F4 S:F4 D:F4 G:P1 | fixRP F 
+       7.1.4a e252          no-answer   4.8s -> contains-noun   2.0s | rerun contains-noun 1.4s | pre no-a 3.9s | E:F2 A:F1 S:F1 D:F1 G:P1 | fixRP F 
+    3  A-route: the now-completing expansion ends in a partial answer (noun) / unverified form
+       7.1.4a e451          no-answer   4.5s -> contains-noun   3.1s | rerun contains-noun 2.5s | pre no-a 3.8s | E:F2 A:P1 S:F2 D:F2 G:F2 | fixRP F | bisect: first FAIL at A
+       7.1.4a e456          no-answer   4.6s -> contains-noun   6.3s | rerun contains-noun 4.6s | pre no-a 3.8s | E:F4 A:P1 S:F4 D:F5 G:F4 | fixRP F | bisect: first FAIL at A
+       7.1.4a e461          no-answer   4.6s -> contains-noun  10.4s | rerun contains-noun 7.4s | pre no-a 3.7s | E:F7 A:P1 S:F8 D:F8 G:F7 | fixRP F | bisect: first FAIL at A
+    2  E-route: Rubi's EqQ reading (identically-zero condition) opens a route that times out / ends in a noun
+       7.3.4 e115            verified  22.2s -> contains-noun   2.7s | rerun contains-noun 1.7s | pre veri 18.1s | E:P2 A:F2 S:F2 D:F2 G:F2 | fixRP F 
+       7.3.4 e124            verified  10.8s -> contains-noun   3.5s | rerun contains-noun 2.4s | pre veri 8.9s | E:P2 A:F2 S:F2 D:F2 G:F2 | fixRP F 
+    1  S-cost: plain Subst route runs past the cap
+       7.2.5 e226            expected   2.3s -> timeout        30.1s | rerun timeout 30.1s | pre expe 1.8s | E:F30 A:F30 S:P1 D:F30 G:F30 | fixRP F 
+    1  E+A: needs both the symbolic EqQ and fix A reverted
+       7.3.4 e118            verified  21.7s -> contains-noun   3.8s | rerun contains-noun 2.6s | pre veri 17.8s | E:F30 A:F2 S:F3 D:F3 G:F2 | fixRP F | bisect: first FAIL at E
+    1  A-cost near cap: passes singly, fix-A-free run ~20-30x faster
+       7.3.6 e91             verified   5.9s -> timeout        30.0s | rerun verified 25.8s | pre veri 4.8s | E:P26 A:P1 S:P27 D:P26 G:P26 | fixRP P 
+    1  G-answer: two-valued GtQ fires a reduction Rubi's corpus answer does not take (answer correct, not Rubi's)
+       7.3.6 e798            expected  20.8s -> unverified      1.7s | rerun unverified 1.1s | pre expe 16.5s | E:F1 A:F1 S:F1 D:F1 G:P3 | fixRP F | answer |dA/dx-f| 4.019354293838262e-15 (correct)
+
+=== class 4: 9 losses (vs pre-fix class-ports record)
+    6  S-verify: plain Subst leaves an unsimplified but correct answer the zero chain cannot close
+       4.1.0 e494            verified   0.5s -> unverified      0.2s | rerun unverified 0.1s | pre veri 0.4s | E:F0 A:F0 S:P0 D:F0 G:F0 | fixRP F | answer |dA/dx-f| 1.1102230246251565e-16 (correct)
+       4.5.7 e328            verified   8.0s -> unverified      0.4s | rerun unverified 0.3s | pre veri 6.3s | E:F0 A:P1 S:P0 D:F0 G:F0 | fixRP F | also recovered by A; answer |dA/dx-f| 2.220446049250313e-15 (correct)
+       4.5.7 e331            expected   4.5s -> unverified      1.0s | rerun unverified 0.7s | pre expe 3.6s | E:F1 A:F1 S:P1 D:F1 G:F1 | fixRP F | answer |dA/dx-f| 5.551115123125783e-17 (correct)
+       4.5.7 e332            expected   4.4s -> unverified      1.0s | rerun unverified 0.7s | pre expe 3.6s | E:F1 A:F1 S:P1 D:F1 G:F1 | fixRP F | answer |dA/dx-f| 1.7763568394002505e-15 (correct)
+       4.5.7 e333            expected   4.5s -> unverified      1.0s | rerun unverified 0.7s | pre expe 3.6s | E:F1 A:F1 S:P1 D:F1 G:F1 | fixRP F | answer |dA/dx-f| 0 (correct)
+       4.7.7 e348            verified   9.1s -> unverified      1.9s | rerun unverified 1.3s | pre veri 7.3s | E:F2 A:F1 S:P1 D:F1 G:F2 | fixRP F | answer |dA/dx-f| 9.236905462728373e-9 (correct)
+    1  A-refold: the now-completing ExpandIntegrand sum is refolded by 1_2_3_1 r11 (p_. = 1) into a quotient the seen test cuts; ends in a noun
+       4.1.1.3 e152          verified   1.2s -> contains-noun   0.6s | rerun contains-noun 0.4s | pre veri 1.0s | E:F0 A:P0 S:F0 D:F0 G:F0 | fixRP F | bisect: first FAIL at A
+    1  E-cost: zero chain factor() on radical/`if unknown` kernels -- the proposed fix recovers it
+       4.3.1.2 e532          verified   2.6s -> timeout        30.0s | rerun timeout 30.1s | pre veri 2.0s | E:P0 A:F30 S:F30 D:F30 G:F30 | fixRP P 
+    1  A-route: the now-completing expansion ends in a partial answer (noun) / unverified form
+       4.5.1.4 e224          expected   7.2s -> unverified      2.0s | rerun unverified 1.3s | pre expe 5.9s | E:F2 A:P1 S:F1 D:F1 G:F1 | fixRP F | answer |dA/dx-f| 3.3477412582782145e-15 (correct); bisect: first FAIL at A
+
+=== all classes, by bucket
+   35  E-cost: zero chain factor() on radical/`if unknown` kernels -- the proposed fix recovers it
+   35  A-refold: the now-completing ExpandIntegrand sum is refolded by 1_2_3_1 r11 (p_. = 1) into a quotient the seen test cuts; ends in a noun
+   17  A-route: the now-completing expansion ends in a partial answer (noun) / unverified form
+   14  A-cost: the now-completing ExpandIntegrand route runs past the cap
+   12  A-cost near cap: passes singly, fix-A-free run ~20-30x faster
+    9  E-route: Rubi's EqQ reading (identically-zero condition) opens a route that times out / ends in a noun
+    8  G-route: two-valued GtQ (Rubi's reading) fires a reduction that ends in a noun / times out
+    7  carried: class-6 attribution: S  seen-test cycle 1_1_2_2 r5 <-> 1_2_3_1 r1 (pre-existing; after A)
+    6  carried: class-6 attribution: G  give-up form c*unintegrable (Rubi-faithful 4_5_10 r13 / 4_3_10 r24)
+    6  carried: class-6 attribution: route/runaway: new timeout
+    6  carried: class-6 attribution: W  wrong answer: bridged fractional power, Maxima radical branches (4_3_1_1); answer |dA/dx-f| err (not shown correct)
+    6  S-verify: plain Subst leaves an unsimplified but correct answer the zero chain cannot close
+    5  G-answer: two-valued GtQ fires a reduction Rubi's corpus answer does not take (answer correct, not Rubi's)
+    3  carried: class-6 attribution: D  depth cap 16 (bridge ping-pong)
+    2  E-cost near cap: passes singly; symbolic-EqQ-free run much faster, the proposed fix too
+    2  carried: class-6 attribution: route/runaway: new timeout; answer |dA/dx-f| err (not shown correct)
+    2  E+A: needs both the symbolic EqQ and fix A reverted
+    1  E-route near cap: passes singly; symbolic-EqQ-free run much faster (a different, Rubi-divergent route), the proposed fix does not help
+    1  S+G WRONG ANSWER: degenerate integrand (x^4 coefficient 2+2c-2(1+c) = 0) reaches 1_1_3_2 r8
+    1  carried: pre-fix record FAIL
+    1  noise
+    1  carried: class-6 attribution: route/runaway: new timeout -- the ports-era slowdown; now passes singly near the cap (25.2s, base 3.1s)
+    1  carried: class-6 attribution: cost -- the ports-era slowdown; now passes singly near the cap (28.2s, base 5.8s)
+    1  S-cost: plain Subst route runs past the cap
+  182  TOTAL
+
+=== 100 s timeout re-checks of the final records (same core, same switches)
+  class 8: 27/27 record timeouts re-checked -> now-PASS 1 (slow-correct: expected 1); still timeout 20; other 6 (contains-noun 4, error 1, unverified 1)
+  class 5: 195/195 record timeouts re-checked -> now-PASS 52 (slow-correct: expected 21, verified 31); still timeout 74; other 69 (contains-noun 28, error 40, unverified 1)
+  class 7: 211/211 record timeouts re-checked -> now-PASS 48 (slow-correct: expected 9, verified 39); still timeout 78; other 85 (contains-noun 41, error 37, unverified 7)
+  class 4: 1068/1068 record timeouts re-checked -> now-PASS 475 (slow-correct: expected 14, verified 461); still timeout 426; other 167 (contains-noun 115, error 37, unverified 15)

@@ -1,0 +1,15 @@
+/* probe 03: the cost of the symbolic EqQ stages on the 1_4_1 r4 perfect-power
+   test (Rubi 1.4.1 :54, EqQ[Px, (a+b*x)^Expon[Px,x]] with a, b the Rt of the
+   end coefficients), Px = (a+b*x)^4*(c+d*x)^3 in the form the table reaches
+   (1.1.1.2 e1259). Plain maxima (no rules): each stage timed alone, 20 s
+   budget each via a cpu-time guard is not available, so stages run in order
+   of increasing expected cost and the batch is run under the probe's cap. */
+showtime : false$
+Px : (d^3*(b*x+a)^7)/b^3+((3*b*c*d^2-3*a*d^3)*(b*x+a)^6)/b^3+((3*a^2*d^3-6*a*b*c*d^2+3*b^2*c^2*d)*(b*x+a)^5)/b^3+((-(a^3*d^3)+3*a^2*b*c*d^2-3*a*b^2*c^2*d+b^3*c^3)*(b*x+a)^4)/b^3$
+D : Px - (b^(4/7)*d^(3/7)*x+a^(4/7)*c^(3/7))^7$
+tm(label, e) ::= buildq([label, e], block([t0 : elapsed_run_time(), r], r : e,
+  print("STAGE", label, "cpu", elapsed_run_time() - t0, "zero?", is(r = 0), "len", slength(string(r))), r))$
+r0 : tm("ratsimp(D)", ratsimp(D))$
+print("showratvars", showratvars(r0))$
+r1 : tm("ratsimp(expand(r0))", ratsimp(expand(r0)))$
+r2 : tm("factor(r1)", factor(r1))$

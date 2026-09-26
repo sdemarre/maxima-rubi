@@ -1,0 +1,14 @@
+/* PROPOSED FIX (not applied): %mr_pseudoRoot (maxima_rubi_utils.mac, the
+   local real-root form of PseudoBinomialParts) tests the sign with a bare
+   is(u < 0), which is UNKNOWN on a symbol, so `oddp(n) and unknown` leaves
+   an unevaluated `if unknown then -(-u)^(1/n) else u^(1/n)` in the parts
+   (seen in 2.3 e256/e315 and 1.3.1 e195: "(if unknown then -(-d^9)^(1/9)
+   else d)^72"). Under the symbolic EqQ that conditional is a non-radical
+   kernel, the zero chain's factor() stage runs on it and never returns.
+   The two-valued sign test %mr_rt_ltQ (is(is(u < 0) = true)), which the
+   %mr_rt port already uses, reads a symbol as not negative, as Rubi's
+   NegQ-based Rt does. */
+%mr_pseudoRoot(u, n) := block([],
+  if n = 2 then sqrt(u)
+  else if oddp(n) and %mr_rt_ltQ(u) then -(-u)^(1/n)
+  else u^(1/n))$

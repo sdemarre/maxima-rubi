@@ -1,0 +1,42 @@
+/* overlay: fix A (3bb8c4f) REVERTED on the final core -- %mr_ei_linear_power_at
+   exactly as shipped minus the 'and not atom(denom(f))' guard, so op(denom(1/x))
+   is again a part error that aborts ExpandIntegrand (the pre-fix behaviour). */
+%mr_ei_linear_power_at(F, i, x, mode) :=
+  block([f, base, ok, L, R, j, rest],
+    f : part(F, i),
+    ok : false,
+    if mode = "power" then (
+      if not atom(f) and op(f) = "^"
+      then (base : part(f, 1), ok : true)
+      else if not atom(f) and op(f) = "/" and is(num(f) = 1)
+        and op(denom(f)) = "^"
+        and integerp(part(denom(f), 2))
+        and is(part(denom(f), 2) > 0)
+      then (base : part(denom(f), 1), ok : true)
+    )
+    else if not atom(f) and op(f) # "^"
+    then (base : f, ok : true),
+    if ok = false then false
+    else (
+      if %mr_linearQ(base, x) then (
+        L : %mr_binomial_parts(base, x),
+        if not atom(L) and is(part(L, 3) = 1)
+          and %mr_neQ(part(L, 2), 0)
+        then (
+          R : [],
+          for j : 1 thru length(F) do
+            if j # i then R : append(R, [part(F, j)]),
+          rest : %mr_product_from_list(R),
+          if %mr_polynomialQ(rest, x)
+          then [f, part(L, 1), part(L, 2), rest]
+          else false
+        )
+        else false
+      )
+      else false
+    ))$
+
+/* The linear-power factor of a product, as [power, a, b, rest]: an
+   actual (a+b*x)^m node is preferred over a bare linear factor (the
+   .m's (a+b*x)^m_. pattern matches a Power first in the class-1 term
+   order). */

@@ -1,0 +1,40 @@
+/* probes/class-ports/final/17-proposed-checks.mac -- the failing checks for the
+   PROPOSED (not applied) symbolic-EqQ fixes: fix-eqq-radcan.mac (a nonzero
+   radcan ends %mr_symbolicZeroQ when every ratsimp kernel is a variable symbol,
+   a positive rational, or a rational power of one) and fix-pseudoroot.mac
+   (%mr_pseudoRoot's sign test two-valued). Run on the final rules core:
+     sh run_probe.sh 17-proposed-checks.mac 90                 -> RED
+     (prepend the two fix files)                               -> GREEN
+   The cost checks run LAST: on the shipped code the first of them does not
+   return (probe 03: factor() > 120 s), so a RED run ends at the cap with no
+   Results line -- which is itself the failure. */
+display2d : false$ linel : 400$
+mr_pc_pass : 0$ mr_pc_fail : 0$
+pc(label, got, want) := if is(got = want) then (mr_pc_pass : mr_pc_pass + 1, print("PASS:", label))
+  else (mr_pc_fail : mr_pc_fail + 1, print("FAIL:", label, "got", got, "want", want))$
+/* cpu-bounded boolean check: the value and the cpu it took must be under LIM s */
+pct(label, expr_val, want, t, lim) := pc(sconcat(label, " (", t, " s <= ", lim, " s)"), is(expr_val = want and t <= lim), true)$
+ex(e) ::= buildq([e], block([t0 : elapsed_run_time(), r], r : e, [r, elapsed_run_time() - t0]))$
+
+/* 1. the readings the fix must keep */
+pc("identically zero, symbolic coefficients (issue 03 witness)",
+   %mr_eqQ(c*d^3*e - d*e*(c*d^2 + a*e^2) + a*d*e^3, 0), true)$
+pc("a true perfect power reads zero (1_4_1 r4 witness)",
+   %mr_eqQ(expand((a + b*x)^3), (%mr_rt(a^3, 3) + %mr_rt(b^3, 3)*x)^3), true)$
+pc("a branch identity stays nonzero (Rubi's EqQ False)",
+   %mr_eqQ(sqrt(a*b), sqrt(a)*sqrt(b)), false)$
+pc("a parameter-dependent zero stays nonzero", %mr_eqQ(a*b*c, 0), false)$
+
+/* 2. %mr_pseudoRoot is two-valued: no unevaluated `if unknown` in its result */
+pc("pseudoRoot(d^9, 9) carries no conditional",
+   freeof("if", %mr_pseudoRoot(d^9, 9)) and freeof('unknown, %mr_pseudoRoot(d^9, 9)), true)$
+
+/* 3. the cost: each of these did not return within 120 s on the shipped code */
+block([r], r : ex(%mr_eqQ(expand((a + b*x)^4*(c + d*x)^3),
+                          (%mr_rt(a^4*c^3, 7) + %mr_rt(b^4*d^3, 7)*x)^7)),
+  pct("1_4_1 r4 test of (a+b*x)^4*(c+d*x)^3 is false and cheap (1.1.1.2 e1259)", r[1], false, r[2], 2))$
+block([r], r : ex(%mr_eqQ((2*c*x + b)*(c*x^2 + b*x + a)^3,
+                          (2^(1/7)*c^(4/7)*x + a^(3/7)*b^(1/7))^7)),
+  pct("numeric-radical kernel 2^(1/7) is false and cheap (2.3 e620)", r[1], false, r[2], 2))$
+
+print(sconcat("Results: ", mr_pc_pass, " passed, ", mr_pc_fail, " failed"))$

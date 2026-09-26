@@ -1,0 +1,8 @@
+/* overlay: the pre-39eba80 GtQ/LtQ/GeQ/LeQ emission, is(u op v) (three-valued:
+   unknown on a symbol), in place of the %mr_realCmpQ reading. The generator
+   emitted `is(a op b)` and the chained form `is(a op b) and is(b op c)`;
+   both are reproduced here. */
+%mr_gtQ(%ov_a, %ov_b, [%ov_c]) := if %ov_c = [] then is(%ov_a > %ov_b) else (is(%ov_a > %ov_b) and is(%ov_b > first(%ov_c)))$
+%mr_ltQ(%ov_a, %ov_b, [%ov_c]) := if %ov_c = [] then is(%ov_a < %ov_b) else (is(%ov_a < %ov_b) and is(%ov_b < first(%ov_c)))$
+%mr_geQ(%ov_a, %ov_b, [%ov_c]) := if %ov_c = [] then is(%ov_a >= %ov_b) else (is(%ov_a >= %ov_b) and is(%ov_b >= first(%ov_c)))$
+%mr_leQ(%ov_a, %ov_b, [%ov_c]) := if %ov_c = [] then is(%ov_a <= %ov_b) else (is(%ov_a <= %ov_b) and is(%ov_b <= first(%ov_c)))$
