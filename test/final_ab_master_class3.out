@@ -1,0 +1,811 @@
+base: test/corpus_class3.out (3085 entries)
+new:  test/corpus_class3.final.out (3085 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS   1687
+PASS->FAIL      5
+FAIL->PASS    759
+FAIL->FAIL    634
+
+=== class transitions (changed only) ===
+  380  contains-noun -> expected
+  107  contains-noun -> verified
+   85  unverified -> expected
+   75  timeout -> expected
+   67  timeout -> verified
+   56  timeout -> contains-noun
+   37  contains-noun -> timeout
+   29  deferred -> expected
+   21  contains-noun -> unverified
+   20  timeout -> unverified
+   16  deferred -> verified
+   13  deferred -> contains-noun
+    3  deferred -> timeout
+    2  verified -> contains-noun
+    2  verified -> expected
+    2  no-answer -> contains-noun
+    1  unverified -> timeout
+    1  unverified -> contains-noun
+    1  deferred -> error
+    1  timeout -> deferred
+    1  deferred -> unverified
+    1  expected -> timeout
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    2   150  3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac
+    0   132  3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac
+    0    63  3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac
+    0    62  3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac
+    0    40  3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac
+    1   133  3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac
+    1   128  3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac
+    1    51  3 Logarithms/3.5 Logarithm functions.mac
+
+=== PASS->FAIL (5) ===
+  verified      -> contains-noun t=2.9s -> t=1.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e353
+  verified      -> contains-noun t=3.2s -> t=2.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e361
+  no-answer     -> contains-noun t=2.5s -> t=1.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e346
+  expected      -> timeout       t=23.2s -> t=30.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e497
+  no-answer     -> contains-noun t=0.7s -> t=0.5s 3 Logarithms/3.5 Logarithm functions.mac e289
+
+=== FAIL->PASS (759) ===
+  contains-noun -> verified      t=6.9s -> t=2.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e11
+  contains-noun -> verified      t=9.9s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e21
+  contains-noun -> verified      t=7.5s -> t=0.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e22
+  contains-noun -> verified      t=6.0s -> t=1.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e23
+  contains-noun -> verified      t=15.2s -> t=1.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e57
+  timeout       -> verified      t=30.0s -> t=14.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e67
+  timeout       -> verified      t=30.1s -> t=9.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e68
+  timeout       -> verified      t=30.1s -> t=5.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e69
+  contains-noun -> verified      t=14.4s -> t=2.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e77
+  contains-noun -> verified      t=28.7s -> t=4.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e85
+  contains-noun -> verified      t=6.6s -> t=2.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e86
+  contains-noun -> expected      t=12.7s -> t=2.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e92
+  contains-noun -> expected      t=7.4s -> t=2.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e93
+  contains-noun -> expected      t=4.0s -> t=1.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e94
+  contains-noun -> expected      t=1.6s -> t=0.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e95
+  contains-noun -> expected      t=3.5s -> t=1.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e96
+  contains-noun -> expected      t=6.7s -> t=2.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e97
+  contains-noun -> expected      t=9.6s -> t=3.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e98
+  contains-noun -> expected      t=12.6s -> t=4.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e99
+  contains-noun -> expected      t=23.6s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e100
+  contains-noun -> expected      t=10.0s -> t=2.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e101
+  contains-noun -> expected      t=12.7s -> t=1.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e102
+  contains-noun -> expected      t=7.0s -> t=2.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e104
+  contains-noun -> expected      t=16.1s -> t=3.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e107
+  contains-noun -> expected      t=20.0s -> t=3.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e108
+  contains-noun -> expected      t=13.3s -> t=4.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e111
+  contains-noun -> expected      t=23.9s -> t=5.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e113
+  contains-noun -> expected      t=27.6s -> t=5.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e114
+  contains-noun -> expected      t=21.0s -> t=7.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e118
+  contains-noun -> expected      t=4.7s -> t=1.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e121
+  contains-noun -> expected      t=9.2s -> t=3.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e122
+  contains-noun -> expected      t=19.5s -> t=6.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e123
+  contains-noun -> expected      t=10.6s -> t=3.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e134
+  contains-noun -> expected      t=15.8s -> t=2.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e135
+  contains-noun -> expected      t=22.9s -> t=3.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e136
+  contains-noun -> expected      t=12.4s -> t=3.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e141
+  contains-noun -> expected      t=22.7s -> t=1.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e142
+  contains-noun -> expected      t=24.2s -> t=3.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e143
+  contains-noun -> expected      t=8.9s -> t=2.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e148
+  contains-noun -> expected      t=16.1s -> t=2.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e149
+  contains-noun -> expected      t=24.0s -> t=3.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e150
+  contains-noun -> expected      t=10.5s -> t=2.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e155
+  timeout       -> expected      t=30.0s -> t=13.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e156
+  deferred      -> verified      t=2.0s -> t=0.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e174
+  contains-noun -> verified      t=7.5s -> t=2.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e184
+  contains-noun -> verified      t=5.8s -> t=0.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e185
+  contains-noun -> verified      t=10.8s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e197
+  contains-noun -> verified      t=8.8s -> t=1.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e198
+  contains-noun -> verified      t=6.4s -> t=1.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e199
+  contains-noun -> expected      t=9.4s -> t=2.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e216
+  contains-noun -> expected      t=6.0s -> t=2.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e217
+  contains-noun -> expected      t=4.1s -> t=1.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e218
+  contains-noun -> expected      t=5.9s -> t=2.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e219
+  contains-noun -> expected      t=7.4s -> t=2.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e220
+  contains-noun -> expected      t=11.4s -> t=4.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e226
+  contains-noun -> expected      t=11.6s -> t=3.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e227
+  contains-noun -> expected      t=4.5s -> t=2.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e228
+  contains-noun -> expected      t=7.8s -> t=2.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e229
+  contains-noun -> expected      t=9.9s -> t=3.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e230
+  contains-noun -> expected      t=21.6s -> t=6.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e236
+  contains-noun -> expected      t=16.4s -> t=4.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e237
+  contains-noun -> expected      t=5.0s -> t=2.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e238
+  contains-noun -> expected      t=9.7s -> t=3.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e239
+  contains-noun -> expected      t=11.8s -> t=4.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e240
+  unverified    -> expected      t=2.0s -> t=0.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e243
+  contains-noun -> expected      t=0.6s -> t=0.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e244
+  unverified    -> expected      t=4.1s -> t=0.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e245
+  unverified    -> expected      t=4.1s -> t=0.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e246
+  contains-noun -> verified      t=9.2s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e251
+  contains-noun -> verified      t=6.7s -> t=2.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e252
+  contains-noun -> expected      t=4.0s -> t=2.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e254
+  contains-noun -> expected      t=15.7s -> t=2.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e255
+  contains-noun -> expected      t=11.4s -> t=4.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e256
+  contains-noun -> expected      t=7.5s -> t=4.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e257
+  contains-noun -> expected      t=1.3s -> t=2.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e258
+  contains-noun -> expected      t=3.1s -> t=3.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e259
+  contains-noun -> verified      t=1.8s -> t=0.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e260
+  contains-noun -> verified      t=10.2s -> t=2.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e261
+  contains-noun -> verified      t=15.6s -> t=2.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e262
+  contains-noun -> verified      t=8.9s -> t=2.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e263
+  contains-noun -> verified      t=5.6s -> t=1.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e264
+  contains-noun -> expected      t=4.1s -> t=2.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e266
+  contains-noun -> expected      t=13.2s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e267
+  contains-noun -> expected      t=11.8s -> t=4.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e268
+  contains-noun -> expected      t=2.0s -> t=2.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e269
+  contains-noun -> expected      t=7.0s -> t=4.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e270
+  contains-noun -> expected      t=8.7s -> t=4.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e271
+  contains-noun -> verified      t=1.8s -> t=0.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e272
+  contains-noun -> verified      t=13.0s -> t=1.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e273
+  contains-noun -> verified      t=18.3s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e274
+  contains-noun -> verified      t=9.0s -> t=2.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e276
+  contains-noun -> verified      t=6.2s -> t=1.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e277
+  contains-noun -> expected      t=9.6s -> t=2.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e279
+  contains-noun -> expected      t=15.9s -> t=2.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e280
+  contains-noun -> expected      t=5.8s -> t=4.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e281
+  deferred      -> expected      t=0.8s -> t=1.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e282
+  contains-noun -> verified      t=1.7s -> t=0.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e283
+  contains-noun -> verified      t=6.8s -> t=1.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e284
+  contains-noun -> verified      t=13.0s -> t=2.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e285
+  contains-noun -> expected      t=20.5s -> t=1.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e290
+  timeout       -> expected      t=30.1s -> t=12.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e291
+  contains-noun -> expected      t=12.2s -> t=8.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e292
+  contains-noun -> verified      t=0.6s -> t=0.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e293
+  contains-noun -> verified      t=4.7s -> t=2.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e294
+  contains-noun -> verified      t=6.1s -> t=2.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e295
+  contains-noun -> verified      t=8.2s -> t=3.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e296
+  timeout       -> expected      t=30.0s -> t=2.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e301
+  timeout       -> expected      t=30.1s -> t=10.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e304
+  contains-noun -> verified      t=1.8s -> t=0.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e305
+  contains-noun -> verified      t=1.1s -> t=0.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e306
+  contains-noun -> verified      t=6.2s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e307
+  contains-noun -> verified      t=7.8s -> t=3.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e308
+  timeout       -> verified      t=30.1s -> t=5.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e309
+  contains-noun -> expected      t=9.7s -> t=4.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e311
+  contains-noun -> expected      t=27.7s -> t=4.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e312
+  contains-noun -> expected      t=11.4s -> t=5.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e313
+  contains-noun -> expected      t=2.5s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e314
+  deferred      -> expected      t=1.6s -> t=1.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e355
+  deferred      -> verified      t=1.6s -> t=1.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e357
+  deferred      -> verified      t=1.6s -> t=1.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e358
+  deferred      -> expected      t=2.5s -> t=2.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e363
+  deferred      -> expected      t=2.5s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e364
+  deferred      -> expected      t=2.5s -> t=3.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e365
+  deferred      -> expected      t=2.5s -> t=5.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e366
+  deferred      -> verified      t=1.7s -> t=0.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e370
+  contains-noun -> verified      t=8.5s -> t=2.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e395
+  timeout       -> verified      t=30.1s -> t=17.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e396
+  timeout       -> verified      t=30.0s -> t=21.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e397
+  timeout       -> verified      t=30.1s -> t=14.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e401
+  timeout       -> verified      t=30.1s -> t=18.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e402
+  timeout       -> verified      t=30.0s -> t=24.1s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e403
+  contains-noun -> verified      t=8.5s -> t=2.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e421
+  deferred      -> verified      t=1.8s -> t=0.7s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e423
+  deferred      -> verified      t=2.6s -> t=2.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e427
+  deferred      -> verified      t=2.6s -> t=2.0s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e428
+  deferred      -> verified      t=1.5s -> t=1.2s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e429
+  contains-noun -> expected      t=3.6s -> t=1.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e430
+  contains-noun -> expected      t=9.3s -> t=3.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e431
+  contains-noun -> expected      t=18.4s -> t=6.5s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e432
+  contains-noun -> expected      t=8.9s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e433
+  contains-noun -> expected      t=6.1s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e434
+  contains-noun -> expected      t=4.4s -> t=2.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e435
+  contains-noun -> expected      t=12.5s -> t=1.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e436
+  contains-noun -> expected      t=24.7s -> t=2.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e437
+  timeout       -> expected      t=30.0s -> t=2.6s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e438
+  timeout       -> expected      t=30.0s -> t=2.9s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e439
+  contains-noun -> expected      t=0.6s -> t=0.3s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e446
+  contains-noun -> expected      t=2.4s -> t=0.8s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e447
+  contains-noun -> expected      t=7.1s -> t=3.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e455
+  contains-noun -> expected      t=11.2s -> t=5.4s 3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac e456
+  contains-noun -> expected      t=15.9s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e2
+  contains-noun -> expected      t=6.7s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e3
+  contains-noun -> expected      t=4.1s -> t=0.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e4
+  contains-noun -> expected      t=2.1s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e5
+  contains-noun -> expected      t=1.0s -> t=0.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e6
+  contains-noun -> expected      t=2.2s -> t=0.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e7
+  contains-noun -> expected      t=4.5s -> t=0.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e8
+  contains-noun -> expected      t=5.7s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e9
+  timeout       -> expected      t=30.1s -> t=10.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e10
+  contains-noun -> expected      t=17.1s -> t=4.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e11
+  contains-noun -> expected      t=10.8s -> t=3.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e12
+  contains-noun -> expected      t=5.0s -> t=3.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e13
+  contains-noun -> expected      t=2.1s -> t=0.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e14
+  contains-noun -> expected      t=13.9s -> t=3.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e15
+  contains-noun -> expected      t=22.8s -> t=5.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e16
+  timeout       -> expected      t=30.1s -> t=23.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e17
+  timeout       -> expected      t=30.0s -> t=10.7s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e18
+  contains-noun -> expected      t=20.1s -> t=7.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e19
+  contains-noun -> expected      t=7.8s -> t=8.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e20
+  contains-noun -> expected      t=3.3s -> t=1.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e21
+  contains-noun -> expected      t=5.3s -> t=1.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e24
+  contains-noun -> expected      t=3.0s -> t=1.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e25
+  contains-noun -> expected      t=1.3s -> t=0.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e26
+  contains-noun -> expected      t=4.6s -> t=1.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e27
+  contains-noun -> expected      t=7.5s -> t=1.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e28
+  contains-noun -> expected      t=2.7s -> t=0.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e29
+  contains-noun -> expected      t=3.7s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e30
+  contains-noun -> expected      t=4.3s -> t=1.2s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e31
+  contains-noun -> expected      t=10.3s -> t=5.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e32
+  contains-noun -> expected      t=6.1s -> t=4.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e33
+  contains-noun -> expected      t=2.5s -> t=0.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e34
+  contains-noun -> expected      t=13.0s -> t=17.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e40
+  contains-noun -> expected      t=7.9s -> t=12.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e41
+  contains-noun -> expected      t=3.7s -> t=1.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e42
+  contains-noun -> expected      t=27.6s -> t=2.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e46
+  contains-noun -> expected      t=12.2s -> t=1.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e47
+  contains-noun -> expected      t=4.8s -> t=0.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e48
+  contains-noun -> expected      t=1.3s -> t=0.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e49
+  contains-noun -> expected      t=8.8s -> t=1.7s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e50
+  contains-noun -> expected      t=11.9s -> t=2.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e51
+  contains-noun -> expected      t=15.2s -> t=2.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e52
+  timeout       -> expected      t=30.1s -> t=13.2s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e53
+  contains-noun -> expected      t=19.8s -> t=9.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e54
+  contains-noun -> expected      t=13.3s -> t=3.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e55
+  contains-noun -> expected      t=2.5s -> t=0.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e56
+  timeout       -> expected      t=30.1s -> t=10.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e57
+  timeout       -> expected      t=30.1s -> t=13.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e58
+  contains-noun -> expected      t=24.8s -> t=10.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e60
+  contains-noun -> expected      t=3.7s -> t=1.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e61
+  contains-noun -> expected      t=4.9s -> t=1.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e64
+  contains-noun -> expected      t=3.7s -> t=1.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e65
+  contains-noun -> expected      t=2.5s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e66
+  contains-noun -> expected      t=1.3s -> t=0.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e67
+  contains-noun -> expected      t=21.1s -> t=1.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e70
+  contains-noun -> expected      t=16.3s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e71
+  contains-noun -> expected      t=8.2s -> t=1.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e72
+  contains-noun -> expected      t=2.6s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e73
+  contains-noun -> expected      t=2.4s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e74
+  contains-noun -> expected      t=6.3s -> t=0.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e75
+  contains-noun -> expected      t=7.2s -> t=1.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e76
+  contains-noun -> expected      t=14.6s -> t=1.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e77
+  timeout       -> expected      t=30.1s -> t=4.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e78
+  contains-noun -> expected      t=26.2s -> t=4.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e79
+  contains-noun -> expected      t=8.6s -> t=2.2s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e80
+  contains-noun -> expected      t=4.1s -> t=1.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e81
+  contains-noun -> expected      t=13.8s -> t=3.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e82
+  contains-noun -> expected      t=23.0s -> t=6.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e83
+  timeout       -> expected      t=30.1s -> t=7.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e84
+  timeout       -> expected      t=30.1s -> t=6.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e85
+  contains-noun -> expected      t=19.1s -> t=4.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e86
+  contains-noun -> expected      t=5.3s -> t=2.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e87
+  contains-noun -> expected      t=9.0s -> t=1.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e90
+  contains-noun -> expected      t=4.7s -> t=2.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e91
+  contains-noun -> expected      t=3.6s -> t=1.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e92
+  contains-noun -> expected      t=6.6s -> t=1.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e93
+  contains-noun -> expected      t=8.7s -> t=1.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e94
+  contains-noun -> expected      t=6.7s -> t=1.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e95
+  contains-noun -> expected      t=2.4s -> t=0.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e96
+  contains-noun -> expected      t=3.3s -> t=0.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e97
+  contains-noun -> expected      t=4.2s -> t=1.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e98
+  contains-noun -> expected      t=4.7s -> t=1.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e99
+  contains-noun -> expected      t=26.1s -> t=4.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e100
+  contains-noun -> expected      t=5.6s -> t=2.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e101
+  timeout       -> expected      t=30.0s -> t=10.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e108
+  contains-noun -> expected      t=6.8s -> t=3.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e109
+  timeout       -> expected      t=30.0s -> t=2.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e115
+  contains-noun -> expected      t=14.9s -> t=2.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e116
+  contains-noun -> expected      t=4.5s -> t=0.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e117
+  contains-noun -> expected      t=4.2s -> t=1.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e118
+  contains-noun -> expected      t=10.7s -> t=2.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e119
+  contains-noun -> expected      t=14.4s -> t=2.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e120
+  contains-noun -> expected      t=18.0s -> t=2.7s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e121
+  contains-noun -> expected      t=6.0s -> t=2.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e125
+  contains-noun -> expected      t=7.3s -> t=3.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e130
+  contains-noun -> expected      t=25.5s -> t=2.7s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e133
+  contains-noun -> expected      t=14.0s -> t=2.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e134
+  contains-noun -> expected      t=9.8s -> t=1.7s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e135
+  contains-noun -> expected      t=14.1s -> t=2.2s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e136
+  contains-noun -> expected      t=17.3s -> t=3.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e137
+  contains-noun -> expected      t=7.5s -> t=3.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e139
+  contains-noun -> expected      t=6.1s -> t=2.2s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e140
+  contains-noun -> expected      t=4.1s -> t=1.7s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e141
+  contains-noun -> expected      t=4.2s -> t=1.6s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e147
+  contains-noun -> expected      t=17.4s -> t=2.2s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e150
+  contains-noun -> expected      t=11.9s -> t=1.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e151
+  contains-noun -> expected      t=10.4s -> t=1.7s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e152
+  contains-noun -> expected      t=10.8s -> t=1.7s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e153
+  contains-noun -> expected      t=13.6s -> t=2.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e154
+  contains-noun -> expected      t=19.1s -> t=2.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e155
+  contains-noun -> verified      t=5.3s -> t=2.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e170
+  contains-noun -> verified      t=4.3s -> t=1.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e171
+  contains-noun -> verified      t=3.3s -> t=1.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e172
+  contains-noun -> verified      t=4.9s -> t=2.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e174
+  contains-noun -> verified      t=5.2s -> t=2.2s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e175
+  contains-noun -> verified      t=4.2s -> t=1.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e181
+  contains-noun -> verified      t=7.4s -> t=3.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e183
+  contains-noun -> verified      t=13.0s -> t=5.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e184
+  contains-noun -> verified      t=13.0s -> t=5.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e185
+  contains-noun -> verified      t=3.8s -> t=1.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e186
+  contains-noun -> verified      t=3.8s -> t=1.9s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e187
+  contains-noun -> expected      t=3.8s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e188
+  contains-noun -> expected      t=3.7s -> t=1.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e189
+  contains-noun -> expected      t=3.8s -> t=1.0s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e192
+  contains-noun -> expected      t=3.8s -> t=1.1s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e193
+  contains-noun -> expected      t=3.5s -> t=1.3s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e199
+  contains-noun -> expected      t=2.4s -> t=0.8s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e200
+  contains-noun -> expected      t=1.2s -> t=0.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e201
+  contains-noun -> expected      t=0.8s -> t=0.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e205
+  contains-noun -> expected      t=1.7s -> t=0.7s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e206
+  contains-noun -> expected      t=0.9s -> t=0.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e211
+  contains-noun -> expected      t=0.9s -> t=0.4s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e217
+  deferred      -> expected      t=4.7s -> t=3.5s 3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac e249
+  unverified    -> expected      t=4.7s -> t=2.3s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e5
+  timeout       -> verified      t=30.1s -> t=11.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e7
+  contains-noun -> expected      t=4.5s -> t=1.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e14
+  unverified    -> expected      t=4.9s -> t=1.9s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e33
+  timeout       -> verified      t=30.1s -> t=11.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e35
+  contains-noun -> expected      t=2.6s -> t=1.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e42
+  contains-noun -> verified      t=8.0s -> t=2.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e45
+  contains-noun -> verified      t=10.9s -> t=2.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e46
+  unverified    -> expected      t=2.7s -> t=1.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e62
+  timeout       -> verified      t=30.0s -> t=13.5s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e64
+  contains-noun -> expected      t=17.6s -> t=15.5s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e67
+  contains-noun -> expected      t=14.2s -> t=8.8s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e68
+  contains-noun -> expected      t=10.3s -> t=6.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e69
+  unverified    -> expected      t=4.8s -> t=2.0s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e70
+  timeout       -> expected      t=30.1s -> t=4.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e71
+  unverified    -> expected      t=4.7s -> t=2.0s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e92
+  timeout       -> verified      t=30.1s -> t=11.5s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e94
+  contains-noun -> expected      t=4.5s -> t=1.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e101
+  unverified    -> expected      t=4.8s -> t=2.0s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e123
+  timeout       -> verified      t=30.0s -> t=11.5s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e125
+  contains-noun -> expected      t=4.6s -> t=1.7s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e132
+  unverified    -> expected      t=4.7s -> t=1.9s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e151
+  timeout       -> verified      t=30.1s -> t=22.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e154
+  contains-noun -> expected      t=5.4s -> t=2.0s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e159
+  timeout       -> expected      t=30.1s -> t=7.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e164
+  contains-noun -> expected      t=25.9s -> t=5.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e165
+  contains-noun -> expected      t=15.8s -> t=2.9s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e166
+  contains-noun -> expected      t=6.6s -> t=2.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e167
+  unverified    -> expected      t=4.8s -> t=1.9s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e177
+  timeout       -> verified      t=30.1s -> t=11.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e179
+  contains-noun -> expected      t=2.6s -> t=1.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e186
+  contains-noun -> verified      t=7.8s -> t=2.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e189
+  contains-noun -> verified      t=11.0s -> t=2.6s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e190
+  unverified    -> expected      t=4.8s -> t=2.2s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e205
+  timeout       -> verified      t=30.0s -> t=11.5s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e207
+  contains-noun -> expected      t=2.6s -> t=1.2s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e214
+  contains-noun -> verified      t=7.9s -> t=2.0s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e217
+  contains-noun -> verified      t=11.2s -> t=2.5s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e218
+  unverified    -> expected      t=2.7s -> t=1.5s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e235
+  timeout       -> verified      t=30.1s -> t=13.2s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e237
+  contains-noun -> expected      t=17.7s -> t=15.2s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e240
+  contains-noun -> expected      t=14.2s -> t=8.4s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e241
+  contains-noun -> expected      t=10.3s -> t=6.2s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e242
+  unverified    -> expected      t=4.9s -> t=1.9s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e243
+  timeout       -> expected      t=30.1s -> t=4.0s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e244
+  unverified    -> expected      t=2.8s -> t=1.2s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e267
+  timeout       -> verified      t=30.1s -> t=13.3s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e269
+  contains-noun -> expected      t=18.0s -> t=15.2s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e272
+  contains-noun -> expected      t=14.4s -> t=8.9s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e273
+  contains-noun -> expected      t=10.4s -> t=6.0s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e274
+  unverified    -> expected      t=5.1s -> t=2.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e275
+  timeout       -> expected      t=30.1s -> t=4.1s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e276
+  unverified    -> expected      t=2.8s -> t=1.0s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e298
+  timeout       -> verified      t=30.0s -> t=13.0s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e300
+  contains-noun -> expected      t=15.5s -> t=9.3s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e303
+  contains-noun -> expected      t=10.9s -> t=6.3s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e304
+  unverified    -> expected      t=4.9s -> t=1.8s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e305
+  timeout       -> expected      t=30.0s -> t=4.4s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e306
+  contains-noun -> expected      t=23.0s -> t=16.2s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e309
+  contains-noun -> expected      t=16.7s -> t=10.9s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e310
+  contains-noun -> expected      t=3.6s -> t=1.5s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e311
+  timeout       -> expected      t=30.1s -> t=5.9s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e312
+  contains-noun -> expected      t=5.0s -> t=2.2s 3 Logarithms/3.2.1 (f+g x)^m (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e313
+  unverified    -> expected      t=5.9s -> t=2.6s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e5
+  timeout       -> verified      t=30.0s -> t=7.6s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e11
+  contains-noun -> verified      t=24.7s -> t=4.7s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e12
+  timeout       -> verified      t=30.1s -> t=18.7s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e20
+  timeout       -> verified      t=30.1s -> t=4.3s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e22
+  unverified    -> expected      t=4.8s -> t=2.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e34
+  timeout       -> verified      t=30.0s -> t=11.2s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e50
+  contains-noun -> verified      t=6.2s -> t=2.3s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e51
+  contains-noun -> expected      t=8.9s -> t=3.8s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e59
+  contains-noun -> expected      t=8.5s -> t=2.9s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e60
+  timeout       -> expected      t=30.1s -> t=13.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e65
+  contains-noun -> expected      t=25.6s -> t=5.9s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e66
+  contains-noun -> expected      t=16.5s -> t=6.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e68
+  contains-noun -> expected      t=13.3s -> t=4.5s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e70
+  timeout       -> expected      t=30.1s -> t=21.8s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e75
+  timeout       -> expected      t=30.1s -> t=10.6s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e76
+  contains-noun -> expected      t=24.9s -> t=9.4s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e78
+  timeout       -> expected      t=30.0s -> t=6.7s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e84
+  contains-noun -> expected      t=23.5s -> t=4.4s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e85
+  contains-noun -> expected      t=14.9s -> t=2.5s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e86
+  contains-noun -> expected      t=2.5s -> t=1.5s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e87
+  contains-noun -> expected      t=19.8s -> t=4.5s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e92
+  contains-noun -> expected      t=13.6s -> t=3.2s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e93
+  contains-noun -> expected      t=6.0s -> t=2.1s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e94
+  contains-noun -> expected      t=26.8s -> t=3.7s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e100
+  contains-noun -> expected      t=10.8s -> t=3.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e101
+  timeout       -> verified      t=30.1s -> t=3.3s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e106
+  unverified    -> expected      t=6.0s -> t=2.6s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e112
+  timeout       -> verified      t=30.1s -> t=7.5s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e118
+  contains-noun -> verified      t=24.7s -> t=6.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e119
+  timeout       -> verified      t=30.1s -> t=19.1s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e127
+  timeout       -> verified      t=30.0s -> t=4.6s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e129
+  unverified    -> expected      t=4.8s -> t=2.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e138
+  timeout       -> verified      t=30.1s -> t=11.3s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e154
+  contains-noun -> verified      t=6.1s -> t=2.6s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e155
+  contains-noun -> expected      t=9.5s -> t=3.2s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e163
+  contains-noun -> expected      t=9.1s -> t=3.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e164
+  timeout       -> expected      t=30.1s -> t=12.7s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e169
+  contains-noun -> expected      t=26.1s -> t=5.3s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e170
+  contains-noun -> expected      t=17.0s -> t=6.3s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e172
+  contains-noun -> expected      t=13.3s -> t=4.7s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e174
+  timeout       -> expected      t=30.0s -> t=21.5s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e179
+  timeout       -> expected      t=30.1s -> t=10.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e180
+  contains-noun -> expected      t=25.1s -> t=9.1s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e182
+  contains-noun -> expected      t=16.5s -> t=6.2s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e185
+  timeout       -> expected      t=30.0s -> t=7.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e186
+  contains-noun -> expected      t=24.2s -> t=4.7s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e187
+  contains-noun -> expected      t=15.1s -> t=2.6s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e188
+  contains-noun -> expected      t=2.6s -> t=1.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e189
+  contains-noun -> expected      t=20.0s -> t=4.7s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e194
+  contains-noun -> expected      t=13.8s -> t=3.3s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e195
+  contains-noun -> expected      t=6.2s -> t=2.1s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e196
+  contains-noun -> expected      t=27.0s -> t=3.9s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e202
+  contains-noun -> expected      t=10.8s -> t=3.0s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e203
+  timeout       -> verified      t=30.1s -> t=3.4s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e208
+  timeout       -> expected      t=30.1s -> t=12.3s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e249
+  timeout       -> expected      t=30.1s -> t=12.2s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e250
+  contains-noun -> expected      t=29.2s -> t=10.7s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e251
+  unverified    -> expected      t=2.8s -> t=1.1s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e255
+  unverified    -> expected      t=2.6s -> t=1.1s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e256
+  timeout       -> expected      t=30.1s -> t=14.2s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e259
+  timeout       -> expected      t=30.0s -> t=13.3s 3 Logarithms/3.2.2 (f+g x)^m (h+i x)^q (A+B log(e ((a+b x) over (c+d x))^n))^p.mac e260
+  unverified    -> expected      t=4.2s -> t=1.5s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e4
+  unverified    -> expected      t=10.4s -> t=2.2s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e5
+  contains-noun -> expected      t=29.9s -> t=16.4s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e6
+  unverified    -> expected      t=2.2s -> t=0.9s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e11
+  timeout       -> verified      t=30.1s -> t=23.2s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e15
+  timeout       -> expected      t=30.0s -> t=4.1s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e16
+  timeout       -> expected      t=30.1s -> t=3.3s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e17
+  timeout       -> expected      t=30.1s -> t=2.9s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e18
+  unverified    -> expected      t=17.0s -> t=2.5s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e19
+  contains-noun -> expected      t=12.7s -> t=4.1s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e20
+  unverified    -> expected      t=16.9s -> t=5.2s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e21
+  timeout       -> expected      t=30.1s -> t=12.6s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e22
+  unverified    -> expected      t=2.7s -> t=1.0s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e30
+  timeout       -> verified      t=30.1s -> t=12.8s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e33
+  timeout       -> expected      t=30.1s -> t=29.1s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e36
+  unverified    -> expected      t=2.5s -> t=0.9s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e38
+  unverified    -> expected      t=24.6s -> t=7.8s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e40
+  timeout       -> expected      t=30.1s -> t=19.5s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e41
+  contains-noun -> expected      t=11.5s -> t=4.4s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e51
+  contains-noun -> expected      t=6.7s -> t=3.1s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e52
+  unverified    -> expected      t=3.0s -> t=1.2s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e53
+  timeout       -> expected      t=30.1s -> t=16.7s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e56
+  timeout       -> expected      t=30.0s -> t=13.8s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e57
+  deferred      -> expected      t=25.7s -> t=8.0s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e58
+  timeout       -> expected      t=30.0s -> t=9.1s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e67
+  timeout       -> expected      t=30.1s -> t=7.6s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e68
+  timeout       -> expected      t=30.1s -> t=4.9s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e69
+  contains-noun -> expected      t=10.3s -> t=2.9s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e90
+  contains-noun -> expected      t=17.3s -> t=3.9s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e91
+  contains-noun -> expected      t=17.2s -> t=4.2s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e92
+  contains-noun -> expected      t=2.1s -> t=0.9s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e95
+  contains-noun -> expected      t=3.9s -> t=1.3s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e98
+  contains-noun -> expected      t=2.3s -> t=0.9s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e101
+  contains-noun -> expected      t=8.0s -> t=0.8s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e102
+  contains-noun -> expected      t=11.3s -> t=2.2s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e103
+  contains-noun -> expected      t=2.7s -> t=1.4s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e104
+  contains-noun -> expected      t=11.4s -> t=3.0s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e105
+  contains-noun -> expected      t=5.2s -> t=2.5s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e106
+  timeout       -> expected      t=30.0s -> t=4.8s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e107
+  timeout       -> expected      t=30.1s -> t=6.0s 3 Logarithms/3.2.3 u log(e (f (a+b x)^p (c+d x)^q)^r)^s.mac e108
+  unverified    -> expected      t=1.2s -> t=0.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e40
+  timeout       -> verified      t=30.1s -> t=24.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e44
+  timeout       -> verified      t=30.1s -> t=12.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e45
+  contains-noun -> verified      t=11.2s -> t=5.0s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e46
+  contains-noun -> expected      t=2.9s -> t=1.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e48
+  unverified    -> expected      t=1.9s -> t=0.7s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e49
+  timeout       -> verified      t=30.1s -> t=21.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e53
+  contains-noun -> verified      t=25.8s -> t=9.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e54
+  contains-noun -> expected      t=4.9s -> t=2.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e56
+  contains-noun -> expected      t=3.5s -> t=1.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e57
+  contains-noun -> expected      t=12.0s -> t=4.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e58
+  contains-noun -> expected      t=20.1s -> t=7.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e59
+  timeout       -> verified      t=30.1s -> t=15.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e60
+  contains-noun -> expected      t=6.2s -> t=2.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e62
+  contains-noun -> expected      t=5.5s -> t=2.7s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e63
+  timeout       -> verified      t=30.0s -> t=0.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e67
+  contains-noun -> verified      t=9.1s -> t=2.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e85
+  contains-noun -> verified      t=25.4s -> t=7.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e87
+  timeout       -> expected      t=30.1s -> t=9.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e145
+  timeout       -> expected      t=30.1s -> t=6.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e146
+  contains-noun -> expected      t=29.7s -> t=4.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e147
+  contains-noun -> expected      t=27.4s -> t=3.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e148
+  contains-noun -> expected      t=29.6s -> t=5.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e149
+  timeout       -> expected      t=30.1s -> t=5.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e150
+  timeout       -> expected      t=30.0s -> t=7.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e151
+  timeout       -> verified      t=30.1s -> t=27.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e175
+  timeout       -> verified      t=30.0s -> t=14.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e176
+  timeout       -> verified      t=30.0s -> t=21.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e184
+  contains-noun -> expected      t=15.1s -> t=5.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e188
+  contains-noun -> expected      t=19.6s -> t=7.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e189
+  contains-noun -> expected      t=27.8s -> t=10.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e190
+  contains-noun -> verified      t=18.3s -> t=8.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e191
+  contains-noun -> verified      t=16.4s -> t=7.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e192
+  contains-noun -> verified      t=15.2s -> t=6.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e193
+  contains-noun -> verified      t=5.5s -> t=2.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e194
+  timeout       -> expected      t=30.0s -> t=8.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e198
+  timeout       -> expected      t=30.0s -> t=6.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e199
+  contains-noun -> expected      t=29.1s -> t=4.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e200
+  contains-noun -> expected      t=26.7s -> t=3.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e201
+  contains-noun -> expected      t=29.1s -> t=4.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e202
+  timeout       -> expected      t=30.1s -> t=5.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e203
+  timeout       -> expected      t=30.0s -> t=6.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e204
+  contains-noun -> expected      t=28.6s -> t=4.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e205
+  contains-noun -> expected      t=26.6s -> t=3.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e206
+  contains-noun -> expected      t=28.3s -> t=4.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e207
+  timeout       -> expected      t=30.0s -> t=5.0s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e208
+  contains-noun -> verified      t=16.8s -> t=7.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e210
+  contains-noun -> verified      t=15.6s -> t=6.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e211
+  contains-noun -> verified      t=5.4s -> t=2.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e212
+  unverified    -> expected      t=21.1s -> t=1.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e217
+  unverified    -> expected      t=9.8s -> t=1.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e218
+  unverified    -> expected      t=4.1s -> t=0.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e219
+  unverified    -> expected      t=1.3s -> t=0.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e220
+  unverified    -> expected      t=7.4s -> t=2.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e221
+  timeout       -> expected      t=30.1s -> t=7.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e222
+  contains-noun -> expected      t=27.9s -> t=7.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e224
+  contains-noun -> expected      t=7.9s -> t=2.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e225
+  contains-noun -> expected      t=2.8s -> t=1.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e226
+  contains-noun -> expected      t=14.2s -> t=4.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e227
+  timeout       -> expected      t=30.0s -> t=15.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e228
+  timeout       -> expected      t=30.0s -> t=14.0s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e229
+  contains-noun -> expected      t=11.0s -> t=3.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e230
+  contains-noun -> expected      t=4.9s -> t=2.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e231
+  contains-noun -> expected      t=19.9s -> t=7.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e232
+  timeout       -> expected      t=30.0s -> t=21.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e233
+  unverified    -> expected      t=9.2s -> t=1.7s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e242
+  unverified    -> expected      t=5.4s -> t=1.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e243
+  unverified    -> expected      t=3.0s -> t=0.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e244
+  unverified    -> expected      t=1.2s -> t=0.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e245
+  deferred      -> expected      t=1.6s -> t=1.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e246
+  unverified    -> expected      t=7.9s -> t=1.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e247
+  unverified    -> expected      t=13.0s -> t=1.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e248
+  unverified    -> expected      t=13.2s -> t=1.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e249
+  unverified    -> expected      t=7.0s -> t=1.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e250
+  unverified    -> expected      t=7.8s -> t=1.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e251
+  deferred      -> expected      t=1.6s -> t=1.7s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e253
+  unverified    -> expected      t=12.8s -> t=1.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e254
+  unverified    -> expected      t=20.6s -> t=2.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e255
+  contains-noun -> expected      t=2.7s -> t=4.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e277
+  unverified    -> expected      t=1.3s -> t=0.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e306
+  unverified    -> expected      t=2.7s -> t=1.0s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e340
+  deferred      -> expected      t=2.5s -> t=4.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e343
+  deferred      -> expected      t=2.5s -> t=3.0s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e344
+  deferred      -> expected      t=1.6s -> t=1.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e345
+  contains-noun -> expected      t=2.2s -> t=0.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e362
+  timeout       -> expected      t=30.1s -> t=11.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e367
+  timeout       -> expected      t=30.1s -> t=14.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e368
+  contains-noun -> expected      t=9.4s -> t=2.7s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e369
+  contains-noun -> expected      t=19.8s -> t=5.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e373
+  contains-noun -> verified      t=10.0s -> t=3.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e379
+  contains-noun -> verified      t=8.2s -> t=4.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e380
+  contains-noun -> expected      t=4.7s -> t=2.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e382
+  unverified    -> expected      t=27.1s -> t=3.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e386
+  unverified    -> expected      t=19.1s -> t=2.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e387
+  unverified    -> expected      t=11.2s -> t=2.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e388
+  unverified    -> expected      t=6.1s -> t=1.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e389
+  contains-noun -> expected      t=4.1s -> t=3.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e391
+  unverified    -> expected      t=16.8s -> t=3.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e392
+  contains-noun -> expected      t=2.1s -> t=1.0s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e401
+  unverified    -> expected      t=2.8s -> t=1.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e424
+  timeout       -> verified      t=30.1s -> t=14.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e427
+  timeout       -> verified      t=30.0s -> t=27.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e429
+  deferred      -> verified      t=12.2s -> t=10.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e430
+  deferred      -> expected      t=3.8s -> t=3.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e432
+  unverified    -> expected      t=4.6s -> t=1.7s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e433
+  deferred      -> verified      t=28.0s -> t=22.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e436
+  deferred      -> expected      t=6.0s -> t=4.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e438
+  deferred      -> expected      t=4.5s -> t=3.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e439
+  deferred      -> expected      t=13.9s -> t=10.6s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e440
+  deferred      -> expected      t=7.5s -> t=5.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e442
+  deferred      -> expected      t=6.7s -> t=4.7s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e443
+  timeout       -> verified      t=30.1s -> t=0.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e488
+  timeout       -> expected      t=30.0s -> t=18.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e489
+  timeout       -> expected      t=30.0s -> t=13.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e490
+  timeout       -> expected      t=30.1s -> t=10.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e491
+  deferred      -> expected      t=28.2s -> t=8.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e492
+  timeout       -> expected      t=30.0s -> t=11.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e493
+  timeout       -> expected      t=30.1s -> t=13.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e494
+  timeout       -> expected      t=30.1s -> t=15.1s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e495
+  deferred      -> expected      t=4.7s -> t=8.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e521
+  timeout       -> expected      t=30.0s -> t=3.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e523
+  unverified    -> expected      t=22.4s -> t=3.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e524
+  unverified    -> expected      t=9.5s -> t=2.4s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e525
+  unverified    -> expected      t=2.8s -> t=1.0s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e526
+  unverified    -> expected      t=16.9s -> t=4.5s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e527
+  timeout       -> expected      t=30.1s -> t=17.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e528
+  timeout       -> expected      t=30.1s -> t=17.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e530
+  deferred      -> expected      t=10.0s -> t=4.8s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e531
+  deferred      -> expected      t=3.9s -> t=3.3s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e532
+  deferred      -> expected      t=17.6s -> t=10.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e533
+  deferred      -> expected      t=13.4s -> t=6.9s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e536
+  deferred      -> expected      t=6.1s -> t=4.2s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e537
+  deferred      -> expected      t=23.9s -> t=16.7s 3 Logarithms/3.3 u (a+b log(c (d+e x)^n))^p.mac e538
+  timeout       -> verified      t=30.0s -> t=0.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e46
+  contains-noun -> verified      t=9.5s -> t=2.8s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e77
+  contains-noun -> verified      t=10.7s -> t=4.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e78
+  contains-noun -> expected      t=2.8s -> t=1.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e80
+  contains-noun -> expected      t=15.8s -> t=3.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e84
+  contains-noun -> expected      t=11.7s -> t=3.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e85
+  contains-noun -> expected      t=6.5s -> t=3.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e86
+  contains-noun -> expected      t=5.0s -> t=2.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e87
+  contains-noun -> expected      t=7.9s -> t=3.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e88
+  contains-noun -> expected      t=12.4s -> t=3.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e89
+  contains-noun -> expected      t=16.5s -> t=3.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e90
+  contains-noun -> verified      t=26.0s -> t=8.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e91
+  contains-noun -> expected      t=4.3s -> t=1.6s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e94
+  contains-noun -> expected      t=3.2s -> t=1.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e95
+  contains-noun -> expected      t=10.3s -> t=3.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e96
+  contains-noun -> expected      t=16.3s -> t=5.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e97
+  contains-noun -> verified      t=10.9s -> t=4.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e129
+  contains-noun -> expected      t=2.8s -> t=1.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e131
+  contains-noun -> verified      t=10.2s -> t=3.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e163
+  contains-noun -> verified      t=11.7s -> t=5.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e164
+  contains-noun -> expected      t=4.3s -> t=1.8s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e166
+  contains-noun -> expected      t=2.8s -> t=1.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e174
+  contains-noun -> expected      t=4.2s -> t=1.7s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e175
+  unverified    -> expected      t=1.1s -> t=0.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e180
+  timeout       -> verified      t=30.0s -> t=0.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e198
+  timeout       -> verified      t=30.1s -> t=0.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e199
+  contains-noun -> expected      t=1.8s -> t=1.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e201
+  contains-noun -> verified      t=15.0s -> t=0.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e202
+  contains-noun -> expected      t=1.7s -> t=1.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e205
+  unverified    -> expected      t=8.3s -> t=1.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e219
+  unverified    -> expected      t=4.9s -> t=1.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e220
+  unverified    -> expected      t=2.6s -> t=0.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e221
+  unverified    -> expected      t=1.1s -> t=0.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e222
+  deferred      -> expected      t=1.6s -> t=1.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e223
+  unverified    -> expected      t=7.3s -> t=1.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e224
+  unverified    -> expected      t=11.9s -> t=1.8s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e225
+  contains-noun -> expected      t=7.8s -> t=2.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e240
+  contains-noun -> expected      t=5.2s -> t=2.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e241
+  contains-noun -> expected      t=3.1s -> t=1.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e242
+  contains-noun -> expected      t=1.7s -> t=1.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e243
+  unverified    -> expected      t=3.5s -> t=2.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e244
+  contains-noun -> expected      t=7.6s -> t=2.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e245
+  contains-noun -> expected      t=11.7s -> t=2.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e246
+  timeout       -> expected      t=30.1s -> t=10.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e273
+  contains-noun -> expected      t=18.3s -> t=6.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e274
+  timeout       -> expected      t=30.0s -> t=17.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e293
+  timeout       -> expected      t=30.1s -> t=12.7s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e294
+  contains-noun -> expected      t=17.2s -> t=8.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e295
+  contains-noun -> expected      t=2.8s -> t=0.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e313
+  contains-noun -> expected      t=4.2s -> t=1.8s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e326
+  unverified    -> expected      t=6.5s -> t=2.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e338
+  unverified    -> expected      t=4.1s -> t=1.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e339
+  unverified    -> expected      t=2.2s -> t=0.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e340
+  contains-noun -> expected      t=3.0s -> t=1.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e341
+  unverified    -> expected      t=8.8s -> t=1.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e342
+  unverified    -> expected      t=7.9s -> t=1.6s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e348
+  unverified    -> expected      t=8.6s -> t=1.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e349
+  contains-noun -> expected      t=3.0s -> t=2.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e351
+  unverified    -> expected      t=13.3s -> t=2.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e352
+  contains-noun -> expected      t=4.4s -> t=2.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e357
+  contains-noun -> expected      t=3.2s -> t=1.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e360
+  contains-noun -> expected      t=3.3s -> t=1.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e361
+  contains-noun -> expected      t=3.0s -> t=1.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e362
+  contains-noun -> expected      t=4.3s -> t=2.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e365
+  contains-noun -> expected      t=4.2s -> t=2.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e366
+  contains-noun -> expected      t=4.0s -> t=1.8s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e367
+  contains-noun -> expected      t=2.9s -> t=1.7s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e371
+  unverified    -> expected      t=2.6s -> t=1.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e372
+  contains-noun -> expected      t=2.9s -> t=2.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e375
+  unverified    -> expected      t=8.9s -> t=1.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e376
+  contains-noun -> expected      t=3.6s -> t=1.6s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e389
+  unverified    -> expected      t=2.1s -> t=0.8s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e396
+  timeout       -> verified      t=30.0s -> t=0.6s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e400
+  contains-noun -> verified      t=19.1s -> t=5.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e408
+  contains-noun -> verified      t=11.9s -> t=3.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e409
+  contains-noun -> verified      t=10.7s -> t=5.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e410
+  contains-noun -> expected      t=3.0s -> t=1.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e411
+  timeout       -> verified      t=30.1s -> t=15.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e416
+  contains-noun -> verified      t=25.4s -> t=10.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e417
+  contains-noun -> expected      t=4.8s -> t=5.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e418
+  contains-noun -> expected      t=11.1s -> t=12.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e419
+  contains-noun -> expected      t=3.1s -> t=1.8s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e432
+  contains-noun -> verified      t=11.2s -> t=5.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e433
+  contains-noun -> verified      t=12.2s -> t=3.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e434
+  contains-noun -> verified      t=19.1s -> t=4.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e435
+  contains-noun -> expected      t=11.2s -> t=12.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e437
+  contains-noun -> expected      t=4.9s -> t=5.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e438
+  contains-noun -> verified      t=25.8s -> t=10.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e439
+  timeout       -> verified      t=30.1s -> t=16.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e440
+  timeout       -> verified      t=30.1s -> t=1.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e442
+  timeout       -> verified      t=30.1s -> t=9.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e450
+  contains-noun -> verified      t=18.8s -> t=5.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e451
+  contains-noun -> verified      t=9.3s -> t=2.9s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e452
+  contains-noun -> expected      t=3.2s -> t=1.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e453
+  timeout       -> verified      t=30.1s -> t=11.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e459
+  contains-noun -> expected      t=4.8s -> t=4.8s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e460
+  contains-noun -> verified      t=19.4s -> t=5.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e471
+  contains-noun -> verified      t=9.8s -> t=3.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e472
+  contains-noun -> expected      t=3.1s -> t=1.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e473
+  timeout       -> verified      t=30.1s -> t=11.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e482
+  contains-noun -> expected      t=4.9s -> t=2.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e483
+  contains-noun -> expected      t=3.0s -> t=1.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e500
+  contains-noun -> verified      t=10.0s -> t=3.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e501
+  contains-noun -> verified      t=19.3s -> t=5.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e502
+  contains-noun -> expected      t=4.9s -> t=2.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e505
+  timeout       -> verified      t=30.1s -> t=12.7s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e506
+  contains-noun -> expected      t=3.1s -> t=1.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e518
+  contains-noun -> verified      t=10.0s -> t=3.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e519
+  contains-noun -> verified      t=18.9s -> t=5.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e520
+  contains-noun -> expected      t=4.9s -> t=2.1s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e526
+  timeout       -> verified      t=30.1s -> t=12.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e527
+  timeout       -> verified      t=30.1s -> t=17.7s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e606
+  timeout       -> verified      t=30.1s -> t=19.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e607
+  timeout       -> verified      t=30.1s -> t=18.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e608
+  timeout       -> verified      t=30.1s -> t=17.7s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e609
+  timeout       -> verified      t=30.1s -> t=17.7s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e610
+  timeout       -> verified      t=30.1s -> t=26.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e611
+  timeout       -> verified      t=30.1s -> t=26.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e612
+  timeout       -> verified      t=30.0s -> t=26.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e613
+  timeout       -> verified      t=30.0s -> t=26.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e614
+  timeout       -> verified      t=30.0s -> t=26.3s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e615
+  contains-noun -> expected      t=1.1s -> t=0.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e619
+  contains-noun -> expected      t=3.3s -> t=1.2s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e620
+  contains-noun -> expected      t=6.6s -> t=2.7s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e621
+  contains-noun -> expected      t=5.6s -> t=2.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e622
+  contains-noun -> expected      t=4.0s -> t=1.4s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e623
+  contains-noun -> expected      t=5.1s -> t=2.0s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e636
+  contains-noun -> expected      t=3.3s -> t=1.5s 3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e637
+  deferred      -> verified      t=0.8s -> t=0.3s 3 Logarithms/3.5 Logarithm functions.mac e19
+  deferred      -> verified      t=0.7s -> t=0.4s 3 Logarithms/3.5 Logarithm functions.mac e34
+  contains-noun -> expected      t=6.9s -> t=1.6s 3 Logarithms/3.5 Logarithm functions.mac e65
+  timeout       -> verified      t=30.1s -> t=11.9s 3 Logarithms/3.5 Logarithm functions.mac e88
+  contains-noun -> expected      t=7.2s -> t=2.9s 3 Logarithms/3.5 Logarithm functions.mac e92
+  contains-noun -> expected      t=8.4s -> t=2.1s 3 Logarithms/3.5 Logarithm functions.mac e96
+  contains-noun -> expected      t=1.0s -> t=0.6s 3 Logarithms/3.5 Logarithm functions.mac e113
+  contains-noun -> expected      t=0.8s -> t=0.4s 3 Logarithms/3.5 Logarithm functions.mac e114
+  contains-noun -> expected      t=0.7s -> t=0.4s 3 Logarithms/3.5 Logarithm functions.mac e115
+  unverified    -> expected      t=0.6s -> t=0.5s 3 Logarithms/3.5 Logarithm functions.mac e116
+  contains-noun -> expected      t=1.2s -> t=0.5s 3 Logarithms/3.5 Logarithm functions.mac e118
+  contains-noun -> expected      t=0.9s -> t=0.4s 3 Logarithms/3.5 Logarithm functions.mac e119
+  contains-noun -> expected      t=0.8s -> t=0.3s 3 Logarithms/3.5 Logarithm functions.mac e120
+  contains-noun -> expected      t=1.6s -> t=0.7s 3 Logarithms/3.5 Logarithm functions.mac e123
+  contains-noun -> expected      t=1.3s -> t=0.6s 3 Logarithms/3.5 Logarithm functions.mac e124
+  contains-noun -> expected      t=1.0s -> t=0.5s 3 Logarithms/3.5 Logarithm functions.mac e125
+  unverified    -> expected      t=0.9s -> t=0.7s 3 Logarithms/3.5 Logarithm functions.mac e126
+  contains-noun -> verified      t=23.3s -> t=0.6s 3 Logarithms/3.5 Logarithm functions.mac e148
+  contains-noun -> verified      t=7.3s -> t=1.7s 3 Logarithms/3.5 Logarithm functions.mac e154
+  deferred      -> verified      t=0.6s -> t=2.3s 3 Logarithms/3.5 Logarithm functions.mac e155
+  contains-noun -> verified      t=3.4s -> t=3.4s 3 Logarithms/3.5 Logarithm functions.mac e156
+  contains-noun -> verified      t=8.3s -> t=1.0s 3 Logarithms/3.5 Logarithm functions.mac e157
+  deferred      -> verified      t=0.6s -> t=2.2s 3 Logarithms/3.5 Logarithm functions.mac e158
+  contains-noun -> verified      t=3.4s -> t=3.3s 3 Logarithms/3.5 Logarithm functions.mac e159
+  contains-noun -> verified      t=7.4s -> t=0.5s 3 Logarithms/3.5 Logarithm functions.mac e160
+  contains-noun -> expected      t=0.3s -> t=0.7s 3 Logarithms/3.5 Logarithm functions.mac e173
+  contains-noun -> expected      t=0.7s -> t=0.8s 3 Logarithms/3.5 Logarithm functions.mac e174
+  contains-noun -> expected      t=0.7s -> t=0.8s 3 Logarithms/3.5 Logarithm functions.mac e175
+  contains-noun -> expected      t=0.6s -> t=1.7s 3 Logarithms/3.5 Logarithm functions.mac e176
+  contains-noun -> expected      t=0.6s -> t=1.5s 3 Logarithms/3.5 Logarithm functions.mac e177
+  contains-noun -> expected      t=1.4s -> t=1.8s 3 Logarithms/3.5 Logarithm functions.mac e178
+  contains-noun -> verified      t=7.6s -> t=1.5s 3 Logarithms/3.5 Logarithm functions.mac e195
+  deferred      -> verified      t=0.8s -> t=3.0s 3 Logarithms/3.5 Logarithm functions.mac e196
+  contains-noun -> verified      t=3.7s -> t=4.8s 3 Logarithms/3.5 Logarithm functions.mac e197
+  contains-noun -> verified      t=8.3s -> t=1.7s 3 Logarithms/3.5 Logarithm functions.mac e198
+  deferred      -> verified      t=0.6s -> t=2.6s 3 Logarithms/3.5 Logarithm functions.mac e199
+  contains-noun -> verified      t=3.3s -> t=5.2s 3 Logarithms/3.5 Logarithm functions.mac e200
+  contains-noun -> expected      t=1.0s -> t=0.8s 3 Logarithms/3.5 Logarithm functions.mac e215
+  contains-noun -> expected      t=1.0s -> t=0.8s 3 Logarithms/3.5 Logarithm functions.mac e216
+  contains-noun -> expected      t=1.6s -> t=1.1s 3 Logarithms/3.5 Logarithm functions.mac e217
+  contains-noun -> expected      t=0.9s -> t=1.5s 3 Logarithms/3.5 Logarithm functions.mac e218
+  contains-noun -> expected      t=1.0s -> t=1.5s 3 Logarithms/3.5 Logarithm functions.mac e219
+  contains-noun -> expected      t=1.6s -> t=1.8s 3 Logarithms/3.5 Logarithm functions.mac e220
+  timeout       -> verified      t=30.1s -> t=0.4s 3 Logarithms/3.5 Logarithm functions.mac e222
+  contains-noun -> verified      t=2.3s -> t=0.6s 3 Logarithms/3.5 Logarithm functions.mac e238
+  unverified    -> expected      t=2.6s -> t=1.1s 3 Logarithms/3.5 Logarithm functions.mac e267
+  deferred      -> expected      t=6.1s -> t=1.3s 3 Logarithms/3.5 Logarithm functions.mac e270
+  contains-noun -> verified      t=0.3s -> t=0.2s 3 Logarithms/3.5 Logarithm functions.mac e271
+  contains-noun -> expected      t=1.5s -> t=0.8s 3 Logarithms/3.5 Logarithm functions.mac e277
+  contains-noun -> expected      t=2.4s -> t=2.0s 3 Logarithms/3.5 Logarithm functions.mac e278
+  contains-noun -> expected      t=5.6s -> t=3.2s 3 Logarithms/3.5 Logarithm functions.mac e279
