@@ -415,6 +415,11 @@ matcher regression 109/0 in both arms.
   shim ticket) — done on branch `polylog-native-li` (+566 PASS over classes
   2–8, 2,518 `expected` -> `verified`; one real PASS->FAIL, 8.8 e155, the
   eager `li[-2]` simplification) — merged, records promoted (2026-09-26)
+- `.scratch/corpus-harness/issues/06` — `verified` can rest on the numeric
+  stage alone; record which zero-chain stage closed each entry, add the
+  radcan-family symbolic stages the README examples found
+  (`radcan`, `exponentialize`, `rectform`, `trigexpand`, `demoivre`,
+  `logarc`), full A/B, then decide the numeric stage's status — ready
 - `.scratch/rubi-rat-state-leak/issues/01` — `rubi` leaves the rat
   package's global `varlist`/`genvar` populated until the top-level statement
   ends; a `ratsimp` in the same statement can then fail to close a correct
