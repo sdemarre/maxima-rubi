@@ -1,0 +1,21 @@
+/* probe overlay: master (cd0a421-line, mr-attr-base) definitions of %mr_substFor3 */
+%mr_substFor3(v, u, x) := block([L],
+  if %mr_atomQ(v)
+  then subst(x, v, u)
+  
+  else if not %mr_inertTrigFreeQ(u)
+  then %mr_substFor3(v, %mr_activateTrig(u), x)
+  else if not atom(%mr_nonfreeFactors(v, x))
+    and is(member(op(%mr_nonfreeFactors(v, x)), [sin, cos, tan, cot]) = true)
+  then %mr_substForTrigHead(v, u, x)
+  else if not atom(v) and op(v) = "^"
+    and is(part(v, 1) = x) and freeof(x, part(v, 2))
+  then %mr_substPower(u, x, 1/part(v, 2))
+  else if %mr_linearQ(v, x) then (
+    L : %mr_binomial_parts(v, x),
+    if not atom(L) and is(part(L, 3) = 1)
+    then subst((x - part(L, 1))/part(L, 2), x, u)
+    else subst(x, v, u)
+  )
+  else subst(x, v, u))$
+

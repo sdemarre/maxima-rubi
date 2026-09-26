@@ -1,0 +1,12 @@
+# core /home/serge/src/mr-attr-base/test/mr_rules.core cap 200 hit_cap False cpu [29.149555]
+chk(mr_f,mr_pts):=block([mr_r,mr_d],mr_r:rubi(mr_f,x),mr_d:diff(mr_r,x)-mr_f,print("ANSWER-LEN",slength(string(mr_r)),"UNINT",not freeof(unintegrable,mr_r)),for mr_p in mr_pts do print("  RESID at",mr
+ANSWER-LEN 8268 UNINT false 
+  RESID at [A = 1.3,B = 0.7,C = 2.1,D = 0.4,a = 1.1,b = 0.6,c = 2.3,d = 0.9,x = 0.8] 3.7323566459690483e-10 
+  RESID at [A = 0.2,B = 1.7,C = 0.5,D = 1.4,a = 2.1,b = 1.6,c = 0.3,d = 1.9,x = 1.8] -(5.554950924478842e-16*%i)-1.6653345369377348e-15 
+ANSWER-LEN 3108 UNINT false 
+  RESID at [a = 1.1,c = 0.6,d = 2.3,e = 0.9,x = 0.8] -2.373423402257657e-10 
+  RESID at [a = 2.1,c = 1.6,d = 0.3,e = 1.9,x = 1.8] -1.3877787807814457e-17 
+# core /home/serge/src/mr-attr/test/mr_rules.core cap 200 hit_cap False cpu [4.258]
+chk(mr_f,mr_pts):=block([mr_r,mr_d],mr_r:rubi(mr_f,x),mr_d:diff(mr_r,x)-mr_f,print("ANSWER-LEN",slength(string(mr_r)),"UNINT",not freeof(unintegrable,mr_r)),for mr_p in mr_pts do print("  RESID at",mr
+ANSWER-LEN 635 UNINT false 
+  RESID at [A = 1.3,B = 0.7,C = 2.1,D = 0.4,a = 1.1,b = 0.6,c = 2.3,d = 0.9,x = 0.8] -(4.172325134277344e-7*%i)-2.812990373968205e-8 

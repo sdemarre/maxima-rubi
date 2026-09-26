@@ -1,0 +1,39 @@
+/* probes/class-ports/fix-C-substforhyperbolic.mac -- RUNTIME PATCH (probe
+   only, not applied to the tree): %mr_substForHyperbolic from
+   maxima_rubi_utils.mac (4ed1877, added by ae6b7a6) with its EqQ test
+   %mr_eqQ(part(u,1), v) -- a SYNTACTIC is(u - v = 0), false for
+   a*c+b*c*x vs c*(a+b*x) -- replaced by the quotient the IntegerQuotientQ
+   guard already computed: is(ratsimp(part(u,1)/v) = 1). Rubi's EqQ is
+   PossibleZeroQ[u-v], true there. Without it the q = 1 case falls to the
+   TrigExpand branch, which maps over the ARGUMENTS of cosh(v) and returns
+   cosh(v) unsubstituted. */
+%mr_substForHyperbolic(%mr_sfy_u, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v) :=
+  block([inflag : true, %mr_sfy_h, %mr_sfy_t, %mr_sfy_p],
+  if atom(%mr_sfy_u) then %mr_sfy_u
+  elseif %mr_hyperbolicQ(%mr_sfy_u)
+         and %mr_integerQuotientQ(part(%mr_sfy_u, 1), %mr_sfy_v) then (
+    %mr_sfy_h : op(%mr_sfy_u),
+    if is(ratsimp(part(%mr_sfy_u, 1)/%mr_sfy_v) = 1) then (
+      if %mr_sfy_h = sinh then %mr_sfy_s
+      elseif %mr_sfy_h = cosh then %mr_sfy_c
+      elseif %mr_sfy_h = tanh then %mr_sfy_s/%mr_sfy_c
+      elseif %mr_sfy_h = coth then %mr_sfy_c/%mr_sfy_s
+      elseif %mr_sfy_h = sech then 1/%mr_sfy_c
+      else 1/%mr_sfy_s)
+    else (
+      %mr_sfy_t : subst(%mr_sfy_v, '%mr_sfy_y,
+                        trigexpand(apply(%mr_sfy_h,
+                          [ratsimp(part(%mr_sfy_u, 1)/%mr_sfy_v)*'%mr_sfy_y]))),
+      if atom(%mr_sfy_t) then %mr_sfy_t
+      else funmake(op(%mr_sfy_t),
+                 map(lambda([%mr_sfy_p],
+                            %mr_substForHyperbolic(%mr_sfy_p, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v)),
+                     args(%mr_sfy_t)))))
+  else (
+    %mr_sfy_t : %mr_foq_halfPair(%mr_sfy_u, %mr_sfy_v, cosh, sinh),
+    if %mr_sfy_t # false
+    then %mr_sfy_s/2*%mr_substForHyperbolic(%mr_sfy_t, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v)
+    else funmake(op(%mr_sfy_u),
+               map(lambda([%mr_sfy_p],
+                          %mr_substForHyperbolic(%mr_sfy_p, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v)),
+                   args(%mr_sfy_u)))))$

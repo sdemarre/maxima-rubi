@@ -1,0 +1,11 @@
+/* probes/class-ports/class1/03-heap-cost.mac -- a rule-free Maxima workload
+load("/home/serge/src/mr-attr/probes/class-ports/class1/gcstat.lisp")$
+   (no rubi call) timed on each core: is the class-ports core slower at plain
+   Maxima work (heap / GC), independent of the rule walk? Prints the run cpu
+   and SBCL's cumulative GC run time for the workload. */
+gc0 : ?get\-gc\-ms()$
+t0 : elapsed_run_time()$
+for i thru 3 do (w : expand((x+y+z+1)^30), w : ratsimp(diff(w, x)/((x+y+z+1)^29)))$
+for i thru 200 do w : integrate(x^i*exp(x), x)$
+print("WORK-CPU", elapsed_run_time() - t0, "GC-MS", ?get\-gc\-ms() - gc0)$
+print("DYNAMIC-USAGE-MB", ?get\-dyn\-mb())$

@@ -1,0 +1,51 @@
+#!/bin/sh
+# probes/class-ports/01-timeout-ab.run -- the ALTERNATING SEQUENTIAL timing
+# A/B of the class-6 PASS->FAIL entries that the class-ports measurement
+# (mr-ports test/corpus_class6.ports.out) left as `timeout`, 97 entries.
+#
+# Modelled on probes/section9/05-timing-ab.run: ONE entry at a time, ONE
+# Maxima process at a time, reference (master cc12ec2, 3,997 rules) core then
+# class-ports (4ed1877, 7,776 rules) core, 120 s cpu cap, shipping switches,
+# through the harness itself (run_corpus_queue.py subset mode, workers 1).
+# NOTE: the host was running a 24-worker corpus measurement concurrently
+# (SMT contention, AGENTS.md: ~1.35x CPU inflation at 24 workers); both
+# arms of a pair ran under the same load, one right after the other.
+#
+#   sh probes/class-ports/01-timeout-ab.run
+set -u
+cd "$(dirname "$0")/../.." || exit 1
+REF=../mr-attr-base/test/mr_rules.core
+NEW=test/mr_rules.core
+OUT=probes/class-ports/01-timeout-ab.out
+CAP=120
+WORK=probes/class-ports/work/timeout-ab
+SECTION="6 Hyperbolic functions"
+[ -f "$REF" ] || { echo "MISSING $REF"; exit 1; }
+[ -f "$NEW" ] || { echo "MISSING $NEW"; exit 1; }
+rm -rf "$WORK"; mkdir -p "$WORK"
+{
+  echo "# probes/class-ports/01-timeout-ab.run -- ALTERNATING SEQUENTIAL timing A/B, ${CAP} s cpu cap."
+  echo "# tree $(git rev-parse --short HEAD), $(date -u '+%F %H:%M UTC')"
+  awk '/^fingerprint |^rules |^git_rev /{print "# ref core: " $0}' "$REF.stamp"
+  awk '/^fingerprint |^rules |^git_rev /{print "# new core: " $0}' "$NEW.stamp"
+  echo
+} > "$OUT"
+i=0
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  i=$((i + 1))
+  printf '%s\n' "$line" > "$WORK/one.out"
+  for arm in ref new; do
+    [ "$arm" = ref ] && core=$REF || core=$NEW
+    d="$WORK/e${i}_$arm"; rm -rf "$d"; mkdir -p "$d"
+    MR_RULES_CORE_PATH="$PWD/$core" python3 test/run_corpus_queue.py "$SECTION" \
+      --entries-from "$WORK/one.out" --class pf --out-dir "$PWD/$d" \
+      --workers 1 --cap "$CAP" --launch > "$d/plan.txt" 2>&1 || exit 1
+    for pid in $(awk '{print $2}' "$d/pids"); do
+      while kill -0 "$pid" 2>/dev/null; do sleep 2; done
+    done
+    printf '%s  ' "$arm" >> "$OUT"
+    grep -h -E '^\S+\s+t=' "$d"/shard*.out >> "$OUT"
+  done
+done < probes/class-ports/c6-pf-timeout.entries
+echo "wrote $OUT"

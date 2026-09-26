@@ -1,0 +1,39 @@
+/* probe overlay: master (cd0a421-line, mr-attr-base) definitions of mr_unintegrable %mr_top_body mr_top mr_int rubi rubi_fallback */
+mr_unintegrable(f, x) := 'unintegrable[f, x]$
+
+%mr_top_body(f, x, fb) := block([ans],
+  depth_level : depth_level + 1,
+  if depth_level > mr_max_depth then (
+    depth_level : depth_level - 1,
+    mr_depth_cap_hits : mr_depth_cap_hits + 1,
+    if fb then return(integrate(f, x))
+    else return(mr_unintegrable(f, x))
+  ),
+  if member(f, %mr_seen) then (
+    depth_level : depth_level - 1,
+    
+    if fb then return(integrate(f, x))
+    
+    else error("mr_seen_cut")
+  ),
+  %mr_seen : cons(f, %mr_seen),
+  
+  ans : if mr_model_flags
+        then block([radexpand : false, logexpand : false],
+                   %mr_dispatch_tree(f, x, mr_rule_table, depth_level))
+        else %mr_dispatch_tree(f, x, mr_rule_table, depth_level),
+  %mr_seen : rest(%mr_seen),
+  depth_level : depth_level - 1,
+  if ans = false then (
+    if fb then integrate(f, x)
+    else mr_unintegrable(f, x)
+  ) else ans)$
+
+mr_top(f, x, fb) := %mr_top_body(f, x, fb)$
+
+mr_int(f, x) := mr_top(f, x, mr_nested_fallback)$
+
+rubi(f, x) := mr_top(f, x, false)$
+
+rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
+

@@ -1,0 +1,10 @@
+/* probes/class-ports/class1/06-elliptic-cd.mac -- the 1.1.1.3 e863-e870
+   family: does Rubi 1.1.3.7 L32 (Int[(c+d x)/Sqrt[a+b x^3]], the EllipticE
+   rule) fire on the integrand the chain reaches, (4^(1/3) x+1-sqrt(3))/sqrt(4x^3+1)?
+   Narrow flat mode (shipping) vs mr_flat_wide:true. */
+rubi_verbose : true$
+r1 : rubi((4^(1/3)*x-sqrt(3)+1)/sqrt(4*x^3+1), x)$
+print("NARROW", string(r1))$
+mr_flat_wide : true$
+r2 : rubi((4^(1/3)*x-sqrt(3)+1)/sqrt(4*x^3+1), x)$
+print("WIDE", string(r2))$

@@ -1,0 +1,9 @@
+/* probe overlay: master (cd0a421-line, mr-attr-base) definitions of %mr_calculusQ */
+%mr_calculusQ(u) := block([s],
+  if atom(u) then false
+  else (
+    s : string(op(u)),
+    is(member(s, ["integrate", "diff", "sum", "product",
+                  "mr_int", "mr_subst", "unintegrable"]) = true)
+  ))$
+

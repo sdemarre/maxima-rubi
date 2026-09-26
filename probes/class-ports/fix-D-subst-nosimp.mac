@@ -1,0 +1,7 @@
+/* probes/class-ports/fix-D-subst-nosimp.mac -- RUNTIME EXPERIMENT (probe only,
+   not a proposed fix as is): %mr_subst without the %mr_simp pass
+   (ratsimp / ratsimp(expand) / factor / ratsimp) that maxima_rubi_utils.mac
+   applies after every Subst. Question: is the answer blow-up of the
+   route-timeout family (answers of 5 KB - 7 MB, log arguments of degree
+   15-44 in tanh) made by that pass? */
+%mr_subst(u, x, v) := subst(v, x, u)$

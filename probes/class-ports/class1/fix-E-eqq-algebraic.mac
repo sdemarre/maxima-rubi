@@ -1,0 +1,12 @@
+/* probes/class-ports/class1/fix-E-eqq-algebraic.mac -- CANDIDATE FIX E (probe
+   overlay, not applied to the tree): EqQ / NeQ decide a difference that is
+   algebraically zero but not syntactically so. The shipping %mr_eqQ is
+   is(u - v = 0) on the simplified difference (maxima_rubi_utils.mac L398),
+   so 4 (1-sqrt 3)^3 - 8 (5 - 3^(3/2)) and (a e^3 - c d^2 e) - e (a e^2 - c d^2)
+   read as nonzero. Rubi's EqQ is PossibleZeroQ[u - v]: here the rational
+   zero test with algebraic:true (radicals reduced), after the cheap
+   syntactic test. */
+%mr_eqQ(u, v) := block([%mr_eq_d : u - v],
+  if is(%mr_eq_d = 0) then true
+  else is(block([algebraic : true], ratsimp(%mr_eq_d)) = 0))$
+%mr_neQ(u, v) := not %mr_eqQ(u, v)$

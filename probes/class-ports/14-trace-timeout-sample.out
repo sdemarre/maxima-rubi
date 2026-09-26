@@ -1,0 +1,362 @@
+# entry 6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e474  integrand csch(c+d*x)^2*sech(c+d*x)^3/(a+b*sinh(c+d*x))
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.055122]
+
+# entry 6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e73  integrand sinh(x)^3/(a+b*sinh(x))
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [6.061161]
+fired    1_1_2_1 r13  1/(-x^2+4*b^8+4*a^2*b^6)
+fired    1_2_1_1 r12  1/(-(a*b^3*x^2)+2*b^4*x+a*b^3)
+fired    4_1_1_1 r27  1/(a*b^3-%i*b^4*%mr_isin(%i*x))
+fired    4_1_0_1 r1  1/(b^4*sinh(x)+a*b^3)
+fired    9_1 r8  1
+fired    4_1_1_1 r3  %mr_isin(%i*x)^2
+fired    9_1 r10  -%mr_isin(%i*x)^2
+fired    4_1_0_1 r1  sinh(x)^2
+fired    4_1_1_1 r6  %mr_isin(%i*x)
+fired    9_1 r11  -(%i*%mr_isin(%i*x))
+fired    4_1_0_1 r1  sinh(x)
+fired    1_4_1 r7  -(a^3/(b^4*sinh(x)+a*b^3))+sinh(x)^2/b-(a*sinh(x))/b^2+a^2/b^3
+fired    9_3 r61  sinh(x)^3/(b*sinh(x)+a)
+RUBI-CPU 6.009305 
+ANSWER ((cosh(x)*sinh(x))/2-x/2)/b-(a*cosh(x))/b^2+(a^2*x)/b^3+(2*a^3*log((b^3*(a^44*(-tanh(x/2)^44-860*tanh(x/2)^42-111069*tanh(x/2)^40-5133856*tanh(x/2)^38-112784399*tanh(x/2)^36-1353412788*tanh(x/2)^34-9586673915*tanh(x/2)^32-41802112192*tanh(x/2)^30-113649492522*tanh(x/2)^28-187187399448*tanh(x/2)^26-160094486370*tanh(x/2)^24+160094486370*tanh(x/2)^20+187187399448*tanh(x/2)^18+113649492522*tanh(x/2)^16+41802112192*tanh(x/2)^14+9586673915*tanh(x/2)^12+1353412788*tanh(x/2)^10+112784399*tanh(x/2)^8+5133856*tanh(x/2)^6+111069*tanh(x/2)^4+860*tanh(x/2)^2+1)+a^40*sqrt(4*b^8+4*a^2*b^6)*(493640*ta...
+
+# entry 6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e129  integrand (A+B*sinh(x))/(a+b*sinh(x))
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [4.953044]
+fired    1_1_2_1 r13  1/(-x^2+4*b^4+4*a^2*b^2)
+fired    1_2_1_1 r12  1/(-(a*b*x^2)+2*b^2*x+a*b)
+fired    4_1_1_1 r27  1/(a*b-%i*b^2*%mr_isin(%i*x))
+fired    4_1_0_1 r1  1/(b^2*sinh(x)+a*b)
+fired    1_4_1 r7  B/b-(B*a-A*b)/(b^2*sinh(x)+a*b)
+fired    9_3 r61  (B*sinh(x)+A)/(b*sinh(x)+a)
+RUBI-CPU 4.909257 
+ANSWER (B*x)/b-(2*(A*b-B*a)*log((b*(a^44*(-tanh(x/2)^44-860*tanh(x/2)^42-111069*tanh(x/2)^40-5133856*tanh(x/2)^38-112784399*tanh(x/2)^36-1353412788*tanh(x/2)^34-9586673915*tanh(x/2)^32-41802112192*tanh(x/2)^30-113649492522*tanh(x/2)^28-187187399448*tanh(x/2)^26-160094486370*tanh(x/2)^24+160094486370*tanh(x/2)^20+187187399448*tanh(x/2)^18+113649492522*tanh(x/2)^16+41802112192*tanh(x/2)^14+9586673915*tanh(x/2)^12+1353412788*tanh(x/2)^10+112784399*tanh(x/2)^8+5133856*tanh(x/2)^6+111069*tanh(x/2)^4+860*tanh(x/2)^2+1)+a^42*sqrt(4*b^4+4*a^2*b^2)*(903*tanh(x/2)^42+234479*tanh(x/2)^40+16364166*tanh(x/...
+
+# entry 6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e252  integrand (A+B*csch(x))/(a+b*sinh(x))
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [21.276707]
+fired    1_1_2_1 r13  1/(-x^2+4*b^2+4*a^2)
+fired    1_2_1_1 r12  1/(-(a*x^2)+2*b*x+a)
+fired    4_1_1_1 r27  1/(a-%i*b*%mr_isin(%i*x))
+fired    4_1_0_1 r1  1/(b*sinh(x)+a)
+fired    1_1_2_1 r13  1/(1-x^2)
+fired    1_4_1 r18  -(1/(x^2-1))
+fired    4_7_5 r48  1/%mr_isin(%i*x)
+fired    9_1 r11  %i/%mr_isin(%i*x)
+fired    4_1_0_1 r1  1/sinh(x)
+fired    9_1 r11  -(%i/sinh(x))
+fired    4_1_3_1 r36  (A*%mr_isin(%i*x)+%i*B)/(%mr_isin(%i*x)*(a-%i*b*%mr_isin(%i*x)))
+fired    9_1 r11  (%i*(A*%mr_isin(%i*x)+%i*B))/(%mr_isin(%i*x)*(a-%i*b*%mr_isin(%i*x)))
+fired    4_1_0_1 r1  (%i*A*sinh(x)+%i*B)/(sinh(x)*(b*sinh(x)+a))
+fired    9_1 r11  -((%i*(%i*A*sinh(x)+%i*B))/(sinh(x)*(b*sinh(x)+a)))
+fired    4_1_2_1 r95  (%i*B*%mr_icsc(%i*x)+A)/(a-%i*b*%mr_isin(%i*x))
+fired    4_1_0_1 r1  (B*csch(x)+A)/(b*sinh(x)+a)
+RUBI-CPU 21.22187 
+ANSWER (2*(B*b-A*a)*log((a^44*(-tanh(x/2)^44-860*tanh(x/2)^42-111069*tanh(x/2)^40-5133856*tanh(x/2)^38-112784399*tanh(x/2)^36-1353412788*tanh(x/2)^34-9586673915*tanh(x/2)^32-41802112192*tanh(x/2)^30-113649492522*tanh(x/2)^28-187187399448*tanh(x/2)^26-160094486370*tanh(x/2)^24+160094486370*tanh(x/2)^20+187187399448*tanh(x/2)^18+113649492522*tanh(x/2)^16+41802112192*tanh(x/2)^14+9586673915*tanh(x/2)^12+1353412788*tanh(x/2)^10+112784399*tanh(x/2)^8+5133856*tanh(x/2)^6+111069*tanh(x/2)^4+860*tanh(x/2)^2+1)+b*(a^43*(44*tanh(x/2)^43+36120*tanh(x/2)^41+4442760*tanh(x/2)^39+195086528*tanh(x/2)^37+4060...
+
+# entry 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e120  integrand sinh(e+f*x)^6/(a+b*sinh(e+f*x)^2)^(5/2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.076785]
+
+# entry 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e214  integrand csch(c+d*x)^9*(a+b*sinh(c+d*x)^4)^3
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.110606]
+
+# entry 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e222  integrand csch(c+d*x)^8*(a+b*sinh(c+d*x)^4)^3
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.076672]
+
+# entry 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e274  integrand 1/(1-sinh(x)^6)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [3.820432]
+fired    4_1_1_1 r25  1/(-(%i*%mr_isin(%i*x))-1)
+fired    4_1_0_1 r1  1/(sinh(x)-1)
+fired    9_1 r10  -(1/(sinh(x)-1))
+fired    4_1_1_1 r24  1/(1-%i*%mr_isin(%i*x))
+fired    4_1_0_1 r1  1/(sinh(x)+1)
+fired    9_3 r58  1/(sinh(x)^2-1)
+fired    9_1 r10  -(1/(sinh(x)^2-1))
+fired    4_1_1_1 r25  1/(-(%i*%mr_isin(%i*x))-1)
+fired    4_1_0_1 r1  1/(sinh(x)-1)
+fired    9_1 r10  -(1/(sinh(x)-1))
+fired    4_1_1_1 r24  1/(1-%i*%mr_isin(%i*x))
+fired    4_1_0_1 r1  1/(sinh(x)+1)
+fired    9_3 r58  1/(sinh(x)^2-1)
+fired    9_1 r10  -(1/(sinh(x)^2-1))
+fired    4_1_1_1 r25  1/(-(%i*%mr_isin(%i*x))-1)
+fired    4_1_0_1 r1  1/(sinh(x)-1)
+fired    9_1 r10  -(1/(sinh(x)-1))
+fired    4_1_1_1 r24  1/(1-%i*%mr_isin(%i*x))
+fired    4_1_0_1 r1  1/(sinh(x)+1)
+fired    9_3 r58  1/(sinh(x)^2-1)
+fired    9_1 r10  -(1/(sinh(x)^2-1))
+fired    9_3 r59  1/(1-sinh(x)^6)
+RUBI-CPU 3.743241 
+ANSWER ((x/sqrt(2)-sqrt(2)*atanh(cosh(x)/(sinh(x)+sqrt(2)+1)))/2-sqrt(2)*atanh(cosh(x)/(sinh(x)+sqrt(2)+1))+(x/sqrt(2)-sqrt(2)*atanh(cosh(x)/(sinh(x)-sqrt(2)-1)))/2-sqrt(2)*atanh(cosh(x)/(sinh(x)-sqrt(2)-1))+sqrt(2)*x)/3 
+
+# entry 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e357  integrand cosh(e+f*x)^4*sqrt(a+b*sinh(e+f*x)^2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [28.69185]
+fired    9_3 r67  sqrt(a-b*x^2)/sqrt(1-x^2)
+fired    9_3 r67  1/(sqrt(1-x^2)*sqrt(a-b*x^2))
+fired    1_1_2_5 r4  ((-(3*b^2)-7*a*b+2*a^2)*x^2+9*a*b-a^2)/(sqrt(1-x^2)*sqrt(a-b*x^2))
+fired    9_1 r6  ((2*a^2-3*b^2)*x^2-7*a*b*x^2+9*a*b-a^2)/(sqrt(1-x^2)*sqrt(a-b*x^2))
+fired    9_1 r6  (-(3*b^2*x^2)-7*a*b*x^2+2*a^2*x^2+9*a*b-a^2)/(sqrt(1-x^2)*sqrt(a-b*x^2))
+fired    1_4_2 r9  (a^2*(2*x^2-1)-3*b^2*x^2+a*b*(9-7*x^2))/(sqrt(1-x^2)*sqrt(a-b*x^2))
+fired    1_1_2_5 r8  (sqrt(a-b*x^2)*((6*b-2*a)*x^2-5*b+a))/sqrt(1-x^2)
+fired    9_1 r6  (sqrt(a-b*x^2)*(6*b*x^2-2*a*x^2-5*b+a))/sqrt(1-x^2)
+fired    1_4_2 r9  (sqrt(a-b*x^2)*(b*(6*x^2-5)+a*(1-2*x^2)))/sqrt(1-x^2)
+fired    1_1_2_3 r39  (1-x^2)^(3/2)*sqrt(a-b*x^2)
+fired    4_1_7 r24  %mr_icos(%i*f*x+%i*e)^4*sqrt(a-b*%mr_isin(%i*f*x+%i*e)^2)
+fired    4_1_0_1 r1  cosh(f*x+e)^4*sqrt(b*sinh(f*x+e)^2+a)
+RUBI-CPU 28.609948 
+ANSWER -((%i*sqrt(cos(%i*f*x+%i*e)^2)*(b*(7*a*'unintegrable[sqrt(b*sinh(f*x+e)^2+a)/sqrt(sinh(f*x+e)^2+1),%i*sinh(f*x+e)]-8*a^2*'unintegrable[1/(sqrt(sinh(f*x+e)^2+1)*sqrt(b*sinh(f*x+e)^2+a)),%i*sinh(f*x+e)])+b^2*(3*'unintegrable[sqrt(b*sinh(f*x+e)^2+a)/sqrt(sinh(f*x+e)^2+1),%i*sinh(f*x+e)]+6*a*'unintegrable[1/(sqrt(sinh(f*x+e)^2+1)*sqrt(b*sinh(f*x+e)^2+a)),%i*sinh(f*x+e)])-2*a^2*'unintegrable[sqrt(b*sinh(f*x+e)^2+a)/sqrt(sinh(f*x+e)^2+1),%i*sinh(f*x+e)]+2*a^3*'unintegrable[1/(sqrt(sinh(f*x+e)^2+1)*sqrt(b*sinh(f*x+e)^2+a)),%i*sinh(f*x+e)]+sinh(f*x+e)*(6*%i*b^2*sqrt(sinh(f*x+e)^2+1)*sqrt(b*sinh...
+
+# entry 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e469  integrand (a+b*sinh(e+f*x)^2)^(3/2)*tanh(e+f*x)^3
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.059141]
+fired    1_1_2_1 r15  1/(x^2/b-(a-b)/b)
+fired    1_1_1_2 r32  1/(x*sqrt(b*x-b+a))
+fired    1_1_1_2 r19  sqrt(b*x-b+a)/x
+fired    1_1_1_2 r19  (b*x-b+a)^(3/2)/x
+fired    1_1_1_3 r6  ((x-1)*(b*x-b+a)^(3/2))/x^2
+fired    1_1_2_4 r20  ((x^2-1)*(b*x^2-b+a)^(3/2))/x^3
+fired    1_4_2 r8  ((b*(x^2-1)+a)^(3/2)*(x^2-1))/x^3
+
+# entry 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e481  integrand tanh(e+f*x)/sqrt(a+b*sinh(e+f*x)^2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [21.852881]
+fired    1_1_2_1 r15  1/(x^2/b-(a-b)/b)
+fired    1_1_1_2 r32  1/(x*sqrt(b*x-b+a))
+fired    1_1_2_2 r4  1/(x*sqrt(b*x^2-b+a))
+fired    1_4_2 r6  1/(x*sqrt(b*(x^2-1)+a))
+fired    4_7_5 r32  tanh(f*x+e)/sqrt(b*sinh(f*x+e)^2+a)
+RUBI-CPU 21.289541 
+ANSWER 
+
+# entry 6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e502  integrand tanh(e+f*x)^3/(a+b*sinh(e+f*x)^2)^(5/2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.063146]
+fired    1_1_2_1 r15  1/(x^2/b-(a-b)/b)
+fired    1_1_1_2 r32  1/(x*sqrt(b*x-b+a))
+fired    1_1_1_2 r20  1/(x*(b*x-b+a)^(3/2))
+fired    1_1_1_2 r20  1/(x*(b*x-b+a)^(5/2))
+fired    1_1_1_3 r6  (x-1)/(x^2*(b*x-b+a)^(5/2))
+fired    1_1_2_4 r20  (x^2-1)/(x^3*(b*x^2-b+a)^(5/2))
+fired    1_4_2 r8  (x^2-1)/(x^3*(b*(x^2-1)+a)^(5/2))
+
+# entry 6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e65  integrand 1/(a+b*cosh(x)^6)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [21.840273]
+fired    1_1_2_1 r15  1/(-((a^(1/6)-%i*b^(1/6))*x^2)+%i*b^(1/6)+a^(1/6))
+fired    4_1_1_1 r26  1/(%i*b^(1/6)*%mr_isin(%i*x+%pi/2)+a^(1/6))
+fired    4_1_0_1 r1  1/(%i*b^(1/6)*cosh(x)+a^(1/6))
+fired    9_1 r12  a^(1/6)/(%i*b^(1/6)*cosh(x)+a^(1/6))
+fired    1_1_2_1 r15  1/(-((-(%i*b^(1/6))-a^(1/6))*x^2)+%i*b^(1/6)-a^(1/6))
+fired    4_1_1_1 r26  1/(%i*b^(1/6)*%mr_isin(%i*x+%pi/2)-a^(1/6))
+fired    4_1_0_1 r1  1/(%i*b^(1/6)*cosh(x)-a^(1/6))
+fired    9_1 r12  a^(1/6)/(%i*b^(1/6)*cosh(x)-a^(1/6))
+fired    9_1 r10  -(a^(1/6)/(%i*b^(1/6)*cosh(x)-a^(1/6)))
+fired    9_3 r58  1/(b^(1/3)*cosh(x)^2+a^(1/3))
+fired    9_1 r12  a^(1/3)/(b^(1/3)*cosh(x)^2+a^(1/3))
+fired    1_1_2_1 r15  1/(-((a^(1/6)-%i*b^(1/6))*x^2)+%i*b^(1/6)+a^(1/6))
+fired    4_1_1_1 r26  1/(%i*b^(1/6)*%mr_isin(%i*x+%pi/2)+a^(1/6))
+fired    4_1_0_1 r1  1/(%i*b^(1/6)*cosh(x)+a^(1/6))
+fired    9_1 r12  a^(1/6)/(%i*b^(1/6)*cosh(x)+a^(1/6))
+fired    1_1_2_1 r15  1/(-((-(%i*b^(1/6))-a^(1/6))*x^2)+%i*b^(1/6)-a^(1/6))
+fired    4_1_1_1 r26  1/(%i*b^(1/6)*%mr_isin(%i*x+%pi/2)-a^(1/6))
+fired    4_1_0_1 r1  1/(%i*b^(1/6)*cosh(x)-a^(1/6))
+fired    9_1 r12  a^(1/6)/(%i*b^(1/6)*cosh(x)-a^(1/6))
+fired    9_1 r10  -(a^(1/6)/(%i*b^(1/6)*cosh(x)-a^(1/6)))
+fired    9_3 r58  1/(b^(1/3)*cosh(x)^2+a^(1/3))
+fired    9_1 r12  a^(1/3)/(b^(1/3)*cosh(x)^2+a^(1/3))
+fired    1_1_2_1 r15  1/(-((a^(1/6)-%i*b^(1/6))*x^2)+%i*b^(1/6)+a^(1/6))
+fired    4_1_1_1 r26  1/(%i*b^(1/6)*%mr_isin(%i*x+%pi/2)+a^(1/6))
+fired    4_1_0_1 r1  1/(%i*b^(1/6)*cosh(x)+a^(1/6))
+fired    9_1 r12  a^(1/6)/(%i*b^(1/6)*cosh(x)+a^(1/6))
+fired    1_1_2_1 r15  1/(-((-(%i*b^(1/6))-a^(1/6))*x^2)+%i*b^(1/6)-a^(1/6))
+fired    4_1_1_1 r26  1/(%i*b^(1/6)*%mr_isin(%i*x+%pi/2)-a^(1/6))
+fired    4_1_0_1 r1  1/(%i*b^(1/6)*cosh(x)-a^(1/6))
+fired    9_1 r12  a^(1/6)/(%i*b^(1/6)*cosh(x)-a^(1/6))
+fired    9_1 r10  -(a^(1/6)/(%i*b^(1/6)*cosh(x)-a^(1/6)))
+fired    9_3 r58  1/(b^(1/3)*cosh(x)^2+a^(1/3))
+fired    9_1 r12  a^(1/3)/(b^(1/3)*cosh(x)^2+a^(1/3))
+fired    9_3 r59  1/(b*cosh(x)^6+a)
+RUBI-CPU 21.736 
+ANSWER (log(-((a^(1/3)*(sqrt(a^(1/6)-%i*b^(1/6))*sqrt(%i*b^(1/6)+a^(1/6))*(tanh(x/2)-tanh(x/2)^3)+%i*b^(1/6)*(tanh(x/2)^2-3))+b^(1/3)*(sqrt(a^(1/6)-%i*b^(1/6))*sqrt(%i*b^(1/6)+a^(1/6))*(-tanh(x/2)^3-tanh(x/2))+a^(1/6)*(tanh(x/2)^2+3))+%i*sqrt(b)*(tanh(x/2)^2+1)+sqrt(a)*(tanh(x/2)^2-1)+2*%i*a^(1/6)*sqrt(a^(1/6)-%i*b^(1/6))*sqrt(%i*b^(1/6)+a^(1/6))*b^(1/6)*tanh(x/2))/(b^(1/3)*(sqrt(a^(1/6)-%i*b^(1/6))*sqrt(%i*b^(1/6)+a^(1/6))*(3*tanh(x/2)-tanh(x/2)^3)+a^(1/6)*(3*tanh(x/2)^2-3))+a^(1/3)*(sqrt(a^(1/6)-%i*b^(1/6))*sqrt(%i*b^(1/6)+a^(1/6))*(-tanh(x/2)^3-3*tanh(x/2))+%i*b^(1/6)*(3*tanh(x/2)^2+3))+sqr...
+
+# entry 6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e34  integrand sinh(c+d*x)^3/(a+b*tanh(c+d*x)^2)^2
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.094528]
+
+# entry 6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e41  integrand sinh(c+d*x)^4/(a+b*tanh(c+d*x)^2)^3
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.090287]
+
+# entry 6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e125  integrand cosh(c+d*x)^2/(a+b*tanh(c+d*x)^2)^3
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.049417]
+
+# entry 6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e190  integrand tanh(c+d*x)^6/(a+b*tanh(c+d*x)^2)^3
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.038864]
+
+# entry 6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e215  integrand coth(x)^2*sqrt(a+b*tanh(x)^2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [3.796568]
+fired    1_1_2_1 r13  1/(1/(b+a)-(b/(b+a)+a/(b+a))*x^2)
+fired    1_1_2_3 r12  1/(sqrt(b*x^2+a)*(1/(b+a)-x^2/(b+a)))
+fired    1_4_1 r18  (b+a)/((1-x^2)*sqrt(b*x^2+a))
+fired    1_1_2_4 r43  sqrt(b*x^2+a)/(x^2*(1-x^2))
+fired    1_4_1 r25  sqrt(b*x^2+a)/(x^2-x^4)
+fired    1_4_1 r18  -(sqrt(b*x^2+a)/(x^4-x^2))
+fired    4_7_5 r19  coth(x)^2*sqrt(b*tanh(x)^2+a)
+RUBI-CPU 3.707252 
+ANSWER (sqrt(b+a)*tanh(x)*log(-((tanh(x)^15*(32768*a*b^7*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-208896*a^3*b^5*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-348160*a^4*b^4*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-239360*a^5*b^3*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-78336*a^6*b^2*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-11424*a^7*b*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-544*a^8*sqrt(b+a)*sqrt(b*tanh(x)^2+a))+tanh(x)^17*(-(32768*a*b^7*sqrt(b+a)*sqrt(b*tanh(x)^2+a))-114688*a^2*b^6*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-159744*a^3*b^5*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-112640*a^4*b^4*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-42240*a^5*b^3*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-8064*a^6*b^2*sqrt...
+
+# entry 6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e227  integrand (1+tanh(x)^2)^(3/2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [1.061928]
+fired    1_1_2_1 r16  1/sqrt(x^2+1)
+fired    1_1_2_1 r13  1/(1-2*x^2)
+fired    1_1_2_3 r12  1/((1-x^2)*sqrt(x^2+1))
+fired    1_1_2_5 r3  (-(5*x^2)-3)/((1-x^2)*sqrt(x^2+1))
+fired    1_1_2_3 r39  (x^2+1)^(3/2)/(1-x^2)
+fired    4_3_7 r5  (1-%mr_itan(%i*x)^2)^(3/2)
+fired    4_1_0_1 r1  (tanh(x)^2+1)^(3/2)
+RUBI-CPU 0.987917 
+ANSWER -((-(2^(3/2)*log(-((-(1189*2^(3/2)*tanh(x)^11*sqrt(tanh(x)^2+1))-679*2^(3/2)*tanh(x)^9*sqrt(tanh(x)^2+1)+487*2^(5/2)*tanh(x)^7*sqrt(tanh(x)^2+1)+377*2^(5/2)*tanh(x)^5*sqrt(tanh(x)^2+1)+135*2^(3/2)*tanh(x)^3*sqrt(tanh(x)^2+1)+5*2^(3/2)*tanh(x)*sqrt(tanh(x)^2+1)+3363*tanh(x)^12+3602*tanh(x)^10-2215*tanh(x)^8-3540*tanh(x)^6-1115*tanh(x)^4-94*tanh(x)^2-1)/(-(3465*2^(5/2)*tanh(x)^11*sqrt(tanh(x)^2+1))-6879*2^(5/2)*tanh(x)^9*sqrt(tanh(x)^2+1)-2325*2^(7/2)*tanh(x)^7*sqrt(tanh(x)^2+1)-631*2^(7/2)*tanh(x)^5*sqrt(tanh(x)^2+1)-125*2^(5/2)*tanh(x)^3*sqrt(tanh(x)^2+1)-3*2^(5/2)*tanh(x)*sqrt(tanh(x)^...
+
+# entry 6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e241  integrand tanh(x)^2/(a+b*tanh(x)^2)^(3/2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [7.908008]
+fired    1_1_2_1 r13  1/(1-(b+a)*x^2)
+fired    1_1_2_3 r12  1/((1-x^2)*sqrt(b*x^2+a))
+fired    1_4_1 r18  -(1/((x^2-1)*sqrt(b*x^2+a)))
+fired    1_1_2_4 r39  x^2/((x^2-1)*(b*x^2+a)^(3/2))
+fired    1_4_1 r18  -(x^2/((1-x^2)*(b*x^2+a)^(3/2)))
+fired    4_3_7 r14  %mr_itan(%i*x)^2/(a-b*%mr_itan(%i*x)^2)^(3/2)
+fired    9_1 r10  -(%mr_itan(%i*x)^2/(a-b*%mr_itan(%i*x)^2)^(3/2))
+fired    4_1_0_1 r1  tanh(x)^2/(b*tanh(x)^2+a)^(3/2)
+RUBI-CPU 7.8158009999999996 
+ANSWER -((2*sqrt(b+a)*tanh(x)-sqrt(b*tanh(x)^2+a)*log(-((tanh(x)^15*(32768*a*b^7*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-208896*a^3*b^5*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-348160*a^4*b^4*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-239360*a^5*b^3*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-78336*a^6*b^2*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-11424*a^7*b*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-544*a^8*sqrt(b+a)*sqrt(b*tanh(x)^2+a))+tanh(x)^17*(-(32768*a*b^7*sqrt(b+a)*sqrt(b*tanh(x)^2+a))-114688*a^2*b^6*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-159744*a^3*b^5*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-112640*a^4*b^4*sqrt(b+a)*sqrt(b*tanh(x)^2+a)-42240*a^5*b^3*sqrt(b+a)*sqrt(b*tanh(x...
+
+# entry 6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e248  integrand tanh(x)^4/(a+b*tanh(x)^2)^(5/2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [13.438262]
+fired    1_1_2_1 r15  1/(1/(3*a*b)-(1/(3*b)+1/(3*a))*x^2)
+fired    1_1_2_3 r12  1/((1/(3*a*b)-x^2/(3*a*b))*sqrt(b*x^2+a))
+fired    1_4_1 r18  b/((1/(3*a)-x^2/(3*a))*sqrt(b*x^2+a))
+fired    1_4_1 r18  (a*b)/((1/3-x^2/3)*sqrt(b*x^2+a))
+fired    1_4_1 r18  (3*a*b)/((1-x^2)*sqrt(b*x^2+a))
+fired    1_1_2_5 r7  ((-(3*b)-a)*x^2+a)/((1-x^2)*(b*x^2+a)^(3/2))
+fired    9_1 r6  (-(3*b*x^2)-a*x^2+a)/((1-x^2)*(b*x^2+a)^(3/2))
+fired    1_4_2 r9  (a*(1-x^2)-3*b*x^2)/((1-x^2)*(b*x^2+a)^(3/2))
+fired    1_1_2_4 r38  x^4/((1-x^2)*(b*x^2+a)^(5/2))
+fired    4_3_7 r14  %mr_itan(%i*x)^4/(a-b*%mr_itan(%i*x)^2)^(5/2)
+fired    4_1_0_1 r1  tanh(x)^4/(b*tanh(x)^2+a)^(5/2)
+RUBI-CPU 13.331264000000001 
+ANSWER ((sqrt(3)*b^(5/2)*tanh(x)^4+2*sqrt(3)*a*b^(3/2)*tanh(x)^2+sqrt(3)*a^2*sqrt(b))*log(-(((-(262144*a*b^10)-1245184*a^2*b^9-2490368*a^3*b^8-2723840*a^4*b^7-1770496*a^5*b^6-695552*a^6*b^5-160512*a^7*b^4-20064*a^8*b^3-1140*a^9*b^2-19*a^10*b)*tanh(x)^22+sqrt(b*tanh(x)^2+a)*((3^(21/2)*a^(21/2)*b^(21/2)*((b+a)/(3*a*b))^(21/2)+17*3^(19/2)*a^(19/2)*b^(21/2)*((b+a)/(3*a*b))^(19/2)+13*3^(21/2)*a^(17/2)*b^(21/2)*((b+a)/(3*a*b))^(17/2)+((b+a)/(3*a*b))^(15/2)*(215*3^(17/2)*a^(15/2)*b^(21/2)+128*3^(17/2)*a^(17/2)*b^(19/2)+17*3^(19/2)*a^(19/2)*b^(17/2))+((b+a)/(3*a*b))^(13/2)*(1105*3^(15/2)*a^(13/2)*b^(2...
+
+# entry 6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e255  integrand 1/sqrt(1+tanh(x)^2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [0.621179]
+fired    1_1_2_1 r13  1/(1-2*x^2)
+fired    1_1_2_3 r12  1/((1-x^2)*sqrt(x^2+1))
+fired    4_3_7 r5  1/sqrt(1-%mr_itan(%i*x)^2)
+fired    4_1_0_1 r1  1/sqrt(tanh(x)^2+1)
+RUBI-CPU 0.536704 
+ANSWER log(-((-(1189*2^(3/2)*tanh(x)^11*sqrt(tanh(x)^2+1))-679*2^(3/2)*tanh(x)^9*sqrt(tanh(x)^2+1)+487*2^(5/2)*tanh(x)^7*sqrt(tanh(x)^2+1)+377*2^(5/2)*tanh(x)^5*sqrt(tanh(x)^2+1)+135*2^(3/2)*tanh(x)^3*sqrt(tanh(x)^2+1)+5*2^(3/2)*tanh(x)*sqrt(tanh(x)^2+1)+3363*tanh(x)^12+3602*tanh(x)^10-2215*tanh(x)^8-3540*tanh(x)^6-1115*tanh(x)^4-94*tanh(x)^2-1)/(-(3465*2^(5/2)*tanh(x)^11*sqrt(tanh(x)^2+1))-6879*2^(5/2)*tanh(x)^9*sqrt(tanh(x)^2+1)-2325*2^(7/2)*tanh(x)^7*sqrt(tanh(x)^2+1)-631*2^(7/2)*tanh(x)^5*sqrt(tanh(x)^2+1)-125*2^(5/2)*tanh(x)^3*sqrt(tanh(x)^2+1)-3*2^(5/2)*tanh(x)*sqrt(tanh(x)^2+1)+19601*ta...
+
+# entry 6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e49  integrand 1/(b*coth(c+d*x)^4)^(4/3)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [3.662508]
+fired    1_1_2_1 r11  1/(-x^2+4*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6)^2-4)
+fired    1_2_1_1 r12  1/(x^2-2*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6)*x+1)
+fired    1_2_1_2 r3  (2*x-2*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6))/(x^2-2*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6)*x+1)
+fired    1_2_1_2 r9  (cos((2*%pi*(2*_mr_1_1_3_2_r37_k-1))/3)-cos((5*%pi*(2*_mr_1_1_3_2_r37_k-1))/6)*x)/(x^2-2*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6)*x+1)
+fired    1_1_2_1 r11  1/(-x^2+4*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6)^2-4)
+fired    1_2_1_1 r12  1/(x^2+2*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6)*x+1)
+fired    1_2_1_2 r3  (2*x+2*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6))/(x^2+2*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6)*x+1)
+fired    1_2_1_2 r9  (cos((5*%pi*(2*_mr_1_1_3_2_r37_k-1))/6)*x+cos((2*%pi*(2*_mr_1_1_3_2_r37_k-1))/3))/(x^2+2*cos((%pi*(2*_mr_1_1_3_2_r37_k-1))/6)*x+1)
+fired    1_1_2_1 r10  1/(x^2+1)
+fired    1_1_3_2 r37  x^4/(x^6+1)
+fired    1_1_2_2 r27  x^(2/3)/(x^2+1)
+fired    4_3_1_1 r4  (-%mr_itan(%i*d*x+%i*c+%pi/2))^(2/3)
+fired    4_1_0_1 r1  cot(%i*d*x+%i*c)^(2/3)
+fired    4_3_1_1 r2  1/(-%mr_itan(%i*d*x+%i*c+%pi/2))^(4/3)
+fired    4_1_0_1 r1  1/cot(%i*d*x+%i*c)^(4/3)
+fired    4_3_1_1 r2  1/(-%mr_itan(%i*d*x+%i*c+%pi/2))^(10/3)
+fired    4_1_0_1 r1  1/cot(%i*d*x+%i*c)^(10/3)
+fired    9_3 r41  1/(%i*cot(%i*d*x+%i*c))^(10/3)
+fired    4_3_1_1 r2  1/(-(%i*%mr_itan(%i*d*x+%i*c+%pi/2)))^(16/3)
+fired    4_1_0_1 r1  1/coth(d*x+c)^(16/3)
+fired    9_1 r12  1/(b^(4/3)*coth(d*x+c)^(16/3))
+RUBI-CPU 3.57503 
+ANSWER ((%i*cot(%i*d*x+%i*c)^(1/3)*(-((%i*(sqrt(3)*log((-(%i*coth(d*x+c)))^(2/3)+sqrt(3)*(-(%i*coth(d*x+c)))^(1/3)+1)-sqrt(3)*log((-(%i*coth(d*x+c)))^(2/3)-sqrt(3)*(-(%i*coth(d*x+c)))^(1/3)+1)-2*atan(2*(-(%i*coth(d*x+c)))^(1/3)+sqrt(3))-2*atan(2*(-(%i*coth(d*x+c)))^(1/3)-sqrt(3))-4*atan((-(%i*coth(d*x+c)))^(1/3))))/(4*d))+(3*%i)/(d*cot(%i*d*x+%i*c)^(1/3))-(3*%i)/(7*d*cot(%i*d*x+%i*c)^(7/3))))/(%i*cot(%i*d*x+%i*c))^(1/3)-3/(13*d*(%i*cot(%i*d*x+%i*c))^(13/3)))/b^(4/3) 
+
+# entry 6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e21  integrand sqrt(a+b*coth(x)^2)*tanh(x)^2
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [3.559292]
+fired    1_1_2_1 r13  1/(1/(b+a)-(b/(b+a)+a/(b+a))*x^2)
+fired    1_1_2_3 r12  1/(sqrt(b*x^2+a)*(1/(b+a)-x^2/(b+a)))
+fired    1_4_1 r18  (b+a)/((1-x^2)*sqrt(b*x^2+a))
+fired    1_1_2_4 r43  sqrt(b*x^2+a)/(x^2*(1-x^2))
+fired    1_4_1 r25  sqrt(b*x^2+a)/(x^2-x^4)
+fired    1_4_1 r18  -(sqrt(b*x^2+a)/(x^4-x^2))
+fired    4_7_5 r20  sqrt(b*coth(x)^2+a)*tanh(x)^2
+RUBI-CPU 3.472453 
+ANSWER (sqrt(b+a)*coth(x)*log(-((coth(x)^15*(32768*a*b^7*sqrt(b+a)*sqrt(b*coth(x)^2+a)-208896*a^3*b^5*sqrt(b+a)*sqrt(b*coth(x)^2+a)-348160*a^4*b^4*sqrt(b+a)*sqrt(b*coth(x)^2+a)-239360*a^5*b^3*sqrt(b+a)*sqrt(b*coth(x)^2+a)-78336*a^6*b^2*sqrt(b+a)*sqrt(b*coth(x)^2+a)-11424*a^7*b*sqrt(b+a)*sqrt(b*coth(x)^2+a)-544*a^8*sqrt(b+a)*sqrt(b*coth(x)^2+a))+coth(x)^17*(-(32768*a*b^7*sqrt(b+a)*sqrt(b*coth(x)^2+a))-114688*a^2*b^6*sqrt(b+a)*sqrt(b*coth(x)^2+a)-159744*a^3*b^5*sqrt(b+a)*sqrt(b*coth(x)^2+a)-112640*a^4*b^4*sqrt(b+a)*sqrt(b*coth(x)^2+a)-42240*a^5*b^3*sqrt(b+a)*sqrt(b*coth(x)^2+a)-8064*a^6*b^2*sqrt...
+
+# entry 6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e35  integrand 1/sqrt(a+b*coth(x)^2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [1.011806]
+fired    1_1_2_1 r13  1/(1-(b+a)*x^2)
+fired    1_1_2_3 r12  1/((1-x^2)*sqrt(b*x^2+a))
+fired    4_3_7 r5  1/sqrt(a-b*%mr_itan(%i*x+%pi/2)^2)
+fired    4_1_0_1 r1  1/sqrt(b*coth(x)^2+a)
+RUBI-CPU 0.933992 
+ANSWER log(-((coth(x)^15*(32768*a*b^7*sqrt(b+a)*sqrt(b*coth(x)^2+a)-208896*a^3*b^5*sqrt(b+a)*sqrt(b*coth(x)^2+a)-348160*a^4*b^4*sqrt(b+a)*sqrt(b*coth(x)^2+a)-239360*a^5*b^3*sqrt(b+a)*sqrt(b*coth(x)^2+a)-78336*a^6*b^2*sqrt(b+a)*sqrt(b*coth(x)^2+a)-11424*a^7*b*sqrt(b+a)*sqrt(b*coth(x)^2+a)-544*a^8*sqrt(b+a)*sqrt(b*coth(x)^2+a))+coth(x)^17*(-(32768*a*b^7*sqrt(b+a)*sqrt(b*coth(x)^2+a))-114688*a^2*b^6*sqrt(b+a)*sqrt(b*coth(x)^2+a)-159744*a^3*b^5*sqrt(b+a)*sqrt(b*coth(x)^2+a)-112640*a^4*b^4*sqrt(b+a)*sqrt(b*coth(x)^2+a)-42240*a^5*b^3*sqrt(b+a)*sqrt(b*coth(x)^2+a)-8064*a^6*b^2*sqrt(b+a)*sqrt(b*coth(x...
+
+# entry 6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e42  integrand tanh(x)^2/(a+b*coth(x)^2)^(3/2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [10.198639]
+fired    1_1_2_1 r13  1/(1/a^2-(b/a^2+1/a)*x^2)
+fired    1_1_2_3 r12  1/((1/a^2-x^2/a^2)*sqrt(b*x^2+a))
+fired    1_4_1 r18  a/((1/a-x^2/a)*sqrt(b*x^2+a))
+fired    1_4_1 r18  a^2/((1-x^2)*sqrt(b*x^2+a))
+fired    1_1_2_6 r11  (2*b*x^2-2*b-a)/(x^2*(1-x^2)*sqrt(b*x^2+a))
+fired    1_4_2 r10  (b*(2*x^2-2)-a)/(x^2*(1-x^2)*sqrt(b*x^2+a))
+fired    1_1_2_4 r40  1/(x^2*(1-x^2)*(b*x^2+a)^(3/2))
+fired    4_7_5 r20  tanh(x)^2/(b*coth(x)^2+a)^(3/2)
+RUBI-CPU 10.124374999999999 
+ANSWER ((a*b*coth(x)^3+a^2*coth(x))*log(-(((-(262144*a*b^10)-1245184*a^2*b^9-2490368*a^3*b^8-2723840*a^4*b^7-1770496*a^5*b^6-695552*a^6*b^5-160512*a^7*b^4-20064*a^8*b^3-1140*a^9*b^2-19*a^10*b)*coth(x)^22+sqrt(b*coth(x)^2+a)*((a^21*((b+a)/a^2)^(21/2)+17*a^19*b*((b+a)/a^2)^(19/2)+117*a^17*b^2*((b+a)/a^2)^(17/2)+sqrt((b+a)/a^2)*(-(4096*a*b^10)+34560*a^3*b^8+69120*a^4*b^7+58320*a^5*b^6+23328*a^6*b^5+3645*a^7*b^4)+((b+a)/a^2)^(3/2)*(-(30464*a^3*b^9)-44544*a^4*b^8+18720*a^5*b^7+69120*a^6*b^6+49005*a^7*b^5+15552*a^8*b^4+2187*a^9*b^3)+((b+a)/a^2)^(5/2)*(-(7920*a^5*b^8)+45792*a^6*b^7+110079*a^7*b^6+777...
+
+# entry 6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e43  integrand sinh(c+d*x)^2/(a+b*sech(c+d*x)^2)^3
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.038051]
+
+# entry 6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e158  integrand tanh(c+d*x)^6/(a+b*sech(c+d*x)^2)^3
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.097612]
+
+# entry 6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e199  integrand 1/sqrt(a+b*sech(x)^2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [2.579528]
+fired    1_1_2_1 r13  1/(1-a*x^2)
+fired    1_1_2_3 r12  1/((1-x^2)*sqrt(-(b*x^2)+b+a))
+fired    4_5_7 r9  1/sqrt(b*%mr_isec(%i*x)^2+a)
+fired    4_1_0_1 r1  1/sqrt(b*sech(x)^2+a)
+RUBI-CPU 2.480165 
+ANSWER log((b^9*(a^13*(187187399448*tanh(x)^44-83741731332*tanh(x)^42-7669757393172*tanh(x)^40+6689486538168*tanh(x)^38+72254336186928*tanh(x)^36-112790260135812*tanh(x)^34-207135880206052*tanh(x)^32+514755039896608*tanh(x)^30+52602782505168*tanh(x)^28-832025934118792*tanh(x)^26+407353324135576*tanh(x)^24+502623387289296*tanh(x)^22-436082278288384*tanh(x)^20-100581205738664*tanh(x)^18+161735401182936*tanh(x)^16+3434693348128*tanh(x)^14-26551554072232*tanh(x)^12-912784809972*tanh(x)^10+1865693877628*tanh(x)^8+315417295928*tanh(x)^6+16398038160*tanh(x)^4+248303020*tanh(x)^2+497420)+a^(25/2)*sqrt...
+
+# entry 6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e208  integrand 1/(a+b*sech(x)^2)^(3/2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [4.068631]
+fired    1_1_2_1 r13  1/(1-a*x^2)
+fired    1_1_2_3 r12  1/((1-x^2)*sqrt(-(b*x^2)+b+a))
+fired    1_1_2_3 r17  1/((1-x^2)*(-(b*x^2)+b+a)^(3/2))
+fired    4_5_7 r9  1/(b*%mr_isec(%i*x)^2+a)^(3/2)
+fired    4_1_0_1 r1  1/(b*sech(x)^2+a)^(3/2)
+RUBI-CPU 3.951676 
+ANSWER -((b*(2*a*tanh(x)-sqrt(a)*sqrt(b*(1-tanh(x)^2)+a)*log((b^9*(a^13*(187187399448*tanh(x)^44-83741731332*tanh(x)^42-7669757393172*tanh(x)^40+6689486538168*tanh(x)^38+72254336186928*tanh(x)^36-112790260135812*tanh(x)^34-207135880206052*tanh(x)^32+514755039896608*tanh(x)^30+52602782505168*tanh(x)^28-832025934118792*tanh(x)^26+407353324135576*tanh(x)^24+502623387289296*tanh(x)^22-436082278288384*tanh(x)^20-100581205738664*tanh(x)^18+161735401182936*tanh(x)^16+3434693348128*tanh(x)^14-26551554072232*tanh(x)^12-912784809972*tanh(x)^10+1865693877628*tanh(x)^8+315417295928*tanh(x)^6+16398038160*t...
+
+# entry 6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e215  integrand tanh(x)^2/(a+b*sech(x)^2)^(5/2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.128411]
+fired    1_1_2_1 r15  1/(1/(3*b+3*a)-((b+a)/(3*b+3*a)-b/(3*b+3*a))*x^2)
+fired    1_1_2_3 r12  1/(sqrt(-(b*x^2)+b+a)*(1/(3*b+3*a)-x^2/(3*b+3*a)))
+fired    1_4_1 r18  (-(3*b)-3*a)/((x^2-1)*sqrt(-(b*x^2)+b+a))
+fired    1_1_2_5 r7  (-(2*x^2)-1)/((x^2-1)*(-(b*x^2)+b+a)^(3/2))
+fired    1_1_2_4 r39  x^2/((x^2-1)*(-(b*x^2)+b+a)^(5/2))
+fired    1_4_2 r8  x^2/((b*(1-x^2)+a)^(5/2)*(x^2-1))
+fired    1_4_1 r18  -(x^2/((b*(1-x^2)+a)^(5/2)*(1-x^2)))
+
+# entry 6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e55  integrand 1/(a+%i*a*csch(c+d*x))^(3/2)
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap True  cpu [30.036002]
+
+# entry 6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1034  integrand cosh(x)^2/(a+b*sinh(2*x))
+# core /home/serge/src/mr-attr/test/mr_rules.core  cap 30  hit_cap False  cpu [7.980696]
+fired    1_1_2_1 r13  1/(-x^2+16*b^4+16*a^2*b^2)
+fired    1_2_1_1 r12  1/(-(2*a*b*x^2)+4*b^2*x+2*a*b)
+fired    1_2_1_2 r3  (4*b^2-4*a*b*x)/(-(2*a*b*x^2)+4*b^2*x+2*a*b)
+fired    1_2_1_2 r9  (2*b-a*x)/(-(2*a*b*x^2)+4*b^2*x+2*a*b)
+fired    1_1_2_2 r1  x/(2*b*x^2-2*b)
+fired    1_4_1 r7  (2*b-a*x)/(-(2*a*b*x^2)+4*b^2*x+2*a*b)-x/(2*b*x^2-2*b)
+fired    1_2_1_4 r8  1/((x^2-1)*(a*x^2-2*b*x-a))
+fired    1_2_1_3 r8  1/((x-1)*(x+1)*(a*x^2-2*b*x-a))
+fired    4_7_5 r58  %mr_icos(%i*x)^2/(a-%i*b*%mr_isin(2*%i*x))
+fired    4_1_0_1 r1  cosh(x)^2/(b*sinh(2*x)+a)
+RUBI-CPU 7.880097 
+ANSWER -((4*b^2*log((b*(a^44*(-(2*tanh(x)^44)-1720*tanh(x)^42-222138*tanh(x)^40-10267712*tanh(x)^38-225568798*tanh(x)^36-2706825576*tanh(x)^34-19173347830*tanh(x)^32-83604224384*tanh(x)^30-227298985044*tanh(x)^28-374374798896*tanh(x)^26-320188972740*tanh(x)^24+320188972740*tanh(x)^20+374374798896*tanh(x)^18+227298985044*tanh(x)^16+83604224384*tanh(x)^14+19173347830*tanh(x)^12+2706825576*tanh(x)^10+225568798*tanh(x)^8+10267712*tanh(x)^6+222138*tanh(x)^4+1720*tanh(x)^2+2)+a^42*sqrt(16*b^4+16*a^2*b^2)*(903*tanh(x)^42+234479*tanh(x)^40+16364166*tanh(x)^38+483361710*tanh(x)^36+7330985935*tanh(x)^34...
+

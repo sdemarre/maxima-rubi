@@ -1,0 +1,14 @@
+/* probes/class-ports/10-coth-power-numeric.mac -- 6.4.2 (b*coth^n)^p, the
+   `unverified` family: is the class-ports answer a correct antiderivative?
+   Numeric derivative check at two points (b, c, d numeric), plus whether the
+   answer still carries an ACTIVE circular trig of an imaginary argument. */
+mr_chk(f) := block([r, g, pts : [0.3, 0.7], vals],
+  r : rubi(f, x),
+  g : subst([b = 1.3, c = 0.2, d = 0.9], diff(r, x) - f),
+  vals : map(lambda([p], cabs(float(rectform(subst(x = p, g))))), pts),
+  print("F", f, " trig-of-i:", not freeof(cot, r) or not freeof(tan, r),
+        " |r'-f| at 0.3, 0.7:", vals))$
+mr_chk((b*coth(c+d*x))^(4/3))$
+mr_chk(1/(b*coth(c+d*x))^(4/3))$
+mr_chk((b*coth(c+d*x)^2)^(2/3))$
+mr_chk((b*coth(c+d*x)^4)^(1/3))$

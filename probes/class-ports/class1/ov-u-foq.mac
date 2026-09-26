@@ -1,0 +1,30 @@
+/* probe overlay: master (cd0a421-line, mr-attr-base) definitions of %mr_functionOfQ */
+%mr_functionOfQ(%mr_foq_v, %mr_foq_u, %mr_foq_x, [%mr_foq_opt]) :=
+  block([inflag : true, %mr_foq_pure, %mr_foq_h, %mr_foq_w],
+  %mr_foq_pure : is(length(%mr_foq_opt) > 0 and first(%mr_foq_opt) = true),
+  if freeof(%mr_foq_x, %mr_foq_u) then false
+  elseif atom(%mr_foq_v) then true
+  elseif not %mr_inertTrigFreeQ(%mr_foq_u)
+  then %mr_functionOfQ(%mr_foq_v, %mr_activateTrig(%mr_foq_u), %mr_foq_x, %mr_foq_pure)
+  elseif %mr_productQ(%mr_foq_v) and %mr_neQ(%mr_freeFactors(%mr_foq_v, %mr_foq_x), 1)
+  then %mr_functionOfQ(%mr_nonfreeFactors(%mr_foq_v, %mr_foq_x), %mr_foq_u, %mr_foq_x,
+                       %mr_foq_pure)
+  elseif not %mr_trigQ(%mr_foq_v) then false
+  else (
+    %mr_foq_h : op(%mr_foq_v),
+    %mr_foq_w : part(%mr_foq_v, 1),
+    if %mr_foq_pure then (
+      if %mr_foq_h = sin or %mr_foq_h = csc
+      then %mr_pureFunctionOfTrigQ([sin, csc], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cos or %mr_foq_h = sec
+      then %mr_pureFunctionOfTrigQ([cos, sec], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = tan
+      then %mr_pureFunctionOfTrigQ([tan, cot], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_pureFunctionOfTrigQ([cot], %mr_foq_u, %mr_foq_w, %mr_foq_x))
+    else (
+      if %mr_foq_h = sin or %mr_foq_h = csc
+      then %mr_functionOfSinQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cos or %mr_foq_h = sec
+      then %mr_functionOfCosQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_functionOfTanQ(%mr_foq_u, %mr_foq_w, %mr_foq_x))))$
+

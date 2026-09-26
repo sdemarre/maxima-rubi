@@ -1,0 +1,12 @@
+/* probes/class-ports/04-expandintegrand.mac -- %mr_expandIntegrand on
+   (x^2-1)/x: the `part: ... found x` error behind the 1_1_2_2 r5 /
+   1_1_3_2 r12 / 1_4_1 r9 repl misfires. */
+print("E1", errcatch(%mr_expandIntegrand((x^2-1)/x, x)))$
+print("E2", errcatch(%mr_expandIntegrand(x^(-1)*(x^2-1), x)))$
+print("E3", errcatch(%mr_expandIntegrand((x^2+1)/x, x)))$
+print("E4", errcatch(%mr_expandIntegrand((x^2-1)/x^2, x)))$
+print("E5", errcatch(%mr_expandIntegrand((x^2-a)/x, x)))$
+print("E6", errcatch(%mr_expandIntegrand((b*x^2+a)/x, x)))$
+print("E7", errcatch(%mr_expandIntegrand((x^3-1)/x, x)))$
+print("E8", errcatch(%mr_expandIntegrand((x-1)/x, x)))$
+debugmode(false)$
