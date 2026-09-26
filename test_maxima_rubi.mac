@@ -964,12 +964,13 @@ test_structural_predicates() := block([],
     check_not("b4 e392 not a noun",
               is(atom(ans)) or is(op(ans) = 'integrate)
               or is(string(op(ans)) = "unintegrable")),
-    /* the r1 repl form w*polylog(2, 1-v) with w = 1/n, v the bound
-       quotient — the corpus expected polylog(2,-a/x^n)/n in stored
-       argument (1-(a+x^n)/x^n stores unsimplified, so the
-       is()-equality is against the stored form) */
+    /* the r1 repl form w*li[2](1-v) with w = 1/n, v the bound
+       quotient — the corpus expected polylog(2,-a/x^n)/n (li[2](-a/x^n)/n
+       since polylog-native-li issue 01) in stored argument
+       (1-(a+x^n)/x^n stores unsimplified, so the is()-equality is
+       against the stored form) */
     check_bool("b4 e392 answer is the r1 repl form",
-               is(ans = (1/n)*polylog(2, 1 - (a+x^n)/x^n))),
+               is(ans = (1/n)*li[2](1 - (a+x^n)/x^n))),
     mr_rule_table : saved_table,
     true
   )$
@@ -2209,6 +2210,13 @@ test_structural_predicates() := block([],
     check_bool("iFQ asinh", %mr_inverseFunctionQ(asinh(x))),
     check_not("iFQ sin", %mr_inverseFunctionQ(sin(x))),
     check_not("iFQ x", %mr_inverseFunctionQ(x)),
+    /* PolyLog is Maxima's li[s](z) (polylog-native-li issue 01) */
+    check_bool("iFQ li[2]", %mr_inverseFunctionQ(li[2](x))),
+    check_bool("iFQ li[n] symbolic order", %mr_inverseFunctionQ(li[n](x))),
+    check_not("iFQ psi[1] (a subscripted non-inverse)",
+              %mr_inverseFunctionQ(psi[1](x))),
+    check("polylogParts li[n](a+b*x) = [n, a+b*x]",
+          %mr_polylogParts(li[n](a + b*x)), [n, a + b*x]),
     /* algebraicFunctionQ (Rubi :1681, flag = false) */
     check_bool("aFQ x", %mr_algebraicFunctionQ(x, x)),
     check_bool("aFQ sqrt", %mr_algebraicFunctionQ(sqrt(x), x)),
@@ -4897,6 +4905,14 @@ test_class5_cluster_b() := block([],
         %mr_inverseFunctionOfLinear(%e^atan(x^2), x), false),
   check("ifl: a trig call is not an inverse function",
         %mr_inverseFunctionOfLinear(sin(1 + 2*x), x), false),
+  /* PolyLog[n, z]: Rubi's u[[1]] is the ORDER n, not the argument, so a
+     polylog of a linear argument is NOT itself returned (n is not linear
+     in x) -- but the scan walks [n, z] and finds an inverse function
+     inside z (polylog-native-li issue 01) */
+  check("ifl: li[2] of a linear argument is not returned (u[[1]] is the order)",
+        %mr_inverseFunctionOfLinear(li[2](1 + 2*x), x), false),
+  check("ifl: the scan walks into li's argument",
+        %mr_inverseFunctionOfLinear(li[2](-%e^atan(1 + 2*x)), x), atan(1 + 2*x)),
   check("ifl: x-free is false", %mr_inverseFunctionOfLinear(%e^atan(a), x), false),
   check("ifl: an atom is false", %mr_inverseFunctionOfLinear(x, x), false),
   check("sfi 4-arg: v -> x and x -> w",

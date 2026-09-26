@@ -2707,6 +2707,15 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
          and %mr_b(part(l1, 5) = part(l2, 5))
   ))$
 
+/* PolyLog[s, z] is Maxima's subscripted li[s](z) (since 2026-09-26,
+   .scratch/polylog-native-li/issues/01): an mqapply whose operator is the
+   subscripted li[s], so the ORDER s lives in the operator and args() is
+   [z] alone. %mr_polylogQ recognises it; %mr_polylogParts gives Rubi's
+   argument list [s, z] (u[[1]] is the order, as in Mathematica). */
+%mr_polylogQ(u) := block([inflag : true],
+  not atom(u) and subvarp(op(u)) and is(op(op(u)) = 'li))$
+%mr_polylogParts(u) := block([inflag : true], [part(op(u), 1), part(u, 1)])$
+
 /* Rubi :303  InverseFunctionQ[u]. The Maxima head set follows the .m
    $InverseTrigFunctions / $InverseHyperbolicFunctions lists; the two-arg
    inverse tangent is atan2 (absent from the one-arg list, so the .m
@@ -2721,8 +2730,9 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
     and member(v, ['asinh, 'acosh, 'atanh, 'acoth, 'asech, 'acsch]) # false
   then true
   else if not %mr_atomQ(u)
-    and (is(v = 'mod) or is(v = 'polylog) or is(v = 'productlog))
+    and (is(v = 'mod) or is(v = 'productlog))
   then true
+  else if %mr_polylogQ(u) then true
   else false)$
 
 /* Rubi :1681  AlgebraicFunctionQ[u, x, flag_ = False]. flag false: a
@@ -7962,16 +7972,21 @@ mr_witness_utils() := true$
    (depth first, arguments in order) that is an inverse function of a
    linear argument, else false. InverseFunctionQ is %mr_inverseFunctionQ
    (log, the six inverse-trig heads, the six inverse-hyperbolic ones, mod,
-   polylog). Rubi's Scan walks the stored arguments, so inflag is true. */
+   PolyLog). Rubi's Scan walks the stored arguments, so inflag is true.
+   A PolyLog li[s](z) is read as Rubi's PolyLog[s, z]: u[[1]] is the order
+   s, and the scan walks [s, z] (%mr_polylogParts). */
 %mr_inverseFunctionOfLinear(%mr_ifl_u, %mr_ifl_x) :=
   block([inflag : true, %mr_ifl_r, %mr_ifl_a],
   if atom(%mr_ifl_u) or %mr_calculusQ(%mr_ifl_u)
      or freeof(%mr_ifl_x, %mr_ifl_u) then false
   elseif %mr_inverseFunctionQ(%mr_ifl_u)
-         and %mr_linearQ(part(%mr_ifl_u, 1), %mr_ifl_x) then %mr_ifl_u
+         and %mr_linearQ(if %mr_polylogQ(%mr_ifl_u)
+                         then first(%mr_polylogParts(%mr_ifl_u))
+                         else part(%mr_ifl_u, 1), %mr_ifl_x) then %mr_ifl_u
   else (
     %mr_ifl_r : false,
-    for %mr_ifl_a in args(%mr_ifl_u) while %mr_ifl_r = false do (
+    for %mr_ifl_a in (if %mr_polylogQ(%mr_ifl_u) then %mr_polylogParts(%mr_ifl_u)
+                      else args(%mr_ifl_u)) while %mr_ifl_r = false do (
       %mr_ifl_r : %mr_inverseFunctionOfLinear(%mr_ifl_a, %mr_ifl_x),
       if atom(%mr_ifl_r) then %mr_ifl_r : false),
     %mr_ifl_r))$

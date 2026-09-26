@@ -10,7 +10,7 @@ _mr_cond_3_4_r1(mm, x) := block([_mr_3_4_r1_Pq, _mr_3_4_r1_m, _mr_3_4_r1_u],
   (integerp(_mr_3_4_r1_m)  and  %mr_polyQ(_mr_3_4_r1_Pq, x)  and  %mr_rationalFunctionQ(_mr_3_4_r1_u, x)  and  %mr_leQ(part(%mr_rationalFunctionExponents(_mr_3_4_r1_u, x), 2), %mr_expon(_mr_3_4_r1_Pq, x)))  and  block([_mr_3_4_r1_C], _mr_3_4_r1_C : ratsimp(_mr_3_4_r1_Pq^_mr_3_4_r1_m*(1 - _mr_3_4_r1_u)/diff(_mr_3_4_r1_u, x)), is(freeof(x, _mr_3_4_r1_C)) = true))$
 _mr_repl_3_4_r1(mm, x) := block([_mr_3_4_r1_Pq__s, _mr_3_4_r1_m__s, _mr_3_4_r1_u__s],
   _mr_3_4_r1_Pq__s : geteqR(mm, '_mr_3_4_r1_Pq), _mr_3_4_r1_m__s : geteqR(mm, '_mr_3_4_r1_m), _mr_3_4_r1_u__s : geteqR(mm, '_mr_3_4_r1_u),
-  block([_mr_3_4_r1_C], _mr_3_4_r1_C : ratsimp(_mr_3_4_r1_Pq__s^_mr_3_4_r1_m__s*(1 - _mr_3_4_r1_u__s)/diff(_mr_3_4_r1_u__s, x)), _mr_3_4_r1_C*polylog(2, 1 - _mr_3_4_r1_u__s)))$
+  block([_mr_3_4_r1_C], _mr_3_4_r1_C : ratsimp(_mr_3_4_r1_Pq__s^_mr_3_4_r1_m__s*(1 - _mr_3_4_r1_u__s)/diff(_mr_3_4_r1_u__s, x)), _mr_3_4_r1_C*li[2](1 - _mr_3_4_r1_u__s)))$
 _mr_rule_3_4_r1 : %mr_defrule("3_4", 1, "(Int (Times (Log (Pattern |_mr_3_4_r1_u| (Blank))) (Power (Pattern |_mr_3_4_r1_Pq| (Blank)) (Optional (Pattern |_mr_3_4_r1_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_3_4_r1, _mr_repl_3_4_r1)$
 
 _mr_cond_3_4_r2(mm, x) := block([_mr_3_4_r2_c, _mr_3_4_r2_d, _mr_3_4_r2_e, _mr_3_4_r2_n, _mr_3_4_r2_p],

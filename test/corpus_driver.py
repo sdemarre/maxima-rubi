@@ -132,11 +132,10 @@ HEAD_REWRITES = [
     # 2026-08-29 on this build) — but a distinct token (lowercase,
     # subscript-arg form li[s](z)), so the uppercase Li( row cannot
     # collide with it.
-    # No polylog( row: the package emits the native polylog( spelling
-    # and the ACTIVE corpus expected texts are already natively
-    # spelled — the ten commented-out PolyLog[ suite entries span the
-    # four class-3 files 3.1.5/3.3/3.4/3.5 (3/3/3/1 lines); each is a
-    # /* ... */-commented entry extract_entries never reads.
+    # No polylog( row: polylog(A, B) -> li[A](B) is a STRUCTURAL rewrite
+    # (rewrite_structural below), since 2026-09-26 — before, the package
+    # emitted the corpus's own unknown polylog( spelling and the corpus
+    # was read as written (.scratch/polylog-native-li/issues/01).
     (re.compile(r"(?<![A-Za-z0-9_])Chi\("), "expintegral_chi("),
     (re.compile(r"(?<![A-Za-z0-9_])Shi\("), "expintegral_shi("),
     (re.compile(r"(?<![A-Za-z0-9_])Si\("), "expintegral_si("),
@@ -170,6 +169,7 @@ REWRITE_LOCK = threading.Lock()
 _DERIVATIVE = re.compile(r"(?<![A-Za-z0-9_%])Derivative\(")
 _PSI = re.compile(r"(?<![A-Za-z0-9_%])Psi\(")
 _H2F1 = re.compile(r"(?<![A-Za-z0-9_%])Hypergeometric2F1\(")
+_POLYLOG = re.compile(r"(?<![A-Za-z0-9_%])polylog\(")
 
 
 def rewrite_structural(text):
@@ -193,7 +193,13 @@ def rewrite_structural(text):
       Hypergeometric2F1 case; the class-8 HypergeometricPFQ row's target,
       which differentiates -- probes/answer-side/04 A13). Only the
       4-argument form; three occurrences over two corpus entries, both in 4.1.1.3
-      (probes/corpus/14-class4-answer-heads.out)."""
+      (probes/corpus/14-class4-answer-heads.out).
+    - polylog(A, B) -> li[A](B) (2026-09-26, .scratch/polylog-native-li/
+      issues/01): the corpus spells Rubi's PolyLog[A, B] as polylog(A, B),
+      an operator Maxima does not know (no diff, no float); li[A](B) is
+      Maxima's native subscripted polylogarithm, which the rules emit.
+      Every class that carries it (2-8), integrands and expected answers
+      alike. Only the 2-argument form."""
     counts = {}
 
     def inner(t):
@@ -205,8 +211,8 @@ def rewrite_structural(text):
     out, i = [], 0
     while True:
         md, mp = _DERIVATIVE.search(text, i), _PSI.search(text, i)
-        mh = _H2F1.search(text, i)
-        m = min((x for x in (md, mp, mh) if x), key=lambda x: x.start(),
+        mh, ml = _H2F1.search(text, i), _POLYLOG.search(text, i)
+        m = min((x for x in (md, mp, mh, ml) if x), key=lambda x: x.start(),
                 default=None)
         if m is None:
             out.append(text[i:])
@@ -233,6 +239,14 @@ def rewrite_structural(text):
                 a, b, c, z = (inner(x) for x in args)
                 out.append(f"hypergeometric([{a},{b}],[{c}],{z})")
                 counts["hypergeometric(2F1)"] = counts.get("hypergeometric(2F1)", 0) + 1
+                i = k
+                continue
+        elif m is ml:
+            args, k = _call_args(text, j)
+            if args is not None and len(args) == 2:
+                a, b = (inner(x) for x in args)
+                out.append(f"li[{a}]({b})")
+                counts["li["] = counts.get("li[", 0) + 1
                 i = k
                 continue
         else:

@@ -47,7 +47,7 @@ from translation_table import RENAME, RESTRUCTURE, CLASS_RENAME
 # produced `noun(expr, x)` in 8 rules. Guarded at the head boundary below.
 HANDLER_ONLY = frozenset({"noun", "block", "cmp", "if", "switch",
                           "loggamma", "power", "plus", "times",
-                          "polygamma", "zeta", "derivative"})
+                          "polygamma", "zeta", "derivative", "polylog"})
 import mma_reader as rd  # the evaluated-FullForm reader (spec 3.4)
 from fractions import Fraction
 
@@ -1823,6 +1823,15 @@ def emit_head(head, arglist, ctx):
         if len(arglist) != 2:
             raise GenError(f"{key} r{n}: PolyGamma arity {len(arglist)}")
         return f"psi[{arglist[0].strip()}]({arglist[1].strip()})"
+    if head == "PolyLog":
+        # RESTRUCTURE handler "polylog": PolyLog[s, z] -> li[s](z), Maxima's
+        # subscripted polylogarithm (mr-tree reads it back as PolyLog). The
+        # 3-argument Nielsen PolyLog[n, p, z] has no Maxima function; no
+        # Rubi rule emits it (2026-09-26), so any other arity is loud.
+        # .scratch/polylog-native-li/issues/01.
+        if len(arglist) != 2:
+            raise GenError(f"{key} r{n}: PolyLog arity {len(arglist)}")
+        return f"li[{arglist[0].strip()}]({arglist[1].strip()})"
     if head == "Zeta":
         # class 8 (RESTRUCTURE handler "zeta"): 1-arg -> Riemann's native
         # zeta; 2-arg is the Hurwitz zeta, which Maxima lacks symbolically

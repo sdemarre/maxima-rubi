@@ -150,13 +150,16 @@ RENAME = {
     # both float-evaluable.
     "CoshIntegral": "expintegral_chi",
     "SinhIntegral": "expintegral_shi",
-    # 1:1 rename to the native spelling: the active class-3 corpus
-    # expected texts are natively spelled (2,793 polylog( occurrences —
-    # probes/corpus/03-class3-answer-heads.out). The build's
-    # diff(polylog(2,x),x) and ev(polylog(2,0.5)) both stay nouns
-    # (measured 2026-08-29 on branch_5_50_base_84_g4204fb669), so there
-    # is no spurious self-diff closure; a form-identical expected answer
-    # still closes because identical terms cancel before the diff.
+    # PolyLog[s, z] -> li[s](z), Maxima's native SUBSCRIPTED polylogarithm
+    # (describe("li", exact)); mr-tree's +subscripted+ reads li[s](z) back
+    # as PolyLog. An emitter case, not a rename: the order becomes the
+    # subscript (the PolyGamma -> psi[n](z) precedent). Until 2026-09-26
+    # this was a 1:1 rename to polylog(s, z), the corpus's own spelling, an
+    # unknown operator: diff and float left it a noun, so a polylog answer
+    # could only ever close form-identically. li differentiates for a
+    # symbolic order and float-evaluates, and simplifies eagerly at orders
+    # <= 1 (li[1](z) = -log(1-z)) and at special points (li[2](1) =
+    # %pi^2/6). .scratch/polylog-native-li/issues/01. Handler name only.
     "PolyLog": "polylog",
     # class-3 utility ports (Tasks 4-5): the %mr_ names do not exist
     # yet — the table is static closure, the ports land in Tasks 4-5
