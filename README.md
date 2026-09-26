@@ -82,9 +82,8 @@ in one statement and verify it in a later one (see the note after the table).
 |---|---|
 | `1/(x^8+1)`, `x/(%e^(2*x)+%e^x-1)`, `x/(%e^(2*x)+3*%e^x+3)`, `log(x^2/(x^2+1))/(x^2+1)`, `1/(x*log(7*x)^2+x*log(7*x)+x)`, `(x*acot(x))/(x^2+1)`, `x/(sqrt(x^2+1)*asinh(x))`, `li[2](1+x)/(2+x)` | `radcan(d)` |
 | `sqrt(x^4+1)` | `radcan(trigexpand(d))` |
-| `cos(x)*sec(4*x)`, `1/(cosh(x)^4+1)`, `expintegral_si(2*x)*sin(5*x)` | `radcan(exponentialize(d))` |
-| `1/(sin(x)^4+1)` | Weierstrass: `radcan(trigsimp(trigexpand(subst(x = 2*atan(t), d))))` |
-| `tanh(8*x)^(1/3)` | `ratsimp(subst(tanh(8*x) = u^3, subst(sech(8*x) = sqrt(1-tanh(8*x)^2), d)))`: only `sech^2` occurs, and the result is a rational function of `u` |
+| `cos(x)*sec(4*x)`, `1/(cosh(x)^4+1)`, `tanh(8*x)^(1/3)`, `expintegral_si(2*x)*sin(5*x)` | `radcan(exponentialize(d))` |
+| `1/(sin(x)^4+1)` | `radcan(exponentialize(rectform(d)))`: `rectform` first turns the answer's `(-1)^(1/4)` into `(1+%i)/sqrt(2)` |
 | `asin(sqrt(x))/x` | `radcan(trigexpand(demoivre(d)))`: `demoivre` turns `%e^(2*%i*asin(sqrt(x)))` into `cos`/`sin` of `2*asin(sqrt(x))`, `trigexpand` splits the double angle into `sqrt(x)` and `sqrt(1-x)` |
 | `asinh(sqrt(x))/x` | `radcan(logarc(d))`: `logarc` writes `asinh(y)` as `log(y+sqrt(y^2+1))`, so `%e^(2*asinh(sqrt(x)))` collapses |
 
