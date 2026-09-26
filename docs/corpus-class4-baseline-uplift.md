@@ -195,6 +195,18 @@ through 1_1_2_3 r12 / 1_1_2_1 r13/r15 inflating answers to 5 KB – 7 MB
 under the old `Subst` simplification). The per-fix split is not measured
 here.
 
+### 4.3a PASS->FAIL attribution (pre-fix -> final)
+
+Evidence: `probes/class-ports/final/attribution.{py,out}` (`3deddb7`). Each fix was reverted
+alone on the final core (switch arms and overlays), a commit bisect ran over cores built at every
+class-ports-fixes commit, and timings are alternating sequential runs. Build
+`branch_5_50_base_84_g4204fb669`, 2026-09-26.
+
+9, all caused by fixes landed after the pre-fix run:
+- **plain Subst** (`e67e2eb`), 6 entries. The answers are numerically correct (|dA/dx - f| of 1e-8 or less, `11-numcheck-final.out`), but unsimplified, so the zero chain cannot close them.
+- **fix A**, 2 entries: one refolded by 1_2_3_1 r11 (ticket 22), one ending in a partial answer.
+- **symbolic EqQ**, 1 entry: the zero chain's `factor()` on radical kernels runs past the cap (ticket 23; the proposed fix recovers it).
+
 ### 4.4 Timeout re-check (100 s)
 
 All 1,068 `timeout` entries at a 100 s cap, 12 workers
@@ -372,6 +384,25 @@ Class 6's +1,840 is the move ticket 05 predicted class 4 would unlock
 (the inert-trig bridge answering the class-6 `.7` family); how much of it
 is class 4's rather than the fixes' is the attribution's to say. All eight
 classes: 61,266 of 70,385 entries PASS (87.0 %) on this core.
+
+### 7.1 The earlier classes' PASS->FAIL, attributed
+
+139 losses against master's promoted records (class 1 85, 2 3, 3 5, 6 46), from the same
+attribution (`probes/class-ports/final/attribution.out`). Across all 182 losses of the final
+re-measure, the buckets are:
+- **fix A** (the ExpandIntegrand guard), 78: 35 refolded by 1_2_3_1 r11 and cut by the seen
+  test (ticket 22), 17 ending in a partial answer or an unverified form, 14 past the cap.
+- **symbolic EqQ**, 47: 37 are the zero chain's `factor()` on radical kernels (ticket 23;
+  a proposed fix, measured, recovers 36 and loses none), and 9 or 10 follow Rubi's reading into
+  a slow or noun route.
+- **two-valued GtQ**, 13.
+- **plain Subst**, 7.
+- **carried**, 33: class 6's pre-existing families, identified by the class-6 attribution.
+- **noise**, 1.
+- **wrong answer**, 1: 1.2.2.2 e1035, a degenerate zero coefficient, which needs both plain
+  Subst and the two-valued GtQ (ticket 24).
+
+None blocks the merge. Against that: 4,888 / 108 / 759 / 1,886 FAIL->PASS in classes 1 / 2 / 3 / 6.
 
 ## 8. Final gates
 

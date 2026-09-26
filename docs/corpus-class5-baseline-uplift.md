@@ -166,6 +166,17 @@ which the ticket found limited by EqQ's syntactic zero test (finding 1),
 is one site the EqQ fix reaches: 5.3.7 PASS 93 → 110. The per-fix split
 is not measured here.
 
+### 4.3a PASS->FAIL attribution (pre-fix -> final)
+
+Evidence: `probes/class-ports/final/attribution.{py,out}` (`3deddb7`). Each fix was reverted
+alone on the final core (switch arms and overlays), a commit bisect ran over cores built at every
+class-ports-fixes commit, and timings are alternating sequential runs. Build
+`branch_5_50_base_84_g4204fb669`, 2026-09-26.
+
+15, all caused by fixes landed after the pre-fix run:
+- **fix A**, the ExpandIntegrand reciprocal-atom guard (`3bb8c4f`), 9 entries. The guard is correct: it removes a `part` error that had made the calling rule misfire into a route that verified. The expansion now completes, and then runs past the cap (5) or ends in a partial answer or an unverified form (4). Ticket `.scratch/class-ports/issues/22`.
+- **two-valued GtQ** (Rubi's reading, `39eba80`), 6 entries. It lets reductions fire whose conditions used to come back unknown (e.g. 5_1_4 r23, `Not[LtQ[m,-1]]` on a symbolic m). 3 of the answers are numerically correct but differ from Rubi's corpus answer; 3 end in a noun or time out.
+
 ### 4.4 Timeout re-check (100 s)
 
 All 195 `timeout` entries at a 100 s cap, 12 workers

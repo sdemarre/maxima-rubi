@@ -185,6 +185,15 @@ both sums are truncated at the cap, so the ratio understates the
 speed-up). Fix V is the likely main carrier of the speed (its commit
 measures ~3.5x on master); the per-fix split is not measured here.
 
+### 4.3a PASS->FAIL attribution (pre-fix -> final)
+
+Evidence: `probes/class-ports/final/attribution.{py,out}` (`3deddb7`). Each fix was reverted
+alone on the final core (switch arms and overlays), a commit bisect ran over cores built at every
+class-ports-fixes commit, and timings are alternating sequential runs. Build
+`branch_5_50_base_84_g4204fb669`, 2026-09-26.
+
+None: the final record loses no entry against the pre-fix class-ports record (0 PASS->FAIL, 41 FAIL->PASS).
+
 ### 4.4 Timeout re-check (100 s)
 
 All 27 `timeout` entries re-run at a 100 s cap, 12 workers

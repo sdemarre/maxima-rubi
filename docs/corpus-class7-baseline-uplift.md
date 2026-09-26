@@ -179,6 +179,20 @@ Rubi's GtQ (`39eba80`); the master merge brought no code (class-8 record
 record's cpu sum 63,152 s → 20,645 s, median entry 5.6 s → 1.3 s (probe
 28; sums truncated at the cap). The per-fix split is not measured here.
 
+### 4.3a PASS->FAIL attribution (pre-fix -> final)
+
+Evidence: `probes/class-ports/final/attribution.{py,out}` (`3deddb7`). Each fix was reverted
+alone on the final core (switch arms and overlays), a commit bisect ran over cores built at every
+class-ports-fixes commit, and timings are alternating sequential runs. Build
+`branch_5_50_base_84_g4204fb669`, 2026-09-26.
+
+19, all caused by fixes landed after the pre-fix run:
+- **fix A** (`3bb8c4f`), 10 entries: 4 past the cap, 3 refolded by 1_2_3_1 r11 and cut by the seen test (ticket 22), 3 ending in a partial answer or an unverified form.
+- **two-valued GtQ**, 4 entries: 3 ending in a noun or a timeout, 1 with a numerically correct answer different from Rubi's.
+- **symbolic EqQ**, 2 entries: Rubi's reading of an identically-zero condition opens a route that times out or ends in a noun.
+- **fix A and symbolic EqQ together**, 1 entry.
+- **plain Subst**, 1 entry, past the cap.
+
 ### 4.4 Timeout re-check (100 s)
 
 All 211 `timeout` entries at a 100 s cap, 12 workers
