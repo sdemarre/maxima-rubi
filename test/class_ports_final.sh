@@ -46,7 +46,7 @@ done
 for spec in "8 Special functions" "5 Inverse trig functions" "7 Inverse hyperbolic functions" "4 Trig functions"; do
   n=$(echo "$spec" | cut -d' ' -f1)
   src="test/corpus_class$n.final.out"
-  nt=$(grep -c "^timeout " "$src")
+  nt=$(grep -cE "^timeout +t=" "$src")  # entry lines only: "^timeout " also matched the Results summary (off by one, 2026-09-26)
   [ "$nt" -gt 0 ] || { echo "class $n: no timeouts"; continue; }
   if [ "$nt" -gt 1500 ]; then
     python3 - "$src" "test/corpus_class$n.final.timeout-sample.out" <<'PY'
