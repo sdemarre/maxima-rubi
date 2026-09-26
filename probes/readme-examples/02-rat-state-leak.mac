@@ -1,0 +1,12 @@
+/* probes/readme-examples/02-rat-state-leak.mac -- rubi leaves the rat
+   package's global varlist/genvar populated for the rest of the top-level
+   statement; a ratsimp there fails to close a residual that closes after a
+   reset (.scratch/rubi-rat-state-leak/issues/01). From the repo root:
+   maxima --very-quiet -b probes/readme-examples/02-rat-state-leak.mac < /dev/null */
+load("maxima_rubi.mac")$ mr_load_all()$ display2d:false$
+:lisp (defun maxima::$resetrat () (setq maxima::varlist nil maxima::genvar nil) 'maxima::$done)
+:lisp (defun maxima::$ratstate () (list '(maxima::mlist) (length maxima::varlist) (if (listp maxima::genvar) (length maxima::genvar) (list 'maxima::mlist (format nil "~s" maxima::genvar)))))
+g : x/(%e^(2*x)+3*%e^x+3)$
+print("top state", ratstate())$
+block([rr], print("before", ratstate()), rr : rubi(g, x), print("after rubi", ratstate()), print("no reset", is(ratsimp(diff(rr, x) - g) = 0)))$
+block([rr], rr : rubi(g, x), resetrat(), print("reset", is(ratsimp(diff(rr, x) - g) = 0)))$
