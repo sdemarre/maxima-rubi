@@ -1,154 +1,184 @@
 # maxima-rubi
 
 A rule-based symbolic integration package for Maxima, in the spirit of
-[Rubi](https://github.com/RuleBasedIntegration/Rubi): Rubi 4's
-integration rules, ported as declarative Maxima patterns executed by a
-first-match-wins rule runner, held to the Rubi Maxima-syntax test corpus
-as the yardstick. Milestone 1 delivered the foundation (loader, runner,
-predicate/shim layer, Python rule generator, two-layer test harness)
-plus Rubi's class-1 (algebraic functions) rule set; milestones 2 and 3
-ported class 2 (exponentials) and class 3 (logarithms). Classes 4–8
-are open runbook tickets (`todo/TODO.md`, `docs/class-porting.md`).
+[Rubi](https://github.com/RuleBasedIntegration/Rubi). Rubi 4's integration
+rules are ported as declarative rule records and executed by a Lisp pattern
+matcher and a first-match-wins dispatcher. The Rubi Maxima-syntax test corpus
+(70,385 integrals) is the yardstick.
 
-## Requirements
+All eight rule classes of Rubi 4 are ported: algebraic, exponential,
+logarithmic, trigonometric, inverse trigonometric, hyperbolic, inverse
+hyperbolic and special functions, plus Rubi's section-9 utility rules. That is
+7,776 rules.
 
-Measured on Maxima 5.50.0 / SBCL 2.6.7 (every number in this repo is
-stamped with the build it was taken on; re-measure on a new build, do
-not carry numbers).
+## Quick start
 
-**Any `maxima` process that loads rule files must be started with
-`-X "--tls-limit 100000"`** (two argv tokens — the flag takes no
-`=`). The SBCL special-variable pool is a hard per-process cap; beyond
-it, creating a `defmatch` slot dies with the uncatchable FATAL
-"Thread local storage exhausted". The default limit holds only ~310
-class-1 rules; 100000 covers the full loaded Rubi set at ~1.4x
-headroom. The test harness and the rules-core build already pass the
-flag; an interactive session that calls `mr_load_all()` or
-`mr_load_class1_all()` must set it at startup.
+The fastest way in is the prebuilt rules core: an SBCL image with Maxima and
+all 7,776 rules already loaded, which starts in under a second.
 
-## Loading
-
-```maxima
-load("maxima_rubi.mac")$       /* utils + dispatcher + 1.1.1.1 core      */
-mr_load_all()$                 /* classes 1-3, Rubi LoadRules order (3,514 rules) */
-/* or: mr_load_class1_all()$      the class-1 rule set only (3,055 rules) */
+```sh
+sh test/build_rules_core.sh        # (re)build test/mr_rules.core, a few seconds
+rlwrap sbcl --tls-limit 100000 --core test/mr_rules.core --noinform
 ```
 
-`load("maxima_rubi.mac")` must be findable by one of four paths: load
-by full path, run maxima from the package directory, push the package
-directory onto `file_search_maxima`, or install the package under
-`~/.maxima/`. Every sibling load is witness-checked: a missed or
-truncated sibling fails loudly at load time with the four options
-named.
+That gives an ordinary Maxima prompt (`rlwrap` is optional; it adds line
+editing):
 
-The eager load is deliberately small (the 1.1.1.1 core — five rules —
-plus the support layer). `mr_load_all()` loads the full table: the
-73-file class-1 port (67 LoadRules files + the five corpus-tested
-`b`-suffixed 1.2.1 siblings + the manually ported 9.1), then class 2
-(3 files, 125 rules) and class 3 (11 files, 334 rules), in Rubi
-`LoadRules` order. On a build without the TLS headroom, load single
-files instead:
-`%mr_load_sibling("rules/class1/<key>.mac", 'mr_witness_<key>)` then
-concat the file's rule list onto `mr_rule_table` (`unload()` releases a
-file's patterns).
+```maxima
+rubi(sec(x)^3, x);                            /* atanh(sin(x))/2 + sec(x)^2*sin(x)/2 */
+r : rubi(x^3/sqrt(a+b*x^2), x)$
+ratsimp(diff(r, x) - x^3/sqrt(a+b*x^2));      /* 0 */
+```
+
+The core is built from the files on disk. Rebuild it after pulling or after
+changing any rule or package file.
+
+Without the core, from a plain Maxima started in the package directory (about
+4 s to load):
+
+```maxima
+load("maxima_rubi.mac")$
+mr_load_all()$
+rubi(sec(x)^3, x);
+```
+
+`load("maxima_rubi.mac")` must be able to find its siblings, by one of four
+routes: load it by full path, start Maxima in the package directory, push the
+package directory onto `file_search_maxima`, or install it under `~/.maxima/`.
+Every sibling load is witness-checked, so a missed or truncated file fails
+loudly at load time and names the four options. The eager load is small (the
+support layer and the five 1.1.1.1 rules); `mr_load_all()` loads the full
+table, in Rubi's `LoadRules` order, which is rule priority here.
+
+### Examples native `integrate` does not do
+
+Each of these comes back unevaluated from Maxima's `integrate` and is answered
+by `rubi` in about a second or less. Every answer was checked, either
+numerically or by the corpus harness (2026-09-26).
+
+```maxima
+rubi(1/(1+x^8), x);                         /* logs and atans with nested radicals */
+rubi(sqrt(1+x^4), x);                       /* an elliptic_f term */
+rubi(x/(3+3*%e^x+%e^(2*x)), x);             /* polylog(2, ...) terms */
+rubi(1/(x+x*log(7*x)+x*log(7*x)^2), x);     /* 2*atan((2*log(7*x)+1)/sqrt(3))/sqrt(3) */
+rubi(cos(x)*sec(4*x), x);
+rubi(asin(sqrt(x))/x, x);
+rubi(tanh(8*x)^(1/3), x);
+rubi(x/(asinh(x)*sqrt(1+x^2)), x);          /* expintegral_shi(asinh(x)) */
+rubi(expintegral_si(2*x)*sin(5*x), x);
+```
 
 ## API
 
 ```maxima
-rubi(f, x)                  /* the entry point */
-rubi_fallback(f, x, fb)     /* explicit fall-through control (fb = true) */
-rubi_verbose : true$        /* print the rule that fires / misfire diagnostics */
+rubi(f, x)                 /* the entry point: rules only */
+rubi_fallback(f, x, true)  /* the same, but fall through to integrate(f, x) */
+rubi_verbose : true$       /* print the rule that fires, and misfires */
 ```
 
-- `rubi(f, x)` returns an antiderivative, or the package no-answer noun
-  `unintegrable[f, x]` when no top-level rule fires (or the recursion
-  cap, `%mr_max_depth : 16`, is reached). It is rules-only: a top-level
-  0-firing is a port/matcher-gap signal, not a job for native
-  `integrate`.
-- `rubi_fallback(f, x, true)` restores the status-quo behaviour: the
-  same rule set, but a top-level 0-firing (or cap hit) falls through to
-  native `integrate(f, x)` — the `integrate` noun is then Maxima's own.
-  Generated rules call `mr_int` for NESTED sub-integrals, which always
-  keeps the native fall-through.
-- `rubi_verbose` prints the fired rule, boolean-leak misfires, and
-  BOOLWALK crashes on each dispatch.
+- `rubi(f, x)` returns an antiderivative, or the no-answer noun
+  `unintegrable[f, x]` when no rule applies. It never hands the integral to
+  Maxima's own `integrate`. `rubi_fallback(f, x, true)` does, at the top level;
+  nested sub-integrals follow the switch `mr_nested_fallback` either way.
+- The answer can contain Rubi's own special functions in their Maxima
+  spelling: `elliptic_f`/`elliptic_e`/`elliptic_pi`, `polylog`,
+  `expintegral_ei`/`_si`/`_ci`/`_shi`/`_chi`, `gamma_incomplete`,
+  `fresnel_s`/`fresnel_c`, `hypergeometric`. Rubi's `AppellF1` has no Maxima
+  counterpart and stays a noun.
+
+Run switches, set at the prompt (the defaults are what the corpus records use):
+
+| switch | default | meaning |
+|---|---|---|
+| `mr_max_depth` | 32 | the nested-dispatch depth cap |
+| `mr_gtq_facts` | false | true: GtQ/LtQ/GeQ/LeQ also accept what Maxima's `is()` proves, so `assume()` facts count; false is Rubi's own purely numeric reading |
+| `mr_eqq_symbolic` | true | EqQ/NeQ read an identically-zero difference as zero (ratsimp/expand/factor), as Rubi's `PossibleZeroQ` does |
+| `mr_subst_simp` | false | true: simplify every `Subst` result (the milestone-1 behaviour) |
+| `mr_nested_fallback` | false | true: nested sub-integrals no rule answers fall through to `integrate` |
+
+The rest (`mr_flat_wide`, `mr_cond_retry`, `mr_model_flags`, `mr_giveup_last`,
+`mr_inert_leak_misfire`, `mr_last_resort_tier`, `mr_general_after_giveups`)
+are migration and ordering switches of the matcher; they are documented in
+`maxima_rubi_dispatch.lisp`.
 
 ## Measured state
 
-Accepted records against the Rubi Maxima-syntax corpus (30 s
-per-entry cap, 24-shard runs, SBCL 2.6.7; PASS = verified, expected,
-or a correct no-answer). Each record carries its own Maxima build
-stamp in its header.
+Full-corpus records on `master` (2026-09-26; Maxima
+`branch_5_50_base_84_g4204fb669`, SBCL 2.6.7; 30 s CPU cap per integral; PASS
+= the answer is verified by differentiation, matches the corpus answer, or is
+a correct no-answer). Each record states its own build and switches in its
+header.
 
-| class | integrals | package PASS | native `integrate` | record |
-|---|---|---|---|---|
-| 1 algebraic | 25,697 | **20,069 (78.1 %)** | 12,798 (49.8 %) | `docs/corpus-baseline-uplift.md`, `docs/corpus-class2-baseline-uplift.md` §8 |
-| 2 exponentials | 965 | **594 (61.6 %)** | 593 (61.5 %) | `docs/corpus-class2-baseline-uplift.md` |
-| 3 logarithms | 3,085 | **1,736 (56.3 %)** | 1,441 (46.7 %) | `docs/corpus-class3-baseline-uplift.md` |
+| class | integrals | `rubi` PASS | native `integrate` | record |
+|---|---:|---:|---:|---|
+| 1 algebraic | 25,697 | **23,203 (90.3 %)** | — | `test/corpus_class1.out` |
+| 2 exponentials | 965 | **863 (89.4 %)** | 363 | `test/corpus_class2.out` |
+| 3 logarithms | 3,085 | **2,446 (79.3 %)** | 1,190 | `test/corpus_class3.out` |
+| 4 trigonometric | 22,472 | **19,932 (88.7 %)** | 1,384 | `docs/corpus-class4-baseline-uplift.md` |
+| 5 inverse trig | 4,585 | **3,629 (79.1 %)** | 1,234 | `docs/corpus-class5-baseline-uplift.md` |
+| 6 hyperbolic | 5,080 | **4,314 (84.9 %)** | 301 | `docs/corpus-class6-baseline-uplift.md` |
+| 7 inverse hyperbolic | 6,552 | **5,342 (81.5 %)** | 953 | `docs/corpus-class7-baseline-uplift.md` |
+| 8 special functions | 1,949 | **1,537 (78.9 %)** | 327 | `docs/corpus-class8-baseline-uplift.md` |
+| **all** | **70,385** | **61,266 (87.0 %)** | | |
 
-The class-1 and class-2 figures are the 2026-08-28 re-measure under the
-zero-chain `radcan(rat())` fallback (Maxima build 2026-08-20); class 3
-is the milestone-3 acceptance (build 2026-08-29). The class-3 deferred
-campaign (branch `class3-deferred`,
-`docs/corpus-class3-deferred-uplift.md`) is re-measuring class 3; its
-figure replaces the row above only once the campaign's acceptance
-record is written.
+The native-`integrate` baselines are scored the same way (classes 2, 3 and 6
+re-measured 2026-09-20; classes 4, 5, 7 and 8 on 2026-09-25). The class-1
+baseline is the older sample-based figure in `docs/corpus-baseline-uplift.md`
+and is not comparable.
 
 ## Testing
 
-Two layers, one `Results: <n> passed, <m> failed` reading protocol
-(read that line; individual assertions print `PASS:`/`FAIL:` above it,
-and a run that dies mid-way prints no line at all — which is itself a
-failure):
+Every suite ends with `Results: <n> passed, <m> failed`. Read that line: a run
+that dies mid-way prints no such line, which is itself a failure, and a Lisp
+error inside a test section silently drops that section's remaining checks,
+so also grep the output for `Lisp error` and compare the pass count with the
+expected figure.
 
-- **Layer A** — unit suite, one batch run (the TLS flag is mandatory:
-  without it the run dies at the class-3 tests):
-  `maxima --very-quiet -X "--tls-limit 100000" -b test_maxima_rubi.mac`
-  (892 targets).
-- **Layer B** — full corpus per class, sharded:
-  `python3 test/launch_class_shards.py "<section>" <record> test/corpus_driver.py --launch`
-  plus the `test/wait_and_merge.sh` watcher (class 1 ~80 min wall on
-  24 cores). The full-run A/B against the previous merged record is
-  the regression gate: `python3 test/ab_records.py <old> <new>` prints
-  the transition table and every PASS→FAIL entry. The timeout re-check
-  (`python3 test/launch_timeout_rerun.py … --launch`,
-  `test/wait_timeout_rerun.sh`, `test/merge_timeout_rerun.py`) re-runs a
-  record's `timeout` class at a larger cap and reads the transitions.
+- **Layer A**, the unit suite:
+  `maxima --very-quiet -b test_maxima_rubi.mac < /dev/null` (1,585 checks).
+- **The gates on the real table**: `test/test_rule_table_order.mac`,
+  `test/test_section9_e2e.mac`, and the matcher suites under `test/matcher/`.
+- **The generator's static gate**: `python3 test/check_generated_rules.py`.
+- **Layer B**, a full corpus class, through the queue runner (one Maxima
+  process per integral, 24 workers):
+  `python3 test/run_corpus_queue.py "<section>" --prev <record> --workers 24 --launch`,
+  then `test/wait_and_merge.sh`; compare two records with
+  `python3 test/ab_records.py <old> <new>`. Class 1 takes about 50 minutes.
 
-`AGENTS.md` (`## Tests`) carries the live protocol in detail.
+`AGENTS.md` (`## Tests`) holds every gate with its current green figure and
+the reading protocol in detail.
 
 ## Layout
 
 ```
-maxima_rubi.mac             public loader (diophantine mould, witness-checked)
-maxima_rubi_utils.mac       runner, %mr_ predicate/shim layer, noun forms
-maxima_rubi_dispatch.lisp   table dispatcher (pass-2 matchreverse rescan)
-maxima_rubi_implicit1.lisp  exponent-1 rescan (Maxima drops stored ^1)
-maxima_rubi_pass4.lisp      pass-4 bare-factor sweep (class-3 deferred campaign)
-rules/class{1,2,3}/<key>.mac  GENERATED rule files, one per Rubi .m (do not
-                            edit; class1/9_1.mac is a manual port)
-generator/                  the Python generator (generate_rules.py)
+maxima_rubi.mac             public loader (witness-checked sibling loads, mr_load_all)
+maxima_rubi_utils.mac       mr_top / rubi, the %mr_ predicate and utility layer
+maxima_rubi_match.lisp      the pattern matcher (MR-MATCH)
+maxima_rubi_tree.lisp       Maxima expression <-> matcher tree conversion
+maxima_rubi_dispatch.lisp   rule records, the dispatcher, the run switches
+rules/class1 .. class8/     GENERATED rule files, one per Rubi .m file
+rules/class9/               section 9 (9.2, 9.3), generated
+rules/utils/                generated rewrite tables (the inert-trig functions)
+generator/                  the Python rule generator (generate_rules.py)
 test_maxima_rubi.mac        Layer A unit suite
-test/                       Layer B driver, shard planner, mergers, A/B diff,
-                            rules-core build, canary
+test/                       corpus driver, queue runner, mergers, A/B diff, gates,
+                            rules-core build, the committed corpus records
 probes/                     committed, re-runnable measurement probes
-docs/                       research design + measured records + runbook
+docs/                       design specs, measured acceptance records, runbook
+.scratch/                   issue tickets (see docs/agents/issue-tracker.md)
 todo/                       milestone index and pinned reference clones
 ```
 
-The generated rule files come from `generator/generate_rules.py` over
-the pinned Rubi 4 clone (`reference/rubi`, gitignored working copy —
-the pin is recorded in `todo/TODO.md` and in every generated file's
-header). Regenerate, do not hand-edit:
-`python3 generator/generate_rules.py --class <n> [--only <key>]`
-(`generate_class1.py` is the class-1 shim). The one exception is
-`rules/class1/9_1.mac`, a manual port (the section-9.1 legacy file is
-absent from the pinned Rubi.m's LoadRules, so the generator does not
-emit it).
+The rule files are generated from the pinned Rubi 4 clone (`reference/rubi`, a
+gitignored working copy; the pin is recorded in `todo/TODO.md` and in every
+generated file's header). Regenerate, don't hand-edit:
+`python3 generator/generate_rules.py --class <1-9>` (and `--rewrites` for
+`rules/utils/`). Regeneration is byte-identical, and the static gate checks
+that.
 
 ## License
 
-The generated rule files (`rules/class1/*.mac`) are a substantial
+The generated rule files (`rules/class*/*.mac`) are a substantial
 portion of Rubi, ported from the pinned commit, and carry the Rubi
 copyright notice in their headers. Rubi is MIT:
 
