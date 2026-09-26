@@ -1,6 +1,6 @@
 # polylog derivative shim — close the two-sided-expected-chain ceiling (go number: 638)
 
-Status: needs-triage
+Status: superseded by `.scratch/polylog-native-li/issues/01-emit-native-li.md` (2026-09-26)
 Type: research (+ possible port)
 Filed: 2026-08-30 (milestone-3 close — the M2-deferred
 polylog/AppellF1 structural-ceiling decision, decided with the

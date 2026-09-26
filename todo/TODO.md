@@ -356,7 +356,7 @@ Layer A 898/0; the TLS flag is no longer required
   (3.5 r37, 3.1.5 r28, 3.5 r11) (`probes/matcher/06-dispatch-cost.out`)
   — open, judged by the P5 median-wall gate
 
-## Classes 8, 5, 7, 4 (special, inverse trig, inverse hyperbolic, trig) — in prog (Step 10 records written, closes on merge)
+## Classes 8, 5, 7, 4 (special, inverse trig, inverse hyperbolic, trig) — closed 2026-09-26 (merged `fc31e14`, records promoted `6c3598d`)
 
 The four remaining post-M2 classes, ported in the queue 8 → 5 → 7 → 4 on
 branch `class-ports` (worktree `mr-ports`, base `cd0a421`), each against
@@ -364,7 +364,7 @@ branch `class-ports` (worktree `mr-ports`, base `cd0a421`), each against
 `.scratch/class-ports/issues/01-…` (8), `02-…` (5), `04-…` (7), `05-…` (4),
 which carry the Step 1–7 records. Class 8 takes 9.1 Derivative with it
 (`rules/class8/9_1d.mac`). Records `docs/corpus-class{8,5,7,4}-baseline-uplift.md`;
-their PASS→FAIL attribution sections are pending.
+their PASS→FAIL attribution sections are §4.3a (class 4 also §7.1).
 
 Rule set: class 8 328 rules (9 files + 9.1), class 5 667 (15 files),
 class 7 712 (21 files; four old-numbering 7.3 files excluded, as Rubi.m
@@ -392,9 +392,15 @@ Earlier classes on the same core vs master's promoted records: class 1
 1583/0, P3 29/0, head rewrites 64/0, byte-identity EMPTY for 1–9,
 matcher regression 109/0 in both arms.
 
-- The PASS→FAIL attribution (139 vs master in classes 1/2/3/6; 43 vs the
-  pre-fix records in 5/7/4; 27/117/48/158 vs the baselines of 8/5/7/4),
-  then the merge to `master`, which closes tickets 01/02/04/05 — in prog
+- The PASS→FAIL attribution (182: 139 vs master in classes 1/2/3/6, 43 vs
+  the pre-fix records in 5/7/4; `probes/class-ports/final/attribution.out`),
+  then the merge to `master` (`fc31e14`) — done
+- `.scratch/class-ports/issues/23` — symbolic EqQ's `factor()` on radical
+  kernels runs past the cap (37 losses); a measured fix is ready — open
+- `.scratch/class-ports/issues/22` — 1_2_3_1 r11 refolds a completed
+  expansion and the seen test cuts it (35 losses + 7 carried) — open
+- `.scratch/class-ports/issues/24` — 1.2.2.2 e1035, a degenerate zero
+  coefficient gives an infinite answer — open
 - `.scratch/corpus-harness/issues/05` — Rubi's own partial answers (an
   interior `Unintegrable`/`CannotIntegrate`) can never PASS: 746 entries
   over the four classes — open
@@ -402,8 +408,11 @@ matcher regression 109/0 in both arms.
   mass (1,068, 475 slow-correct at 100 s) is its main weight — open
 - `.scratch/class-ports/issues/20` — the FreeFactors quotient fix's 3.1.5
   slowdown — open
-- `.scratch/class3-polylog-ceiling/issues/01` — polylog shim; the four
-  classes add ≤ 11 / 44 / 88 / 6 `unverified` — open
+- `.scratch/polylog-native-li/issues/01` — emit Maxima's native `li[s](z)`
+  instead of the unknown `polylog(s, z)`, and rewrite the corpus to match:
+  polylog answers become differentiable and float-evaluable (218
+  `unverified` candidates over classes 2–8; supersedes the class-3 polylog
+  shim ticket) — open
 - Not ticketed (the records' §9): the class-8 8.8 polylog noun block, the
   class-7 7.3.6/7.4.2 and class-4 hypergeometric/AppellF1 `unverified`
   blocks, the radexpand-at-read question (4.1.7, `mr_model_flags`), the
