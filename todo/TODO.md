@@ -412,7 +412,9 @@ matcher regression 109/0 in both arms.
   instead of the unknown `polylog(s, z)`, and rewrite the corpus to match:
   polylog answers become differentiable and float-evaluable (218
   `unverified` candidates over classes 2–8; supersedes the class-3 polylog
-  shim ticket) — open
+  shim ticket) — done on branch `polylog-native-li` (+566 PASS over classes
+  2–8, 2,518 `expected` -> `verified`; one real PASS->FAIL, 8.8 e155, the
+  eager `li[-2]` simplification), awaiting merge and record promotion
 - `.scratch/unknown-special-heads/issues/01` — the other heads Maxima does
   not know: `AppellF1` (476 `unverified` over classes 1/4/5/6/7), 2-argument
   Hurwitz `Zeta` (8.7), `psi[-2]` (8.6, differentiable, no float) — decide

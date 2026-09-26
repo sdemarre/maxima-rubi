@@ -1,6 +1,6 @@
 # Emit Maxima's native polylogarithm `li[s](z)` instead of the unknown `polylog(s, z)`
 
-Status: ready (not started)
+Status: done on branch `polylog-native-li` (2026-09-26); not merged, not promoted
 Type: task (generator + driver + tests; full-corpus A/B)
 Filed: 2026-09-26 (user request: make it a todo with enough information to pick it up later)
 Supersedes: `.scratch/class3-polylog-ceiling/issues/01-polylog-derivative-shim.md`. Maxima
@@ -141,3 +141,51 @@ Everything in AGENTS.md `## Tests`: Layer A, rule-table order, section-9 e2e, th
 suites, P3, generator section-9 unit, run-records, the harness guards (head rewrites),
 regeneration byte-identical for classes 1–9, the matcher regression suite (both arms; mr-tree may
 change).
+
+## Results (2026-09-26, branch `polylog-native-li`, core fingerprint `4ba2b5813ba5c4288585c104a4bbf802`, build `branch_5_50_base_84_g4204fb669`)
+
+Steps 1-4 and 7 done (commits `39e1fe7`, `471aaad`); step 5 watched in the A/B; step 6 below.
+
+Full corpus, classes 2-8, queue runner, 24 workers, 30 s cpu cap (`test/polylog_li_measure.sh`,
+log `test/polylog_li_measure.log`), each A/B'd against the promoted record
+`test/corpus_class<N>.out` (`test/li_ab_class<N>.out`):
+
+| class | PASS before -> after | PASS->FAIL | FAIL->PASS |
+|---|---|---:|---:|
+| 2 | 863 -> 866 | 0 | 3 |
+| 3 | 2,446 -> 2,550 | 0 | 104 |
+| 4 | 19,932 -> 19,955 | 23 | 46 |
+| 5 | 3,629 -> 3,754 | 1 | 126 |
+| 6 | 4,314 -> 4,343 | 6 | 35 |
+| 7 | 5,342 -> 5,485 | 0 | 143 |
+| 8 | 1,537 -> 1,676 | 1 | 140 |
+| **all** | **38,063 -> 38,629 (+566)** | **31** | **597** |
+
+Split by whether the corpus entry carries `polylog(` (`probes/polylog-native-li/01-transitions.out`):
+the 4,629 polylog entries go 2,781 -> 3,371 PASS (+590; 2 PASS->FAIL), and **2,518 of their
+`expected` (form-identical) PASSes become `verified`**: they now close by differentiation. The
+40,059 other entries go 32,777 -> 32,753 (29 PASS->FAIL, 5 FAIL->PASS).
+
+**PASS->FAIL attribution (31).** Every one was re-run on the same core at 12 workers
+(`test/corpus_class<N>.li.recheck/`):
+
+- **30 are cap-boundary noise**: old times 22.4-30.0 s (28 of them >= 28.8 s), new `timeout`
+  at 30.0-30.1 s; all 30 PASS on the re-check (class 4: 23 verified, max 20.3 s; class 6: 4
+  expected + 2 verified; class 5: 1 expected).
+- **1 is real, and it is the step-5 eager simplification:** 8.8 e155,
+  `polylog(-2, e*((a+b*x)/(c+d*x))^n)/((a+b*x)*(c+d*x))`. `li[-2](z)` simplifies on input
+  to the rational `z*(1+z)/(1-z)^3`, so no 8.8 PolyLog rule sees it; the rational route
+  times out at 30 s and at a 300 s cap ends `contains-noun` (84 s). It was `expected` only
+  because the unknown `polylog(-2, …)` stayed a PolyLog. The sibling low orders do NOT
+  regress: e152 (order 1), e153 (0) expected -> verified, e154 (-1) unverified -> verified.
+  This is what a Maxima user typing `li[-2](…)` gets anyway; recovering it would mean
+  recognising the rational form, i.e. new work, not part of this ticket.
+
+Gates on the branch: Layer A 1591/0, rule-table order 18/0, section-9 e2e 9/0, mr-match 57/0,
+mr-tree 88/0, dispatch 128/0, P3 30/0, generator section-9 28/0, run-records 43/0, harness
+guards all green (head rewrites 70/0), regeneration byte-identical for classes 1-9 and
+`--rewrites`, matcher regression suite 109/0 in both arms (records unchanged but for the
+timing lines).
+
+Open for the user: merge `polylog-native-li` to `master`, and whether to promote the
+`.li.out` records as the new baselines (`test/corpus_class<N>.out`).
