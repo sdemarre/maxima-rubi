@@ -1,6 +1,6 @@
 # Class 8 (special functions) port — 1,949 entries
 
-Status: ready
+Status: in prog — Steps 1–9 done; Step 10 record written (`docs/corpus-class8-baseline-uplift.md`, 2026-09-26); closes on the merge of `class-ports`
 Type: task (port, runbook-driven)
 Filed: 2026-08-30 (milestone-3 close; the M2 TODO's class-8 item, now
 against the instantiated runbook)
@@ -326,3 +326,13 @@ package corpus runs) are the coordinator's.
 (old `subst` kept otherwise); FunctionOfQ's hyperbolic arms left unported
 (still decline); `funmake` for every generic-head rebuild rather than only
 the class-8 paths; the Derivative representation (above).
+
+### 2026-09-26 — Steps 8–9 measured, Step 10 record written
+
+Record: `docs/corpus-class8-baseline-uplift.md` (the PASS→FAIL
+attribution section is added separately). Final package record
+`test/corpus_class8.final.out` (core `89bec424`, 7,776 rules, `c2deb32`;
+queue runner, 24 workers, 30 s cpu cap): **1,537 / 1,949 (78.9 %) against the native baseline's 327 (16.8 %)**; the pre-fix run
+(core `4daae7ac`) read 1,496, and the class-ports fixes moved 0 entries
+PASS→FAIL against it. 100 s re-check of the timeouts: 27 of 27: 1 now-PASS, 20 still timeout. Figures:
+`probes/corpus/28-class-ports-acceptance.out`.

@@ -1,6 +1,6 @@
 # Class 7 (inverse hyperbolic functions) port — 6,552 entries
 
-Status: ready
+Status: in prog — Steps 1–9 done; Step 10 record written (`docs/corpus-class7-baseline-uplift.md`, 2026-09-26); closes on the merge of `class-ports`
 Type: task (port, runbook-driven)
 Filed: 2026-08-30 (milestone-3 close; the M2 TODO's class-7 item, now
 against the instantiated runbook)
@@ -266,3 +266,13 @@ are header-comment-only duplicates of loaded files, the fourth an old
 omnibus); FunctionOfQ's hyperbolic arms not ported (not reached); class 7
 placed after the class-4 bridge block in `mr_load_all` (body order is the
 same either side of that empty-bodied block).
+
+### 2026-09-26 — Steps 8–9 measured, Step 10 record written
+
+Record: `docs/corpus-class7-baseline-uplift.md` (the PASS→FAIL
+attribution section is added separately). Final package record
+`test/corpus_class7.final.out` (core `89bec424`, 7,776 rules, `c2deb32`;
+queue runner, 24 workers, 30 s cpu cap): **5,342 / 6,552 (81.5 %) against the native baseline's 953 (14.5 %)**; the pre-fix run
+(core `4daae7ac`) read 4,318, and the class-ports fixes moved 19 entries
+PASS→FAIL against it. 100 s re-check of the timeouts: 211: 48 now-PASS, 78 still timeout. Figures:
+`probes/corpus/28-class-ports-acceptance.out`.

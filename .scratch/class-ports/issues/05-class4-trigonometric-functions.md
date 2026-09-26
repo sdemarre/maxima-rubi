@@ -1,6 +1,6 @@
 # Class 4 (trigonometric functions) port — 22,472 entries
 
-Status: needs-triage
+Status: in prog — Steps 1–9 done; Step 10 record written (`docs/corpus-class4-baseline-uplift.md`, 2026-09-26); closes on the merge of `class-ports`
 Type: task (port, runbook-driven)
 Filed: 2026-08-30 (milestone-3 close; the M2 TODO's class-4 item, now
 against the instantiated runbook)
@@ -517,3 +517,13 @@ e1), 10 unverified (4.1.3.1 e1/e2, 4.1.4.1 e1, 4.5.10, 4.5.11 e1, 4.5.2.1
 e1, 4.5.2.3, 4.6.11 e1), 6 contains-noun (4.3.7 e1/e2, 4.5.1.3 e1, and
 4.3.11/4.5.11/4.6.11 e2, whose expected answers carry Rubi's own
 Unintegrable). Step-9 triage input.
+
+### 2026-09-26 — Steps 8–9 measured, Step 10 record written
+
+Record: `docs/corpus-class4-baseline-uplift.md` (the PASS→FAIL
+attribution section is added separately). Final package record
+`test/corpus_class4.final.out` (core `89bec424`, 7,776 rules, `c2deb32`;
+queue runner, 24 workers, 30 s cpu cap): **19,932 / 22,472 (88.7 %) against the native baseline's 1,384 (6.2 %)**; the pre-fix run
+(core `4daae7ac`) read 14,630, and the class-ports fixes moved 9 entries
+PASS→FAIL against it. 100 s re-check of the timeouts: 1,068: 475 now-PASS, 426 still timeout. Figures:
+`probes/corpus/28-class-ports-acceptance.out`.

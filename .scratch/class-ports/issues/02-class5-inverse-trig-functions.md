@@ -1,6 +1,6 @@
 # Class 5 (inverse trig functions) port — 4,585 entries
 
-Status: ready
+Status: in prog — Steps 1–9 done; Step 10 record written (`docs/corpus-class5-baseline-uplift.md`, 2026-09-26); closes on the merge of `class-ports`
 Type: task (port, runbook-driven)
 Filed: 2026-08-30 (milestone-3 close; the M2 TODO's class-5 item, now
 against the instantiated runbook)
@@ -268,3 +268,13 @@ Mathematica's); `Head` as a narrow `%mr_head` (Mathematica's atom heads for
 atoms, the stored operator otherwise) rather than a general one; the
 x-free short cut in `SubstForInverseFunction`'s walk (sound: v carries x);
 no new ticket for finding 1 (issue 03 already owns the defect).
+
+### 2026-09-26 — Steps 8–9 measured, Step 10 record written
+
+Record: `docs/corpus-class5-baseline-uplift.md` (the PASS→FAIL
+attribution section is added separately). Final package record
+`test/corpus_class5.final.out` (core `89bec424`, 7,776 rules, `c2deb32`;
+queue runner, 24 workers, 30 s cpu cap): **3,629 / 4,585 (79.1 %) against the native baseline's 1,234 (26.9 %)**; the pre-fix run
+(core `4daae7ac`) read 2,915, and the class-ports fixes moved 15 entries
+PASS→FAIL against it. 100 s re-check of the timeouts: 195: 52 now-PASS, 74 still timeout. Figures:
+`probes/corpus/28-class-ports-acceptance.out`.

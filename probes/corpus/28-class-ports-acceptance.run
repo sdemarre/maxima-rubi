@@ -1,0 +1,18 @@
+#!/bin/sh
+# probes/corpus/28-class-ports-acceptance.run -- the Step-10 acceptance
+# figures of the class 8/5/7/4 ports, read from the committed records (no
+# Maxima), plus the unloaded-file listing of each section.
+#
+#   sh probes/corpus/28-class-ports-acceptance.run
+cd "$(dirname "$0")/../.." || exit 1
+OUT=probes/corpus/28-class-ports-acceptance.out
+{
+  echo "date: $(date -u '+%F %H:%M UTC')  commit: $(git rev-parse --short HEAD)"
+  echo
+  echo "== rule files in the pinned tree that Rubi.m does not load"
+  for s in "8 " "5 " "7 " "4 "; do
+    python3 probes/translation/11-class7-excluded-files.py "$s"
+  done
+  python3 probes/corpus/28-class-ports-acceptance.py 8 5 7 4
+} > "$OUT" 2>&1
+echo "wrote $OUT"
