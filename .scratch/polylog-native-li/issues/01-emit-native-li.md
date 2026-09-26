@@ -116,6 +116,25 @@ corpus is already "natively spelled" in the old sense. That reasoning is what ch
 7. Close `.scratch/class3-polylog-ceiling/issues/01` as superseded, and update the README's
    answer-spelling list (`polylog` -> `li[s](z)`).
 
+## Addenda (2026-09-26, probed before starting)
+
+- **`part(u, 1)` changes meaning.** Rubi's `InverseFunctionOfLinear` tests `LinearQ[u[[1]], x]`;
+  for `PolyLog[n, z]` that is the ORDER `n`, and `%mr_inverseFunctionOfLinear`
+  (`maxima_rubi_utils.mac` ~L7970) ports it as `part(u, 1)`. On `li[n](a*x+b)` with
+  `inflag:true`, `part(e, 1)` is `a*x+b` (the order lives in the operator `li[n]`). The helpers
+  must special-case the `li` operator to keep Rubi's reading, not just rename the head.
+- **Eager simplification reaches further than `li[1]`:** `li[0](x) = x/(1-x)`,
+  `li[-1](x) = x/(1-x)^2`. A rule that emits order <= 1 yields a rational function or a log.
+- **`subst` into the subscript works and re-simplifies:** `subst(n=2, li[n](z))` is `li[2](z)`,
+  `subst(n=1, …)` is `-log(1-z)`; a function `f(k,z) := li[k](z)` behaves the same. Plain text
+  emission of `li[n](z)` is viable; a helper is optional.
+- **No 3-argument PolyLog** anywhere in `reference/rubi` (271 `PolyLog[` sites) or in the
+  rule files: the Nielsen caveat in step 1 is moot.
+- `li[2](z)` is complex for real z > 1, so a numeric check at a branch-sensitive point can
+  disagree with a correct answer. Watch for it in the A/B.
+- The sibling unknown heads (AppellF1, Hurwitz Zeta, psi[-2]) are
+  `.scratch/unknown-special-heads/issues/01`.
+
 ## Gates
 
 Everything in AGENTS.md `## Tests`: Layer A, rule-table order, section-9 e2e, the three matcher

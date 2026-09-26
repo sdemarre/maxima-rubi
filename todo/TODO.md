@@ -413,6 +413,10 @@ matcher regression 109/0 in both arms.
   polylog answers become differentiable and float-evaluable (218
   `unverified` candidates over classes 2–8; supersedes the class-3 polylog
   shim ticket) — open
+- `.scratch/unknown-special-heads/issues/01` — the other heads Maxima does
+  not know: `AppellF1` (476 `unverified` over classes 1/4/5/6/7), 2-argument
+  Hurwitz `Zeta` (8.7), `psi[-2]` (8.6, differentiable, no float) — decide
+  per head: inert, `gradef`, numeric hook — needs-triage
 - Not ticketed (the records' §9): the class-8 8.8 polylog noun block, the
   class-7 7.3.6/7.4.2 and class-4 hypergeometric/AppellF1 `unverified`
   blocks, the radexpand-at-read question (4.1.7, `mr_model_flags`), the
