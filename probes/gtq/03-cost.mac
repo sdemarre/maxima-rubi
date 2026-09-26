@@ -1,0 +1,25 @@
+/* probes/gtq/03-cost.mac -- per-call cost of the GtQ-family readings,
+   sequential, one Maxima process (no rule files).  For each argument shape
+   (u, 0) the loop runs N calls of:
+     cur      is(u > v)                      the current inline emission
+     F-inl    is(is(u > v) = true)           (F) inline, no errcatch
+     F-fn     %mr_gtq_F(">", u, v)           (F) as a named entry, errcatch
+     R-fn     %mr_gtq_R(">", u, v)           (R) as a named entry
+   minus the empty loop.  Microseconds per call (elapsed_run_time = CPU).
+   Run: sh probes/gtq/03-cost.run */
+load("probes/gtq/gtq-readings.mac")$
+display2d : false$
+print("build:", build_info()@version, build_info()@timestamp, build_info()@lisp_name)$
+N : 20000$
+%t(f) := block([t0 : elapsed_run_time()], f(), elapsed_run_time() - t0)$
+shapes : [a, m + 1, 2, -3/2, 0.5, sqrt(2) - 1, a^2 + 1, b^2 - 4*a*c, %e^a, 2*n/3 - 1/2]$
+%run(u, v) := block([e, c, fi, ff, fr],
+  e  : %t(lambda([], for k thru N do u)),
+  c  : %t(lambda([], for k thru N do is(u > v))),
+  fi : %t(lambda([], for k thru N do is(is(u > v) = true))),
+  ff : %t(lambda([], for k thru N do %mr_gtq_F(">", u, v))),
+  fr : %t(lambda([], for k thru N do %mr_gtq_R(">", u, v))),
+  printf(true, "~20a ~8,2f ~8,2f ~8,2f ~8,2f~%", string(u),
+         1e6*(c - e)/N, 1e6*(fi - e)/N, 1e6*(ff - e)/N, 1e6*(fr - e)/N))$
+print("shape (u > 0)        cur us   F-inl us F-fn us  R-fn us")$
+for rep thru 2 do (print("-- pass", rep), for u in shapes do %run(u, 0))$

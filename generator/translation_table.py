@@ -14,13 +14,24 @@ RENAME = {
     # the "rc" spellings arccot/arcoth are unbound nouns — the corpus
     # integrands and answers use the native spellings.
     "ArcCot": "acot", "ArcCoth": "acoth",
+    # ArcTanh / ArcSinh / ArcCosh: the NATIVE heads in every class (ticket
+    # .scratch/class-ports/issues/18, option 1, user decision 2026-09-25).
+    # Until then classes 1-6/8/9 emitted the %mr_atanh / %mr_asinh /
+    # %mr_acosh log-form shims ("this binary lacks the name" -- no longer
+    # true: the natives are bound, differentiate through the zero chain and
+    # float-evaluate, probes/answer-side/06 A1-A4, E1-E4). A shim evaluates
+    # on the spot to its log / product body (probe 06 K1/K2), so a recursive
+    # Int[...] handed on no longer carried the head the class-7 patterns
+    # name (3_1_3 r14, 5_3_2 r3), and 7.3.7's EqQ[Head[tmp], ArcTanh]
+    # compares op() with the native atom. The shims stay defined
+    # (maxima_rubi_utils.mac) for their Layer A units; no rule emits them.
+    "ArcTanh": "atanh", "ArcSinh": "asinh", "ArcCosh": "acosh",
     "Denominator": "denom", "Numerator": "num", "Denom": "denom", "Numer": "num",
     "GCD": "gcd", "Mod": "mod", "Floor": "floor", "Factor": "factor",
     "Binomial": "binomial", "Cos": "cos", "Sin": "sin", "Expand": "expand",
     # shims (this binary lacks the name; %mr_ prefix, house rule 8)
     "Rt": "%mr_rt", "Sign": "%mr_sign", "Cancel": "%mr_cancel",
     "Together": "%mr_together",
-    "ArcTanh": "%mr_atanh", "ArcSinh": "%mr_asinh", "ArcCosh": "%mr_acosh",
     # ports (Rubi utilities, Task 4/5/7)
     "EqQ": "%mr_eqQ", "NeQ": "%mr_neQ", "PossibleZeroQ": "%mr_possible_zeroQ",
     "Coeff": "%mr_coeff", "Coefficient": "%mr_coeff",
@@ -259,7 +270,115 @@ RENAME = {
     # 5-arg overload and FunctionOfLinearSubst are internal, not
     # generated-rule tokens).
     "FunctionOfLinear": "%mr_functionOfLinear",
+    # class 8 (2026-09-25): the special-function heads, NATIVE spellings
+    # (the naming trap: the public names carry underscores). Each one
+    # differentiates through the harness zero chain and float-evaluates,
+    # build branch_5_50_base_84_g4204fb669
+    # (probes/answer-side/04-class8-answer-side-identities.out A1-A7,
+    # E1-E5): d/dz fresnel_s(z) = sin(%pi z^2/2), fresnel_c -> cos(..),
+    # erfc -> -2 %e^-z^2/sqrt(%pi), expintegral_si -> sin(z)/z,
+    # expintegral_ci -> cos(z)/z, expintegral_e(n,z) -> -expintegral_e(n-1,z),
+    # lambert_w -> lambert_w(z)/(z (1+lambert_w(z))). mr-tree's +functions+
+    # already maps all seven, so patterns need nothing new. Census counts
+    # (rules): ProductLog 44, FresnelS/FresnelC 28 each, Erfc 22,
+    # SinIntegral/CosIntegral 14 each, ExpIntegralE 10
+    # (probes/translation/09-class8-syntax-census.out).
+    "ProductLog": "lambert_w",
+    "FresnelS": "fresnel_s", "FresnelC": "fresnel_c",
+    "Erfc": "erfc",
+    "SinIntegral": "expintegral_si", "CosIntegral": "expintegral_ci",
+    "ExpIntegralE": "expintegral_e",
+    # class 5 (2026-09-25): the two inverse-trig heads the earlier classes
+    # never met, NATIVE spellings. Both differentiate through the harness
+    # zero chain and float-evaluate on their real domain |z| >= 1, and
+    # their conventions are Mathematica's -- asec(z) = acos(1/z), acsc(z) =
+    # asin(1/z) -- build branch_5_50_base_84_g4204fb669
+    # (probes/answer-side/05-class5-answer-side-identities.out A5/A6,
+    # E5-E8, C1/C2/C4-C6). mr-tree already maps both heads. Census: 31
+    # rules each (probes/translation/10-class5-syntax-census.out).
+    "ArcSec": "asec", "ArcCsc": "acsc",
+    # class 5: Mathematica's polynomial discriminant, 5.3.7 r27/r28 (the
+    # two ShowSteps rules; the quadratic v of Int[u_*v_^n_., x]). The
+    # native poly_discriminant equals Mathematica's Discriminant on a
+    # symbolic quadratic (b^2-4ac) and cubic (probe 05 D1-D3).
+    "Discriminant": "poly_discriminant",
+    # class 5 utility rows. ExpandExpression is ported since class 1 (the
+    # ExpandIntegrand catch-all) and first called by a rule here (5.1.5
+    # r9/r10); the other four are the class's Step-4 ports: HalfIntegerQ
+    # (8 rules, 5.1.3/5.1.4), and the 5.3.7 r27/r28 trio --
+    # InverseFunctionOfLinear, SubstForInverseFunction (3-arg) and Head
+    # (EqQ[Head[tmp], ArcTan]: op() of the call, compared with the bare
+    # head atom, which this table renames to the same native symbol --
+    # probe 05 H1-H3).
+    "ExpandExpression": "%mr_expandExpression",
+    "HalfIntegerQ": "%mr_halfIntegerQ",
+    "InverseFunctionOfLinear": "%mr_inverseFunctionOfLinear",
+    "SubstForInverseFunction": "%mr_substForInverseFunction",
+    "Head": "%mr_head",
+    # class 7 (2026-09-25): the two inverse-hyperbolic heads the earlier
+    # classes never met, NATIVE spellings. Both differentiate through the
+    # harness zero chain, float-evaluate on their real domain (asech on
+    # (0, 1], acsch off 0), and follow Mathematica's conventions --
+    # asech(z) = acosh(1/z), acsch(z) = asinh(1/z) -- build
+    # branch_5_50_base_84_g4204fb669
+    # (probes/answer-side/06-class7-answer-side-identities.out A5/A6,
+    # E5/E6/E9, C1/C2/C4-C6). mr-tree already maps both heads. Census: 38
+    # and 36 rules (probes/translation/11-class7-syntax-census.out).
+    "ArcSech": "asech", "ArcCsch": "acsch",
+    # class 4 (2026-09-25): the eleven tokens the Step-1 closure left
+    # unlisted (probes/translation/12-class4-syntax-census.out; adjudicated
+    # on .scratch/class-ports/issues/05). TrigQ (11 rules, every use
+    # TrigQ[F] on a head variable) and InertTrigQ (7, every use the 1-arg
+    # InertTrigQ[F]) are ported since the inert-trig substrate; the rest
+    # are the class's Step-4 ports in maxima_rubi_utils.mac: ExpandTrig
+    # (50 rules, 2- and 3-arg), the four Known*IntegrandQ wrappers of
+    # KnownTrigIntegrandQ (22/22/8/8), ComplexFreeQ (4.1.10 r9-r11), and
+    # 4.7.5 r66's TrigSimplifyQ / TrigSimplify.
+    "TrigQ": "%mr_trigQ",
+    "InertTrigQ": "%mr_inertTrigQ",
+    "ExpandTrig": "%mr_expandTrig",
+    "KnownSineIntegrandQ": "%mr_knownSineIntegrandQ",
+    "KnownSecantIntegrandQ": "%mr_knownSecantIntegrandQ",
+    "KnownTangentIntegrandQ": "%mr_knownTangentIntegrandQ",
+    "KnownCotangentIntegrandQ": "%mr_knownCotangentIntegrandQ",
+    "ComplexFreeQ": "%mr_complexFreeQ",
+    "TrigSimplifyQ": "%mr_trigSimplifyQ",
+    "TrigSimplify": "%mr_trigSimplify",
+    # TrigSimplify's worker, a generated rewrite table (mr_rw_tsa,
+    # rules/utils/inert_trig_rewrites.mac); its first clause recurses.
+    "TrigSimplifyAux": "%mr_trigSimplifyAux",
+    # DeactivateTrig's general clause, generated with its fast-path clause
+    # into mr_rw_dt, calls the hand-ported worker by name.
+    "DeactivateTrigAux": "%mr_deactivateTrigAux",
+    # class 4: Apart, both uses ONE-argument (4.1.7 r51/r64:
+    # Apart[a*(1+Tan[e+f*x]^2)^2 + b*Tan[e+f*x]^4]^p). Its argument is a
+    # polynomial in Tan[e+f*x], on which Mathematica's Apart has no
+    # fraction to split and returns the expanded polynomial; Maxima's
+    # expand gives the same polynomial. Apart never changes a value, and
+    # the rule needs only the value (the factor's p-th power cancels, as a
+    # value, against (Sec^2)^(2p)). Maxima's partfrac needs a main variable
+    # the 1-arg form does not name.
+    "Apart": "expand",
 }
+
+# Per-class overrides of RENAME, consulted first by the generator's
+# translate_token (generate_rules.py) for the class being generated only.
+#
+# Empty since 2026-09-25. It held two rows:
+# - class 7: ArcTanh / ArcSinh / ArcCosh -> the native heads. The shared
+#   RENAME rows now emit the natives for every class (ticket
+#   .scratch/class-ports/issues/18, option 1).
+# - class 4: Expand -> %mr_expand. Rubi's two-argument Expand[u, x] (expand
+#   the parts of u that contain x) is not Maxima's expand(u, x) -- that is
+#   the 3-argument expand(expr, p, n) short of one: "expand: expop must be a
+#   nonnegative integer; found: x", a repl error the dispatcher reads as a
+#   misfire (probes/maxima/probe-class4-expand-two-arg.out E1). The emitter
+#   (generate_rules.py emit_head) now maps EVERY two-argument Expand to
+#   %mr_expand, which drops the pattern argument, whatever the class: class
+#   4's three sites (4.1.1.1 r1, 4.1.7 r58, 4.3.1.3 r2, unchanged text) and
+#   class 2's 2_3 r58/r65 (ticket .scratch/class-ports/issues/19). A
+#   one-argument Expand keeps the RENAME row, expand.
+CLASS_RENAME = {}
 
 # Structural rewrites (not 1:1 renames): token -> handler name in the emitter.
 RESTRUCTURE = {
@@ -299,6 +418,34 @@ RESTRUCTURE = {
     "EllipticF": "elliptic_f", "EllipticE": "elliptic_e",
     "EllipticPi": "elliptic_pi",
     "Hypergeometric2F1": "hypergeometric",   # list-form args
+    # class 8 (2026-09-25): the generalized pFq, 16 rules. Rubi writes
+    # HypergeometricPFQ[{a..}, {b..}, z] and Maxima's native takes the
+    # same shape with lists, hypergeometric([a..], [b..], z) — the list
+    # braces translate to brackets on their own, so the row is a 1:1
+    # rename. diff closes (d/dz 3F3([1,1,1],[2,2,2],z) =
+    # 3F3([2,2,2],[3,3,3],z)/8, probe 04 A13) and it float-evaluates (E9).
+    "HypergeometricPFQ": "hypergeometric",
+    # class 8 (2026-09-25): PolyGamma[n, z] -> psi[n](z), Maxima's
+    # SUBSCRIPTED polygamma (mr-tree's +subscripted+ reads psi[n](z) back
+    # as PolyGamma). An emitter case, not a rename: the order becomes the
+    # subscript. diff closes for every order the rules emit, negative
+    # included (psi[-2] -> psi[-1], probe 04 A8/A9). Handler name only.
+    "PolyGamma": "polygamma",
+    # class 8 (2026-09-25): Zeta, arity-dispatched in the emitter. 1-arg is
+    # Riemann's zeta (native `zeta`); 2-arg is the HURWITZ zeta, which
+    # Maxima does not have symbolically (describe("hurwitz", inexact) finds
+    # nothing; `zeta` is 1-argument) — so it is emitted as the corpus's own
+    # head Zeta(s, z), an inert noun (the AppellF1 precedent): identical
+    # answers cancel in the zero chain, a different form cannot verify
+    # (probe 04 A16/A17). Handler name only.
+    "Zeta": "zeta",
+    # class 8 / 9.1 (2026-09-25): Mathematica's formal derivative
+    # Derivative[n][f][u] -> %mr_derivative(n, f, u), which builds Maxima's
+    # own derivative noun 'diff(f(u), u, n) (order 0: f(u)). The design
+    # and its measurements: .scratch/class-ports/issues/01 ("DESIGN"),
+    # probes/answer-side/04 D1-D3, N1-N17. A curried-call emitter case in
+    # translate_atom. Handler name only.
+    "Derivative": "derivative",
     # AppellF1: emit the SAME head the corpus expected answers use
     # (the .mac files carry AppellF1[...]). Maxima has no AppellF1
     # builtin, so both sides of the zero-test carry the identical

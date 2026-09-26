@@ -1,0 +1,71 @@
+/* probes/matcher/26-eqq-symbolic-zero-test.mac -- the evidence for the
+   EqQ/NeQ symbolic zero test (.scratch/matcher-translation-fixes/issues/03,
+   user decision 2026-09-25; the run switch mr_eqq_symbolic).
+   (2026-09-25, branch class-ports-fixes.)
+
+   Z: the candidate stages on the issue's shapes, its parametric controls and
+      the branch identities -- ratsimp, factor, ratsimp(expand), and the
+      harness's radcan(rat()) fallback, which is why radcan is NOT a stage.
+   E: %mr_eqQ under both switch values on the same shapes.
+   C: cost -- mean per call of %mr_eqQ / %mr_neQ over N calls on condition
+      shapes the rules evaluate, switch off vs on.
+   R: end to end -- probe 25's shifted quadratics (5.3.7 / 7.3.7 sibling
+      tables), both arms. (1.2.1.2 e1926 on the full table is measured by
+      the slice A/B, probes/corpus/27; uncapped here it ran past 15 min.) */
+display2d : false$
+linel : 10000$
+print("R build", build_info()@version, build_info()@timestamp)$
+load("maxima_rubi.mac")$
+tr(e) := [errcatch(ratsimp(e)), errcatch(factor(e)), errcatch(ratsimp(expand(e))),
+          errcatch(radcan(rat(e)))]$
+Z : [["g12 coefficient", c*d^3*e - d*e*(c*d^2+a*e^2) + a*d*e^3],
+     ["shifted-quadratic residual", 16*(2*x+1)^2-(-(8*x)-4)^2],
+     ["free c d^2-b d e+a e^2", c*d^2-b*d*e+a*e^2],
+     ["generic product", a*b*c],
+     ["sqrt(a b)-sqrt(a)sqrt(b)", sqrt(a*b) - sqrt(a)*sqrt(b)],
+     ["log(a b)-log a-log b", log(a*b) - log(a) - log(b)],
+     ["(a b)^m-a^m b^m", (a*b)^m - a^m*b^m],
+     ["sqrt(x^2+2x+1)-x-1", sqrt(x^2+2*x+1) - x - 1],
+     ["sqrt(-a)-i sqrt(a)", sqrt(-a) - %i*sqrt(a)],
+     ["(1+ia)(1-ia)-1-a^2", (1+%i*a)*(1-%i*a) - 1 - a^2],
+     ["sin^2+cos^2-1", sin(x)^2+cos(x)^2-1]]$
+for z in Z do print("Z", z[1], "  [ratsimp, factor, ratsimp(expand), radcan(rat)] =", tr(z[2]))$
+for z in Z do (mr_eqq_symbolic : false, print("E", z[1], " off:", %mr_eqQ(z[2], 0)),
+               mr_eqq_symbolic : true, print("E", z[1], " on:", %mr_eqQ(z[2], 0)))$
+/* cost: each case is [label, u, v]; the bound values are the ones a rule
+   condition sees after geteqR */
+cases : [["EqQ numbers 2, 2", 2, 2],
+         ["NeQ b^2-4ac free", b^2 - 4*a*c, 0],
+         ["NeQ b^2-4ac numbers", 3^2 - 4*1*2, 0],
+         ["EqQ m+1 free", m + 1, 0],
+         ["EqQ m, -1 at m=-1/2", -1/2, -1],
+         ["NeQ c d^2-b d e+a e^2 free", c*d^2 - b*d*e + a*e^2, 0],
+         ["NeQ c d^2-b d e+a e^2 g12", c*d^3*e - d*e*(c*d^2+a*e^2) + a*d*e^3, 0],
+         ["NeQ 2 c d-b e g12 binding", 2*(c*d*e)*d - (c*d^2+a*e^2)*e, 0],
+         ["EqQ b c-a d free", b*c - a*d, 0],
+         ["NeQ radical kernel sqrt(a) b-c", sqrt(a)*b - c, 0],
+         ["EqQ discriminant identity shifted", 16*(2*x+1)^2-(-(8*x)-4)^2, 0],
+         ["EqQ head atan vs atanh", atan, atanh],
+         ["NeQ log-kernel e^2 log(f)-g", e^2*log(f) - g, 0]]$
+N : 2000$
+cost(u, v) := block([t0, i],
+  t0 : elapsed_run_time(),
+  for i : 1 thru N do %mr_eqQ(u, v),
+  (elapsed_run_time() - t0)/N)$
+for k in cases do (
+  mr_eqq_symbolic : false, t_off : cost(k[2], k[3]),
+  mr_eqq_symbolic : true, t_on : cost(k[2], k[3]),
+  print("C", k[1], " off_us", round(1.0e6*t_off), " on_us", round(1.0e6*t_on),
+        " eqQ_on", %mr_eqQ(k[2], k[3]),
+        " expanded_polyp", %mr_expanded_polyp(k[2] - k[3])))$
+/* end to end */
+mr_nested_fallback : true$
+%mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1)$
+%mr_load_sibling("rules/class5/5_3_7.mac", 'mr_witness_5_3_7)$
+%mr_load_sibling("rules/class7/7_3_7.mac", 'mr_witness_7_3_7)$
+for sw in [false, true] do (
+  mr_eqq_symbolic : sw,
+  mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_5_3_7]),
+  print("R", sw, "rubi(e^atan(2x+1)/(4x^2+4x+2))", rubi(%e^atan(1+2*x)/(4*x^2+4*x+2), x)),
+  mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_7_3_7]),
+  print("R", sw, "rubi(e^atanh(2x+1)/(-4x^2-4x))", rubi(%e^atanh(1+2*x)/(-4*x^2-4*x), x)))$

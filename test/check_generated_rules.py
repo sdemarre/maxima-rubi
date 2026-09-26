@@ -27,6 +27,14 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
          name declared in an expression-line block([...]) as
          _mr_<key>_r<n>_<name> is renamed back to <name> (the local Rubi
          calls D back to its old spelling diff), count pinned
+       - the native inverse-hyperbolic heads (ticket 18, 2026-09-25): an
+         atanh( / asinh( / acosh( call is undone to the %mr_ shim call the
+         base emitted, count pinned
+       - the two-argument Expand (ticket 19, 2026-09-25): a %mr_expand( call
+         is undone to the expand( the base emitted, count pinned
+       - Rubi's real comparisons (matcher-translation-fixes issue 02,
+         2026-09-25): %mr_gtQ/%mr_ltQ/%mr_leQ/%mr_geQ(A, B) undone to
+         is(A op B), count pinned
        - the 29 manual 9.1 rules and the 52 rules that had a workaround
          emitter (no defmatch in the base) are exempt;
   4. the generator's reader self-test is green;
@@ -83,6 +91,13 @@ ENTRY_CALL = re.compile(r"\b(mr_int|mr_top|rubi|rubi_fallback)\(")
 # counts every emitted site.
 INT_CMP_UNDO = {"%mr_iGtQ": ">", "%mr_iLtQ": "<", "%mr_iLeQ": "<=", "%mr_iGeQ": ">="}
 INT_CMP_SITES = 1283
+# Rubi's real comparisons (matcher-translation-fixes issue 02, user decision
+# 2026-09-25): GtQ/LtQ/GeQ/LeQ emit the named two-valued entries %mr_gtQ ...
+# where the base emitted is(A op B). Undone on the new body before the
+# comparison, like the integer comparisons; the count is the sites in the
+# compared rules.
+REAL_CMP_UNDO = {"%mr_gtQ": ">", "%mr_ltQ": "<", "%mr_leQ": "<=", "%mr_geQ": ">="}
+REAL_CMP_SITES = 1944
 NOTEQUAL_SITES = 10
 JUXTA_SITES = 1
 # The With/Module local prefixing (.scratch/class-ports/issues/08): the
@@ -93,6 +108,19 @@ JUXTA_SITES = 1
 # compared rules. The unprefixed emission translated the local D to diff.
 LOCAL_PREFIX_SITES = 1602
 LOCAL_BASE_SPELLING = {"D": "diff"}
+# The native inverse-hyperbolic heads (.scratch/class-ports/issues/18, option
+# 1, user decision 2026-09-25): ArcTanh / ArcSinh / ArcCosh emit atanh /
+# asinh / acosh in every class, where the base emitted the %mr_atanh /
+# %mr_asinh / %mr_acosh log-form shims. Undone on the new body (native call
+# -> shim call) before the comparison; the count is the sites in the
+# compared rules (class 1's 51 and class 3's 2, all in repl lines).
+NATIVE_HEADS = ("atanh", "asinh", "acosh")
+NATIVE_HEAD_SITES = 53
+# Two-argument Expand (.scratch/class-ports/issues/19, 2026-09-25): Rubi's
+# Expand[u, x] emits %mr_expand(u, x) in every class, where the base emitted
+# Maxima's expand(u, x) -- an expop error, so the rule always misfired.
+# Undone on the new body before the comparison; class 2's 2_3 r58/r65.
+EXPAND2_SITES = 2
 # user decision 2026-09-12 (Plan 2 writing session): move all 227 inner
 # conditions, including those whose locals integrate (IntHide -> mr_int);
 # their extra cost is watched by the P5 median-wall gate.
@@ -212,9 +240,10 @@ def call_args(s, open_idx):
 
 def undo_fixes(s, stats):
     """The new body line in its base spelling: %mr_iGtQ(A, B) -> is(A > B)
-    (likewise %mr_iLtQ <, %mr_iLeQ <=, %mr_iGeQ >=) and notequal(A, B) ->
+    (likewise %mr_iLtQ <, %mr_iLeQ <=, %mr_iGeQ >=; and the real comparisons
+    %mr_gtQ/%mr_ltQ/%mr_leQ/%mr_geQ the same way) and notequal(A, B) ->
     A != B; the generator emits both calls as NAME(A, B). Counts the sites."""
-    names = list(INT_CMP_UNDO) + ["notequal"]
+    names = list(INT_CMP_UNDO) + list(REAL_CMP_UNDO) + ["notequal"]
     pat = re.compile(r"(?<![A-Za-z0-9_%])(" + "|".join(re.escape(n) for n in names) + r")\(")
     while True:
         m = pat.search(s)
@@ -226,6 +255,8 @@ def undo_fixes(s, stats):
         a, b = args[0], args[1][1:]
         if m.group(1) == "notequal":
             rep, key = "%s != %s" % (a, b), "notequal"
+        elif m.group(1) in REAL_CMP_UNDO:
+            rep, key = "is(%s %s %s)" % (a, REAL_CMP_UNDO[m.group(1)], b), "real_cmp"
         else:
             rep, key = "is(%s %s %s)" % (a, INT_CMP_UNDO[m.group(1)], b), "int_cmp"
         s = s[:m.start()] + rep + s[end:]
@@ -249,6 +280,25 @@ def undo_local_prefix(s, key, n, stats):
         s = re.sub(r"(?<![A-Za-z0-9_%])" + re.escape(nm) + r"(?![A-Za-z0-9_])",
                    LOCAL_BASE_SPELLING.get(base, base), s)
     stats["local_prefix"] += len(names)
+    return s
+
+
+def undo_native_heads(s, stats):
+    """The new expression line with each native inverse-hyperbolic call
+    atanh( / asinh( / acosh( back in its base shim spelling %mr_atanh( ...
+    (ticket 18). A preceding identifier character or % excludes the shim
+    itself and longer names. Counts the sites."""
+    s, n = re.subn(r"(?<![A-Za-z0-9_%])(" + "|".join(NATIVE_HEADS) + r")\(", r"%mr_\1(", s)
+    stats["native_heads"] += n
+    return s
+
+
+def undo_expand2(s, stats):
+    """The new expression line with each %mr_expand( call back in the base
+    spelling expand( (ticket 19; the generator emits %mr_expand only for a
+    two-argument Expand). Counts the sites."""
+    s, n = re.subn(r"%mr_expand\(", "expand(", s)
+    stats["expand2"] += n
     return s
 
 
@@ -417,8 +467,8 @@ def main(argv):
     files = rule_files(a.base)
     counts_ok, lists_ok = [], []
     stats = dict(identical=0, guard=0, moved=0, matchq_old=0, workaround=0, nine=0,
-                 no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, notequal=0, juxta=0,
-                 local_prefix=0)
+                 no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, real_cmp=0, notequal=0, juxta=0,
+                 local_prefix=0, native_heads=0, expand2=0)
     unexplained, entry_locals, bad_moves = [], [], []
     for rel in files:
         old = git_show(a.base, rel)
@@ -472,8 +522,10 @@ def main(argv):
                 continue
             try:
                 lines = [redo_juxtaposition(parts[0][2], stats), redo_juxtaposition(parts[1][2], stats),
-                         undo_fixes(undo_local_prefix(parts[2][2], key, n, stats), stats),
-                         undo_fixes(undo_local_prefix(parts[3][2], key, n, stats), stats)]
+                         undo_expand2(undo_native_heads(undo_fixes(
+                             undo_local_prefix(parts[2][2], key, n, stats), stats), stats), stats),
+                         undo_expand2(undo_native_heads(undo_fixes(
+                             undo_local_prefix(parts[3][2], key, n, stats), stats), stats), stats)]
             except ValueError as e:
                 unexplained.append("%s: translation-fix undo: %s" % (rid, e))
                 continue
@@ -549,6 +601,9 @@ def main(argv):
             "%d + %d" % (stats["matchq_old"], stats["exempt_matchq"]))
     g.check("integer comparisons %%mr_i*Q(A, B) undone to is(A op B): %d sites" % INT_CMP_SITES,
             stats["int_cmp"] == INT_CMP_SITES, str(stats["int_cmp"]))
+    g.check("real comparisons %%mr_gtQ/ltQ/geQ/leQ(A, B) undone to is(A op B): %d sites"
+            % REAL_CMP_SITES,
+            stats["real_cmp"] == REAL_CMP_SITES, str(stats["real_cmp"]))
     g.check("notequal(A, B) undone to A != B: %d sites" % NOTEQUAL_SITES,
             stats["notequal"] == NOTEQUAL_SITES, str(stats["notequal"]))
     g.check("juxtaposition ) ( redone to )*( in the base: %d sites" % JUXTA_SITES,
@@ -556,6 +611,11 @@ def main(argv):
     g.check("With/Module locals _mr_<key>_r<n>_<name> undone to <name>: %d declarations"
             % LOCAL_PREFIX_SITES,
             stats["local_prefix"] == LOCAL_PREFIX_SITES, str(stats["local_prefix"]))
+    g.check("native inverse-hyperbolic heads undone to the %%mr_ shims: %d sites"
+            % NATIVE_HEAD_SITES,
+            stats["native_heads"] == NATIVE_HEAD_SITES, str(stats["native_heads"]))
+    g.check("two-argument %%mr_expand(u, x) undone to expand(u, x): %d sites" % EXPAND2_SITES,
+            stats["expand2"] == EXPAND2_SITES, str(stats["expand2"]))
     for rid in entry_locals:
         print("INFO: moved inner condition with a package entry in its locals: %s%s" % (
             rid, " (resolved)" if rid in RESOLVED_ENTRY_LOCALS else " (UNRESOLVED)"))

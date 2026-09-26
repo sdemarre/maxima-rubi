@@ -1,0 +1,12 @@
+/* overlay (diagnostic): %mr_eqQ as shipped, printing every symbolic-stage
+   entry (difference truncated) BEFORE it runs, and its cpu after. */
+%mr_eqQ(u, v) := block([%mr_eq_d, %ov_t0, %ov_r],
+  %mr_eq_d : u - v,
+  if %mr_b(%mr_eq_d = 0) then true
+  else if mr_eqq_symbolic = true then (
+    print("EQQ-IN", "LEN", slength(string(%mr_eq_d)), "D", substring(string(%mr_eq_d), 1, min(300, 1 + slength(string(%mr_eq_d))))),
+    %ov_t0 : elapsed_run_time(),
+    %ov_r : %mr_symbolicZeroQ(%mr_eq_d),
+    print("EQQ-OUT", elapsed_run_time() - %ov_t0, %ov_r),
+    %ov_r)
+  else false)$

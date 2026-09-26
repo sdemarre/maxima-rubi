@@ -1,0 +1,18 @@
+#!/bin/sh
+# probes/maxima/probe-class4-carried-items.run (from the repo root):
+#   sh probes/maxima/probe-class4-carried-items.run
+cd "$(dirname "$0")/../.." || exit 1
+T=$(mktemp)
+maxima --very-quiet -b probes/maxima/probe-class4-carried-items.mac < /dev/null > "$T" 2>&1
+{
+  echo "# probe-class4-carried-items output, $(date -u +%F)"
+  grep -A1 '^%build_info\|^R[123] ' "$T" | grep -v '^--'
+  echo
+  echo "== M: repl misfires (rubi_verbose) per rule, over the probe's ten integrands =="
+  echo "integrands run: $(grep -c '^M-INTEGRAND' "$T")"
+  echo "repl misfires: $(grep -c 'misfire (repl error)' "$T")"
+  grep -o 'rule [0-9a-z_]* r[0-9]* misfire (repl error)' "$T" | sort | uniq -c | sort -rn
+  echo "rules fired: $(grep -c ' fired on ' "$T")"
+} > probes/maxima/probe-class4-carried-items.out
+rm -f "$T"
+echo "wrote probes/maxima/probe-class4-carried-items.out"

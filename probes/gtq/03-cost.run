@@ -1,0 +1,7 @@
+#!/bin/sh
+# probes/gtq/03-cost.run -- run 03-cost.mac; one Maxima process, stdin /dev/null.
+# Timings are CPU seconds under whatever else the host runs (stamped below).
+cd "$(dirname "$0")/../.." || exit 1
+date -u '+run: %Y-%m-%dT%H:%M:%SZ'
+echo "loadavg: $(cat /proc/loadavg)"
+maxima --very-quiet -b probes/gtq/03-cost.mac < /dev/null 2>&1 | grep -v '^[%a-zA-Z_(]*(.*:=\|^ \+\|^shapes\|^N :\|^for \|^load\|^display'

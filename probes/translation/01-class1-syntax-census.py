@@ -140,7 +140,11 @@ def main():
     rule_dir = root / "Rubi" / "IntegrationRules"
 
     loaded = []
-    for parts, _gated in parse_load_rules(rubi_m):
+    # strip_comments first (2026-09-25, class 8): Rubi.m L352 is a
+    # commented-out LoadRules for "8.10 Bessel functions"; the raw parse
+    # counted it (3 rules). It is the only commented LoadRules line in the
+    # pinned Rubi.m, so the census of every other class is unchanged.
+    for parts, _gated in parse_load_rules(strip_comments(rubi_m)):
         if parts[0].startswith("$") or not parts[0].startswith(classp):
             continue
         p = rule_dir.joinpath(*parts)

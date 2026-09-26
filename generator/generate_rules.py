@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # RENAME/RESTRUCTURE were never imported at all), so translate_token's
 # table lookup would NameError/TypeError. Import under an alias.
 from translation_table import translate as table_translate
-from translation_table import RENAME, RESTRUCTURE
+from translation_table import RENAME, RESTRUCTURE, CLASS_RENAME
 
 # Values in the translation table that name an EMITTER CASE rather than a
 # Maxima function. Reaching the generic `name(args)` emission with one of
@@ -46,7 +46,8 @@ from translation_table import RENAME, RESTRUCTURE
 # class-6 `Integral -> "noun"` row did exactly that on 2026-09-20 and
 # produced `noun(expr, x)` in 8 rules. Guarded at the head boundary below.
 HANDLER_ONLY = frozenset({"noun", "block", "cmp", "if", "switch",
-                          "loggamma", "power", "plus", "times"})
+                          "loggamma", "power", "plus", "times",
+                          "polygamma", "zeta", "derivative"})
 import mma_reader as rd  # the evaluated-FullForm reader (spec 3.4)
 from fractions import Fraction
 
@@ -462,7 +463,21 @@ def _drop_would_join_runs(lines, is_comment):
                 while j < n and is_comment[j]:
                     j += 1
                 nxt = lines[j] if j < n else ""
-                if not nxt.startswith("Int["):
+                # Fix 2026-09-25 (class-8 port): the guard tripped on
+                # shapes that join nothing, and --class 1 / --class 3
+                # aborted, so the byte-identity gate could not run at all.
+                # Measured over the pinned clone: 1.1.3.1 L82 (a
+                # commented-out rule, then a BLANK line), 1.2.1.2 L78/L90
+                # (a one-line comment, then a MULTI-line comment opening at
+                # column 0) and 3.5 L45 (a comment, then the single-line
+                # If[TrueQ[$LoadShowSteps], Int[...]] wrapper that
+                # unwrap_showsteps_line reopens on Int[). A next line that
+                # is blank once its comment text is stripped is the run
+                # separator rule_runs honours; the ShowSteps wrapper opens
+                # a run exactly as Int[ does.
+                if (strip_comments(nxt).strip()
+                        and not nxt.startswith("Int[")
+                        and not nxt.startswith("If[TrueQ[$LoadShowSteps]")):
                     return True
                 cur_open, depth, dangling = False, 0, False
             continue
@@ -597,6 +612,10 @@ def translate_token(tok, ctx):
         return {"Pi": "%pi", "E": "%e", "I": "%i"}[tok]
     if tok in ("True", "False"):
         return "true" if tok == "True" else "false"
+    if tok in CLASS_RENAME.get(globals().get("CLASS"), {}):
+        # a per-class override (translation_table.py CLASS_RENAME, empty
+        # since 2026-09-25) -- consulted before the shared RENAME rows
+        return CLASS_RENAME[CLASS][tok]
     if tok in RENAME or tok in RESTRUCTURE:
         return table_translate(tok)
     # unknown identifier that is not a capture: a Maxima symbol (a, b, c, …)
@@ -692,8 +711,20 @@ def translate(s, ctx):
             if len(parts) < 2:
                 raise GenError(f"{ctx['key']} r{ctx['n']}: Block arity "
                                f"{len(parts)}")
-            if re.sub(r"\s+", "", parts[0]) != \
-                    "{$ShowSteps=False,$StepCounter=Null}":
+            binds = re.sub(r"\s+", "", parts[0])
+            if binds == "{$UseGamma=True}":
+                # 8.6 r9 (class 8, 2026-09-25): Block[{$UseGamma = True},
+                # rhs] -- the one Block whose binding a rule CAN observe:
+                # $UseGamma is the package global mr_use_gamma_flag (the
+                # table's $-row), read by class-2 conditions, so the nested
+                # Int in rhs must run with it true. Maxima's block binds
+                # its locals DYNAMICALLY, which is Block's semantics; the
+                # name is the global itself and must NOT take the
+                # With/Module local prefix (ticket 08), or the binding
+                # would shadow nothing.
+                return (f"block([{RENAME['$UseGamma']} : true], "
+                        f"{translate(','.join(parts[1:]), ctx)})")
+            if binds != "{$ShowSteps=False,$StepCounter=Null}":
                 raise GenError(f"{ctx['key']} r{ctx['n']}: unlisted Block "
                                f"bindings {parts[0].strip()!r}")
             return translate(",".join(parts[1:]), ctx)
@@ -710,9 +741,10 @@ def translate(s, ctx):
             # binds F to the Maxima operator symbol of the matched head
             # (maxima_rubi_dispatch.lisp mr-binding-value), the symbol the
             # typed native name reads as (asin reads as %asin), so the list
-            # carries the native spellings — not the %mr_ shims the RENAME
-            # table maps ArcSinh/ArcCosh/ArcTanh to (the corpus integrands
-            # carry the natives; probed 2026-08-29 and 2026-09-13).
+            # carries the native spellings (the corpus integrands carry the
+            # natives; probed 2026-08-29 and 2026-09-13) -- which the RENAME
+            # table also gives ArcSinh/ArcCosh/ArcTanh since ticket 18
+            # (2026-09-25); before it, the %mr_ log-form shims.
             parts = split_top(args, ",") if args.strip() else []
             heads = parts[0].strip() if len(parts) == 2 else ""
             names = ([h.strip() for h in heads[1:-1].split(",")]
@@ -785,6 +817,37 @@ def translate_atom(s, ctx):
             k = j
             while k < L and s[k] in " \t":
                 k += 1
+            if k < L and s[k] == "[" and name == "Derivative":
+                # class 8 / 9.1 (RESTRUCTURE handler "derivative"):
+                # Mathematica's curried formal derivative
+                # Derivative[n][f][u] -> %mr_derivative(n, f, u), which
+                # builds Maxima's derivative noun 'diff(f(u), u, n) (order
+                # 0: f(u)); the design is on
+                # .scratch/class-ports/issues/01 ("DESIGN"). Exactly three
+                # bracket groups, nothing else: a bare Derivative[n] (an
+                # operator value) has no Maxima reading here, so it is
+                # loud, never a half-translated call.
+                groups, t = [], k
+                while t < L and s[t] == "[" and len(groups) < 3:
+                    depth, u = 0, t
+                    while u < L:
+                        if s[u] == "[":
+                            depth += 1
+                        elif s[u] == "]":
+                            depth -= 1
+                            if depth == 0:
+                                break
+                        u += 1
+                    groups.append(s[t+1:u])
+                    t = u + 1
+                if len(groups) != 3 or any(not g.strip() or "," in g
+                                           for g in groups):
+                    raise GenError(f"{ctx['key']} r{ctx['n']}: Derivative is "
+                                   f"not the curried Derivative[n][f][u] form: "
+                                   f"{s[i:t][:60]!r}")
+                out.append("%mr_derivative(" + ", ".join(
+                    translate(g, ctx) for g in groups) + ")")
+                i = t; continue
             if k < L and s[k] == "[":
                 # find the matching ]
                 depth, t = 0, k
@@ -827,6 +890,15 @@ def translate_atom(s, ctx):
         # and mixes with and/or correctly: `n = 2 and q` values as
         # (n = 2) and q. Translate `==` to `=`. (This build's negation is
         # `#`, not `#=`; no class-1 source uses `#=`, so no mapping yet.)
+        # Class 4 (2026-09-25): `===` (SameQ) is the same syntactic
+        # identity -- Maxima's `=` under is() compares the simplified forms
+        # structurally, which is what SameQ tests (the %mr_unsameQ reading
+        # of `=!=`, section 9 A2.3). Read as ONE three-character token;
+        # without this the walk below emitted `==` + `=`, i.e. `==`, which
+        # this build cannot parse. No rule file uses `===`; the first
+        # generated uses are TrigSimplifyAux's conds (mr_rw_tsa).
+        if s[i:i+3] == "===":
+            out.append("="); i += 3; continue
         if s[i:i+2] == "==":
             out.append("="); i += 2; continue
         ch = s[i]
@@ -1076,6 +1148,7 @@ def _maxima_stmts(body):
     return ", ".join(segs)
 
 CMP_OPS = {"GtQ": ">", "LtQ": "<", "LeQ": "<=", "GeQ": ">="}
+REAL_CMP = {"GtQ": "%mr_gtQ", "LtQ": "%mr_ltQ", "LeQ": "%mr_leQ", "GeQ": "%mr_geQ"}
 
 # Rubi :379-:395  IGtQ[u_,n_] := IntegerQ[u] && u>n, likewise ILtQ, IGeQ,
 # ILeQ: the integer test is part of the predicate. The heads translate to
@@ -1195,6 +1268,52 @@ ACCEPTED_RISKS = {
     ("rit", 1, "risk:Pi-arg:ReduceInertTrig"),
     ("rit", 2, "risk:Pi-arg:ReduceInertTrig"),
     ("rit", 2, "risk:numeric-or-negated-arg:Complex"),
+    # Class 8 (2026-09-25): the 17 class-8 G-9 risk rules
+    # (probes/matcher/02-construct-census.out lists them under "LHS
+    # evaluation effects"; the matcher-substrate spec left them to this
+    # port). Every one is a special function whose FIRST argument is a
+    # numeric order/parameter and whose SECOND is a pattern expression:
+    # ExpIntegralE[1, b_.*x_], Gamma[0, b_.*x_], PolyGamma[0, a_.+b_.*x_],
+    # Zeta[2, a_.+b_.*x_], PolyLog[2, c_.*(a_.+b_.*x_)]. The reader flags
+    # ANY numeric argument of a function head; Mathematica evaluates these
+    # functions only at special values of the second argument (a number,
+    # 0, Infinity, ...), and a pattern is none of them, so the LHS is stored
+    # exactly as written -- the shape the reader emits. (The flag's real
+    # targets, Sin[-x_] -> -Sin[x_] and the like, rewrite on the argument
+    # that carries the pattern; none of these do.)
+    ("8_3", 3, "risk:numeric-or-negated-arg:ExpIntegralE"),
+    ("8_6", 2, "risk:numeric-or-negated-arg:Gamma"),
+    ("8_6", 18, "risk:numeric-or-negated-arg:PolyGamma"),
+    ("8_6", 19, "risk:numeric-or-negated-arg:PolyGamma"),
+    ("8_7", 1, "risk:numeric-or-negated-arg:Zeta"),
+    ("8_7", 3, "risk:numeric-or-negated-arg:Zeta"),
+    *(("8_8", _r, "risk:numeric-or-negated-arg:PolyLog")
+      for _r in (11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22)),
+    # Class 4 (2026-09-25): the 24 flags over 21 rules the class-4 Step-1
+    # dry run lists (probes/translation/12-class4-syntax-census.out part B;
+    # ticket .scratch/class-ports/issues/05, Step 1).
+    #  - Pi-arg on an INERT head (sin/tan/csc[e_.+Pi/2+f_.*x_],
+    #    [e_.+k_.*Pi+f_.*x_]): the inert heads are user symbols with no
+    #    definitions, so evaluation leaves the shifted argument alone -- the
+    #    rit r1/r2 argument above.
+    #  - Pi-arg on ACTIVE Sec/Csc (4.7.7 r19/r21, Sec[d_.+k_.*Pi+e_.*x_]):
+    #    the shift is k_.*Pi with a PATTERN coefficient; Sec/Csc
+    #    auto-evaluate only an explicit rational multiple of Pi, which a
+    #    pattern is not (the class-8 argument above).
+    #  - Complex[0, fz_] / the MatchQ pattern f1_.*Complex[0, j_]: a pattern
+    #    argument keeps Complex unevaluated -- the 9.1 L15 case.
+    *(("4_1_1_1", _r, "risk:Pi-arg:sin") for _r in (5, 26)),
+    *(("4_1_10", _r, "risk:Pi-arg:sin") for _r in (9, 12, 25, 26)),
+    *(("4_1_10", _r, "risk:numeric-or-negated-arg:Complex")
+      for _r in (3, 5, 6, 25, 27)),
+    *(("4_3_10", _r, "risk:Pi-arg:tan") for _r in (1, 2, 16)),
+    *(("4_3_10", _r, "risk:numeric-or-negated-arg:Complex")
+      for _r in (1, 3, 24)),
+    *(("4_5_10", _r, "risk:Pi-arg:csc") for _r in (1, 2)),
+    *(("4_5_10", _r, "risk:numeric-or-negated-arg:Complex")
+      for _r in (1, 3, 13)),
+    ("4_7_7", 19, "risk:Pi-arg:Sec"),
+    ("4_7_7", 21, "risk:Pi-arg:Csc"),
 }
 
 
@@ -1272,38 +1391,17 @@ BARE_U_BODY_EXCEPTIONS = {
 }
 
 
-# Class 4 is emitted as a SUBSET (inert-trig substrate plan, Task 9): only
-# the bridge's bare-u_ records, not section 4's ~2,070 body rules, which need
-# the class-4 Step-1 token closure no one has adjudicated yet. Per source key,
-# the run numbers (1-based, the same n every handle and the static gate use)
-# of the records emitted. Every other run of the file is skipped; numbering
-# is NOT compacted, so a handle keeps its source clause number when the rest
-# of the file is ported later. Each listed record is asserted bare-u_ at
-# generation time -- a reference-clone bump that moves a run fails loudly
-# instead of emitting the wrong rule.
-#   4_1_0_1 r1  Int[u_,x_Symbol] := Int[DeactivateTrig[u,x],x] /;
-#               FunctionOfTrigOfLinearQ[u,x] -- the bridge (4.1.0.1.m L4,
-#               the If[TrueQ[$LoadShowSteps], ...] wrapper that
-#               unwrap_showsteps_line recovers).
-#   4_7_5 r21/r22  the Cot/Tan Subst forms (4.7.5.m L24/L25).
-#   4_7_5 r47/r48  the Sin/Cos derivative-divides forms (L50/L51).
-#   4_7_5 r58   the Tan Subst form under InverseFunctionFreeQ (L61).
-#   4_7_5 r71   the half-angle Weierstrass substitution (L74; Task 10) --
-#               its trial Int sits in a Block[{$ShowSteps = False,
-#               $StepCounter = Null}, ...], which translate() emits as the
-#               body alone (the IntHide precedent; see the "Block" case).
-#   4_7_5 r72   Int[u_,x_Symbol] := With[{v=ActivateTrig[u]},
-#               CannotIntegrate[v,x]] /; Not[InertTrigFreeQ[u]] (L76; Task
-#               10 fix round 1, ruling R26) -- the file's LAST record: the
-#               integrand the bridge admitted and nothing finished is given
-#               up RE-ACTIVATED, so the unintegrable noun carries no inert
-#               head. It must stay last in the tail.
-# 4_7_5 r66/r70 (L69/L73 -- TrigSimplify, ExpandTrig) are bare-u_ too but
-# NOT wrapped; they are class-4 port work, outside this subset.
-CLASS4_SUBSET = {
-    "4_1_0_1": (1,),
-    "4_7_5": (21, 22, 47, 48, 58, 71, 72),
-}
+# Class 4 was emitted as a SUBSET from the inert-trig substrate (plan Task 9,
+# 2026-09-21) until the class-4 port (2026-09-25, .scratch/class-ports/
+# issues/05): CLASS4_SUBSET listed the eight bare-u_ records the substrate
+# needed (4_1_0_1 r1, the DeactivateTrig bridge; 4_7_5 r21/r22/r47/r48/r58,
+# the Subst catch-alls; r71, the half-angle Weierstrass substitution, whose
+# Block[{$ShowSteps = False, $StepCounter = Null}, ...] translate() emits as
+# the body alone -- the "Block" case; r72, the re-activating CannotIntegrate
+# give-up, 4.7.5's last record). The class is now emitted whole; the handle
+# numbers were never compacted, so those eight records keep their names, and
+# they stay in the tail with 4_7_5 r66/r70 (TrigSimplify, ExpandTrig), the
+# class's other bare-u_ records (bare_int_clause below).
 
 
 _INT_X_UNTYPED = re.compile(r"^Int\[(.*),\s*x_\]$", re.DOTALL)
@@ -1381,7 +1479,8 @@ def _rename_captures(ev, key, n, rule_vars):
 # carry the natives, and probed 2026-08-29 on
 # branch_5_50_base_84_g4204fb669 / SBCL 2.6.7 asin/acos/atan/acot/asinh/
 # acosh/atanh/acoth are all bound natives with closing diffs (arccot/arcoth
-# are unbound nouns) — NOT the RENAME table's %mr_ shims.
+# are unbound nouns). (The RENAME table agrees since ticket 18, 2026-09-25;
+# it used to map the three inverse-hyperbolic heads to %mr_ shims.)
 NATIVE_FUNCTION_HEADS = {
     "ArcSin": "asin", "ArcCos": "acos", "ArcTan": "atan",
     "ArcCot": "acot", "ArcSinh": "asinh", "ArcCosh": "acosh",
@@ -1508,6 +1607,13 @@ def emit_head(head, arglist, ctx):
         if len(arglist) != 2:
             raise GenError(f"{key} r{n}: Complex arity {len(arglist)}")
         return f"({arglist[0]} + {arglist[1]}*%i)"
+    if head == "Expand" and len(arglist) == 2:
+        # Rubi's Expand[u, x] (expand the parts of u containing x) is not
+        # Maxima's expand(u, x), an error (expop must be a nonnegative
+        # integer); %mr_expand drops the pattern argument
+        # (translation_table.py CLASS_RENAME note; tickets
+        # .scratch/class-ports/issues/05 and 19). Every class.
+        return f"%mr_expand({', '.join(arglist)})"
     if head == "FreeQ":
         # FreeQ[e, x] -> freeof(x, e); FreeQ[{a,b}, x] -> and of freeof.
         # (FIX F7) the arg list may arrive as [a, b] (braces already
@@ -1522,13 +1628,18 @@ def emit_head(head, arglist, ctx):
             raise GenError(f"{key} r{n}: {head} arity {len(arglist)}")
         return f"{INT_CMP[head]}({arglist[0]}, {arglist[1]})"
     if head in CMP_OPS:
-        op = CMP_OPS[head]
+        # Rubi :403-:475 reads GtQ/LtQ/GeQ/LeQ numerically and two-valued
+        # (a symbol is False, never unknown): the named utils entries
+        # %mr_gtQ ... (maxima_rubi_utils.mac), not a bare is(u > v), which is
+        # unknown on a symbol and rejected Not[GtQ[a,0]] as well as GtQ[a,0]
+        # (matcher-translation-fixes issue 02, user decision 2026-09-25).
+        fn = REAL_CMP[head]
         if len(arglist) == 2:
-            return f"is({arglist[0]} {op} {arglist[1]})"
+            return f"{fn}({arglist[0]}, {arglist[1]})"
         if len(arglist) == 3:
             # Rubi :468-:470 chained form: LtQ[u,v,w] := LtQ[u,v] && LtQ[v,w]
             a, b, c = (p.strip() for p in arglist)
-            return f"is({a} {op} {b}) and is({b} {op} {c})"
+            return f"{fn}({a}, {b}) and {fn}({b}, {c})"
         raise GenError(f"{key} r{n}: {head} arity {len(arglist)}")
     if head in ("Int", "IntHide"):
         # mr_int's seen test is exact membership for every source (exact
@@ -1704,6 +1815,24 @@ def emit_head(head, arglist, ctx):
         fn = {"EllipticF": "elliptic_f", "EllipticE": "elliptic_e",
               "EllipticPi": "elliptic_pi"}[head]
         return f"{fn}({', '.join(arglist)})"
+    if head == "PolyGamma":
+        # class 8 (RESTRUCTURE handler "polygamma"): PolyGamma[n, z] ->
+        # psi[n](z), Maxima's subscripted polygamma (mr-tree reads it back
+        # as PolyGamma). diff closes for every order, negative included
+        # (probes/answer-side/04-class8-answer-side-identities.out A8/A9).
+        if len(arglist) != 2:
+            raise GenError(f"{key} r{n}: PolyGamma arity {len(arglist)}")
+        return f"psi[{arglist[0].strip()}]({arglist[1].strip()})"
+    if head == "Zeta":
+        # class 8 (RESTRUCTURE handler "zeta"): 1-arg -> Riemann's native
+        # zeta; 2-arg is the Hurwitz zeta, which Maxima lacks symbolically
+        # (probe 04 A16/A17), emitted as the corpus's own head Zeta(s, z) --
+        # an inert noun, the AppellF1 precedent. Any other arity is loud.
+        if len(arglist) == 1:
+            return f"zeta({arglist[0].strip()})"
+        if len(arglist) == 2:
+            return f"Zeta({arglist[0].strip()}, {arglist[1].strip()})"
+        raise GenError(f"{key} r{n}: Zeta arity {len(arglist)}")
     if head == "LogGamma":
         # Structural rewrite (RESTRUCTURE handler "loggamma"), not a
         # rename: LogGamma[v] -> log(gamma(v)). loggamma itself is an
@@ -2114,10 +2243,7 @@ def emit_file(rel_m, runs, key=None):
     body = []
     rule_names = []
     tail_names = []
-    subset = CLASS4_SUBSET.get(key) if CLASS == 4 else None
     for n, run in enumerate(runs, start=1):
-        if subset is not None and n not in subset:
-            continue
         # FIX F3: rule_runs yields LISTS OF LINES; join the run and split it
         # the way the census does.
         text = "\n".join(run)
@@ -2153,10 +2279,6 @@ def emit_file(rel_m, runs, key=None):
                 body.append(f" * {ln.strip()}")
             body.append(" */")
         handle_name = f"_mr_rule_{key}_r{n}"
-        if subset is not None and not bare_int_clause(lhs, key, n):
-            raise GenError(f"{key} r{n}: listed in CLASS4_SUBSET but not a "
-                           f"bare-u_ Int record -- the source moved; "
-                           f"re-measure the subset")
         if bare_int_clause(lhs, key, n) and (key, n) not in BARE_U_BODY_EXCEPTIONS:
             tail_names.append(handle_name)
         else:
@@ -2169,13 +2291,7 @@ def emit_file(rel_m, runs, key=None):
         # (still every class as of Task 8) regenerates byte-identically
         # (inert-trig substrate design 3.3).
         body.append(f"mr_rules_{key}_tail : [ {', '.join(tail_names)} ]$")
-    n_emitted = len(runs) if subset is None else len(subset)
-    if subset is not None and len(rule_names) + len(tail_names) != n_emitted:
-        raise GenError(f"{key}: CLASS4_SUBSET lists {n_emitted} runs, "
-                       f"{len(rule_names) + len(tail_names)} emitted "
-                       f"(a listed run number is past the file's "
-                       f"{len(runs)} runs)")
-    body.append(f"mr_rules_count_{key} : {n_emitted}$")
+    body.append(f"mr_rules_count_{key} : {len(runs)}$")
     body.append(f"mr_witness_{key}() := true$")
     return header + "\n".join(body) + "\n"
 
@@ -2188,15 +2304,16 @@ def load_class_files(rubi):
     $LoadElementaryFunctionRules block) — the gated flag is not a filter
     (dropping it is a no-op for class 1: the gated block holds no "1 "
     files)."""
-    order = parse_load_rules((rubi / "Rubi" / "Rubi.m").read_text())
+    # strip_comments first (class 8, 2026-09-25): Rubi.m L352 is a
+    # commented-out LoadRules for "8.10 Bessel functions", the only one in
+    # the pinned Rubi.m; the raw parse would generate its 3 dead rules.
+    # A no-op for every other class (the byte-identity gate).
+    order = parse_load_rules(strip_comments((rubi / "Rubi" / "Rubi.m").read_text()))
     out = []
     for parts, gated in order:
         if not parts or not parts[0].startswith(CLASS_PREFIX):
             continue
         rel = "Rubi/IntegrationRules/" + "/".join(parts) + ".m"
-        # class 4: only the files CLASS4_SUBSET names (see there)
-        if CLASS == 4 and key_of(rel) not in CLASS4_SUBSET:
-            continue
         # class 9: "9.1 Derivative integration rules" belongs to class 8
         # (spec §0.3.3, ticket 01), not class 9. Its key is "9_1" -- the
         # SAME key as the legacy class-1 file (NINE_ONE, "9.1 Integrand
@@ -2245,8 +2362,20 @@ NINE_ONE = ("Rubi/IntegrationRules/9 Miscellaneous/"
             "9.1 Integrand simplification rules.m")
 NINE_ONE_TOTAL = 28
 
+# 9.1 Derivative integration rules (Rubi.m L354, the last file inside the
+# $LoadElementaryFunctionRules block, right after class 8) belongs to the
+# class-8 port (section-9 spec 2026-09-22 §0.3.3; its only corpus is
+# "8 Special functions/8.10 Formal derivatives.mac"). It is generated with
+# class 8 under the key 9_1d: its own key would be 9_1, which the legacy
+# class-1 file above already owns (mr_rules_9_1), and class 9 skips it for
+# the same reason (load_class_files).
+NINE_ONE_DERIV = ("Rubi/IntegrationRules/9 Miscellaneous/"
+                  "9.1 Derivative integration rules.m")
+NINE_ONE_DERIV_KEY = "9_1d"
+NINE_ONE_DERIV_TOTAL = 21
+
 def configure(class_num):
-    """Point the generator at class <class_num> (1, 2, 3, 4, 6 or 9)."""
+    """Point the generator at class <class_num> (1, 2, 3, 4, 5, 6, 7, 8 or 9)."""
     global CLASS, CLASS_PREFIX, OUT, EXPECTED_TOTAL
     CLASS = class_num
     CLASS_PREFIX = f"{CLASS} "
@@ -2261,20 +2390,44 @@ def configure(class_num):
     # so unwrap_showsteps_line finds nothing to recover and the census
     # and the emitter agree exactly
     # (probes/translation/05-class6-syntax-census.out).
-    # class 4: 8 — NOT the section's 2,080 (spec 0.3): only the
-    # CLASS4_SUBSET records, the bridge and six of 4.7.5's substitution
-    # catch-alls (inert-trig substrate plan, Task 9; r71, Task 10) and
-    # 4.7.5's re-activating give-up r72 (Task 10 fix round 1). It grows with the
-    # subset until the class-4 port replaces it with the full total.
+    # class 4: 2,080 — the 01 census's 2,073 plus 7: section 4 carries seven
+    # single-line If[TrueQ[$LoadShowSteps], …] wrappers (4.1.0.1 L4, the
+    # bridge; 4.7.5 L24/L25/L50/L51/L61/L74; L75 is commented out), which
+    # the census parser does not count and unwrap_showsteps_line makes
+    # records of their own (measured 2026-09-25,
+    # probes/translation/12-class4-syntax-census.out: 56 files, 2,080
+    # rules). It was 8 while CLASS4_SUBSET emitted only the inert-trig
+    # substrate's tail records.
     # class 9: 86 — 19 (9.2 Piecewise linear functions) + 67 (9.3
     # Miscellaneous integration rules), spec 2026-09-22 A3.
     # `grep -c '^Int\['` over the two .m files gives 95, not 86: it counts
     # BOTH branches of 9.3's nine single-line
     # If[TrueQ[$LoadShowSteps], …] wrappers (unwrap_showsteps_line keeps
     # only the plain branch — 9 fewer records, 95 - 9 = 86).
+    # class 8: 328 — the census's 307 over the nine loaded "8 " files plus
+    # 9.1 Derivative integration rules' 21 (NINE_ONE_DERIV below), no
+    # adjustment: 0 LoadShowSteps lines over the ten .m files (measured
+    # 2026-09-25, probes/translation/09-class8-syntax-census.out).
+    # class 5: 667 — the 01 census's 665 plus 2: 5.3.7 carries two
+    # single-line If[TrueQ[$LoadShowSteps], <ShowStep rule>, <plain rule>]
+    # wrappers (L30/L31, the Int[u_*v_^n_., x] quadratic-discriminant pair)
+    # that the census's rule_runs glues onto the rule before them, while
+    # unwrap_showsteps_line makes each its own (plain) record. The
+    # generator-side count is the closure probe's (measured 2026-09-25,
+    # probes/translation/10-class5-syntax-census.out: 15 files, 667 rules,
+    # 2 LoadShowSteps lines).
+    # class 7: 712 — the 01 census's 710 plus 2, class 5's adjustment: 7.3.7
+    # carries two single-line If[TrueQ[$LoadShowSteps], …] wrappers (L28/L29,
+    # the ArcTanh/ArcCoth twins of 5.3.7's pair) that the census glues onto
+    # their predecessors (measured 2026-09-25,
+    # probes/translation/11-class7-syntax-census.out: 21 files, 712 rules,
+    # 2 LoadShowSteps lines). The four .m files of the section's tree that
+    # Rubi.m does not load are never read (the loaded-files walk).
     EXPECTED_TOTAL = {1: 2710 + EXTRA_TOTAL + NINE_ONE_TOTAL, 2: 125,
-                      3: 334, 4: sum(len(v) for v in CLASS4_SUBSET.values()),
-                      6: 390, 9: 86}[class_num]
+                      3: 334, 4: 2080,
+                      5: 667,
+                      6: 390, 7: 712, 8: 307 + NINE_ONE_DERIV_TOTAL,
+                      9: 86}[class_num]
 
 
 def _emit_source(rel_m, key, only, total, load_lines, note=""):
@@ -2289,12 +2442,6 @@ def _emit_source(rel_m, key, only, total, load_lines, note=""):
     out = OUT / f"{key}.mac"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(emit_file(rel_m, runs, key))
-    if CLASS == 4:
-        n = len(CLASS4_SUBSET[key])
-        print(f"  {key}: {n} of {len(runs)} rules (CLASS4_SUBSET){note}")
-        load_lines.append(f"%mr_load_sibling(\"rules/class{CLASS}/{key}.mac\", "
-                          f"'mr_witness_{key})$")
-        return total + n
     print(f"  {key}: {len(runs)} rules{note}")
     load_lines.append(f"%mr_load_sibling(\"rules/class{CLASS}/{key}.mac\", "
                       f"'mr_witness_{key})$")
@@ -2328,6 +2475,28 @@ REWRITE_FUNCTIONS = [
     # and L5028 are identical in the source and both stay, since the table
     # is faithful to the file). MEASURED 2026-09-20 over the pinned clone: 5.
     ("eiq", "EulerIntegrandQ", 5),
+    # Class 4 (2026-09-25, .scratch/class-ports/issues/05): TrigSimplifyAux,
+    # the worker of TrigSimplify (4.7.5 r66's TrigSimplifyQ/TrigSimplify,
+    # IntegrationUtilityFunctions.m L2702-2946). 31 clauses in the
+    # comment-stripped source (the file carries eleven more inside nested
+    # (* ... *) comments, which strip_comments removes); clause 30 is the
+    # bare TrigSimplifyAux[u_] := u, which bare_clause moves to the table's
+    # end, behind clause 31 (Mathematica tries it last too). MEASURED
+    # 2026-09-25 over the pinned clone: 31. A ONE-argument function: its
+    # wrapper walks the table with the 3-argument %mr_rewrite.
+    ("tsa", "TrigSimplifyAux", 31),
+    # Class 4 (2026-09-25): DeactivateTrig's two clauses (L6189-6195). The
+    # first is the fast path for (c+d x)^m (a+b trig[e+f x])^n: it
+    # deactivates the trig factor ALONE, so UnifyInertTrigFunction sees
+    # (a+b cos[e+f x])^n and rewrites cos as sin[e+Pi/2+f x] -- the shape
+    # 4.1.10's (c+d x)^m sin[...] rules are written against. The substrate
+    # hand-ported only the second (the general UnifyInertTrigFunction o
+    # FixInertTrigFunction o DeactivateTrigAux composition, a bare-Blank
+    # clause, so it sorts last); on the product (c+d x) cos[...] no
+    # UnifyInertTrigFunction clause binds and the cos stayed a cos no
+    # 4.1.10 rule matches (measured 2026-09-25, the class-4 slice: 4.1.10
+    # e1/e2, 4.2.10 e1/e2 contains-noun). MEASURED 2026-09-25: 2.
+    ("dt", "DeactivateTrig", 2),
 ]
 
 
@@ -2479,6 +2648,14 @@ def main(class_num=None):
             total = _emit_source(NINE_ONE, "9_1", only, total, load_lines,
                                  " (legacy 9.1, end of the class-1 table)")
             table_terms.append("mr_rules_9_1")
+    if CLASS == 8:
+        if not (RUBI / NINE_ONE_DERIV).exists():
+            raise GenError(f"9.1 Derivative source missing: {NINE_ONE_DERIV}")
+        if not only or only == NINE_ONE_DERIV_KEY:
+            total = _emit_source(NINE_ONE_DERIV, NINE_ONE_DERIV_KEY, only,
+                                 total, load_lines,
+                                 " (9.1 Derivative, Rubi.m L354)")
+            table_terms.append(f"mr_rules_{NINE_ONE_DERIV_KEY}")
     expected = EXPECTED_TOTAL
     note = (f"OK (== {expected})" if (total == expected and not only)
             else ("partial (--only)" if only

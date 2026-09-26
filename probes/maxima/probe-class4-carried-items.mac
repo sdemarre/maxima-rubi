@@ -1,0 +1,19 @@
+/* probes/maxima/probe-class4-carried-items.mac -- two of the inert-trig
+   substrate's carried items, measured on the class-4 table
+   (.scratch/class-ports/issues/05, "Carried from the inert-trig substrate").
+   R: radexpand at READ time -- the corpus driver assigns mr_f : <integrand>
+      at Maxima's defaults, before rubi binds radexpand:false (mr_model_flags).
+   M: repl misfires on inert integrands -- the rules whose replacement errors
+      on an inert-head integrand, over a few class-4 integrands (the .run
+      counts the rubi_verbose "misfire (repl error)" lines per rule). */
+display2d : false$
+print(build_info())$
+print("R1 default radexpand:", radexpand, " (a*sin(x)^2)^(3/2) reads as", (a*sin(x)^2)^(3/2))$
+print("R2 sqrt(b*sin(x)^2) reads as", sqrt(b*sin(x)^2))$
+block([radexpand : false], print("R3 radexpand:false, the same text reads as", (a*sin(x)^2)^(3/2)))$
+load("maxima_rubi.mac")$
+mr_load_all()$
+rubi_verbose : true$
+mr_fs : [sin(x)^3, cos(x)^4, x*sin(x), (c+d*x)^2*sin(a+b*x), 1/(a+b*sin(x)),
+         sin(x)^2*cos(x)^3, tan(x)^3, sec(x)^3, cosh(x)*sinh(x)^2, x*cosh(x)]$
+for mr_f in mr_fs do (print("M-INTEGRAND", mr_f), rubi(mr_f, x))$

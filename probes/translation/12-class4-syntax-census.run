@@ -1,0 +1,23 @@
+#!/bin/sh
+# probes/translation/12-class4-syntax-census.run — the class-4 port's Step-1
+# closure (docs/class-porting.md Step 1(a), the "UNLISTED" half; the 01
+# census itself is probes/translation/06-class4-syntax-census, re-run
+# unchanged on branch class-ports 2026-09-25). Two parts, static, no Maxima:
+#   1. the token closure against generator/translation_table.py, counted
+#      the generator's way (2,080 = the 01 census's 2,073 + the seven
+#      single-line If[TrueQ[$LoadShowSteps], ...] wrappers), and its
+#      TRANSITIVE closure through IntegrationUtilityFunctions.m (the class-5
+#      probe 10, section as argument — ticket 05's CENSUS TRAP);
+#   2. the generator dry run over the WHOLE class (CLASS4_SUBSET bypassed):
+#      the emitter's own errors, every G-9 LHS/MatchQ risk flag, and the
+#      bare-u_ records (12-class4-generator-dryrun.py).
+#
+#   sh probes/translation/12-class4-syntax-census.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# class-4 token closure + generator dry run, $(date -u +%F)"
+  python3 probes/translation/10-class5-table-closure.py "4 "
+  echo
+  python3 probes/translation/12-class4-generator-dryrun.py
+} > probes/translation/12-class4-syntax-census.out
+echo "wrote probes/translation/12-class4-syntax-census.out"

@@ -61,6 +61,34 @@ except SystemExit:
 check("A2.1 fix round 2: a rule not opening on column-0 Int[ raises "
       "GenError instead of silently joining two runs",
       a21_join_outcome, "SystemExit")
+# 2026-09-25 (class-8 port): a comment-only line followed by a BLANK line
+# (1.1.3.1 L82, a commented-out rule) is not a join -- the blank line is the
+# separator -- and must not raise; it tripped --class 1 / --class 3.
+comment_then_blank = ("Int[u_,x_Symbol] := u /; FreeQ[u,x]\n"
+                      "(* Int[w_,x_Symbol] := w *)\n"
+                      "\n"
+                      "Int[v_,x_Symbol] := v /; FreeQ[v,x]\n")
+try:
+    out = g.drop_comment_only_lines(comment_then_blank)
+    runs_after = len(g.rule_runs(g.strip_comments(out)))
+except SystemExit:
+    runs_after = "SystemExit"
+check("A2.1 guard: a comment-only line before a blank line is no join",
+      runs_after, 2)
+# ... nor before a comment opening at column 0 that runs over several lines
+# (1.2.1.2 L78/L90), nor before the single-line ShowSteps wrapper (3.5 L45).
+for label, nxt in (("a multi-line comment", "(* Int[w_,x_Symbol] :=\n  w *)\n"),
+                   ("the ShowSteps wrapper",
+                    "If[TrueQ[$LoadShowSteps], Int[v_,x_Symbol] := v /; FreeQ[v,x], "
+                    "Int[v_,x_Symbol] := v /; FreeQ[v,x]]\n")):
+    try:
+        g.drop_comment_only_lines("Int[u_,x_Symbol] := u /; FreeQ[u,x]\n"
+                                  "(* a note *)\n" + nxt)
+        outcome = "no exception raised"
+    except SystemExit:
+        outcome = "SystemExit"
+    check(f"A2.1 guard: a comment-only line before {label} is no join",
+          outcome, "no exception raised")
 
 # A2.2 -- the multi-line ShowSteps wrapper keeps its plain branch only.
 wrapped = ("If[TrueQ[$LoadShowSteps],\n\n"
@@ -139,6 +167,15 @@ check("12b hoist: with no initialised local, the condition's order stands",
       g._hoist_scope_assigns("{q,r}", [("r", "A[x]"), ("q", "B[x]")],
                              "9_3", 18),
       "{r=A[x], q=B[x]}")
+
+# Class 4 (2026-09-25): `===` (SameQ, TrigSimplifyAux's conds) is Maxima's
+# syntactic `=` under is(); the walk used to emit `==` + `=` = `==`, which
+# this build cannot parse.
+g.CLASS, g.CLASS_PREFIX = 4, "4 "
+cond = g.clean_cond("a===-b", "t4", 1)
+body = g.emit_rule(("Int[a_*b_,x_Symbol]", "a", cond), "t4", 1, {"a", "b"})
+check("class 4: === emits a single =", "_mr_t4_r1_a=-_mr_t4_r1_b" in body, True)
+check("class 4: no == left from ===", "==" in body, False)
 
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

@@ -1,0 +1,66 @@
+/* rules/class7/7_2_2.mac — GENERATED; do not edit.
+ * Source: Rubi 4 61e9c18ea248061cd83c67882f7c91a73cef912d
+ *          Rubi/IntegrationRules/7 Inverse hyperbolic functions/7.2 Inverse hyperbolic cosine/7.2.2 (d x)^m (a+b arccosh(c x))^n.m
+ * Regenerate: python3 generator/generate_rules.py --class 7 --only 7_2_2 */
+/* Ported from Rule-Based Integration (Rubi), https://github.com/RuleBasedIntegration/Rubi
+ * Copyright (c) 2018 Rule-Based-Integration Organization (MIT). */
+
+_mr_cond_7_2_2_r1(mm, x) := block([_mr_7_2_2_r1_a, _mr_7_2_2_r1_b, _mr_7_2_2_r1_c, _mr_7_2_2_r1_n],
+  _mr_7_2_2_r1_a : geteqR(mm, '_mr_7_2_2_r1_a), _mr_7_2_2_r1_b : geteqR(mm, '_mr_7_2_2_r1_b), _mr_7_2_2_r1_c : geteqR(mm, '_mr_7_2_2_r1_c), _mr_7_2_2_r1_n : geteqR(mm, '_mr_7_2_2_r1_n),
+  freeof(x, _mr_7_2_2_r1_a) and freeof(x, _mr_7_2_2_r1_b) and freeof(x, _mr_7_2_2_r1_c)  and  %mr_iGtQ(_mr_7_2_2_r1_n, 0))$
+_mr_repl_7_2_2_r1(mm, x) := block([_mr_7_2_2_r1_a__s, _mr_7_2_2_r1_b__s, _mr_7_2_2_r1_c__s, _mr_7_2_2_r1_n__s],
+  _mr_7_2_2_r1_a__s : geteqR(mm, '_mr_7_2_2_r1_a), _mr_7_2_2_r1_b__s : geteqR(mm, '_mr_7_2_2_r1_b), _mr_7_2_2_r1_c__s : geteqR(mm, '_mr_7_2_2_r1_c), _mr_7_2_2_r1_n__s : geteqR(mm, '_mr_7_2_2_r1_n),
+  1/_mr_7_2_2_r1_b__s*%mr_subst(mr_int(x^_mr_7_2_2_r1_n__s*tanh(-_mr_7_2_2_r1_a__s/_mr_7_2_2_r1_b__s + x/_mr_7_2_2_r1_b__s), x), x, _mr_7_2_2_r1_a__s + _mr_7_2_2_r1_b__s*acosh(_mr_7_2_2_r1_c__s*x)))$
+_mr_rule_7_2_2_r1 : %mr_defrule("7_2_2", 1, "(Int (Times (Power (Pattern x (Blank)) -1) (Power (Plus (Optional (Pattern |_mr_7_2_2_r1_a| (Blank))) (Times (ArcCosh (Times (Optional (Pattern |_mr_7_2_2_r1_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_7_2_2_r1_b| (Blank))))) (Optional (Pattern |_mr_7_2_2_r1_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_7_2_2_r1, _mr_repl_7_2_2_r1)$
+
+_mr_cond_7_2_2_r2(mm, x) := block([_mr_7_2_2_r2_a, _mr_7_2_2_r2_b, _mr_7_2_2_r2_c, _mr_7_2_2_r2_d, _mr_7_2_2_r2_m, _mr_7_2_2_r2_n],
+  _mr_7_2_2_r2_a : geteqR(mm, '_mr_7_2_2_r2_a), _mr_7_2_2_r2_b : geteqR(mm, '_mr_7_2_2_r2_b), _mr_7_2_2_r2_c : geteqR(mm, '_mr_7_2_2_r2_c), _mr_7_2_2_r2_d : geteqR(mm, '_mr_7_2_2_r2_d), _mr_7_2_2_r2_m : geteqR(mm, '_mr_7_2_2_r2_m), _mr_7_2_2_r2_n : geteqR(mm, '_mr_7_2_2_r2_n),
+  freeof(x, _mr_7_2_2_r2_a) and freeof(x, _mr_7_2_2_r2_b) and freeof(x, _mr_7_2_2_r2_c) and freeof(x, _mr_7_2_2_r2_d) and freeof(x, _mr_7_2_2_r2_m)  and  %mr_iGtQ(_mr_7_2_2_r2_n, 0)  and  %mr_neQ(_mr_7_2_2_r2_m, -1))$
+_mr_repl_7_2_2_r2(mm, x) := block([_mr_7_2_2_r2_a__s, _mr_7_2_2_r2_b__s, _mr_7_2_2_r2_c__s, _mr_7_2_2_r2_d__s, _mr_7_2_2_r2_m__s, _mr_7_2_2_r2_n__s],
+  _mr_7_2_2_r2_a__s : geteqR(mm, '_mr_7_2_2_r2_a), _mr_7_2_2_r2_b__s : geteqR(mm, '_mr_7_2_2_r2_b), _mr_7_2_2_r2_c__s : geteqR(mm, '_mr_7_2_2_r2_c), _mr_7_2_2_r2_d__s : geteqR(mm, '_mr_7_2_2_r2_d), _mr_7_2_2_r2_m__s : geteqR(mm, '_mr_7_2_2_r2_m), _mr_7_2_2_r2_n__s : geteqR(mm, '_mr_7_2_2_r2_n),
+  (_mr_7_2_2_r2_d__s*x)^(_mr_7_2_2_r2_m__s + 1)*(_mr_7_2_2_r2_a__s + _mr_7_2_2_r2_b__s*acosh(_mr_7_2_2_r2_c__s*x))^_mr_7_2_2_r2_n__s/(_mr_7_2_2_r2_d__s*(_mr_7_2_2_r2_m__s + 1)) - _mr_7_2_2_r2_b__s*_mr_7_2_2_r2_c__s*_mr_7_2_2_r2_n__s/(_mr_7_2_2_r2_d__s*(_mr_7_2_2_r2_m__s + 1))* mr_int((_mr_7_2_2_r2_d__s*x)^(_mr_7_2_2_r2_m__s + 1)*(_mr_7_2_2_r2_a__s + _mr_7_2_2_r2_b__s*acosh(_mr_7_2_2_r2_c__s*x))^(_mr_7_2_2_r2_n__s - 1)/(sqrt(1 + _mr_7_2_2_r2_c__s*x)* sqrt(-1 + _mr_7_2_2_r2_c__s*x)), x))$
+_mr_rule_7_2_2_r2 : %mr_defrule("7_2_2", 2, "(Int (Times (Power (Plus (Optional (Pattern |_mr_7_2_2_r2_a| (Blank))) (Times (ArcCosh (Times (Optional (Pattern |_mr_7_2_2_r2_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_7_2_2_r2_b| (Blank))))) (Optional (Pattern |_mr_7_2_2_r2_n| (Blank)))) (Power (Times (Optional (Pattern |_mr_7_2_2_r2_d| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_7_2_2_r2_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_7_2_2_r2, _mr_repl_7_2_2_r2)$
+
+_mr_cond_7_2_2_r3(mm, x) := block([_mr_7_2_2_r3_a, _mr_7_2_2_r3_b, _mr_7_2_2_r3_c, _mr_7_2_2_r3_m, _mr_7_2_2_r3_n],
+  _mr_7_2_2_r3_a : geteqR(mm, '_mr_7_2_2_r3_a), _mr_7_2_2_r3_b : geteqR(mm, '_mr_7_2_2_r3_b), _mr_7_2_2_r3_c : geteqR(mm, '_mr_7_2_2_r3_c), _mr_7_2_2_r3_m : geteqR(mm, '_mr_7_2_2_r3_m), _mr_7_2_2_r3_n : geteqR(mm, '_mr_7_2_2_r3_n),
+  freeof(x, _mr_7_2_2_r3_a) and freeof(x, _mr_7_2_2_r3_b) and freeof(x, _mr_7_2_2_r3_c)  and  %mr_iGtQ(_mr_7_2_2_r3_m, 0)  and  %mr_gtQ(_mr_7_2_2_r3_n, 0))$
+_mr_repl_7_2_2_r3(mm, x) := block([_mr_7_2_2_r3_a__s, _mr_7_2_2_r3_b__s, _mr_7_2_2_r3_c__s, _mr_7_2_2_r3_m__s, _mr_7_2_2_r3_n__s],
+  _mr_7_2_2_r3_a__s : geteqR(mm, '_mr_7_2_2_r3_a), _mr_7_2_2_r3_b__s : geteqR(mm, '_mr_7_2_2_r3_b), _mr_7_2_2_r3_c__s : geteqR(mm, '_mr_7_2_2_r3_c), _mr_7_2_2_r3_m__s : geteqR(mm, '_mr_7_2_2_r3_m), _mr_7_2_2_r3_n__s : geteqR(mm, '_mr_7_2_2_r3_n),
+  x^(_mr_7_2_2_r3_m__s + 1)*(_mr_7_2_2_r3_a__s + _mr_7_2_2_r3_b__s*acosh(_mr_7_2_2_r3_c__s*x))^_mr_7_2_2_r3_n__s/(_mr_7_2_2_r3_m__s + 1) - _mr_7_2_2_r3_b__s*_mr_7_2_2_r3_c__s*_mr_7_2_2_r3_n__s/(_mr_7_2_2_r3_m__s + 1)* mr_int(x^(_mr_7_2_2_r3_m__s + 1)*(_mr_7_2_2_r3_a__s + _mr_7_2_2_r3_b__s*acosh(_mr_7_2_2_r3_c__s*x))^(_mr_7_2_2_r3_n__s - 1)/(sqrt(1 + _mr_7_2_2_r3_c__s*x)* sqrt(-1 + _mr_7_2_2_r3_c__s*x)), x))$
+_mr_rule_7_2_2_r3 : %mr_defrule("7_2_2", 3, "(Int (Times (Power (Pattern x (Blank)) (Optional (Pattern |_mr_7_2_2_r3_m| (Blank)))) (Power (Plus (Optional (Pattern |_mr_7_2_2_r3_a| (Blank))) (Times (ArcCosh (Times (Optional (Pattern |_mr_7_2_2_r3_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_7_2_2_r3_b| (Blank))))) (Pattern |_mr_7_2_2_r3_n| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_7_2_2_r3, _mr_repl_7_2_2_r3)$
+
+_mr_cond_7_2_2_r4(mm, x) := block([_mr_7_2_2_r4_a, _mr_7_2_2_r4_b, _mr_7_2_2_r4_c, _mr_7_2_2_r4_m, _mr_7_2_2_r4_n],
+  _mr_7_2_2_r4_a : geteqR(mm, '_mr_7_2_2_r4_a), _mr_7_2_2_r4_b : geteqR(mm, '_mr_7_2_2_r4_b), _mr_7_2_2_r4_c : geteqR(mm, '_mr_7_2_2_r4_c), _mr_7_2_2_r4_m : geteqR(mm, '_mr_7_2_2_r4_m), _mr_7_2_2_r4_n : geteqR(mm, '_mr_7_2_2_r4_n),
+  freeof(x, _mr_7_2_2_r4_a) and freeof(x, _mr_7_2_2_r4_b) and freeof(x, _mr_7_2_2_r4_c)  and  %mr_iGtQ(_mr_7_2_2_r4_m, 0)  and  %mr_geQ(_mr_7_2_2_r4_n, -2)  and  %mr_ltQ(_mr_7_2_2_r4_n, -1))$
+_mr_repl_7_2_2_r4(mm, x) := block([_mr_7_2_2_r4_a__s, _mr_7_2_2_r4_b__s, _mr_7_2_2_r4_c__s, _mr_7_2_2_r4_m__s, _mr_7_2_2_r4_n__s],
+  _mr_7_2_2_r4_a__s : geteqR(mm, '_mr_7_2_2_r4_a), _mr_7_2_2_r4_b__s : geteqR(mm, '_mr_7_2_2_r4_b), _mr_7_2_2_r4_c__s : geteqR(mm, '_mr_7_2_2_r4_c), _mr_7_2_2_r4_m__s : geteqR(mm, '_mr_7_2_2_r4_m), _mr_7_2_2_r4_n__s : geteqR(mm, '_mr_7_2_2_r4_n),
+  x^_mr_7_2_2_r4_m__s*sqrt(1 + _mr_7_2_2_r4_c__s*x)* sqrt(-1 + _mr_7_2_2_r4_c__s*x)*(_mr_7_2_2_r4_a__s + _mr_7_2_2_r4_b__s*acosh(_mr_7_2_2_r4_c__s*x))^(_mr_7_2_2_r4_n__s + 1)/(_mr_7_2_2_r4_b__s*_mr_7_2_2_r4_c__s*(_mr_7_2_2_r4_n__s + 1)) + 1/(_mr_7_2_2_r4_b__s^2*_mr_7_2_2_r4_c__s^(_mr_7_2_2_r4_m__s + 1)*(_mr_7_2_2_r4_n__s + 1))* %mr_subst(mr_int(%mr_expandTrigReduce(x^(_mr_7_2_2_r4_n__s + 1), cosh(-_mr_7_2_2_r4_a__s/_mr_7_2_2_r4_b__s + x/_mr_7_2_2_r4_b__s)^(_mr_7_2_2_r4_m__s - 1)*(_mr_7_2_2_r4_m__s - (_mr_7_2_2_r4_m__s + 1)*cosh(-_mr_7_2_2_r4_a__s/_mr_7_2_2_r4_b__s + x/_mr_7_2_2_r4_b__s)^2), x), x), x, _mr_7_2_2_r4_a__s + _mr_7_2_2_r4_b__s*acosh(_mr_7_2_2_r4_c__s*x)))$
+_mr_rule_7_2_2_r4 : %mr_defrule("7_2_2", 4, "(Int (Times (Power (Pattern x (Blank)) (Optional (Pattern |_mr_7_2_2_r4_m| (Blank)))) (Power (Plus (Optional (Pattern |_mr_7_2_2_r4_a| (Blank))) (Times (ArcCosh (Times (Optional (Pattern |_mr_7_2_2_r4_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_7_2_2_r4_b| (Blank))))) (Pattern |_mr_7_2_2_r4_n| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_7_2_2_r4, _mr_repl_7_2_2_r4)$
+
+_mr_cond_7_2_2_r5(mm, x) := block([_mr_7_2_2_r5_a, _mr_7_2_2_r5_b, _mr_7_2_2_r5_c, _mr_7_2_2_r5_m, _mr_7_2_2_r5_n],
+  _mr_7_2_2_r5_a : geteqR(mm, '_mr_7_2_2_r5_a), _mr_7_2_2_r5_b : geteqR(mm, '_mr_7_2_2_r5_b), _mr_7_2_2_r5_c : geteqR(mm, '_mr_7_2_2_r5_c), _mr_7_2_2_r5_m : geteqR(mm, '_mr_7_2_2_r5_m), _mr_7_2_2_r5_n : geteqR(mm, '_mr_7_2_2_r5_n),
+  freeof(x, _mr_7_2_2_r5_a) and freeof(x, _mr_7_2_2_r5_b) and freeof(x, _mr_7_2_2_r5_c)  and  %mr_iGtQ(_mr_7_2_2_r5_m, 0)  and  %mr_ltQ(_mr_7_2_2_r5_n, -2))$
+_mr_repl_7_2_2_r5(mm, x) := block([_mr_7_2_2_r5_a__s, _mr_7_2_2_r5_b__s, _mr_7_2_2_r5_c__s, _mr_7_2_2_r5_m__s, _mr_7_2_2_r5_n__s],
+  _mr_7_2_2_r5_a__s : geteqR(mm, '_mr_7_2_2_r5_a), _mr_7_2_2_r5_b__s : geteqR(mm, '_mr_7_2_2_r5_b), _mr_7_2_2_r5_c__s : geteqR(mm, '_mr_7_2_2_r5_c), _mr_7_2_2_r5_m__s : geteqR(mm, '_mr_7_2_2_r5_m), _mr_7_2_2_r5_n__s : geteqR(mm, '_mr_7_2_2_r5_n),
+  x^_mr_7_2_2_r5_m__s*sqrt(1 + _mr_7_2_2_r5_c__s*x)* sqrt(-1 + _mr_7_2_2_r5_c__s*x)*(_mr_7_2_2_r5_a__s + _mr_7_2_2_r5_b__s*acosh(_mr_7_2_2_r5_c__s*x))^(_mr_7_2_2_r5_n__s + 1)/(_mr_7_2_2_r5_b__s*_mr_7_2_2_r5_c__s*(_mr_7_2_2_r5_n__s + 1)) + _mr_7_2_2_r5_m__s/(_mr_7_2_2_r5_b__s*_mr_7_2_2_r5_c__s*(_mr_7_2_2_r5_n__s + 1))* mr_int(x^(_mr_7_2_2_r5_m__s - 1)*(_mr_7_2_2_r5_a__s + _mr_7_2_2_r5_b__s*acosh(_mr_7_2_2_r5_c__s*x))^(_mr_7_2_2_r5_n__s + 1)/(sqrt(1 + _mr_7_2_2_r5_c__s*x)* sqrt(-1 + _mr_7_2_2_r5_c__s*x)), x) - _mr_7_2_2_r5_c__s*(_mr_7_2_2_r5_m__s + 1)/(_mr_7_2_2_r5_b__s*(_mr_7_2_2_r5_n__s + 1))* mr_int(x^(_mr_7_2_2_r5_m__s + 1)*(_mr_7_2_2_r5_a__s + _mr_7_2_2_r5_b__s*acosh(_mr_7_2_2_r5_c__s*x))^(_mr_7_2_2_r5_n__s + 1)/(sqrt(1 + _mr_7_2_2_r5_c__s*x)* sqrt(-1 + _mr_7_2_2_r5_c__s*x)), x))$
+_mr_rule_7_2_2_r5 : %mr_defrule("7_2_2", 5, "(Int (Times (Power (Pattern x (Blank)) (Optional (Pattern |_mr_7_2_2_r5_m| (Blank)))) (Power (Plus (Optional (Pattern |_mr_7_2_2_r5_a| (Blank))) (Times (ArcCosh (Times (Optional (Pattern |_mr_7_2_2_r5_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_7_2_2_r5_b| (Blank))))) (Pattern |_mr_7_2_2_r5_n| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_7_2_2_r5, _mr_repl_7_2_2_r5)$
+
+_mr_cond_7_2_2_r6(mm, x) := block([_mr_7_2_2_r6_a, _mr_7_2_2_r6_b, _mr_7_2_2_r6_c, _mr_7_2_2_r6_m, _mr_7_2_2_r6_n],
+  _mr_7_2_2_r6_a : geteqR(mm, '_mr_7_2_2_r6_a), _mr_7_2_2_r6_b : geteqR(mm, '_mr_7_2_2_r6_b), _mr_7_2_2_r6_c : geteqR(mm, '_mr_7_2_2_r6_c), _mr_7_2_2_r6_m : geteqR(mm, '_mr_7_2_2_r6_m), _mr_7_2_2_r6_n : geteqR(mm, '_mr_7_2_2_r6_n),
+  freeof(x, _mr_7_2_2_r6_a) and freeof(x, _mr_7_2_2_r6_b) and freeof(x, _mr_7_2_2_r6_c) and freeof(x, _mr_7_2_2_r6_n)  and  %mr_iGtQ(_mr_7_2_2_r6_m, 0))$
+_mr_repl_7_2_2_r6(mm, x) := block([_mr_7_2_2_r6_a__s, _mr_7_2_2_r6_b__s, _mr_7_2_2_r6_c__s, _mr_7_2_2_r6_m__s, _mr_7_2_2_r6_n__s],
+  _mr_7_2_2_r6_a__s : geteqR(mm, '_mr_7_2_2_r6_a), _mr_7_2_2_r6_b__s : geteqR(mm, '_mr_7_2_2_r6_b), _mr_7_2_2_r6_c__s : geteqR(mm, '_mr_7_2_2_r6_c), _mr_7_2_2_r6_m__s : geteqR(mm, '_mr_7_2_2_r6_m), _mr_7_2_2_r6_n__s : geteqR(mm, '_mr_7_2_2_r6_n),
+  1/(_mr_7_2_2_r6_b__s*_mr_7_2_2_r6_c__s^(_mr_7_2_2_r6_m__s + 1))* %mr_subst(mr_int(x^_mr_7_2_2_r6_n__s*cosh(-_mr_7_2_2_r6_a__s/_mr_7_2_2_r6_b__s + x/_mr_7_2_2_r6_b__s)^_mr_7_2_2_r6_m__s*sinh(-_mr_7_2_2_r6_a__s/_mr_7_2_2_r6_b__s + x/_mr_7_2_2_r6_b__s), x), x, _mr_7_2_2_r6_a__s + _mr_7_2_2_r6_b__s*acosh(_mr_7_2_2_r6_c__s*x)))$
+_mr_rule_7_2_2_r6 : %mr_defrule("7_2_2", 6, "(Int (Times (Power (Pattern x (Blank)) (Optional (Pattern |_mr_7_2_2_r6_m| (Blank)))) (Power (Plus (Optional (Pattern |_mr_7_2_2_r6_a| (Blank))) (Times (ArcCosh (Times (Optional (Pattern |_mr_7_2_2_r6_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_7_2_2_r6_b| (Blank))))) (Pattern |_mr_7_2_2_r6_n| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_7_2_2_r6, _mr_repl_7_2_2_r6)$
+
+_mr_cond_7_2_2_r7(mm, x) := block([_mr_7_2_2_r7_a, _mr_7_2_2_r7_b, _mr_7_2_2_r7_c, _mr_7_2_2_r7_d, _mr_7_2_2_r7_m, _mr_7_2_2_r7_n],
+  _mr_7_2_2_r7_a : geteqR(mm, '_mr_7_2_2_r7_a), _mr_7_2_2_r7_b : geteqR(mm, '_mr_7_2_2_r7_b), _mr_7_2_2_r7_c : geteqR(mm, '_mr_7_2_2_r7_c), _mr_7_2_2_r7_d : geteqR(mm, '_mr_7_2_2_r7_d), _mr_7_2_2_r7_m : geteqR(mm, '_mr_7_2_2_r7_m), _mr_7_2_2_r7_n : geteqR(mm, '_mr_7_2_2_r7_n),
+  freeof(x, _mr_7_2_2_r7_a) and freeof(x, _mr_7_2_2_r7_b) and freeof(x, _mr_7_2_2_r7_c) and freeof(x, _mr_7_2_2_r7_d) and freeof(x, _mr_7_2_2_r7_m) and freeof(x, _mr_7_2_2_r7_n))$
+_mr_repl_7_2_2_r7(mm, x) := block([_mr_7_2_2_r7_a__s, _mr_7_2_2_r7_b__s, _mr_7_2_2_r7_c__s, _mr_7_2_2_r7_d__s, _mr_7_2_2_r7_m__s, _mr_7_2_2_r7_n__s],
+  _mr_7_2_2_r7_a__s : geteqR(mm, '_mr_7_2_2_r7_a), _mr_7_2_2_r7_b__s : geteqR(mm, '_mr_7_2_2_r7_b), _mr_7_2_2_r7_c__s : geteqR(mm, '_mr_7_2_2_r7_c), _mr_7_2_2_r7_d__s : geteqR(mm, '_mr_7_2_2_r7_d), _mr_7_2_2_r7_m__s : geteqR(mm, '_mr_7_2_2_r7_m), _mr_7_2_2_r7_n__s : geteqR(mm, '_mr_7_2_2_r7_n),
+  mr_unintegrable((_mr_7_2_2_r7_d__s*x)^_mr_7_2_2_r7_m__s*(_mr_7_2_2_r7_a__s + _mr_7_2_2_r7_b__s*acosh(_mr_7_2_2_r7_c__s*x))^_mr_7_2_2_r7_n__s, x))$
+_mr_rule_7_2_2_r7 : %mr_defrule("7_2_2", 7, "(Int (Times (Power (Plus (Optional (Pattern |_mr_7_2_2_r7_a| (Blank))) (Times (ArcCosh (Times (Optional (Pattern |_mr_7_2_2_r7_c| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_7_2_2_r7_b| (Blank))))) (Optional (Pattern |_mr_7_2_2_r7_n| (Blank)))) (Power (Times (Optional (Pattern |_mr_7_2_2_r7_d| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_7_2_2_r7_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_7_2_2_r7, _mr_repl_7_2_2_r7)$
+
+mr_rules_7_2_2 : [ _mr_rule_7_2_2_r1, _mr_rule_7_2_2_r2, _mr_rule_7_2_2_r3, _mr_rule_7_2_2_r4, _mr_rule_7_2_2_r5, _mr_rule_7_2_2_r6, _mr_rule_7_2_2_r7 ]$
+mr_rules_count_7_2_2 : 7$
+mr_witness_7_2_2() := true$

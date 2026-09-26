@@ -95,7 +95,7 @@ _mr_rule_9_3_r11 : %mr_defrule("9_3", 11, "(Int (Times (Optional (Pattern |_mr_9
 
 _mr_cond_9_3_r12(mm, x) := block([_mr_9_3_r12_a, _mr_9_3_r12_m, _mr_9_3_r12_n, _mr_9_3_r12_p, _mr_9_3_r12_u, _mr_9_3_r12_v, _mr_9_3_r12_w],
   _mr_9_3_r12_a : geteqR(mm, '_mr_9_3_r12_a), _mr_9_3_r12_m : geteqR(mm, '_mr_9_3_r12_m), _mr_9_3_r12_n : geteqR(mm, '_mr_9_3_r12_n), _mr_9_3_r12_p : geteqR(mm, '_mr_9_3_r12_p), _mr_9_3_r12_u : geteqR(mm, '_mr_9_3_r12_u), _mr_9_3_r12_v : geteqR(mm, '_mr_9_3_r12_v), _mr_9_3_r12_w : geteqR(mm, '_mr_9_3_r12_w),
-  freeof(x, _mr_9_3_r12_a) and freeof(x, _mr_9_3_r12_m) and freeof(x, _mr_9_3_r12_n)  and  integerp(_mr_9_3_r12_p)  and  not(is(_mr_9_3_r12_n > 0))  and  not(freeof(x, _mr_9_3_r12_v)))$
+  freeof(x, _mr_9_3_r12_a) and freeof(x, _mr_9_3_r12_m) and freeof(x, _mr_9_3_r12_n)  and  integerp(_mr_9_3_r12_p)  and  not(%mr_gtQ(_mr_9_3_r12_n, 0))  and  not(freeof(x, _mr_9_3_r12_v)))$
 _mr_repl_9_3_r12(mm, x) := block([_mr_9_3_r12_a__s, _mr_9_3_r12_m__s, _mr_9_3_r12_n__s, _mr_9_3_r12_p__s, _mr_9_3_r12_u__s, _mr_9_3_r12_v__s, _mr_9_3_r12_w__s],
   _mr_9_3_r12_a__s : geteqR(mm, '_mr_9_3_r12_a), _mr_9_3_r12_m__s : geteqR(mm, '_mr_9_3_r12_m), _mr_9_3_r12_n__s : geteqR(mm, '_mr_9_3_r12_n), _mr_9_3_r12_p__s : geteqR(mm, '_mr_9_3_r12_p), _mr_9_3_r12_u__s : geteqR(mm, '_mr_9_3_r12_u), _mr_9_3_r12_v__s : geteqR(mm, '_mr_9_3_r12_v), _mr_9_3_r12_w__s : geteqR(mm, '_mr_9_3_r12_w),
   mr_int(_mr_9_3_r12_u__s^(_mr_9_3_r12_m__s+_mr_9_3_r12_n__s*_mr_9_3_r12_p__s)*(_mr_9_3_r12_a__s+_mr_9_3_r12_u__s^(-_mr_9_3_r12_n__s)*_mr_9_3_r12_v__s)^_mr_9_3_r12_p__s*_mr_9_3_r12_w__s, x))$
@@ -423,7 +423,7 @@ _mr_rule_9_3_r52 : %mr_defrule("9_3", 52, "(Int (Times (Pattern |_mr_9_3_r52_u| 
 
 _mr_cond_9_3_r53(mm, x) := block([_mr_9_3_r53_m, _mr_9_3_r53_u],
   _mr_9_3_r53_m : geteqR(mm, '_mr_9_3_r53_m), _mr_9_3_r53_u : geteqR(mm, '_mr_9_3_r53_u),
-  (integerp(_mr_9_3_r53_m)  and  %mr_neQ(_mr_9_3_r53_m, -1)  and  %mr_nonsumQ(_mr_9_3_r53_u)  and  (is(_mr_9_3_r53_m > 0)  or  not(%mr_algebraicFunctionQ(_mr_9_3_r53_u, x))))  and  block([_mr_9_3_r53_lst], _mr_9_3_r53_lst : %mr_powerVariableExpn(_mr_9_3_r53_u, _mr_9_3_r53_m+1, x), is(not(%mr_falseQ(_mr_9_3_r53_lst))  and  %mr_neQ(part(_mr_9_3_r53_lst, 2), _mr_9_3_r53_m+1)) = true))$
+  (integerp(_mr_9_3_r53_m)  and  %mr_neQ(_mr_9_3_r53_m, -1)  and  %mr_nonsumQ(_mr_9_3_r53_u)  and  (%mr_gtQ(_mr_9_3_r53_m, 0)  or  not(%mr_algebraicFunctionQ(_mr_9_3_r53_u, x))))  and  block([_mr_9_3_r53_lst], _mr_9_3_r53_lst : %mr_powerVariableExpn(_mr_9_3_r53_u, _mr_9_3_r53_m+1, x), is(not(%mr_falseQ(_mr_9_3_r53_lst))  and  %mr_neQ(part(_mr_9_3_r53_lst, 2), _mr_9_3_r53_m+1)) = true))$
 _mr_repl_9_3_r53(mm, x) := block([_mr_9_3_r53_m__s, _mr_9_3_r53_u__s],
   _mr_9_3_r53_m__s : geteqR(mm, '_mr_9_3_r53_m), _mr_9_3_r53_u__s : geteqR(mm, '_mr_9_3_r53_u),
   block([_mr_9_3_r53_lst], _mr_9_3_r53_lst : %mr_powerVariableExpn(_mr_9_3_r53_u__s, _mr_9_3_r53_m__s+1, x), 1/part(_mr_9_3_r53_lst, 2) * %mr_subst(mr_int(%mr_normalizeIntegrand(%mr_simp(part(_mr_9_3_r53_lst, 1)/x), x), x), x, part((part(_mr_9_3_r53_lst, 3)*x)^_mr_9_3_r53_lst, 2))))$

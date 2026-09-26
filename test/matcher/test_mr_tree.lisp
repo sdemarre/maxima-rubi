@@ -58,8 +58,34 @@
   (check-conv "1+%i" "#C(1 1)")
   (check-conv "%i" "#C(0 1)")
   (check-conv "b*a+c" "(Plus c (Times a b))")
-  (let ((got (conv "foo(x)")))
-    (check "unknown function -> MX_ head" (and (consp got) (search "MX_" (symbol-name (car got))))
+  ;; a user function reads as the head named like it (class-8 port,
+  ;; 2026-09-25): 9.1's f_ binds the atom f and the head of f(x) alike
+  (check-conv "foo(x)" "(foo x)")
+  (check-conv "F(x)" "(F x)")
+  (check "a user function's head is the symbol its bare name converts to"
+         (eq (car (conv "f(x)")) (conv "f")))
+  ;; ... but a %-noun, and a user function colliding with a table head of
+  ;; its arity or a structural head, keep the opaque MX_ head
+  (dolist (s '("'foo(x)" "Log(x)" "Plus(x,y)" "Derivative(x)"))
+    (let ((got (conv s)))
+      (check (format nil "~a -> MX_ head" s)
+             (and (consp got) (symbolp (car got)) (search "MX_" (symbol-name (car got))))
+             (tree-string got))))
+  ;; a 2-arg Zeta is no table head (the table's Zeta is 1-arg): Hurwitz
+  (check-conv "Zeta(2,x)" "(Zeta 2 x)")
+  ;; the formal derivative (class 8 / 9.1): the noun 'diff(f(u), u, n) is
+  ;; the curried tree (((Derivative n) f) u)
+  (check-conv "'diff(f(x),x,1)" "(((Derivative 1) f) x)")
+  (check-conv "'diff(f(x),x,3)" "(((Derivative 3) f) x)")
+  (check-conv "'diff(f(x),x,m-1)" "(((Derivative (Plus -1 m)) f) x)")
+  (check-conv "'diff(f(x),x,-2)" "(((Derivative -2) f) x)")
+  (check-conv "'diff(F(x),x,1)*g(x)" "(Times (((Derivative 1) F) x) (g x))")
+  (check-conv "subst(f(x)*g(x), x, 'diff(F(x),x,1))"
+              "(((Derivative 1) F) (Times (f x) (g x)))")
+  ;; not the formal-derivative shape: stays the opaque noun
+  (let ((got (conv "'diff(f(x,y),x,1)")))
+    (check "'diff(f(x,y),x,1) -> MX_ head" (and (consp got) (symbolp (car got))
+                                               (search "MX_" (symbol-name (car got))))
            (tree-string got)))
   (check-conv "polylog(2,x)" "(PolyLog 2 x)")
   ;; the dispatcher converts integrands and bindings, which can be CRE or boolean
@@ -98,9 +124,18 @@
   (format t "--- tree->max round trip ---~%")
   (dolist (s '("a+b*x" "(a+b*x)^m*(c+d*x)^n" "x/(a+b*x)" "2*%i*x" "1+%i" "li[2](x)" "psi[1](x)"
                "sin(x)^2*log(c*x)" "A*x" "abs(x)" "x!" "0.1*x" "exp(2*x)" "foo(x,y)"
-               "gamma_incomplete(a,x)" "sqrt(1-x^2)" "%pi*x"))
+               "gamma_incomplete(a,x)" "sqrt(1-x^2)" "%pi*x"
+               ;; class 8: user functions, Hurwitz Zeta, the formal derivative
+               "f(x)*g(x)" "F(f(x)*g(x))" "'foo(x)" "Log(x)" "Zeta(2,a+b*x)"
+               "'diff(f(x),x,1)" "'diff(f(x),x,m)" "'diff(f(x),x,-1)"
+               "'diff(g(x),x,2)*f(x)^2" "subst(f(x)*g(x), x, 'diff(F(x),x,1))"
+               "'diff(f(x,y),x,1)"))
     (multiple-value-bind (ok back) (round-trips-p s)
-      (check (format nil "round trip ~a" s) ok (format nil "back ~s" back)))))
+      (check (format nil "round trip ~a" s) ok (format nil "back ~s" back))))
+  ;; order 0 writes back as f(u) itself
+  (let ((back (tree->max (read-tree "(((Derivative 0) f) x)"))))
+    (check "tree->max (((Derivative 0) f) x) = f(x)"
+           (maxima::alike1 back (maxima-form "f(x)")) (format nil "back ~s" back))))
 
 (defun run ()
   (setf *passed* 0 *failed* 0)

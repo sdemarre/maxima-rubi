@@ -1,0 +1,20 @@
+#!/bin/sh
+# probes/translation/10-class5-syntax-census.run — class-5 census driver
+# (docs/class-porting.md Step 1(a)). Two parts:
+#   1. the rule-syntax census of the "5 " files Rubi.m loads (the 01 census
+#      script; its rule_runs glues 5.3.7's two single-line
+#      If[TrueQ[$LoadShowSteps], ...] wrappers onto the rule before them, so
+#      it counts 665, not the 667 the generator emits);
+#   2. the token closure against generator/translation_table.py, counted
+#      the generator's way (667), and its TRANSITIVE closure through
+#      IntegrationUtilityFunctions.m (ticket 05's CENSUS TRAP).
+#
+#   sh probes/translation/10-class5-syntax-census.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# class-5 rule syntax census, $(date -u +%F)"
+  python3 probes/translation/01-class1-syntax-census.py reference/rubi "5 "
+  echo
+  python3 probes/translation/10-class5-table-closure.py "5 "
+} > probes/translation/10-class5-syntax-census.out
+echo "wrote probes/translation/10-class5-syntax-census.out"

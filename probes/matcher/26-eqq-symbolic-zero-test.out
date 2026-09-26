@@ -1,0 +1,63 @@
+=== probes/matcher/26-eqq-symbolic-zero-test  git HEAD 4ed1877  2026-09-25 17:30 CEST
+S generated %mr_eqQ( / %mr_neQ( call sites per class (grep -o over rules/):
+S class1 eqQ 1895 neQ 1887
+S class2 eqQ 44 neQ 26
+S class3 eqQ 159 neQ 107
+S class4 eqQ 1201 neQ 1332
+S class5 eqQ 430 neQ 129
+S class6 eqQ 86 neQ 129
+S class7 eqQ 512 neQ 144
+S class8 eqQ 85 neQ 61
+S class9 eqQ 59 neQ 35
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+Z g12 coefficient   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[0],[0],[0],[0]] 
+Z shifted-quadratic residual   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[0],[0],[0],[0]] 
+Z free c d^2-b d e+a e^2   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[a*e^2-b*d*e+c*d^2],[a*e^2-b*d*e+c*d^2],[a*e^2-b*d*e+c*d^2],[a*e^2-b*d*e+c*d^2]] 
+Z generic product   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[a*b*c],[a*b*c],[a*b*c],[a*b*c]] 
+Z sqrt(a b)-sqrt(a)sqrt(b)   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[sqrt(a*b)-sqrt(a)*sqrt(b)],[sqrt(a*b)-sqrt(a)*sqrt(b)],[sqrt(a*b)-sqrt(a)*sqrt(b)],[0]] 
+Z log(a b)-log a-log b   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[log(a*b)-log(b)-log(a)],[log(a*b)-log(b)-log(a)],[log(a*b)-log(b)-log(a)],[0]] 
+Z (a b)^m-a^m b^m   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[(a*b)^m-a^m*b^m],[(a*b)^m-a^m*b^m],[(a*b)^m-a^m*b^m],[0]] 
+Z sqrt(x^2+2x+1)-x-1   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[sqrt(x^2+2*x+1)-x-1],[sqrt(x^2+2*x+1)-x-1],[sqrt(x^2+2*x+1)-x-1],[0]] 
+Z sqrt(-a)-i sqrt(a)   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[sqrt(-a)-%i*sqrt(a)],[-(%i*sqrt(a)-sqrt(-a))],[sqrt(-a)-%i*sqrt(a)],[0]] 
+Z (1+ia)(1-ia)-1-a^2   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[0],[0],[0],[0]] 
+Z sin^2+cos^2-1   [ratsimp, factor, ratsimp(expand), radcan(rat)] = [[sin(x)^2+cos(x)^2-1],[sin(x)^2+cos(x)^2-1],[sin(x)^2+cos(x)^2-1],[sin(x)^2+cos(x)^2-1]] 
+E g12 coefficient  off: false 
+E g12 coefficient  on: true 
+E shifted-quadratic residual  off: false 
+E shifted-quadratic residual  on: true 
+E free c d^2-b d e+a e^2  off: false 
+E free c d^2-b d e+a e^2  on: false 
+E generic product  off: false 
+E generic product  on: false 
+E sqrt(a b)-sqrt(a)sqrt(b)  off: false 
+E sqrt(a b)-sqrt(a)sqrt(b)  on: false 
+E log(a b)-log a-log b  off: false 
+E log(a b)-log a-log b  on: false 
+E (a b)^m-a^m b^m  off: false 
+E (a b)^m-a^m b^m  on: false 
+E sqrt(x^2+2x+1)-x-1  off: false 
+E sqrt(x^2+2x+1)-x-1  on: false 
+E sqrt(-a)-i sqrt(a)  off: false 
+E sqrt(-a)-i sqrt(a)  on: false 
+E (1+ia)(1-ia)-1-a^2  off: false 
+E (1+ia)(1-ia)-1-a^2  on: true 
+E sin^2+cos^2-1  off: false 
+E sin^2+cos^2-1  on: false 
+C EqQ numbers 2, 2  off_us 4  on_us 4  eqQ_on true  expanded_polyp true 
+C NeQ b^2-4ac free  off_us 5  on_us 6  eqQ_on false  expanded_polyp true 
+C NeQ b^2-4ac numbers  off_us 5  on_us 6  eqQ_on false  expanded_polyp true 
+C EqQ m+1 free  off_us 5  on_us 6  eqQ_on false  expanded_polyp true 
+C EqQ m, -1 at m=-1/2  off_us 5  on_us 6  eqQ_on false  expanded_polyp true 
+C NeQ c d^2-b d e+a e^2 free  off_us 5  on_us 7  eqQ_on false  expanded_polyp true 
+C NeQ c d^2-b d e+a e^2 g12  off_us 5  on_us 14  eqQ_on true  expanded_polyp false 
+C NeQ 2 c d-b e g12 binding  off_us 5  on_us 38  eqQ_on false  expanded_polyp false 
+C EqQ b c-a d free  off_us 5  on_us 7  eqQ_on false  expanded_polyp true 
+C NeQ radical kernel sqrt(a) b-c  off_us 5  on_us 95  eqQ_on false  expanded_polyp false 
+C EqQ discriminant identity shifted  off_us 5  on_us 12  eqQ_on true  expanded_polyp false 
+C EqQ head atan vs atanh  off_us 7  on_us 7  eqQ_on false  expanded_polyp true 
+C NeQ log-kernel e^2 log(f)-g  off_us 5  on_us 106  eqQ_on false  expanded_polyp false 
+R false rubi(e^atan(2x+1)/(4x^2+4x+2)) 'unintegrable[%e^atan(2*x+1)/(4*x^2+4*x+2),x] 
+R false rubi(e^atanh(2x+1)/(-4x^2-4x)) 'unintegrable[%e^atanh(2*x+1)/(-(4*x^2)-4*x),x] 
+R true rubi(e^atan(2x+1)/(4x^2+4x+2)) %e^atan(2*x+1)/2 
+R true rubi(e^atanh(2x+1)/(-4x^2-4x)) %e^atanh(2*x+1)/2 
+=== done

@@ -356,6 +356,59 @@ Layer A 898/0; the TLS flag is no longer required
   (3.5 r37, 3.1.5 r28, 3.5 r11) (`probes/matcher/06-dispatch-cost.out`)
   — open, judged by the P5 median-wall gate
 
+## Classes 8, 5, 7, 4 (special, inverse trig, inverse hyperbolic, trig) — in prog (Step 10 records written, closes on merge)
+
+The four remaining post-M2 classes, ported in the queue 8 → 5 → 7 → 4 on
+branch `class-ports` (worktree `mr-ports`, base `cd0a421`), each against
+`docs/class-porting.md` Steps 1–10; tickets
+`.scratch/class-ports/issues/01-…` (8), `02-…` (5), `04-…` (7), `05-…` (4),
+which carry the Step 1–7 records. Class 8 takes 9.1 Derivative with it
+(`rules/class8/9_1d.mac`). Records `docs/corpus-class{8,5,7,4}-baseline-uplift.md`;
+their PASS→FAIL attribution sections are pending.
+
+Rule set: class 8 328 rules (9 files + 9.1), class 5 667 (15 files),
+class 7 712 (21 files; four old-numbering 7.3 files excluded, as Rubi.m
+does), class 4 2,080 (56 files, 10 of the rules tail records; one
+unloaded 4.7 file). Core **rules=7,776**, fingerprint `89bec424` at
+`c2deb32`. Between the first measurement (core `4daae7ac`) and the final
+one the branch took the class-ports fixes (`4ed1877..39eba80`: symbolic
+EqQ, native inverse-hyperbolic heads everywhere — ticket 18 —,
+two-argument Expand — ticket 19 —, the `values` trim, depth cap 32, plain
+Subst, Rubi's GtQ) and merged master.
+
+Measured (30 s cpu cap, 24-worker queue, build 2026-08-31 13:27:47, core
+`89bec424`; baselines are native `integrate`, 30 s wall):
+
+| class | entries | baseline | package | 100 s re-check |
+|---|---:|---:|---:|---|
+| 8 Special functions | 1,949 | 327 | **1,537 (78.9 %)** | +1 of 27 |
+| 5 Inverse trig | 4,585 | 1,234 | **3,629 (79.1 %)** | +52 of 195 |
+| 7 Inverse hyperbolic | 6,552 | 953 | **5,342 (81.5 %)** | +48 of 211 |
+| 4 Trig | 22,472 | 1,384 | **19,932 (88.7 %)** | +475 of 1,068 |
+
+Earlier classes on the same core vs master's promoted records: class 1
+18,400 → 23,203, class 2 758 → 863, class 3 1,692 → 2,446, class 6
+2,474 → 4,314. All eight: 61,266 / 70,385 (87.0 %). Gates: Layer A
+1583/0, P3 29/0, head rewrites 64/0, byte-identity EMPTY for 1–9,
+matcher regression 109/0 in both arms.
+
+- The PASS→FAIL attribution (139 vs master in classes 1/2/3/6; 43 vs the
+  pre-fix records in 5/7/4; 27/117/48/158 vs the baselines of 8/5/7/4),
+  then the merge to `master`, which closes tickets 01/02/04/05 — in prog
+- `.scratch/corpus-harness/issues/05` — Rubi's own partial answers (an
+  interior `Unintegrable`/`CannotIntegrate`) can never PASS: 746 entries
+  over the four classes — open
+- `.scratch/class-ports/issues/21` — dispatch index; the class-4 timeout
+  mass (1,068, 475 slow-correct at 100 s) is its main weight — open
+- `.scratch/class-ports/issues/20` — the FreeFactors quotient fix's 3.1.5
+  slowdown — open
+- `.scratch/class3-polylog-ceiling/issues/01` — polylog shim; the four
+  classes add ≤ 11 / 44 / 88 / 6 `unverified` — open
+- Not ticketed (the records' §9): the class-8 8.8 polylog noun block, the
+  class-7 7.3.6/7.4.2 and class-4 hypergeometric/AppellF1 `unverified`
+  blocks, the radexpand-at-read question (4.1.7, `mr_model_flags`), the
+  `error`s at the 100 s re-checks — open
+
 ## Pinned reference clones
 
 - `reference/rubi` @ `61e9c18ea248061cd83c67882f7c91a73cef912d` (cloned 2026-08-17)

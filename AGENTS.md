@@ -195,18 +195,32 @@ depend on the rule table's contents at their point in the suite:
 maxima --very-quiet -b test/test_rule_table_order.mac
 ```
 
-Green: `Results: 13 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
+Green: `Results: 18 passed, 0 failed` (4 at Task 8; +3 at the inert-trig
 plan's Task 9, when class 4's bridge subset put the first real `_tail`
 lists in the table; +1 at Task 10's fix round 1: r72 is the tail's only
 give-up record; +3 at Task 11, section-9's 9.2/9.3; +2 at ticket 14,
 2026-09-23: the dispatcher's tail and general-body MARKS equal the tail
-list and 9.3's body list) — both handle lists
+list and 9.3's body list; +1 at the class-8 port, 2026-09-25: class 8's
+nine bodies then 9.1 Derivative's (`9_1d`), contiguous, after class 6 and
+before 9.3; the tail gains 8.9 r44 between the bridge and 9.3; the run
+prints the table length, 4,325; +1 at the class-5 port, 2026-09-25: class
+5's fifteen bodies, contiguous, right after class 3's last list and right
+before class 6's first, 667 handles; table length 4,992; +1 at the class-7
+port, 2026-09-25: class 7's twenty-one bodies, contiguous, right after
+class 6's last list and right before class 8's first, 712 handles; table
+length 5,704; +2 at the class-4 port, 2026-09-25: class 4's fifty-six
+bodies, contiguous, right after class 3's last list and right before class
+5's first, 2,070 handles, and every record `mr_load_all` registered —
+`1..%mr_rule_count()`, not the table — is in `mr_rule_table`; the tail
+gains 4.7.5 r66/r70; the bare-`u_` check iterates every registered handle;
+table length 7,776) — both handle lists
 are defined lists and the body list is non-empty; `mr_rule_table` equals
 the body handles followed by the tail handles with nothing lost; the tail
-is non-empty; the tail is the eight bridge records in LoadRules order
-(`4_1_0_1` r1 first, then `4_7_5` r21/r22/r47/r48/r58/r71/r72 — r71, the
+is non-empty; the tail is class 4's ten bare-`u_` records in LoadRules order
+(`4_1_0_1` r1 first, then `4_7_5` r21/r22/r47/r48/r58/r66/r70/r71/r72 — r66/r70,
+TrigSimplify and ExpandTrig, since the class-4 port; r71, the
 Weierstrass record, since Task 10; r72, the re-activating CannotIntegrate
-give-up, since its fix round 1) followed by 9.3's eleven bare-`u_`
+give-up, since its fix round 1), then 8.9 r44, then 9.3's eleven bare-`u_`
 records in file order (Task 11), r67 — Rubi's own final `CannotIntegrate`
 catch-all — last and closing the tail; the tail's give-ups
 (`%mr_giveup_handles`) are exactly `4_7_5` r72 and `9_3` r67; every tail
@@ -217,7 +231,7 @@ source file, after its own tail record r63, so registration order no
 longer matches table order and only list position is asserted); 9.2's
 body sits right after 9.1 (class 1's last list) and before class 2, and
 9.3's body is the last body entry; and every bare-`u_` Int record
-anywhere in the loaded table (read via the debug entry
+anywhere among the registered handles (read via the debug entry
 `%mr_rule_pattern_text(handle)`, `maxima_rubi_dispatch.lisp`) is either
 in the tail or one of the six named exceptions
 (`generator/generate_rules.py` `BARE_U_BODY_EXCEPTIONS`,
@@ -264,10 +278,12 @@ Green: `Results: 57 passed, 0 failed` (mr-match; 48 at Plan 1's Task 5,
 empty-leftover lock, +2 at Plan 2: the Power-exponent Optional
 default, +4 at spec §3.8: the flat-absorb committed-tail prune — two
 committed-tail locks, one lock that an uncommitted tail still
-enumerates, one cost test), `Results: 58 passed, 0 failed` (mr-tree;
+enumerates, one cost test), `Results: 84 passed, 0 failed` (mr-tree;
 46, +5 at Plan 2: CRE input and the booleans, +7 at the inert-trig
-substrate, `53dc578`: the six inert trig heads) and
-`Results: 106 passed, 0 failed`
+substrate, `53dc578`: the six inert trig heads, +26 at the class-8 port,
+2026-09-25: user-function heads, Hurwitz `Zeta`, the formal-derivative
+noun as the curried `Derivative` tree, and their round trips) and
+`Results: 119 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
@@ -277,7 +293,10 @@ switch defaults; +8 more by 2026-09-18, not attributed here; +5 at the
 inert-trig substrate, `e9642a6`: the rewrite records; +9 at ticket 15,
 2026-09-23: the `mr_inert_leak_misfire` inert-leak misfire; +26 at ticket
 14, 2026-09-23: the `mr_last_resort_tier` tail tier and the
-`mr_general_after_giveups` general body, 13 each).
+`mr_general_after_giveups` general body, 13 each; +3 at the class-4
+port's Step 4, 2026-09-25: the 3-argument `%mr_rewrite` walk of a
+one-argument function; +10 at its Step 6: `%mr_rule_count`, and class-4
+BODY records — the inert-leak exemption and their give-up-last tiers).
 
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the
@@ -293,7 +312,55 @@ trap in `mr_sum`'s own locals, 5 targets, and in the generated With/Module
 locals of every class, 2 targets): `Results: 1179 passed, 0 failed`; at the
 section-9 port (branch `section9-port`, its Tasks 1-12b: the 9.2/9.3 utility
 units and the condition-assignment idiom):
-**`Results: 1292 passed, 0 failed`**, re-measured 2026-09-23 at Task 14. The
+`Results: 1292 passed, 0 failed`, re-measured 2026-09-23 at Task 14 (1293
+on the class-ports base `cd0a421`, after tickets 14/15); at the class-8
+port's Step 4 (2026-09-25: `%mr_derivative`, FunctionOfExpnQ and
+FunctionOfQ's general arm, SubstForAux, 38 checks): `Results: 1331
+passed, 0 failed`; with its capture fixes, the formal-derivative CalculusQ
+reading and the 9.1 Derivative end-to-end targets (19 checks, three older
+checks re-pointed): `Results: 1350 passed, 0 failed`; at the class-5 port's
+Step 4 (2026-09-25: `%mr_halfIntegerQ`, `%mr_head`,
+`%mr_inverseFunctionOfLinear`, `%mr_substForInverseFunction`, and class-5
+rule files end to end on sibling tables, 37 checks):
+`Results: 1387 passed, 0 failed`; at the class-7 port's Step 4 (2026-09-25:
+no utility to port, class-7 rule files end to end on sibling tables — the
+native inverse-hyperbolic heads and the asech/acsch rows, 13 checks):
+`Results: 1400 passed, 0 failed`; at the class-4 port's Step 4 cluster
+(a) (2026-09-25: ComplexFreeQ, InertTrigQ's MemberQ reading, ExpandTrig,
+KnownTrigIntegrandQ and its four wrappers, TrigSimplify(Q) over the
+generated TrigSimplifyAux table, DeactivateTrig on a sum and a quotient,
+which FixInertTrigFunction clause fires, 35 checks):
+`Results: 1435 passed, 0 failed`; at its cluster (b) (FunctionOfQ's and
+SubstFor's hyperbolic arms, 4.7.5 r5/r37 on a sibling table, and
+FreeFactors/NonfreeFactors on a quotient, 35 checks, one older target
+re-pointed): `Results: 1470 passed, 0 failed`; with the class-4 files end
+to end on a sibling table (the bridge and the 4.1/4.3/4.5 bodies, 4.1.1.1
+r1's Expand row, the Pi-shifted and Complex[0, fz] arguments, the accepted
+G-9 flags binding, the r66/r70 tail records, a 4.7.1 normalization record,
+17 checks): `Results: 1486 passed, 0 failed`; with DeactivateTrig's
+fast-path clause (the generated mr_rw_dt, 9 checks):
+`Results: 1495 passed, 0 failed`; with the EqQ/NeQ symbolic zero test
+(2026-09-25, branch `class-ports-fixes`,
+`.scratch/matcher-translation-fixes/issues/03`: the g12 shapes, the
+parametric and branch-identity controls, the `mr_eqq_symbolic` switch both
+ways, 1_2_1_2 r107 on 1.2.1.2 e1926, 5.3.7 r27/r28 and 7.3.7 r25/r26 on a
+shifted quadratic, 24 checks): `Results: 1519 passed, 0 failed`; with the
+native inverse-hyperbolic heads in every class (ticket
+`.scratch/class-ports/issues/18`, 8 checks): `Results: 1527 passed, 0
+failed`; with the two-argument `Expand[u, x]` -> `%mr_expand` in every class
+(ticket `.scratch/class-ports/issues/19`, 2_3 r58/r65, 7 checks):
+`Results: 1534 passed, 0 failed`; with ExpandIntegrand's reciprocal-atom
+guard (the class-6 attribution's fix A, 6 checks): `Results: 1540
+passed, 0 failed`; with SubstForTrig/SubstForHyperbolic on an unexpanded
+argument (its fix C, cured by the symbolic EqQ, 5 checks): `Results:
+1545 passed, 0 failed`; with the rule-record globals kept off Maxima's
+`values` list (the class-1 attribution's fix V, `%mr_trim_rule_values`, 4
+checks): `Results: 1549 passed, 0 failed` (the depth-cap default 16 -> 32,
+fix E, changes one check's expectation); with `%mr_subst` a plain `subst`
+unless the run switch `mr_subst_simp` (fix D, 4 checks): `Results: 1553
+passed, 0 failed`; with Rubi's real-number reading of GtQ/LtQ/GeQ/LeQ and
+the run switch `mr_gtq_facts` (matcher-translation-fixes issue 02, 30
+checks): **`Results: 1583 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -315,9 +382,28 @@ files`; Task 10 keeps 21 and moves that line to `7 rules over 2 files`,
 its fix round 1 to `8 rules over 2 files`); then `Results: 22 passed, 0
 failed` (2026-09-21, ticket 08): the With/Module local prefixing is one more
 closed exception, `undo_local_prefix`, its 1,602 declarations pinned.
-Now **`Results: 23 passed, 0 failed`** (2026-09-22, the section-9 port's
+Then `Results: 23 passed, 0 failed` (2026-09-22, the section-9 port's
 Task 10: one more check-7 line, `post-P0 class 9: 86 rules over 2 files`;
-re-measured 2026-09-23 at Task 14).
+re-measured 2026-09-23 at Task 14). Then `Results: 24 passed, 0 failed`
+(2026-09-25, the class-8 port's Step 3: one more check-7 line,
+`post-P0 class 8: 328 rules over 10 files` — the nine loaded "8 " files and
+9.1 Derivative as `rules/class8/9_1d.mac`). Then `Results: 25 passed, 0
+failed` (2026-09-25, the class-5 port's Step 3: one more check-7 line,
+`post-P0 class 5: 667 rules over 15 files`). Then `Results: 26 passed, 0
+failed` (2026-09-25, the class-7 port's Step 3: one more check-7 line,
+`post-P0 class 7: 712 rules over 21 files`; 5,906 pattern strings; still
+26 at the class-4 port's Step 3, 2026-09-25, whose check-7 line moves from
+`8 rules over 2 files` — the substrate's subset — to `post-P0 class 4:
+2080 rules over 56 files`; 7,990 pattern strings). Then `Results: 27
+passed, 0 failed` (2026-09-25, ticket `.scratch/class-ports/issues/18`:
+the native `atanh`/`asinh`/`acosh` heads are one more closed exception,
+`undo_native_heads`, its 53 class-1/3 sites pinned). Then `Results: 28
+passed, 0 failed` (2026-09-25, ticket `.scratch/class-ports/issues/19`:
+the two-argument `Expand` -> `%mr_expand`, `undo_expand2`, class 2's 2 sites).
+Now **`Results: 29 passed, 0 failed`** (2026-09-25,
+`.scratch/matcher-translation-fixes/issues/02`: GtQ/LtQ/GeQ/LeQ emit the
+two-valued `%mr_gtQ`/`%mr_ltQ`/`%mr_geQ`/`%mr_leQ`, undone to `is(A op B)`,
+1,944 class-1/2/3 sites pinned).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
@@ -328,15 +414,20 @@ fixes' 1,283 integer comparisons, 10 `notequal` and 1 juxtaposition), the
 reader self-test
 (`python3 generator/mma_reader.py`), and every pattern string preparing
 in `MR-MATCH`. Regeneration is byte-identical:
-`python3 generator/generate_rules.py --class <1|2|3|6>` and `--rewrites`
-leave `git status --porcelain rules/` empty (as does `--class 4` against
-the committed class-4 files; every class prefixes its With/Module
+`python3 generator/generate_rules.py --class <1|2|3|4|5|6|7|8|9>` and `--rewrites`
+leave `git status --porcelain rules/` empty (class 4 whole since the
+class-4 port, 2,080 rules; every class prefixes its With/Module
 locals `_mr_<key>_r<n>_<name>` — class 4 since `de51845`, the rest since
 ticket `.scratch/class-ports/issues/08`).
 
 The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
 guard, pure Python: `python3 test/test_generator_section9.py` — green
-**`Results: 21 passed, 0 failed`** (re-measured 2026-09-23 at Task 14;
+**`Results: 28 passed, 0 failed`** (2026-09-25, the class-4 port's Step 4:
++2, `===` (SameQ) emits Maxima's single `=`. Before: 26, the class-8 port: 23 after
+`7df5f9d`'s two `drop_comment_only_lines` join-guard checks, +3 for the
+guard's fix in `a6713a4` — a comment-only line before a blank line, before
+a multi-line comment, before the single-line ShowSteps wrapper; the guard
+had aborted `--class 1` and `--class 3`. Earlier: 21, re-measured 2026-09-23 at Task 14;
 13 at Task 1: 11 at the task; +2 at its fix round 1:
 the two-comments-on-one-line guard on `drop_comment_only_lines` and the
 bounded, loud `GenError` on a wrapper missing its `SimplifyFlag` line in
@@ -460,6 +551,11 @@ three migration switches (`mr_flat_wide` false, `mr_cond_retry` true,
 are set per run with `MR_SWITCHES` (space-separated
 `<switch>=true|false`), e.g.
 `MR_SWITCHES="mr_model_flags=false" python3 test/launch_class_shards.py …`.
+Every later `defmvar` run switch rides the same plumbing (`test/run_records.py`
+SWITCHES); the latest, `mr_eqq_symbolic` (default true, 2026-09-25), selects
+the EqQ/NeQ zero test — false is the syntactic `is(u - v = 0)` of every
+earlier record (`.scratch/matcher-translation-fixes/issues/03`,
+`probes/matcher/26-eqq-symbolic-zero-test.out`).
 The driver assigns them in every entry text and ends its `filter:`
 line with `switches: …`; the mergers refuse shards that state no arm
 or two arms. A launch first deletes the previous run's shard files and
@@ -491,7 +587,7 @@ python3 test/test_ab_records.py             # Results: 6 passed, 0 failed
 python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
 python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
 python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
-python3 test/test_head_rewrites.py          # Results: 20 passed, 0 failed
+python3 test/test_head_rewrites.py          # Results: 64 passed, 0 failed
 ```
 
 `test_driver_inert_leak` guards the inert-head leak classification: an answer

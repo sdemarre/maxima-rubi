@@ -1,0 +1,34 @@
+batch("04-radcan-nonzero-cost.mac")
+Px:(d^3*(b*x+a)^7)/b^3+((3*b*c*d^2-3*a*d^3)*(b*x+a)^6)/b^3
+                      +((3*a^2*d^3-6*a*b*c*d^2+3*b^2*c^2*d)*(b*x+a)^5)/b^3
+                      +((-(a^3*d^3)+3*a^2*b*c*d^2+(-3)*a*b^2*c^2*d+b^3*c^3)
+                       *(b*x+a)^4)
+                       /b^3
+D:Px-(b^(4/7)*d^(3/7)*x+a^(4/7)*c^(3/7))^7
+tm(label,e)::=buildq([label,e],
+   block([t0:elapsed_run_time(),r],r:e,
+         print("STAGE",label,"cpu",elapsed_run_time()-t0,"zero?",is(r = 0),
+               "len",slength(string(r))),r))
+r0:tm("ratsimp(D)",ratsimp(D))
+STAGE ratsimp(D) cpu 2.580000000000013e-4 zero? false len 511 
+tm("radcan(r0)",radcan(r0))
+STAGE radcan(r0) cpu 4.3299999999999936e-4 zero? false len 511 
+P2:expand((a+b*x)^3)
+D2:P2-(%mr_rt(a^3,3)+%mr_rt(b^3,3)*x)^3
+tm("ratsimp(D2)",ratsimp(D2))
+STAGE ratsimp(D2) cpu 9.999999999999593e-6 zero? true len 1 
+P3:expand((2*a+3*b*x)^5)
+D3:P3-(%mr_rt(coeff(P3,x,0),5)+%mr_rt(coeff(P3,x,5),5)*x)^5
+print("D3 kernels",showratvars(ratsimp(D3)))
+D3 kernels [] 
+tm("ratsimp(D3)",ratsimp(D3))
+STAGE ratsimp(D3) cpu 9.000000000002062e-6 zero? true len 1 
+tm("radcan(D3)",radcan(D3))
+STAGE radcan(D3) cpu 8.999999999998592e-6 zero? true len 1 
+tm("radcan(sqrt(a*b)-sqrt(a)*sqrt(b))",radcan(sqrt(a*b)-sqrt(a)*sqrt(b)))
+STAGE radcan(sqrt(a*b)-sqrt(a)*sqrt(b)) cpu 8.100000000000121e-5 zero? true len
+                                                                             1 
+tm("radcan((a*b)^m-a^m*b^m)",radcan((a*b)^m-a^m*b^m))
+STAGE radcan((a*b)^m-a^m*b^m) cpu 8.299999999999974e-5 zero? true len 1 
+ /home/serge/src/mr-ports/probes/class-ports/final/04-radcan-nonzero-cost.mac
+rc 0 cpu 0.031051

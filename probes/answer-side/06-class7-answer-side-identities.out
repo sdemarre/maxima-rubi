@@ -1,0 +1,54 @@
+probe: class7-answer-side-identities   date: 2026-09-24 23:59 UTC
+Maxima-version: "branch_5_50_base_84_g4204fb669"
+Maxima build date: "2026-08-31 13:27:47"
+Host type: "x86_64-pc-linux-gnu"
+Lisp implementation type: "SBCL"
+Lisp implementation version: "2.6.7"
+A1 chain diff resid asinh = 1
+A2 chain diff resid acosh = 1
+A3 chain diff resid atanh = 1
+A4 chain diff resid acoth = 1
+A5 chain diff resid asech = 1
+A6 chain diff resid acsch = 1
+E1 ev asinh(0.7) = 0.6526665660823557
+E2 ev acosh(1.7) = 1.123230982587296
+E3 ev atanh(0.7) = 0.8673005276940531
+E4 ev acoth(1.7) = 0.674963358474508
+E5 ev asech(0.7) = 0.8955880995299759
+E6 ev acsch(0.7) = 1.1544773942370685
+E7 ev acosh(0.7) (complex) = 0.7953988301841436*%i
+E8 ev acoth(0.7) (complex) = 0.8673005276940533-1.5707963267948966*%i
+E9 ev asech(1.7) (complex) = 0.9419214012998447*%i
+C1 chain diff(asech(z)-acosh(1/z)) = 1
+C2 chain diff(acsch(z)-asinh(1/z)) = 1
+C3 chain diff(acoth(z)-atanh(1/z)) = 1
+C4 asech(0.7)-acosh(1/0.7) = 0.0
+C5 acsch(1.7)-asinh(1/1.7) = 0.0
+C6 acsch(-1.7)-asinh(-1/1.7) = 0.0
+C7 acoth(1.7)-atanh(1/1.7) = 0.0
+C8 acoth(-1.7)-atanh(-1/1.7) = 0.0
+S1 asinh(-x) = -asinh(x)
+S2 acosh(-x) = acosh(-x)
+S3 atanh(-x) = -atanh(x)
+S4 acoth(-x) = -acoth(x)
+S5 asech(-x) = asech(-x)
+S6 acsch(-x) = -acsch(x)
+S7 atanh(1/x) = atanh(1/x)
+S8 acoth(1/x) = acoth(1/x)
+S9 asech(1/x) = asech(1/x)
+S10 acsch(1/x) = acsch(1/x)
+S11 logarc (the default) = false
+S12 ratsimp(atanh(c*x)^2+1) = atanh(c*x)^2+1
+S13 radcan(acosh(c*x)) = acosh(c*x)
+N1 errcatch(atanh(1)) = []
+N2 errcatch(acoth(1)) = []
+N3 acosh(1), asech(1), atanh(0) = [0,0,0]
+H1 op(atanh(1+2*x)) = atanh
+H2 op(acoth(1+2*x)) = acoth
+H3 op(asinh(1+2*x)) = asinh
+H4 op(acosh(1+2*x)) = acosh
+H5 op(asech(2*x)) = asech
+H6 op(acsch(2*x)) = acsch
+H7 is(op(atanh(1+2*x)) = atanh)  = true
+K1 op of the %mr_atanh shim body = "/"
+K2 op of the %mr_asinh shim body = log

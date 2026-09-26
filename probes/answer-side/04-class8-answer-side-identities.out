@@ -1,0 +1,52 @@
+probe: class8-answer-side-identities   date: 2026-09-24 22:08 UTC
+Maxima-version: "branch_5_50_base_84_g4204fb669"
+Maxima build date: "2026-08-31 13:27:47"
+Host type: "x86_64-pc-linux-gnu"
+Lisp implementation type: "SBCL"
+Lisp implementation version: "2.6.7"
+A1 chain diff resid fresnel_s = 1
+A2 chain diff resid fresnel_c = 1
+A3 chain diff resid erfc = 1
+A4 chain diff resid expintegral_si = 1
+A5 chain diff resid expintegral_ci = 1
+A6 chain diff resid expintegral_e = 1
+A7 chain diff resid lambert_w = 1
+A8 chain diff resid psi[n] = 1
+A9 chain diff resid psi[-2] = 1
+A10 chain diff resid log_gamma = 1
+A11 chain diff resid factorial = 1
+A12 chain diff resid gamma = 1
+A13 chain diff resid hypergeometric 3F3 = 1
+A14 expintegral_e(1,z) stays = expintegral_e(1,z)
+A15 hypergeometric([1,1],[3/2,2],z) stays = hypergeometric([1,1],[3/2,2],z)
+A16 Zeta(2,z) (no Hurwitz native) = Zeta(2,z)
+A17 diff Zeta(2,z) (a noun) = 'diff(Zeta(2,z),z,1)
+E1 ev fresnel_s(0.7) = 0.17213645786347742
+E2 ev fresnel_c(0.7) = 0.6596523519045103
+E3 ev erfc(0.7) = 0.32219880616258173
+E4 ev expintegral_e(2,0.7) = 0.23494711352795317
+E5 ev lambert_w(0.7) = 0.44747025926965495
+E6 ev log_gamma(0.7) = 0.2608672465316664
+E7 ev psi[0](0.7) = -1.220023553697935
+E8 ev psi[-2](0.7) (stays a noun) = psi[-2](0.7)
+E9 ev hypergeometric 3F3(0.7) = 1.097554331138013
+D1 corpus spelling, outer op = ?mqapply
+D2 corpus spelling, innermost op = Derivative
+D3 chain corpus spelling d/dx D1 = D2 = 0
+N1 native noun op = "diff"
+N2 native noun args = [f(x),x,1]
+N3 chain d/dx f(x) = 'diff(f(x),x,1) = 1
+N4 chain d/dx order 1 -> 2 = 1
+N5 chain d/dx order m -> m+1 = 1
+N6 chain d/dx order -1+m -> m = 1
+N7 chain d/dx order -1 -> f(x) = 1
+N8 chain d/dx order -3 -> -2 = 1
+N9 order 0 built by funmake = f(x)
+N10 order -1 noun is holdable = 'diff(f(x),x,-1)
+N11 diff() refuses order -1 = []
+N12 subst composite point = 'diff(F(f(x)*g(x)),f(x)*g(x),1)
+N13 chain no chain rule (composite) = 0
+N14 chain identical answers cancel = 1
+N15 numeric stage declines on a noun = []
+N16 subst of the noun by a symbol = g(x)*y
+N17 subst of a product misses its power = 1/(f(x)^2*g(x)^2+1)

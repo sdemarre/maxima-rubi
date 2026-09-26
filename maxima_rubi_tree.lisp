@@ -108,11 +108,50 @@ before the default MX_<operator> head for a Maxima operator the table lacks.")
     (t (let ((n (maxima-name sym)))
          (sym (if (member n +reserved+ :test #'string=) (concatenate 'string "MXS_" n) n))))))
 
-(defun unknown-head (op)
+;;; Tree heads a user function must never be read as: MR-MATCH's structural
+;;; heads and the names the pattern language reserves.
+(defparameter +structural-heads+
+  '("Plus" "Times" "Power" "Int" "List" "Pattern" "Blank" "BlankSequence"
+    "BlankNullSequence" "Optional" "Condition" "PatternTest" "Alternatives"
+    "Complex" "Rational" "Integer" "Real" "Symbol" "String" "True" "False"
+    "Derivative" "MRArg"))
+
+(defun user-function-head (op arity)
+  "A user function f(...) (a $-prefixed operator the table lacks) reads as the
+head named like the function itself, (f ...), the SAME symbol the bare atom f
+converts to -- Rubi's 9.1 patterns bind one capture both as a value
+(Derivative[1][f_]) and as a head (f_[x_]), so the two must agree (class-8
+port, 2026-09-25). Nil (keep the opaque MX_ head) for a %-noun or an
+unprefixed internal operator, whose name does not round-trip, and for a name
+that is a structural head or a table head of the same arity, which would be
+written back as something else."
+  (let ((name (symbol-name op)))
+    (when (and (> (length name) 1) (char= (char name 0) #\$))
+      (let* ((tn (maxima-name op)) (h (sym tn)))
+        (unless (or (member tn +structural-heads+ :test #'string=)
+                    (member tn +reserved+ :test #'string=)
+                    (gethash (cons h arity) *head->op*))
+          h)))))
+
+(defun unknown-head (op &optional arity)
   (or (and *unknown-head-hook* (funcall *unknown-head-hook* op))
+      (and arity (user-function-head op arity))
       (let ((h (sym (concatenate 'string "MX_" (symbol-name op)))))
         (setf (get h 'maxima-op) op)
         h)))
+
+(defun derivative-form-p (e)
+  "Maxima's formal derivative noun 'diff(f(u), u, n): exactly three
+arguments, the first a one-argument call whose argument is the
+differentiation variable (probes/answer-side/04-class8-answer-side-identities
+N1/N2/N12)."
+  (let ((args (cdr e)))
+    (and (= (length args) 3)
+         (let ((call (first args)))
+           (and (consp call) (consp (car call))
+                (not (eq (caar call) 'maxima::mqapply))
+                (= (length (cdr call)) 1)
+                (maxima::alike1 (second call) (second args)))))))
 
 ;;; ------------------------------------------------------------------
 ;;; Maxima -> tree
@@ -156,12 +195,23 @@ before the default MX_<operator> head for a Maxima operator the table lacks.")
                  ((eq op 'maxima::mplus) (flat-node (sym "Plus") (mapcar #'convert args)))
                  ((eq op 'maxima::mtimes) (flat-node (sym "Times") (mapcar #'convert args)))
                  ((eq op 'maxima::mexpt) (list (sym "Power") (convert (first args)) (convert (second args))))
+                 ;; Rubi's Derivative[n][f][u] is the curried tree
+                 ;; (((Derivative n) f) u); Maxima's own spelling of it is
+                 ;; the noun 'diff(f(u), u, n) (the class-8 design,
+                 ;; .scratch/class-ports/issues/01).
+                 ((and (eq op 'maxima::%derivative) (derivative-form-p e))
+                  (let ((call (convert (first args))))
+                    (if (consp call)
+                        (list (list (list (sym "Derivative") (convert (third args)))
+                                    (car call))
+                              (convert (second args)))
+                        (cons (unknown-head op) (mapcar #'convert args)))))
                  ((eq op 'maxima::mqapply)
                   (let* ((sub (first args))
                          (entry (find (caar sub) +subscripted+ :key #'second)))
                     (cons (if entry (sym (first entry)) (unknown-head (caar sub)))
                           (mapcar #'convert (append (cdr sub) (rest args))))))
-                 (t (cons (or (gethash op *op->head*) (unknown-head op))
+                 (t (cons (or (gethash op *op->head*) (unknown-head op (length args)))
                           (mapcar #'convert args))))))
         (t (error "mr-tree: cannot convert ~s" e))))
 
@@ -184,6 +234,17 @@ before the default MX_<operator> head for a Maxima operator the table lacks.")
                                                    (subseq n 4) n)))
                      :maxima)))))
 
+(defun head-operator (h arity)
+  "The Maxima operator a tree head symbol H of ARITY writes back as."
+  (or (gethash (cons h arity) *head->op*)
+      (get h 'maxima-op)
+      (tree-symbol->maxima h)))
+
+(defun derivative-head-p (h)
+  "The curried head ((Derivative n) f) of Derivative[n][f][u]."
+  (and (consp h) (consp (car h)) (eq (caar h) (sym "Derivative"))
+       (= (length (car h)) 2) (= (length h) 2) (symbolp (second h))))
+
 (defun unconvert (e)
   (cond ((integerp e) e)
         ((typep e 'ratio) (list '(maxima::rat) (numerator e) (denominator e)))
@@ -194,7 +255,15 @@ before the default MX_<operator> head for a Maxima operator the table lacks.")
         ((symbolp e) (tree-symbol->maxima e))
         (t (let* ((h (car e)) (args (mapcar #'unconvert (cdr e)))
                   (sub (and (symbolp h) (assoc (symbol-name h) +subscripted+ :test #'string=))))
-             (cond ((eq h (sym "Plus")) (cons '(maxima::mplus) args))
+             (cond ((and (derivative-head-p h) (= (length args) 1))
+                    ;; (((Derivative n) f) u) -> 'diff(f(u), u, n); order 0
+                    ;; is f(u) itself, as Mathematica's Derivative[0][f] is f
+                    (let ((n (unconvert (second (car h))))
+                          (call (list (list (head-operator (second h) 1)) (first args))))
+                      (if (eql n 0)
+                          call
+                          (list '(maxima::%derivative) call (first args) n))))
+                   ((eq h (sym "Plus")) (cons '(maxima::mplus) args))
                    ((eq h (sym "Times")) (cons '(maxima::mtimes) args))
                    ((eq h (sym "Power")) (cons '(maxima::mexpt) args))
                    (sub (list* '(maxima::mqapply) (list (list (second sub) 'maxima::array) (first args))

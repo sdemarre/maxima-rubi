@@ -1,0 +1,73 @@
+/* probes/corpus/27-class-ports-fixes-slice-select.mac -- picks the corpus
+   entries of the class-ports-fixes slice A/B (probes/corpus/27-class-ports-
+   fixes-slice-ab.run). Two kinds of hit, each one line:
+     EQQ <file> e<i> <off> <on>  -- the entry's accepting records of its own
+         section's rule file(s) differ between mr_eqq_symbolic false and true
+         (the EqQ/NeQ fix changes the top-level choice);
+     HIT <file> e<i> <rule>      -- a named record accepts the entry (the
+         ticket-18 shim sites 3_1_3 r14 / 5_3_2 r3, the ticket-19 records
+         2_3 r58 / r65).
+   Corpus files are read with batchload (each sets lst : '[...]; entry i is
+   lst[i], the driver's e<i>). The .sh sets mr_sel_phase: "eqq" runs the
+   EQQ scans, "hit" the HIT scans. (2026-09-25, branch class-ports-fixes.)
+   Every local and parameter is %sel_-prefixed: an integrand is EVALUATED
+   inside these functions (ev / eval_string), so a local named like a corpus
+   symbol (f, n, a) captured it -- the first run bound f and n and its
+   1.2.1.3 / 1.1.1.3 hits were wrong (Maxima binds block locals
+   dynamically; the capture trap of .scratch/class-ports/issues/08). */
+display2d : false$
+linel : 10000$
+print("R build", build_info()@version, build_info()@timestamp)$
+load("maxima_rubi.mac")$
+%sel_S : "reference/maxima-syntax-test-suite/"$
+ld(%sel_c, %sel_k) := %mr_load_sibling(sconcat("rules/", %sel_c, "/", %sel_k, ".mac"), concat('mr_witness_, %sel_k))$
+ld("class1", "1_2_1_2")$ ld("class1", "1_2_1_3")$ ld("class1", "1_1_1_3")$
+ld("class2", "2_3")$ ld("class3", "3_1_3")$ ld("class5", "5_3_2")$
+ld("class5", "5_3_7")$ ld("class7", "7_3_7")$
+/* the positions i of the accepting handles in the rule file's list (the
+   list is r1..rN in order, so position i is record r<i>) */
+accepts(%sel_hs, %sel_f) := sublist_indices(%sel_hs, lambda([%sel_h],
+    block([%sel_r], %sel_r : errcatch(%mr_rule_accept(%sel_h, %sel_f, x)),
+          is(%sel_r # [] and listp(first(%sel_r))))))$
+names(%sel_key, %sel_ix) := map(lambda([%sel_i], sconcat(%sel_key, "_r", %sel_i)), %sel_ix)$
+eqq_scan(%sel_file, %sel_key, %sel_hs) := block([%sel_n, %sel_f, %sel_off, %sel_on],
+  batchload(sconcat(%sel_S, %sel_file)),
+  %sel_n : length(lst),
+  for %sel_i : 1 thru %sel_n do (
+    %sel_f : errcatch(ev(first(lst[%sel_i]))),
+    if %sel_f # [] then (
+      %sel_f : first(%sel_f),
+      mr_eqq_symbolic : false, %sel_off : accepts(%sel_hs, %sel_f),
+      mr_eqq_symbolic : true, %sel_on : accepts(%sel_hs, %sel_f),
+      if %sel_off # %sel_on then print("EQQ", %sel_file, sconcat("e", %sel_i),
+                                       names(%sel_key, %sel_off), names(%sel_key, %sel_on)))),
+  print("R scanned", %sel_file, %sel_n))$
+/* HIT scans read the entries the .sh extracted with the driver's own
+   extract_entries / split_elements / normalize_heads (batchload of a corpus
+   file dies on its first entry Maxima cannot evaluate -- 3.1.4 line 579,
+   "0 to a negative exponent"; 6.7.1 line 1270, a 2-argument atan):
+   mr_hit_entries is [[file, i, "integrand text"], ...]. */
+hit_scan(%sel_file, %sel_key, %sel_hs) := block([%sel_f, %sel_a, %sel_n : 0],
+  for %sel_q in mr_hit_entries do if %sel_q[1] = %sel_file then (
+    %sel_n : %sel_n + 1,
+    %sel_f : errcatch(eval_string(%sel_q[3])),
+    if %sel_f # [] then (
+      %sel_a : accepts(%sel_hs, first(%sel_f)),
+      if %sel_a # [] then print("HIT", %sel_file, sconcat("e", %sel_q[2]),
+                                map(lambda([%sel_j], %sel_key[%sel_j]), %sel_a)))),
+  print("R scanned", %sel_file, %sel_n))$
+/* No class-6 scan: batchload of "6.7.1 Hyperbolic functions.mac" errors
+   at its line 1270 (atan with two arguments -- the corpus's ArcTan[x, y],
+   which the driver's normalize_heads rewrites), so the slice's class-6
+   entries are controls picked in the .run. */
+if mr_sel_phase = "eqq" then (
+eqq_scan("1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac", "1_2_1_2", mr_rules_1_2_1_2),
+eqq_scan("1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac", "1_2_1_3", mr_rules_1_2_1_3),
+eqq_scan("1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac", "1_1_1_3", mr_rules_1_1_1_3),
+eqq_scan("5 Inverse trig functions/5.3 Inverse tangent/5.3.7 Inverse tangent functions.mac", "5_3_7", mr_rules_5_3_7),
+eqq_scan("7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.7 Inverse hyperbolic tangent functions.mac", "7_3_7", mr_rules_7_3_7))$
+if mr_sel_phase = "hit" then (
+hit_scan("2 Exponentials/2.3 Exponential functions.mac", ["2_3_r58", "2_3_r65"], [_mr_rule_2_3_r58, _mr_rule_2_3_r65]),
+hit_scan("3 Logarithms/3.1.4 (f x)^m (d+e x^r)^q (a+b log(c x^n))^p.mac", ["3_1_3_r14"], [_mr_rule_3_1_3_r14]),
+hit_scan("3 Logarithms/3.1.5 u (a+b log(c x^n))^p.mac", ["3_1_3_r14"], [_mr_rule_3_1_3_r14]),
+hit_scan("5 Inverse trig functions/5.3 Inverse tangent/5.3.2 (d x)^m (a+b arctan(c x^n))^p.mac", ["5_3_2_r3"], [_mr_rule_5_3_2_r3]))$

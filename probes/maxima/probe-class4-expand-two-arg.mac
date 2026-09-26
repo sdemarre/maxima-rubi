@@ -1,0 +1,24 @@
+/* probes/maxima/probe-class4-expand-two-arg.mac -- Rubi's 2-argument
+   Expand[u, x] emitted as Maxima's expand(u, x) (class 4 port, 2026-09-25;
+   .scratch/class-ports/issues/19). Loads no rule files except the ones
+   named. */
+display2d : false$
+print(build_info())$
+load("maxima_rubi.mac")$
+/* E1: the bare Maxima call the table used to emit */
+print("E1 expand((1-x^2)^2, x) ->", errcatch(expand((1 - x^2)^2, x)))$
+/* E2: %mr_expand, class 4's CLASS_RENAME target */
+print("E2 %mr_expand((1-x^2)^2, x) ->", %mr_expand((1 - x^2)^2, x))$
+/* E3: class 2's 2_3 r58 repl, as committed, on its own integrand shape
+   G^(h (f+g x)) (a+b F^(e (c+d x)))^p with p = 2: the repl errors
+   (the message below) and the dispatcher reads it as a misfire, false */
+%mr_load_sibling("rules/class2/2_3.mac", 'mr_witness_2_3)$
+print("E3 2_3 r58 on 2^x*(1+3^x)^2 ->",
+      %mr_rule_apply(_mr_rule_2_3_r58, 2^x*(1 + 3^x)^2, x))$
+/* E4: 4_1_1_1 r1 (Int sin^n, n odd), after the class-4 row */
+%mr_load_sibling("rules/utils/inert_trig_rewrites.mac", 'mr_witness_inert_trig_rewrites)$
+%mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1)$
+%mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1)$
+%mr_load_sibling("rules/class4/4_1_1_1.mac", 'mr_witness_4_1_1_1)$
+mr_rule_table : flatten([mr_rules_1_1_1_1, mr_rules_9_1])$
+print("E4 4_1_1_1 r1 on sin(x)^5 ->", %mr_rule_apply(_mr_rule_4_1_1_1_r1, %mr_isin(x)^5, x))$

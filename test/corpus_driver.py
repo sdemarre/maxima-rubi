@@ -61,6 +61,36 @@ import threading
 import time
 from datetime import datetime, timezone
 
+def _call_args(s, open_i):
+    """The top-level argument texts of the call whose '(' is s[open_i], and
+    the index just past its ')' -- or (None, open_i) when unbalanced.
+    Commas inside (), [] or {} do not split (hypergeometric([1,1],[2],z))."""
+    depth, start, args = 0, open_i + 1, []
+    for i in range(open_i, len(s)):
+        ch = s[i]
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+            if depth == 0:
+                args.append(s[start:i])
+                return args, i + 1
+        elif ch == "," and depth == 1:
+            args.append(s[start:i])
+            start = i + 1
+    return None, open_i
+
+
+def _by_arity(head, table):
+    """A HEAD_REWRITES replacement for `head(`, chosen by the call's
+    argument count; an arity the table lacks is left as written."""
+    def rep(m):
+        args, _ = _call_args(m.string, m.end() - 1)
+        return table.get(len(args) if args is not None else -1, m.group(0))
+    rep.labels = table
+    return rep
+
+
 HEAD_REWRITES = [
     # Corpus expected answers carry Rubi-notation special-function
     # heads; the package emits the native Maxima names (the generator
@@ -73,8 +103,18 @@ HEAD_REWRITES = [
     # harness zero chain; probes/corpus/02-class2-answer-heads
     # measures the head COUNTS only). The lookbehind keeps longer names
     # (e.g. a free function named "XEi") intact.
-    (re.compile(r"(?<![A-Za-z0-9_])GAMMA\("), "gamma_incomplete("),
-    (re.compile(r"(?<![A-Za-z0-9_])Ei\("), "expintegral_ei("),
+    # GAMMA( and Ei( are ARITY-dispatched since class 8 (2026-09-25; the
+    # _by_arity rows below): section 8 is the first to carry 1-arg GAMMA
+    # (Gamma[z] -> gamma, 18 uses) and 2-arg Ei (ExpIntegralE[n, z] ->
+    # expintegral_e, 334 uses; probes/corpus/15-class8-answer-heads.out),
+    # which the old arity-blind rows turned into gamma_incomplete(z) and
+    # expintegral_ei(n, z). The class-2 readings (2-arg GAMMA, 1-arg Ei)
+    # are unchanged, and the accepted sections carry no other arity
+    # (classes 2/3/6 only 1-arg Ei and 2-arg GAMMA, class 1 neither).
+    (re.compile(r"(?<![A-Za-z0-9_])GAMMA\("),
+     _by_arity("GAMMA", {1: "gamma(", 2: "gamma_incomplete("})),
+    (re.compile(r"(?<![A-Za-z0-9_])Ei\("),
+     _by_arity("Ei", {1: "expintegral_ei(", 2: "expintegral_e("})),
     # Class-3 rows (2026-08-29): the "3 Logarithms" expected answers
     # carry the Rubi heads Chi( Shi( Si( Ci( Li(. Measured on 5.50.0 —
     # the committed re-runnable form:
@@ -102,6 +142,24 @@ HEAD_REWRITES = [
     (re.compile(r"(?<![A-Za-z0-9_])Si\("), "expintegral_si("),
     (re.compile(r"(?<![A-Za-z0-9_])Ci\("), "expintegral_ci("),
     (re.compile(r"(?<![A-Za-z0-9_])Li\("), "expintegral_li("),
+    # Class-8 rows (2026-09-25): the "8 Special functions" answer heads onto
+    # the natives the class-8 rules emit (generator/translation_table.py).
+    # Each native differentiates through this driver's zero_chain and
+    # float-evaluates, build branch_5_50_base_84_g4204fb669
+    # (probes/answer-side/04-class8-answer-side-identities.out: fresnel_s /
+    # fresnel_c A1/A2, lambert_w A7, log_gamma A10, factorial A11,
+    # hypergeometric A13). Counts: probes/corpus/15-class8-answer-heads.out
+    # (ProductLog( 1695, FresnelS( 424, FresnelC( 418, HypergeometricPFQ(
+    # 137, lnGAMMA( 22, Factorial( 2). lnGAMMA is Mathematica's LogGamma;
+    # the rules emit log(gamma(z)) for it (the class-3 decision), which
+    # differentiates to the same psi[0](z). HypergeometricPFQ's list
+    # arguments are already Maxima lists in the corpus text.
+    (re.compile(r"(?<![A-Za-z0-9_])ProductLog\("), "lambert_w("),
+    (re.compile(r"(?<![A-Za-z0-9_])FresnelS\("), "fresnel_s("),
+    (re.compile(r"(?<![A-Za-z0-9_])FresnelC\("), "fresnel_c("),
+    (re.compile(r"(?<![A-Za-z0-9_])lnGAMMA\("), "log_gamma("),
+    (re.compile(r"(?<![A-Za-z0-9_])HypergeometricPFQ\("), "hypergeometric("),
+    (re.compile(r"(?<![A-Za-z0-9_])Factorial\("), "factorial("),
 ]
 REWRITE_STATS = {}
 # The queue runner (test/run_corpus_queue.py) calls normalize_heads from its
@@ -109,12 +167,105 @@ REWRITE_STATS = {}
 REWRITE_LOCK = threading.Lock()
 
 
+_DERIVATIVE = re.compile(r"(?<![A-Za-z0-9_%])Derivative\(")
+_PSI = re.compile(r"(?<![A-Za-z0-9_%])Psi\(")
+_H2F1 = re.compile(r"(?<![A-Za-z0-9_%])Hypergeometric2F1\(")
+
+
+def rewrite_structural(text):
+    """The class-8 STRUCTURAL rewrites (not table rows: the head's argument
+    list changes shape), applied before the rows. Returns (text, counts).
+
+    - Derivative(A)(B)(C) -> %mr_derivative(A, B, C): Mathematica's formal
+      derivative Derivative[A][B][C] as the corpus spells it. The package
+      function builds Maxima's own derivative noun 'diff(B(C), C, A) (order
+      0: B(C)) -- the class-8 design, .scratch/class-ports/issues/01
+      ("DESIGN"); the zero-chain identities it relies on are
+      probes/answer-side/04-class8-answer-side-identities.out N1-N17.
+      Nested derivatives inside the groups are rewritten too. A
+      Derivative( not followed by exactly three groups is left as written.
+    - Psi(A, B) -> psi[A](B): PolyGamma[A, B] (A the order, negative ones
+      included) as Maxima's subscripted polygamma, which differentiates
+      (probe 04 A8/A9). Only the 2-argument form.
+    - Hypergeometric2F1(A, B, C, Z) -> hypergeometric([A, B], [C], Z)
+      (class 4, 2026-09-25): Gauss's 2F1 as the native generalized
+      hypergeometric the rules emit for it (generator/generate_rules.py's
+      Hypergeometric2F1 case; the class-8 HypergeometricPFQ row's target,
+      which differentiates -- probes/answer-side/04 A13). Only the
+      4-argument form; three occurrences over two corpus entries, both in 4.1.1.3
+      (probes/corpus/14-class4-answer-heads.out)."""
+    counts = {}
+
+    def inner(t):
+        r, c = rewrite_structural(t)
+        for k, v in c.items():
+            counts[k] = counts.get(k, 0) + v
+        return r.strip()
+
+    out, i = [], 0
+    while True:
+        md, mp = _DERIVATIVE.search(text, i), _PSI.search(text, i)
+        mh = _H2F1.search(text, i)
+        m = min((x for x in (md, mp, mh) if x), key=lambda x: x.start(),
+                default=None)
+        if m is None:
+            out.append(text[i:])
+            break
+        out.append(text[i:m.start()])
+        j = m.end() - 1
+        if m is md:
+            groups = []
+            while len(groups) < 3 and j < len(text) and text[j] == "(":
+                args, k = _call_args(text, j)
+                if args is None or len(args) != 1:
+                    break
+                groups.append(args[0])
+                j = k
+            if len(groups) == 3:
+                out.append("%mr_derivative("
+                           + ", ".join(inner(g) for g in groups) + ")")
+                counts["%mr_derivative("] = counts.get("%mr_derivative(", 0) + 1
+                i = j
+                continue
+        elif m is mh:
+            args, k = _call_args(text, j)
+            if args is not None and len(args) == 4:
+                a, b, c, z = (inner(x) for x in args)
+                out.append(f"hypergeometric([{a},{b}],[{c}],{z})")
+                counts["hypergeometric(2F1)"] = counts.get("hypergeometric(2F1)", 0) + 1
+                i = k
+                continue
+        else:
+            args, k = _call_args(text, j)
+            if args is not None and len(args) == 2:
+                a, b = (inner(x) for x in args)
+                out.append(f"psi[{a}]({b})")
+                counts["psi["] = counts.get("psi[", 0) + 1
+                i = k
+                continue
+        out.append(m.group(0))
+        i = m.end()
+    return "".join(out), counts
+
+
 def normalize_heads(text):
+    text, counts = rewrite_structural(text)
+    stats = dict(counts)
     for rx, rep in HEAD_REWRITES:
-        text, n = rx.subn(rep, text)
-        if n:
-            with REWRITE_LOCK:
-                REWRITE_STATS[rep] = REWRITE_STATS.get(rep, 0) + n
+        if callable(rep):
+            hits = []
+            text = rx.sub(lambda m: hits.append(rep(m)) or hits[-1], text)
+            for h in hits:
+                if h in rep.labels.values():
+                    stats[h] = stats.get(h, 0) + 1
+        else:
+            text, n = rx.subn(rep, text)
+            if n:
+                stats[rep] = stats.get(rep, 0) + n
+    if stats:
+        with REWRITE_LOCK:
+            for k, v in stats.items():
+                REWRITE_STATS[k] = REWRITE_STATS.get(k, 0) + v
     return text
 
 

@@ -1,0 +1,27 @@
+#!/bin/sh
+# probes/corpus/26-class4-slice-attribution.run -- one Maxima at a time,
+# 60 s wall per case; the tree's own rule files (mr_load_all), not a core.
+#   sh probes/corpus/26-class4-slice-attribution.run
+cd "$(dirname "$0")/../.." || exit 1
+T=$(mktemp -d)
+OUT=probes/corpus/26-class4-slice-attribution.out
+run() {  # $1 label, $2 mr_oldff, $3 integrand
+  printf 'mr_oldff : %s$\nmr_f : %s$\n' "$2" "$3" > "$T/case.mac"
+  cat probes/corpus/26-class4-slice-attribution.mac >> "$T/case.mac"
+  timeout 60 setsid -w maxima --very-quiet -b "$T/case.mac" < /dev/null > "$T/case.out" 2>&1
+  echo "== $1  (old FreeFactors: $2)  $3"
+  grep '^TIME' "$T/case.out" || echo "no answer within 60 s wall"
+  echo "   fired: $(grep -o 'rule [0-9a-z_]* r[0-9]* fired' "$T/case.out" | awk '{print $2}' | sort | uniq -c | sort -rn | tr -s ' ' | tr '\n' ' ')"
+}
+{
+  echo "# class-4 slice attribution, $(date -u '+%F %T UTC')"
+  maxima --very-quiet --batch-string='print(build_info())$' < /dev/null 2>&1 | grep 'Maxima-version\|build date'
+  run "A1 1.1.1.5 e2 (timeout -> verified)" false "(a+b*x)^2*(A+B*x+C*x^2+D*x^3)/sqrt(c+d*x)"
+  run "A1 1.1.1.5 e2 (timeout -> verified)" true  "(a+b*x)^2*(A+B*x+C*x^2+D*x^3)/sqrt(c+d*x)"
+  run "A2 3.1.5 e1 (unverified -> timeout)" false "(a+b*log(c*x^n))/(d+e*x+f*x^2)"
+  run "A2 3.1.5 e1 (unverified -> timeout)" true  "(a+b*log(c*x^n))/(d+e*x+f*x^2)"
+  run "A3 7.5.2 e1 (timeout -> verified)" false "x^3*asech(a+b*x)"
+  run "A4 7.5.1 e1 (contains-noun -> timeout)" false "x^4*asech(a*x)^2"
+} > "$OUT"
+rm -rf "$T"
+echo "wrote $OUT"

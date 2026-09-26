@@ -1,0 +1,450 @@
+/* rules/class8/8_2.mac — GENERATED; do not edit.
+ * Source: Rubi 4 61e9c18ea248061cd83c67882f7c91a73cef912d
+ *          Rubi/IntegrationRules/8 Special functions/8.2 Fresnel integral functions.m
+ * Regenerate: python3 generator/generate_rules.py --class 8 --only 8_2 */
+/* Ported from Rule-Based Integration (Rubi), https://github.com/RuleBasedIntegration/Rubi
+ * Copyright (c) 2018 Rule-Based-Integration Organization (MIT). */
+
+_mr_cond_8_2_r1(mm, x) := block([_mr_8_2_r1_a, _mr_8_2_r1_b],
+  _mr_8_2_r1_a : geteqR(mm, '_mr_8_2_r1_a), _mr_8_2_r1_b : geteqR(mm, '_mr_8_2_r1_b),
+  freeof(x, _mr_8_2_r1_a) and freeof(x, _mr_8_2_r1_b))$
+_mr_repl_8_2_r1(mm, x) := block([_mr_8_2_r1_a__s, _mr_8_2_r1_b__s],
+  _mr_8_2_r1_a__s : geteqR(mm, '_mr_8_2_r1_a), _mr_8_2_r1_b__s : geteqR(mm, '_mr_8_2_r1_b),
+  (_mr_8_2_r1_a__s + _mr_8_2_r1_b__s*x)*fresnel_s(_mr_8_2_r1_a__s + _mr_8_2_r1_b__s*x)/_mr_8_2_r1_b__s + cos(%pi/2*(_mr_8_2_r1_a__s + _mr_8_2_r1_b__s*x)^2)/(_mr_8_2_r1_b__s*%pi))$
+_mr_rule_8_2_r1 : %mr_defrule("8_2", 1, "(Int (FresnelS (Plus (Optional (Pattern |_mr_8_2_r1_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r1_b| (Blank))) (Pattern x (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r1, _mr_repl_8_2_r1)$
+
+_mr_cond_8_2_r2(mm, x) := block([_mr_8_2_r2_a, _mr_8_2_r2_b],
+  _mr_8_2_r2_a : geteqR(mm, '_mr_8_2_r2_a), _mr_8_2_r2_b : geteqR(mm, '_mr_8_2_r2_b),
+  freeof(x, _mr_8_2_r2_a) and freeof(x, _mr_8_2_r2_b))$
+_mr_repl_8_2_r2(mm, x) := block([_mr_8_2_r2_a__s, _mr_8_2_r2_b__s],
+  _mr_8_2_r2_a__s : geteqR(mm, '_mr_8_2_r2_a), _mr_8_2_r2_b__s : geteqR(mm, '_mr_8_2_r2_b),
+  (_mr_8_2_r2_a__s + _mr_8_2_r2_b__s*x)*fresnel_c(_mr_8_2_r2_a__s + _mr_8_2_r2_b__s*x)/_mr_8_2_r2_b__s - sin(%pi/2*(_mr_8_2_r2_a__s + _mr_8_2_r2_b__s*x)^2)/(_mr_8_2_r2_b__s*%pi))$
+_mr_rule_8_2_r2 : %mr_defrule("8_2", 2, "(Int (FresnelC (Plus (Optional (Pattern |_mr_8_2_r2_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r2_b| (Blank))) (Pattern x (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r2, _mr_repl_8_2_r2)$
+
+_mr_cond_8_2_r3(mm, x) := block([_mr_8_2_r3_a, _mr_8_2_r3_b],
+  _mr_8_2_r3_a : geteqR(mm, '_mr_8_2_r3_a), _mr_8_2_r3_b : geteqR(mm, '_mr_8_2_r3_b),
+  freeof(x, _mr_8_2_r3_a) and freeof(x, _mr_8_2_r3_b))$
+_mr_repl_8_2_r3(mm, x) := block([_mr_8_2_r3_a__s, _mr_8_2_r3_b__s],
+  _mr_8_2_r3_a__s : geteqR(mm, '_mr_8_2_r3_a), _mr_8_2_r3_b__s : geteqR(mm, '_mr_8_2_r3_b),
+  (_mr_8_2_r3_a__s + _mr_8_2_r3_b__s*x)*fresnel_s(_mr_8_2_r3_a__s + _mr_8_2_r3_b__s*x)^2/_mr_8_2_r3_b__s - 2*mr_int((_mr_8_2_r3_a__s + _mr_8_2_r3_b__s*x)*sin(%pi/2*(_mr_8_2_r3_a__s + _mr_8_2_r3_b__s*x)^2)*fresnel_s(_mr_8_2_r3_a__s + _mr_8_2_r3_b__s*x), x))$
+_mr_rule_8_2_r3 : %mr_defrule("8_2", 3, "(Int (Power (FresnelS (Plus (Optional (Pattern |_mr_8_2_r3_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r3_b| (Blank))) (Pattern x (Blank))))) 2) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r3, _mr_repl_8_2_r3)$
+
+_mr_cond_8_2_r4(mm, x) := block([_mr_8_2_r4_a, _mr_8_2_r4_b],
+  _mr_8_2_r4_a : geteqR(mm, '_mr_8_2_r4_a), _mr_8_2_r4_b : geteqR(mm, '_mr_8_2_r4_b),
+  freeof(x, _mr_8_2_r4_a) and freeof(x, _mr_8_2_r4_b))$
+_mr_repl_8_2_r4(mm, x) := block([_mr_8_2_r4_a__s, _mr_8_2_r4_b__s],
+  _mr_8_2_r4_a__s : geteqR(mm, '_mr_8_2_r4_a), _mr_8_2_r4_b__s : geteqR(mm, '_mr_8_2_r4_b),
+  (_mr_8_2_r4_a__s + _mr_8_2_r4_b__s*x)*fresnel_c(_mr_8_2_r4_a__s + _mr_8_2_r4_b__s*x)^2/_mr_8_2_r4_b__s - 2*mr_int((_mr_8_2_r4_a__s + _mr_8_2_r4_b__s*x)*cos(%pi/2*(_mr_8_2_r4_a__s + _mr_8_2_r4_b__s*x)^2)*fresnel_c(_mr_8_2_r4_a__s + _mr_8_2_r4_b__s*x), x))$
+_mr_rule_8_2_r4 : %mr_defrule("8_2", 4, "(Int (Power (FresnelC (Plus (Optional (Pattern |_mr_8_2_r4_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r4_b| (Blank))) (Pattern x (Blank))))) 2) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r4, _mr_repl_8_2_r4)$
+
+_mr_cond_8_2_r5(mm, x) := block([_mr_8_2_r5_a, _mr_8_2_r5_b, _mr_8_2_r5_n],
+  _mr_8_2_r5_a : geteqR(mm, '_mr_8_2_r5_a), _mr_8_2_r5_b : geteqR(mm, '_mr_8_2_r5_b), _mr_8_2_r5_n : geteqR(mm, '_mr_8_2_r5_n),
+  freeof(x, _mr_8_2_r5_a) and freeof(x, _mr_8_2_r5_b) and freeof(x, _mr_8_2_r5_n)  and  %mr_neQ(_mr_8_2_r5_n, 1)  and  %mr_neQ(_mr_8_2_r5_n, 2))$
+_mr_repl_8_2_r5(mm, x) := block([_mr_8_2_r5_a__s, _mr_8_2_r5_b__s, _mr_8_2_r5_n__s],
+  _mr_8_2_r5_a__s : geteqR(mm, '_mr_8_2_r5_a), _mr_8_2_r5_b__s : geteqR(mm, '_mr_8_2_r5_b), _mr_8_2_r5_n__s : geteqR(mm, '_mr_8_2_r5_n),
+  mr_unintegrable(fresnel_s(_mr_8_2_r5_a__s + _mr_8_2_r5_b__s*x)^_mr_8_2_r5_n__s, x))$
+_mr_rule_8_2_r5 : %mr_defrule("8_2", 5, "(Int (Power (FresnelS (Plus (Optional (Pattern |_mr_8_2_r5_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r5_b| (Blank))) (Pattern x (Blank))))) (Pattern |_mr_8_2_r5_n| (Blank))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r5, _mr_repl_8_2_r5)$
+
+_mr_cond_8_2_r6(mm, x) := block([_mr_8_2_r6_a, _mr_8_2_r6_b, _mr_8_2_r6_n],
+  _mr_8_2_r6_a : geteqR(mm, '_mr_8_2_r6_a), _mr_8_2_r6_b : geteqR(mm, '_mr_8_2_r6_b), _mr_8_2_r6_n : geteqR(mm, '_mr_8_2_r6_n),
+  freeof(x, _mr_8_2_r6_a) and freeof(x, _mr_8_2_r6_b) and freeof(x, _mr_8_2_r6_n)  and  %mr_neQ(_mr_8_2_r6_n, 1)  and  %mr_neQ(_mr_8_2_r6_n, 2))$
+_mr_repl_8_2_r6(mm, x) := block([_mr_8_2_r6_a__s, _mr_8_2_r6_b__s, _mr_8_2_r6_n__s],
+  _mr_8_2_r6_a__s : geteqR(mm, '_mr_8_2_r6_a), _mr_8_2_r6_b__s : geteqR(mm, '_mr_8_2_r6_b), _mr_8_2_r6_n__s : geteqR(mm, '_mr_8_2_r6_n),
+  mr_unintegrable(fresnel_c(_mr_8_2_r6_a__s + _mr_8_2_r6_b__s*x)^_mr_8_2_r6_n__s, x))$
+_mr_rule_8_2_r6 : %mr_defrule("8_2", 6, "(Int (Power (FresnelC (Plus (Optional (Pattern |_mr_8_2_r6_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r6_b| (Blank))) (Pattern x (Blank))))) (Pattern |_mr_8_2_r6_n| (Blank))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r6, _mr_repl_8_2_r6)$
+
+_mr_cond_8_2_r7(mm, x) := block([_mr_8_2_r7_b],
+  _mr_8_2_r7_b : geteqR(mm, '_mr_8_2_r7_b),
+  freeof(x, _mr_8_2_r7_b))$
+_mr_repl_8_2_r7(mm, x) := block([_mr_8_2_r7_b__s],
+  _mr_8_2_r7_b__s : geteqR(mm, '_mr_8_2_r7_b),
+  (1 + %i)/4*mr_int(erf(sqrt(%pi)/2*(1 + %i)*_mr_8_2_r7_b__s*x)/x, x) + (1 - %i)/4* mr_int(erf(sqrt(%pi)/2*(1 - %i)*_mr_8_2_r7_b__s*x)/x, x))$
+_mr_rule_8_2_r7 : %mr_defrule("8_2", 7, "(Int (Times (FresnelS (Times (Optional (Pattern |_mr_8_2_r7_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) -1)) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r7, _mr_repl_8_2_r7)$
+
+_mr_cond_8_2_r8(mm, x) := block([_mr_8_2_r8_b],
+  _mr_8_2_r8_b : geteqR(mm, '_mr_8_2_r8_b),
+  freeof(x, _mr_8_2_r8_b))$
+_mr_repl_8_2_r8(mm, x) := block([_mr_8_2_r8_b__s],
+  _mr_8_2_r8_b__s : geteqR(mm, '_mr_8_2_r8_b),
+  (1 - %i)/4*mr_int(erf(sqrt(%pi)/2*(1 + %i)*_mr_8_2_r8_b__s*x)/x, x) + (1 + %i)/4* mr_int(erf(sqrt(%pi)/2*(1 - %i)*_mr_8_2_r8_b__s*x)/x, x))$
+_mr_rule_8_2_r8 : %mr_defrule("8_2", 8, "(Int (Times (FresnelC (Times (Optional (Pattern |_mr_8_2_r8_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) -1)) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r8, _mr_repl_8_2_r8)$
+
+_mr_cond_8_2_r9(mm, x) := block([_mr_8_2_r9_b, _mr_8_2_r9_d, _mr_8_2_r9_m],
+  _mr_8_2_r9_b : geteqR(mm, '_mr_8_2_r9_b), _mr_8_2_r9_d : geteqR(mm, '_mr_8_2_r9_d), _mr_8_2_r9_m : geteqR(mm, '_mr_8_2_r9_m),
+  freeof(x, _mr_8_2_r9_b) and freeof(x, _mr_8_2_r9_d) and freeof(x, _mr_8_2_r9_m)  and  %mr_neQ(_mr_8_2_r9_m, -1))$
+_mr_repl_8_2_r9(mm, x) := block([_mr_8_2_r9_b__s, _mr_8_2_r9_d__s, _mr_8_2_r9_m__s],
+  _mr_8_2_r9_b__s : geteqR(mm, '_mr_8_2_r9_b), _mr_8_2_r9_d__s : geteqR(mm, '_mr_8_2_r9_d), _mr_8_2_r9_m__s : geteqR(mm, '_mr_8_2_r9_m),
+  (_mr_8_2_r9_d__s*x)^(_mr_8_2_r9_m__s + 1)*fresnel_s(_mr_8_2_r9_b__s*x)/(_mr_8_2_r9_d__s*(_mr_8_2_r9_m__s + 1)) - _mr_8_2_r9_b__s/(_mr_8_2_r9_d__s*(_mr_8_2_r9_m__s + 1))*mr_int((_mr_8_2_r9_d__s*x)^(_mr_8_2_r9_m__s + 1)*sin(%pi/2*_mr_8_2_r9_b__s^2*x^2), x))$
+_mr_rule_8_2_r9 : %mr_defrule("8_2", 9, "(Int (Times (FresnelS (Times (Optional (Pattern |_mr_8_2_r9_b| (Blank))) (Pattern x (Blank)))) (Power (Times (Optional (Pattern |_mr_8_2_r9_d| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_8_2_r9_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r9, _mr_repl_8_2_r9)$
+
+_mr_cond_8_2_r10(mm, x) := block([_mr_8_2_r10_b, _mr_8_2_r10_d, _mr_8_2_r10_m],
+  _mr_8_2_r10_b : geteqR(mm, '_mr_8_2_r10_b), _mr_8_2_r10_d : geteqR(mm, '_mr_8_2_r10_d), _mr_8_2_r10_m : geteqR(mm, '_mr_8_2_r10_m),
+  freeof(x, _mr_8_2_r10_b) and freeof(x, _mr_8_2_r10_d) and freeof(x, _mr_8_2_r10_m)  and  %mr_neQ(_mr_8_2_r10_m, -1))$
+_mr_repl_8_2_r10(mm, x) := block([_mr_8_2_r10_b__s, _mr_8_2_r10_d__s, _mr_8_2_r10_m__s],
+  _mr_8_2_r10_b__s : geteqR(mm, '_mr_8_2_r10_b), _mr_8_2_r10_d__s : geteqR(mm, '_mr_8_2_r10_d), _mr_8_2_r10_m__s : geteqR(mm, '_mr_8_2_r10_m),
+  (_mr_8_2_r10_d__s*x)^(_mr_8_2_r10_m__s + 1)*fresnel_c(_mr_8_2_r10_b__s*x)/(_mr_8_2_r10_d__s*(_mr_8_2_r10_m__s + 1)) - _mr_8_2_r10_b__s/(_mr_8_2_r10_d__s*(_mr_8_2_r10_m__s + 1))*mr_int((_mr_8_2_r10_d__s*x)^(_mr_8_2_r10_m__s + 1)*cos(%pi/2*_mr_8_2_r10_b__s^2*x^2), x))$
+_mr_rule_8_2_r10 : %mr_defrule("8_2", 10, "(Int (Times (FresnelC (Times (Optional (Pattern |_mr_8_2_r10_b| (Blank))) (Pattern x (Blank)))) (Power (Times (Optional (Pattern |_mr_8_2_r10_d| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_8_2_r10_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r10, _mr_repl_8_2_r10)$
+
+_mr_cond_8_2_r11(mm, x) := block([_mr_8_2_r11_a, _mr_8_2_r11_b, _mr_8_2_r11_c, _mr_8_2_r11_d, _mr_8_2_r11_m],
+  _mr_8_2_r11_a : geteqR(mm, '_mr_8_2_r11_a), _mr_8_2_r11_b : geteqR(mm, '_mr_8_2_r11_b), _mr_8_2_r11_c : geteqR(mm, '_mr_8_2_r11_c), _mr_8_2_r11_d : geteqR(mm, '_mr_8_2_r11_d), _mr_8_2_r11_m : geteqR(mm, '_mr_8_2_r11_m),
+  freeof(x, _mr_8_2_r11_a) and freeof(x, _mr_8_2_r11_b) and freeof(x, _mr_8_2_r11_c) and freeof(x, _mr_8_2_r11_d)  and  %mr_iGtQ(_mr_8_2_r11_m, 0))$
+_mr_repl_8_2_r11(mm, x) := block([_mr_8_2_r11_a__s, _mr_8_2_r11_b__s, _mr_8_2_r11_c__s, _mr_8_2_r11_d__s, _mr_8_2_r11_m__s],
+  _mr_8_2_r11_a__s : geteqR(mm, '_mr_8_2_r11_a), _mr_8_2_r11_b__s : geteqR(mm, '_mr_8_2_r11_b), _mr_8_2_r11_c__s : geteqR(mm, '_mr_8_2_r11_c), _mr_8_2_r11_d__s : geteqR(mm, '_mr_8_2_r11_d), _mr_8_2_r11_m__s : geteqR(mm, '_mr_8_2_r11_m),
+  (_mr_8_2_r11_c__s + _mr_8_2_r11_d__s*x)^(_mr_8_2_r11_m__s + 1)*fresnel_s(_mr_8_2_r11_a__s + _mr_8_2_r11_b__s*x)/(_mr_8_2_r11_d__s*(_mr_8_2_r11_m__s + 1)) - _mr_8_2_r11_b__s/(_mr_8_2_r11_d__s*(_mr_8_2_r11_m__s + 1))*mr_int((_mr_8_2_r11_c__s + _mr_8_2_r11_d__s*x)^(_mr_8_2_r11_m__s + 1)*sin(%pi/2*(_mr_8_2_r11_a__s + _mr_8_2_r11_b__s*x)^2), x))$
+_mr_rule_8_2_r11 : %mr_defrule("8_2", 11, "(Int (Times (FresnelS (Plus (Optional (Pattern |_mr_8_2_r11_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r11_b| (Blank))) (Pattern x (Blank))))) (Power (Plus (Optional (Pattern |_mr_8_2_r11_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r11_d| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_8_2_r11_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r11, _mr_repl_8_2_r11)$
+
+_mr_cond_8_2_r12(mm, x) := block([_mr_8_2_r12_a, _mr_8_2_r12_b, _mr_8_2_r12_c, _mr_8_2_r12_d, _mr_8_2_r12_m],
+  _mr_8_2_r12_a : geteqR(mm, '_mr_8_2_r12_a), _mr_8_2_r12_b : geteqR(mm, '_mr_8_2_r12_b), _mr_8_2_r12_c : geteqR(mm, '_mr_8_2_r12_c), _mr_8_2_r12_d : geteqR(mm, '_mr_8_2_r12_d), _mr_8_2_r12_m : geteqR(mm, '_mr_8_2_r12_m),
+  freeof(x, _mr_8_2_r12_a) and freeof(x, _mr_8_2_r12_b) and freeof(x, _mr_8_2_r12_c) and freeof(x, _mr_8_2_r12_d)  and  %mr_iGtQ(_mr_8_2_r12_m, 0))$
+_mr_repl_8_2_r12(mm, x) := block([_mr_8_2_r12_a__s, _mr_8_2_r12_b__s, _mr_8_2_r12_c__s, _mr_8_2_r12_d__s, _mr_8_2_r12_m__s],
+  _mr_8_2_r12_a__s : geteqR(mm, '_mr_8_2_r12_a), _mr_8_2_r12_b__s : geteqR(mm, '_mr_8_2_r12_b), _mr_8_2_r12_c__s : geteqR(mm, '_mr_8_2_r12_c), _mr_8_2_r12_d__s : geteqR(mm, '_mr_8_2_r12_d), _mr_8_2_r12_m__s : geteqR(mm, '_mr_8_2_r12_m),
+  (_mr_8_2_r12_c__s + _mr_8_2_r12_d__s*x)^(_mr_8_2_r12_m__s + 1)*fresnel_c(_mr_8_2_r12_a__s + _mr_8_2_r12_b__s*x)/(_mr_8_2_r12_d__s*(_mr_8_2_r12_m__s + 1)) - _mr_8_2_r12_b__s/(_mr_8_2_r12_d__s*(_mr_8_2_r12_m__s + 1))*mr_int((_mr_8_2_r12_c__s + _mr_8_2_r12_d__s*x)^(_mr_8_2_r12_m__s + 1)*cos(%pi/2*(_mr_8_2_r12_a__s + _mr_8_2_r12_b__s*x)^2), x))$
+_mr_rule_8_2_r12 : %mr_defrule("8_2", 12, "(Int (Times (FresnelC (Plus (Optional (Pattern |_mr_8_2_r12_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r12_b| (Blank))) (Pattern x (Blank))))) (Power (Plus (Optional (Pattern |_mr_8_2_r12_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r12_d| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_8_2_r12_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r12, _mr_repl_8_2_r12)$
+
+_mr_cond_8_2_r13(mm, x) := block([_mr_8_2_r13_b, _mr_8_2_r13_m],
+  _mr_8_2_r13_b : geteqR(mm, '_mr_8_2_r13_b), _mr_8_2_r13_m : geteqR(mm, '_mr_8_2_r13_m),
+  freeof(x, _mr_8_2_r13_b)  and  integerp(_mr_8_2_r13_m)  and  %mr_neQ(_mr_8_2_r13_m, -1))$
+_mr_repl_8_2_r13(mm, x) := block([_mr_8_2_r13_b__s, _mr_8_2_r13_m__s],
+  _mr_8_2_r13_b__s : geteqR(mm, '_mr_8_2_r13_b), _mr_8_2_r13_m__s : geteqR(mm, '_mr_8_2_r13_m),
+  x^(_mr_8_2_r13_m__s + 1)*fresnel_s(_mr_8_2_r13_b__s*x)^2/(_mr_8_2_r13_m__s + 1) - 2*_mr_8_2_r13_b__s/(_mr_8_2_r13_m__s + 1)*mr_int(x^(_mr_8_2_r13_m__s + 1)*sin(%pi/2*_mr_8_2_r13_b__s^2*x^2)*fresnel_s(_mr_8_2_r13_b__s*x), x))$
+_mr_rule_8_2_r13 : %mr_defrule("8_2", 13, "(Int (Times (Power (FresnelS (Times (Optional (Pattern |_mr_8_2_r13_b| (Blank))) (Pattern x (Blank)))) 2) (Power (Pattern x (Blank)) (Optional (Pattern |_mr_8_2_r13_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r13, _mr_repl_8_2_r13)$
+
+_mr_cond_8_2_r14(mm, x) := block([_mr_8_2_r14_b, _mr_8_2_r14_m],
+  _mr_8_2_r14_b : geteqR(mm, '_mr_8_2_r14_b), _mr_8_2_r14_m : geteqR(mm, '_mr_8_2_r14_m),
+  freeof(x, _mr_8_2_r14_b)  and  integerp(_mr_8_2_r14_m)  and  %mr_neQ(_mr_8_2_r14_m, -1))$
+_mr_repl_8_2_r14(mm, x) := block([_mr_8_2_r14_b__s, _mr_8_2_r14_m__s],
+  _mr_8_2_r14_b__s : geteqR(mm, '_mr_8_2_r14_b), _mr_8_2_r14_m__s : geteqR(mm, '_mr_8_2_r14_m),
+  x^(_mr_8_2_r14_m__s + 1)*fresnel_c(_mr_8_2_r14_b__s*x)^2/(_mr_8_2_r14_m__s + 1) - 2*_mr_8_2_r14_b__s/(_mr_8_2_r14_m__s + 1)*mr_int(x^(_mr_8_2_r14_m__s + 1)*cos(%pi/2*_mr_8_2_r14_b__s^2*x^2)*fresnel_c(_mr_8_2_r14_b__s*x), x))$
+_mr_rule_8_2_r14 : %mr_defrule("8_2", 14, "(Int (Times (Power (FresnelC (Times (Optional (Pattern |_mr_8_2_r14_b| (Blank))) (Pattern x (Blank)))) 2) (Power (Pattern x (Blank)) (Optional (Pattern |_mr_8_2_r14_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r14, _mr_repl_8_2_r14)$
+
+_mr_cond_8_2_r15(mm, x) := block([_mr_8_2_r15_a, _mr_8_2_r15_b, _mr_8_2_r15_c, _mr_8_2_r15_d, _mr_8_2_r15_m],
+  _mr_8_2_r15_a : geteqR(mm, '_mr_8_2_r15_a), _mr_8_2_r15_b : geteqR(mm, '_mr_8_2_r15_b), _mr_8_2_r15_c : geteqR(mm, '_mr_8_2_r15_c), _mr_8_2_r15_d : geteqR(mm, '_mr_8_2_r15_d), _mr_8_2_r15_m : geteqR(mm, '_mr_8_2_r15_m),
+  freeof(x, _mr_8_2_r15_a) and freeof(x, _mr_8_2_r15_b) and freeof(x, _mr_8_2_r15_c) and freeof(x, _mr_8_2_r15_d)  and  %mr_iGtQ(_mr_8_2_r15_m, 0))$
+_mr_repl_8_2_r15(mm, x) := block([_mr_8_2_r15_a__s, _mr_8_2_r15_b__s, _mr_8_2_r15_c__s, _mr_8_2_r15_d__s, _mr_8_2_r15_m__s],
+  _mr_8_2_r15_a__s : geteqR(mm, '_mr_8_2_r15_a), _mr_8_2_r15_b__s : geteqR(mm, '_mr_8_2_r15_b), _mr_8_2_r15_c__s : geteqR(mm, '_mr_8_2_r15_c), _mr_8_2_r15_d__s : geteqR(mm, '_mr_8_2_r15_d), _mr_8_2_r15_m__s : geteqR(mm, '_mr_8_2_r15_m),
+  1/_mr_8_2_r15_b__s^(_mr_8_2_r15_m__s + 1)* %mr_subst(mr_int(%mr_expandIntegrand(fresnel_s(x)^2, (_mr_8_2_r15_b__s*_mr_8_2_r15_c__s - _mr_8_2_r15_a__s*_mr_8_2_r15_d__s + _mr_8_2_r15_d__s*x)^_mr_8_2_r15_m__s, x), x), x, _mr_8_2_r15_a__s + _mr_8_2_r15_b__s*x))$
+_mr_rule_8_2_r15 : %mr_defrule("8_2", 15, "(Int (Times (Power (FresnelS (Plus (Pattern |_mr_8_2_r15_a| (Blank)) (Times (Optional (Pattern |_mr_8_2_r15_b| (Blank))) (Pattern x (Blank))))) 2) (Power (Plus (Optional (Pattern |_mr_8_2_r15_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r15_d| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_8_2_r15_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r15, _mr_repl_8_2_r15)$
+
+_mr_cond_8_2_r16(mm, x) := block([_mr_8_2_r16_a, _mr_8_2_r16_b, _mr_8_2_r16_c, _mr_8_2_r16_d, _mr_8_2_r16_m],
+  _mr_8_2_r16_a : geteqR(mm, '_mr_8_2_r16_a), _mr_8_2_r16_b : geteqR(mm, '_mr_8_2_r16_b), _mr_8_2_r16_c : geteqR(mm, '_mr_8_2_r16_c), _mr_8_2_r16_d : geteqR(mm, '_mr_8_2_r16_d), _mr_8_2_r16_m : geteqR(mm, '_mr_8_2_r16_m),
+  freeof(x, _mr_8_2_r16_a) and freeof(x, _mr_8_2_r16_b) and freeof(x, _mr_8_2_r16_c) and freeof(x, _mr_8_2_r16_d)  and  %mr_iGtQ(_mr_8_2_r16_m, 0))$
+_mr_repl_8_2_r16(mm, x) := block([_mr_8_2_r16_a__s, _mr_8_2_r16_b__s, _mr_8_2_r16_c__s, _mr_8_2_r16_d__s, _mr_8_2_r16_m__s],
+  _mr_8_2_r16_a__s : geteqR(mm, '_mr_8_2_r16_a), _mr_8_2_r16_b__s : geteqR(mm, '_mr_8_2_r16_b), _mr_8_2_r16_c__s : geteqR(mm, '_mr_8_2_r16_c), _mr_8_2_r16_d__s : geteqR(mm, '_mr_8_2_r16_d), _mr_8_2_r16_m__s : geteqR(mm, '_mr_8_2_r16_m),
+  1/_mr_8_2_r16_b__s^(_mr_8_2_r16_m__s + 1)* %mr_subst(mr_int(%mr_expandIntegrand(fresnel_c(x)^2, (_mr_8_2_r16_b__s*_mr_8_2_r16_c__s - _mr_8_2_r16_a__s*_mr_8_2_r16_d__s + _mr_8_2_r16_d__s*x)^_mr_8_2_r16_m__s, x), x), x, _mr_8_2_r16_a__s + _mr_8_2_r16_b__s*x))$
+_mr_rule_8_2_r16 : %mr_defrule("8_2", 16, "(Int (Times (Power (FresnelC (Plus (Pattern |_mr_8_2_r16_a| (Blank)) (Times (Optional (Pattern |_mr_8_2_r16_b| (Blank))) (Pattern x (Blank))))) 2) (Power (Plus (Optional (Pattern |_mr_8_2_r16_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r16_d| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_8_2_r16_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r16, _mr_repl_8_2_r16)$
+
+_mr_cond_8_2_r17(mm, x) := block([_mr_8_2_r17_a, _mr_8_2_r17_b, _mr_8_2_r17_c, _mr_8_2_r17_d, _mr_8_2_r17_m, _mr_8_2_r17_n],
+  _mr_8_2_r17_a : geteqR(mm, '_mr_8_2_r17_a), _mr_8_2_r17_b : geteqR(mm, '_mr_8_2_r17_b), _mr_8_2_r17_c : geteqR(mm, '_mr_8_2_r17_c), _mr_8_2_r17_d : geteqR(mm, '_mr_8_2_r17_d), _mr_8_2_r17_m : geteqR(mm, '_mr_8_2_r17_m), _mr_8_2_r17_n : geteqR(mm, '_mr_8_2_r17_n),
+  freeof(x, _mr_8_2_r17_a) and freeof(x, _mr_8_2_r17_b) and freeof(x, _mr_8_2_r17_c) and freeof(x, _mr_8_2_r17_d) and freeof(x, _mr_8_2_r17_m) and freeof(x, _mr_8_2_r17_n))$
+_mr_repl_8_2_r17(mm, x) := block([_mr_8_2_r17_a__s, _mr_8_2_r17_b__s, _mr_8_2_r17_c__s, _mr_8_2_r17_d__s, _mr_8_2_r17_m__s, _mr_8_2_r17_n__s],
+  _mr_8_2_r17_a__s : geteqR(mm, '_mr_8_2_r17_a), _mr_8_2_r17_b__s : geteqR(mm, '_mr_8_2_r17_b), _mr_8_2_r17_c__s : geteqR(mm, '_mr_8_2_r17_c), _mr_8_2_r17_d__s : geteqR(mm, '_mr_8_2_r17_d), _mr_8_2_r17_m__s : geteqR(mm, '_mr_8_2_r17_m), _mr_8_2_r17_n__s : geteqR(mm, '_mr_8_2_r17_n),
+  mr_unintegrable((_mr_8_2_r17_c__s + _mr_8_2_r17_d__s*x)^_mr_8_2_r17_m__s*fresnel_s(_mr_8_2_r17_a__s + _mr_8_2_r17_b__s*x)^_mr_8_2_r17_n__s, x))$
+_mr_rule_8_2_r17 : %mr_defrule("8_2", 17, "(Int (Times (Power (FresnelS (Plus (Optional (Pattern |_mr_8_2_r17_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r17_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r17_n| (Blank)))) (Power (Plus (Optional (Pattern |_mr_8_2_r17_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r17_d| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_8_2_r17_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r17, _mr_repl_8_2_r17)$
+
+_mr_cond_8_2_r18(mm, x) := block([_mr_8_2_r18_a, _mr_8_2_r18_b, _mr_8_2_r18_c, _mr_8_2_r18_d, _mr_8_2_r18_m, _mr_8_2_r18_n],
+  _mr_8_2_r18_a : geteqR(mm, '_mr_8_2_r18_a), _mr_8_2_r18_b : geteqR(mm, '_mr_8_2_r18_b), _mr_8_2_r18_c : geteqR(mm, '_mr_8_2_r18_c), _mr_8_2_r18_d : geteqR(mm, '_mr_8_2_r18_d), _mr_8_2_r18_m : geteqR(mm, '_mr_8_2_r18_m), _mr_8_2_r18_n : geteqR(mm, '_mr_8_2_r18_n),
+  freeof(x, _mr_8_2_r18_a) and freeof(x, _mr_8_2_r18_b) and freeof(x, _mr_8_2_r18_c) and freeof(x, _mr_8_2_r18_d) and freeof(x, _mr_8_2_r18_m) and freeof(x, _mr_8_2_r18_n))$
+_mr_repl_8_2_r18(mm, x) := block([_mr_8_2_r18_a__s, _mr_8_2_r18_b__s, _mr_8_2_r18_c__s, _mr_8_2_r18_d__s, _mr_8_2_r18_m__s, _mr_8_2_r18_n__s],
+  _mr_8_2_r18_a__s : geteqR(mm, '_mr_8_2_r18_a), _mr_8_2_r18_b__s : geteqR(mm, '_mr_8_2_r18_b), _mr_8_2_r18_c__s : geteqR(mm, '_mr_8_2_r18_c), _mr_8_2_r18_d__s : geteqR(mm, '_mr_8_2_r18_d), _mr_8_2_r18_m__s : geteqR(mm, '_mr_8_2_r18_m), _mr_8_2_r18_n__s : geteqR(mm, '_mr_8_2_r18_n),
+  mr_unintegrable((_mr_8_2_r18_c__s + _mr_8_2_r18_d__s*x)^_mr_8_2_r18_m__s*fresnel_c(_mr_8_2_r18_a__s + _mr_8_2_r18_b__s*x)^_mr_8_2_r18_n__s, x))$
+_mr_rule_8_2_r18 : %mr_defrule("8_2", 18, "(Int (Times (Power (FresnelC (Plus (Optional (Pattern |_mr_8_2_r18_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r18_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r18_n| (Blank)))) (Power (Plus (Optional (Pattern |_mr_8_2_r18_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r18_d| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_8_2_r18_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r18, _mr_repl_8_2_r18)$
+
+_mr_cond_8_2_r19(mm, x) := block([_mr_8_2_r19_b, _mr_8_2_r19_c, _mr_8_2_r19_d],
+  _mr_8_2_r19_b : geteqR(mm, '_mr_8_2_r19_b), _mr_8_2_r19_c : geteqR(mm, '_mr_8_2_r19_c), _mr_8_2_r19_d : geteqR(mm, '_mr_8_2_r19_d),
+  freeof(x, _mr_8_2_r19_b) and freeof(x, _mr_8_2_r19_c) and freeof(x, _mr_8_2_r19_d)  and  %mr_eqQ(_mr_8_2_r19_d^2, -%pi^2/4*_mr_8_2_r19_b^4))$
+_mr_repl_8_2_r19(mm, x) := block([_mr_8_2_r19_b__s, _mr_8_2_r19_c__s, _mr_8_2_r19_d__s],
+  _mr_8_2_r19_b__s : geteqR(mm, '_mr_8_2_r19_b), _mr_8_2_r19_c__s : geteqR(mm, '_mr_8_2_r19_c), _mr_8_2_r19_d__s : geteqR(mm, '_mr_8_2_r19_d),
+  (1 + %i)/4* mr_int(%e^(_mr_8_2_r19_c__s + _mr_8_2_r19_d__s*x^2)*erf(sqrt(%pi)/2*(1 + %i)*_mr_8_2_r19_b__s*x), x) + (1 - %i)/4* mr_int(%e^(_mr_8_2_r19_c__s + _mr_8_2_r19_d__s*x^2)*erf(sqrt(%pi)/2*(1 - %i)*_mr_8_2_r19_b__s*x), x))$
+_mr_rule_8_2_r19 : %mr_defrule("8_2", 19, "(Int (Times (FresnelS (Times (Optional (Pattern |_mr_8_2_r19_b| (Blank))) (Pattern x (Blank)))) (Power E (Plus (Optional (Pattern |_mr_8_2_r19_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r19_d| (Blank))) (Power (Pattern x (Blank)) 2))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r19, _mr_repl_8_2_r19)$
+
+_mr_cond_8_2_r20(mm, x) := block([_mr_8_2_r20_b, _mr_8_2_r20_c, _mr_8_2_r20_d],
+  _mr_8_2_r20_b : geteqR(mm, '_mr_8_2_r20_b), _mr_8_2_r20_c : geteqR(mm, '_mr_8_2_r20_c), _mr_8_2_r20_d : geteqR(mm, '_mr_8_2_r20_d),
+  freeof(x, _mr_8_2_r20_b) and freeof(x, _mr_8_2_r20_c) and freeof(x, _mr_8_2_r20_d)  and  %mr_eqQ(_mr_8_2_r20_d^2, -%pi^2/4*_mr_8_2_r20_b^4))$
+_mr_repl_8_2_r20(mm, x) := block([_mr_8_2_r20_b__s, _mr_8_2_r20_c__s, _mr_8_2_r20_d__s],
+  _mr_8_2_r20_b__s : geteqR(mm, '_mr_8_2_r20_b), _mr_8_2_r20_c__s : geteqR(mm, '_mr_8_2_r20_c), _mr_8_2_r20_d__s : geteqR(mm, '_mr_8_2_r20_d),
+  (1 - %i)/4* mr_int(%e^(_mr_8_2_r20_c__s + _mr_8_2_r20_d__s*x^2)*erf(sqrt(%pi)/2*(1 + %i)*_mr_8_2_r20_b__s*x), x) + (1 + %i)/4* mr_int(%e^(_mr_8_2_r20_c__s + _mr_8_2_r20_d__s*x^2)*erf(sqrt(%pi)/2*(1 - %i)*_mr_8_2_r20_b__s*x), x))$
+_mr_rule_8_2_r20 : %mr_defrule("8_2", 20, "(Int (Times (FresnelC (Times (Optional (Pattern |_mr_8_2_r20_b| (Blank))) (Pattern x (Blank)))) (Power E (Plus (Optional (Pattern |_mr_8_2_r20_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r20_d| (Blank))) (Power (Pattern x (Blank)) 2))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r20, _mr_repl_8_2_r20)$
+
+_mr_cond_8_2_r21(mm, x) := block([_mr_8_2_r21_a, _mr_8_2_r21_b, _mr_8_2_r21_c, _mr_8_2_r21_d, _mr_8_2_r21_n],
+  _mr_8_2_r21_a : geteqR(mm, '_mr_8_2_r21_a), _mr_8_2_r21_b : geteqR(mm, '_mr_8_2_r21_b), _mr_8_2_r21_c : geteqR(mm, '_mr_8_2_r21_c), _mr_8_2_r21_d : geteqR(mm, '_mr_8_2_r21_d), _mr_8_2_r21_n : geteqR(mm, '_mr_8_2_r21_n),
+  freeof(x, _mr_8_2_r21_a) and freeof(x, _mr_8_2_r21_b) and freeof(x, _mr_8_2_r21_c) and freeof(x, _mr_8_2_r21_d) and freeof(x, _mr_8_2_r21_n))$
+_mr_repl_8_2_r21(mm, x) := block([_mr_8_2_r21_a__s, _mr_8_2_r21_b__s, _mr_8_2_r21_c__s, _mr_8_2_r21_d__s, _mr_8_2_r21_n__s],
+  _mr_8_2_r21_a__s : geteqR(mm, '_mr_8_2_r21_a), _mr_8_2_r21_b__s : geteqR(mm, '_mr_8_2_r21_b), _mr_8_2_r21_c__s : geteqR(mm, '_mr_8_2_r21_c), _mr_8_2_r21_d__s : geteqR(mm, '_mr_8_2_r21_d), _mr_8_2_r21_n__s : geteqR(mm, '_mr_8_2_r21_n),
+  mr_unintegrable(%e^(_mr_8_2_r21_c__s + _mr_8_2_r21_d__s*x^2)*fresnel_s(_mr_8_2_r21_a__s + _mr_8_2_r21_b__s*x)^_mr_8_2_r21_n__s, x))$
+_mr_rule_8_2_r21 : %mr_defrule("8_2", 21, "(Int (Times (Power E (Plus (Optional (Pattern |_mr_8_2_r21_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r21_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Power (FresnelS (Plus (Optional (Pattern |_mr_8_2_r21_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r21_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r21_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r21, _mr_repl_8_2_r21)$
+
+_mr_cond_8_2_r22(mm, x) := block([_mr_8_2_r22_a, _mr_8_2_r22_b, _mr_8_2_r22_c, _mr_8_2_r22_d, _mr_8_2_r22_n],
+  _mr_8_2_r22_a : geteqR(mm, '_mr_8_2_r22_a), _mr_8_2_r22_b : geteqR(mm, '_mr_8_2_r22_b), _mr_8_2_r22_c : geteqR(mm, '_mr_8_2_r22_c), _mr_8_2_r22_d : geteqR(mm, '_mr_8_2_r22_d), _mr_8_2_r22_n : geteqR(mm, '_mr_8_2_r22_n),
+  freeof(x, _mr_8_2_r22_a) and freeof(x, _mr_8_2_r22_b) and freeof(x, _mr_8_2_r22_c) and freeof(x, _mr_8_2_r22_d) and freeof(x, _mr_8_2_r22_n))$
+_mr_repl_8_2_r22(mm, x) := block([_mr_8_2_r22_a__s, _mr_8_2_r22_b__s, _mr_8_2_r22_c__s, _mr_8_2_r22_d__s, _mr_8_2_r22_n__s],
+  _mr_8_2_r22_a__s : geteqR(mm, '_mr_8_2_r22_a), _mr_8_2_r22_b__s : geteqR(mm, '_mr_8_2_r22_b), _mr_8_2_r22_c__s : geteqR(mm, '_mr_8_2_r22_c), _mr_8_2_r22_d__s : geteqR(mm, '_mr_8_2_r22_d), _mr_8_2_r22_n__s : geteqR(mm, '_mr_8_2_r22_n),
+  mr_unintegrable(%e^(_mr_8_2_r22_c__s + _mr_8_2_r22_d__s*x^2)*fresnel_c(_mr_8_2_r22_a__s + _mr_8_2_r22_b__s*x)^_mr_8_2_r22_n__s, x))$
+_mr_rule_8_2_r22 : %mr_defrule("8_2", 22, "(Int (Times (Power E (Plus (Optional (Pattern |_mr_8_2_r22_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r22_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Power (FresnelC (Plus (Optional (Pattern |_mr_8_2_r22_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r22_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r22_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r22, _mr_repl_8_2_r22)$
+
+_mr_cond_8_2_r23(mm, x) := block([_mr_8_2_r23_b, _mr_8_2_r23_d, _mr_8_2_r23_n],
+  _mr_8_2_r23_b : geteqR(mm, '_mr_8_2_r23_b), _mr_8_2_r23_d : geteqR(mm, '_mr_8_2_r23_d), _mr_8_2_r23_n : geteqR(mm, '_mr_8_2_r23_n),
+  freeof(x, _mr_8_2_r23_b) and freeof(x, _mr_8_2_r23_d) and freeof(x, _mr_8_2_r23_n)  and  %mr_eqQ(_mr_8_2_r23_d^2, %pi^2/4*_mr_8_2_r23_b^4))$
+_mr_repl_8_2_r23(mm, x) := block([_mr_8_2_r23_b__s, _mr_8_2_r23_d__s, _mr_8_2_r23_n__s],
+  _mr_8_2_r23_b__s : geteqR(mm, '_mr_8_2_r23_b), _mr_8_2_r23_d__s : geteqR(mm, '_mr_8_2_r23_d), _mr_8_2_r23_n__s : geteqR(mm, '_mr_8_2_r23_n),
+  %pi*_mr_8_2_r23_b__s/(2*_mr_8_2_r23_d__s)*%mr_subst(mr_int(x^_mr_8_2_r23_n__s, x), x, fresnel_s(_mr_8_2_r23_b__s*x)))$
+_mr_rule_8_2_r23 : %mr_defrule("8_2", 23, "(Int (Times (Power (FresnelS (Times (Optional (Pattern |_mr_8_2_r23_b| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_8_2_r23_n| (Blank)))) (Sin (Times (Optional (Pattern |_mr_8_2_r23_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r23, _mr_repl_8_2_r23)$
+
+_mr_cond_8_2_r24(mm, x) := block([_mr_8_2_r24_b, _mr_8_2_r24_d, _mr_8_2_r24_n],
+  _mr_8_2_r24_b : geteqR(mm, '_mr_8_2_r24_b), _mr_8_2_r24_d : geteqR(mm, '_mr_8_2_r24_d), _mr_8_2_r24_n : geteqR(mm, '_mr_8_2_r24_n),
+  freeof(x, _mr_8_2_r24_b) and freeof(x, _mr_8_2_r24_d) and freeof(x, _mr_8_2_r24_n)  and  %mr_eqQ(_mr_8_2_r24_d^2, %pi^2/4*_mr_8_2_r24_b^4))$
+_mr_repl_8_2_r24(mm, x) := block([_mr_8_2_r24_b__s, _mr_8_2_r24_d__s, _mr_8_2_r24_n__s],
+  _mr_8_2_r24_b__s : geteqR(mm, '_mr_8_2_r24_b), _mr_8_2_r24_d__s : geteqR(mm, '_mr_8_2_r24_d), _mr_8_2_r24_n__s : geteqR(mm, '_mr_8_2_r24_n),
+  %pi*_mr_8_2_r24_b__s/(2*_mr_8_2_r24_d__s)*%mr_subst(mr_int(x^_mr_8_2_r24_n__s, x), x, fresnel_c(_mr_8_2_r24_b__s*x)))$
+_mr_rule_8_2_r24 : %mr_defrule("8_2", 24, "(Int (Times (Cos (Times (Optional (Pattern |_mr_8_2_r24_d| (Blank))) (Power (Pattern x (Blank)) 2))) (Power (FresnelC (Times (Optional (Pattern |_mr_8_2_r24_b| (Blank))) (Pattern x (Blank)))) (Optional (Pattern |_mr_8_2_r24_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r24, _mr_repl_8_2_r24)$
+
+_mr_cond_8_2_r25(mm, x) := block([_mr_8_2_r25_b, _mr_8_2_r25_c, _mr_8_2_r25_d],
+  _mr_8_2_r25_b : geteqR(mm, '_mr_8_2_r25_b), _mr_8_2_r25_c : geteqR(mm, '_mr_8_2_r25_c), _mr_8_2_r25_d : geteqR(mm, '_mr_8_2_r25_d),
+  freeof(x, _mr_8_2_r25_b) and freeof(x, _mr_8_2_r25_c) and freeof(x, _mr_8_2_r25_d)  and  %mr_eqQ(_mr_8_2_r25_d^2, %pi^2/4*_mr_8_2_r25_b^4))$
+_mr_repl_8_2_r25(mm, x) := block([_mr_8_2_r25_b__s, _mr_8_2_r25_c__s, _mr_8_2_r25_d__s],
+  _mr_8_2_r25_b__s : geteqR(mm, '_mr_8_2_r25_b), _mr_8_2_r25_c__s : geteqR(mm, '_mr_8_2_r25_c), _mr_8_2_r25_d__s : geteqR(mm, '_mr_8_2_r25_d),
+  sin(_mr_8_2_r25_c__s)*mr_int(cos(_mr_8_2_r25_d__s*x^2)*fresnel_s(_mr_8_2_r25_b__s*x), x) + cos(_mr_8_2_r25_c__s)*mr_int(sin(_mr_8_2_r25_d__s*x^2)*fresnel_s(_mr_8_2_r25_b__s*x), x))$
+_mr_rule_8_2_r25 : %mr_defrule("8_2", 25, "(Int (Times (FresnelS (Times (Optional (Pattern |_mr_8_2_r25_b| (Blank))) (Pattern x (Blank)))) (Sin (Plus (Pattern |_mr_8_2_r25_c| (Blank)) (Times (Optional (Pattern |_mr_8_2_r25_d| (Blank))) (Power (Pattern x (Blank)) 2))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r25, _mr_repl_8_2_r25)$
+
+_mr_cond_8_2_r26(mm, x) := block([_mr_8_2_r26_b, _mr_8_2_r26_c, _mr_8_2_r26_d],
+  _mr_8_2_r26_b : geteqR(mm, '_mr_8_2_r26_b), _mr_8_2_r26_c : geteqR(mm, '_mr_8_2_r26_c), _mr_8_2_r26_d : geteqR(mm, '_mr_8_2_r26_d),
+  freeof(x, _mr_8_2_r26_b) and freeof(x, _mr_8_2_r26_c) and freeof(x, _mr_8_2_r26_d)  and  %mr_eqQ(_mr_8_2_r26_d^2, %pi^2/4*_mr_8_2_r26_b^4))$
+_mr_repl_8_2_r26(mm, x) := block([_mr_8_2_r26_b__s, _mr_8_2_r26_c__s, _mr_8_2_r26_d__s],
+  _mr_8_2_r26_b__s : geteqR(mm, '_mr_8_2_r26_b), _mr_8_2_r26_c__s : geteqR(mm, '_mr_8_2_r26_c), _mr_8_2_r26_d__s : geteqR(mm, '_mr_8_2_r26_d),
+  cos(_mr_8_2_r26_c__s)*mr_int(cos(_mr_8_2_r26_d__s*x^2)*fresnel_c(_mr_8_2_r26_b__s*x), x) - sin(_mr_8_2_r26_c__s)*mr_int(sin(_mr_8_2_r26_d__s*x^2)*fresnel_c(_mr_8_2_r26_b__s*x), x))$
+_mr_rule_8_2_r26 : %mr_defrule("8_2", 26, "(Int (Times (Cos (Plus (Pattern |_mr_8_2_r26_c| (Blank)) (Times (Optional (Pattern |_mr_8_2_r26_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (FresnelC (Times (Optional (Pattern |_mr_8_2_r26_b| (Blank))) (Pattern x (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r26, _mr_repl_8_2_r26)$
+
+_mr_cond_8_2_r27(mm, x) := block([_mr_8_2_r27_a, _mr_8_2_r27_b, _mr_8_2_r27_c, _mr_8_2_r27_d, _mr_8_2_r27_n],
+  _mr_8_2_r27_a : geteqR(mm, '_mr_8_2_r27_a), _mr_8_2_r27_b : geteqR(mm, '_mr_8_2_r27_b), _mr_8_2_r27_c : geteqR(mm, '_mr_8_2_r27_c), _mr_8_2_r27_d : geteqR(mm, '_mr_8_2_r27_d), _mr_8_2_r27_n : geteqR(mm, '_mr_8_2_r27_n),
+  freeof(x, _mr_8_2_r27_a) and freeof(x, _mr_8_2_r27_b) and freeof(x, _mr_8_2_r27_c) and freeof(x, _mr_8_2_r27_d) and freeof(x, _mr_8_2_r27_n))$
+_mr_repl_8_2_r27(mm, x) := block([_mr_8_2_r27_a__s, _mr_8_2_r27_b__s, _mr_8_2_r27_c__s, _mr_8_2_r27_d__s, _mr_8_2_r27_n__s],
+  _mr_8_2_r27_a__s : geteqR(mm, '_mr_8_2_r27_a), _mr_8_2_r27_b__s : geteqR(mm, '_mr_8_2_r27_b), _mr_8_2_r27_c__s : geteqR(mm, '_mr_8_2_r27_c), _mr_8_2_r27_d__s : geteqR(mm, '_mr_8_2_r27_d), _mr_8_2_r27_n__s : geteqR(mm, '_mr_8_2_r27_n),
+  mr_unintegrable(sin(_mr_8_2_r27_c__s + _mr_8_2_r27_d__s*x^2)*fresnel_s(_mr_8_2_r27_a__s + _mr_8_2_r27_b__s*x)^_mr_8_2_r27_n__s, x))$
+_mr_rule_8_2_r27 : %mr_defrule("8_2", 27, "(Int (Times (Power (FresnelS (Plus (Optional (Pattern |_mr_8_2_r27_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r27_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r27_n| (Blank)))) (Sin (Plus (Optional (Pattern |_mr_8_2_r27_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r27_d| (Blank))) (Power (Pattern x (Blank)) 2))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r27, _mr_repl_8_2_r27)$
+
+_mr_cond_8_2_r28(mm, x) := block([_mr_8_2_r28_a, _mr_8_2_r28_b, _mr_8_2_r28_c, _mr_8_2_r28_d, _mr_8_2_r28_n],
+  _mr_8_2_r28_a : geteqR(mm, '_mr_8_2_r28_a), _mr_8_2_r28_b : geteqR(mm, '_mr_8_2_r28_b), _mr_8_2_r28_c : geteqR(mm, '_mr_8_2_r28_c), _mr_8_2_r28_d : geteqR(mm, '_mr_8_2_r28_d), _mr_8_2_r28_n : geteqR(mm, '_mr_8_2_r28_n),
+  freeof(x, _mr_8_2_r28_a) and freeof(x, _mr_8_2_r28_b) and freeof(x, _mr_8_2_r28_c) and freeof(x, _mr_8_2_r28_d) and freeof(x, _mr_8_2_r28_n))$
+_mr_repl_8_2_r28(mm, x) := block([_mr_8_2_r28_a__s, _mr_8_2_r28_b__s, _mr_8_2_r28_c__s, _mr_8_2_r28_d__s, _mr_8_2_r28_n__s],
+  _mr_8_2_r28_a__s : geteqR(mm, '_mr_8_2_r28_a), _mr_8_2_r28_b__s : geteqR(mm, '_mr_8_2_r28_b), _mr_8_2_r28_c__s : geteqR(mm, '_mr_8_2_r28_c), _mr_8_2_r28_d__s : geteqR(mm, '_mr_8_2_r28_d), _mr_8_2_r28_n__s : geteqR(mm, '_mr_8_2_r28_n),
+  mr_unintegrable(cos(_mr_8_2_r28_c__s + _mr_8_2_r28_d__s*x^2)*fresnel_c(_mr_8_2_r28_a__s + _mr_8_2_r28_b__s*x)^_mr_8_2_r28_n__s, x))$
+_mr_rule_8_2_r28 : %mr_defrule("8_2", 28, "(Int (Times (Cos (Plus (Optional (Pattern |_mr_8_2_r28_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r28_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Power (FresnelC (Plus (Optional (Pattern |_mr_8_2_r28_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r28_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r28_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r28, _mr_repl_8_2_r28)$
+
+_mr_cond_8_2_r29(mm, x) := block([_mr_8_2_r29_b, _mr_8_2_r29_d],
+  _mr_8_2_r29_b : geteqR(mm, '_mr_8_2_r29_b), _mr_8_2_r29_d : geteqR(mm, '_mr_8_2_r29_d),
+  freeof(x, _mr_8_2_r29_b) and freeof(x, _mr_8_2_r29_d)  and  %mr_eqQ(_mr_8_2_r29_d^2, %pi^2/4*_mr_8_2_r29_b^4))$
+_mr_repl_8_2_r29(mm, x) := block([_mr_8_2_r29_b__s, _mr_8_2_r29_d__s],
+  _mr_8_2_r29_b__s : geteqR(mm, '_mr_8_2_r29_b), _mr_8_2_r29_d__s : geteqR(mm, '_mr_8_2_r29_d),
+  fresnel_c(_mr_8_2_r29_b__s*x)*fresnel_s(_mr_8_2_r29_b__s*x)/(2*_mr_8_2_r29_b__s) - 1/8*%i*_mr_8_2_r29_b__s*x^2* hypergeometric([1, 1], [3/2, 2], -1/2*%i*_mr_8_2_r29_b__s^2*%pi*x^2) + 1/8*%i*_mr_8_2_r29_b__s*x^2* hypergeometric([1, 1], [3/2, 2], 1/2*%i*_mr_8_2_r29_b__s^2*%pi*x^2))$
+_mr_rule_8_2_r29 : %mr_defrule("8_2", 29, "(Int (Times (Cos (Times (Optional (Pattern |_mr_8_2_r29_d| (Blank))) (Power (Pattern x (Blank)) 2))) (FresnelS (Times (Optional (Pattern |_mr_8_2_r29_b| (Blank))) (Pattern x (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r29, _mr_repl_8_2_r29)$
+
+_mr_cond_8_2_r30(mm, x) := block([_mr_8_2_r30_b, _mr_8_2_r30_d],
+  _mr_8_2_r30_b : geteqR(mm, '_mr_8_2_r30_b), _mr_8_2_r30_d : geteqR(mm, '_mr_8_2_r30_d),
+  freeof(x, _mr_8_2_r30_b) and freeof(x, _mr_8_2_r30_d)  and  %mr_eqQ(_mr_8_2_r30_d^2, %pi^2/4*_mr_8_2_r30_b^4))$
+_mr_repl_8_2_r30(mm, x) := block([_mr_8_2_r30_b__s, _mr_8_2_r30_d__s],
+  _mr_8_2_r30_b__s : geteqR(mm, '_mr_8_2_r30_b), _mr_8_2_r30_d__s : geteqR(mm, '_mr_8_2_r30_d),
+  _mr_8_2_r30_b__s*%pi*fresnel_c(_mr_8_2_r30_b__s*x)*fresnel_s(_mr_8_2_r30_b__s*x)/(4*_mr_8_2_r30_d__s) + 1/8*%i*_mr_8_2_r30_b__s*x^2*hypergeometric([1, 1], [3/2, 2], -%i*_mr_8_2_r30_d__s*x^2) - 1/8*%i*_mr_8_2_r30_b__s*x^2*hypergeometric([1, 1], [3/2, 2], %i*_mr_8_2_r30_d__s*x^2))$
+_mr_rule_8_2_r30 : %mr_defrule("8_2", 30, "(Int (Times (FresnelC (Times (Optional (Pattern |_mr_8_2_r30_b| (Blank))) (Pattern x (Blank)))) (Sin (Times (Optional (Pattern |_mr_8_2_r30_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r30, _mr_repl_8_2_r30)$
+
+_mr_cond_8_2_r31(mm, x) := block([_mr_8_2_r31_b, _mr_8_2_r31_c, _mr_8_2_r31_d],
+  _mr_8_2_r31_b : geteqR(mm, '_mr_8_2_r31_b), _mr_8_2_r31_c : geteqR(mm, '_mr_8_2_r31_c), _mr_8_2_r31_d : geteqR(mm, '_mr_8_2_r31_d),
+  freeof(x, _mr_8_2_r31_b) and freeof(x, _mr_8_2_r31_c) and freeof(x, _mr_8_2_r31_d)  and  %mr_eqQ(_mr_8_2_r31_d^2, %pi^2/4*_mr_8_2_r31_b^4))$
+_mr_repl_8_2_r31(mm, x) := block([_mr_8_2_r31_b__s, _mr_8_2_r31_c__s, _mr_8_2_r31_d__s],
+  _mr_8_2_r31_b__s : geteqR(mm, '_mr_8_2_r31_b), _mr_8_2_r31_c__s : geteqR(mm, '_mr_8_2_r31_c), _mr_8_2_r31_d__s : geteqR(mm, '_mr_8_2_r31_d),
+  cos(_mr_8_2_r31_c__s)*mr_int(cos(_mr_8_2_r31_d__s*x^2)*fresnel_s(_mr_8_2_r31_b__s*x), x) - sin(_mr_8_2_r31_c__s)*mr_int(sin(_mr_8_2_r31_d__s*x^2)*fresnel_s(_mr_8_2_r31_b__s*x), x))$
+_mr_rule_8_2_r31 : %mr_defrule("8_2", 31, "(Int (Times (Cos (Plus (Pattern |_mr_8_2_r31_c| (Blank)) (Times (Optional (Pattern |_mr_8_2_r31_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (FresnelS (Times (Optional (Pattern |_mr_8_2_r31_b| (Blank))) (Pattern x (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r31, _mr_repl_8_2_r31)$
+
+_mr_cond_8_2_r32(mm, x) := block([_mr_8_2_r32_b, _mr_8_2_r32_c, _mr_8_2_r32_d],
+  _mr_8_2_r32_b : geteqR(mm, '_mr_8_2_r32_b), _mr_8_2_r32_c : geteqR(mm, '_mr_8_2_r32_c), _mr_8_2_r32_d : geteqR(mm, '_mr_8_2_r32_d),
+  freeof(x, _mr_8_2_r32_b) and freeof(x, _mr_8_2_r32_c) and freeof(x, _mr_8_2_r32_d)  and  %mr_eqQ(_mr_8_2_r32_d^2, %pi^2/4*_mr_8_2_r32_b^4))$
+_mr_repl_8_2_r32(mm, x) := block([_mr_8_2_r32_b__s, _mr_8_2_r32_c__s, _mr_8_2_r32_d__s],
+  _mr_8_2_r32_b__s : geteqR(mm, '_mr_8_2_r32_b), _mr_8_2_r32_c__s : geteqR(mm, '_mr_8_2_r32_c), _mr_8_2_r32_d__s : geteqR(mm, '_mr_8_2_r32_d),
+  sin(_mr_8_2_r32_c__s)*mr_int(cos(_mr_8_2_r32_d__s*x^2)*fresnel_c(_mr_8_2_r32_b__s*x), x) + cos(_mr_8_2_r32_c__s)*mr_int(sin(_mr_8_2_r32_d__s*x^2)*fresnel_c(_mr_8_2_r32_b__s*x), x))$
+_mr_rule_8_2_r32 : %mr_defrule("8_2", 32, "(Int (Times (FresnelC (Times (Optional (Pattern |_mr_8_2_r32_b| (Blank))) (Pattern x (Blank)))) (Sin (Plus (Pattern |_mr_8_2_r32_c| (Blank)) (Times (Optional (Pattern |_mr_8_2_r32_d| (Blank))) (Power (Pattern x (Blank)) 2))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r32, _mr_repl_8_2_r32)$
+
+_mr_cond_8_2_r33(mm, x) := block([_mr_8_2_r33_a, _mr_8_2_r33_b, _mr_8_2_r33_c, _mr_8_2_r33_d, _mr_8_2_r33_n],
+  _mr_8_2_r33_a : geteqR(mm, '_mr_8_2_r33_a), _mr_8_2_r33_b : geteqR(mm, '_mr_8_2_r33_b), _mr_8_2_r33_c : geteqR(mm, '_mr_8_2_r33_c), _mr_8_2_r33_d : geteqR(mm, '_mr_8_2_r33_d), _mr_8_2_r33_n : geteqR(mm, '_mr_8_2_r33_n),
+  freeof(x, _mr_8_2_r33_a) and freeof(x, _mr_8_2_r33_b) and freeof(x, _mr_8_2_r33_c) and freeof(x, _mr_8_2_r33_d) and freeof(x, _mr_8_2_r33_n))$
+_mr_repl_8_2_r33(mm, x) := block([_mr_8_2_r33_a__s, _mr_8_2_r33_b__s, _mr_8_2_r33_c__s, _mr_8_2_r33_d__s, _mr_8_2_r33_n__s],
+  _mr_8_2_r33_a__s : geteqR(mm, '_mr_8_2_r33_a), _mr_8_2_r33_b__s : geteqR(mm, '_mr_8_2_r33_b), _mr_8_2_r33_c__s : geteqR(mm, '_mr_8_2_r33_c), _mr_8_2_r33_d__s : geteqR(mm, '_mr_8_2_r33_d), _mr_8_2_r33_n__s : geteqR(mm, '_mr_8_2_r33_n),
+  mr_unintegrable(cos(_mr_8_2_r33_c__s + _mr_8_2_r33_d__s*x^2)*fresnel_s(_mr_8_2_r33_a__s + _mr_8_2_r33_b__s*x)^_mr_8_2_r33_n__s, x))$
+_mr_rule_8_2_r33 : %mr_defrule("8_2", 33, "(Int (Times (Cos (Plus (Optional (Pattern |_mr_8_2_r33_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r33_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Power (FresnelS (Plus (Optional (Pattern |_mr_8_2_r33_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r33_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r33_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r33, _mr_repl_8_2_r33)$
+
+_mr_cond_8_2_r34(mm, x) := block([_mr_8_2_r34_a, _mr_8_2_r34_b, _mr_8_2_r34_c, _mr_8_2_r34_d, _mr_8_2_r34_n],
+  _mr_8_2_r34_a : geteqR(mm, '_mr_8_2_r34_a), _mr_8_2_r34_b : geteqR(mm, '_mr_8_2_r34_b), _mr_8_2_r34_c : geteqR(mm, '_mr_8_2_r34_c), _mr_8_2_r34_d : geteqR(mm, '_mr_8_2_r34_d), _mr_8_2_r34_n : geteqR(mm, '_mr_8_2_r34_n),
+  freeof(x, _mr_8_2_r34_a) and freeof(x, _mr_8_2_r34_b) and freeof(x, _mr_8_2_r34_c) and freeof(x, _mr_8_2_r34_d) and freeof(x, _mr_8_2_r34_n))$
+_mr_repl_8_2_r34(mm, x) := block([_mr_8_2_r34_a__s, _mr_8_2_r34_b__s, _mr_8_2_r34_c__s, _mr_8_2_r34_d__s, _mr_8_2_r34_n__s],
+  _mr_8_2_r34_a__s : geteqR(mm, '_mr_8_2_r34_a), _mr_8_2_r34_b__s : geteqR(mm, '_mr_8_2_r34_b), _mr_8_2_r34_c__s : geteqR(mm, '_mr_8_2_r34_c), _mr_8_2_r34_d__s : geteqR(mm, '_mr_8_2_r34_d), _mr_8_2_r34_n__s : geteqR(mm, '_mr_8_2_r34_n),
+  mr_unintegrable(sin(_mr_8_2_r34_c__s + _mr_8_2_r34_d__s*x^2)*fresnel_c(_mr_8_2_r34_a__s + _mr_8_2_r34_b__s*x)^_mr_8_2_r34_n__s, x))$
+_mr_rule_8_2_r34 : %mr_defrule("8_2", 34, "(Int (Times (Power (FresnelC (Plus (Optional (Pattern |_mr_8_2_r34_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r34_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r34_n| (Blank)))) (Sin (Plus (Optional (Pattern |_mr_8_2_r34_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r34_d| (Blank))) (Power (Pattern x (Blank)) 2))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r34, _mr_repl_8_2_r34)$
+
+_mr_cond_8_2_r35(mm, x) := block([_mr_8_2_r35_b, _mr_8_2_r35_d],
+  _mr_8_2_r35_b : geteqR(mm, '_mr_8_2_r35_b), _mr_8_2_r35_d : geteqR(mm, '_mr_8_2_r35_d),
+  freeof(x, _mr_8_2_r35_b) and freeof(x, _mr_8_2_r35_d)  and  %mr_eqQ(_mr_8_2_r35_d^2, %pi^2/4*_mr_8_2_r35_b^4))$
+_mr_repl_8_2_r35(mm, x) := block([_mr_8_2_r35_b__s, _mr_8_2_r35_d__s],
+  _mr_8_2_r35_b__s : geteqR(mm, '_mr_8_2_r35_b), _mr_8_2_r35_d__s : geteqR(mm, '_mr_8_2_r35_d),
+  -cos(_mr_8_2_r35_d__s*x^2)*fresnel_s(_mr_8_2_r35_b__s*x)/(2*_mr_8_2_r35_d__s) + 1/(2*_mr_8_2_r35_b__s*%pi)*mr_int(sin(2*_mr_8_2_r35_d__s*x^2), x))$
+_mr_rule_8_2_r35 : %mr_defrule("8_2", 35, "(Int (Times (FresnelS (Times (Optional (Pattern |_mr_8_2_r35_b| (Blank))) (Pattern x (Blank)))) (Pattern x (Blank)) (Sin (Times (Optional (Pattern |_mr_8_2_r35_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r35, _mr_repl_8_2_r35)$
+
+_mr_cond_8_2_r36(mm, x) := block([_mr_8_2_r36_b, _mr_8_2_r36_d],
+  _mr_8_2_r36_b : geteqR(mm, '_mr_8_2_r36_b), _mr_8_2_r36_d : geteqR(mm, '_mr_8_2_r36_d),
+  freeof(x, _mr_8_2_r36_b) and freeof(x, _mr_8_2_r36_d)  and  %mr_eqQ(_mr_8_2_r36_d^2, %pi^2/4*_mr_8_2_r36_b^4))$
+_mr_repl_8_2_r36(mm, x) := block([_mr_8_2_r36_b__s, _mr_8_2_r36_d__s],
+  _mr_8_2_r36_b__s : geteqR(mm, '_mr_8_2_r36_b), _mr_8_2_r36_d__s : geteqR(mm, '_mr_8_2_r36_d),
+  sin(_mr_8_2_r36_d__s*x^2)*fresnel_c(_mr_8_2_r36_b__s*x)/(2*_mr_8_2_r36_d__s) - _mr_8_2_r36_b__s/(4*_mr_8_2_r36_d__s)*mr_int(sin(2*_mr_8_2_r36_d__s*x^2), x))$
+_mr_rule_8_2_r36 : %mr_defrule("8_2", 36, "(Int (Times (Cos (Times (Optional (Pattern |_mr_8_2_r36_d| (Blank))) (Power (Pattern x (Blank)) 2))) (FresnelC (Times (Optional (Pattern |_mr_8_2_r36_b| (Blank))) (Pattern x (Blank)))) (Pattern x (Blank))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r36, _mr_repl_8_2_r36)$
+
+_mr_cond_8_2_r37(mm, x) := block([_mr_8_2_r37_b, _mr_8_2_r37_d, _mr_8_2_r37_m],
+  _mr_8_2_r37_b : geteqR(mm, '_mr_8_2_r37_b), _mr_8_2_r37_d : geteqR(mm, '_mr_8_2_r37_d), _mr_8_2_r37_m : geteqR(mm, '_mr_8_2_r37_m),
+  freeof(x, _mr_8_2_r37_b) and freeof(x, _mr_8_2_r37_d)  and  %mr_eqQ(_mr_8_2_r37_d^2, %pi^2/4*_mr_8_2_r37_b^4)  and  %mr_iGtQ(_mr_8_2_r37_m, 1))$
+_mr_repl_8_2_r37(mm, x) := block([_mr_8_2_r37_b__s, _mr_8_2_r37_d__s, _mr_8_2_r37_m__s],
+  _mr_8_2_r37_b__s : geteqR(mm, '_mr_8_2_r37_b), _mr_8_2_r37_d__s : geteqR(mm, '_mr_8_2_r37_d), _mr_8_2_r37_m__s : geteqR(mm, '_mr_8_2_r37_m),
+  -x^(_mr_8_2_r37_m__s - 1)*cos(_mr_8_2_r37_d__s*x^2)*fresnel_s(_mr_8_2_r37_b__s*x)/(2*_mr_8_2_r37_d__s) + 1/(2*_mr_8_2_r37_b__s*%pi)*mr_int(x^(_mr_8_2_r37_m__s - 1)*sin(2*_mr_8_2_r37_d__s*x^2), x) + (_mr_8_2_r37_m__s - 1)/(2*_mr_8_2_r37_d__s)*mr_int(x^(_mr_8_2_r37_m__s - 2)*cos(_mr_8_2_r37_d__s*x^2)*fresnel_s(_mr_8_2_r37_b__s*x), x))$
+_mr_rule_8_2_r37 : %mr_defrule("8_2", 37, "(Int (Times (FresnelS (Times (Optional (Pattern |_mr_8_2_r37_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) (Pattern |_mr_8_2_r37_m| (Blank))) (Sin (Times (Optional (Pattern |_mr_8_2_r37_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r37, _mr_repl_8_2_r37)$
+
+_mr_cond_8_2_r38(mm, x) := block([_mr_8_2_r38_b, _mr_8_2_r38_d, _mr_8_2_r38_m],
+  _mr_8_2_r38_b : geteqR(mm, '_mr_8_2_r38_b), _mr_8_2_r38_d : geteqR(mm, '_mr_8_2_r38_d), _mr_8_2_r38_m : geteqR(mm, '_mr_8_2_r38_m),
+  freeof(x, _mr_8_2_r38_b) and freeof(x, _mr_8_2_r38_d)  and  %mr_eqQ(_mr_8_2_r38_d^2, %pi^2/4*_mr_8_2_r38_b^4)  and  %mr_iGtQ(_mr_8_2_r38_m, 1))$
+_mr_repl_8_2_r38(mm, x) := block([_mr_8_2_r38_b__s, _mr_8_2_r38_d__s, _mr_8_2_r38_m__s],
+  _mr_8_2_r38_b__s : geteqR(mm, '_mr_8_2_r38_b), _mr_8_2_r38_d__s : geteqR(mm, '_mr_8_2_r38_d), _mr_8_2_r38_m__s : geteqR(mm, '_mr_8_2_r38_m),
+  x^(_mr_8_2_r38_m__s - 1)*sin(_mr_8_2_r38_d__s*x^2)*fresnel_c(_mr_8_2_r38_b__s*x)/(2*_mr_8_2_r38_d__s) - _mr_8_2_r38_b__s/(4*_mr_8_2_r38_d__s)*mr_int(x^(_mr_8_2_r38_m__s - 1)*sin(2*_mr_8_2_r38_d__s*x^2), x) - (_mr_8_2_r38_m__s - 1)/(2*_mr_8_2_r38_d__s)*mr_int(x^(_mr_8_2_r38_m__s - 2)*sin(_mr_8_2_r38_d__s*x^2)*fresnel_c(_mr_8_2_r38_b__s*x), x))$
+_mr_rule_8_2_r38 : %mr_defrule("8_2", 38, "(Int (Times (Cos (Times (Optional (Pattern |_mr_8_2_r38_d| (Blank))) (Power (Pattern x (Blank)) 2))) (FresnelC (Times (Optional (Pattern |_mr_8_2_r38_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) (Pattern |_mr_8_2_r38_m| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r38, _mr_repl_8_2_r38)$
+
+_mr_cond_8_2_r39(mm, x) := block([_mr_8_2_r39_b, _mr_8_2_r39_d, _mr_8_2_r39_m],
+  _mr_8_2_r39_b : geteqR(mm, '_mr_8_2_r39_b), _mr_8_2_r39_d : geteqR(mm, '_mr_8_2_r39_d), _mr_8_2_r39_m : geteqR(mm, '_mr_8_2_r39_m),
+  freeof(x, _mr_8_2_r39_b) and freeof(x, _mr_8_2_r39_d)  and  %mr_eqQ(_mr_8_2_r39_d^2, %pi^2/4*_mr_8_2_r39_b^4)  and  %mr_iLtQ(_mr_8_2_r39_m, -2))$
+_mr_repl_8_2_r39(mm, x) := block([_mr_8_2_r39_b__s, _mr_8_2_r39_d__s, _mr_8_2_r39_m__s],
+  _mr_8_2_r39_b__s : geteqR(mm, '_mr_8_2_r39_b), _mr_8_2_r39_d__s : geteqR(mm, '_mr_8_2_r39_d), _mr_8_2_r39_m__s : geteqR(mm, '_mr_8_2_r39_m),
+  x^(_mr_8_2_r39_m__s + 1)*sin(_mr_8_2_r39_d__s*x^2)*fresnel_s(_mr_8_2_r39_b__s*x)/(_mr_8_2_r39_m__s + 1) - _mr_8_2_r39_d__s*x^(_mr_8_2_r39_m__s + 2)/(%pi*_mr_8_2_r39_b__s*(_mr_8_2_r39_m__s + 1)*(_mr_8_2_r39_m__s + 2)) + _mr_8_2_r39_d__s/(%pi*_mr_8_2_r39_b__s*(_mr_8_2_r39_m__s + 1))*mr_int(x^(_mr_8_2_r39_m__s + 1)*cos(2*_mr_8_2_r39_d__s*x^2), x) - 2*_mr_8_2_r39_d__s/(_mr_8_2_r39_m__s + 1)*mr_int(x^(_mr_8_2_r39_m__s + 2)*cos(_mr_8_2_r39_d__s*x^2)*fresnel_s(_mr_8_2_r39_b__s*x), x))$
+_mr_rule_8_2_r39 : %mr_defrule("8_2", 39, "(Int (Times (FresnelS (Times (Optional (Pattern |_mr_8_2_r39_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) (Pattern |_mr_8_2_r39_m| (Blank))) (Sin (Times (Optional (Pattern |_mr_8_2_r39_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r39, _mr_repl_8_2_r39)$
+
+_mr_cond_8_2_r40(mm, x) := block([_mr_8_2_r40_b, _mr_8_2_r40_d, _mr_8_2_r40_m],
+  _mr_8_2_r40_b : geteqR(mm, '_mr_8_2_r40_b), _mr_8_2_r40_d : geteqR(mm, '_mr_8_2_r40_d), _mr_8_2_r40_m : geteqR(mm, '_mr_8_2_r40_m),
+  freeof(x, _mr_8_2_r40_b) and freeof(x, _mr_8_2_r40_d)  and  %mr_eqQ(_mr_8_2_r40_d^2, %pi^2/4*_mr_8_2_r40_b^4)  and  %mr_iLtQ(_mr_8_2_r40_m, -2))$
+_mr_repl_8_2_r40(mm, x) := block([_mr_8_2_r40_b__s, _mr_8_2_r40_d__s, _mr_8_2_r40_m__s],
+  _mr_8_2_r40_b__s : geteqR(mm, '_mr_8_2_r40_b), _mr_8_2_r40_d__s : geteqR(mm, '_mr_8_2_r40_d), _mr_8_2_r40_m__s : geteqR(mm, '_mr_8_2_r40_m),
+  x^(_mr_8_2_r40_m__s + 1)*cos(_mr_8_2_r40_d__s*x^2)*fresnel_c(_mr_8_2_r40_b__s*x)/(_mr_8_2_r40_m__s + 1) - _mr_8_2_r40_b__s*x^(_mr_8_2_r40_m__s + 2)/(2*(_mr_8_2_r40_m__s + 1)*(_mr_8_2_r40_m__s + 2)) - _mr_8_2_r40_b__s/(2*(_mr_8_2_r40_m__s + 1))*mr_int(x^(_mr_8_2_r40_m__s + 1)*cos(2*_mr_8_2_r40_d__s*x^2), x) + 2*_mr_8_2_r40_d__s/(_mr_8_2_r40_m__s + 1)*mr_int(x^(_mr_8_2_r40_m__s + 2)*sin(_mr_8_2_r40_d__s*x^2)*fresnel_c(_mr_8_2_r40_b__s*x), x))$
+_mr_rule_8_2_r40 : %mr_defrule("8_2", 40, "(Int (Times (Cos (Times (Optional (Pattern |_mr_8_2_r40_d| (Blank))) (Power (Pattern x (Blank)) 2))) (FresnelC (Times (Optional (Pattern |_mr_8_2_r40_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) (Pattern |_mr_8_2_r40_m| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r40, _mr_repl_8_2_r40)$
+
+_mr_cond_8_2_r41(mm, x) := block([_mr_8_2_r41_a, _mr_8_2_r41_b, _mr_8_2_r41_c, _mr_8_2_r41_d, _mr_8_2_r41_e, _mr_8_2_r41_m, _mr_8_2_r41_n],
+  _mr_8_2_r41_a : geteqR(mm, '_mr_8_2_r41_a), _mr_8_2_r41_b : geteqR(mm, '_mr_8_2_r41_b), _mr_8_2_r41_c : geteqR(mm, '_mr_8_2_r41_c), _mr_8_2_r41_d : geteqR(mm, '_mr_8_2_r41_d), _mr_8_2_r41_e : geteqR(mm, '_mr_8_2_r41_e), _mr_8_2_r41_m : geteqR(mm, '_mr_8_2_r41_m), _mr_8_2_r41_n : geteqR(mm, '_mr_8_2_r41_n),
+  freeof(x, _mr_8_2_r41_a) and freeof(x, _mr_8_2_r41_b) and freeof(x, _mr_8_2_r41_c) and freeof(x, _mr_8_2_r41_d) and freeof(x, _mr_8_2_r41_e) and freeof(x, _mr_8_2_r41_m) and freeof(x, _mr_8_2_r41_n))$
+_mr_repl_8_2_r41(mm, x) := block([_mr_8_2_r41_a__s, _mr_8_2_r41_b__s, _mr_8_2_r41_c__s, _mr_8_2_r41_d__s, _mr_8_2_r41_e__s, _mr_8_2_r41_m__s, _mr_8_2_r41_n__s],
+  _mr_8_2_r41_a__s : geteqR(mm, '_mr_8_2_r41_a), _mr_8_2_r41_b__s : geteqR(mm, '_mr_8_2_r41_b), _mr_8_2_r41_c__s : geteqR(mm, '_mr_8_2_r41_c), _mr_8_2_r41_d__s : geteqR(mm, '_mr_8_2_r41_d), _mr_8_2_r41_e__s : geteqR(mm, '_mr_8_2_r41_e), _mr_8_2_r41_m__s : geteqR(mm, '_mr_8_2_r41_m), _mr_8_2_r41_n__s : geteqR(mm, '_mr_8_2_r41_n),
+  mr_unintegrable((_mr_8_2_r41_e__s*x)^_mr_8_2_r41_m__s*sin(_mr_8_2_r41_c__s + _mr_8_2_r41_d__s*x^2)*fresnel_s(_mr_8_2_r41_a__s + _mr_8_2_r41_b__s*x)^_mr_8_2_r41_n__s, x))$
+_mr_rule_8_2_r41 : %mr_defrule("8_2", 41, "(Int (Times (Power (FresnelS (Plus (Optional (Pattern |_mr_8_2_r41_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r41_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r41_n| (Blank)))) (Power (Times (Optional (Pattern |_mr_8_2_r41_e| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_8_2_r41_m| (Blank)))) (Sin (Plus (Optional (Pattern |_mr_8_2_r41_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r41_d| (Blank))) (Power (Pattern x (Blank)) 2))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r41, _mr_repl_8_2_r41)$
+
+_mr_cond_8_2_r42(mm, x) := block([_mr_8_2_r42_a, _mr_8_2_r42_b, _mr_8_2_r42_c, _mr_8_2_r42_d, _mr_8_2_r42_e, _mr_8_2_r42_m, _mr_8_2_r42_n],
+  _mr_8_2_r42_a : geteqR(mm, '_mr_8_2_r42_a), _mr_8_2_r42_b : geteqR(mm, '_mr_8_2_r42_b), _mr_8_2_r42_c : geteqR(mm, '_mr_8_2_r42_c), _mr_8_2_r42_d : geteqR(mm, '_mr_8_2_r42_d), _mr_8_2_r42_e : geteqR(mm, '_mr_8_2_r42_e), _mr_8_2_r42_m : geteqR(mm, '_mr_8_2_r42_m), _mr_8_2_r42_n : geteqR(mm, '_mr_8_2_r42_n),
+  freeof(x, _mr_8_2_r42_a) and freeof(x, _mr_8_2_r42_b) and freeof(x, _mr_8_2_r42_c) and freeof(x, _mr_8_2_r42_d) and freeof(x, _mr_8_2_r42_e) and freeof(x, _mr_8_2_r42_m) and freeof(x, _mr_8_2_r42_n))$
+_mr_repl_8_2_r42(mm, x) := block([_mr_8_2_r42_a__s, _mr_8_2_r42_b__s, _mr_8_2_r42_c__s, _mr_8_2_r42_d__s, _mr_8_2_r42_e__s, _mr_8_2_r42_m__s, _mr_8_2_r42_n__s],
+  _mr_8_2_r42_a__s : geteqR(mm, '_mr_8_2_r42_a), _mr_8_2_r42_b__s : geteqR(mm, '_mr_8_2_r42_b), _mr_8_2_r42_c__s : geteqR(mm, '_mr_8_2_r42_c), _mr_8_2_r42_d__s : geteqR(mm, '_mr_8_2_r42_d), _mr_8_2_r42_e__s : geteqR(mm, '_mr_8_2_r42_e), _mr_8_2_r42_m__s : geteqR(mm, '_mr_8_2_r42_m), _mr_8_2_r42_n__s : geteqR(mm, '_mr_8_2_r42_n),
+  mr_unintegrable((_mr_8_2_r42_e__s*x)^_mr_8_2_r42_m__s*cos(_mr_8_2_r42_c__s + _mr_8_2_r42_d__s*x^2)*fresnel_c(_mr_8_2_r42_a__s + _mr_8_2_r42_b__s*x)^_mr_8_2_r42_n__s, x))$
+_mr_rule_8_2_r42 : %mr_defrule("8_2", 42, "(Int (Times (Cos (Plus (Optional (Pattern |_mr_8_2_r42_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r42_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Power (FresnelC (Plus (Optional (Pattern |_mr_8_2_r42_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r42_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r42_n| (Blank)))) (Power (Times (Optional (Pattern |_mr_8_2_r42_e| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_8_2_r42_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r42, _mr_repl_8_2_r42)$
+
+_mr_cond_8_2_r43(mm, x) := block([_mr_8_2_r43_b, _mr_8_2_r43_d],
+  _mr_8_2_r43_b : geteqR(mm, '_mr_8_2_r43_b), _mr_8_2_r43_d : geteqR(mm, '_mr_8_2_r43_d),
+  freeof(x, _mr_8_2_r43_b) and freeof(x, _mr_8_2_r43_d)  and  %mr_eqQ(_mr_8_2_r43_d^2, %pi^2/4*_mr_8_2_r43_b^4))$
+_mr_repl_8_2_r43(mm, x) := block([_mr_8_2_r43_b__s, _mr_8_2_r43_d__s],
+  _mr_8_2_r43_b__s : geteqR(mm, '_mr_8_2_r43_b), _mr_8_2_r43_d__s : geteqR(mm, '_mr_8_2_r43_d),
+  sin(_mr_8_2_r43_d__s*x^2)*fresnel_s(_mr_8_2_r43_b__s*x)/(2*_mr_8_2_r43_d__s) - 1/(%pi*_mr_8_2_r43_b__s)*mr_int(sin(_mr_8_2_r43_d__s*x^2)^2, x))$
+_mr_rule_8_2_r43 : %mr_defrule("8_2", 43, "(Int (Times (Cos (Times (Optional (Pattern |_mr_8_2_r43_d| (Blank))) (Power (Pattern x (Blank)) 2))) (FresnelS (Times (Optional (Pattern |_mr_8_2_r43_b| (Blank))) (Pattern x (Blank)))) (Pattern x (Blank))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r43, _mr_repl_8_2_r43)$
+
+_mr_cond_8_2_r44(mm, x) := block([_mr_8_2_r44_b, _mr_8_2_r44_d],
+  _mr_8_2_r44_b : geteqR(mm, '_mr_8_2_r44_b), _mr_8_2_r44_d : geteqR(mm, '_mr_8_2_r44_d),
+  freeof(x, _mr_8_2_r44_b) and freeof(x, _mr_8_2_r44_d)  and  %mr_eqQ(_mr_8_2_r44_d^2, %pi^2/4*_mr_8_2_r44_b^4))$
+_mr_repl_8_2_r44(mm, x) := block([_mr_8_2_r44_b__s, _mr_8_2_r44_d__s],
+  _mr_8_2_r44_b__s : geteqR(mm, '_mr_8_2_r44_b), _mr_8_2_r44_d__s : geteqR(mm, '_mr_8_2_r44_d),
+  -cos(_mr_8_2_r44_d__s*x^2)*fresnel_c(_mr_8_2_r44_b__s*x)/(2*_mr_8_2_r44_d__s) + _mr_8_2_r44_b__s/(2*_mr_8_2_r44_d__s)*mr_int(cos(_mr_8_2_r44_d__s*x^2)^2, x))$
+_mr_rule_8_2_r44 : %mr_defrule("8_2", 44, "(Int (Times (FresnelC (Times (Optional (Pattern |_mr_8_2_r44_b| (Blank))) (Pattern x (Blank)))) (Pattern x (Blank)) (Sin (Times (Optional (Pattern |_mr_8_2_r44_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r44, _mr_repl_8_2_r44)$
+
+_mr_cond_8_2_r45(mm, x) := block([_mr_8_2_r45_b, _mr_8_2_r45_d, _mr_8_2_r45_m],
+  _mr_8_2_r45_b : geteqR(mm, '_mr_8_2_r45_b), _mr_8_2_r45_d : geteqR(mm, '_mr_8_2_r45_d), _mr_8_2_r45_m : geteqR(mm, '_mr_8_2_r45_m),
+  freeof(x, _mr_8_2_r45_b) and freeof(x, _mr_8_2_r45_d)  and  %mr_eqQ(_mr_8_2_r45_d^2, %pi^2/4*_mr_8_2_r45_b^4)  and  %mr_iGtQ(_mr_8_2_r45_m, 1))$
+_mr_repl_8_2_r45(mm, x) := block([_mr_8_2_r45_b__s, _mr_8_2_r45_d__s, _mr_8_2_r45_m__s],
+  _mr_8_2_r45_b__s : geteqR(mm, '_mr_8_2_r45_b), _mr_8_2_r45_d__s : geteqR(mm, '_mr_8_2_r45_d), _mr_8_2_r45_m__s : geteqR(mm, '_mr_8_2_r45_m),
+  x^(_mr_8_2_r45_m__s - 1)*sin(_mr_8_2_r45_d__s*x^2)*fresnel_s(_mr_8_2_r45_b__s*x)/(2*_mr_8_2_r45_d__s) - 1/(%pi*_mr_8_2_r45_b__s)*mr_int(x^(_mr_8_2_r45_m__s - 1)*sin(_mr_8_2_r45_d__s*x^2)^2, x) - (_mr_8_2_r45_m__s - 1)/(2*_mr_8_2_r45_d__s)*mr_int(x^(_mr_8_2_r45_m__s - 2)*sin(_mr_8_2_r45_d__s*x^2)*fresnel_s(_mr_8_2_r45_b__s*x), x))$
+_mr_rule_8_2_r45 : %mr_defrule("8_2", 45, "(Int (Times (Cos (Times (Optional (Pattern |_mr_8_2_r45_d| (Blank))) (Power (Pattern x (Blank)) 2))) (FresnelS (Times (Optional (Pattern |_mr_8_2_r45_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) (Pattern |_mr_8_2_r45_m| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r45, _mr_repl_8_2_r45)$
+
+_mr_cond_8_2_r46(mm, x) := block([_mr_8_2_r46_b, _mr_8_2_r46_d, _mr_8_2_r46_m],
+  _mr_8_2_r46_b : geteqR(mm, '_mr_8_2_r46_b), _mr_8_2_r46_d : geteqR(mm, '_mr_8_2_r46_d), _mr_8_2_r46_m : geteqR(mm, '_mr_8_2_r46_m),
+  freeof(x, _mr_8_2_r46_b) and freeof(x, _mr_8_2_r46_d)  and  %mr_eqQ(_mr_8_2_r46_d^2, %pi^2/4*_mr_8_2_r46_b^4)  and  %mr_iGtQ(_mr_8_2_r46_m, 1))$
+_mr_repl_8_2_r46(mm, x) := block([_mr_8_2_r46_b__s, _mr_8_2_r46_d__s, _mr_8_2_r46_m__s],
+  _mr_8_2_r46_b__s : geteqR(mm, '_mr_8_2_r46_b), _mr_8_2_r46_d__s : geteqR(mm, '_mr_8_2_r46_d), _mr_8_2_r46_m__s : geteqR(mm, '_mr_8_2_r46_m),
+  -x^(_mr_8_2_r46_m__s - 1)*cos(_mr_8_2_r46_d__s*x^2)*fresnel_c(_mr_8_2_r46_b__s*x)/(2*_mr_8_2_r46_d__s) + _mr_8_2_r46_b__s/(2*_mr_8_2_r46_d__s)*mr_int(x^(_mr_8_2_r46_m__s - 1)*cos(_mr_8_2_r46_d__s*x^2)^2, x) + (_mr_8_2_r46_m__s - 1)/(2*_mr_8_2_r46_d__s)*mr_int(x^(_mr_8_2_r46_m__s - 2)*cos(_mr_8_2_r46_d__s*x^2)*fresnel_c(_mr_8_2_r46_b__s*x), x))$
+_mr_rule_8_2_r46 : %mr_defrule("8_2", 46, "(Int (Times (FresnelC (Times (Optional (Pattern |_mr_8_2_r46_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) (Pattern |_mr_8_2_r46_m| (Blank))) (Sin (Times (Optional (Pattern |_mr_8_2_r46_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r46, _mr_repl_8_2_r46)$
+
+_mr_cond_8_2_r47(mm, x) := block([_mr_8_2_r47_b, _mr_8_2_r47_d, _mr_8_2_r47_m],
+  _mr_8_2_r47_b : geteqR(mm, '_mr_8_2_r47_b), _mr_8_2_r47_d : geteqR(mm, '_mr_8_2_r47_d), _mr_8_2_r47_m : geteqR(mm, '_mr_8_2_r47_m),
+  freeof(x, _mr_8_2_r47_b) and freeof(x, _mr_8_2_r47_d)  and  %mr_eqQ(_mr_8_2_r47_d^2, %pi^2/4*_mr_8_2_r47_b^4)  and  %mr_iLtQ(_mr_8_2_r47_m, -1))$
+_mr_repl_8_2_r47(mm, x) := block([_mr_8_2_r47_b__s, _mr_8_2_r47_d__s, _mr_8_2_r47_m__s],
+  _mr_8_2_r47_b__s : geteqR(mm, '_mr_8_2_r47_b), _mr_8_2_r47_d__s : geteqR(mm, '_mr_8_2_r47_d), _mr_8_2_r47_m__s : geteqR(mm, '_mr_8_2_r47_m),
+  x^(_mr_8_2_r47_m__s + 1)*cos(_mr_8_2_r47_d__s*x^2)*fresnel_s(_mr_8_2_r47_b__s*x)/(_mr_8_2_r47_m__s + 1) - _mr_8_2_r47_d__s/(%pi*_mr_8_2_r47_b__s*(_mr_8_2_r47_m__s + 1))*mr_int(x^(_mr_8_2_r47_m__s + 1)*sin(2*_mr_8_2_r47_d__s*x^2), x) + 2*_mr_8_2_r47_d__s/(_mr_8_2_r47_m__s + 1)*mr_int(x^(_mr_8_2_r47_m__s + 2)*sin(_mr_8_2_r47_d__s*x^2)*fresnel_s(_mr_8_2_r47_b__s*x), x))$
+_mr_rule_8_2_r47 : %mr_defrule("8_2", 47, "(Int (Times (Cos (Times (Optional (Pattern |_mr_8_2_r47_d| (Blank))) (Power (Pattern x (Blank)) 2))) (FresnelS (Times (Optional (Pattern |_mr_8_2_r47_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) (Pattern |_mr_8_2_r47_m| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r47, _mr_repl_8_2_r47)$
+
+_mr_cond_8_2_r48(mm, x) := block([_mr_8_2_r48_b, _mr_8_2_r48_d, _mr_8_2_r48_m],
+  _mr_8_2_r48_b : geteqR(mm, '_mr_8_2_r48_b), _mr_8_2_r48_d : geteqR(mm, '_mr_8_2_r48_d), _mr_8_2_r48_m : geteqR(mm, '_mr_8_2_r48_m),
+  freeof(x, _mr_8_2_r48_b) and freeof(x, _mr_8_2_r48_d)  and  %mr_eqQ(_mr_8_2_r48_d^2, %pi^2/4*_mr_8_2_r48_b^4)  and  %mr_iLtQ(_mr_8_2_r48_m, -1))$
+_mr_repl_8_2_r48(mm, x) := block([_mr_8_2_r48_b__s, _mr_8_2_r48_d__s, _mr_8_2_r48_m__s],
+  _mr_8_2_r48_b__s : geteqR(mm, '_mr_8_2_r48_b), _mr_8_2_r48_d__s : geteqR(mm, '_mr_8_2_r48_d), _mr_8_2_r48_m__s : geteqR(mm, '_mr_8_2_r48_m),
+  x^(_mr_8_2_r48_m__s + 1)*sin(_mr_8_2_r48_d__s*x^2)*fresnel_c(_mr_8_2_r48_b__s*x)/(_mr_8_2_r48_m__s + 1) - _mr_8_2_r48_b__s/(2*(_mr_8_2_r48_m__s + 1))*mr_int(x^(_mr_8_2_r48_m__s + 1)*sin(2*_mr_8_2_r48_d__s*x^2), x) - 2*_mr_8_2_r48_d__s/(_mr_8_2_r48_m__s + 1)*mr_int(x^(_mr_8_2_r48_m__s + 2)*cos(_mr_8_2_r48_d__s*x^2)*fresnel_c(_mr_8_2_r48_b__s*x), x))$
+_mr_rule_8_2_r48 : %mr_defrule("8_2", 48, "(Int (Times (FresnelC (Times (Optional (Pattern |_mr_8_2_r48_b| (Blank))) (Pattern x (Blank)))) (Power (Pattern x (Blank)) (Pattern |_mr_8_2_r48_m| (Blank))) (Sin (Times (Optional (Pattern |_mr_8_2_r48_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r48, _mr_repl_8_2_r48)$
+
+_mr_cond_8_2_r49(mm, x) := block([_mr_8_2_r49_a, _mr_8_2_r49_b, _mr_8_2_r49_c, _mr_8_2_r49_d, _mr_8_2_r49_e, _mr_8_2_r49_m, _mr_8_2_r49_n],
+  _mr_8_2_r49_a : geteqR(mm, '_mr_8_2_r49_a), _mr_8_2_r49_b : geteqR(mm, '_mr_8_2_r49_b), _mr_8_2_r49_c : geteqR(mm, '_mr_8_2_r49_c), _mr_8_2_r49_d : geteqR(mm, '_mr_8_2_r49_d), _mr_8_2_r49_e : geteqR(mm, '_mr_8_2_r49_e), _mr_8_2_r49_m : geteqR(mm, '_mr_8_2_r49_m), _mr_8_2_r49_n : geteqR(mm, '_mr_8_2_r49_n),
+  freeof(x, _mr_8_2_r49_a) and freeof(x, _mr_8_2_r49_b) and freeof(x, _mr_8_2_r49_c) and freeof(x, _mr_8_2_r49_d) and freeof(x, _mr_8_2_r49_e) and freeof(x, _mr_8_2_r49_m) and freeof(x, _mr_8_2_r49_n))$
+_mr_repl_8_2_r49(mm, x) := block([_mr_8_2_r49_a__s, _mr_8_2_r49_b__s, _mr_8_2_r49_c__s, _mr_8_2_r49_d__s, _mr_8_2_r49_e__s, _mr_8_2_r49_m__s, _mr_8_2_r49_n__s],
+  _mr_8_2_r49_a__s : geteqR(mm, '_mr_8_2_r49_a), _mr_8_2_r49_b__s : geteqR(mm, '_mr_8_2_r49_b), _mr_8_2_r49_c__s : geteqR(mm, '_mr_8_2_r49_c), _mr_8_2_r49_d__s : geteqR(mm, '_mr_8_2_r49_d), _mr_8_2_r49_e__s : geteqR(mm, '_mr_8_2_r49_e), _mr_8_2_r49_m__s : geteqR(mm, '_mr_8_2_r49_m), _mr_8_2_r49_n__s : geteqR(mm, '_mr_8_2_r49_n),
+  mr_unintegrable((_mr_8_2_r49_e__s*x)^_mr_8_2_r49_m__s*cos(_mr_8_2_r49_c__s + _mr_8_2_r49_d__s*x^2)*fresnel_s(_mr_8_2_r49_a__s + _mr_8_2_r49_b__s*x)^_mr_8_2_r49_n__s, x))$
+_mr_rule_8_2_r49 : %mr_defrule("8_2", 49, "(Int (Times (Cos (Plus (Optional (Pattern |_mr_8_2_r49_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r49_d| (Blank))) (Power (Pattern x (Blank)) 2)))) (Power (FresnelS (Plus (Optional (Pattern |_mr_8_2_r49_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r49_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r49_n| (Blank)))) (Power (Times (Optional (Pattern |_mr_8_2_r49_e| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_8_2_r49_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r49, _mr_repl_8_2_r49)$
+
+_mr_cond_8_2_r50(mm, x) := block([_mr_8_2_r50_a, _mr_8_2_r50_b, _mr_8_2_r50_c, _mr_8_2_r50_d, _mr_8_2_r50_e, _mr_8_2_r50_m, _mr_8_2_r50_n],
+  _mr_8_2_r50_a : geteqR(mm, '_mr_8_2_r50_a), _mr_8_2_r50_b : geteqR(mm, '_mr_8_2_r50_b), _mr_8_2_r50_c : geteqR(mm, '_mr_8_2_r50_c), _mr_8_2_r50_d : geteqR(mm, '_mr_8_2_r50_d), _mr_8_2_r50_e : geteqR(mm, '_mr_8_2_r50_e), _mr_8_2_r50_m : geteqR(mm, '_mr_8_2_r50_m), _mr_8_2_r50_n : geteqR(mm, '_mr_8_2_r50_n),
+  freeof(x, _mr_8_2_r50_a) and freeof(x, _mr_8_2_r50_b) and freeof(x, _mr_8_2_r50_c) and freeof(x, _mr_8_2_r50_d) and freeof(x, _mr_8_2_r50_e) and freeof(x, _mr_8_2_r50_m) and freeof(x, _mr_8_2_r50_n))$
+_mr_repl_8_2_r50(mm, x) := block([_mr_8_2_r50_a__s, _mr_8_2_r50_b__s, _mr_8_2_r50_c__s, _mr_8_2_r50_d__s, _mr_8_2_r50_e__s, _mr_8_2_r50_m__s, _mr_8_2_r50_n__s],
+  _mr_8_2_r50_a__s : geteqR(mm, '_mr_8_2_r50_a), _mr_8_2_r50_b__s : geteqR(mm, '_mr_8_2_r50_b), _mr_8_2_r50_c__s : geteqR(mm, '_mr_8_2_r50_c), _mr_8_2_r50_d__s : geteqR(mm, '_mr_8_2_r50_d), _mr_8_2_r50_e__s : geteqR(mm, '_mr_8_2_r50_e), _mr_8_2_r50_m__s : geteqR(mm, '_mr_8_2_r50_m), _mr_8_2_r50_n__s : geteqR(mm, '_mr_8_2_r50_n),
+  mr_unintegrable((_mr_8_2_r50_e__s*x)^_mr_8_2_r50_m__s*sin(_mr_8_2_r50_c__s + _mr_8_2_r50_d__s*x^2)*fresnel_c(_mr_8_2_r50_a__s + _mr_8_2_r50_b__s*x)^_mr_8_2_r50_n__s, x))$
+_mr_rule_8_2_r50 : %mr_defrule("8_2", 50, "(Int (Times (Power (FresnelC (Plus (Optional (Pattern |_mr_8_2_r50_a| (Blank))) (Times (Optional (Pattern |_mr_8_2_r50_b| (Blank))) (Pattern x (Blank))))) (Optional (Pattern |_mr_8_2_r50_n| (Blank)))) (Power (Times (Optional (Pattern |_mr_8_2_r50_e| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_8_2_r50_m| (Blank)))) (Sin (Plus (Optional (Pattern |_mr_8_2_r50_c| (Blank))) (Times (Optional (Pattern |_mr_8_2_r50_d| (Blank))) (Power (Pattern x (Blank)) 2))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r50, _mr_repl_8_2_r50)$
+
+_mr_cond_8_2_r51(mm, x) := block([_mr_8_2_r51_a, _mr_8_2_r51_b, _mr_8_2_r51_c, _mr_8_2_r51_d, _mr_8_2_r51_n],
+  _mr_8_2_r51_a : geteqR(mm, '_mr_8_2_r51_a), _mr_8_2_r51_b : geteqR(mm, '_mr_8_2_r51_b), _mr_8_2_r51_c : geteqR(mm, '_mr_8_2_r51_c), _mr_8_2_r51_d : geteqR(mm, '_mr_8_2_r51_d), _mr_8_2_r51_n : geteqR(mm, '_mr_8_2_r51_n),
+  freeof(x, _mr_8_2_r51_a) and freeof(x, _mr_8_2_r51_b) and freeof(x, _mr_8_2_r51_c) and freeof(x, _mr_8_2_r51_d) and freeof(x, _mr_8_2_r51_n))$
+_mr_repl_8_2_r51(mm, x) := block([_mr_8_2_r51_a__s, _mr_8_2_r51_b__s, _mr_8_2_r51_c__s, _mr_8_2_r51_d__s, _mr_8_2_r51_n__s],
+  _mr_8_2_r51_a__s : geteqR(mm, '_mr_8_2_r51_a), _mr_8_2_r51_b__s : geteqR(mm, '_mr_8_2_r51_b), _mr_8_2_r51_c__s : geteqR(mm, '_mr_8_2_r51_c), _mr_8_2_r51_d__s : geteqR(mm, '_mr_8_2_r51_d), _mr_8_2_r51_n__s : geteqR(mm, '_mr_8_2_r51_n),
+  x*fresnel_s(_mr_8_2_r51_d__s*(_mr_8_2_r51_a__s + _mr_8_2_r51_b__s*log(_mr_8_2_r51_c__s*x^_mr_8_2_r51_n__s))) - _mr_8_2_r51_b__s*_mr_8_2_r51_d__s*_mr_8_2_r51_n__s*mr_int(sin(%pi/2*(_mr_8_2_r51_d__s*(_mr_8_2_r51_a__s + _mr_8_2_r51_b__s*log(_mr_8_2_r51_c__s*x^_mr_8_2_r51_n__s)))^2), x))$
+_mr_rule_8_2_r51 : %mr_defrule("8_2", 51, "(Int (FresnelS (Times (Optional (Pattern |_mr_8_2_r51_d| (Blank))) (Plus (Optional (Pattern |_mr_8_2_r51_a| (Blank))) (Times (Log (Times (Optional (Pattern |_mr_8_2_r51_c| (Blank))) (Power (Pattern x (Blank)) (Optional (Pattern |_mr_8_2_r51_n| (Blank)))))) (Optional (Pattern |_mr_8_2_r51_b| (Blank))))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r51, _mr_repl_8_2_r51)$
+
+_mr_cond_8_2_r52(mm, x) := block([_mr_8_2_r52_a, _mr_8_2_r52_b, _mr_8_2_r52_c, _mr_8_2_r52_d, _mr_8_2_r52_n],
+  _mr_8_2_r52_a : geteqR(mm, '_mr_8_2_r52_a), _mr_8_2_r52_b : geteqR(mm, '_mr_8_2_r52_b), _mr_8_2_r52_c : geteqR(mm, '_mr_8_2_r52_c), _mr_8_2_r52_d : geteqR(mm, '_mr_8_2_r52_d), _mr_8_2_r52_n : geteqR(mm, '_mr_8_2_r52_n),
+  freeof(x, _mr_8_2_r52_a) and freeof(x, _mr_8_2_r52_b) and freeof(x, _mr_8_2_r52_c) and freeof(x, _mr_8_2_r52_d) and freeof(x, _mr_8_2_r52_n))$
+_mr_repl_8_2_r52(mm, x) := block([_mr_8_2_r52_a__s, _mr_8_2_r52_b__s, _mr_8_2_r52_c__s, _mr_8_2_r52_d__s, _mr_8_2_r52_n__s],
+  _mr_8_2_r52_a__s : geteqR(mm, '_mr_8_2_r52_a), _mr_8_2_r52_b__s : geteqR(mm, '_mr_8_2_r52_b), _mr_8_2_r52_c__s : geteqR(mm, '_mr_8_2_r52_c), _mr_8_2_r52_d__s : geteqR(mm, '_mr_8_2_r52_d), _mr_8_2_r52_n__s : geteqR(mm, '_mr_8_2_r52_n),
+  x*fresnel_c(_mr_8_2_r52_d__s*(_mr_8_2_r52_a__s + _mr_8_2_r52_b__s*log(_mr_8_2_r52_c__s*x^_mr_8_2_r52_n__s))) - _mr_8_2_r52_b__s*_mr_8_2_r52_d__s*_mr_8_2_r52_n__s*mr_int(cos(%pi/2*(_mr_8_2_r52_d__s*(_mr_8_2_r52_a__s + _mr_8_2_r52_b__s*log(_mr_8_2_r52_c__s*x^_mr_8_2_r52_n__s)))^2), x))$
+_mr_rule_8_2_r52 : %mr_defrule("8_2", 52, "(Int (FresnelC (Times (Optional (Pattern |_mr_8_2_r52_d| (Blank))) (Plus (Optional (Pattern |_mr_8_2_r52_a| (Blank))) (Times (Log (Times (Optional (Pattern |_mr_8_2_r52_c| (Blank))) (Power (Pattern x (Blank)) (Optional (Pattern |_mr_8_2_r52_n| (Blank)))))) (Optional (Pattern |_mr_8_2_r52_b| (Blank))))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r52, _mr_repl_8_2_r52)$
+
+_mr_cond_8_2_r53(mm, x) := block([_mr_8_2_r53_F, _mr_8_2_r53_a, _mr_8_2_r53_b, _mr_8_2_r53_c, _mr_8_2_r53_d, _mr_8_2_r53_n],
+  _mr_8_2_r53_F : geteqR(mm, '_mr_8_2_r53_F), _mr_8_2_r53_a : geteqR(mm, '_mr_8_2_r53_a), _mr_8_2_r53_b : geteqR(mm, '_mr_8_2_r53_b), _mr_8_2_r53_c : geteqR(mm, '_mr_8_2_r53_c), _mr_8_2_r53_d : geteqR(mm, '_mr_8_2_r53_d), _mr_8_2_r53_n : geteqR(mm, '_mr_8_2_r53_n),
+  freeof(x, _mr_8_2_r53_a) and freeof(x, _mr_8_2_r53_b) and freeof(x, _mr_8_2_r53_c) and freeof(x, _mr_8_2_r53_d) and freeof(x, _mr_8_2_r53_n)  and  %mr_memberQ([fresnel_s, fresnel_c], _mr_8_2_r53_F))$
+_mr_repl_8_2_r53(mm, x) := block([_mr_8_2_r53_F__s, _mr_8_2_r53_a__s, _mr_8_2_r53_b__s, _mr_8_2_r53_c__s, _mr_8_2_r53_d__s, _mr_8_2_r53_n__s],
+  _mr_8_2_r53_F__s : geteqR(mm, '_mr_8_2_r53_F), _mr_8_2_r53_a__s : geteqR(mm, '_mr_8_2_r53_a), _mr_8_2_r53_b__s : geteqR(mm, '_mr_8_2_r53_b), _mr_8_2_r53_c__s : geteqR(mm, '_mr_8_2_r53_c), _mr_8_2_r53_d__s : geteqR(mm, '_mr_8_2_r53_d), _mr_8_2_r53_n__s : geteqR(mm, '_mr_8_2_r53_n),
+  1/_mr_8_2_r53_n__s*%mr_subst(apply(_mr_8_2_r53_F__s, [_mr_8_2_r53_d__s*(_mr_8_2_r53_a__s + _mr_8_2_r53_b__s*x)]), x, log(_mr_8_2_r53_c__s*x^_mr_8_2_r53_n__s)))$
+_mr_rule_8_2_r53 : %mr_defrule("8_2", 53, "(Int (Times (Power (Pattern x (Blank)) -1) ((Pattern |_mr_8_2_r53_F| (Blank)) (Times (Optional (Pattern |_mr_8_2_r53_d| (Blank))) (Plus (Optional (Pattern |_mr_8_2_r53_a| (Blank))) (Times (Log (Times (Optional (Pattern |_mr_8_2_r53_c| (Blank))) (Power (Pattern x (Blank)) (Optional (Pattern |_mr_8_2_r53_n| (Blank)))))) (Optional (Pattern |_mr_8_2_r53_b| (Blank)))))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r53, _mr_repl_8_2_r53)$
+
+_mr_cond_8_2_r54(mm, x) := block([_mr_8_2_r54_a, _mr_8_2_r54_b, _mr_8_2_r54_c, _mr_8_2_r54_d, _mr_8_2_r54_e, _mr_8_2_r54_m, _mr_8_2_r54_n],
+  _mr_8_2_r54_a : geteqR(mm, '_mr_8_2_r54_a), _mr_8_2_r54_b : geteqR(mm, '_mr_8_2_r54_b), _mr_8_2_r54_c : geteqR(mm, '_mr_8_2_r54_c), _mr_8_2_r54_d : geteqR(mm, '_mr_8_2_r54_d), _mr_8_2_r54_e : geteqR(mm, '_mr_8_2_r54_e), _mr_8_2_r54_m : geteqR(mm, '_mr_8_2_r54_m), _mr_8_2_r54_n : geteqR(mm, '_mr_8_2_r54_n),
+  freeof(x, _mr_8_2_r54_a) and freeof(x, _mr_8_2_r54_b) and freeof(x, _mr_8_2_r54_c) and freeof(x, _mr_8_2_r54_d) and freeof(x, _mr_8_2_r54_e) and freeof(x, _mr_8_2_r54_m) and freeof(x, _mr_8_2_r54_n)  and  %mr_neQ(_mr_8_2_r54_m, -1))$
+_mr_repl_8_2_r54(mm, x) := block([_mr_8_2_r54_a__s, _mr_8_2_r54_b__s, _mr_8_2_r54_c__s, _mr_8_2_r54_d__s, _mr_8_2_r54_e__s, _mr_8_2_r54_m__s, _mr_8_2_r54_n__s],
+  _mr_8_2_r54_a__s : geteqR(mm, '_mr_8_2_r54_a), _mr_8_2_r54_b__s : geteqR(mm, '_mr_8_2_r54_b), _mr_8_2_r54_c__s : geteqR(mm, '_mr_8_2_r54_c), _mr_8_2_r54_d__s : geteqR(mm, '_mr_8_2_r54_d), _mr_8_2_r54_e__s : geteqR(mm, '_mr_8_2_r54_e), _mr_8_2_r54_m__s : geteqR(mm, '_mr_8_2_r54_m), _mr_8_2_r54_n__s : geteqR(mm, '_mr_8_2_r54_n),
+  (_mr_8_2_r54_e__s*x)^(_mr_8_2_r54_m__s + 1)*fresnel_s(_mr_8_2_r54_d__s*(_mr_8_2_r54_a__s + _mr_8_2_r54_b__s*log(_mr_8_2_r54_c__s*x^_mr_8_2_r54_n__s)))/(_mr_8_2_r54_e__s*(_mr_8_2_r54_m__s + 1)) - _mr_8_2_r54_b__s*_mr_8_2_r54_d__s*_mr_8_2_r54_n__s/(_mr_8_2_r54_m__s + 1)* mr_int((_mr_8_2_r54_e__s*x)^_mr_8_2_r54_m__s*sin(%pi/2*(_mr_8_2_r54_d__s*(_mr_8_2_r54_a__s + _mr_8_2_r54_b__s*log(_mr_8_2_r54_c__s*x^_mr_8_2_r54_n__s)))^2), x))$
+_mr_rule_8_2_r54 : %mr_defrule("8_2", 54, "(Int (Times (FresnelS (Times (Optional (Pattern |_mr_8_2_r54_d| (Blank))) (Plus (Optional (Pattern |_mr_8_2_r54_a| (Blank))) (Times (Log (Times (Optional (Pattern |_mr_8_2_r54_c| (Blank))) (Power (Pattern x (Blank)) (Optional (Pattern |_mr_8_2_r54_n| (Blank)))))) (Optional (Pattern |_mr_8_2_r54_b| (Blank))))))) (Power (Times (Optional (Pattern |_mr_8_2_r54_e| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_8_2_r54_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r54, _mr_repl_8_2_r54)$
+
+_mr_cond_8_2_r55(mm, x) := block([_mr_8_2_r55_a, _mr_8_2_r55_b, _mr_8_2_r55_c, _mr_8_2_r55_d, _mr_8_2_r55_e, _mr_8_2_r55_m, _mr_8_2_r55_n],
+  _mr_8_2_r55_a : geteqR(mm, '_mr_8_2_r55_a), _mr_8_2_r55_b : geteqR(mm, '_mr_8_2_r55_b), _mr_8_2_r55_c : geteqR(mm, '_mr_8_2_r55_c), _mr_8_2_r55_d : geteqR(mm, '_mr_8_2_r55_d), _mr_8_2_r55_e : geteqR(mm, '_mr_8_2_r55_e), _mr_8_2_r55_m : geteqR(mm, '_mr_8_2_r55_m), _mr_8_2_r55_n : geteqR(mm, '_mr_8_2_r55_n),
+  freeof(x, _mr_8_2_r55_a) and freeof(x, _mr_8_2_r55_b) and freeof(x, _mr_8_2_r55_c) and freeof(x, _mr_8_2_r55_d) and freeof(x, _mr_8_2_r55_e) and freeof(x, _mr_8_2_r55_m) and freeof(x, _mr_8_2_r55_n)  and  %mr_neQ(_mr_8_2_r55_m, -1))$
+_mr_repl_8_2_r55(mm, x) := block([_mr_8_2_r55_a__s, _mr_8_2_r55_b__s, _mr_8_2_r55_c__s, _mr_8_2_r55_d__s, _mr_8_2_r55_e__s, _mr_8_2_r55_m__s, _mr_8_2_r55_n__s],
+  _mr_8_2_r55_a__s : geteqR(mm, '_mr_8_2_r55_a), _mr_8_2_r55_b__s : geteqR(mm, '_mr_8_2_r55_b), _mr_8_2_r55_c__s : geteqR(mm, '_mr_8_2_r55_c), _mr_8_2_r55_d__s : geteqR(mm, '_mr_8_2_r55_d), _mr_8_2_r55_e__s : geteqR(mm, '_mr_8_2_r55_e), _mr_8_2_r55_m__s : geteqR(mm, '_mr_8_2_r55_m), _mr_8_2_r55_n__s : geteqR(mm, '_mr_8_2_r55_n),
+  (_mr_8_2_r55_e__s*x)^(_mr_8_2_r55_m__s + 1)*fresnel_c(_mr_8_2_r55_d__s*(_mr_8_2_r55_a__s + _mr_8_2_r55_b__s*log(_mr_8_2_r55_c__s*x^_mr_8_2_r55_n__s)))/(_mr_8_2_r55_e__s*(_mr_8_2_r55_m__s + 1)) - _mr_8_2_r55_b__s*_mr_8_2_r55_d__s*_mr_8_2_r55_n__s/(_mr_8_2_r55_m__s + 1)* mr_int((_mr_8_2_r55_e__s*x)^_mr_8_2_r55_m__s*cos(%pi/2*(_mr_8_2_r55_d__s*(_mr_8_2_r55_a__s + _mr_8_2_r55_b__s*log(_mr_8_2_r55_c__s*x^_mr_8_2_r55_n__s)))^2), x))$
+_mr_rule_8_2_r55 : %mr_defrule("8_2", 55, "(Int (Times (FresnelC (Times (Optional (Pattern |_mr_8_2_r55_d| (Blank))) (Plus (Optional (Pattern |_mr_8_2_r55_a| (Blank))) (Times (Log (Times (Optional (Pattern |_mr_8_2_r55_c| (Blank))) (Power (Pattern x (Blank)) (Optional (Pattern |_mr_8_2_r55_n| (Blank)))))) (Optional (Pattern |_mr_8_2_r55_b| (Blank))))))) (Power (Times (Optional (Pattern |_mr_8_2_r55_e| (Blank))) (Pattern x (Blank))) (Optional (Pattern |_mr_8_2_r55_m| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_8_2_r55, _mr_repl_8_2_r55)$
+
+mr_rules_8_2 : [ _mr_rule_8_2_r1, _mr_rule_8_2_r2, _mr_rule_8_2_r3, _mr_rule_8_2_r4, _mr_rule_8_2_r5, _mr_rule_8_2_r6, _mr_rule_8_2_r7, _mr_rule_8_2_r8, _mr_rule_8_2_r9, _mr_rule_8_2_r10, _mr_rule_8_2_r11, _mr_rule_8_2_r12, _mr_rule_8_2_r13, _mr_rule_8_2_r14, _mr_rule_8_2_r15, _mr_rule_8_2_r16, _mr_rule_8_2_r17, _mr_rule_8_2_r18, _mr_rule_8_2_r19, _mr_rule_8_2_r20, _mr_rule_8_2_r21, _mr_rule_8_2_r22, _mr_rule_8_2_r23, _mr_rule_8_2_r24, _mr_rule_8_2_r25, _mr_rule_8_2_r26, _mr_rule_8_2_r27, _mr_rule_8_2_r28, _mr_rule_8_2_r29, _mr_rule_8_2_r30, _mr_rule_8_2_r31, _mr_rule_8_2_r32, _mr_rule_8_2_r33, _mr_rule_8_2_r34, _mr_rule_8_2_r35, _mr_rule_8_2_r36, _mr_rule_8_2_r37, _mr_rule_8_2_r38, _mr_rule_8_2_r39, _mr_rule_8_2_r40, _mr_rule_8_2_r41, _mr_rule_8_2_r42, _mr_rule_8_2_r43, _mr_rule_8_2_r44, _mr_rule_8_2_r45, _mr_rule_8_2_r46, _mr_rule_8_2_r47, _mr_rule_8_2_r48, _mr_rule_8_2_r49, _mr_rule_8_2_r50, _mr_rule_8_2_r51, _mr_rule_8_2_r52, _mr_rule_8_2_r53, _mr_rule_8_2_r54, _mr_rule_8_2_r55 ]$
+mr_rules_count_8_2 : 55$
+mr_witness_8_2() := true$

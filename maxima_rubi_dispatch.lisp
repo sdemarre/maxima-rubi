@@ -201,11 +201,88 @@ is an improper list."
         ((member (caar e) +mr-inert-ops+ :test #'eq) t)
         (t (loop for tail on (cdr e) thereis (mr-carries-inert-p (car tail))))))
 
-(defmvar $mr_max_depth 16
+(defmvar $mr_max_depth 32
   "Run switch: the dispatch depth cap. mr_top counts nested dispatches in
 depth_level and takes the cap branch beyond this many; every cap hit is
 counted in mr_depth_cap_hits (the run's .caps census). Rubi's own step
-counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).")
+counts exceed 16 on 272 / 24 / 358 corpus entries (classes 1 / 2 / 3).
+Raised 16 -> 32 on 2026-09-25 (user decision): the class-4 routes of 10
+class-6 entries re-enter the inert-trig bridge on every hop and hit 16; at
+64, 7 of the 10 verify (class-6 attribution, branch class6-attribution,
+probes/class-ports/07-depthcap-64.out).")
+
+(defmvar $mr_eqq_symbolic t
+  "Run switch: true (default) = EqQ/NeQ (%mr_eqQ / %mr_neQ,
+maxima_rubi_utils.mac) read u - v as zero when it is syntactically 0 OR
+identically zero by the exact symbolic stages of the harness's zero chain
+(ratsimp, ratsimp(expand), factor, ratsimp(factor), in its two orders; not
+its numeric stage, not its radcan fallback); false = the syntactic test
+alone, is(u - v = 0), the reading every record before 2026-09-25 ran.
+
+WHY (.scratch/matcher-translation-fixes/issues/03, user decision
+2026-09-25). An unexpanded bound coefficient made an identically-zero
+difference read nonzero: 1_2_1_2 r107's NeQ[c d^2 - b d e + a e^2, 0] fired
+on class 1's factorable quadratics and divided by an expression that
+expands to 0, and 5.3.7 r27/r28 / 7.3.7 r25/r26 declined on a shifted
+quadratic. Rubi's PossibleZeroQ reads those zero. A zero for SOME
+parameter values (a*b*c, a - b) stays nonzero, as in Rubi.")
+
+(defmvar $mr_subst_simp nil
+  "Run switch: false (default) = %mr_subst (Rubi's Subst[u, x, v],
+maxima_rubi_utils.mac) is Maxima's plain subst(v, x, u); true = the
+milestone-1 reading (58596c3) that runs %mr_simp (ratsimp, ratsimp(expand),
+factor) on every substituted result. User decision 2026-09-25: on the
+class-4 routes that pass inflated answers to 5 KB - 7 MB (log arguments of
+degree 15-44 in tanh), so verification timed out or the process died; the
+plain subst recovered 54 of 97 class-6 timeouts and broke 0 of 120 sampled
+class-6 PASS entries (class-6 attribution, branch class6-attribution,
+probes/class-ports/18-fixD-timeout.out, 19-fixD-pass-sample.out).")
+
+(defmvar $mr_gtq_facts nil
+  "Run switch: false (default) = GtQ/LtQ/GeQ/LeQ (%mr_gtQ ..., maxima_rubi_utils.mac)
+read Rubi's way (IntegrationUtilityFunctions.m :403-:475): a numeric
+comparison, false on anything not numerically evaluable, never unknown;
+true = that reading OR Maxima's is(u op v) = true, which honours the facts
+database (assume) and Maxima's sign reasoning (a^2+1 > 0) -- a deviation
+from Rubi, which ignores assumptions. User decision 2026-09-25
+(matcher-translation-fixes issue 02; probes/gtq/: over 8,843 corpus calls
+the two readings disagreed on 10 and changed no verdict).")
+
+;; The EqQ fast path (%mr_symbolicZeroQ, maxima_rubi_utils.mac): an
+;; EXPANDED polynomial -- a number, a variable symbol, a product of numbers
+;; and integer powers of variable symbols, or a sum of such terms -- is in
+;; the simplifier's collected form, where like terms have already combined,
+;; so it is zero iff it is syntactically 0: ratsimp could not close it (it
+;; treats every kernel as independent, as this reading does). Variable
+;; symbols are %mr_isVarSym's: not %pi %e %i inf minf true false unknown
+;; %lambda undefined und. Anything else (a sum inside a product, a quotient
+;; of sums, a radical, a function call, a CRE) returns false: not decided
+;; here, the zero chain's stages run.
+(defun mr-poly-var-p (x)
+  (and (symbolp x) x (not (eq x t))
+       (not (member x '($%pi $%e $%i $inf $minf $true $false $unknown
+                        $%lambda $undefined $und)
+                    :test #'eq))))
+
+(defun mr-poly-factor-p (f)
+  (or (mnump f)
+      (mr-poly-var-p f)
+      (and (consp f) (consp (car f)) (eq (caar f) 'mexpt)
+           (mr-poly-var-p (cadr f)) (integerp (caddr f)))))
+
+(defun mr-poly-term-p (u)
+  (or (mr-poly-factor-p u)
+      (and (consp u) (consp (car u)) (eq (caar u) 'mtimes)
+           (every #'mr-poly-factor-p (cdr u)))))
+
+(defun $%mr_expanded_polyp (u)
+  "True when U is an expanded polynomial (Laurent, integer exponents) in
+variable symbols with numeric coefficients, in simplified form."
+  (if (or (mr-poly-term-p u)
+          (and (consp u) (consp (car u)) (eq (caar u) 'mplus)
+               (every #'mr-poly-term-p (cdr u))))
+      t
+      nil))
 
 ;; Maxima variables the utils define before this file loads (declared here
 ;; so their references compile as special).
@@ -271,6 +348,43 @@ runs at load."
                                         (mr-giveup-repl-p repl))
                           *mr-rules*)
       (fill-pointer *mr-rules*))))
+
+(defmfun |$%MR_RULE_COUNT| (&rest args)
+  "%mr_rule_count(): the number of rule records %mr_defrule has registered,
+i.e. the largest handle -- every handle is 1..%mr_rule_count(). For the
+real-table gate (test/test_rule_table_order.mac, class 4, 2026-09-25): a
+registered record that mr_load_all forgot to put in mr_rule_table is then
+seen, not only the ones the table holds."
+  (unless (null args)
+    (merror (intl:gettext "%mr_rule_count: expected no arguments, found ~A") (length args)))
+  (fill-pointer *mr-rules*))
+
+;;; The rule-record globals _mr_rule_<key>_r<n> (each generated rule file
+;;; assigns one per record) are only read by name -- the tests and the
+;;; rule-table gate; the dispatcher reads the handle lists mr_rules_<key>.
+;;; Left on Maxima's `values` infolist they cost every binding of a
+;;; globally unbound variable two walks of that list: MSET -> ADD2LNC on
+;;; entry, MUNBIND -> DELETE on exit (mlisp.lisp L518-594, L2523), and every
+;;; cond/repl call binds its parameters and block locals that way. Measured
+;;; on class-ports (8,404 names after mr_load_all): ~74 % of rubi's cpu in
+;;; %MEMBER-EQ + DELETE, a ~1.7x slowdown over a 4,387-name table (branch
+;;; class1-attribution, probes/class-ports/class1/04-values-census.out,
+;;; 05-prof-e863.out). %mr_load_sibling calls this after every load; the
+;;; symbols stay BOUND, only the infolist entry goes.
+(defmfun |$%MR_TRIM_RULE_VALUES| (&rest args)
+  "%mr_trim_rule_values(): drop every _mr_rule_* name from `values`; returns
+how many were dropped. The symbols keep their values."
+  (unless (null args)
+    (merror (intl:gettext "%mr_trim_rule_values: expected no arguments, found ~A") (length args)))
+  (let ((n0 (length (cdr $values))))
+    (setf (cdr $values)
+          (delete-if (lambda (s)
+                       (and (symbolp s)
+                            (let ((n (symbol-name s)))
+                              (and (> (length n) 10)
+                                   (string-equal "$_mr_rule_" n :end2 10)))))
+                     (cdr $values)))
+    (- n0 (length (cdr $values)))))
 
 (defun mr-rule-of (handle)
   (if (and (integerp handle) (<= 1 handle (fill-pointer *mr-rules*)))
@@ -635,15 +749,22 @@ statically)."
 %mr_defrewrite handles) in order; the first record whose pattern binds
 (head u x) and whose cond accepts answers with its repl's value. U
 unchanged when none does -- Mathematica's own behaviour for a call with no
-applicable definition, which is what the callers rely on."
-  (unless (= (length args) 4)
-    (merror (intl:gettext "%mr_rewrite: expected 4 args, found ~A") (length args)))
-  (destructuring-bind (head table u x) args
+applicable definition, which is what the callers rely on.
+
+%mr_rewrite(head, table, u) walks a ONE-argument function's table: the
+pattern binds (head u), and the cond and repl get false for x (class 4,
+2026-09-25: TrigSimplifyAux[u], whose clauses never read x)."
+  (unless (member (length args) '(3 4))
+    (merror (intl:gettext "%mr_rewrite: expected 3 or 4 args, found ~A") (length args)))
+  (destructuring-bind (head table u &optional (x nil x-p)) args
     (unless ($listp table)
       (merror (intl:gettext "%mr_rewrite: the table is not a list: ~M") table))
-    (let ((expr (list (mr-match:sym head)
-                       (mr-tree:max->tree u)
-                       (mr-tree:max->tree x))))
+    (let ((expr (if x-p
+                    (list (mr-match:sym head)
+                          (mr-tree:max->tree u)
+                          (mr-tree:max->tree x))
+                    (list (mr-match:sym head)
+                          (mr-tree:max->tree u)))))
       (with-mr-switches
         (dolist (h (cdr table) u)
           (let* ((rw (mr-rewrite-of h))

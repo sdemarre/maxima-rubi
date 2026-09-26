@@ -1,0 +1,25 @@
+#!/bin/sh
+# probes/translation/11-class7-syntax-census.run — class-7 census driver
+# (docs/class-porting.md Step 1(a)). Three parts:
+#   1. the rule-syntax census of the "7 " files Rubi.m loads (the 01 census
+#      script; its rule_runs glues 7.3.7's two single-line
+#      If[TrueQ[$LoadShowSteps], ...] wrappers onto the rule before them, so
+#      it counts 710, not the 712 the generator emits);
+#   2. the token closure against generator/translation_table.py, counted
+#      the generator's way (712), and its TRANSITIVE closure through
+#      IntegrationUtilityFunctions.m (the class-5 probe 10, section as
+#      argument);
+#   3. the four .m files of the section's tree that Rubi.m does NOT load,
+#      and what they are (11-class7-excluded-files.py).
+#
+#   sh probes/translation/11-class7-syntax-census.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# class-7 rule syntax census, $(date -u +%F)"
+  python3 probes/translation/01-class1-syntax-census.py reference/rubi "7 "
+  echo
+  python3 probes/translation/10-class5-table-closure.py "7 "
+  echo
+  python3 probes/translation/11-class7-excluded-files.py "7 "
+} > probes/translation/11-class7-syntax-census.out
+echo "wrote probes/translation/11-class7-syntax-census.out"

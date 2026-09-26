@@ -1,0 +1,40 @@
+/* PROPOSED FIX (not applied): %mr_symbolicZeroQ as shipped (c2deb32,
+   maxima_rubi_utils.mac), plus ONE stage between the ratsimp exit and the
+   zero chain: when every ratsimp kernel is a variable symbol or a RATIONAL
+   POWER of one (a^(1/7), sqrt(b)), a NONZERO radcan proves the difference is
+   not identically zero -- radcan relates a^(1/7) to a (the principal branch)
+   and is canonical on that class, and an identically-zero difference is zero
+   on the principal branch -- so the test ends false. A ZERO radcan is not
+   conclusive (radcan also closes the branch identities sqrt(a*b) -
+   sqrt(a)*sqrt(b), which Rubi's EqQ reads False) and falls through to the
+   zero chain as before. Probe 03: the chain's factor() stage runs > 120 s on
+   the 1_4_1 r4 perfect-power test of (a+b*x)^4*(c+d*x)^3 (kernels a^(1/7),
+   a, b^(1/7), b, ...); probe 04: radcan answers nonzero in 0.4 ms. */
+%mr_radicalVarKernelQ(k) :=
+  %mr_isVarSym(k)
+  or (not atom(k) and op(k) = 'sqrt and %mr_isVarSym(part(k, 1)))
+  or (not atom(k) and op(k) = "^" and %mr_isVarSym(part(k, 1)) and ratnump(part(k, 2)))$
+%mr_symbolicZeroQ(%mr_eq_d) := block([%mr_eq_r, %mr_eq_c],
+  if atom(%mr_eq_d) or numberp(%mr_eq_d) or %mr_expanded_polyp(%mr_eq_d) then false
+  else (
+    %mr_eq_r : errcatch(ratsimp(%mr_eq_d)),
+    if %mr_eq_r = [] then %mr_zeroChainQ(%mr_eq_d, %mr_eq_d)
+    else if %mr_b(part(%mr_eq_r, 1) = 0) then true
+    else if errcatch(every(%mr_isVarSym, showratvars(part(%mr_eq_r, 1)))) = [true]
+      then false
+    else if errcatch(every(%mr_radicalVarKernelQ, showratvars(part(%mr_eq_r, 1)))) = [true]
+      and (%mr_eq_c : errcatch(radcan(part(%mr_eq_r, 1))), %mr_eq_c # [] and not %mr_b(part(%mr_eq_c, 1) = 0))
+      then false
+    else %mr_zeroChainQ(%mr_eq_d, part(%mr_eq_r, 1))))$
+/* overlay (diagnostic): %mr_eqQ as shipped, printing every symbolic-stage
+   entry (difference truncated) BEFORE it runs, and its cpu after. */
+%mr_eqQ(u, v) := block([%mr_eq_d, %ov_t0, %ov_r],
+  %mr_eq_d : u - v,
+  if %mr_b(%mr_eq_d = 0) then true
+  else if mr_eqq_symbolic = true then (
+    print("EQQ-IN", "LEN", slength(string(%mr_eq_d)), "D", substring(string(%mr_eq_d), 1, min(300, 1 + slength(string(%mr_eq_d))))),
+    %ov_t0 : elapsed_run_time(),
+    %ov_r : %mr_symbolicZeroQ(%mr_eq_d),
+    print("EQQ-OUT", elapsed_run_time() - %ov_t0, %ov_r),
+    %ov_r)
+  else false)$

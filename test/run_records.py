@@ -51,7 +51,8 @@ import re
 # test/test_run_records.py holds the names and defaults in step with it.
 SWITCHES = ("mr_flat_wide", "mr_cond_retry", "mr_model_flags",
             "mr_nested_fallback", "mr_giveup_last", "mr_inert_leak_misfire",
-            "mr_last_resort_tier", "mr_general_after_giveups", "mr_max_depth")
+            "mr_last_resort_tier", "mr_general_after_giveups", "mr_max_depth",
+            "mr_eqq_symbolic", "mr_subst_simp", "mr_gtq_facts")
 SWITCH_DEFAULTS = {"mr_flat_wide": "false",
                    "mr_cond_retry": "true",
                    "mr_model_flags": "true",
@@ -60,7 +61,10 @@ SWITCH_DEFAULTS = {"mr_flat_wide": "false",
                    "mr_inert_leak_misfire": "true",
                    "mr_last_resort_tier": "true",
                    "mr_general_after_giveups": "true",
-                   "mr_max_depth": "16"}
+                   "mr_max_depth": "32",
+                   "mr_eqq_symbolic": "true",
+                   "mr_subst_simp": "false",
+                   "mr_gtq_facts": "false"}
 # mr_max_depth is the one INTEGER switch (a positive depth cap); the rest
 # are booleans. Both kinds are read from the record's filter: line, so the
 # mergers' one-arm check covers them all.

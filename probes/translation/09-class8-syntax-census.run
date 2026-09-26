@@ -1,0 +1,19 @@
+#!/bin/sh
+# probes/translation/09-class8-syntax-census.run — class-8 census driver
+# (docs/class-porting.md Step 1(a)). Two parts:
+#   1. the rule-syntax census of the "8 " files Rubi.m loads (the 01 census
+#      script; since 2026-09-25 it comment-strips Rubi.m, so L352's
+#      commented-out "8.10 Bessel functions" is no longer counted);
+#   2. the token closure against generator/translation_table.py over those
+#      files PLUS "9.1 Derivative integration rules" (Rubi.m L354), which
+#      the section-9 spec §0.3.3 assigned to this port.
+#
+#   sh probes/translation/09-class8-syntax-census.run
+cd "$(dirname "$0")/../.." || exit 1
+{
+  echo "# class-8 rule syntax census, $(date -u +%F)"
+  python3 probes/translation/01-class1-syntax-census.py reference/rubi "8 "
+  echo
+  python3 probes/translation/09-class8-table-closure.py
+} > probes/translation/09-class8-syntax-census.out
+echo "wrote probes/translation/09-class8-syntax-census.out"

@@ -1,0 +1,48 @@
+#!/bin/sh
+# probes/corpus/23-class7-slice-ab.run — the class-7 port's Step-7 slice
+# check (docs/class-porting.md Step 7): small single-process corpus slices of
+# the earlier classes run on the class-7 tree's rules core AND on a core
+# built at 995bbc1 (the class-5 port's last commit, i.e. the tree before
+# class 7; a throwaway git worktree; the driver is this tree's in both arms,
+# and it is unchanged by the class-7 port —
+# probes/corpus/22-class7-head-rewrite-noop.out), A/B'd entry by entry with
+# test/ab_records.py; then a 2-per-file class-7 slice on the class-7 core.
+# Slices: class 1 "1.1.1" 2/file, class 2 2/file, class 3 1/file, class 5
+# 1/file, class 6 1/file, class 8 1/file (81 entries), 30 s cpu cap.
+#
+#   sh probes/corpus/23-class7-slice-ab.run      (rebuilds nothing: build
+#                                                 test/mr_rules.core first)
+cd "$(dirname "$0")/../.." || exit 1
+ROOT=$(pwd)
+W=$(mktemp -d)
+OUT=probes/corpus/23-class7-slice-ab.out
+SUITE="$ROOT/reference/maxima-syntax-test-suite"
+git worktree add -q --detach "$W/base" 995bbc1 || exit 1
+ln -s "$(readlink -f reference)" "$W/base/reference"
+(cd "$W/base" && bash test/build_rules_core.sh > "$W/base-build.log" 2>&1) || { cat "$W/base-build.log"; exit 1; }
+slices() {  # $1 = tag
+  python3 test/corpus_driver.py "1.1.1" 2 30 "$SUITE" 0 "" 0 "$W/$1-c1.out" < /dev/null > /dev/null 2>&1
+  python3 test/corpus_driver.py "" 2 30 "$SUITE/2 Exponentials" 0 "" 0 "$W/$1-c2.out" < /dev/null > /dev/null 2>&1
+  python3 test/corpus_driver.py "" 1 30 "$SUITE/3 Logarithms" 0 "" 0 "$W/$1-c3.out" < /dev/null > /dev/null 2>&1
+  python3 test/corpus_driver.py "" 1 30 "$SUITE/5 Inverse trig functions" 0 "" 0 "$W/$1-c5.out" < /dev/null > /dev/null 2>&1
+  python3 test/corpus_driver.py "" 1 30 "$SUITE/6 Hyperbolic functions" 0 "" 0 "$W/$1-c6.out" < /dev/null > /dev/null 2>&1
+  python3 test/corpus_driver.py "" 1 30 "$SUITE/8 Special functions" 0 "" 0 "$W/$1-c8.out" < /dev/null > /dev/null 2>&1
+}
+MR_RULES_CORE_PATH="$W/base/test/mr_rules.core" slices base
+slices new
+python3 test/corpus_driver.py "" 2 30 "$SUITE/7 Inverse hyperbolic functions" 0 "" 0 "$W/new-c7.out" < /dev/null > /dev/null 2>&1
+{
+  echo "# class-7 Step-7 slice A/B, $(date -u '+%F %T UTC')"
+  echo "# base core: $(grep -h '^built\|rules=' "$W/base-build.log" | tail -1)"
+  echo "# new core:  $(grep -h '^rules\|^fingerprint' test/mr_rules.core.stamp | tr '\n' ' ')"
+  for c in c1 c2 c3 c5 c6 c8; do
+    echo; echo "######## $c: base 995bbc1 core vs the class-7 core"
+    python3 test/ab_records.py "$W/base-$c.out" "$W/new-$c.out" --all
+  done
+  echo; echo "######## class 7, 2 per file, the class-7 core"
+  grep -v '^maxima:' "$W/new-c7.out"
+} > "$OUT"
+rm -f "$W/base/reference"
+git worktree remove --force "$W/base"
+rm -rf "$W"
+echo "wrote $OUT"

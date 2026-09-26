@@ -24,7 +24,7 @@ geteqR(mm, nm) := block([],
 
 /* Package noun forms (house rule 10 — distinct from the fall-through
  * integrate noun and from corpus-expected nouns). */
-mr_unintegrable(f, x) := 'unintegrable[f, x]$
+mr_unintegrable(%mr_top_f, x) := 'unintegrable[%mr_top_f, x]$
 
 /* Rubi's finite Sum, concretized (2026-08-25 divergence fix). Maxima
    evaluates function arguments eagerly, so the generator hands the
@@ -221,15 +221,15 @@ depth_level : 0$
    integrand to Maxima's integrate (mr_int under mr_nested_fallback,
    rubi_fallback). Every cap hit is counted in mr_depth_cap_hits for the
    run's .caps census (exact seen test design 3.3). */
-%mr_top_body(f, x, fb) := block([ans],
+%mr_top_body(%mr_top_f, x, %mr_top_fb) := block([%mr_top_ans],
   depth_level : depth_level + 1,
   if depth_level > mr_max_depth then (
     depth_level : depth_level - 1,
     mr_depth_cap_hits : mr_depth_cap_hits + 1,
-    if fb then return(integrate(f, x))
-    else return(mr_unintegrable(f, x))
+    if %mr_top_fb then return(integrate(%mr_top_f, x))
+    else return(mr_unintegrable(%mr_top_f, x))
   ),
-  if member(f, %mr_seen) then (
+  if member(%mr_top_f, %mr_seen) then (
     depth_level : depth_level - 1,
     /* A re-dispatch of an integrand already on the dispatch path is
        a pure rule loop (static table, deterministic matcher -> the
@@ -249,7 +249,7 @@ depth_level : 0$
        lines are queued) is inherent to bare integrate in a batch —
        vanilla Maxima integrate dies identically — and is not
        regressed or fixed here. */
-    if fb then return(integrate(f, x))
+    if %mr_top_fb then return(integrate(%mr_top_f, x))
     /* fb = false (the rules-only default): DECLINE THE RULE instead of
        answering the noun -- the seen-cut fall-through, half of the pair
        with mr_giveup_last (maxima_rubi_dispatch.lisp).
@@ -281,25 +281,25 @@ depth_level : 0$
        the seen guard returns. That branch is untouched. */
     else error("mr_seen_cut")
   ),
-  %mr_seen : cons(f, %mr_seen),
+  %mr_seen : cons(%mr_top_f, %mr_seen),
   /* One dispatch on MR-MATCH (maxima_rubi_dispatch.lisp
      %mr_dispatch_tree): Mathematica matching semantics, so the
      compensating rescans of the defmatch runner (passes 2-4) are gone
      (matcher substrate spec section 3.5). mr_model_flags (spec 3.6,
      the G-5 arm) binds radexpand:false and logexpand:false around the
      dispatch, so the intermediate integrands keep Mathematica's shape. */
-  ans : if mr_model_flags
+  %mr_top_ans : if mr_model_flags
         then block([radexpand : false, logexpand : false],
-                   %mr_dispatch_tree(f, x, mr_rule_table, depth_level))
-        else %mr_dispatch_tree(f, x, mr_rule_table, depth_level),
+                   %mr_dispatch_tree(%mr_top_f, x, mr_rule_table, depth_level))
+        else %mr_dispatch_tree(%mr_top_f, x, mr_rule_table, depth_level),
   %mr_seen : rest(%mr_seen),
   depth_level : depth_level - 1,
-  if ans = false then (
-    if fb then integrate(f, x)
-    else mr_unintegrable(f, x)
-  ) else ans)$
+  if %mr_top_ans = false then (
+    if %mr_top_fb then integrate(%mr_top_f, x)
+    else mr_unintegrable(%mr_top_f, x)
+  ) else %mr_top_ans)$
 
-mr_top(f, x, fb) := %mr_top_body(f, x, fb)$
+mr_top(%mr_top_f, x, %mr_top_fb) := %mr_top_body(%mr_top_f, x, %mr_top_fb)$
 
 /* Nested sub-integral entry: every generated replacement calls mr_int by
  * name. What a nested call with no route (no rule, the seen test, the
@@ -312,7 +312,7 @@ mr_top(f, x, fb) := %mr_top_body(f, x, fb)$
  * ratsimp seen comparison had declared a loop — the rules-only arm is
  * the new baseline, the fall-through arm is the like-for-like comparison
  * with P0/P5b. */
-mr_int(f, x) := mr_top(f, x, mr_nested_fallback)$
+mr_int(%mr_top_f, x) := mr_top(%mr_top_f, x, mr_nested_fallback)$
 
 /* Two-arg rubi is the rules-only entry (fast no-answer noun on a
  * 0-firing). The integrate fall-through is the separate explicit entry
@@ -322,8 +322,8 @@ mr_int(f, x) := mr_top(f, x, mr_nested_fallback)$
  * "Too few arguments supplied to rubi(f, x, fb)") — and no variadic
  * syntax (`b...` is a parse error; `argc`/`arglist` have no manual
  * entries), so the two modes must have distinct names. */
-rubi(f, x) := mr_top(f, x, false)$
-rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
+rubi(%mr_top_f, x) := mr_top(%mr_top_f, x, false)$
+rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
 
 /* ===================== predicate cluster 1 (T5) =====================
  * Ports of Rubi IntegrationUtilityFunctions.m (pinned clone, read-only)
@@ -395,10 +395,74 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   * a misfired rule already returned. NeQ stays "not provably zero" (a
   * symbolic m must let the power rule fire), which is independent of the
   * EqQ reading. */
-%mr_eqQ(u, v) := %mr_b(u - v = 0)$
-%mr_neQ(u, v) := block([z],
-  z : is(u - v = 0),
-  if z = true then false else true)$
+/* Under the run switch mr_eqq_symbolic (default true, user decision
+ * 2026-09-25, .scratch/matcher-translation-fixes/issues/03) the syntactic
+ * test is only the FIRST stage: a u - v that is not syntactically 0 is also
+ * read zero when it is IDENTICALLY zero by the exact symbolic stages of the
+ * harness's zero chain (test/corpus_driver.py zero_chain) -- ratsimp,
+ * ratsimp(expand), factor, ratsimp(factor), in its two orders. Rubi's
+ * PossibleZeroQ reads such a difference zero (an unexpanded bound
+ * coefficient, c*d^3*e - d*e*(c*d^2+a*e^2) + a*d*e^3; a shifted quadratic's
+ * discriminant identity, 16*(2*x+1)^2 - (-8*x-4)^2).
+ *
+ * Not ported from the chain, on measurement
+ * (probes/matcher/26-eqq-symbolic-zero-test.out):
+ *   - its two-point NUMERIC stage (the user's decision: no numerical tricks);
+ *   - its radcan(rat()) fallback: radcan closes BRANCH identities --
+ *     sqrt(a*b) - sqrt(a)*sqrt(b), log(a*b) - log(a) - log(b),
+ *     (a*b)^m - a^m*b^m, sqrt(x^2+2*x+1) - x - 1 all read 0 -- which hold
+ *     only for some parameter values, where Rubi's EqQ reads False. The
+ *     ratsimp/expand/factor stages treat every kernel as independent and
+ *     close none of them.
+ * So the "zero for some parameter values" reading the 2026-08-24 history
+ * rules out stays False: a*b*c, a - b, c*d^2 - b*d*e + a*e^2 are nonzero
+ * rational functions.
+ *
+ * Cost (probe 26 C): the stages run only when the syntactic test fails on
+ * a difference that is not a number, an atom or an EXPANDED polynomial in
+ * variable symbols (%mr_expanded_polyp, maxima_rubi_dispatch.lisp: in the
+ * simplifier's collected form, so zero iff syntactically 0 -- b^2 - 4*a*c,
+ * m + 1, b*c - a*d end here). Then ratsimp, which is CANONICAL on a rational
+ * function of variable symbols: a nonzero ratsimp whose kernels
+ * (showratvars) are all variable symbols ends the test; the other stages
+ * run only on differences with other kernels (radicals, functions, %i,
+ * %pi). Every chain is errcatch'd: a crash in a chain is a chain that did
+ * not close. */
+%mr_symbolicZeroQ(%mr_eq_d) := block([%mr_eq_r],
+  if atom(%mr_eq_d) or numberp(%mr_eq_d) or %mr_expanded_polyp(%mr_eq_d) then false
+  else (
+    %mr_eq_r : errcatch(ratsimp(%mr_eq_d)),
+    if %mr_eq_r = [] then %mr_zeroChainQ(%mr_eq_d, %mr_eq_d)
+    else if %mr_b(part(%mr_eq_r, 1) = 0) then true
+    else if errcatch(every(%mr_isVarSym, showratvars(part(%mr_eq_r, 1)))) = [true]
+      then false
+    else %mr_zeroChainQ(%mr_eq_d, part(%mr_eq_r, 1))))$
+
+/* The chain's two orders: ratsimp-first (from r0 = ratsimp(d), already
+   computed), then factor-first from d. The harness runs factor-first
+   first; the reading is the same -- any stage closing is a zero -- and the
+   ratsimp-first order is the cheap one. */
+%mr_zeroChainQ(%mr_eq_d, %mr_eq_r0) := block([%mr_eq_z],
+  %mr_eq_z : errcatch(block([%mr_eq_s],
+        %mr_eq_s : %mr_eq_r0, if %mr_b(%mr_eq_s = 0) then return(true),
+        %mr_eq_s : ratsimp(expand(%mr_eq_s)), if %mr_b(%mr_eq_s = 0) then return(true),
+        %mr_eq_s : factor(%mr_eq_s), if %mr_b(%mr_eq_s = 0) then return(true),
+        %mr_eq_s : ratsimp(factor(%mr_eq_s)), %mr_b(%mr_eq_s = 0))),
+  if %mr_eq_z # [] and part(%mr_eq_z, 1) = true then true
+  else (
+    %mr_eq_z : errcatch(block([%mr_eq_s],
+          %mr_eq_s : factor(%mr_eq_d), if %mr_b(%mr_eq_s = 0) then return(true),
+          %mr_eq_s : ratsimp(%mr_eq_s), if %mr_b(%mr_eq_s = 0) then return(true),
+          %mr_eq_s : ratsimp(expand(%mr_eq_s)), if %mr_b(%mr_eq_s = 0) then return(true),
+          %mr_eq_s : ratsimp(factor(%mr_eq_s)), %mr_b(%mr_eq_s = 0))),
+    if %mr_eq_z # [] and part(%mr_eq_z, 1) = true then true else false))$
+
+%mr_eqQ(u, v) := block([%mr_eq_d],
+  %mr_eq_d : u - v,
+  if %mr_b(%mr_eq_d = 0) then true
+  else if mr_eqq_symbolic = true then %mr_symbolicZeroQ(%mr_eq_d)
+  else false)$
+%mr_neQ(u, v) := not %mr_eqQ(u, v)$
 
 /* ---- simp / together shims ----------------------------------------
  * simplify and together are UNBOUND in this build (measured, T2/T4;
@@ -712,6 +776,62 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
 %mr_iLtQ(u, n) := if integerp(u) and is(u < n) = true then true else false$
 %mr_iGeQ(u, n) := if integerp(u) and is(u >= n) = true then true else false$
 %mr_iLeQ(u, n) := if integerp(u) and is(u <= n) = true then true else false$
+
+/* Rubi :403-:475  GtQ / LtQ / GeQ / LeQ[u, v] (and the three-argument
+   chains GtQ[u, v, w] := GtQ[u, v] && GtQ[v, w]): a NUMERIC comparison.
+   RealNumberQ[u] (an explicit non-complex number) -> u; else
+   N[Together[u]] with Head Real -> that float; else the predicate is False
+   -- never unknown. The generator emitted is(u > v), unknown on a symbol,
+   which rejected GtQ[a, 0] AND Not[GtQ[a, 0]] alike (matcher-translation-
+   fixes issue 02; probes/gtq/ 01-06). N -> float(), falling back to bfloat
+   when float() errors (float(exp(1000)) overflows; Mathematica's N has no
+   such range); Together -> ratsimp, tried only when float() of u itself is
+   not a float and u has a variable ((a^2-1)/(a-1)-a is 1). User decision
+   2026-09-25: this is the default; the run switch mr_gtq_facts (defmvar,
+   maxima_rubi_dispatch.lisp, default false) ORs in Maxima's own
+   is(u op v) = true, so the facts database (assume) is honoured -- a
+   documented deviation from Rubi, which ignores assumptions. */
+%mr_rc_float(%mr_rc_w) := block([errormsg : false, %mr_rc_r],
+  %mr_rc_r : errcatch(float(%mr_rc_w)),
+  if %mr_rc_r = [] then (
+    %mr_rc_r : errcatch(bfloat(%mr_rc_w)),
+    if %mr_rc_r # [] and bfloatp(first(%mr_rc_r)) then first(%mr_rc_r) else false)
+  elseif floatnump(first(%mr_rc_r)) then first(%mr_rc_r)
+  else false)$
+
+%mr_rc_num(%mr_rc_u) := block([errormsg : false, %mr_rc_r],
+  if numberp(%mr_rc_u) then %mr_rc_u
+  else (
+    %mr_rc_r : %mr_rc_float(%mr_rc_u),
+    if %mr_rc_r # false then %mr_rc_r
+    elseif listofvars(%mr_rc_u) = [] then false
+    else (
+      %mr_rc_r : errcatch(ratsimp(%mr_rc_u)),
+      if %mr_rc_r = [] then false else %mr_rc_float(first(%mr_rc_r)))))$
+
+%mr_realCmpQ(%mr_rc_op, %mr_rc_u, %mr_rc_v) := block([errormsg : false, %mr_rc_un, %mr_rc_vn, %mr_rc_r],
+  %mr_rc_un : %mr_rc_num(%mr_rc_u),
+  %mr_rc_r : if %mr_rc_un = false then false
+             else (%mr_rc_vn : %mr_rc_num(%mr_rc_v),
+                   if %mr_rc_vn = false then false
+                   else is(is(apply(%mr_rc_op, [%mr_rc_un, %mr_rc_vn])) = true)),
+  if %mr_rc_r = false and mr_gtq_facts = true then (
+    %mr_rc_r : errcatch(is(apply(%mr_rc_op, [%mr_rc_u, %mr_rc_v]))),
+    is(%mr_rc_r # [] and first(%mr_rc_r) = true))
+  else %mr_rc_r)$
+
+%mr_gtQ(%mr_rc_a, %mr_rc_b, [%mr_rc_c]) :=
+  if %mr_rc_c = [] then %mr_realCmpQ(">", %mr_rc_a, %mr_rc_b)
+  else %mr_realCmpQ(">", %mr_rc_a, %mr_rc_b) and %mr_realCmpQ(">", %mr_rc_b, first(%mr_rc_c))$
+%mr_ltQ(%mr_rc_a, %mr_rc_b, [%mr_rc_c]) :=
+  if %mr_rc_c = [] then %mr_realCmpQ("<", %mr_rc_a, %mr_rc_b)
+  else %mr_realCmpQ("<", %mr_rc_a, %mr_rc_b) and %mr_realCmpQ("<", %mr_rc_b, first(%mr_rc_c))$
+%mr_geQ(%mr_rc_a, %mr_rc_b, [%mr_rc_c]) :=
+  if %mr_rc_c = [] then %mr_realCmpQ(">=", %mr_rc_a, %mr_rc_b)
+  else %mr_realCmpQ(">=", %mr_rc_a, %mr_rc_b) and %mr_realCmpQ(">=", %mr_rc_b, first(%mr_rc_c))$
+%mr_leQ(%mr_rc_a, %mr_rc_b, [%mr_rc_c]) :=
+  if %mr_rc_c = [] then %mr_realCmpQ("<=", %mr_rc_a, %mr_rc_b)
+  else %mr_realCmpQ("<=", %mr_rc_a, %mr_rc_b) and %mr_realCmpQ("<=", %mr_rc_b, first(%mr_rc_c))$
 
 /* the distinct x-exponents of a CONFIRMED polynomial (callers gate on
  * %mr_polynomialQ), ascending — MEASURED 2026-08-23: sort() orders
@@ -2241,7 +2361,14 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
  * Rubi :1152  RemoveContent[u,x] := with v = NonfreeFactors[u,x],
  *   w = Together[v]: if EqQ[FreeFactors[w,x],1] then Aux[v,x]
  *   else Aux[NonfreeFactors[w,x],x] */
-%mr_nonfreeFactors(u, x) := block([r, i, t],
+/* Class 4 (2026-09-25): both read u with inflag:true, i.e. Rubi's
+   ProductQ reading -- a quotient x/2 or a/(b x) is Times[...] with Power[.,
+   -1] factors, as in Mathematica. Without it op(x/2) is "/", neither "-"
+   nor "*", and FreeFactors[x/2] answered 1 (NonfreeFactors x/2): found by
+   SubstFor[Sinh[x]/2, u, x] (test_class4_free_factors). A negation is
+   (-1)*u internally, so the "-" branches below are kept for a caller that
+   passes a non-simplified form only. */
+%mr_nonfreeFactors(u, x) := block([inflag : true, r, i, t],
   if atom(u) then (
     if freeof(x, u) then 1 else u
   )
@@ -2258,7 +2385,7 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   )
   else if freeof(x, u) then 1 else u)$
 
-%mr_freeFactors(u, x) := block([r, i, t],
+%mr_freeFactors(u, x) := block([inflag : true, r, i, t],
   if atom(u) then (
     if freeof(x, u) then u else 1
   )
@@ -2388,9 +2515,12 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
  * flag) are Task 7 scope; a dummy x inside a noun WOULD be replaced by
  * this port — the 1.1.1.1 rule-5 antiderivative is a closed form, so
  * no dummy occurs in this cluster's usage. */
+/* The %mr_simp pass is the run switch mr_subst_simp (default false, user
+   decision 2026-09-25; maxima_rubi_dispatch.lisp's defmvar has the
+   evidence): on the class-4 routes it inflated answers to megabytes. */
 %mr_subst(u, x, v) := block([r],
   r : subst(v, x, u),
-  %mr_simp(r))$
+  if mr_subst_simp = true then %mr_simp(r) else r)$
 
 /* ===================== predicate cluster F (Task 7a) ====================
  * LinearPairQ / PerfectSquareQ / RationalFunctionQ / SplitProduct /
@@ -3231,6 +3361,10 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
       if not atom(f) and op(f) = "^"
       then (base : part(f, 1), ok : true)
       else if not atom(f) and op(f) = "/" and is(num(f) = 1)
+        /* a reciprocal of an ATOM (1/x) has no op: op(x) is a part error
+           that aborted the whole ExpandIntegrand (class-6 attribution,
+           2026-09-25: Int[(x^2-1)/x], Int[(b/x^2+a)/x] -> unintegrable) */
+        and not atom(denom(f))
         and op(denom(f)) = "^"
         and integerp(part(denom(f), 2))
         and is(part(denom(f), 2) > 0)
@@ -3579,7 +3713,7 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
        where the substitution needs the quartic). Rubi's SubstPower
        is Map over every subpart (IntegrationUtilityFunctions.m:6142),
        so walk args generically. */
-    apply(op(u), map(lambda([z], %mr_substPower(z, x, n)), args(u)))))$
+    funmake(op(u), map(lambda([z], %mr_substPower(z, x, n)), args(u)))))$
 
 /* Rubi :5980  SubstFor[v, u, x] — u (a function of v) with v replaced
    by x. The algebraic surface: an atom is a plain subst, x^n is the
@@ -3598,6 +3732,12 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
   else if not atom(%mr_nonfreeFactors(v, x))
     and is(member(op(%mr_nonfreeFactors(v, x)), [sin, cos, tan, cot]) = true)
   then %mr_substForTrigHead(v, u, x)
+  /* Class 4 (2026-09-25): the six HYPERBOLIC Switch arms (L5993-5998) ->
+     SubstForHyperbolic (%mr_substForHypHead, with FunctionOfQ's hyperbolic
+     arms at the end of this file). */
+  else if not atom(%mr_nonfreeFactors(v, x))
+    and %mr_hyperbolicQ(%mr_nonfreeFactors(v, x))
+  then %mr_substForHypHead(v, u, x)
   else if not atom(v) and op(v) = "^"
     and is(part(v, 1) = x) and freeof(x, part(v, 2))
   then %mr_substPower(u, x, 1/part(v, 2))
@@ -3607,6 +3747,17 @@ rubi_fallback(f, x, fb) := mr_top(f, x, fb)$
     then subst((x - part(L, 1))/part(L, 2), x, u)
     else subst(x, v, u)
   )
+  /* Class 8 (2026-09-25): Rubi's last arm is SubstForAux[u,v,x] (L6004),
+     after SubstFor[NonfreeFactors[v,x], u, x/FreeFactors[v,x]]. The plain
+     subst below cannot see a product v inside a power of it (f(x)*g(x) in
+     f(x)^2*g(x)^2 -- probes/answer-side/04-class8-answer-side-identities
+     N17). SubstForAux is taken when u IS a function of v (Rubi calls
+     SubstFor only then: every call site sits behind a FunctionOfQ or an
+     equivalent test); otherwise the old subst stands, so a caller that
+     leaned on subst's partial matching sees no change. */
+  else if %mr_functionOfExpnQ(u, %mr_nonfreeFactors(v, x), x) # false then
+    subst(x/%mr_freeFactors(v, x), x,
+          %mr_substForAux(u, %mr_nonfreeFactors(v, x), x))
   else subst(x, v, u))$
 
 /* Rubi :5976  SubstFor[w,v,u,x] := SimplifyIntegrand[w*SubstFor[v,u,x],x].
@@ -3929,11 +4080,32 @@ mr_use_gamma_flag : false$
    summed/integrated object depends on the variable. */
 %mr_calculusQ(u) := block([s],
   if atom(u) then false
+  /* Class 8 (2026-09-25): Maxima's formal-derivative noun
+     'diff(f(v), v, n) is Mathematica's EVALUATED Derivative[n][f][v],
+     whose head Derivative[n][f] is not in $CalculusFunctions -- only an
+     unevaluated D is. In Maxima a diff noun of that shape is always the
+     evaluated form (diff evaluates eagerly and leaves the noun only for an
+     undeclared function). Rubi's FunctionOfExpnQ, for one, maps into it
+     (9.1 r9 on F'(f(x) g(x)) (g f' + f g'): the 8.10 chain-rule family);
+     any other diff noun stays calculus. */
+  elseif %mr_formalDerivativeQ(u) then false
   else (
     s : string(op(u)),
     is(member(s, ["integrate", "diff", "sum", "product",
                   "mr_int", "mr_subst", "unintegrable"]) = true)
   ))$
+
+/* True for Maxima's formal-derivative noun 'diff(f(v), v, n): three
+   arguments, the first a one-argument call on the differentiation variable
+   -- the shape mr-tree reads as Rubi's Derivative[n][f][v]
+   (maxima_rubi_tree.lisp derivative-form-p; class 8, 2026-09-25). */
+%mr_formalDerivativeQ(%mr_fdq_u) := block([inflag : true, %mr_fdq_a],
+  if atom(%mr_fdq_u) or string(op(%mr_fdq_u)) # "diff" then false
+  else (
+    %mr_fdq_a : args(%mr_fdq_u),
+    is(length(%mr_fdq_a) = 3) and not atom(first(%mr_fdq_a))
+    and is(length(args(first(%mr_fdq_a))) = 1)
+    and is(first(args(first(%mr_fdq_a))) = second(%mr_fdq_a))))$
 
 /* Rubi HyperbolicQ — the six hyperbolic heads (the
    FunctionOfExponential machinery's explicit-exponential detection).
@@ -4570,6 +4742,20 @@ mr_use_gamma_flag : false$
    ((x+1)^5 — x^5 is a binomial, a = 0), sqrt nodes, minus-wrapped
    powers, other function heads. Quotients are stored as products of
    an inverse-power factor, which the product branch above handles. */
+/* The generic-head rebuild is funmake(op(u), args), not apply (class 8,
+   2026-09-25, all 16 such sites in this file): apply EVALUATES the operator
+   symbol, and Maxima binds parameters and lambda variables dynamically, so
+   a free function whose name is a live variable -- the 8.10 corpus's f, g,
+   F, u -- was applied as that variable's VALUE: f(x)*'diff(g(x),x,1)
+   through this function's lambda([f], ...) came back f(x)(x), and each
+   9.3 r62 pass nested it again until the depth cap (measured on the class-8
+   smoke, rubi_verbose trace). funmake builds the call without evaluating
+   the operator and otherwise agrees with apply on every operator kind the
+   rebuilds meet (+, *, ^, sqrt, unary minus, a subscripted li[2]/psi[1],
+   the diff noun at a negative order, natives, the inert %mr_i* heads,
+   lists, equations -- measured 2026-09-25, build
+   branch_5_50_base_84_g4204fb669). The capture of a SYMBOL inside the
+   integrand by a same-named parameter is ticket 17's wider problem. */
 %mr_normalizeIntegrandFactorBase(u, x) := block([v],
   if atom(u) then u
   else if %mr_binomialQ(u, x) then
@@ -4587,7 +4773,7 @@ mr_use_gamma_flag : false$
     then %mr_unifySum(u, x)
     else %mr_normalizeIntegrandFactorBase(v, x)
   )
-  else apply(op(u), map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u))))$
+  else funmake(op(u), map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u))))$
 
 /* Rubi :2007  NormalizeIntegrandFactor. The .m's last branch maps
    #/x^min without Simplify while the integer-power branch maps
@@ -4990,7 +5176,7 @@ mr_use_gamma_flag : false$
        must become sin(x)). Comma-form lambda (the colon form is a
        parse error) and no slash-star opener sequence inside a comment
        (Maxima nests comments), MEASURED 2026-08-28 (5.50.0/SBCL). */
-    apply(op(u), map(lambda([p], %mr_foEFunctionAux(p, x, st)), args(u)))))$
+    funmake(op(u), map(lambda([p], %mr_foEFunctionAux(p, x, st)), args(u)))))$
 
 %mr_functionExpand(u) := block([n, z],
   if not atom(u) and is(op(u) = gamma_incomplete)
@@ -5421,7 +5607,7 @@ mr_use_gamma_flag : false$
   else if is(op(v) = 'sinc) then sin(part(v, 1))/part(v, 1)
   else if is(op(v) = "[") then
     map(lambda([z], %mr_sincReplace(z)), %mr_parts_list(v))
-  else apply(op(v), map(lambda([z], %mr_sincReplace(z)), args(v))))$
+  else funmake(op(v), map(lambda([z], %mr_sincReplace(z)), args(v))))$
 
 /* Rubi :7450-7462  DerivativeDivides[y, u, x] — if y is not a*x (a
    x-free), y is easy to differentiate (PolynomialQ[y,x] ? the
@@ -5531,7 +5717,7 @@ mr_use_gamma_flag : false$
   else if is(op(u) = "[") then
     map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
       %mr_parts_list(u))
-  else apply(op(u), map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
+  else funmake(op(u), map(lambda([z], %mr_substForFractionalPower(z, v, n, w, x)),
     args(u))))$
 
 /* Rubi :6056-6063  SubstForFractionalPowerOfLinear[u, x] — the 4-list
@@ -5657,7 +5843,7 @@ mr_use_gamma_flag : false$
    ),
    if is(dead = true) then false
    else if is(op(u) = "[") then [res, v, n]
-   else [apply(op(u), res), v, n])$
+   else [funmake(op(u), res), v, n])$
 
 /* Rubi's inert-trig rewrite functions, ported as generated rewrite tables
    (inert-trig substrate design 3.2): every one of their clauses --
@@ -5842,13 +6028,17 @@ mr_use_gamma_flag : false$
 
 /* Rubi InertTrigQ[f_] := MemberQ[{sin,cos,tan,cot,sec,csc},f]
    (IntegrationUtilityFunctions.m L6160). Takes a HEAD, as upstream does:
-   rules bind F_ over an inert head and test this on the binding. The
-   %mr_hyperbolicQ shape (atom u -> u, else op(u)) is deliberate — the atom
-   branch was wrong there until 2026-09-20 and this one is faithful from the
-   start. */
+   rules bind F_ over an inert head and test this on the binding.
+   Class 4 (2026-09-25): MemberQ's own semantics, the head SYMBOL only. The
+   substrate read an application through its op() (the %mr_hyperbolicQ
+   shape), but MemberQ[{sin,...}, sin[x]] is False -- and TrigSimplifyAux's
+   first clause (L2723) calls InertTrigQ[v] on an EXPRESSION v, so that
+   clause never fires in Rubi and must not fire here. Every other caller
+   (the seven class-4 InertTrigQ[F] rules) passes a head capture, unchanged
+   by this. Rubi's 2- and 3-argument forms (L6162-6167) have no caller in
+   the rules and are not ported. */
 %mr_inertTrigQ(u) := block([],
-  is(member(if atom(u) then u else op(u),
-            [%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc]) = true))$
+  is(atom(u) and member(u, [%mr_isin, %mr_icos, %mr_itan, %mr_icot, %mr_isec, %mr_icsc]) = true))$
 
 /* Rubi InertTrigFreeQ[u_] := FreeQ[u,sin] && ... && FreeQ[u,csc] (L6173).
    An EXPRESSION test, unlike InertTrigQ. */
@@ -5906,22 +6096,24 @@ mr_use_gamma_flag : false$
     elseif op(u) = coth then %i * %mr_reduceInertTrig(%mr_icot, %mr_dta_v)
     elseif op(u) = sech then %mr_reduceInertTrig(%mr_isec, %mr_dta_v)
     else %i * %mr_reduceInertTrig(%mr_icsc, %mr_dta_v))
-  else apply(op(u),
+  else funmake(op(u),
              map(lambda([%mr_dta_t], %mr_deactivateTrigAux(%mr_dta_t, x)),
                  args(u))))$
 
-/* Rubi DeactivateTrig[u,x] (L6189-6195): UnifyInertTrigFunction o
-   FixInertTrigFunction o DeactivateTrigAux. The upstream file also carries
-   a fast-path clause ahead of this one, for (c+d x)^m (a+b trig[e+f x])^n,
-   that recurses DeactivateTrig into the trig factor alone rather than
-   walking the whole product through DeactivateTrigAux. It is NOT ported
-   here: no Layer A target distinguishes it from the general clause below,
-   which subsumes it (map/apply already walks into a product's trig factor
-   the same way), so it would be an optimisation this plan does not need
-   (brief resolution 3). */
-%mr_deactivateTrig(u, x) := block([],
-  %mr_unifyInertTrigFunction(%mr_fixInertTrigFunction(
-    %mr_deactivateTrigAux(u, x), x), x))$
+/* Rubi DeactivateTrig[u,x] (L6189-6195): its two clauses, a generated
+   rewrite table (mr_rw_dt, rules/utils/inert_trig_rewrites.mac).
+   Clause 2 is the general UnifyInertTrigFunction o FixInertTrigFunction o
+   DeactivateTrigAux composition (the substrate's hand port, which this
+   replaces). Clause 1 is the fast path for (c+d x)^m (a+b trig[e+f x])^n:
+   it deactivates the trig factor ALONE. The substrate left it out as an
+   optimisation (brief resolution 3), but it is not one: UnifyInertTrig-
+   Function has a clause for (a+b cos[e+f x])^n -- cos as sin[e+Pi/2+f x],
+   the shape 4.1.10's (c+d x)^m sin[...] rules are written against -- and
+   none for the product (c+d x) cos[...], so the general clause left a cos
+   no 4.1.10 rule matches (class 4 port, 2026-09-25: (c+d x)^2 sin(a+b x)
+   answered a noun; test_class4_cluster_c). */
+%mr_deactivateTrig(%mr_dt_u, %mr_dt_x) :=
+  %mr_rewrite("DeactivateTrig", mr_rw_dt, %mr_dt_u, %mr_dt_x)$
 
 /* ---- Task 7: FunctionOfTrigOfLinearQ + FunctionOfTrig -----------------
  * IntegrationUtilityFunctions.m L4357-4407 -- the bridge rule's condition
@@ -6116,8 +6308,11 @@ mr_use_gamma_flag : false$
  *      %i*product, i.e. a hyperbolic integrand with NO constant term, c=0).
  *      Those integrands decline here; Mathematica takes the same turn and
  *      Rubi answers them through the hyperbolic branches.
+ *      CLOSED at the class-4 port (2026-09-25): the hyperbolic arms are
+ *      ported (%mr_functionOfSinhQ ..., end of this file).
  *  (b) SubstFor's trig branch covers Sin/Cos/Tan/Cot -- the four heads
- *      the six bridge records pass. Sec/Csc and the six hyperbolic heads
+ *      the six bridge records pass (and, since the class-4 port, the six
+ *      hyperbolic heads, %mr_substForHypHead). Sec/Csc
  *      fall through to the pre-existing algebraic port below. UNREACHABLE
  *      from the ported records (none passes such a head); if it were
  *      reached it would NOT decline -- it would mis-substitute, through
@@ -6184,15 +6379,19 @@ mr_use_gamma_flag : false$
   %mr_foq_r)$
 
 /* The (Cos[v/2], Sin[v/2]) factor pair of FunctionOfSinQ / SubstForTrig:
-   u with the pair removed, or false (deviation (c) above). */
-%mr_foq_halfPair(%mr_hp_u, %mr_hp_v) := block([inflag : true, %mr_hp_c, %mr_hp_s, %mr_hp_k],
+   u with the pair removed, or false (deviation (c) above). The optional
+   third and fourth arguments name the pair's heads (class 4, 2026-09-25:
+   FunctionOfSinhQ / SubstForHyperbolic's (Cosh[v/2], Sinh[v/2]) pair). */
+%mr_foq_halfPair(%mr_hp_u, %mr_hp_v, [%mr_hp_heads]) :=
+  block([inflag : true, %mr_hp_c, %mr_hp_s, %mr_hp_k, %mr_hp_ch, %mr_hp_sh],
+  [%mr_hp_ch, %mr_hp_sh] : if %mr_hp_heads = [] then [cos, sin] else %mr_hp_heads,
   %mr_hp_c : false, %mr_hp_s : false,
   if atom(%mr_hp_u) or op(%mr_hp_u) # "*" then false
   else (
     for %mr_hp_k in args(%mr_hp_u) do (
-      if not atom(%mr_hp_k) and op(%mr_hp_k) = cos and %mr_hp_c = false
+      if not atom(%mr_hp_k) and op(%mr_hp_k) = %mr_hp_ch and %mr_hp_c = false
          and %mr_eqQ(part(%mr_hp_k, 1), %mr_hp_v/2) then %mr_hp_c : %mr_hp_k,
-      if not atom(%mr_hp_k) and op(%mr_hp_k) = sin and %mr_hp_s = false
+      if not atom(%mr_hp_k) and op(%mr_hp_k) = %mr_hp_sh and %mr_hp_s = false
          and %mr_eqQ(part(%mr_hp_k, 1), %mr_hp_v/2) then %mr_hp_s : %mr_hp_k),
     if %mr_hp_c = false or %mr_hp_s = false then false
     else %mr_hp_u/(%mr_hp_c*%mr_hp_s)))$
@@ -6326,7 +6525,33 @@ mr_use_gamma_flag : false$
   elseif %mr_productQ(%mr_foq_v) and %mr_neQ(%mr_freeFactors(%mr_foq_v, %mr_foq_x), 1)
   then %mr_functionOfQ(%mr_nonfreeFactors(%mr_foq_v, %mr_foq_x), %mr_foq_u, %mr_foq_x,
                        %mr_foq_pure)
-  elseif not %mr_trigQ(%mr_foq_v) then false
+  /* Class 8 (2026-09-25): Rubi's Switch sends every head other than the
+     twelve circular/hyperbolic ones to FunctionOfExpnQ[u,v,x] =!= False
+     (L4443-4481). The port answered false there; class 8's v's take that
+     arm (ProductLog[x], 8.9 r44; f[x]*g[x] and Derivative[n-1][f][x],
+     9.1 r8-r18) -- and so does 9.3 r36's x^(m+1), which was dead until
+     now. Class 4 (2026-09-25): the HYPERBOLIC arms are ported (deviation
+     (a) is closed) -- eighteen 4.7.5 records pass a Sinh/Cosh/Tanh/Coth v
+     (%mr_functionOfSinhQ ... below). */
+  elseif %mr_hyperbolicQ(%mr_foq_v) then (
+    %mr_foq_h : op(%mr_foq_v),
+    %mr_foq_w : part(%mr_foq_v, 1),
+    if %mr_foq_pure then (
+      if %mr_foq_h = sinh or %mr_foq_h = csch
+      then %mr_pureFunctionOfHypQ([sinh, csch], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cosh or %mr_foq_h = sech
+      then %mr_pureFunctionOfHypQ([cosh, sech], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = tanh
+      then %mr_pureFunctionOfHypQ([tanh, coth], %mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_pureFunctionOfHypQ([coth], %mr_foq_u, %mr_foq_w, %mr_foq_x))
+    else (
+      if %mr_foq_h = sinh or %mr_foq_h = csch
+      then %mr_functionOfSinhQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      elseif %mr_foq_h = cosh or %mr_foq_h = sech
+      then %mr_functionOfCoshQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)
+      else %mr_functionOfTanhQ(%mr_foq_u, %mr_foq_w, %mr_foq_x)))
+  elseif not %mr_trigQ(%mr_foq_v)
+  then is(%mr_functionOfExpnQ(%mr_foq_u, %mr_foq_v, %mr_foq_x) # false)
   else (
     %mr_foq_h : op(%mr_foq_v),
     %mr_foq_w : part(%mr_foq_v, 1),
@@ -6366,7 +6591,7 @@ mr_use_gamma_flag : false$
                         trigexpand(apply(%mr_sft_h,
                           [ratsimp(part(%mr_sft_u, 1)/%mr_sft_v)*'%mr_sft_y]))),
       if atom(%mr_sft_t) then %mr_sft_t
-      else apply(op(%mr_sft_t),
+      else funmake(op(%mr_sft_t),
                  map(lambda([%mr_sft_p],
                             %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
                      args(%mr_sft_t)))))
@@ -6374,7 +6599,7 @@ mr_use_gamma_flag : false$
     %mr_sft_t : %mr_foq_halfPair(%mr_sft_u, %mr_sft_v),
     if %mr_sft_t # false
     then %mr_sft_s/2*%mr_substForTrig(%mr_sft_t, %mr_sft_s, %mr_sft_c, %mr_sft_v)
-    else apply(op(%mr_sft_u),
+    else funmake(op(%mr_sft_u),
                map(lambda([%mr_sft_p],
                           %mr_substForTrig(%mr_sft_p, %mr_sft_s, %mr_sft_c, %mr_sft_v)),
                    args(%mr_sft_u)))))$
@@ -6714,7 +6939,7 @@ mr_use_gamma_flag : false$
        then x^(part(%mr_pisa_u, 2) / part(%mr_pisa_v, 2))
        else %mr_polynomialInSubstAux(part(%mr_pisa_u, 1), %mr_pisa_v, x)
               ^part(%mr_pisa_u, 2))
-  else apply(op(%mr_pisa_u),
+  else funmake(op(%mr_pisa_u),
              map(lambda([%mr_pisa_t],
                         %mr_polynomialInSubstAux(%mr_pisa_t, %mr_pisa_v, x)),
                  %mr_args_in(%mr_pisa_u))))$
@@ -6778,7 +7003,7 @@ mr_use_gamma_flag : false$
   then %mr_pvs_u
   elseif %mr_powerQ(%mr_pvs_u) and freeof(x, part(%mr_pvs_u, 1) / x) then
     x^(part(%mr_pvs_u, 2) / %mr_pvs_m)
-  else apply(op(%mr_pvs_u),
+  else funmake(op(%mr_pvs_u),
              map(lambda([%mr_pvs_t],
                         %mr_powerVariableSubst(%mr_pvs_t, %mr_pvs_m, x)),
                  %mr_args_in(%mr_pvs_u))))$
@@ -6888,7 +7113,7 @@ mr_use_gamma_flag : false$
     else %mr_squareRootOfQuadraticSubst(
            part(%mr_sqs_u, 1), %mr_sqs_vv, %mr_sqs_xx, x)^part(%mr_sqs_u, 2)
   )
-  else apply(op(%mr_sqs_u),
+  else funmake(op(%mr_sqs_u),
              map(lambda([%mr_sqs_t],
                         %mr_squareRootOfQuadraticSubst(
                           %mr_sqs_t, %mr_sqs_vv, %mr_sqs_xx, x)),
@@ -7148,7 +7373,7 @@ if not integerp(lcm(1, 1)) then load("functs")$
    Mathematica's Map on a compound node under inflag : true). */
 %mr_divideDegreesOfFactors(%mr_ddof_u, %mr_ddof_n) := block([inflag : true],
   if %mr_productQ(%mr_ddof_u) then
-    apply(op(%mr_ddof_u),
+    funmake(op(%mr_ddof_u),
           map(lambda([%mr_ddof_f],
                       %mr_leadBase(%mr_ddof_f) ^ (%mr_leadDegree(%mr_ddof_f) / %mr_ddof_n)),
               %mr_args_in(%mr_ddof_u)))
@@ -7174,7 +7399,7 @@ if not integerp(lcm(1, 1)) then load("functs")$
 %mr_absurdNumberFactors(%mr_anf_u) := block([inflag : true],
   if %mr_absurdNumberQ(%mr_anf_u) then %mr_anf_u
   elseif %mr_productQ(%mr_anf_u) then
-    apply(op(%mr_anf_u), map(%mr_absurdNumberFactors, %mr_args_in(%mr_anf_u)))
+    funmake(op(%mr_anf_u), map(%mr_absurdNumberFactors, %mr_args_in(%mr_anf_u)))
   else %mr_numericFactor(%mr_anf_u))$
 
 /* Rubi :1926-1931  NonabsurdNumberFactors[u] — the product of u's factors
@@ -7182,7 +7407,7 @@ if not integerp(lcm(1, 1)) then load("functs")$
 %mr_nonabsurdNumberFactors(%mr_nanf_u) := block([inflag : true],
   if %mr_absurdNumberQ(%mr_nanf_u) then 1
   elseif %mr_productQ(%mr_nanf_u) then
-    apply(op(%mr_nanf_u), map(%mr_nonabsurdNumberFactors, %mr_args_in(%mr_nanf_u)))
+    funmake(op(%mr_nanf_u), map(%mr_nonabsurdNumberFactors, %mr_args_in(%mr_nanf_u)))
   else %mr_nonnumericFactors(%mr_nanf_u))$
 
 /* Rubi :1934-1940  FactorAbsurdNumber[m] — m's prime factorization as a
@@ -7581,9 +7806,502 @@ if not integerp(lcm(1, 1)) then load("functs")$
               %mr_divideDegreesOfFactors(second(%mr_fols_lst), first(%mr_fols_lst)) * x,
               %mr_fols_a, %mr_fols_b, x) ^ first(%mr_fols_lst)
     )
-    else apply(op(%mr_fols_u),
+    else funmake(op(%mr_fols_u),
                map(lambda([%mr_fols_e], %mr_functionOfLinearSubst(%mr_fols_e, %mr_fols_a, %mr_fols_b, x)),
                    %mr_args_in(%mr_fols_u)))
   ))$
 
 mr_witness_utils() := true$
+
+/* ======================================================================
+   Class 8 (special functions) and 9.1 Derivative integration rules
+   (2026-09-25). docs/class-porting.md Step 4; the census and the design:
+   .scratch/class-ports/issues/01-class8-special-functions.md.
+   ====================================================================== */
+
+/* Rubi's formal derivative Derivative[n][f][u] (Mathematica's evaluated
+   form of D[f[u], {u, n}] for an undefined f). The port's representation
+   is Maxima's OWN derivative noun 'diff(f(u), u, n) -- what diff returns
+   for an undeclared function -- with order 0 meaning f(u), as
+   Derivative[0][f] is f. Built with funmake, so nothing evaluates: diff()
+   itself refuses a negative order ("order of derivative must be a
+   nonnegative integer"), but the noun holds one, and diff of the noun
+   increments it -- the formal antiderivatives Derivative[-k][f][x] of 9.1
+   r3/r6/r7 and the 8.10 corpus. MEASURED 2026-09-25 on
+   branch_5_50_base_84_g4204fb669: probes/answer-side/
+   04-class8-answer-side-identities.out N1-N17. A composite point u gives
+   'diff(f(u), u, n), the same spelling Maxima's subst produces (N12). */
+%mr_derivative(%mr_dv_n, %mr_dv_f, %mr_dv_u) :=
+  if %mr_dv_n = 0 then funmake(%mr_dv_f, [%mr_dv_u])
+  else funmake(nounify(diff), [funmake(%mr_dv_f, [%mr_dv_u]), %mr_dv_u, %mr_dv_n])$
+
+/* The gcd of FunctionOfExpnQ's degrees: integers, 0 (a v-free term) or
+   rationals (u[[2]]/v[[2]] of a fractional power). Mathematica's GCD of
+   rationals is gcd(numerators)/lcm(denominators); Maxima's gcd is a
+   polynomial gcd, so it is built from num/denom. */
+%mr_gcdDegrees(%mr_gd_l) := block([%mr_gd_n : 0, %mr_gd_d : 1, %mr_gd_e],
+  for %mr_gd_e in %mr_gd_l do (
+    %mr_gd_n : gcd(%mr_gd_n, num(%mr_gd_e)),
+    %mr_gd_d : lcm(%mr_gd_d, denom(%mr_gd_e))),
+  %mr_gd_n / %mr_gd_d)$
+
+/* Rubi FunctionOfExpnQ[u, v, x] (IntegrationUtilityFunctions.m
+   L4486-4516): if u is a function of v, the degree of u in v (1 for v
+   itself, 0 for an x-free atom, the gcd over the arguments of a sum or a
+   function); else false. Mathematica's Apply[List, u] is args(u); First /
+   Rest of a product are first() / rest() of the Maxima product -- both
+   products are in Maxima's canonical factor order, so factor k of u and
+   factor k of v correspond exactly when the Mathematica ones do.
+   inflag:true reads the internal form (1/x is x^-1, a/b is a*b^-1), as
+   the .m's Power/Times tests do. */
+%mr_functionOfExpnQ(%mr_fe_u, %mr_fe_v, %mr_fe_x) :=
+  block([inflag : true, %mr_fe_d1, %mr_fe_d2, %mr_fe_l, %mr_fe_q],
+  if is(%mr_fe_u = %mr_fe_v) then 1
+  elseif atom(%mr_fe_u) then (if is(%mr_fe_u = %mr_fe_x) then false else 0)
+  elseif %mr_calculusQ(%mr_fe_u) then false
+  elseif %mr_powerQ(%mr_fe_u) and freeof(%mr_fe_x, part(%mr_fe_u, 2)) then (
+    if %mr_eqQ(part(%mr_fe_u, 1), %mr_fe_v)
+    then (if integerp(part(%mr_fe_u, 2)) then part(%mr_fe_u, 2) else 1)
+    elseif %mr_powerQ(%mr_fe_v) and freeof(%mr_fe_x, part(%mr_fe_v, 2))
+           and %mr_eqQ(part(%mr_fe_u, 1), part(%mr_fe_v, 1)) then (
+      if %mr_rationalQ(part(%mr_fe_v, 2)) then (
+        if %mr_rationalQ(part(%mr_fe_u, 2))
+           and integerp(part(%mr_fe_u, 2)/part(%mr_fe_v, 2))
+           and (is(part(%mr_fe_v, 2) > 0) or is(part(%mr_fe_u, 2) < 0))
+        then part(%mr_fe_u, 2)/part(%mr_fe_v, 2) else false)
+      else (
+        %mr_fe_q : %mr_simp(part(%mr_fe_u, 2)/part(%mr_fe_v, 2)),
+        if integerp(%mr_fe_q) then %mr_fe_q else false))
+    else %mr_functionOfExpnQ(part(%mr_fe_u, 1), %mr_fe_v, %mr_fe_x))
+  elseif %mr_productQ(%mr_fe_u) and %mr_neQ(%mr_freeFactors(%mr_fe_u, %mr_fe_x), 1)
+  then %mr_functionOfExpnQ(%mr_nonfreeFactors(%mr_fe_u, %mr_fe_x), %mr_fe_v, %mr_fe_x)
+  elseif %mr_productQ(%mr_fe_u) and %mr_productQ(%mr_fe_v) then (
+    %mr_fe_d1 : %mr_functionOfExpnQ(first(%mr_fe_u), first(%mr_fe_v), %mr_fe_x),
+    if %mr_fe_d1 = false then false
+    else (
+      %mr_fe_d2 : %mr_functionOfExpnQ(rest(%mr_fe_u), rest(%mr_fe_v), %mr_fe_x),
+      if is(%mr_fe_d1 = %mr_fe_d2)
+         and freeof(%mr_fe_x, %mr_simp(%mr_fe_u/%mr_fe_v^%mr_fe_d1))
+      then %mr_fe_d1 else false))
+  else (
+    %mr_fe_l : map(lambda([%mr_fe_w], %mr_functionOfExpnQ(%mr_fe_w, %mr_fe_v, %mr_fe_x)),
+                   args(%mr_fe_u)),
+    if member(false, %mr_fe_l) then false
+    else %mr_gcdDegrees(%mr_fe_l)))$
+
+/* Rubi SubstForAux[u, v, x] (L6004-6023): u, a function of v, with v
+   replaced by x. The general (last) arm rebuilds u from its mapped
+   arguments with funmake, never apply: apply(diff, ...) would EVALUATE a
+   formal-derivative noun (and error on a negative order); an argument
+   list that comes back unchanged returns u itself. */
+%mr_substForAux(%mr_sa_u, %mr_sa_v, %mr_sa_x) :=
+  block([inflag : true, %mr_sa_a, %mr_sa_b],
+  if is(%mr_sa_u = %mr_sa_v) then %mr_sa_x
+  elseif atom(%mr_sa_u) then (
+    if %mr_powerQ(%mr_sa_v) and freeof(%mr_sa_x, part(%mr_sa_v, 2))
+       and %mr_eqQ(%mr_sa_u, part(%mr_sa_v, 1))
+    then %mr_sa_x^%mr_simp(1/part(%mr_sa_v, 2))
+    else %mr_sa_u)
+  elseif %mr_powerQ(%mr_sa_u) and freeof(%mr_sa_x, part(%mr_sa_u, 2)) then (
+    if %mr_eqQ(part(%mr_sa_u, 1), %mr_sa_v) then %mr_sa_x^part(%mr_sa_u, 2)
+    elseif %mr_powerQ(%mr_sa_v) and freeof(%mr_sa_x, part(%mr_sa_v, 2))
+           and %mr_eqQ(part(%mr_sa_u, 1), part(%mr_sa_v, 1))
+    then %mr_sa_x^%mr_simp(part(%mr_sa_u, 2)/part(%mr_sa_v, 2))
+    else %mr_substForAux(part(%mr_sa_u, 1), %mr_sa_v, %mr_sa_x)^part(%mr_sa_u, 2))
+  elseif %mr_productQ(%mr_sa_u) and %mr_neQ(%mr_freeFactors(%mr_sa_u, %mr_sa_x), 1)
+  then %mr_freeFactors(%mr_sa_u, %mr_sa_x)
+       * %mr_substForAux(%mr_nonfreeFactors(%mr_sa_u, %mr_sa_x), %mr_sa_v, %mr_sa_x)
+  elseif %mr_productQ(%mr_sa_u) and %mr_productQ(%mr_sa_v)
+  then %mr_substForAux(first(%mr_sa_u), first(%mr_sa_v), %mr_sa_x)
+  else (
+    %mr_sa_a : args(%mr_sa_u),
+    %mr_sa_b : map(lambda([%mr_sa_w], %mr_substForAux(%mr_sa_w, %mr_sa_v, %mr_sa_x)),
+                   %mr_sa_a),
+    if is(%mr_sa_a = %mr_sa_b) then %mr_sa_u
+    else funmake(op(%mr_sa_u), %mr_sa_b)))$
+
+/* ---- class 5 (inverse trig functions), Step 4 ---------------------------
+   The four utilities the class-5 census's token closure left to port
+   (.scratch/class-ports/issues/02, Step 1; probes/translation/
+   10-class5-syntax-census.out). Parameters carry the %mr_ prefix (the
+   capture trap, ticket 17). */
+
+/* Rubi L80  HalfIntegerQ[u__] := Scan[Function[If[Head[#]===Rational &&
+   Denominator[#]==2, Null, Return[False]]], {u}] === Null — every argument
+   an EXPLICIT rational with denominator 2 (an integer, a float or a symbol
+   is not). Variadic, as Rubi's is; 5.1.3/5.1.4 call it with two. */
+%mr_halfIntegerQ([%mr_hi_args]) :=
+  every(lambda([%mr_hi_a], ratnump(%mr_hi_a) and not integerp(%mr_hi_a)
+                           and is(denom(%mr_hi_a) = 2)),
+        %mr_hi_args)$
+
+/* Mathematica's Head[u], for the one class-5 reader, 5.3.7 r27/r28's
+   EqQ[Head[tmp], ArcTan]: a non-atom's operator, read with inflag true so
+   it is the stored head (a/b is a product, as Times[a, Power[b, -1]] is).
+   The operator of an inverse-trig call is the native symbol the table
+   emits for the bare head atom (atan for ArcTan), so %mr_eqQ compares the
+   two (probes/answer-side/05-class5-answer-side-identities.out H1-H3). An
+   atom answers Mathematica's atom heads Integer / Real / Symbol / String;
+   anything else (a Maxima rational, which is not an atom here, and a
+   sum, product or power) answers its operator. */
+%mr_head(%mr_hd_u) := block([inflag : true],
+  if atom(%mr_hd_u) then (
+    if integerp(%mr_hd_u) then 'Integer
+    elseif floatnump(%mr_hd_u) or bfloatp(%mr_hd_u) then 'Real
+    elseif stringp(%mr_hd_u) then 'String
+    else 'Symbol)
+  else op(%mr_hd_u))$
+
+/* Rubi L6084  InverseFunctionOfLinear[u, x]: the first subexpression of u
+   (depth first, arguments in order) that is an inverse function of a
+   linear argument, else false. InverseFunctionQ is %mr_inverseFunctionQ
+   (log, the six inverse-trig heads, the six inverse-hyperbolic ones, mod,
+   polylog). Rubi's Scan walks the stored arguments, so inflag is true. */
+%mr_inverseFunctionOfLinear(%mr_ifl_u, %mr_ifl_x) :=
+  block([inflag : true, %mr_ifl_r, %mr_ifl_a],
+  if atom(%mr_ifl_u) or %mr_calculusQ(%mr_ifl_u)
+     or freeof(%mr_ifl_x, %mr_ifl_u) then false
+  elseif %mr_inverseFunctionQ(%mr_ifl_u)
+         and %mr_linearQ(part(%mr_ifl_u, 1), %mr_ifl_x) then %mr_ifl_u
+  else (
+    %mr_ifl_r : false,
+    for %mr_ifl_a in args(%mr_ifl_u) while %mr_ifl_r = false do (
+      %mr_ifl_r : %mr_inverseFunctionOfLinear(%mr_ifl_a, %mr_ifl_x),
+      if atom(%mr_ifl_r) then %mr_ifl_r : false),
+    %mr_ifl_r))$
+
+/* Mathematica's InverseFunction[h] for the heads InverseFunctionQ admits
+   (the one-argument ones; mod and polylog have no inverse and answer
+   false). Used only by %mr_substForInverseFunction's 3-argument form. */
+%mr_inverseHead(%mr_ih_h) := block([%mr_ih_p],
+  %mr_ih_p : assoc(%mr_ih_h,
+    [atan = tan, acot = cot, asin = sin, acos = cos, asec = sec, acsc = csc,
+     asinh = sinh, acosh = cosh, atanh = tanh, acoth = coth, asech = sech,
+     acsch = csch, log = exp], false),
+  %mr_ih_p)$
+
+/* Rubi L6085-6096  SubstForInverseFunction[u, v, x] and [u, v, w, x]: u
+   with every subexpression having v's head and v's (first) argument
+   replaced by x, and x itself replaced by w. The 3-argument form takes
+   w = (-a + h^-1(x))/b for v = h(a + b x) (Coefficient[v[[1]], x, k]).
+   Rubi's Map rebuilds every level; here an x-free subexpression is
+   returned as is (v carries x, so it cannot occur there, and x itself is
+   not in it), and a level is rebuilt with funmake (the class-8 capture
+   rule: never apply), or returned as is when its arguments came back
+   unchanged. */
+%mr_substForInverseFunction(%mr_sfi_u, %mr_sfi_v, [%mr_sfi_rest]) :=
+  block([%mr_sfi_w, %mr_sfi_x, %mr_sfi_h],
+  if length(%mr_sfi_rest) = 1 then (
+    %mr_sfi_x : first(%mr_sfi_rest),
+    %mr_sfi_h : %mr_inverseHead(op(%mr_sfi_v)),
+    if %mr_sfi_h = false
+    then error("%mr_substForInverseFunction: no inverse for", op(%mr_sfi_v)),
+    %mr_sfi_w : (-%mr_coeff(part(%mr_sfi_v, 1), %mr_sfi_x, 0)
+                 + funmake(%mr_sfi_h, [%mr_sfi_x]))
+                / %mr_coeff(part(%mr_sfi_v, 1), %mr_sfi_x, 1))
+  elseif length(%mr_sfi_rest) = 2 then (
+    %mr_sfi_w : first(%mr_sfi_rest),
+    %mr_sfi_x : second(%mr_sfi_rest))
+  else error("%mr_substForInverseFunction: expected 3 or 4 args"),
+  %mr_sfi_aux(%mr_sfi_u, %mr_sfi_v, %mr_sfi_w, %mr_sfi_x))$
+
+%mr_sfi_aux(%mr_sfa_u, %mr_sfa_v, %mr_sfa_w, %mr_sfa_x) :=
+  block([inflag : true, %mr_sfa_a, %mr_sfa_b],
+  if atom(%mr_sfa_u) then (if %mr_sfa_u = %mr_sfa_x then %mr_sfa_w else %mr_sfa_u)
+  elseif freeof(%mr_sfa_x, %mr_sfa_u) then %mr_sfa_u
+  elseif op(%mr_sfa_u) = op(%mr_sfa_v)
+         and %mr_eqQ(part(%mr_sfa_u, 1), part(%mr_sfa_v, 1)) then %mr_sfa_x
+  else (
+    %mr_sfa_a : args(%mr_sfa_u),
+    %mr_sfa_b : map(lambda([%mr_sfa_t],
+                      %mr_sfi_aux(%mr_sfa_t, %mr_sfa_v, %mr_sfa_w, %mr_sfa_x)),
+                    %mr_sfa_a),
+    if is(%mr_sfa_a = %mr_sfa_b) then %mr_sfa_u
+    else funmake(op(%mr_sfa_u), %mr_sfa_b)))$
+
+/* ===================== class 4 (2026-09-25) ==========================
+ * Step 4 cluster (a): the inert-representation utilities the class-4 rule
+ * files call and the inert-trig substrate did not port
+ * (.scratch/class-ports/issues/05, Step 1). Parameters and locals carry
+ * the %mr_ prefix (the capture rule, ticket 17). */
+
+/* Rubi ComplexFreeQ[u] (L226): an atom is complex-free unless it is a
+   ComplexNumberQ; otherwise every part must be. Mathematica's Complex[a, b]
+   is an ATOM; Maxima's 2*%i / a+%i*b is a product or sum whose walk reaches
+   the atom %i, so "no %i anywhere" is the same test (a float imaginary
+   part, 2.0*%i, carries %i too). */
+%mr_complexFreeQ(%mr_cfq_u) := is(freeof(%i, %mr_cfq_u))$
+
+/* Rubi ExpandTrig (L3362-3370):
+     ExpandTrig[u_,x_Symbol] := ActivateTrig[ExpandIntegrand[u,x]]
+     ExpandTrig[u_,v_,x_Symbol] := With[{w=ExpandTrig[v,x],z=ActivateTrig[u]},
+       If[SumQ[w], Map[Function[z*#],w], z*w]]
+   Variadic on the two arities (Maxima functions are fixed-arity). The
+   3-argument Map distributes z over the terms of w; Maxima keeps the mapped
+   sum as a sum of products (map over "+" re-simplifies each term only). */
+%mr_expandTrig([%mr_et_args]) := block([%mr_et_w, %mr_et_z],
+  if length(%mr_et_args) = 2 then
+    %mr_activateTrig(%mr_expandIntegrand(first(%mr_et_args), second(%mr_et_args)))
+  elseif length(%mr_et_args) = 3 then (
+    %mr_et_w : %mr_expandTrig(second(%mr_et_args), third(%mr_et_args)),
+    %mr_et_z : %mr_activateTrig(first(%mr_et_args)),
+    if %mr_sumQ(%mr_et_w)
+    then map(lambda([%mr_et_t], %mr_et_z*%mr_et_t), %mr_et_w)
+    else %mr_et_z*%mr_et_w)
+  else error("%mr_expandTrig: expected 2 or 3 arguments, found",
+             length(%mr_et_args)))$
+
+/* Rubi KnownTrigIntegrandQ[list,u,x] (L7384-7391): u===1, or u matches one
+   of six shapes in func_[e_.+f_.*x] with func a member of list -- the
+   integrands the 4.1/4.3/4.5 files know how to finish. The MatchQ
+   pattern strings and cond lambdas are the generator's own translation of
+   the six MatchQ calls (emit_rule over `MatchQ[u, <pattern> /; <cond>]`,
+   2026-09-25), with Rubi's free `list` and `x` bound to this function's
+   parameters. `func` is a head capture: the dispatcher binds it to the
+   %mr_i* operator SYMBOL (mr-binding-value), which is what `list` holds. */
+%mr_knownTrigIntegrandQ(%mr_kti_list, %mr_kti_u, %mr_kti_x) := block([],
+  is(%mr_kti_u = 1)
+  or %mr_matchQ(%mr_kti_u, "(Power (Plus (Optional (Pattern |_mr_kti_r1mq1_a| (Blank))) (Times (Optional (Pattern |_mr_kti_r1mq1_b| (Blank))) ((Pattern |_mr_kti_r1mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r1mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r1mq1_f| (Blank)))))))) (Optional (Pattern |_mr_kti_r1mq1_m| (Blank))))", [%mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r1mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_a, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_b, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r1mq1_m, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Times (Plus (Optional (Pattern |_mr_kti_r2mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r2mq1_B| (Blank))) ((Pattern |_mr_kti_r2mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r2mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r2mq1_f| (Blank)))))))) (Power (Plus (Optional (Pattern |_mr_kti_r2mq1_a| (Blank))) (Times (Optional (Pattern |_mr_kti_r2mq1_b| (Blank))) ((Pattern |_mr_kti_r2mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r2mq1_e| (Blank))) (Times (MRArg 2) (Optional (Pattern |_mr_kti_r2mq1_f| (Blank)))))))) (Optional (Pattern |_mr_kti_r2mq1_m| (Blank)))))", [%mr_kti_x, %mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r2mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_a, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_b, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_B, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r2mq1_m, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Plus (Optional (Pattern |_mr_kti_r3mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r3mq1_C| (Blank))) (Power ((Pattern |_mr_kti_r3mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r3mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r3mq1_f| (Blank)))))) 2)))", [%mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r3mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r3mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r3mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r3mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r3mq1_C, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Plus (Optional (Pattern |_mr_kti_r4mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r4mq1_B| (Blank))) ((Pattern |_mr_kti_r4mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r4mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r4mq1_f| (Blank))))))) (Times (Optional (Pattern |_mr_kti_r4mq1_C| (Blank))) (Power ((Pattern |_mr_kti_r4mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r4mq1_e| (Blank))) (Times (MRArg 2) (Optional (Pattern |_mr_kti_r4mq1_f| (Blank)))))) 2)))", [%mr_kti_x, %mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r4mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_B, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r4mq1_C, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Times (Plus (Optional (Pattern |_mr_kti_r5mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r5mq1_C| (Blank))) (Power ((Pattern |_mr_kti_r5mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r5mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r5mq1_f| (Blank)))))) 2))) (Power (Plus (Optional (Pattern |_mr_kti_r5mq1_a| (Blank))) (Times (Optional (Pattern |_mr_kti_r5mq1_b| (Blank))) ((Pattern |_mr_kti_r5mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r5mq1_e| (Blank))) (Times (MRArg 2) (Optional (Pattern |_mr_kti_r5mq1_f| (Blank)))))))) (Optional (Pattern |_mr_kti_r5mq1_m| (Blank)))))", [%mr_kti_x, %mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r5mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_a, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_b, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_C, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r5mq1_m, %mr_mqb))))
+  or %mr_matchQ(%mr_kti_u, "(Times (Plus (Optional (Pattern |_mr_kti_r6mq1_A| (Blank))) (Times (Optional (Pattern |_mr_kti_r6mq1_B| (Blank))) ((Pattern |_mr_kti_r6mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r6mq1_e| (Blank))) (Times (MRArg 1) (Optional (Pattern |_mr_kti_r6mq1_f| (Blank))))))) (Times (Optional (Pattern |_mr_kti_r6mq1_C| (Blank))) (Power ((Pattern |_mr_kti_r6mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r6mq1_e| (Blank))) (Times (MRArg 2) (Optional (Pattern |_mr_kti_r6mq1_f| (Blank)))))) 2))) (Power (Plus (Optional (Pattern |_mr_kti_r6mq1_a| (Blank))) (Times (Optional (Pattern |_mr_kti_r6mq1_b| (Blank))) ((Pattern |_mr_kti_r6mq1_func| (Blank)) (Plus (Optional (Pattern |_mr_kti_r6mq1_e| (Blank))) (Times (MRArg 3) (Optional (Pattern |_mr_kti_r6mq1_f| (Blank)))))))) (Optional (Pattern |_mr_kti_r6mq1_m| (Blank)))))", [%mr_kti_x, %mr_kti_x, %mr_kti_x], lambda([%mr_mqb], %mr_memberQ(%mr_kti_list, %mr_mk(_mr_kti_r6mq1_func, %mr_mqb))  and  freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_a, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_b, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_e, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_f, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_A, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_B, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_C, %mr_mqb)) and freeof(%mr_kti_x, %mr_mk(_mr_kti_r6mq1_m, %mr_mqb)))))$
+
+/* Rubi L7368-7381: the four callers the 4.7.1-4.7.3 normalization rules
+   use; the lists are the INERT heads (Rubi's lowercase {sin,cos} ...). */
+%mr_knownSineIntegrandQ(%mr_ksi_u, %mr_ksi_x) :=
+  %mr_knownTrigIntegrandQ([%mr_isin, %mr_icos], %mr_ksi_u, %mr_ksi_x)$
+%mr_knownTangentIntegrandQ(%mr_kti2_u, %mr_kti2_x) :=
+  %mr_knownTrigIntegrandQ([%mr_itan], %mr_kti2_u, %mr_kti2_x)$
+%mr_knownCotangentIntegrandQ(%mr_kci_u, %mr_kci_x) :=
+  %mr_knownTrigIntegrandQ([%mr_icot], %mr_kci_u, %mr_kci_x)$
+%mr_knownSecantIntegrandQ(%mr_kse_u, %mr_kse_x) :=
+  %mr_knownTrigIntegrandQ([%mr_isec, %mr_icsc], %mr_kse_u, %mr_kse_x)$
+
+/* Rubi TrigSimplify (L2702-2721):
+     TrigSimplifyQ[u_] := ActivateTrig[u]=!=TrigSimplify[u]
+     TrigSimplify[u_] := ActivateTrig[TrigSimplifyRecur[u]]
+     TrigSimplifyRecur[u_] := If[AtomQ[u], u,
+       If[Head[u]===If, u, TrigSimplifyAux[Map[TrigSimplifyRecur,u]]]]
+   TrigSimplifyAux is the generated rewrite table mr_rw_tsa
+   (rules/utils/inert_trig_rewrites.mac, 31 clauses), a ONE-argument
+   function, so its walk is the 3-argument %mr_rewrite. Map works on
+   FullForm's level 1, i.e. Maxima's internal form: inflag:true reads a-b
+   as a + (-1)*b and a/b as a*b^(-1), the shapes the clauses are written
+   against. The Head[u]===If branch has no Maxima counterpart in an
+   integrand (a conditional is never an integrand factor here) and is not
+   ported. */
+%mr_trigSimplifyAux(%mr_tsa_u) :=
+  %mr_rewrite("TrigSimplifyAux", mr_rw_tsa, %mr_tsa_u)$
+%mr_trigSimplifyRecur(%mr_tsr_u) := block([inflag : true],
+  if atom(%mr_tsr_u) then %mr_tsr_u
+  else %mr_trigSimplifyAux(
+         funmake(op(%mr_tsr_u),
+                 map(lambda([%mr_tsr_t], %mr_trigSimplifyRecur(%mr_tsr_t)),
+                     args(%mr_tsr_u)))))$
+%mr_trigSimplify(%mr_ts_u) :=
+  %mr_activateTrig(%mr_trigSimplifyRecur(%mr_ts_u))$
+%mr_trigSimplifyQ(%mr_tsq_u) :=
+  is(%mr_activateTrig(%mr_tsq_u) # %mr_trigSimplify(%mr_tsq_u))$
+
+/* ---- class 4 Step 4 cluster (b): FunctionOfQ's and SubstFor's HYPERBOLIC
+ * arms (IntegrationUtilityFunctions.m L4443-4481's Sinh..Csch cases,
+ * L4713-4751, L4761-4842, L4844-4861, L5993-5998, L6039-6050), the
+ * substrate's deviation (a). Eighteen 4.7.5 records call FunctionOfQ and
+ * SubstFor with a hyperbolic v (r5/r6/r9/r10/r15/r16/r19/r20/r27/r28/r31/
+ * r32/r37-r40/r43/r44). Line-for-line mirrors of the circular ports above
+ * (%mr_pureFunctionOfTrigQ, %mr_functionOfSinQ/CosQ/TanQ, %mr_oddTrigPowerQ,
+ * %mr_substForTrig, %mr_substForTrigHead), with the same three stamped
+ * readings: inflag:true where op/args/part walk; deviation (c)'s
+ * position-free (Cosh[v/2], Sinh[v/2]) pair; FindTrigFactor as ported.
+ * Rubi's ReapList/Sow collection of the non-FunctionOfTanhQ factors is the
+ * sublist below (the %mr_functionOfTanQ reading). */
+
+/* Rubi PureFunctionOf{Sinh,Cosh,Tanh,Coth}Q (L4713-4751). */
+%mr_pureFunctionOfHypQ(%mr_pfh_heads, %mr_pfh_u, %mr_pfh_v, %mr_pfh_x) :=
+  block([inflag : true, %mr_pfh_k, %mr_pfh_r],
+  if atom(%mr_pfh_u) then is(not(%mr_pfh_u = %mr_pfh_x))
+  elseif %mr_calculusQ(%mr_pfh_u) then false
+  elseif %mr_hyperbolicQ(%mr_pfh_u) and %mr_eqQ(part(%mr_pfh_u, 1), %mr_pfh_v)
+  then is(member(op(%mr_pfh_u), %mr_pfh_heads) = true)
+  else (
+    %mr_pfh_r : true,
+    for %mr_pfh_k in args(%mr_pfh_u) do
+      if %mr_pfh_r and not %mr_pureFunctionOfHypQ(%mr_pfh_heads, %mr_pfh_k,
+                                                  %mr_pfh_v, %mr_pfh_x)
+      then %mr_pfh_r : false,
+    %mr_pfh_r))$
+
+/* Rubi FunctionOfSinhQ[u,v,x] (L4761-4794). */
+%mr_functionOfSinhQ(%mr_fshq_u, %mr_fshq_v, %mr_fshq_x) :=
+  block([inflag : true, %mr_fshq_l, %mr_fshq_h],
+  if atom(%mr_fshq_u) then is(not(%mr_fshq_u = %mr_fshq_x))
+  elseif %mr_calculusQ(%mr_fshq_u) then false
+  elseif %mr_hyperbolicQ(%mr_fshq_u)
+         and %mr_integerQuotientQ(part(%mr_fshq_u, 1), %mr_fshq_v) then (
+    if %mr_oddQuotientQ(part(%mr_fshq_u, 1), %mr_fshq_v)
+    then is(member(op(%mr_fshq_u), [sinh, csch]) = true)
+    else is(member(op(%mr_fshq_u), [cosh, sech]) = true))
+  elseif %mr_integerPowerQ(%mr_fshq_u) and %mr_hyperbolicQ(part(%mr_fshq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fshq_u, 1, 1), %mr_fshq_v) then (
+    if evenp(part(%mr_fshq_u, 2)) then true
+    else %mr_functionOfSinhQ(part(%mr_fshq_u, 1), %mr_fshq_v, %mr_fshq_x))
+  elseif %mr_productQ(%mr_fshq_u) then (
+    %mr_fshq_h : %mr_foq_halfPair(%mr_fshq_u, %mr_fshq_v, cosh, sinh),
+    if %mr_fshq_h # false then %mr_functionOfSinhQ(%mr_fshq_h, %mr_fshq_v, %mr_fshq_x)
+    else (
+      %mr_fshq_l : %mr_findTrigFactor(sinh, csch, %mr_fshq_u, %mr_fshq_v, false),
+      if listp(%mr_fshq_l) and %mr_evenQuotientQ(first(%mr_fshq_l), %mr_fshq_v)
+      then %mr_functionOfSinhQ(cosh(%mr_fshq_v)*second(%mr_fshq_l), %mr_fshq_v, %mr_fshq_x)
+      else (
+        %mr_fshq_l : %mr_findTrigFactor(cosh, sech, %mr_fshq_u, %mr_fshq_v, false),
+        if listp(%mr_fshq_l) and %mr_oddQuotientQ(first(%mr_fshq_l), %mr_fshq_v)
+        then %mr_functionOfSinhQ(cosh(%mr_fshq_v)*second(%mr_fshq_l), %mr_fshq_v, %mr_fshq_x)
+        else (
+          %mr_fshq_l : %mr_findTrigFactor(tanh, coth, %mr_fshq_u, %mr_fshq_v, true),
+          if listp(%mr_fshq_l)
+          then %mr_functionOfSinhQ(cosh(%mr_fshq_v)*second(%mr_fshq_l), %mr_fshq_v, %mr_fshq_x)
+          else %mr_foq_all(%mr_functionOfSinhQ, %mr_fshq_u, %mr_fshq_v, %mr_fshq_x)))))
+  else %mr_foq_all(%mr_functionOfSinhQ, %mr_fshq_u, %mr_fshq_v, %mr_fshq_x))$
+
+/* Rubi FunctionOfCoshQ[u,v,x] (L4798-4822). */
+%mr_functionOfCoshQ(%mr_fchq_u, %mr_fchq_v, %mr_fchq_x) :=
+  block([inflag : true, %mr_fchq_l],
+  if atom(%mr_fchq_u) then is(not(%mr_fchq_u = %mr_fchq_x))
+  elseif %mr_calculusQ(%mr_fchq_u) then false
+  elseif %mr_hyperbolicQ(%mr_fchq_u)
+         and %mr_integerQuotientQ(part(%mr_fchq_u, 1), %mr_fchq_v)
+  then is(member(op(%mr_fchq_u), [cosh, sech]) = true)
+  elseif %mr_integerPowerQ(%mr_fchq_u) and %mr_hyperbolicQ(part(%mr_fchq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fchq_u, 1, 1), %mr_fchq_v) then (
+    if evenp(part(%mr_fchq_u, 2)) then true
+    else %mr_functionOfCoshQ(part(%mr_fchq_u, 1), %mr_fchq_v, %mr_fchq_x))
+  elseif %mr_productQ(%mr_fchq_u) then (
+    %mr_fchq_l : %mr_findTrigFactor(sinh, csch, %mr_fchq_u, %mr_fchq_v, false),
+    if listp(%mr_fchq_l)
+    then %mr_functionOfCoshQ(sinh(%mr_fchq_v)*second(%mr_fchq_l), %mr_fchq_v, %mr_fchq_x)
+    else (
+      %mr_fchq_l : %mr_findTrigFactor(tanh, coth, %mr_fchq_u, %mr_fchq_v, true),
+      if listp(%mr_fchq_l)
+      then %mr_functionOfCoshQ(sinh(%mr_fchq_v)*second(%mr_fchq_l), %mr_fchq_v, %mr_fchq_x)
+      else %mr_foq_all(%mr_functionOfCoshQ, %mr_fchq_u, %mr_fchq_v, %mr_fchq_x)))
+  else %mr_foq_all(%mr_functionOfCoshQ, %mr_fchq_u, %mr_fchq_v, %mr_fchq_x))$
+
+/* Rubi FunctionOfTanhQ[u,v,x] (L4826-4841). */
+%mr_functionOfTanhQ(%mr_fthq_u, %mr_fthq_v, %mr_fthq_x) :=
+  block([inflag : true, %mr_fthq_l, %mr_fthq_k],
+  if atom(%mr_fthq_u) then is(not(%mr_fthq_u = %mr_fthq_x))
+  elseif %mr_calculusQ(%mr_fthq_u) then false
+  elseif %mr_hyperbolicQ(%mr_fthq_u)
+         and %mr_integerQuotientQ(part(%mr_fthq_u, 1), %mr_fthq_v)
+  then is(member(op(%mr_fthq_u), [tanh, coth]) = true)
+       or %mr_evenQuotientQ(part(%mr_fthq_u, 1), %mr_fthq_v)
+  elseif %mr_powerQ(%mr_fthq_u) and evenp(part(%mr_fthq_u, 2))
+         and %mr_hyperbolicQ(part(%mr_fthq_u, 1))
+         and %mr_integerQuotientQ(part(%mr_fthq_u, 1, 1), %mr_fthq_v) then true
+  elseif %mr_powerQ(%mr_fthq_u) and evenp(part(%mr_fthq_u, 2))
+         and %mr_sumQ(part(%mr_fthq_u, 1))
+  then %mr_functionOfTanhQ(expand(part(%mr_fthq_u, 1)^2), %mr_fthq_v, %mr_fthq_x)
+  elseif %mr_productQ(%mr_fthq_u) then (
+    %mr_fthq_l : sublist(args(%mr_fthq_u),
+                         lambda([%mr_fthq_k],
+                                not %mr_functionOfTanhQ(%mr_fthq_k, %mr_fthq_v, %mr_fthq_x))),
+    if %mr_fthq_l = [] then true
+    else is(length(%mr_fthq_l) = 2)
+         and %mr_oddHyperbolicPowerQ(first(%mr_fthq_l), %mr_fthq_v, %mr_fthq_x)
+         and %mr_oddHyperbolicPowerQ(second(%mr_fthq_l), %mr_fthq_v, %mr_fthq_x))
+  else %mr_foq_all(%mr_functionOfTanhQ, %mr_fthq_u, %mr_fthq_v, %mr_fthq_x))$
+
+/* Rubi OddHyperbolicPowerQ[u,v,x] (L4844-4861). */
+%mr_oddHyperbolicPowerQ(%mr_ohp_u, %mr_ohp_v, %mr_ohp_x) :=
+  block([inflag : true, %mr_ohp_l, %mr_ohp_k],
+  if atom(%mr_ohp_u) then false
+  elseif is(member(op(%mr_ohp_u), [sinh, cosh, sech, csch]) = true)
+  then %mr_oddQuotientQ(part(%mr_ohp_u, 1), %mr_ohp_v)
+  elseif %mr_powerQ(%mr_ohp_u)
+  then integerp(part(%mr_ohp_u, 2)) and oddp(part(%mr_ohp_u, 2))
+       and %mr_oddHyperbolicPowerQ(part(%mr_ohp_u, 1), %mr_ohp_v, %mr_ohp_x)
+  elseif %mr_productQ(%mr_ohp_u) then (
+    if %mr_neQ(%mr_freeFactors(%mr_ohp_u, %mr_ohp_x), 1)
+    then %mr_oddHyperbolicPowerQ(%mr_nonfreeFactors(%mr_ohp_u, %mr_ohp_x), %mr_ohp_v, %mr_ohp_x)
+    else (
+      %mr_ohp_l : sublist(args(%mr_ohp_u),
+                          lambda([%mr_ohp_k],
+                                 not %mr_functionOfTanhQ(%mr_ohp_k, %mr_ohp_v, %mr_ohp_x))),
+      if %mr_ohp_l = [] then true
+      else is(length(%mr_ohp_l) = 1)
+           and %mr_oddHyperbolicPowerQ(first(%mr_ohp_l), %mr_ohp_v, %mr_ohp_x)))
+  elseif %mr_sumQ(%mr_ohp_u)
+  then %mr_foq_all(%mr_oddHyperbolicPowerQ, %mr_ohp_u, %mr_ohp_v, %mr_ohp_x)
+  else false)$
+
+/* Rubi SubstForHyperbolic[u,sinh,cosh,v,x] (L6039-6050): u, a function of
+   Hyper[v], with Sinh[v] -> sinh, Cosh[v] -> cosh. A multiple angle
+   Hyper[k v] is TrigExpand'ed first (Maxima's trigexpand expands the
+   hyperbolic heads too; %mr_sfy_y is the .m's x). */
+%mr_substForHyperbolic(%mr_sfy_u, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v) :=
+  block([inflag : true, %mr_sfy_h, %mr_sfy_t, %mr_sfy_p],
+  if atom(%mr_sfy_u) then %mr_sfy_u
+  elseif %mr_hyperbolicQ(%mr_sfy_u)
+         and %mr_integerQuotientQ(part(%mr_sfy_u, 1), %mr_sfy_v) then (
+    %mr_sfy_h : op(%mr_sfy_u),
+    if %mr_eqQ(part(%mr_sfy_u, 1), %mr_sfy_v) then (
+      if %mr_sfy_h = sinh then %mr_sfy_s
+      elseif %mr_sfy_h = cosh then %mr_sfy_c
+      elseif %mr_sfy_h = tanh then %mr_sfy_s/%mr_sfy_c
+      elseif %mr_sfy_h = coth then %mr_sfy_c/%mr_sfy_s
+      elseif %mr_sfy_h = sech then 1/%mr_sfy_c
+      else 1/%mr_sfy_s)
+    else (
+      %mr_sfy_t : subst(%mr_sfy_v, '%mr_sfy_y,
+                        trigexpand(apply(%mr_sfy_h,
+                          [ratsimp(part(%mr_sfy_u, 1)/%mr_sfy_v)*'%mr_sfy_y]))),
+      if atom(%mr_sfy_t) then %mr_sfy_t
+      else funmake(op(%mr_sfy_t),
+                 map(lambda([%mr_sfy_p],
+                            %mr_substForHyperbolic(%mr_sfy_p, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v)),
+                     args(%mr_sfy_t)))))
+  else (
+    %mr_sfy_t : %mr_foq_halfPair(%mr_sfy_u, %mr_sfy_v, cosh, sinh),
+    if %mr_sfy_t # false
+    then %mr_sfy_s/2*%mr_substForHyperbolic(%mr_sfy_t, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v)
+    else funmake(op(%mr_sfy_u),
+               map(lambda([%mr_sfy_p],
+                          %mr_substForHyperbolic(%mr_sfy_p, %mr_sfy_s, %mr_sfy_c, %mr_sfy_v)),
+                   args(%mr_sfy_u)))))$
+
+/* Rubi SubstFor[v,u,x]'s FreeFactors + Switch[Head[v], Sinh..Csch] arms
+   (L5980-5998): SubstFor[NonfreeFactors[v,x], u, x/FreeFactors[v,x]] with
+   the head's (sinh, cosh) pair in that scaled variable, as Rubi writes
+   them (the Sech/Csch pairs included; no class-4 record passes those). */
+%mr_substForHypHead(%mr_shh_v, %mr_shh_u, %mr_shh_x) :=
+  block([inflag : true, %mr_shh_w, %mr_shh_y, %mr_shh_h, %mr_shh_a],
+  %mr_shh_w : %mr_nonfreeFactors(%mr_shh_v, %mr_shh_x),
+  %mr_shh_y : %mr_shh_x/%mr_freeFactors(%mr_shh_v, %mr_shh_x),
+  %mr_shh_h : op(%mr_shh_w),
+  %mr_shh_a : part(%mr_shh_w, 1),
+  if %mr_shh_h = sinh
+  then %mr_substForHyperbolic(%mr_shh_u, %mr_shh_y, sqrt(1 + %mr_shh_y^2), %mr_shh_a)
+  elseif %mr_shh_h = cosh
+  then %mr_substForHyperbolic(%mr_shh_u, sqrt(-1 + %mr_shh_y^2), %mr_shh_y, %mr_shh_a)
+  elseif %mr_shh_h = tanh
+  then %mr_substForHyperbolic(%mr_shh_u, %mr_shh_y/sqrt(1 - %mr_shh_y^2),
+                              1/sqrt(1 - %mr_shh_y^2), %mr_shh_a)
+  elseif %mr_shh_h = coth
+  then %mr_substForHyperbolic(%mr_shh_u, 1/sqrt(-1 + %mr_shh_y^2),
+                              %mr_shh_y/sqrt(-1 + %mr_shh_y^2), %mr_shh_a)
+  elseif %mr_shh_h = sech
+  then %mr_substForHyperbolic(%mr_shh_u, 1/sqrt(-1 + %mr_shh_y^2), 1/%mr_shh_y, %mr_shh_a)
+  else %mr_substForHyperbolic(%mr_shh_u, 1/%mr_shh_y, 1/sqrt(1 + %mr_shh_y^2), %mr_shh_a))$
+
+/* Rubi's Expand[u] / Expand[u, patt] (Mathematica builtin), class 4's
+   CLASS_RENAME row (generator/translation_table.py). The 2-argument form
+   expands only the parts of u that contain patt; Maxima's expand has no
+   such argument (expand(u, x) is an error: its 3-argument form reads x as
+   maxposex), so the pattern is dropped and u is expanded in full. The value
+   is the same; the shape differs only in x-free products Mathematica would
+   leave unexpanded. The three class-4 uses (4.1.1.1 r1, 4.1.7 r58,
+   4.3.1.3 r2) expand a polynomial or rational function in x or a trig
+   function, whose x-free coefficients are single symbols. */
+%mr_expand(%mr_xp_u, [%mr_xp_patt]) := expand(%mr_xp_u)$
