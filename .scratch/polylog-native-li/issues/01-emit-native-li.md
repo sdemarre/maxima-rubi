@@ -1,6 +1,6 @@
 # Emit Maxima's native polylogarithm `li[s](z)` instead of the unknown `polylog(s, z)`
 
-Status: done on branch `polylog-native-li` (2026-09-26); not merged, not promoted
+Status: resolved (merged to master and records promoted, 2026-09-26)
 Type: task (generator + driver + tests; full-corpus A/B)
 Filed: 2026-09-26 (user request: make it a todo with enough information to pick it up later)
 Supersedes: `.scratch/class3-polylog-ceiling/issues/01-polylog-derivative-shim.md`. Maxima
@@ -187,5 +187,6 @@ guards all green (head rewrites 70/0), regeneration byte-identical for classes 1
 `--rewrites`, matcher regression suite 109/0 in both arms (records unchanged but for the
 timing lines).
 
-Open for the user: merge `polylog-native-li` to `master`, and whether to promote the
-`.li.out` records as the new baselines (`test/corpus_class<N>.out`).
+Merged to `master` and the `.li.out` records promoted as the baselines
+`test/corpus_class<N>.out` for classes 2-8 (user decision, 2026-09-26). Class 1 carries no
+PolyLog and keeps its record. 8.8 e155 is accepted as the one regression.
