@@ -73,7 +73,8 @@ rubi(expintegral_si(2*x)*sin(5*x), x);
 ```maxima
 rubi(f, x)                 /* the entry point: rules only */
 rubi_fallback(f, x, true)  /* the same, but fall through to integrate(f, x) */
-rubi_verbose : true$       /* print the rule that fires, and misfires */
+rubi_verbose : true$       /* print every rule outcome: fired, declined, misfires */
+rubi_verbose : 'matches$   /* print only the rules that fire */
 ```
 
 - `rubi(f, x)` returns an antiderivative, or the no-answer noun
@@ -85,6 +86,10 @@ rubi_verbose : true$       /* print the rule that fires, and misfires */
   `expintegral_ei`/`_si`/`_ci`/`_shi`/`_chi`, `gamma_incomplete`,
   `fresnel_s`/`fresnel_c`, `hypergeometric`. Rubi's `AppellF1` has no Maxima
   counterpart and stays a noun.
+- `rubi_verbose` is `false` by default: nothing is printed. With `true`, every
+  rule tried prints its outcome, including the error message of a rule that
+  misfires. With `'matches` (or the string `"matches"`), only the rules that
+  fire are printed, i.e. the chain of rules that built the answer.
 
 Run switches, set at the prompt (the defaults are what the corpus records use):
 

@@ -289,8 +289,26 @@ variable symbols with numeric coefficients, in simplified form."
 (defvar $rubi_verbose nil)
 (defvar $%mr_boolcheck t)
 
+(defun mr-verbose-all-p ()
+  "rubi_verbose reads every outcome: true (or any value other than false
+and matches, as before 2026-09-26)."
+  (and $rubi_verbose (not (mr-verbose-matches-p))))
+
+(defun mr-verbose-matches-p ()
+  "rubi_verbose : matches (the symbol, or the string \"matches\"): only the
+rules that fire are printed (user request 2026-09-26)."
+  (or (eq $rubi_verbose '$matches)
+      (and (stringp $rubi_verbose) (string= $rubi_verbose "matches"))))
+
 (defun mr-verbose (fmt &rest args)
-  (when $rubi_verbose
+  "Print a rule outcome that is not a firing: declines, misfires, rejected
+conditions, faults. Only under rubi_verbose : true."
+  (when (mr-verbose-all-p)
+    (apply #'mtell fmt args)))
+
+(defun mr-verbose-fired (fmt &rest args)
+  "Print a rule that fired: under rubi_verbose : true and : matches."
+  (when (or (mr-verbose-all-p) (mr-verbose-matches-p))
     (apply #'mtell fmt args)))
 
 ;;; ------------------------------------------------------------------
@@ -433,8 +451,14 @@ without the pre-bound name SKIP."
 
 (defun mr-call (fn &rest args)
   "Call the Maxima function (or lambda) FN on ARGS under errcatch:
-(values result t), or (values nil nil) when the call signals an error."
-  (let ((r (errcatch (apply #'mfuncall fn args))))
+(values result t), or (values nil nil) when the call signals an error.
+errormsg is bound to rubi_verbose : true only: a rule's cond or repl that
+errors is an ordinary misfire the dispatcher reads and moves past, and its
+message used to print in every session (2026-09-26, with the seen cut's
+mr_seen_cut). Under rubi_verbose : true the message still prints, next to
+the misfire line."
+  (let ((r (let (($errormsg (mr-verbose-all-p)))
+             (errcatch (apply #'mfuncall fn args)))))
     (if r (values (car r) t) (values nil nil))))
 
 (defun mr-true-p (v)
@@ -533,7 +557,7 @@ decline or misfire)."
                     (mr-carries-inert-p r) (mr-carries-inert-p f))
                (mr-verbose "rubi: rule ~A r~A misfire (inert head leaked) on ~M with ~M~%" key n f mm) nil)
               (t
-               (mr-verbose "rubi: rule ~A r~A fired on ~M with ~M~%" key n f mm) r))))))
+               (mr-verbose-fired "rubi: rule ~A r~A fired on ~M with ~M~%" key n f mm) r))))))
 
 (defmacro with-mr-switches (&body body)
   `(let ((mr-match:*flat-wide* (not (null $mr_flat_wide)))

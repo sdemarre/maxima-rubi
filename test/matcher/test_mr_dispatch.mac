@@ -514,6 +514,52 @@ test_rewrite() := block([h1, h2, tbl],
 _mr_cond_t3_r4(mm, x) := true$
 _mr_repl_t3_r4(mm, x) := [geteqR(mm, '_t3_r4_a), geteqR(mm, '_t3_r4_u), x]$
 
+/* ---- rubi_verbose: false / true / matches -------------------------------
+   false prints nothing; true prints every rule outcome (fired, declined,
+   misfire, cond not accepted, faults); matches prints only the rules that
+   FIRED (user request 2026-09-26). The string "matches" works too, so a
+   bound Maxima variable called matches cannot change the reading. Output is
+   captured through with_stdout (a batch file cannot hold a :lisp line). */
+t_capture(t_f) := block([t_fn, t_s, t_in, t_l],
+  t_fn : sconcat(maxima_tempdir, "/mr_t_verbose.txt"),
+  with_stdout(t_fn, t_f()),
+  t_s : "",
+  t_in : openr(t_fn),
+  while (t_l : readline(t_in)) # false do t_s : sconcat(t_s, t_l, " | "),
+  close(t_in),
+  t_s)$
+t_has(t_s, t_w) := is(ssearch(t_w, t_s) # false)$
+test_verbose() := block([h7, hdecl, hmis, hcf, tbl, out, saved],
+  print("--- rubi_verbose: false / true / matches ---"),
+  h7 : %mr_defrule("t", 70, p_xm, t_true, t_7),
+  hdecl : %mr_defrule("t", 71, p_xm, t_true, t_false),
+  hmis : %mr_defrule("t", 72, p_xm, t_true, t_err),
+  hcf : %mr_defrule("t", 73, p_xm, t_false, t_42),
+  tbl : [hdecl, hmis, hcf, h7],
+  saved : rubi_verbose,
+  rubi_verbose : false,
+  check("verbose false: prints nothing",
+        t_capture(lambda([], %mr_dispatch_tree(x^3, x, tbl, 1))), ""),
+  rubi_verbose : true,
+  out : t_capture(lambda([], %mr_dispatch_tree(x^3, x, tbl, 1))),
+  check_bool("verbose true: the fired rule", t_has(out, "t r70 fired")),
+  check_bool("verbose true: the declined rule", t_has(out, "t r71 declined")),
+  check_bool("verbose true: the misfire", t_has(out, "t r72 misfire")),
+  check_bool("verbose true: the rejected cond", t_has(out, "t r73 cond not accepted")),
+  rubi_verbose : 'matches,
+  out : t_capture(lambda([], %mr_dispatch_tree(x^3, x, tbl, 1))),
+  check_bool("verbose matches: the fired rule", t_has(out, "t r70 fired")),
+  check_bool("verbose matches: no declined / misfire / cond lines",
+             not t_has(out, "r71") and not t_has(out, "r72") and not t_has(out, "r73")),
+  check("verbose matches: the answer is unchanged",
+        %mr_dispatch_tree(x^3, x, tbl, 1), 7),
+  rubi_verbose : "matches",
+  out : t_capture(lambda([], %mr_dispatch_tree(x^3, x, tbl, 1))),
+  check_bool("verbose \"matches\" (a string) reads the same",
+             t_has(out, "t r70 fired") and not t_has(out, "r71")),
+  rubi_verbose : saved,
+  true)$
+
 test_records()$
 test_dispatch()$
 test_bindings()$
@@ -525,6 +571,7 @@ test_general_body()$
 test_class4_body()$
 test_matchq()$
 test_rewrite()$
+test_verbose()$
 print("")$
 print("========================================")$
 print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$
