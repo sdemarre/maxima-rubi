@@ -517,7 +517,8 @@ _mr_repl_t3_r4(mm, x) := [geteqR(mm, '_t3_r4_a), geteqR(mm, '_t3_r4_u), x]$
 /* ---- rubi_verbose: false / true / matches -------------------------------
    false prints nothing; true prints every rule outcome (fired, declined,
    misfire, cond not accepted, faults); matches prints only the rules that
-   FIRED (user request 2026-09-26). The string "matches" works too, so a
+   FIRED (user request 2026-09-26) -- since 2026-09-27 as the steps list
+   the top-level call answers, not as print. The string "matches" works too, so a
    bound Maxima variable called matches cannot change the reading. Output is
    captured through with_stdout (a batch file cannot hold a :lisp line). */
 t_capture(t_f) := block([t_fn, t_s, t_in, t_l],
@@ -529,7 +530,14 @@ t_capture(t_f) := block([t_fn, t_s, t_in, t_l],
   close(t_in),
   t_s)$
 t_has(t_s, t_w) := is(ssearch(t_w, t_s) # false)$
-test_verbose() := block([h7, hdecl, hmis, hcf, tbl, out, saved],
+/* a replacement with a sub-integral (dispatched on mr_rule_table), and one
+   that dispatches the same sub-integral and then declines */
+t_nest(mm, x) := mr_int(x^2, x) + 1$
+t_nest_decl(mm, x) := (mr_int(x^2, x), false)$
+t_m2(mm, x) := is(geteqR(mm, '_t_m) = 2)$
+t_m3(mm, x) := is(geteqR(mm, '_t_m) = 3)$
+test_verbose() := block([h7, hdecl, hmis, hcf, hout, hin, hbad, tbl, out, saved,
+                          saved_table : mr_rule_table],
   print("--- rubi_verbose: false / true / matches ---"),
   h7 : %mr_defrule("t", 70, p_xm, t_true, t_7),
   hdecl : %mr_defrule("t", 71, p_xm, t_true, t_false),
@@ -546,18 +554,36 @@ test_verbose() := block([h7, hdecl, hmis, hcf, tbl, out, saved],
   check_bool("verbose true: the declined rule", t_has(out, "t r71 declined")),
   check_bool("verbose true: the misfire", t_has(out, "t r72 misfire")),
   check_bool("verbose true: the rejected cond", t_has(out, "t r73 cond not accepted")),
+  /* matches: nothing prints; the top-level call answers [answer, steps],
+     each step [rule, 'integrate(f, x), rhs, [child steps]] */
   rubi_verbose : 'matches,
-  out : t_capture(lambda([], %mr_dispatch_tree(x^3, x, tbl, 1))),
-  check_bool("verbose matches: the fired rule", t_has(out, "t r70 fired")),
-  check_bool("verbose matches: no declined / misfire / cond lines",
-             not t_has(out, "r71") and not t_has(out, "r72") and not t_has(out, "r73")),
-  check("verbose matches: the answer is unchanged",
+  check("verbose matches: prints nothing",
+        t_capture(lambda([], %mr_dispatch_tree(x^3, x, tbl, 1))), ""),
+  check("verbose matches: the dispatcher's own answer is unchanged",
         %mr_dispatch_tree(x^3, x, tbl, 1), 7),
+  mr_rule_table : tbl,
+  check("verbose matches: rubi answers [answer, steps], only the fired rule",
+        rubi(x^3, x), [7, [["t r70", 'integrate(x^3, x), 7, []]]]),
   rubi_verbose : "matches",
-  out : t_capture(lambda([], %mr_dispatch_tree(x^3, x, tbl, 1))),
-  check_bool("verbose \"matches\" (a string) reads the same",
-             t_has(out, "t r70 fired") and not t_has(out, "r71")),
+  check("verbose \"matches\" (a string) reads the same",
+        rubi(x^3, x), [7, [["t r70", 'integrate(x^3, x), 7, []]]]),
+  /* nested: the sub-integral is inert in its parent's rhs and its own step
+     is the parent's child; the step inside a replacement that then
+     declines (r76) is dropped */
+  rubi_verbose : 'matches,
+  hout : %mr_defrule("t", 74, p_xm, t_m3, t_nest),
+  hin : %mr_defrule("t", 75, p_xm, t_m2, t_7),
+  hbad : %mr_defrule("t", 76, p_xm, t_m3, t_nest_decl),
+  mr_rule_table : [hin, hbad, hout],
+  check("verbose matches: nested steps, outermost first",
+        rubi(x^3, x),
+        [8, [["t r74", 'integrate(x^3, x), 'integrate(x^2, x) + 1, [["t r75", 'integrate(x^2, x), 7, []]]]]]),
+  check("verbose matches: a nested call answers as ever (no steps list)",
+        block([depth_level : 1], rubi(x^3, x)), 8),
+  rubi_verbose : false,
+  check("verbose false: rubi answers the plain answer", rubi(x^3, x), 8),
   rubi_verbose : saved,
+  mr_rule_table : saved_table,
   true)$
 
 test_records()$

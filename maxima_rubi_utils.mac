@@ -305,7 +305,16 @@ depth_level : 0$
     else mr_unintegrable(%mr_top_f, x)
   ) else %mr_top_ans)$
 
-mr_top(%mr_top_f, x, %mr_top_fb) := %mr_top_body(%mr_top_f, x, %mr_top_fb)$
+/* Under rubi_verbose : matches the top-level call (depth 0: rubi,
+   rubi_fallback) answers [answer, steps], steps the list of the fired
+   rules' nodes [rule, 'integrate(f, x), rhs, [child steps]], outermost first
+   (maxima_rubi_dispatch.lisp %mr_take_steps). Nested calls answer as ever. */
+mr_top(%mr_top_f, x, %mr_top_fb) :=
+  if depth_level = 0 and %mr_verbose_matches() then block([%mr_top_ans],
+    %mr_take_steps(),
+    %mr_top_ans : %mr_top_body(%mr_top_f, x, %mr_top_fb),
+    [%mr_top_ans, %mr_take_steps()])
+  else %mr_top_body(%mr_top_f, x, %mr_top_fb)$
 
 /* Nested sub-integral entry: every generated replacement calls mr_int by
  * name. What a nested call with no route (no rule, the seen test, the
@@ -318,7 +327,14 @@ mr_top(%mr_top_f, x, %mr_top_fb) := %mr_top_body(%mr_top_f, x, %mr_top_fb)$
  * ratsimp seen comparison had declared a loop — the rules-only arm is
  * the new baseline, the fall-through arm is the like-for-like comparison
  * with P0/P5b. */
-mr_int(%mr_top_f, x) := mr_top(%mr_top_f, x, mr_nested_fallback)$
+/* %mr_trace_inert is true only while rubi_verbose : 'matches evaluates a
+ * replacement a second time for display (maxima_rubi_dispatch.lisp
+ * mr-step-rhs): the sub-integral stays the inert Int(f, x), so the trace
+ * shows the rule's right-hand side before any nested dispatch. The steps
+ * spell it as the noun 'integrate(f, x) (mr-step-record). */
+%mr_trace_inert : false$
+mr_int(%mr_top_f, x) := if %mr_trace_inert then funmake('Int, [%mr_top_f, x])
+  else mr_top(%mr_top_f, x, mr_nested_fallback)$
 
 /* Two-arg rubi is the rules-only entry (fast no-answer noun on a
  * 0-firing). The integrate fall-through is the separate explicit entry

@@ -99,7 +99,7 @@ residual it closes otherwise (`.scratch/rubi-rat-state-leak/issues/01`).
 rubi(f, x)                 /* the entry point: rules only */
 rubi_fallback(f, x, true)  /* the same, but fall through to integrate(f, x) */
 rubi_verbose : true$       /* print every rule outcome: fired, declined, misfires */
-rubi_verbose : 'matches$   /* print only the rules that fire */
+rubi_verbose : 'matches$   /* rubi answers [answer, steps]: the rules that fired */
 ```
 
 - `rubi(f, x)` returns an antiderivative, or the no-answer noun
@@ -114,8 +114,27 @@ rubi_verbose : 'matches$   /* print only the rules that fire */
   counterpart and stay nouns.
 - `rubi_verbose` is `false` by default: nothing is printed. With `true`, every
   rule tried prints its outcome, including the error message of a rule that
-  misfires. With `'matches` (or the string `"matches"`), only the rules that
-  fire are printed, i.e. the chain of rules that built the answer.
+  misfires. With `'matches` (or the string `"matches"`), nothing is printed:
+  `rubi` answers `[answer, steps]` instead, where `steps` lists the rules
+  that fired, i.e. the steps that built the answer. Each step is
+  `[rule, 'integrate(f, x), rhs, [child steps]]`. `rhs` is the rule's
+  right-hand side with its sub-integrals still the unevaluated noun
+  `'integrate(g, x)`, and each of those sub-integrals' own steps is a child:
+
+  ```
+  (%i1) rubi_verbose : 'matches$
+  (%i2) rubi(x^2/(1+x), x);
+  (%o2) [log(x+1)+x^2/2-x,
+         [["1_1_1_2 r12",'integrate(x^2/(x+1),x),'integrate(1/(x+1)+x-1,x),
+           [["1_4_1 r7",'integrate(1/(x+1)+x-1,x),log(x+1)+'integrate(x,x)-x,
+             [["1_1_1_1 r2",'integrate(x,x),x^2/2,[]]]]]]]]
+  ```
+
+  Steps inside a rule that later declines are dropped. `rhs` comes from
+  evaluating the rule's replacement a second time, for the trace only, and
+  it is `false` if that evaluation fails. Only the top-level call
+  (`rubi`, `rubi_fallback`) answers the pair. The sub-integrals a rule
+  dispatches still answer plain antiderivatives.
 
 Run switches, set at the prompt (the defaults are what the corpus records use):
 

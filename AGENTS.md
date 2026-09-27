@@ -284,7 +284,7 @@ substrate, `53dc578`: the six inert trig heads, +26 at the class-8 port,
 2026-09-25: user-function heads, Hurwitz `Zeta`, the formal-derivative
 noun as the curried `Derivative` tree, and their round trips; +4 on
 2026-09-26: `li[n](z)` with a symbolic order, conversion and round trip) and
-`Results: 128 passed, 0 failed`
+`Results: 131 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
@@ -298,7 +298,11 @@ inert-trig substrate, `e9642a6`: the rewrite records; +9 at ticket 15,
 port's Step 4, 2026-09-25: the 3-argument `%mr_rewrite` walk of a
 one-argument function; +10 at its Step 6: `%mr_rule_count`, and class-4
 BODY records — the inert-leak exemption and their give-up-last tiers;
-+9 on 2026-09-26: `rubi_verbose` false / true / `matches`, captured output).
++9 on 2026-09-26: `rubi_verbose` false / true / `matches`, captured output;
++3 on 2026-09-27: the `matches` step trace, outermost first, with the
+integrand and the inert right-hand side — the same day, the trace became
+the `[answer, steps]` answer of the top-level call, checks rewritten, count
+unchanged).
 
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the

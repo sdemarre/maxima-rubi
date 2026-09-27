@@ -288,6 +288,7 @@ variable symbols with numeric coefficients, in simplified form."
 ;; so their references compile as special).
 (defvar $rubi_verbose nil)
 (defvar $%mr_boolcheck t)
+(defvar $%mr_trace_inert nil)
 
 (defun mr-verbose-all-p ()
   "rubi_verbose reads every outcome: true (or any value other than false
@@ -307,9 +308,10 @@ conditions, faults. Only under rubi_verbose : true."
     (apply #'mtell fmt args)))
 
 (defun mr-verbose-fired (fmt &rest args)
-  "Print a rule that fired: under rubi_verbose : true and : matches."
-  (when (or (mr-verbose-all-p) (mr-verbose-matches-p))
+  "Print a rule that fired: under rubi_verbose : true."
+  (when (mr-verbose-all-p)
     (apply #'mtell fmt args)))
+
 
 ;;; ------------------------------------------------------------------
 ;;; Rule records (spec 3.4): %mr_defrule(key, n, pattern, cond, repl)
@@ -321,6 +323,66 @@ conditions, faults. Only under rubi_verbose : true."
   key n pattern pattern-text cond repl giveup
   (tail nil)      ; set by %mr_mark_tail: a bare-u_ tail record (mr_load_all)
   (general nil))  ; set by %mr_mark_general: a general body record
+
+;;; The step trace of rubi_verbose : matches (user requests 2026-09-27).
+;;; A replacement dispatches its sub-integrals itself (mr_int), so a step
+;;; recorded when its rule fires would come out innermost-first. Instead
+;;; each step collects the steps of its own replacement in a frame and
+;;; becomes one node [rule, 'integrate(f, x), rhs, [child steps]] of its parent's
+;;; frame only once it has fired; the top-level steps land in *mr-step-root*,
+;;; which mr_top hands back with the answer (%mr_take_steps). The steps of a
+;;; replacement that then declines or misfires are dropped with its frame:
+;;; they are not part of the answer.
+
+(defvar *mr-step-frame* nil
+  "The list cell collecting the current replacement's step nodes (newest
+first), or nil at the top level.")
+
+(defvar *mr-step-root* nil
+  "The top-level step nodes (newest first) since the last %mr_take_steps.")
+
+(defmfun |$%MR_VERBOSE_MATCHES| ()
+  "%mr_verbose_matches(): true under rubi_verbose : matches."
+  (if (mr-verbose-matches-p) t nil))
+
+(defmfun |$%MR_TAKE_STEPS| ()
+  "%mr_take_steps(): the top-level step nodes recorded since the last call,
+oldest first, as a Maxima list; clears them."
+  (prog1 (cons '(mlist simp) (reverse *mr-step-root*))
+    (setf *mr-step-root* nil)))
+
+(defun mr-step-rhs (rule mm x)
+  "RULE's replacement evaluated with mr_int answering the inert Int(f, x)
+(%mr_trace_inert): the right-hand side before any nested dispatch. A second
+evaluation, for the trace only; when it fails the step's rhs is false, and
+that is not a misfire."
+  (multiple-value-bind (r ok)
+      (let (($%mr_trace_inert t)) (mr-call (mr-rule-repl rule) mm x))
+    (if ok r nil)))
+
+(defun mr-int->integrate (e)
+  "E with every inert Int(f, x) of the trace pass renamed the integrate
+noun (a CRE form is left as it is)."
+  (cond ((atom e) e)
+        ((eq (caar e) 'mrat) e)
+        ((eq (caar e) '|$Int|)
+         (cons (list '%integrate 'simp) (mapcar #'mr-int->integrate (cdr e))))
+        (t (cons (car e) (mapcar #'mr-int->integrate (cdr e))))))
+
+(defun mr-step-record (rule f x rhs children)
+  "Record one fired step, the node [rule, 'integrate(f, x), rhs, CHILDREN]
+(its replacement's step nodes, oldest first), in the enclosing frame. The
+inert pass keeps Int(f, x) (a utility testing freeof('integrate, u) must
+read it as before); the node spells it as the integrate noun (user request
+2026-09-27)."
+  (let ((node (list '(mlist simp)
+                    (format nil "~A r~A" (mr-rule-key rule) (mr-rule-n rule))
+                    (list '(%integrate simp) f x)
+                    (mr-int->integrate rhs)
+                    (cons '(mlist simp) children))))
+    (if *mr-step-frame*
+        (push node (car *mr-step-frame*))
+        (push node *mr-step-root*))))
 
 (defun mr-class4-rule-p (rule)
   "True when RULE is a class-4 record (its key starts \"4_\")."
@@ -546,7 +608,13 @@ decline or misfire)."
         (key (mr-rule-key rule))
         (n (mr-rule-n rule)))
     (when mm
-      (multiple-value-bind (r ok) (mr-call (mr-rule-repl rule) mm x)
+      (multiple-value-bind (r ok rhs children)
+          (if (mr-verbose-matches-p)
+              (let ((rhs (mr-step-rhs rule mm x))
+                    (*mr-step-frame* (list nil)))
+                (multiple-value-bind (r ok) (mr-call (mr-rule-repl rule) mm x)
+                  (values r ok rhs (reverse (car *mr-step-frame*)))))
+              (mr-call (mr-rule-repl rule) mm x))
         (cond ((not ok)
                (mr-verbose "rubi: rule ~A r~A misfire (repl error) on ~M with ~M~%" key n f mm) nil)
               ((null r)
@@ -557,7 +625,9 @@ decline or misfire)."
                     (mr-carries-inert-p r) (mr-carries-inert-p f))
                (mr-verbose "rubi: rule ~A r~A misfire (inert head leaked) on ~M with ~M~%" key n f mm) nil)
               (t
-               (mr-verbose-fired "rubi: rule ~A r~A fired on ~M with ~M~%" key n f mm) r))))))
+               (mr-verbose-fired "rubi: rule ~A r~A fired on ~M with ~M~%" key n f mm)
+               (when (mr-verbose-matches-p) (mr-step-record rule f x rhs children))
+               r))))))
 
 (defmacro with-mr-switches (&body body)
   `(let ((mr-match:*flat-wide* (not (null $mr_flat_wide)))
