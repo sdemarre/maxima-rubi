@@ -1,0 +1,89 @@
+base: test/corpus_class4.out (22472 entries)
+new:  test/corpus_class4.sumfirst.out (22472 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS  19948
+PASS->FAIL      7
+FAIL->PASS     42
+FAIL->FAIL   2475
+
+=== class transitions (changed only) ===
+   23  timeout -> verified
+   18  contains-noun -> verified
+    6  verified -> timeout
+    3  timeout -> unverified
+    1  contains-noun -> expected
+    1  timeout -> contains-noun
+    1  expected -> timeout
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     1  4 Trig functions/4.1 Sine/4.1.1.3 (g tan)^p (a+b sin)^m.mac
+    0     1  4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac
+    0    12  4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac
+    0     1  4 Trig functions/4.1 Sine/4.1.7 (d trig)^m (a+b (c sin)^n)^p.mac
+    0     3  4 Trig functions/4.2 Cosine/4.2.3.1 (a+b cos)^m (c+d cos)^n (A+B cos).mac
+    4     7  4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac
+    0     1  4 Trig functions/4.3 Tangent/4.3.1.2 (d sec)^m (a+b tan)^n.mac
+    0     1  4 Trig functions/4.3 Tangent/4.3.1.3 (d sin)^m (a+b tan)^n.mac
+    1     0  4 Trig functions/4.3 Tangent/4.3.2.1 (a+b tan)^m (c+d tan)^n.mac
+    1     2  4 Trig functions/4.3 Tangent/4.3.3.1 (a+b tan)^m (c+d tan)^n (A+B tan).mac
+    0     3  4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac
+    0     2  4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac
+    0     2  4 Trig functions/4.5 Secant/4.5.2.1 (a+b sec)^m (c+d sec)^n.mac
+    1     1  4 Trig functions/4.5 Secant/4.5.3.1 (a+b sec)^m (d sec)^n (A+B sec).mac
+    0     1  4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac
+    0     4  4 Trig functions/4.5 Secant/4.5.7 (d trig)^m (a+b (c sec)^n)^p.mac
+
+=== PASS->FAIL (7) ===
+  verified      -> timeout       t=29.9s -> t=30.0s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e972
+  verified      -> timeout       t=29.4s -> t=30.0s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e1091
+  verified      -> timeout       t=28.9s -> t=30.0s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e1095
+  verified      -> timeout       t=29.5s -> t=30.1s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e1124
+  verified      -> timeout       t=29.7s -> t=30.0s 4 Trig functions/4.3 Tangent/4.3.2.1 (a+b tan)^m (c+d tan)^n.mac e833
+  expected      -> timeout       t=29.5s -> t=30.1s 4 Trig functions/4.3 Tangent/4.3.3.1 (a+b tan)^m (c+d tan)^n (A+B tan).mac e705
+  verified      -> timeout       t=29.9s -> t=30.1s 4 Trig functions/4.5 Secant/4.5.3.1 (a+b sec)^m (d sec)^n (A+B sec).mac e441
+
+=== FAIL->PASS (42) ===
+  contains-noun -> verified      t=0.7s -> t=0.2s 4 Trig functions/4.1 Sine/4.1.1.3 (g tan)^p (a+b sin)^m.mac e152
+  timeout       -> verified      t=30.1s -> t=29.5s 4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e45
+  contains-noun -> verified      t=1.9s -> t=1.8s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e536
+  contains-noun -> verified      t=1.4s -> t=1.0s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e547
+  contains-noun -> verified      t=1.6s -> t=1.3s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e548
+  timeout       -> verified      t=30.1s -> t=30.0s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1150
+  timeout       -> verified      t=30.1s -> t=30.0s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1158
+  timeout       -> verified      t=30.1s -> t=28.6s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1165
+  timeout       -> verified      t=30.1s -> t=29.6s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1166
+  timeout       -> verified      t=30.1s -> t=29.3s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1189
+  timeout       -> verified      t=30.1s -> t=29.9s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1272
+  timeout       -> verified      t=30.1s -> t=29.0s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1381
+  contains-noun -> verified      t=3.4s -> t=2.8s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1450
+  contains-noun -> verified      t=3.9s -> t=3.3s 4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1456
+  contains-noun -> expected      t=1.6s -> t=1.4s 4 Trig functions/4.1 Sine/4.1.7 (d trig)^m (a+b (c sin)^n)^p.mac e457
+  timeout       -> verified      t=30.1s -> t=29.7s 4 Trig functions/4.2 Cosine/4.2.3.1 (a+b cos)^m (c+d cos)^n (A+B cos).mac e381
+  timeout       -> verified      t=30.1s -> t=29.4s 4 Trig functions/4.2 Cosine/4.2.3.1 (a+b cos)^m (c+d cos)^n (A+B cos).mac e409
+  timeout       -> verified      t=30.0s -> t=29.1s 4 Trig functions/4.2 Cosine/4.2.3.1 (a+b cos)^m (c+d cos)^n (A+B cos).mac e431
+  timeout       -> verified      t=30.0s -> t=29.3s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e712
+  timeout       -> verified      t=30.0s -> t=29.4s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e721
+  timeout       -> verified      t=30.1s -> t=30.0s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e742
+  timeout       -> verified      t=30.0s -> t=28.9s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e1052
+  timeout       -> verified      t=30.1s -> t=30.0s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e1089
+  timeout       -> verified      t=30.1s -> t=29.6s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e1123
+  timeout       -> verified      t=30.0s -> t=29.4s 4 Trig functions/4.2 Cosine/4.2.4.2 (a+b cos)^m (c+d cos)^n (A+B cos+C cos^2).mac e1499
+  timeout       -> verified      t=30.0s -> t=0.6s 4 Trig functions/4.3 Tangent/4.3.1.2 (d sec)^m (a+b tan)^n.mac e532
+  contains-noun -> verified      t=0.8s -> t=0.6s 4 Trig functions/4.3 Tangent/4.3.1.3 (d sin)^m (a+b tan)^n.mac e27
+  timeout       -> verified      t=30.1s -> t=29.6s 4 Trig functions/4.3 Tangent/4.3.3.1 (a+b tan)^m (c+d tan)^n (A+B tan).mac e602
+  timeout       -> verified      t=30.0s -> t=29.5s 4 Trig functions/4.3 Tangent/4.3.3.1 (a+b tan)^m (c+d tan)^n (A+B tan).mac e604
+  contains-noun -> verified      t=0.7s -> t=0.4s 4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac e31
+  contains-noun -> verified      t=0.8s -> t=0.4s 4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac e41
+  contains-noun -> verified      t=3.8s -> t=0.6s 4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac e52
+  contains-noun -> verified      t=0.5s -> t=0.2s 4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e176
+  contains-noun -> verified      t=5.5s -> t=4.7s 4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e183
+  contains-noun -> verified      t=4.0s -> t=3.4s 4 Trig functions/4.5 Secant/4.5.2.1 (a+b sec)^m (c+d sec)^n.mac e21
+  contains-noun -> verified      t=3.5s -> t=3.4s 4 Trig functions/4.5 Secant/4.5.2.1 (a+b sec)^m (c+d sec)^n.mac e22
+  timeout       -> verified      t=30.1s -> t=29.8s 4 Trig functions/4.5 Secant/4.5.3.1 (a+b sec)^m (d sec)^n (A+B sec).mac e454
+  timeout       -> verified      t=30.1s -> t=28.7s 4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e1326
+  contains-noun -> verified      t=0.8s -> t=0.4s 4 Trig functions/4.5 Secant/4.5.7 (d trig)^m (a+b (c sec)^n)^p.mac e3
+  contains-noun -> verified      t=0.8s -> t=0.4s 4 Trig functions/4.5 Secant/4.5.7 (d trig)^m (a+b (c sec)^n)^p.mac e13
+  contains-noun -> verified      t=3.1s -> t=0.2s 4 Trig functions/4.5 Secant/4.5.7 (d trig)^m (a+b (c sec)^n)^p.mac e17
+  contains-noun -> verified      t=5.3s -> t=0.6s 4 Trig functions/4.5 Secant/4.5.7 (d trig)^m (a+b (c sec)^n)^p.mac e25
