@@ -1,0 +1,6 @@
+display2d:false$
+load("maxima_rubi.mac")$ mr_load_all()$
+if sumfirst then mr_rule_table : cons(_mr_rule_9_1_r13, delete(_mr_rule_9_1_r13, mr_rule_table))$
+rubi_verbose : 'matches$
+for f in [(e^2*x^2+2*d*e*x+d^2)/x^2, (e*x+d)^2/x^2, a^2/x+2*a*b+b^2*x, ((e*x+d)^2*(b*log(c*x^n)+a))/x^2] do block([r : rubi(f, x)],
+  print("F:", f), print("  A:", r[1]), print("  S:", map(lambda([s], s[1]), r[2])))$

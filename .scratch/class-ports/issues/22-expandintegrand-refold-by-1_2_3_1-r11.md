@@ -58,3 +58,46 @@ answers. This covers every cycle of this shape, whichever rules form it, but doe
 refold itself. It changes dispatcher semantics: a run switch (default on, the `mr_giveup_last`
 pattern) and a corpus A/B before acceptance. User decision 2026-09-27: recorded here, not worked on
 now.
+
+## Answer to the first question: the sum split comes first in Rubi (2026-09-27)
+
+- **Rubi splits the sum before any trinomial rule sees it.** The corpus gives `(a+b*x)^2/x` and
+  `(a+b*x)^2/x^2` (1.1.1.2 lines 85/86) **2 steps** each: the ExpandIntegrand rule, then the sum split
+  (IntSum integrates each term directly). A refold by 1.2.3.1 r1/r11 would add at least two more
+  steps, and without a seen test Rubi would loop P -> S -> Q -> P.
+- **Our table has the split late.** It is present twice: `1_4_1` r7/r8 (after all of 1.2.3.x) and the
+  legacy `9_1` r13 (the last list in the class-1 table). The 2018-era `Rubi.m` loaded 9.1 FIRST
+  (ticket 09), which puts its sum split ahead of 1.2.3.1.
+- **Measured** (`probes/class-ports/ticket22/01-sum-split-first.{sh,mac,out}`, build
+  `branch_5_50_base_84_g4204fb669`): with `9_1` r13 moved to the head of `mr_rule_table`,
+  `(e*x+d)^2/x^2` and the user's `((e*x+d)^2*(b*log(c*x^n)+a))/x^2` answer (they were
+  `'unintegrable`), and `a^2/x+2ab+b^2x` answers by the split, `a^2*log(x)+b^2*x^2/2+2*a*b*x`, the
+  corpus form, where it was answered by the r11 refold before. Q still answers as before.
+- **Tension with ticket 07.** Ticket 07 moves the bare-`u_` records, this split among them, to the
+  TAIL, arguing that Mathematica orders DownValues by specificity. For the sum split, the corpus step
+  counts point the other way. So ticket 07's premise needs checking against step counts before the
+  move is made.
+
+The workaround above is then probably unnecessary for this shape. The fix is a table-order change,
+tickets 09/07, to be A/B'd on the corpus (classes 1, 2, 3, 6 at least) with every transition
+attributed. It is not done here.
+
+## Corpus A/B of the sum split first (2026-09-27)
+
+This is branch `ticket22-sum-split-first` (worktree `.worktrees/ticket22`). It moves `9_1` r13 to the
+head of `mr_rule_table` and runs all eight classes (`test/ticket22_measure.sh`). Every transition
+against the promoted records was re-run on the variant core and on master's core at the same load.
+Credited to the order:
+
+- **Gains:** 191 (1: 90, 2: 1, 3: 12, 4: 20, 5: 14, 6: 28, 7: 26, 8: 0). Of these, 137 were
+  contains-noun, 38 timeout and 15 deferred before, and now verify; 1 now matches the expected answer.
+- **Losses:** 1, 1.1.1.3 e945 `(e*x)^m*(a-b*x)^(2+n)*(a+b*x)^n`, which now answers a noun where it
+  matched the expected answer. The first divergence is a nested sum that 9_3 r9 used to factor into
+  `F*(a+b*x)^2`. With the split first, it reaches the give-up 9_3 r67 instead. This looks like the
+  "cycle entered at the wrong point" shape above; the cut is not traced yet.
+- **Not the order:** the other 38 transitions are drift from the commits after the promoted records
+  (29, all gains) or noise (9, all 30 s-cap losses that recovered on both cores).
+
+Not merged: moving one named record is a special case in `mr_load_all`. The general form is ticket
+09 (the legacy 9.1 file first), which needs its own A/B. See
+`.scratch/generator-special-cases/issues/01`. User decision 2026-09-27: not worked on now.
