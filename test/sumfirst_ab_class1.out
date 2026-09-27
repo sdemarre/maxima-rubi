@@ -1,0 +1,131 @@
+base: test/corpus_class1.out (25697 entries)
+new:  test/corpus_class1.sumfirst.out (25697 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS  23200
+PASS->FAIL      3
+FAIL->PASS     92
+FAIL->FAIL   2402
+
+=== class transitions (changed only) ===
+   39  contains-noun -> verified
+   38  timeout -> verified
+   15  deferred -> verified
+    1  expected -> contains-noun
+    1  expected -> timeout
+    1  verified -> timeout
+    1  contains-noun -> timeout
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0    11  1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac
+    1     5  1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac
+    1     0  1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.4 (a+b x)^m (c+d x)^n (e+f x)^p (g+h x)^q.mac
+    0     4  1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.2 (c x)^m (a+b x^2)^p.mac
+    0     6  1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.4 (e x)^m (a+b x^2)^p (c+d x^2)^q.mac
+    0    19  1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac
+    0     5  1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac
+    0     1  1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.2 (c x)^m (a x^j+b x^n)^p.mac
+    0     5  1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.3 (e x)^m (a x^j+b x^k)^p (c+d x^n)^q.mac
+    1    14  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac
+    0    18  1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac
+    0     4  1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac
+
+=== PASS->FAIL (3) ===
+  expected      -> contains-noun t=8.9s -> t=2.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e945
+  expected      -> timeout       t=30.0s -> t=30.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.4 (a+b x)^m (c+d x)^n (e+f x)^p (g+h x)^q.mac e122
+  verified      -> timeout       t=29.3s -> t=30.1s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e1903
+
+=== FAIL->PASS (92) ===
+  deferred      -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e56
+  deferred      -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e57
+  timeout       -> verified      t=30.1s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e1259
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e1274
+  timeout       -> verified      t=30.1s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e1276
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e1278
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e1300
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e1302
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e1304
+  timeout       -> verified      t=30.1s -> t=0.3s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e1308
+  deferred      -> verified      t=0.3s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e1907
+  deferred      -> verified      t=1.3s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e54
+  deferred      -> verified      t=1.0s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e55
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e65
+  timeout       -> verified      t=30.0s -> t=0.3s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e1040
+  timeout       -> verified      t=30.1s -> t=0.7s 1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e1065
+  contains-noun -> verified      t=0.6s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.2 (c x)^m (a+b x^2)^p.mac e19
+  contains-noun -> verified      t=3.4s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.2 (c x)^m (a+b x^2)^p.mac e20
+  contains-noun -> verified      t=0.6s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.2 (c x)^m (a+b x^2)^p.mac e21
+  contains-noun -> verified      t=3.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.2 (c x)^m (a+b x^2)^p.mac e22
+  contains-noun -> verified      t=1.2s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.4 (e x)^m (a+b x^2)^p (c+d x^2)^q.mac e4
+  deferred      -> verified      t=0.6s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.4 (e x)^m (a+b x^2)^p (c+d x^2)^q.mac e5
+  contains-noun -> verified      t=1.0s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.4 (e x)^m (a+b x^2)^p (c+d x^2)^q.mac e6
+  deferred      -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.4 (e x)^m (a+b x^2)^p (c+d x^2)^q.mac e7
+  contains-noun -> verified      t=0.6s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.4 (e x)^m (a+b x^2)^p (c+d x^2)^q.mac e14
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.4 (e x)^m (a+b x^2)^p (c+d x^2)^q.mac e146
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e223
+  contains-noun -> verified      t=3.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e225
+  contains-noun -> verified      t=0.5s -> t=0.2s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e226
+  contains-noun -> verified      t=3.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e228
+  contains-noun -> verified      t=0.6s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e625
+  contains-noun -> verified      t=3.7s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e628
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e629
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e1438
+  deferred      -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e1561
+  deferred      -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e1562
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e1818
+  contains-noun -> verified      t=3.4s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e1819
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e1820
+  contains-noun -> verified      t=3.4s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e1821
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2123
+  contains-noun -> verified      t=0.4s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2292
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2455
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2525
+  contains-noun -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2526
+  contains-noun -> verified      t=1.3s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e4
+  deferred      -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e6
+  contains-noun -> verified      t=1.0s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e7
+  deferred      -> verified      t=0.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e9
+  contains-noun -> verified      t=0.6s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e14
+  contains-noun -> verified      t=3.5s -> t=0.1s 1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.2 (c x)^m (a x^j+b x^n)^p.mac e344
+  contains-noun -> verified      t=1.6s -> t=0.4s 1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.3 (e x)^m (a x^j+b x^k)^p (c+d x^n)^q.mac e6
+  deferred      -> verified      t=1.0s -> t=0.4s 1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.3 (e x)^m (a x^j+b x^k)^p (c+d x^n)^q.mac e7
+  contains-noun -> verified      t=1.2s -> t=0.4s 1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.3 (e x)^m (a x^j+b x^k)^p (c+d x^n)^q.mac e8
+  deferred      -> verified      t=0.8s -> t=0.4s 1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.3 (e x)^m (a x^j+b x^k)^p (c+d x^n)^q.mac e9
+  contains-noun -> verified      t=1.0s -> t=0.6s 1 Algebraic functions/1.1 Binomial products/1.1.4 Improper/1.1.4.3 (e x)^m (a x^j+b x^k)^p (c+d x^n)^q.mac e17
+  timeout       -> verified      t=30.0s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e473
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e474
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e488
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e490
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e495
+  timeout       -> verified      t=30.1s -> t=0.5s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e1490
+  timeout       -> verified      t=30.0s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e1555
+  timeout       -> verified      t=30.1s -> t=0.3s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e1570
+  timeout       -> verified      t=30.0s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e1785
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e1852
+  timeout       -> verified      t=30.1s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e1854
+  timeout       -> verified      t=30.1s -> t=0.3s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2131
+  timeout       -> verified      t=30.1s -> t=0.4s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2147
+  timeout       -> verified      t=30.1s -> t=0.6s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2151
+  deferred      -> verified      t=1.2s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e7
+  deferred      -> verified      t=1.0s -> t=0.2s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e8
+  contains-noun -> verified      t=1.8s -> t=0.4s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e658
+  contains-noun -> verified      t=1.4s -> t=0.3s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e659
+  timeout       -> verified      t=30.1s -> t=29.1s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1212
+  timeout       -> verified      t=30.1s -> t=0.3s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1896
+  timeout       -> verified      t=30.0s -> t=0.4s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1905
+  timeout       -> verified      t=30.1s -> t=0.5s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1907
+  timeout       -> verified      t=30.1s -> t=0.5s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1916
+  timeout       -> verified      t=30.0s -> t=0.4s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1918
+  timeout       -> verified      t=30.1s -> t=0.6s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1968
+  timeout       -> verified      t=30.1s -> t=0.6s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1970
+  timeout       -> verified      t=30.0s -> t=0.4s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1972
+  timeout       -> verified      t=30.1s -> t=0.5s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1988
+  timeout       -> verified      t=30.0s -> t=0.6s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1990
+  timeout       -> verified      t=30.1s -> t=0.4s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1992
+  timeout       -> verified      t=30.1s -> t=0.5s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1998
+  timeout       -> verified      t=30.0s -> t=0.5s 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e2318
+  contains-noun -> verified      t=0.7s -> t=0.3s 1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e150
+  contains-noun -> verified      t=3.3s -> t=0.3s 1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e151
+  contains-noun -> verified      t=0.8s -> t=0.3s 1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e152
+  contains-noun -> verified      t=3.3s -> t=0.3s 1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e153

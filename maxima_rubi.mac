@@ -482,7 +482,12 @@ mr_load_all() := block([],
      record reaches neither the tail nor the exception list).
      mr_rule_table_body_handles / _tail_handles are exposed so the
      ordering is assertable rather than inspected by eye. */
-  mr_rule_table_body_handles : mr_rule_table,
+  /* ticket 22: the legacy 9.1 sum split (9_1 r13, Int[u_] /; SumQ[u])
+     first, as in the 2018-era Rubi.m, which loaded 9.1 before 1.1.1.1
+     (ticket 09); the corpus's step counts put the split before any
+     trinomial refold (probes/class-ports/ticket22/01-sum-split-first.out) */
+  mr_rule_table_body_handles : cons(_mr_rule_9_1_r13,
+                                    delete(_mr_rule_9_1_r13, mr_rule_table)),
   mr_rule_table_tail_handles : flatten([mr_rules_4_1_0_1_tail,
                                         mr_rules_4_7_5_tail,
                                         mr_rules_8_9_tail,
