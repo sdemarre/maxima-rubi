@@ -23,8 +23,12 @@ geteqR(mm, nm) := block([],
   if v = true then true else false)$
 
 /* Package noun forms (house rule 10 — distinct from the fall-through
- * integrate noun and from corpus-expected nouns). */
-mr_unintegrable(%mr_top_f, x) := 'unintegrable[%mr_top_f, x]$
+ * integrate noun and from corpus-expected nouns). The function-form noun
+ * 'unintegrable(f, x) (user decision 2026-09-27; before, the subscripted
+ * 'unintegrable[f, x], which a funmake(op(u), args(u)) rebuild turned into
+ * the function form, so an answer could carry both spellings). string(op),
+ * freeof, part(u, 2) and length read the two forms alike. */
+mr_unintegrable(%mr_top_f, x) := 'unintegrable(%mr_top_f, x)$
 
 /* Rubi's finite Sum, concretized (2026-08-25 divergence fix). Maxima
    evaluates function arguments eagerly, so the generator hands the
@@ -4090,7 +4094,7 @@ mr_use_gamma_flag : false$
 /* Rubi CalculusQ — head in the calculus list ($CalculusFunctions =
    {D, Integrate, Sum, Product, Int, Unintegrable, CannotIntegrate,
    Dif, Subst}). The package nouns stand in: the diff/integrate/
-   sum/product nouns, and the 'unintegrable[f, x] noun (the catch-all
+   sum/product nouns, and the 'unintegrable(f, x) noun (the catch-all
    marker, mr_unintegrable, this file's line 27); mr_int and %mr_subst
    are evaluated functions (no noun forms) but their names stay in the
    list for the stand-in mapping. Dif and CannotIntegrate have no
@@ -5273,7 +5277,7 @@ mr_use_gamma_flag : false$
    * Unintegrable AND CannotIntegrate -> the SAME package noun: the
      emitter maps both to the mr_unintegrable(f, x) call
      (generator/generate_rules.py:1393-1394) whose value is the
-     'unintegrable[f, x] node (this file's line 27); one
+     'unintegrable(f, x) node (this file's line 27); one
      freeof('unintegrable, u) covers both;
    * Integral -> NO package surface: the MA typeset integral form has
      no table row and no emitted noun (grep of the table: absent) —
@@ -5312,7 +5316,7 @@ mr_use_gamma_flag : false$
    (the call stays a noun), string(op(AppellF1(1, 2, 3, 4, x))) =
    "AppellF1". The FreeQ[u, x] arm is freeof(x, u), measured to see
    through every noun form the call sites produce (the integrate
-   fall-through noun, the diff noun, 'unintegrable[.] bracket nodes,
+   fall-through noun, the diff noun, 'unintegrable nodes,
    nested calls). MEASURED DIVERGENCE (recorded, task-4 report): the
    finite PRODUCT noun is a special internal object freeof() cannot
    see through — freeof(x, product(f(x), x, 1, n)) = true, and the
@@ -6684,7 +6688,7 @@ mr_use_gamma_flag : false$
 
 /* Rubi CalculusFreeQ[u,x] (IntegrationUtilityFunctions.m L338-344): u has
    no calculus function whose variable (part 2) is x. The CalculusQ list is
-   %mr_calculusQ's (the package nouns, 'unintegrable[f, x] included -- the
+   %mr_calculusQ's (the package nouns, 'unintegrable(f, x) included -- the
    answer a failed nested mr_int gives -- and the integrate noun of the
    fall-through). HeldFormQ (Hold, HoldForm, Defer, Pattern) has no port
    analogue: the port builds no held values (%mr_hold is the identity), so

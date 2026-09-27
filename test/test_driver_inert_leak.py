@@ -86,11 +86,11 @@ def main():
         print("PASS [no-new-class] KNOWN_CLASSES is the nine classes")
 
     cases = [
-        ("top-level-leak", "sin(x)^2", "'unintegrable[%mr_isin(x)^2, x]",
+        ("top-level-leak", "sin(x)^2", "'unintegrable(%mr_isin(x)^2, x)",
          "x/2 - sin(2*x)/4", "error", ["%mr_isin"]),
         ("interior-leak", "sin(x)^2", "x/2 - %mr_icos(2*x)/4",
          "x/2 - sin(2*x)/4", "error", ["%mr_icos"]),
-        ("unintegrable-expected", "f(x)", "'unintegrable[%mr_itan(x)*f(x), x]",
+        ("unintegrable-expected", "f(x)", "'unintegrable(%mr_itan(x)*f(x), x)",
          "Unintegrable[f(x), x]", "error", ["%mr_itan"]),
         ("control", "sin(x)", "-cos(x)", "-cos(x)", "verified", []),
     ]

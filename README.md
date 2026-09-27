@@ -103,7 +103,7 @@ rubi_verbose : 'matches$   /* rubi answers [answer, steps]: the rules that fired
 ```
 
 - `rubi(f, x)` returns an antiderivative, or the no-answer noun
-  `unintegrable[f, x]` when no rule applies. It never hands the integral to
+  `'unintegrable(f, x)` when no rule applies. It never hands the integral to
   Maxima's own `integrate`. `rubi_fallback(f, x, true)` does, at the top level;
   nested sub-integrals follow the switch `mr_nested_fallback` either way.
 - The answer can contain Rubi's own special functions in their Maxima

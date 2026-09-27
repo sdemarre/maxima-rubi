@@ -246,7 +246,7 @@ test_load_and_api() := block([r, saved_table],
   check_bool("no-fallback noun detect",
              is(atom(r) = false) and is(string(op(r)) = "unintegrable")),
   /* noun forms are distinct from the fall-through noun */
-  check_bool("mr_unintegrable is a noun", is(mr_unintegrable(f, x) = 'unintegrable[f, x])),
+  check_bool("mr_unintegrable is a noun", is(mr_unintegrable(f, x) = 'unintegrable(f, x))),
   /* empty table -> no rule can fire -> no-answer noun (default off).
      Save/restore the table so a later test (Task 3+) is not run against
      a wiped table (measured landmine 2026-08-20). */
@@ -794,10 +794,10 @@ test_structural_predicates() := block([],
     saved_table : mr_rule_table,
     mr_rule_table : flatten([mr_rule_table, mr_rules_3_5]),
     ans : rubi(x*log(x)*sqrt(4 + x^2), x),
-    /* the package no-answer noun is the listcons 'unintegrable[f, x]
+    /* the package no-answer noun is 'unintegrable(f, x)
        (mr_unintegrable, utils :27): measured 2026-09-01,
        is(op(noun) = 'unintegrable) is FALSE on it (op() on the
-       listcons is not the bare symbol under is()), so the
+       noun is not the bare symbol under is()), so the
        discriminant is string(op) — this disjunct was added by the
        B1 follow-up after the b2 cycle measured the gap */
     check_not("b1 e275 not a noun",
@@ -860,9 +860,9 @@ test_structural_predicates() := block([],
     %mr_load_sibling("rules/class3/3_2_2.mac", 'mr_witness_3_2_2),
     saved_table : mr_rule_table,
     mr_rule_table : flatten([mr_rule_table, mr_rules_3_2_2]),
-    /* the package no-answer noun is the listcons 'unintegrable[f, x]
+    /* the package no-answer noun is 'unintegrable(f, x)
        (mr_unintegrable, utils :27): measured 2026-09-01, is(op(noun) =
-       'unintegrable) is FALSE on it (op() on a listcons is not the
+       'unintegrable) is FALSE on it (op() of a noun is not the
        bare symbol under is()), so the discriminant is string(op);
        the b1 non-noun checks gained the same disjunct in the B1
        follow-up. diff of the noun evaluates to 0 (measured on all
@@ -957,7 +957,7 @@ test_structural_predicates() := block([],
     mr_rule_table : flatten([mr_rule_table, mr_rules_3_5]),
     f : log((a+x^n)/x^n)/x,
     ans : rubi(f, x),
-    /* the package no-answer noun is the listcons 'unintegrable[f, x]
+    /* the package no-answer noun is 'unintegrable(f, x)
        (mr_unintegrable, utils :27): is(op(noun) = 'unintegrable) is
        FALSE on it (measured 2026-09-01, b2 idiom) — the
        discriminant is string(op) */
@@ -2754,7 +2754,7 @@ test_class2_census() := block([saved_table],
      (a/b)^2 stores as a^2/b^2), so the .m's negative-exponent
      IntegerPowerQ case reaches the port through the "/" branch;
    * a NOUN's op string()s to the head name (string(op) of the
-     integrate fall-through noun is "integrate"; of 'unintegrable[.]
+     integrate fall-through noun is "integrate"; of 'unintegrable(.)
      "unintegrable"; of 'mr_int[.] "mr_int") and freeof(<symbol>, .)
      flags each of those head positions;
    * rat() is the Together stand-in (together is a noun in this
@@ -2811,7 +2811,7 @@ test_class3_cluster_a() := block([],
   check_bool("integralFreeQ quoted mr_int",
              is(%mr_integralFreeQ('mr_int[f(x), x]) = false)),
   check_bool("integralFreeQ unintegrable noun",
-             is(%mr_integralFreeQ('unintegrable[f(x), x]) = false)),
+             is(%mr_integralFreeQ('unintegrable(f(x), x)) = false)),
   check_bool("integralFreeQ mr_unintegrable value",
              is(%mr_integralFreeQ(mr_unintegrable(f(x), x)) = false)),
   check_bool("integralFreeQ answer natives free",
@@ -4039,7 +4039,7 @@ test_try_pure_tan_subst() := block([],
              _mr_cond_4_7_5_r22([_mr_4_7_5_r22_u = %mr_itan(x)^3], x)),
   check_bool("cfq: no calculus head", %mr_calculusFreeQ(a*x + sin(x), x)),
   check_not("cfq: the unintegrable noun in x",
-            %mr_calculusFreeQ(1 + 'unintegrable[f(x), x], x)),
+            %mr_calculusFreeQ(1 + 'unintegrable(f(x), x), x)),
   check_bool("cfq: an integrate noun in another variable",
              %mr_calculusFreeQ(1 + 'integrate(f(y), y), x)),
   check_not("cfq: a (partial) diff noun nested under exp",
@@ -5320,7 +5320,7 @@ test_class4_e2e() := block([mr_c4e_saved, mr_c4e_fb, mr_c4e_ok, mr_c4e_r, mr_c4e
                          %mr_rule_bindings(_mr_rule_4_7_7_r19, 2^x*sec(x + %pi/3), x)))),
     check("4.3.10 r24: MatchQ[f, f1_.*Complex[0, j_]] takes the hyperbolic branch",
           %mr_rule_apply(_mr_rule_4_3_10_r24, x*%mr_itan(%i*x)^2, x),
-          -'unintegrable[x*tanh(x)^2, x]),
+          -'unintegrable(x*tanh(x)^2, x)),
     mr_c4e_r : %mr_rule_apply(_mr_rule_4_7_5_r66, %mr_isin(x)^3*(1 - %mr_isin(x)^2), x),
     check_bool("4.7.5 r66 (TrigSimplify tail record): sin^3 (1 - sin^2)",
                mr_c4e_clean(mr_c4e_r)

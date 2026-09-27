@@ -875,7 +875,7 @@ def build_text(f_text, var_text, e_text, e_text2=None):
             "or is(string(op(mr_r)) = \"unintegrable\") "
             "then 1 else 0)")
     # Contains-noun sub-classification: an answer that CONTAINS Rubi's
-    # CannotIntegrate marker (port: the `unintegrable` subscript noun —
+    # CannotIntegrate marker (port: the `unintegrable` noun —
     # 1.1.1.4.m:47 and the sibling family catch-alls port it faithfully;
     # Rubi 4 itself returns the inert Int there, so the cascade result
     # legitimately carries it) or a native `integrate` noun somewhere in
