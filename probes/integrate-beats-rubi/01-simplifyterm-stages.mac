@@ -1,0 +1,17 @@
+/* integrate-beats-rubi issue 01: which ExpandCleanup stage multiplies a
+   partial fraction's linear-power denominator out.
+   Run: maxima --very-quiet -b probes/integrate-beats-rubi/01-simplifyterm-stages.mac */
+display2d:false$ linel:100000$ load("maxima_rubi.mac")$
+print("BUILD:", build_info()@version, build_info()@timestamp)$
+u : 1/((a+b*x)^2*(c+d*x)^3)$
+print("PARTFRAC:", string(partfrac(u, x)))$
+print("EXPANDINTEGRAND:", string(%mr_expandIntegrand(u, x)))$
+t : d^2/((a^2*d^2-2*a*b*c*d+b^2*c^2)*(d*x+c)^3)$
+s1 : %mr_simpCleanup(t, x)$ print("SIMPCLEANUP:", string(s1))$
+print("TOGETHER(t):", string(%mr_together(t)))$
+print("NORMALIZE(t):", string(%mr_normalizeIntegrand(t, x)))$
+print("SIMPLIFYTERM(t):", string(%mr_simplifyTerm(t, x)))$
+/* defect B: NormalizeIntegrand on 1/(k*(d*x+c)^n) */
+for n : 1 thru 8 do
+  print("NORMALIZE_KEEPS n=", n, " k/(d*x+c)^n:", is(%mr_normalizeIntegrand(k/(d*x+c)^n, x) = k/(d*x+c)^n),
+        " 1/(k*(d*x+c)^n):", is(%mr_normalizeIntegrand(1/(k*(d*x+c)^n), x) = 1/(k*(d*x+c)^n)))$

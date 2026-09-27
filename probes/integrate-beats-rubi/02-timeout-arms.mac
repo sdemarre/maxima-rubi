@@ -1,0 +1,8 @@
+/* integrate-beats-rubi issue 01: time one integrand; arm "stock" or "noSimplify"
+   (SimplifyTerm reduced to NormalizeIntegrand -- an EXPERIMENT, not a fix).
+   Driven by 02-timeout-arms.py. */
+display2d:false$ linel:100000$ load("maxima_rubi.mac")$ mr_load_all()$
+if arm = "noSimplify" then %mr_simplifyTerm(u, x) := %mr_normalizeIntegrand(u, x)$
+f : parse_string(fs)$ t0 : elapsed_run_time()$ r : rubi(f, x)$
+print("TIME:", elapsed_run_time()-t0, " NOUN:", not freeof(unintegrable, r), " LEN:", slength(string(r)))$
+print("CHECK:", ratsimp(diff(r, x) - f))$

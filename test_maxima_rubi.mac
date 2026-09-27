@@ -160,6 +160,7 @@ run_all_tests() := block([],
   test_values_trim(),
   test_subst_simp_switch(),
   test_gtq_real_reading(),
+  test_partial_fraction_structure(),
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
@@ -1991,10 +1992,13 @@ test_structural_predicates() := block([],
    check_bool("trinomialQ 1+x^2+x^4", %mr_trinomialQ(1 + x^2 + x^4, x)),
    check_bool("trinomialQ 3+2x^2+5x^4", %mr_trinomialQ(3 + 2*x^2 + 5*x^4, x)),
    check_bool("trinomialQ x^2+x^4 (a = 0)", %mr_trinomialQ(x^2 + x^4, x)),
-   /* the .m Drop chain leaves the x^(n+1) coefficient unchecked —
-      Rubi-faithful laxness, pinned */
-   check_bool("trinomialQ 1+x^2+x^3+x^4 (Rubi lax scan: x^3 unchecked)",
-              %mr_trinomialQ(1 + x^2 + x^3 + x^4, x)),
+   /* the .m Drop chain Drop[Drop[Drop[lst,{m}],1],-1] leaves every
+      interior non-middle coefficient, and each must be zero: x^3's is 1.
+      (Pinned TRUE as "Rubi-faithful laxness" until 2026-09-27; Drop[l, n]
+      drops the FIRST n elements -- IntegrationUtilityFunctions.m :1948 and
+      :4244 use it so -- .scratch/integrate-beats-rubi/issues/01, B2.) */
+   check_not("trinomialQ 1+x^2+x^3+x^4 (x^3 coefficient nonzero)",
+             %mr_trinomialQ(1 + x^2 + x^3 + x^4, x)),
    check_bool("trinomialQ 1+x^(1/2)+x (fractional, unit coefficients)",
               %mr_trinomialQ(1 + x^(1/2) + x, x)),
    check_bool("trinomialQ 1+1/x+1/x^2 (reciprocal trinomial)",
@@ -5764,6 +5768,73 @@ test_gtq_real_reading() := block([mr_gq_saved, mr_gq_ok],
           _mr_cond_1_1_2_1_r18([_mr_1_1_2_1_r18_a = a, _mr_1_1_2_1_r18_b = b], x), true),
     check("1_1_2_1 r18: Not[GtQ[a, 0]] declines a = 2",
           _mr_cond_1_1_2_1_r18([_mr_1_1_2_1_r18_a = 2, _mr_1_1_2_1_r18_b = b], x), false)),
+  true
+)$
+
+/* ---- partial fractions keep their linear powers --------------------------
+   .scratch/integrate-beats-rubi/issues/01: ExpandIntegrand's partial
+   fractions came back with every denominator multiplied out, so no rule saw
+   (c+d*x)^k and the class-1 rational entries timed out (1.1.1.2 e1360: 27 s
+   of rubi). Three defects, probes/integrate-beats-rubi/01:
+   B2 %mr_trinomial_parts scanned too few coefficients: Rubi's
+      Drop[Drop[Drop[lst,{m}],1],-1] leaves EVERY interior non-middle
+      coefficient, and all must be zero;
+   B1 %mr_normalizeIntegrand read a quotient node as one opaque factor
+      (Mathematica has no quotient: 1/(k*(c+d*x)^n) is Times[k^-1,
+      (c+d*x)^-n], each factor normalized on its own);
+   A  SimplifyTerm's Simplify/Together stand-ins (ratsimp/expand, rat)
+      canonicalised every term; Mathematica's Simplify never returns a
+      form more complex than its input. */
+test_partial_fraction_structure() := block([mr_pf_saved, mr_pf_ok, mr_pf_u, mr_pf_v, mr_pf_r],
+  print("--- partial fractions keep their linear powers ---"),
+  /* B2 */
+  check("trinomial_parts 1+x^2+x^3+x^4 (x^3 coefficient nonzero)",
+        %mr_trinomial_parts(1 + x^2 + x^3 + x^4, x), false),
+  check("trinomial_parts (d*x+c)^4 (five nonzero coefficients)",
+        %mr_trinomial_parts((d*x + c)^4, x), false),
+  check_not("trinomialQ k*(d*x+c)^4", %mr_trinomialQ(k*(d*x + c)^4, x)),
+  check_not("trinomialQ k*(d*x+c)^6", %mr_trinomialQ(k*(d*x + c)^6, x)),
+  check("trinomial_parts 3+2x^2+5x^4 still a trinomial",
+        %mr_trinomial_parts(3 + 2*x^2 + 5*x^4, x), [3, 2, 5, 2]),
+  check("trinomial_parts 1+x^3+x^6 (n = 3, interior zeros)",
+        %mr_trinomial_parts(1 + x^3 + x^6, x), [1, 1, 1, 3]),
+  /* B1 */
+  for n : 1 thru 8 do
+    check_bool(concat("normalizeIntegrand keeps 1/(k*(d*x+c)^", n, ")"),
+      is(%mr_normalizeIntegrand(1/(k*(d*x + c)^n), x) = 1/(k*(d*x + c)^n))),
+  check_bool("normalizeIntegrand keeps d/((a*d-b*c)*(d*x+c)^8)",
+    is(%mr_normalizeIntegrand(d/((a*d - b*c)*(d*x + c)^8), x)
+       = d/((a*d - b*c)*(d*x + c)^8))),
+  /* A */
+  check("simplifyTerm keeps d^2/((b*c-a*d)^2*(d*x+c)^3) as it is",
+        %mr_simplifyTerm(d^2/((a^2*d^2 - 2*a*b*c*d + b^2*c^2)*(d*x + c)^3), x),
+        d^2/((a^2*d^2 - 2*a*b*c*d + b^2*c^2)*(d*x + c)^3)),
+  check("simplifyTerm still cancels (x^2-1)/(x-1)",
+        %mr_simplifyTerm((x^2 - 1)/(x - 1), x), x + 1),
+  mr_pf_u : 1/((a + b*x)^2*(c + d*x)^3),
+  mr_pf_v : %mr_expandIntegrand(mr_pf_u, x),
+  check_bool("expandIntegrand 1/((a+b*x)^2*(c+d*x)^3) is a 5-term sum",
+    is(%mr_sumQ(mr_pf_v)) and is(length(mr_pf_v) = 5)),
+  check_bool("expandIntegrand: every term keeps a power of b*x+a or d*x+c",
+    every(lambda([t], not freeof(b*x + a, t) or not freeof(d*x + c, t)), args(mr_pf_v))),
+  check("expandIntegrand: the sum equals the integrand", ratsimp(mr_pf_v - mr_pf_u), 0),
+  /* end to end: the sum split first (9_1 r13, as in mr_load_all since
+     ticket 22), then the 1.1.1.1 + 1.1.1.2 sibling tables */
+  mr_pf_saved : mr_rule_table,
+  mr_pf_ok : errcatch(
+    %mr_load_sibling("rules/class1/1_1_1_1.mac", 'mr_witness_1_1_1_1),
+    %mr_load_sibling("rules/class1/1_1_1_2.mac", 'mr_witness_1_1_1_2),
+    %mr_load_sibling("rules/class1/9_1.mac", 'mr_witness_9_1),
+    true),
+  check_bool("partial fractions: rule files load", is(mr_pf_ok # [])),
+  if mr_pf_ok # [] then (
+    mr_rule_table : flatten([_mr_rule_9_1_r13, mr_rules_1_1_1_1, mr_rules_1_1_1_2]),
+    mr_pf_r : rubi(mr_pf_u, x),
+    check("1_1_1_2 r13: Int 1/((a+b*x)^2*(c+d*x)^3) verifies",
+          ratsimp(diff(mr_pf_r, x) - mr_pf_u), 0),
+    check_bool("1_1_1_2 r13: the answer carries log(b*x+a) and log(d*x+c)",
+          not freeof(log(b*x + a), mr_pf_r) and not freeof(log(d*x + c), mr_pf_r))),
+  mr_rule_table : mr_pf_saved,
   true
 )$
 
