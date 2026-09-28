@@ -153,3 +153,31 @@ Next, before any full run (user: improve the checker as far as possible first):
    verdict the new stages or the budget change;
 5. whether `rat-radcan` still earns its place behind `radcan` (no synthetic witness found that it
    closes and `radcan` does not).
+
+- 2026-09-28 (late): **the 13 remaining wrong answers** (`handoffs/2026-09-28-checker-wrong-answers.md`,
+  probe 05 regenerated on `d961e8e`). Per category:
+  - **2, 4.1.0 e304 e305 e309 e310 e314 e315 e320 (7): not wrong answers.** rubi's answers pass a
+    principal-branch finite difference. The checker's default-flag residual mis-evaluates complex
+    fractional powers, and no stage closes their 2F1 residuals. Parked (user decision: no
+    hypergeometric special case): `.scratch/corpus-harness/issues/07`, probe
+    `verify-stages/06`.
+  - **4, 1.2.2.2 e1000: table order.** The legacy 9.1 r3 (`EqQ[a, 0]`) accepts the unsimplified
+    zero constant but sits after 1_2_2_2 r17, which divides by it. With 9.1 first, rubi returns
+    the corpus answer (radcan-proved). Ticket `class-ports/issues/09` (comment); not moved: that
+    ticket's full-table A/B is the gate.
+  - **5, 2.3 e725: fixed** (`e5a9d89`). `%mr_fullSimplify` was `ratsimp`, which leaves
+    `2*log(2)/log(4)` unreduced; the answer's 2F1 parameters floated to 3+-eps and evaluated to
+    -1e15. Now `verified` (radcan). Class 2 A/B (965/965, same checker): 0 PASS->FAIL, 3
+    FAIL->PASS (e475, e487 -> expected; e725).
+  - **3, 7.2.4b e96 / 7.2.5 e50: fixed** (`4763cab`). An upstream typo in Rubi's 1.1.2.6
+    r13/r14, `f/e^2` for `f/g^2` (added in the 2023-12 release). New generator errata table
+    `RUBI_ERRATA`, undone by the P3 gate. Both now `verified` (radcan). An A/B over classes 5 and
+    7 plus 1.1.2.4-6 was running at the time of writing.
+  - **6, 4.7.7 e865: fixed** (`4c62ae1`). Rubi's 4.1.0.2 r18 leaves `b` out of FreeQ and out of
+    the RHS; `b` bound `sqrt(csc(x))` and was dropped. Erratum: `b` in FreeQ, `b^n` on the RHS.
+    Now `verified`, but numeric only (`numeric/timeout:rectform`); the answer is correct but
+    less tidy than the corpus's (its elliptic parts do not collapse). No class-4 A/B yet.
+  - **7, 4.1.1.2 e466: not a wrong answer.** The residual is 1e-47 at `fpprec: 50` and 1e-97 at
+    100, so float cancellation only. With the parameters substituted as exact rationals, the
+    plain-float residual is 5e-13, under the tolerance: **checker idea**, substitute rationals
+    (then float) instead of floats first. Not implemented.
