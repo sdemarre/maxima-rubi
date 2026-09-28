@@ -198,3 +198,22 @@ borderline entries that the faster code gets under the cap at 24 workers. The on
 e71 (`expected` 29.3 s -> `timeout` 30.0 s), passes on both cores at 12 workers, so it is noise at
 the cap, not a defect. Class 2 total cpu 1,203 s -> 819 s; median time of PASS entries >= 1 s
 halved.
+
+### 2026-09-28 — revised step 2 done: native geteqR, `259fc62`
+
+Differential gate (probe 04): 6,473,833 real calls, 0 mismatches (same internal object). Probe 01
+on the step-1 core, then on this one (`01-profile.step1.out` / `.step2.out`), plain cpu: e1170
+1.14 -> 0.69 s, e18 2.15 -> 1.49, e88 3.00 -> 1.89, e912 6.79 -> 5.25, e1328 11.9 -> 8.37, e1470
+8.90 -> 4.90 (the pre-step-1 figures were 3.19 / 5.52 / 8.44 / 21.1 / 30.2 / 18.8). On e88 the
+boolean check is now 14 ms (from 5.4 s) and the condition path 1.8 s of 2.2 s, spent in the
+predicates. The top rules are still the `u^m v^p w^q` family and 9_3 r8/r13, which is revised
+step 3.
+
+Full-corpus A/B, `test/geteqr_measure.sh`, against step 1's records
+`test/corpus_class<N>.boolnative.out`, transitions re-run on the step-1 and step-2 cores:
+PASS 63,397 -> 63,497 (+100). Class 1 +27 (30 F->P, 3 P->F), 4 +64 (65/1), 5 +3, 6 +1, 7 +1,
+8 +4, 2 and 3 unchanged. 43 F->P credited to the change at 12 workers, 61 drift. The four P->F
+(1.1.3.8 e584, 1.2.1.4 e765, 1.2.2.4 e224 `expected` at 28-29 s; 4.3.4.2 e121 `verified` at
+30.0 s) sit at the cap and pass on both cores at 12 workers: noise.
+
+Cumulative, steps 1+2 against the promoted baselines: 62,788 -> 63,497 PASS (+709).
