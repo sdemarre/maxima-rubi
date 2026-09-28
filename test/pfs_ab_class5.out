@@ -1,0 +1,55 @@
+base: test/corpus_class5.sumfirst.out (4585 entries)
+new:  test/corpus_class5.pfs.out (4585 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS   3766
+PASS->FAIL      2
+FAIL->PASS     20
+FAIL->FAIL    797
+
+=== class transitions (changed only) ===
+   11  contains-noun -> unverified
+   10  contains-noun -> verified
+    7  timeout -> verified
+    4  timeout -> contains-noun
+    3  contains-noun -> timeout
+    2  contains-noun -> expected
+    1  timeout -> expected
+    1  verified -> timeout
+    1  verified -> contains-noun
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     1  5 Inverse trig functions/5.1 Inverse sine/5.1.4b (f x)^m (d+e x^2)^p (a+b arcsin(c x))^n.mac
+    0     7  5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac
+    1     1  5 Inverse trig functions/5.3 Inverse tangent/5.3.3 (d+e x)^m (a+b arctan(c x^n))^p.mac
+    1     3  5 Inverse trig functions/5.3 Inverse tangent/5.3.4 u (a+b arctan(c x))^p.mac
+    0     1  5 Inverse trig functions/5.3 Inverse tangent/5.3.5 u (a+b arctan(c+d x))^p.mac
+    0     6  5 Inverse trig functions/5.3 Inverse tangent/5.3.6 Exponentials of inverse tangent.mac
+    0     1  5 Inverse trig functions/5.4 Inverse cotangent/5.4.1 Inverse cotangent functions.mac
+
+=== PASS->FAIL (2) ===
+  verified      -> timeout       t=2.8s -> t=30.1s 5 Inverse trig functions/5.3 Inverse tangent/5.3.3 (d+e x)^m (a+b arctan(c x^n))^p.mac e9
+  verified      -> contains-noun t=8.7s -> t=7.4s 5 Inverse trig functions/5.3 Inverse tangent/5.3.4 u (a+b arctan(c x))^p.mac e1270
+
+=== FAIL->PASS (20) ===
+  contains-noun -> verified      t=3.8s -> t=2.8s 5 Inverse trig functions/5.1 Inverse sine/5.1.4b (f x)^m (d+e x^2)^p (a+b arcsin(c x))^n.mac e47
+  contains-noun -> verified      t=1.4s -> t=3.6s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e22
+  contains-noun -> verified      t=0.8s -> t=2.1s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e23
+  contains-noun -> verified      t=6.1s -> t=5.3s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e101
+  timeout       -> verified      t=30.0s -> t=27.8s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e103
+  contains-noun -> expected      t=9.3s -> t=9.1s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e110
+  contains-noun -> expected      t=20.8s -> t=19.5s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e111
+  timeout       -> expected      t=30.1s -> t=28.8s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e112
+  timeout       -> verified      t=30.1s -> t=25.9s 5 Inverse trig functions/5.3 Inverse tangent/5.3.3 (d+e x)^m (a+b arctan(c x^n))^p.mac e24
+  contains-noun -> verified      t=5.3s -> t=1.5s 5 Inverse trig functions/5.3 Inverse tangent/5.3.4 u (a+b arctan(c x))^p.mac e63
+  contains-noun -> verified      t=5.3s -> t=1.7s 5 Inverse trig functions/5.3 Inverse tangent/5.3.4 u (a+b arctan(c x))^p.mac e64
+  contains-noun -> verified      t=5.5s -> t=1.7s 5 Inverse trig functions/5.3 Inverse tangent/5.3.4 u (a+b arctan(c x))^p.mac e65
+  timeout       -> verified      t=30.1s -> t=1.0s 5 Inverse trig functions/5.3 Inverse tangent/5.3.5 u (a+b arctan(c+d x))^p.mac e30
+  contains-noun -> verified      t=4.3s -> t=11.9s 5 Inverse trig functions/5.3 Inverse tangent/5.3.6 Exponentials of inverse tangent.mac e26
+  contains-noun -> verified      t=4.6s -> t=12.2s 5 Inverse trig functions/5.3 Inverse tangent/5.3.6 Exponentials of inverse tangent.mac e59
+  contains-noun -> verified      t=4.5s -> t=15.1s 5 Inverse trig functions/5.3 Inverse tangent/5.3.6 Exponentials of inverse tangent.mac e60
+  timeout       -> verified      t=30.1s -> t=3.1s 5 Inverse trig functions/5.3 Inverse tangent/5.3.6 Exponentials of inverse tangent.mac e375
+  timeout       -> verified      t=30.0s -> t=1.5s 5 Inverse trig functions/5.3 Inverse tangent/5.3.6 Exponentials of inverse tangent.mac e376
+  timeout       -> verified      t=30.1s -> t=1.5s 5 Inverse trig functions/5.3 Inverse tangent/5.3.6 Exponentials of inverse tangent.mac e379
+  timeout       -> verified      t=30.1s -> t=1.0s 5 Inverse trig functions/5.4 Inverse cotangent/5.4.1 Inverse cotangent functions.mac e135

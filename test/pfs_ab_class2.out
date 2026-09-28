@@ -1,0 +1,27 @@
+base: test/corpus_class2.sumfirst.out (965 entries)
+new:  test/corpus_class2.pfs.out (965 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS    866
+PASS->FAIL      1
+FAIL->PASS      5
+FAIL->FAIL     93
+
+=== class transitions (changed only) ===
+    5  timeout -> verified
+    1  verified -> timeout
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    1     0  2 Exponentials/2.1 u (F^(c (a+b x)))^n.mac
+    0     5  2 Exponentials/2.3 Exponential functions.mac
+
+=== PASS->FAIL (1) ===
+  verified      -> timeout       t=1.7s -> t=30.0s 2 Exponentials/2.1 u (F^(c (a+b x)))^n.mac e78
+
+=== FAIL->PASS (5) ===
+  timeout       -> verified      t=30.1s -> t=6.9s 2 Exponentials/2.3 Exponential functions.mac e399
+  timeout       -> verified      t=30.1s -> t=13.4s 2 Exponentials/2.3 Exponential functions.mac e400
+  timeout       -> verified      t=30.1s -> t=6.3s 2 Exponentials/2.3 Exponential functions.mac e408
+  timeout       -> verified      t=30.0s -> t=9.7s 2 Exponentials/2.3 Exponential functions.mac e424
+  timeout       -> verified      t=30.1s -> t=19.5s 2 Exponentials/2.3 Exponential functions.mac e425
