@@ -3,34 +3,30 @@
 == 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e1786 L2027
    f      (a*c+(b*c+a*d)*x+b*d*x^2)^3
    corpus -1/4*(b*c-a*d)^3*(c+d*x)^4/d^4+3/5*b*(b*c-a*d)^2*(c+d*x)^5/d^4-1/2*b^2*(b*c-a*d)*(c+d*x)^6/d^4+1/7*b^3*(c+d*x)^7/d^4
-   rubi   ((3*(2*b*d*(-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)-2*b*d*(sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c))*(((2*b*d*(-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)-2*b*d*(sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c))*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^5)/(60*b^2*d^2)+((2*b*d*x-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^2*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^4)/(12*b*d)))/(14*b*d)+((2*b*d*x-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^4)/(14*b*d))/(64*b^3*d^3)
-   res    0.35 6.625974141356572e-4 4.440892098500626e-16
-   res    0.65 0.0014152010591068631 2.6645352591003757e-15
-   res    1.7 0.008011484893529541 1.4210854715202004e-13
+   rubi   ((3*(2*b*d*(-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)-2*b*d*(sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c))*(((2*b*d*(-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)-2*b*d*(sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c))*((2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^5/(10*b*d)-(sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^4)/(4*b*d)))/(6*b*d)+((2*b*d*x-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^2*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^4)/(12*b*d)))/(14*b*d)+((2*b*d*x-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^4)/(14*b*d))/(64*b^3*d^3)
+   res    0.35 6.661338147750939e-16 4.440892098500626e-16
+   res    0.65 0 2.6645352591003757e-15
+   res    1.7 1.1368683772161603e-13 1.4210854715202004e-13
    1_2_1_1 r4 | 'integrate((b*d*x^2+(a*d+b*c)*x+a*c)^3,x)
      9_1 r12 | 'integrate(((2*b*d*x-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3)/64,x)
        1_1_1_2 r19 | 'integrate((2*b*d*x-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3,x)
          1_1_1_2 r19 | 'integrate((2*b*d*x-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^2*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3,x)
            1_1_1_2 r12 | 'integrate((2*b*d*x-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3,x)
-             1_3_4 r1 | 'integrate((2*b*d*x+a*d+b*c)*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3,x)
-               1_1_1_2 r12 | 'integrate(x^3*(x-sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)),x)
-                 1_1_1_1 r2 | 'integrate(x^4,x)
+             9_1 r13 | 'integrate((2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^4-2*sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)*(2*b*d*x+sqrt(a^2*d^2-2*a*b*c*d+b^2*c^2)+a*d+b*c)^3,x)
 
 == 1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e1853 L2100
    f      (a*d*e+(c*d^2+a*e^2)*x+c*d*e*x^2)^3
    corpus -1/4*(c*d^2-a*e^2)^3*(d+e*x)^4/e^4+3/5*c*d*(c*d^2-a*e^2)^2*(d+e*x)^5/e^4-1/2*c^2*d^2*(c*d^2-a*e^2)*(d+e*x)^6/e^4+1/7*c^3*d^3*(d+e*x)^7/e^4
-   rubi   ((3*(2*c*d*e*(-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)-2*c*d*e*(sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2))*(((2*c*d*e*(-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)-2*c*d*e*(sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2))*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^5)/(60*c^2*d^2*e^2)+((2*c*d*e*x-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^2*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^4)/(12*c*d*e)))/(14*c*d*e)+((2*c*d*e*x-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^4)/(14*c*d*e))/(64*c^3*d^3*e^3)
-   res    0.35 0.7580377021268592 1.7763568394002505e-15
-   res    0.65 1.0582903722548505 0
-   res    1.7 2.7118401491108415 5.684341886080802e-14
+   rubi   ((3*(2*c*d*e*(-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)-2*c*d*e*(sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2))*(((2*c*d*e*(-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)-2*c*d*e*(sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2))*((2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^5/(10*c*d*e)-(sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^4)/(4*c*d*e)))/(6*c*d*e)+((2*c*d*e*x-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^2*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^4)/(12*c*d*e)))/(14*c*d*e)+((2*c*d*e*x-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^4)/(14*c*d*e))/(64*c^3*d^3*e^3)
+   res    0.35 1.3322676295501878e-15 1.7763568394002505e-15
+   res    0.65 5.329070518200751e-15 0
+   res    1.7 0 5.684341886080802e-14
    1_2_1_1 r4 | 'integrate((c*d*e*x^2+(a*e^2+c*d^2)*x+a*d*e)^3,x)
      9_1 r12 | 'integrate(((2*c*d*e*x-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3)/64,x)
        1_1_1_2 r19 | 'integrate((2*c*d*e*x-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3,x)
          1_1_1_2 r19 | 'integrate((2*c*d*e*x-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^2*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3,x)
            1_1_1_2 r12 | 'integrate((2*c*d*e*x-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3,x)
-             1_3_4 r1 | 'integrate((2*c*d*e*x+a*e^2+c*d^2)*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3,x)
-               1_1_1_2 r12 | 'integrate(x^3*(x-sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)),x)
-                 1_1_1_1 r2 | 'integrate(x^4,x)
+             9_1 r13 | 'integrate((2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^4-2*sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)*(2*c*d*e*x+sqrt(a^2*e^4-2*a*c*d^2*e^2+c^2*d^4)+a*e^2+c*d^2)^3,x)
 
 == 1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1000 L1107
    f      1/(x^2*sqrt(2+2*a-2*(1+a)+b*x^2+c*x^4))
@@ -45,183 +41,165 @@
 == 1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.7 P(x) (d+e x^2)^q (a+b x^2+c x^4)^p.mac e30 L67
    f      (sqrt(a)+x^2*sqrt(c))/((d+e*x^2)*sqrt(a+b*x^2+c*x^4))
    corpus -1/2*atan(x*sqrt(c*d^2-b*d*e+a*e^2)/(sqrt(d)*sqrt(e)*sqrt(a+b*x^2+c*x^4)))*(-e*sqrt(a)+d*sqrt(c))/(sqrt(d)*sqrt(e)*sqrt(c*d^2-b*d*e+a*e^2))+1/4*elliptic_pi(-1/4*(-e*sqrt(a)+d*sqrt(c))^2/(d*e*sqrt(a)*sqrt(c)),2*atan(c^(1/4)*x/a^(1/4)),1/4*(2-b/(sqrt(a)*sqrt(c))))*(e*sqrt(a)+d*sqrt(c))*(sqrt(a)+x^2*sqrt(c))*sqrt((a+b*x^2+c*x^4)/(sqrt(a)+x^2*sqrt(c))^2)/(a^(1/4)*c^(1/4)*d*e*sqrt(a+b*x^2+c*x^4))
-   rubi   ((a*d*(e/c+d/(sqrt(a)*sqrt(c)))*((c^2*(e/c-d/(sqrt(a)*sqrt(c)))*atan((sqrt((a*e)/d+(c*d)/e-b)*x)/sqrt(c*x^4+b*x^2+a)))/(2*d*e*sqrt((a*e)/d+(c*d)/e-b))+(a^(1/4)*c^(7/4)*(e/c+d/(sqrt(a)*sqrt(c)))*elliptic_pi(-((sqrt(a)*sqrt(c)*e-c*d)^2/(4*sqrt(a)*c^(3/2)*d*e)),2*atan((c^(1/4)*x)/a^(1/4)),1/2-b/(4*sqrt(a)*sqrt(c)))*((sqrt(c)*x^2)/sqrt(a)+1)*sqrt((c*x^4+b*x^2+a)/(a*((sqrt(c)*x^2)/sqrt(a)+1)^2)))/(4*d*e*sqrt(c*x^4+b*x^2+a))))/(c*(d^2/c-(a*e^2)/c^2))-(a^(5/4)*(e/c+d/(sqrt(a)*sqrt(c)))*((sqrt(c)*x^2)/sqrt(a)+1)*sqrt((c*x^4+b*x^2+a)/(a*((sqrt(c)*x^2)/sqrt(a)+1)^2))*elliptic_f(2*atan((c^(1/4)*x)/a^(1/4)),1/2-b/(4*sqrt(a)*sqrt(c))))/(2*c^(1/4)*(d^2/c-(a*e^2)/c^2)*sqrt(c*x^4+b*x^2+a)))/sqrt(c)
-   res    0.35 0.8876747321230097 1.1102230246251565e-16
-   res    0.65 0.5604268838858012 3.3306690738754696e-16
-   res    1.7 0.07825501968163354 2.220446049250313e-16
-   1_2_2_7 r7 | 'integrate((sqrt(c)*x^2+sqrt(a))/((e*x^2+d)*sqrt(c*x^4+b*x^2+a)),x)
-     1_4_1 r18 | 'integrate((sqrt(c)*x^2)/((e*x^2+d)*sqrt(c*x^4+b*x^2+a)),x)
-       9_1 r12 | 'integrate(x^2/(sqrt(c)*((e*x^2)/c+d/c)*sqrt(c*x^4+b*x^2+a)),x)
-         1_2_2_4 r77 | 'integrate(x^2/(((e*x^2)/c+d/c)*sqrt(c*x^4+b*x^2+a)),x)
-           1_2_2_1 r16 | 'integrate(1/sqrt(c*x^4+b*x^2+a),x)
-           1_2_2_7 r26 | 'integrate(((sqrt(c)*x^2)/sqrt(a)+1)/(((e*x^2)/c+d/c)*sqrt(c*x^4+b*x^2+a)),x)
-     9_1 r8 | 'integrate(0,x)
+   rubi   ((sqrt(a)*e-sqrt(c)*d)*atan((sqrt((a*e)/d+(c*d)/e-b)*x)/sqrt(c*x^4+b*x^2+a)))/(2*d*e*sqrt((a*e)/d+(c*d)/e-b))+((sqrt(a)*e+sqrt(c)*d)*elliptic_pi(-((sqrt(a)*e-sqrt(c)*d)^2/(4*sqrt(a)*sqrt(c)*d*e)),2*atan((c^(1/4)*x)/a^(1/4)),1/2-b/(4*sqrt(a)*sqrt(c)))*(sqrt(c)*x^2+sqrt(a))*sqrt((c*x^4+b*x^2+a)/(sqrt(c)*x^2+sqrt(a))^2))/(4*a^(1/4)*c^(1/4)*d*e*sqrt(c*x^4+b*x^2+a))
+   res    0.35 1.1102230246251565e-16 1.1102230246251565e-16
+   res    0.65 3.3306690738754696e-16 3.3306690738754696e-16
+   res    1.7 2.220446049250313e-16 2.220446049250313e-16
+   1_2_2_7 r26 | 'integrate((sqrt(c)*x^2+sqrt(a))/((e*x^2+d)*sqrt(c*x^4+b*x^2+a)),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.1 Rational functions.mac e483 L644
    f      (x+1/2*(3-sqrt(37)))*(x+1/2*(3+sqrt(37)))
    corpus -7*x+3/2*x^2+1/3*x^3
-   rubi   (x+3/2)^3/3
-   res    0.35 9.249999999999998 2.6645352591003757e-15
-   res    0.65 9.249999999999998 8.881784197001252e-16
-   res    1.7 9.250000000000002 1.4432899320127035e-15
+   rubi   (sqrt(37)*(2*x-sqrt(37)+3)^2)/8+(x+(3-sqrt(37))/2)^3/3
+   res    0.35 4.440892098500626e-16 2.6645352591003757e-15
+   res    0.65 9.992007221626409e-16 8.881784197001252e-16
+   res    1.7 1.3287981825982342e-15 1.4432899320127035e-15
    1_1_1_2 r12 | 'integrate((x+(3-sqrt(37))/2)*(x+(sqrt(37)+3)/2),x)
-     1_1_1_2 r12 | 'integrate((x+3/2)*(x+(3-sqrt(37))/2),x)
-       1_1_1_1 r4 | 'integrate((x+3/2)^2,x)
+     9_1 r13 | 'integrate((x+(3-sqrt(37))/2)*(x-sqrt(37)/2+3/2)+sqrt(37)*(x+(3-sqrt(37))/2),x)
+       1_4_1 r10 | 'integrate((x+(3-sqrt(37))/2)*(x-sqrt(37)/2+3/2),x)
+         1_1_1_1 r4 | 'integrate((x+(3-sqrt(37))/2)^2,x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e129 L174
    f      (1+x+sqrt(3))/(x*sqrt(1+x^3))
    corpus -2/3*atanh(sqrt(1+x^3))*(1+sqrt(3))+2*(1+x)*elliptic_f(asin((1+x-sqrt(3))/(1+x+sqrt(3))),-7-4*sqrt(3))*sqrt(2+sqrt(3))*sqrt((1-x+x^2)/(1+x+sqrt(3))^2)/(3^(1/4)*sqrt(1+x^3)*sqrt((1+x)/(1+x+sqrt(3))^2))
-   rubi   (2*sqrt(sqrt(3)+2)*(x+1)*sqrt((x^2-x+1)/(x+sqrt(3)+1)^2)*elliptic_f(asin((x-sqrt(3)+1)/(x+sqrt(3)+1)),-(4*sqrt(3))-7))/(3^(1/4)*sqrt(x^3+1)*sqrt((x+1)/(x+sqrt(3)+1)^2))-(2*atanh(sqrt(x^3+1)))/3
-   res    0.35 4.845922393474137 4.718447854656915e-16
-   res    0.65 2.3602393929302696 5.689893001203927e-16
-   res    1.7 0.41899396389283206 3.3306690738754696e-16
+   rubi   (2*sqrt(sqrt(3)+2)*(x+1)*sqrt((x^2-x+1)/(x+sqrt(3)+1)^2)*elliptic_f(asin((x-sqrt(3)+1)/(x+sqrt(3)+1)),-(4*sqrt(3))-7))/(3^(1/4)*sqrt(x^3+1)*sqrt((x+1)/(x+sqrt(3)+1)^2))-(2*(sqrt(3)+1)*atanh(sqrt(x^3+1)))/3
+   res    0.35 4.787836793695988e-16 4.718447854656915e-16
+   res    0.65 6.800116025829084e-16 5.689893001203927e-16
+   res    1.7 4.440892098500626e-16 3.3306690738754696e-16
    1_1_3_8 r17 | 'integrate((x+sqrt(3)+1)/(x*sqrt(x^3+1)),x)
      1_1_3_2 r8 | 'integrate(1/(x*sqrt(x^3+1)),x)
        1_1_1_2 r32 | 'integrate(1/(x*sqrt(x+1)),x)
          1_1_2_1 r14 | 'integrate(1/(x^2-1),x)
-     9_3 r62 | 'integrate((sqrt(3)/x+1)/sqrt(x^3+1),x)
-       1_1_3_8 r9 | 'integrate((x+sqrt(3))/(x*sqrt(x^3+1)),x)
-         1_1_3_1 r30 | 'integrate(1/sqrt(x^3+1),x)
+     1_1_3_1 r30 | 'integrate(1/sqrt(x^3+1),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e130 L175
    f      (1-x+sqrt(3))/(x*sqrt(1-x^3))
    corpus -2/3*atanh(sqrt(1-x^3))*(1+sqrt(3))+2*(1-x)*elliptic_f(asin((1-x-sqrt(3))/(1-x+sqrt(3))),-7-4*sqrt(3))*sqrt(2+sqrt(3))*sqrt((1+x+x^2)/(1-x+sqrt(3))^2)/(3^(1/4)*sqrt(1-x^3)*sqrt((1-x)/(1-x+sqrt(3))^2))
-   rubi   (2*sqrt(sqrt(3)+2)*elliptic_f(asin((-x-sqrt(3)+1)/(-x+sqrt(3)+1)),-(4*sqrt(3))-7)*(1-x)*sqrt((x^2+x+1)/(-x+sqrt(3)+1)^2))/(3^(1/4)*sqrt((1-x)/(-x+sqrt(3)+1)^2)*sqrt(1-x^3))-(2*atanh(sqrt(1-x^3)))/3
-   res    0.35 5.058342743509843 1.3877787807814457e-16
-   res    0.65 3.1287148170860126 2.220446049250313e-16
-   res    1.7 0.5150587648401855 3.1882598713760344e-16
+   rubi   (2*sqrt(sqrt(3)+2)*elliptic_f(asin((-x-sqrt(3)+1)/(-x+sqrt(3)+1)),-(4*sqrt(3))-7)*(1-x)*sqrt((x^2+x+1)/(-x+sqrt(3)+1)^2))/(3^(1/4)*sqrt((1-x)/(-x+sqrt(3)+1)^2)*sqrt(1-x^3))-(2*(sqrt(3)+1)*atanh(sqrt(1-x^3)))/3
+   res    0.35 3.0531133177191805e-16 1.3877787807814457e-16
+   res    0.65 2.220446049250313e-16 2.220446049250313e-16
+   res    1.7 3.1882598713760344e-16 3.1882598713760344e-16
    1_1_3_8 r17 | 'integrate((-x+sqrt(3)+1)/(x*sqrt(1-x^3)),x)
      1_1_3_2 r8 | 'integrate(1/(x*sqrt(1-x^3)),x)
        1_1_1_2 r32 | 'integrate(1/(sqrt(1-x)*x),x)
          1_1_2_1 r13 | 'integrate(1/(1-x^2),x)
-     9_3 r62 | 'integrate((sqrt(3)/x-1)/sqrt(1-x^3),x)
-       1_1_3_8 r9 | 'integrate(-((x-sqrt(3))/(x*sqrt(1-x^3))),x)
-         1_4_1 r23 | 'integrate(-(1/sqrt(1-x^3)),x)
-           1_1_3_1 r30 | 'integrate(1/sqrt(1-x^3),x)
+     1_4_1 r23 | 'integrate(-(1/sqrt(1-x^3)),x)
+       1_1_3_1 r30 | 'integrate(1/sqrt(1-x^3),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e131 L176
    f      (1-x+sqrt(3))/(x*sqrt(-1+x^3))
    corpus 2/3*atan(sqrt(-1+x^3))*(1+sqrt(3))+2*(1-x)*elliptic_f(asin((1-x+sqrt(3))/(1-x-sqrt(3))),-7+4*sqrt(3))*sqrt(2-sqrt(3))*sqrt((1+x+x^2)/(1-x-sqrt(3))^2)/(3^(1/4)*sqrt(-1+x^3)*sqrt((-1+x)/(1-x-sqrt(3))^2))
-   rubi   (2*atan(sqrt(x^3-1)))/3+(2*sqrt(2-sqrt(3))*elliptic_f(asin((-x+sqrt(3)+1)/(-x-sqrt(3)+1)),4*sqrt(3)-7)*(1-x)*sqrt((x^2+x+1)/(-x-sqrt(3)+1)^2))/(3^(1/4)*sqrt((x-1)/(-x-sqrt(3)+1)^2)*sqrt(x^3-1))
-   res    0.35 5.0583427435098445 1.0504829673241143e-15
-   res    0.65 3.1287148170860117 3.99460464866385e-16
-   res    1.7 0.5150587648401859 1.6653345369377348e-16
+   rubi   (2*(sqrt(3)+1)*atan(sqrt(x^3-1)))/3+(2*sqrt(2-sqrt(3))*elliptic_f(asin((-x+sqrt(3)+1)/(-x-sqrt(3)+1)),4*sqrt(3)-7)*(1-x)*sqrt((x^2+x+1)/(-x-sqrt(3)+1)^2))/(3^(1/4)*sqrt((x-1)/(-x-sqrt(3)+1)^2)*sqrt(x^3-1))
+   res    0.35 6.789945119803025e-16 1.0504829673241143e-15
+   res    0.65 1.59784185946554e-15 3.99460464866385e-16
+   res    1.7 1.6653345369377348e-16 1.6653345369377348e-16
    1_1_3_8 r17 | 'integrate((-x+sqrt(3)+1)/(x*sqrt(x^3-1)),x)
      1_1_3_2 r8 | 'integrate(1/(x*sqrt(x^3-1)),x)
        1_1_1_2 r32 | 'integrate(1/(sqrt(x-1)*x),x)
          1_1_2_1 r10 | 'integrate(1/(x^2+1),x)
-     9_3 r62 | 'integrate((sqrt(3)/x-1)/sqrt(x^3-1),x)
-       1_1_3_8 r9 | 'integrate(-((x-sqrt(3))/(x*sqrt(x^3-1))),x)
-         1_4_1 r23 | 'integrate(-(1/sqrt(x^3-1)),x)
-           1_1_3_1 r31 | 'integrate(1/sqrt(x^3-1),x)
+     1_4_1 r23 | 'integrate(-(1/sqrt(x^3-1)),x)
+       1_1_3_1 r31 | 'integrate(1/sqrt(x^3-1),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e132 L177
    f      (1+x+sqrt(3))/(x*sqrt(-1-x^3))
    corpus 2/3*atan(sqrt(-1-x^3))*(1+sqrt(3))+2*(1+x)*elliptic_f(asin((1+x+sqrt(3))/(1+x-sqrt(3))),-7+4*sqrt(3))*sqrt(2-sqrt(3))*sqrt((1-x+x^2)/(1+x-sqrt(3))^2)/(3^(1/4)*sqrt(-1-x^3)*sqrt((-1-x)/(1+x-sqrt(3))^2))
-   rubi   (2*sqrt(2-sqrt(3))*(x+1)*sqrt((x^2-x+1)/(x-sqrt(3)+1)^2)*elliptic_f(asin((x+sqrt(3)+1)/(x-sqrt(3)+1)),4*sqrt(3)-7))/(3^(1/4)*sqrt(-x^3-1)*sqrt((-x-1)/(x-sqrt(3)+1)^2))+(2*atan(sqrt(-x^3-1)))/3
-   res    0.35 4.845922393474137 1.901805376746546e-15
-   res    0.65 2.3602393929302683 2.0702685797149517e-15
-   res    1.7 0.41899396389283305 2.0807018469782475e-15
+   rubi   (2*sqrt(2-sqrt(3))*(x+1)*sqrt((x^2-x+1)/(x-sqrt(3)+1)^2)*elliptic_f(asin((x+sqrt(3)+1)/(x-sqrt(3)+1)),4*sqrt(3)-7))/(3^(1/4)*sqrt(-x^3-1)*sqrt((-x-1)/(x-sqrt(3)+1)^2))+(2*(sqrt(3)+1)*atan(sqrt(-x^3-1)))/3
+   res    0.35 1.2006104741033731e-15 1.901805376746546e-15
+   res    0.65 2.6462957621231272e-15 2.0702685797149517e-15
+   res    1.7 1.5751221698978343e-15 2.0807018469782475e-15
    1_1_3_8 r17 | 'integrate((x+sqrt(3)+1)/(x*sqrt(-x^3-1)),x)
      1_1_3_2 r8 | 'integrate(1/(x*sqrt(-x^3-1)),x)
        1_1_1_2 r32 | 'integrate(1/(sqrt(-x-1)*x),x)
          1_1_2_1 r11 | 'integrate(1/(-x^2-1),x)
-     9_3 r62 | 'integrate((sqrt(3)/x+1)/sqrt(-x^3-1),x)
-       1_1_3_8 r9 | 'integrate((x+sqrt(3))/(x*sqrt(-x^3-1)),x)
-         1_1_3_1 r31 | 'integrate(1/sqrt(-x^3-1),x)
+     1_1_3_1 r31 | 'integrate(1/sqrt(-x^3-1),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e133 L178
    f      (1+x-sqrt(3))/(x*sqrt(1+x^3))
    corpus -2/3*atanh(sqrt(1+x^3))*(1-sqrt(3))+2*(1+x)*elliptic_f(asin((1+x-sqrt(3))/(1+x+sqrt(3))),-7-4*sqrt(3))*sqrt(2+sqrt(3))*sqrt((1-x+x^2)/(1+x+sqrt(3))^2)/(3^(1/4)*sqrt(1+x^3)*sqrt((1+x)/(1+x+sqrt(3))^2))
-   rubi   (2*sqrt(sqrt(3)+2)*(x+1)*sqrt((x^2-x+1)/(x+sqrt(3)+1)^2)*elliptic_f(asin((x-sqrt(3)+1)/(x+sqrt(3)+1)),-(4*sqrt(3))-7))/(3^(1/4)*sqrt(x^3+1)*sqrt((x+1)/(x+sqrt(3)+1)^2))-(2*atanh(sqrt(x^3+1)))/3
-   res    0.35 4.845922393474137 1.942890293094024e-16
-   res    0.65 2.36023939293027 1.249000902703301e-16
-   res    1.7 0.4189939638928313 2.220446049250313e-16
+   rubi   (2*sqrt(sqrt(3)+2)*(x+1)*sqrt((x^2-x+1)/(x+sqrt(3)+1)^2)*elliptic_f(asin((x-sqrt(3)+1)/(x+sqrt(3)+1)),-(4*sqrt(3))-7))/(3^(1/4)*sqrt(x^3+1)*sqrt((x+1)/(x+sqrt(3)+1)^2))-(2*(1-sqrt(3))*atanh(sqrt(x^3+1)))/3
+   res    0.35 1.8735013540549517e-16 1.942890293094024e-16
+   res    0.65 2.3592239273284576e-16 1.249000902703301e-16
+   res    1.7 3.3306690738754696e-16 2.220446049250313e-16
    1_1_3_8 r17 | 'integrate((x-sqrt(3)+1)/(x*sqrt(x^3+1)),x)
      1_1_3_2 r8 | 'integrate(1/(x*sqrt(x^3+1)),x)
        1_1_1_2 r32 | 'integrate(1/(x*sqrt(x+1)),x)
          1_1_2_1 r14 | 'integrate(1/(x^2-1),x)
-     9_3 r62 | 'integrate((1-sqrt(3)/x)/sqrt(x^3+1),x)
-       1_1_3_8 r9 | 'integrate((x-sqrt(3))/(x*sqrt(x^3+1)),x)
-         1_1_3_1 r30 | 'integrate(1/sqrt(x^3+1),x)
+     1_1_3_1 r30 | 'integrate(1/sqrt(x^3+1),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e134 L179
    f      (1-x-sqrt(3))/(x*sqrt(1-x^3))
    corpus -2/3*atanh(sqrt(1-x^3))*(1-sqrt(3))+2*(1-x)*elliptic_f(asin((1-x-sqrt(3))/(1-x+sqrt(3))),-7-4*sqrt(3))*sqrt(2+sqrt(3))*sqrt((1+x+x^2)/(1-x+sqrt(3))^2)/(3^(1/4)*sqrt(1-x^3)*sqrt((1-x)/(1-x+sqrt(3))^2))
-   rubi   (2*sqrt(sqrt(3)+2)*elliptic_f(asin((-x-sqrt(3)+1)/(-x+sqrt(3)+1)),-(4*sqrt(3))-7)*(1-x)*sqrt((x^2+x+1)/(-x+sqrt(3)+1)^2))/(3^(1/4)*sqrt((1-x)/(-x+sqrt(3)+1)^2)*sqrt(1-x^3))-(2*atanh(sqrt(1-x^3)))/3
-   res    0.35 5.0583427435098445 1.3877787807814457e-16
-   res    0.65 3.1287148170860126 0
-   res    1.7 0.5150587648401858 3.242644244813779e-16
+   rubi   (2*sqrt(sqrt(3)+2)*elliptic_f(asin((-x-sqrt(3)+1)/(-x+sqrt(3)+1)),-(4*sqrt(3))-7)*(1-x)*sqrt((x^2+x+1)/(-x+sqrt(3)+1)^2))/(3^(1/4)*sqrt((1-x)/(-x+sqrt(3)+1)^2)*sqrt(1-x^3))-(2*(1-sqrt(3))*atanh(sqrt(1-x^3)))/3
+   res    0.35 3.0531133177191805e-16 1.3877787807814457e-16
+   res    0.65 2.220446049250313e-16 0
+   res    1.7 3.242644244813779e-16 3.242644244813779e-16
    1_1_3_8 r17 | 'integrate((-x-sqrt(3)+1)/(x*sqrt(1-x^3)),x)
      1_1_3_2 r8 | 'integrate(1/(x*sqrt(1-x^3)),x)
        1_1_1_2 r32 | 'integrate(1/(sqrt(1-x)*x),x)
          1_1_2_1 r13 | 'integrate(1/(1-x^2),x)
-     9_3 r62 | 'integrate((-(sqrt(3)/x)-1)/sqrt(1-x^3),x)
-       1_1_3_8 r9 | 'integrate(-((x+sqrt(3))/(x*sqrt(1-x^3))),x)
-         1_4_1 r23 | 'integrate(-(1/sqrt(1-x^3)),x)
-           1_1_3_1 r30 | 'integrate(1/sqrt(1-x^3),x)
+     1_4_1 r23 | 'integrate(-(1/sqrt(1-x^3)),x)
+       1_1_3_1 r30 | 'integrate(1/sqrt(1-x^3),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e135 L180
    f      (1-x-sqrt(3))/(x*sqrt(-1+x^3))
    corpus 2/3*atan(sqrt(-1+x^3))*(1-sqrt(3))+2*(1-x)*elliptic_f(asin((1-x+sqrt(3))/(1-x-sqrt(3))),-7+4*sqrt(3))*sqrt(2-sqrt(3))*sqrt((1+x+x^2)/(1-x-sqrt(3))^2)/(3^(1/4)*sqrt(-1+x^3)*sqrt((-1+x)/(1-x-sqrt(3))^2))
-   rubi   (2*atan(sqrt(x^3-1)))/3+(2*sqrt(2-sqrt(3))*elliptic_f(asin((-x+sqrt(3)+1)/(-x-sqrt(3)+1)),4*sqrt(3)-7)*(1-x)*sqrt((x^2+x+1)/(-x-sqrt(3)+1)^2))/(3^(1/4)*sqrt((x-1)/(-x-sqrt(3)+1)^2)*sqrt(x^3-1))
-   res    0.35 5.0583427435098445 1.0504829673241143e-15
-   res    0.65 3.1287148170860144 7.341511737340996e-16
-   res    1.7 0.5150587648401856 5.551115123125783e-17
+   rubi   (2*(1-sqrt(3))*atan(sqrt(x^3-1)))/3+(2*sqrt(2-sqrt(3))*elliptic_f(asin((-x+sqrt(3)+1)/(-x-sqrt(3)+1)),4*sqrt(3)-7)*(1-x)*sqrt((x^2+x+1)/(-x-sqrt(3)+1)^2))/(3^(1/4)*sqrt((x-1)/(-x-sqrt(3)+1)^2)*sqrt(x^3-1))
+   res    0.35 6.789945119803025e-16 1.0504829673241143e-15
+   res    0.65 1.8652319053029535e-15 7.341511737340996e-16
+   res    1.7 5.551115123125783e-17 5.551115123125783e-17
    1_1_3_8 r17 | 'integrate((-x-sqrt(3)+1)/(x*sqrt(x^3-1)),x)
      1_1_3_2 r8 | 'integrate(1/(x*sqrt(x^3-1)),x)
        1_1_1_2 r32 | 'integrate(1/(sqrt(x-1)*x),x)
          1_1_2_1 r10 | 'integrate(1/(x^2+1),x)
-     9_3 r62 | 'integrate((-(sqrt(3)/x)-1)/sqrt(x^3-1),x)
-       1_1_3_8 r9 | 'integrate(-((x+sqrt(3))/(x*sqrt(x^3-1))),x)
-         1_4_1 r23 | 'integrate(-(1/sqrt(x^3-1)),x)
-           1_1_3_1 r31 | 'integrate(1/sqrt(x^3-1),x)
+     1_4_1 r23 | 'integrate(-(1/sqrt(x^3-1)),x)
+       1_1_3_1 r31 | 'integrate(1/sqrt(x^3-1),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e136 L181
    f      (1+x-sqrt(3))/(x*sqrt(-1-x^3))
    corpus 2/3*atan(sqrt(-1-x^3))*(1-sqrt(3))+2*(1+x)*elliptic_f(asin((1+x+sqrt(3))/(1+x-sqrt(3))),-7+4*sqrt(3))*sqrt(2-sqrt(3))*sqrt((1-x+x^2)/(1+x-sqrt(3))^2)/(3^(1/4)*sqrt(-1-x^3)*sqrt((-1-x)/(1+x-sqrt(3))^2))
-   rubi   (2*sqrt(2-sqrt(3))*(x+1)*sqrt((x^2-x+1)/(x-sqrt(3)+1)^2)*elliptic_f(asin((x+sqrt(3)+1)/(x-sqrt(3)+1)),4*sqrt(3)-7))/(3^(1/4)*sqrt(-x^3-1)*sqrt((-x-1)/(x-sqrt(3)+1)^2))+(2*atan(sqrt(-x^3-1)))/3
-   res    0.35 4.845922393474136 2.5674380938237442e-15
-   res    0.65 2.3602393929302714 2.6654230016872903e-15
-   res    1.7 0.4189939638928303 1.8983405101379358e-15
+   rubi   (2*sqrt(2-sqrt(3))*(x+1)*sqrt((x^2-x+1)/(x-sqrt(3)+1)^2)*elliptic_f(asin((x+sqrt(3)+1)/(x-sqrt(3)+1)),4*sqrt(3)-7))/(3^(1/4)*sqrt(-x^3-1)*sqrt((-x-1)/(x-sqrt(3)+1)^2))+(2*(1-sqrt(3))*atan(sqrt(-x^3-1)))/3
+   res    0.35 1.3956986382960082e-15 2.5674380938237442e-15
+   res    0.65 2.370875137478626e-15 2.6654230016872903e-15
+   res    1.7 1.3861342171641676e-15 1.8983405101379358e-15
    1_1_3_8 r17 | 'integrate((x-sqrt(3)+1)/(x*sqrt(-x^3-1)),x)
      1_1_3_2 r8 | 'integrate(1/(x*sqrt(-x^3-1)),x)
        1_1_1_2 r32 | 'integrate(1/(sqrt(-x-1)*x),x)
          1_1_2_1 r11 | 'integrate(1/(-x^2-1),x)
-     9_3 r62 | 'integrate((1-sqrt(3)/x)/sqrt(-x^3-1),x)
-       1_1_3_8 r9 | 'integrate((x-sqrt(3))/(x*sqrt(-x^3-1)),x)
-         1_1_3_1 r31 | 'integrate(1/sqrt(-x^3-1),x)
+     1_1_3_1 r31 | 'integrate(1/sqrt(-x^3-1),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e215 L318
    f      sqrt(a*x^4)/sqrt(1+x^2)
    corpus -1/2*asinh(x)*sqrt(a*x^4)/x^2+1/2*sqrt(a*x^4)*sqrt(1+x^2)/x
-   rubi   (sqrt(a)*x*sqrt(x^2+1))/2
-   res    0.35 0.44771132920492523 0
-   res    0.65 0.39770872757074405 1.1102230246251565e-16
-   res    1.7 0.24050076292307487 2.220446049250313e-16
+   rubi   (sqrt(a)*x*sqrt(x^2+1))/2-(sqrt(a)*asinh(x))/2
+   res    0.35 0 0
+   res    0.65 1.1102230246251565e-16 1.1102230246251565e-16
+   res    1.7 2.220446049250313e-16 2.220446049250313e-16
    1_1_2_10 r6 | 'integrate((sqrt(a)*x^2)/sqrt(x^2+1),x)
-     1_1_2_10 r2 | 'integrate(-(sqrt(a)/sqrt(x^2+1)),x)
-       9_1 r8 | 'integrate(0,x)
+     1_4_1 r23 | 'integrate(-(sqrt(a)/sqrt(x^2+1)),x)
+       1_1_2_1 r16 | 'integrate(1/sqrt(x^2+1),x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e222 L325
    f      sqrt(a/x^4)/sqrt(1+x^2)
    corpus -x*sqrt(a/x^4)*sqrt(1+x^2)
-   rubi   0
-   res    0.35 7.3095727217130655 0
-   res    0.65 1.8826448642402076 4.440892098500626e-16
-   res    1.7 0.16643651413361568 1.1102230246251565e-16
+   rubi   -((sqrt(a)*sqrt(x^2+1))/x)
+   res    0.35 0 0
+   res    0.65 4.440892098500626e-16 4.440892098500626e-16
+   res    1.7 1.1102230246251565e-16 1.1102230246251565e-16
    1_1_2_11 r4 | 'integrate(sqrt(a)/(x^2*sqrt(x^2+1)),x)
      9_1 r8 | 'integrate(0,x)
 
 == 1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e230 L333
    f      sqrt(a/x^4)/sqrt(1+x^3)
    corpus -x*sqrt(a/x^4)*sqrt(1+x^3)+x^2*sqrt(a/x^4)*sqrt(1+x^3)/(1+x+sqrt(3))+x^2*(1+x)*elliptic_f(asin((1+x-sqrt(3))/(1+x+sqrt(3))),-7-4*sqrt(3))*sqrt(2)*sqrt(a/x^4)*sqrt((1-x+x^2)/(1+x+sqrt(3))^2)/(3^(1/4)*sqrt(1+x^3)*sqrt((1+x)/(1+x+sqrt(3))^2))-1/2*3^(1/4)*x^2*(1+x)*elliptic_e(asin((1+x-sqrt(3))/(1+x+sqrt(3))),-7-4*sqrt(3))*sqrt(a/x^4)*sqrt(2-sqrt(3))*sqrt((1-x+x^2)/(1+x+sqrt(3))^2)/(sqrt(1+x^3)*sqrt((1+x)/(1+x+sqrt(3))^2))
-   rubi   0
-   res    0.35 7.583488590929171 6.245004513516506e-16
-   res    0.65 1.9888559332618587 2.896988204881268e-16
-   res    1.7 0.13499555616624057 8.326672684688674e-17
-   1_1_3_8 r9 | 'integrate(sqrt(a)/(x^2*sqrt(x^3+1)),x)
-     9_1 r8 | 'integrate(0,x)
+   rubi   sqrt(a)*(((2*(sqrt(3)-1)*sqrt(sqrt(3)+2)*(x+1)*sqrt((x^2-x+1)/(x+sqrt(3)+1)^2)*elliptic_f(asin((x-sqrt(3)+1)/(x+sqrt(3)+1)),-(4*sqrt(3))-7))/(3^(1/4)*sqrt(x^3+1)*sqrt((x+1)/(x+sqrt(3)+1)^2))-(3^(1/4)*sqrt(2-sqrt(3))*(x+1)*sqrt((x^2-x+1)/(x+sqrt(3)+1)^2)*elliptic_e(asin((x-sqrt(3)+1)/(x+sqrt(3)+1)),-(4*sqrt(3))-7))/(sqrt(x^3+1)*sqrt((x+1)/(x+sqrt(3)+1)^2))+(2*sqrt(x^3+1))/(x+sqrt(3)+1))/2-sqrt(x^3+1)/x)
+   res    0.35 8.881784197001252e-16 6.245004513516506e-16
+   res    0.65 6.661338147750939e-16 2.896988204881268e-16
+   res    1.7 1.3877787807814457e-16 8.326672684688674e-17
+   9_1 r12 | 'integrate(sqrt(a)/(x^2*sqrt(x^3+1)),x)
+     1_1_3_2 r67 | 'integrate(1/(x^2*sqrt(x^3+1)),x)
+       1_1_3_2 r45 | 'integrate(x/sqrt(x^3+1),x)
+         1_1_3_1 r30 | 'integrate(1/sqrt(x^3+1),x)
+         1_1_3_7 r28 | 'integrate((x-sqrt(3)+1)/sqrt(x^3+1),x)
 
 == 2 Exponentials/2.3 Exponential functions.mac e725 L842
    f      (1+4^x)/(1+1/2^x)
@@ -447,27 +425,22 @@
 == 4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac e380 L471
    f      1/(1+tan(x)^3)
    corpus 1/2*x-1/2*log(cos(x))+1/6*log(1+tan(x))-1/3*log(1-tan(x)+tan(x)^2)
-   rubi   (-(log(tan(x)^2+1)/2)+(log(tan(x)+1)-log(tan(x)^2+1)/2)/2+log(tan(x)+1)+(3*x)/2)/3
-   res    0.35 0.22103202349897555 0
-   res    0.65 0.12665173063281165 0
-   res    1.7 0.14713131704901913 1.938553484404082e-16
+   rubi   ((log(tan(x)+1)-log(tan(x)^2+1)/2)/2+(sqrt(3)*%i-1)*((2*log(-(2*sin(x))-(sqrt(3)*%i-1)*cos(x)))/((sqrt(3)*%i-1)^2+4)+((sqrt(3)*%i-1)*x)/((sqrt(3)*%i-1)^2+4))-(sqrt(3)*%i+1)*((2*log(-(2*sin(x))-(-(sqrt(3)*%i)-1)*cos(x)))/((-(sqrt(3)*%i)-1)^2+4)+((-(sqrt(3)*%i)-1)*x)/((-(sqrt(3)*%i)-1)^2+4))+x/2)/3
+   res    0.35 5.551115123125783e-17 0
+   res    0.65 7.401486830834377e-17 0
+   res    1.7 5.1929146776927666e-17 1.938553484404082e-16
    9_3 r60 | 'integrate(1/(tan(x)^3+1),x)
-     4_1_0_1 r1 | 'integrate(1/(tan(x)+1),x)
-       4_3_1_1 r12 | 'integrate(1/(%mr_itan(x)+1),x)
-         9_3 r61 | 'integrate((1-tan(x))/(tan(x)+1),x)
-           4_1_0_1 r1 | 'integrate(2/(tan(x)+1)-1,x)
-             4_7_5 r22 | 'integrate(2/(%mr_itan(x)+1)-1,x)
-               9_3 r46 | 'integrate((2/(x+1)-1)/(x^2+1),x)
-                 9_1 r13 | 'integrate(1/(x+1)-x/(x^2+1),x)
-                   1_1_2_2 r1 | 'integrate(x/(x^2+1),x)
-     4_1_0_1 r1 | 'integrate(1/(tan(x)+1),x)
-       4_3_1_1 r12 | 'integrate(1/(%mr_itan(x)+1),x)
-         9_3 r61 | 'integrate((1-tan(x))/(tan(x)+1),x)
-           4_1_0_1 r1 | 'integrate(2/(tan(x)+1)-1,x)
-             4_7_5 r22 | 'integrate(2/(%mr_itan(x)+1)-1,x)
-               9_3 r46 | 'integrate((2/(x+1)-1)/(x^2+1),x)
-                 9_1 r13 | 'integrate(1/(x+1)-x/(x^2+1),x)
-                   1_1_2_2 r1 | 'integrate(x/(x^2+1),x)
+     9_1 r12 | 'integrate((sqrt(3)*%i-1)/(2*tan(x)+sqrt(3)*%i-1),x)
+       4_1_0_1 r1 | 'integrate(1/(2*tan(x)+sqrt(3)*%i-1),x)
+         4_3_1_1 r12 | 'integrate(1/(2*%mr_itan(x)+sqrt(3)*%i-1),x)
+           4_1_0_1 r1 | 'integrate((2-(sqrt(3)*%i-1)*tan(x))/(2*tan(x)+sqrt(3)*%i-1),x)
+             4_3_2_1 r9 | 'integrate((2-(sqrt(3)*%i-1)*%mr_itan(x))/(2*%mr_itan(x)+sqrt(3)*%i-1),x)
+     9_1 r10 | 'integrate(-((sqrt(3)*%i+1)/(2*tan(x)-sqrt(3)*%i-1)),x)
+       9_1 r12 | 'integrate((sqrt(3)*%i+1)/(2*tan(x)-sqrt(3)*%i-1),x)
+         4_1_0_1 r1 | 'integrate(1/(2*tan(x)-sqrt(3)*%i-1),x)
+           4_3_1_1 r12 | 'integrate(1/(2*%mr_itan(x)-sqrt(3)*%i-1),x)
+             4_1_0_1 r1 | 'integrate((2-(-(sqrt(3)*%i)-1)*tan(x))/(2*tan(x)-sqrt(3)*%i-1),x)
+               4_3_2_1 r9 | 'integrate((2-(-(sqrt(3)*%i)-1)*%mr_itan(x))/(2*%mr_itan(x)-sqrt(3)*%i-1),x)
      4_1_0_1 r1 | 'integrate(1/(tan(x)+1),x)
        4_3_1_1 r12 | 'integrate(1/(%mr_itan(x)+1),x)
          9_3 r61 | 'integrate((1-tan(x))/(tan(x)+1),x)
@@ -480,31 +453,22 @@
 == 4 Trig functions/4.4 Cotangent/4.4.7 (d trig)^m (a+b (c cot)^n)^p.mac e59 L98
    f      1/(1+cot(x)^3)
    corpus 1/2*x-1/6*log(1+cot(x))+1/3*log(1-cot(x)+cot(x)^2)+1/2*log(sin(x))
-   rubi   (2*(-((atan(cot(x))-log(cot(x)^2+1)/2)/2)-log(cot(x)+1)/2)-(x-2*(-((atan(cot(x))-log(cot(x)^2+1)/2)/2)-log(cot(x)+1)/2))/2+x/2)/3
-   res    0.35 0.22103202349897536 2.220446049250313e-16
-   res    0.65 0.126651730632812 1.1102230246251565e-16
-   res    1.7 0.14713131704901872 1.5265566588595902e-16
+   rubi   ((sqrt(3)*%i-1)*(((sqrt(3)*%i-1)*x)/((sqrt(3)*%i-1)^2+4)-(2*log((sqrt(3)*%i-1)*sin(x)+2*cos(x)))/((sqrt(3)*%i-1)^2+4))-(sqrt(3)*%i+1)*(((-(sqrt(3)*%i)-1)*x)/((-(sqrt(3)*%i)-1)^2+4)-(2*log((-(sqrt(3)*%i)-1)*sin(x)+2*cos(x)))/((-(sqrt(3)*%i)-1)^2+4))-(x-2*(-((atan(cot(x))-log(cot(x)^2+1)/2)/2)-log(cot(x)+1)/2))/2+x/2)/3
+   res    0.35 8.852945788027754e-17 2.220446049250313e-16
+   res    0.65 1.7059584221736345e-16 1.1102230246251565e-16
+   res    1.7 2.220446049250313e-16 1.5265566588595902e-16
    9_3 r60 | 'integrate(1/(cot(x)^3+1),x)
-     4_1_0_1 r1 | 'integrate(1/(cot(x)+1),x)
-       4_3_1_1 r12 | 'integrate(1/(1-%mr_itan(x+%pi/2)),x)
-         9_3 r61 | 'integrate((cot(x)-1)/(cot(x)+1),x)
-           4_1_0_1 r1 | 'integrate(1-2/(cot(x)+1),x)
-             9_1 r13 | 'integrate(1-2/(%mr_icot(x)+1),x)
-               4_7_5 r21 | 'integrate(1/(%mr_icot(x)+1),x)
-                 1_1_2_7 r29 | 'integrate(1/((x+1)*(x^2+1)),x)
-                   1_1_2_7 r2 | 'integrate((1-x)/(x^2+1),x)
-                     1_1_2_1 r10 | 'integrate(1/(x^2+1),x)
-                     1_1_2_2 r1 | 'integrate(x/(x^2+1),x)
-     4_1_0_1 r1 | 'integrate(1/(cot(x)+1),x)
-       4_3_1_1 r12 | 'integrate(1/(1-%mr_itan(x+%pi/2)),x)
-         9_3 r61 | 'integrate((cot(x)-1)/(cot(x)+1),x)
-           4_1_0_1 r1 | 'integrate(1-2/(cot(x)+1),x)
-             9_1 r13 | 'integrate(1-2/(%mr_icot(x)+1),x)
-               4_7_5 r21 | 'integrate(1/(%mr_icot(x)+1),x)
-                 1_1_2_7 r29 | 'integrate(1/((x+1)*(x^2+1)),x)
-                   1_1_2_7 r2 | 'integrate((1-x)/(x^2+1),x)
-                     1_1_2_1 r10 | 'integrate(1/(x^2+1),x)
-                     1_1_2_2 r1 | 'integrate(x/(x^2+1),x)
+     9_1 r12 | 'integrate((sqrt(3)*%i-1)/(2*cot(x)+sqrt(3)*%i-1),x)
+       4_1_0_1 r1 | 'integrate(1/(2*cot(x)+sqrt(3)*%i-1),x)
+         4_3_1_1 r12 | 'integrate(1/(-(2*%mr_itan(x+%pi/2))+sqrt(3)*%i-1),x)
+           4_1_0_1 r1 | 'integrate(((sqrt(3)*%i-1)*cot(x)-2)/(2*cot(x)+sqrt(3)*%i-1),x)
+             4_3_2_1 r9 | 'integrate((-((sqrt(3)*%i-1)*%mr_itan(x+%pi/2))-2)/(-(2*%mr_itan(x+%pi/2))+sqrt(3)*%i-1),x)
+     9_1 r10 | 'integrate(-((sqrt(3)*%i+1)/(2*cot(x)-sqrt(3)*%i-1)),x)
+       9_1 r12 | 'integrate((sqrt(3)*%i+1)/(2*cot(x)-sqrt(3)*%i-1),x)
+         4_1_0_1 r1 | 'integrate(1/(2*cot(x)-sqrt(3)*%i-1),x)
+           4_3_1_1 r12 | 'integrate(1/(-(2*%mr_itan(x+%pi/2))-sqrt(3)*%i-1),x)
+             4_1_0_1 r1 | 'integrate(((-(sqrt(3)*%i)-1)*cot(x)-2)/(2*cot(x)-sqrt(3)*%i-1),x)
+               4_3_2_1 r9 | 'integrate((-((-(sqrt(3)*%i)-1)*%mr_itan(x+%pi/2))-2)/(-(2*%mr_itan(x+%pi/2))-sqrt(3)*%i-1),x)
      4_1_0_1 r1 | 'integrate(1/(cot(x)+1),x)
        4_3_1_1 r12 | 'integrate(1/(1-%mr_itan(x+%pi/2)),x)
          9_3 r61 | 'integrate((cot(x)-1)/(cot(x)+1),x)
@@ -537,17 +501,22 @@
 == 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e258 L317
    f      1/(1+tanh(x)^3)
    corpus 1/2*x-2/3*atan((1-2*tanh(x))/sqrt(3))/sqrt(3)+(-1/6)/(1+tanh(x))
-   rubi   ((3*x)/2-3/(2*(tanh(x)+1)))/3
-   res    0.35 0.2150424383162587 2.220446049250313e-16
-   res    0.65 0.20631796177537287 0
-   res    1.7 0.033225083823698376 1.1102230246251565e-16
+   rubi   ((sqrt(3)*%i-1)*(((sqrt(3)*%i-1)*x)/((sqrt(3)*%i-1)^2-4)-(2*log(-(2*sinh(x))-(sqrt(3)*%i-1)*cosh(x)))/((sqrt(3)*%i-1)^2-4))-(sqrt(3)*%i+1)*(((-(sqrt(3)*%i)-1)*x)/((-(sqrt(3)*%i)-1)^2-4)-(2*log(-(2*sinh(x))-(-(sqrt(3)*%i)-1)*cosh(x)))/((-(sqrt(3)*%i)-1)^2-4))-1/(2*(tanh(x)+1))+x/2)/3
+   res    0.35 0 2.220446049250313e-16
+   res    0.65 1.1102230246251565e-16 0
+   res    1.7 1.3343220141622404e-16 1.1102230246251565e-16
    9_3 r60 | 'integrate(1/(tanh(x)^3+1),x)
-     4_1_0_1 r1 | 'integrate(1/(tanh(x)+1),x)
-       4_3_1_1 r7 | 'integrate(1/(1-%i*%mr_itan(%i*x)),x)
-         9_1 r8 | 'integrate(1,x)
-     4_1_0_1 r1 | 'integrate(1/(tanh(x)+1),x)
-       4_3_1_1 r7 | 'integrate(1/(1-%i*%mr_itan(%i*x)),x)
-         9_1 r8 | 'integrate(1,x)
+     9_1 r12 | 'integrate((sqrt(3)*%i-1)/(2*tanh(x)+sqrt(3)*%i-1),x)
+       4_1_0_1 r1 | 'integrate(1/(2*tanh(x)+sqrt(3)*%i-1),x)
+         4_3_1_1 r12 | 'integrate(1/(-(2*%i*%mr_itan(%i*x))+sqrt(3)*%i-1),x)
+           4_1_0_1 r1 | 'integrate((-(%i*(sqrt(3)*%i-1)*tanh(x))-2*%i)/(2*tanh(x)+sqrt(3)*%i-1),x)
+             4_3_2_1 r9 | 'integrate((-((sqrt(3)*%i-1)*%mr_itan(%i*x))-2*%i)/(-(2*%i*%mr_itan(%i*x))+sqrt(3)*%i-1),x)
+     9_1 r10 | 'integrate(-((sqrt(3)*%i+1)/(2*tanh(x)-sqrt(3)*%i-1)),x)
+       9_1 r12 | 'integrate((sqrt(3)*%i+1)/(2*tanh(x)-sqrt(3)*%i-1),x)
+         4_1_0_1 r1 | 'integrate(1/(2*tanh(x)-sqrt(3)*%i-1),x)
+           4_3_1_1 r12 | 'integrate(1/(-(2*%i*%mr_itan(%i*x))-sqrt(3)*%i-1),x)
+             4_1_0_1 r1 | 'integrate((-(%i*(-(sqrt(3)*%i)-1)*tanh(x))-2*%i)/(2*tanh(x)-sqrt(3)*%i-1),x)
+               4_3_2_1 r9 | 'integrate((-((-(sqrt(3)*%i)-1)*%mr_itan(%i*x))-2*%i)/(-(2*%i*%mr_itan(%i*x))-sqrt(3)*%i-1),x)
      4_1_0_1 r1 | 'integrate(1/(tanh(x)+1),x)
        4_3_1_1 r7 | 'integrate(1/(1-%i*%mr_itan(%i*x)),x)
          9_1 r8 | 'integrate(1,x)
@@ -555,17 +524,22 @@
 == 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e50 L81
    f      1/(1+coth(x)^3)
    corpus 1/2*x+(-1/6)/(1+coth(x))-2/3*atan((1-2*coth(x))/sqrt(3))/sqrt(3)
-   rubi   ((3*x)/2-3/(2*(coth(x)+1)))/3
-   res    0.35 0.2150424383162588 1.3877787807814457e-17
-   res    0.65 0.20631796177537287 9.020562075079397e-17
-   res    1.7 0.033225083823698265 1.9949319973733282e-17
+   rubi   ((sqrt(3)*%i-1)*(((sqrt(3)*%i-1)*x)/((sqrt(3)*%i-1)^2-4)-(2*log(%i*(sqrt(3)*%i-1)*sinh(x)+2*%i*cosh(x)))/((sqrt(3)*%i-1)^2-4))-(sqrt(3)*%i+1)*(((-(sqrt(3)*%i)-1)*x)/((-(sqrt(3)*%i)-1)^2-4)-(2*log(%i*(-(sqrt(3)*%i)-1)*sinh(x)+2*%i*cosh(x)))/((-(sqrt(3)*%i)-1)^2-4))-1/(2*(coth(x)+1))+x/2)/3
+   res    0.35 6.513367549166095e-17 1.3877787807814457e-17
+   res    0.65 1.1102230246251565e-16 9.020562075079397e-17
+   res    1.7 2.220446049250313e-16 1.9949319973733282e-17
    9_3 r60 | 'integrate(1/(coth(x)^3+1),x)
-     4_1_0_1 r1 | 'integrate(1/(coth(x)+1),x)
-       4_3_1_1 r7 | 'integrate(1/(1-%i*%mr_itan(%i*x+%pi/2)),x)
-         9_1 r8 | 'integrate(1,x)
-     4_1_0_1 r1 | 'integrate(1/(coth(x)+1),x)
-       4_3_1_1 r7 | 'integrate(1/(1-%i*%mr_itan(%i*x+%pi/2)),x)
-         9_1 r8 | 'integrate(1,x)
+     9_1 r12 | 'integrate((sqrt(3)*%i-1)/(2*coth(x)+sqrt(3)*%i-1),x)
+       4_1_0_1 r1 | 'integrate(1/(2*coth(x)+sqrt(3)*%i-1),x)
+         4_3_1_1 r12 | 'integrate(1/(-(2*%i*%mr_itan(%i*x+%pi/2))+sqrt(3)*%i-1),x)
+           4_1_0_1 r1 | 'integrate((-(%i*(sqrt(3)*%i-1)*coth(x))-2*%i)/(2*coth(x)+sqrt(3)*%i-1),x)
+             4_3_2_1 r9 | 'integrate((-((sqrt(3)*%i-1)*%mr_itan(%i*x+%pi/2))-2*%i)/(-(2*%i*%mr_itan(%i*x+%pi/2))+sqrt(3)*%i-1),x)
+     9_1 r10 | 'integrate(-((sqrt(3)*%i+1)/(2*coth(x)-sqrt(3)*%i-1)),x)
+       9_1 r12 | 'integrate((sqrt(3)*%i+1)/(2*coth(x)-sqrt(3)*%i-1),x)
+         4_1_0_1 r1 | 'integrate(1/(2*coth(x)-sqrt(3)*%i-1),x)
+           4_3_1_1 r12 | 'integrate(1/(-(2*%i*%mr_itan(%i*x+%pi/2))-sqrt(3)*%i-1),x)
+             4_1_0_1 r1 | 'integrate((-(%i*(-(sqrt(3)*%i)-1)*coth(x))-2*%i)/(2*coth(x)-sqrt(3)*%i-1),x)
+               4_3_2_1 r9 | 'integrate((-((-(sqrt(3)*%i)-1)*%mr_itan(%i*x+%pi/2))-2*%i)/(-(2*%i*%mr_itan(%i*x+%pi/2))-sqrt(3)*%i-1),x)
      4_1_0_1 r1 | 'integrate(1/(coth(x)+1),x)
        4_3_1_1 r7 | 'integrate(1/(1-%i*%mr_itan(%i*x+%pi/2)),x)
          9_1 r8 | 'integrate(1,x)
@@ -633,39 +607,56 @@
 == 7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1059 L1250
    f      %e^(2*atanh(a*x))*x^3/(c-a^2*c*x^2)^2
    corpus 1/4/(a^4*c^2*(1-a*x)^2)+(-5/4)/(a^4*c^2*(1-a*x))-7/8*log(1-a*x)/(a^4*c^2)-1/8*log(1+a*x)/(a^4*c^2)
-   rubi   0
-   res    0.35 0.40575759438885384 4.440892098500626e-16
-   res    0.65 9.696756826000136 8.881784197001252e-15
-   res    1.7 52.1745396052199 9.555799156787168e-15
-   1_1_3_7 r44 | 'integrate((%e^(2*atanh(a*x))*x^3)/(c-a^2*c*x^2)^2,x)
-     9_1 r8 | 'integrate(0,x)
+   rubi   (-(log(a*x+1)/(8*a^4))-(7*log(1-a*x))/(8*a^4)+5/(4*a^4*(a*x-1))+1/(4*a^4*(a*x-1)^2))/c^2
+   res    0.35 4.440892098500626e-16 4.440892098500626e-16
+   res    0.65 1.0658141036401503e-14 8.881784197001252e-15
+   res    1.7 9.555799156787168e-15 9.555799156787168e-15
+   7_3_6 r28 | 'integrate((%e^(2*atanh(a*x))*x^3)/(c-a^2*c*x^2)^2,x)
+     1_1_1_3 r17 | 'integrate(x^3/((1-a*x)^3*(a*x+1)),x)
+       9_1 r13 | 'integrate(-(1/(8*a^3*(a*x+1)))-7/(8*a^3*(a*x-1))-5/(4*a^3*(a*x-1)^2)-1/(2*a^3*(a*x-1)^3),x)
+         1_1_1_1 r3 | 'integrate(1/(a*x+1),x)
+         1_1_1_1 r3 | 'integrate(1/(a*x-1),x)
+         1_1_1_1 r4 | 'integrate(1/(a*x-1)^2,x)
+         1_1_1_1 r4 | 'integrate(1/(a*x-1)^3,x)
 
 == 7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1069 L1260
    f      %e^(2*atanh(a*x))*x^3/(c-a^2*c*x^2)^3
    corpus 1/12/(a^4*c^3*(1-a*x)^3)+(-1/4)/(a^4*c^3*(1-a*x)^2)+3/16/(a^4*c^3*(1-a*x))+1/16/(a^4*c^3*(1+a*x))+1/8*atanh(a*x)/(a^4*c^3)
-   rubi   0
-   res    0.35 0.9009077614029116 3.3306690738754696e-16
-   res    0.65 29.483506749268784 1.4210854715202004e-14
-   res    1.7 77.82017988697129 9.530223420765062e-15
-   1_1_3_7 r44 | 'integrate((%e^(2*atanh(a*x))*x^3)/(c-a^2*c*x^2)^3,x)
-     9_1 r8 | 'integrate(0,x)
+   rubi   (atanh(a*x)/(8*a^4)+1/(16*a^4*(a*x+1))-3/(16*a^4*(a*x-1))-1/(4*a^4*(a*x-1)^2)-1/(12*a^4*(a*x-1)^3))/c^3
+   res    0.35 3.3306690738754696e-16 3.3306690738754696e-16
+   res    0.65 1.4210854715202004e-14 1.4210854715202004e-14
+   res    1.7 9.530223420765062e-15 9.530223420765062e-15
+   7_3_6 r28 | 'integrate((%e^(2*atanh(a*x))*x^3)/(c-a^2*c*x^2)^3,x)
+     1_1_1_3 r17 | 'integrate(x^3/((1-a*x)^4*(a*x+1)^2),x)
+       9_1 r13 | 'integrate(-(1/(8*a^5*x^2-8*a^3))-1/(16*a^3*(a*x+1)^2)+3/(16*a^3*(a*x-1)^2)+1/(2*a^3*(a*x-1)^3)+1/(4*a^3*(a*x-1)^4),x)
+         1_1_2_1 r15 | 'integrate(1/(8*a^5*x^2-8*a^3),x)
+         1_1_1_1 r4 | 'integrate(1/(a*x+1)^2,x)
+         1_1_1_1 r4 | 'integrate(1/(a*x-1)^2,x)
+         1_1_1_1 r4 | 'integrate(1/(a*x-1)^3,x)
+         1_1_1_1 r4 | 'integrate(1/(a*x-1)^4,x)
 
 == 7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e899 L1066
    f      %e^atanh(a*x)*x^3/(c-a^2*c*x^2)^2
    corpus 1/3*x^2*(1+a*x)/(a^2*c^2*(1-a^2*x^2)^(3/2))+asin(a*x)/(a^4*c^2)+1/3*(-2-3*a*x)/(a^4*c^2*sqrt(1-a^2*x^2))
-   rubi   0
-   res    0.35 0.2928525880514615 1.6653345369377348e-16
-   res    0.65 4.961761896489786 8.881784197001252e-16
-   res    1.7 23.880108720222697 1.0757978497750334e-14
-   1_1_3_7 r44 | 'integrate((%e^atanh(a*x)*x^3)/(c-a^2*c*x^2)^2,x)
-     9_1 r8 | 'integrate(0,x)
+   rubi   ((a*x+1)/(3*a^4*(1-a^2*x^2)^(3/2))-(((4*x)/a+3/a^2)/(a^2*sqrt(1-a^2*x^2))-(3*asin(a*x))/a^4)/3)/c^2
+   res    0.35 9.992007221626409e-16 1.6653345369377348e-16
+   res    0.65 4.440892098500626e-15 8.881784197001252e-16
+   res    1.7 3.84186224242476e-15 1.0757978497750334e-14
+   7_3_6 r26 | 'integrate((%e^atanh(a*x)*x^3)/(c-a^2*c*x^2)^2,x)
+     1_1_2_8 r14 | 'integrate((x^3*(a*x+1))/(1-a^2*x^2)^(5/2),x)
+       1_1_2_10 r5 | 'integrate(((3*x^2)/a+(3*x)/a^2+1/a^3)/(1-a^2*x^2)^(3/2),x)
+         1_4_1 r23 | 'integrate(3/(a^3*sqrt(1-a^2*x^2)),x)
+           1_1_2_1 r17 | 'integrate(1/sqrt(1-a^2*x^2),x)
 
 == 7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e911 L1078
    f      %e^atanh(a*x)*x^3/(c-a^2*c*x^2)^3
    corpus 1/5/(a^4*c^3*(1-a^2*x^2)^(5/2))+1/5*a*x^5/(c^3*(1-a^2*x^2)^(5/2))+(-1/3)/(a^4*c^3*(1-a^2*x^2)^(3/2))
-   rubi   0
-   res    0.35 0.6502236142243324 2.220446049250313e-16
-   res    0.65 15.086501908676329 3.552713678800501e-15
-   res    1.7 35.618030755794905 2.1427564839768302e-14
-   1_1_3_7 r44 | 'integrate((%e^atanh(a*x)*x^3)/(c-a^2*c*x^2)^3,x)
-     9_1 r8 | 'integrate(0,x)
+   rubi   ((a*x+1)/(5*a^4*(1-a^2*x^2)^(5/2))-(((6*x)/a+5/a^2)/(3*a^2*(1-a^2*x^2)^(3/2))-x/(a^3*sqrt(1-a^2*x^2)))/5)/c^3
+   res    0.35 1.1102230246251565e-16 2.220446049250313e-16
+   res    0.65 1.7763568394002505e-14 3.552713678800501e-15
+   res    1.7 2.1427564839768302e-14 2.1427564839768302e-14
+   7_3_6 r26 | 'integrate((%e^atanh(a*x)*x^3)/(c-a^2*c*x^2)^3,x)
+     1_1_2_8 r14 | 'integrate((x^3*(a*x+1))/(1-a^2*x^2)^(7/2),x)
+       1_1_2_10 r5 | 'integrate(((5*x^2)/a+(5*x)/a^2+1/a^3)/(1-a^2*x^2)^(5/2),x)
+         1_4_1 r23 | 'integrate(3/(a^3*(1-a^2*x^2)^(3/2)),x)
+           1_1_2_1 r2 | 'integrate(1/(1-a^2*x^2)^(3/2),x)
