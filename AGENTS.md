@@ -603,7 +603,38 @@ python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
 python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
 python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
 python3 test/test_head_rewrites.py          # Results: 70 passed, 0 failed
+python3 test/test_driver_proof.py           # Results: 21 passed, 0 failed
+python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
+maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 28 passed, 0 failed
 ```
+
+**The checker** (`test/mr_verify.mac` + `test/mr_verify.lisp`,
+`.scratch/corpus-harness/issues/06`, user decisions 2026-09-28) decides every
+answer. **Symbolic proof first**: the self-diff `diff(r, x) - f`, then each
+expected-diff, through the stages of `mr_proof_stages` (two
+factor/ratsimp chains, `radcan`, `radcan(exponentialize)`,
+`radcan(exponentialize(rectform))`, `radcan(trigexpand)`,
+`radcan(trigexpand(demoivre))`, `radcan(logarc)`, then the elliptic-gated
+`radcan(rat())`), each errcatch'd and CPU-limited on its own
+(`MR_STAGE_CAP`, default 5 s, an `ITIMER_VIRTUAL` timer; its 20 ms tick also
+stops a stage whose heap use passes `mr_heap_fraction`, 0.6 — heap exhaustion is
+fatal in SBCL, and a forced GC is not an option here, see `test/mr_verify.lisp`). Only when no stage
+proves either residual does the **numeric check** decide (two points, the
+sweep parameters, `li` arguments rectformed first) — an indication, not a
+proof, in either direction. A numeric-only pass still counts as PASS until
+the user decides otherwise; its tag says so. **Verification has its own
+budget**: rubi keeps the 30 s cap, the checker gets `MR_VERIFY_CAP` (default
+30 s) on top; the entry prints `ANSWERED <rubi cpu>` (flushed) once rubi
+returns, rubi over 30 s is `timeout` even if it answered, and a process
+killed after `ANSWERED` was killed while verifying — it is classified from
+the `NUMERIC` lines already printed, with a `/verify-timeout` tag. **The
+record's `t=` is rubi's CPU** (the `ANSWERED` value) since this change, not
+the whole process. The tag of every entry that reached the checker goes to
+the shard's **`.proof` sidecar** (`<tag> <label>`), like `.caps`, merged and
+censused against the merged record by `test/merge_proof.py RECORD OUT`; the
+`filter:` line states `verify: 30s cpu, stage 5s`, and the merger carries it.
+Records without that field predate the checker and are NOT comparable on
+`verified`/`unverified`/`timeout`.
 
 `test_driver_inert_leak` guards the inert-head leak classification: an answer
 carrying any of the six inert trig heads (`%mr_isin` … `%mr_icsc`, the bridge

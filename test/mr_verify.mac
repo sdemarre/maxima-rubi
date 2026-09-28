@@ -1,0 +1,227 @@
+/* test/mr_verify.mac -- the corpus checker: prove that a residual is zero
+   (.scratch/corpus-harness/issues/06; user decisions 2026-09-28).
+
+   mr_proof(d, x [, stages]) tries to show that the residual D -- a
+   diff(answer, x) - integrand, or an answer minus the corpus answer,
+   differentiated -- is identically zero, and returns a tag naming how:
+
+     "<stage>"                   a symbolic stage reduced D to exactly 0
+     "numeric"                   no symbolic stage did; D is ~0 at two points
+     "none/numeric-mismatch"     not proved; D is NOT ~0 at a test point
+     "none/numeric-declined"     not proved; D could not be evaluated
+                                 (a free symbol, a domain error, an
+                                 unevaluable special function)
+
+   and "/timeout:<stage>,..." is appended to a "none" or "numeric" tag when
+   stages were abandoned at the per-stage CPU limit mr_stage_cap.
+
+   SYMBOLIC FIRST (user, 2026-09-28): Maxima is a symbolic tool, and a
+   numeric residual is only an indication -- a small one says the answer is
+   likely right, a large one does not show it is wrong (precision, branch
+   or evaluation problems). So every symbolic stage is tried before the
+   numeric check, and the tag says which kind closed it.
+
+   Stages, in order (mr_proof_stages):
+     chainA.1-4   factor, ratsimp, ratsimp(expand), ratsimp(factor) -- each
+                  reworks the previous stage's result
+     chainB.1-4   ratsimp, ratsimp(expand), factor, ratsimp(factor)
+                  (two orders, because closure is order-dependent: measured
+                  2026-08-25, 1.2.2.7 e1 / 1.2.2.3 e1 / 1.2.2.4 e165)
+     radcan, exponentialize, rectform, trigexpand, demoivre, logarc
+                  the radcan family; each closed README residuals that no
+                  chain does (probes/readme-examples/01-symbolic-
+                  verification.out) and each works on D itself
+     rat-radcan   radcan(rat(D)), gated off elliptic residuals (it burned
+                  30-100 s crashing on them, measured 2026-08-28); closes
+                  the ratsimp `quotient' by `zero' class (docs/corpus-radcan-
+                  fallback-attribution.md)
+
+   Every stage is errcatch'd and CPU-limited on its own: an error or a
+   runaway in one stage never ends the chain. A chain stage that fails
+   skips the rest of its own chain, whose stages need its result.
+
+   Branch caveat: radcan and logarc choose principal branches, so a 0 from
+   them is a proof modulo branch choice -- as it was for the rat-radcan
+   stage before this module existed. */
+
+load("test/mr_verify.lisp")$
+
+/* CPU seconds any one stage (and the numeric check) may use. */
+mr_stage_cap : 5$
+
+mr_proof_stages : ["chainA.1", "chainA.2", "chainA.3", "chainA.4",
+                   "chainB.1", "chainB.2", "chainB.3", "chainB.4",
+                   "radcan", "exponentialize", "rectform", "trigexpand",
+                   "demoivre", "logarc", "rat-radcan"]$
+
+/* The numeric check's parameter values and test points (carried over
+   unchanged from the driver's numeric stage, test/corpus_driver.py): a = 0.9
+   keeps 4*a*c - b^2 > 0 so the quadratic families stay on the real branch
+   (1.2.2.2 e957, 1.2.1.5 e105); p = 2 lets the generic-exponent families
+   evaluate (1.2.1.4 e383) and avoids the 1/(p+1), 1/(2p+3) poles. */
+mr_numeric_subs : [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, f=0.8, g=1.7, h=0.3,
+                   A=0.6, B=1.4, C=0.4, D=0.9, p=2]$
+mr_numeric_points : [0.35, 0.65]$
+mr_numeric_tol : 1e-9$
+
+/* The expression a stage applies to its input. */
+mr_stage_apply(mr_nm, mr_rv) :=
+  if mr_nm = "chainA.1" then factor(mr_rv)
+  else if mr_nm = "chainA.2" then ratsimp(mr_rv)
+  else if mr_nm = "chainA.3" then ratsimp(expand(mr_rv))
+  else if mr_nm = "chainA.4" then ratsimp(factor(mr_rv))
+  else if mr_nm = "chainB.1" then ratsimp(mr_rv)
+  else if mr_nm = "chainB.2" then ratsimp(expand(mr_rv))
+  else if mr_nm = "chainB.3" then factor(mr_rv)
+  else if mr_nm = "chainB.4" then ratsimp(factor(mr_rv))
+  else if mr_nm = "radcan" then radcan(mr_rv)
+  else if mr_nm = "exponentialize" then radcan(exponentialize(mr_rv))
+  /* rectform FIRST: after exponentialize it does not close (README) */
+  else if mr_nm = "rectform" then radcan(exponentialize(rectform(mr_rv)))
+  else if mr_nm = "trigexpand" then radcan(trigexpand(mr_rv))
+  else if mr_nm = "demoivre" then radcan(trigexpand(demoivre(mr_rv)))
+  else if mr_nm = "logarc" then radcan(logarc(mr_rv))
+  else if mr_nm = "rat-radcan" then
+    (if apply(freeof, [elliptic_f, elliptic_e, elliptic_pi, elliptic_ec,
+                       elliptic_eu, elliptic_kc, mr_rv]) = true
+       then radcan(rat(mr_rv)) else mr_rv)
+  else error("mr_stage_apply: unknown stage", mr_nm)$
+
+/* "chainA.3" -> "chainA"; any other stage is its own chain. */
+mr_stage_chain(mr_nm) :=
+  if sposition(".", mr_nm) = false then mr_nm
+  else substring(mr_nm, 1, sposition(".", mr_nm))$
+
+/* The value of one guarded step: [v] on success, [] on an error, `timeout`
+   past mr_stage_cap, `heaplimit` past mr_heap_fraction of the heap. */
+mr_guarded(mr_th) := block([errormsg : false, mr_rv],
+  mr_rv : errcatch(mr_cpu_timed(mr_th(), mr_stage_cap)),
+  if mr_rv = [] then [] else part(mr_rv, 1))$
+
+/* rectform every li argument, bottom up: float(li[2](z)) evaluates only
+   when z is already a + b*%i (measured 2026-09-28: li[2](2.0/(0.315*%i
+   - 1.0) + 1.0) stays unevaluated, li[2] of its rectform evaluates) --
+   5.4.1 e18's correct answer read `unverified` for exactly that. */
+mr_rect_li(mr_e) := scanmap(lambda([mr_u],
+    if not atom(mr_u) and subvarp(op(mr_u)) and op(op(mr_u)) = 'li
+      then apply(op(mr_u), [rectform(first(mr_u))]) else mr_u),
+  mr_e, bottomup)$
+
+/* One point: "ok" | "mismatch" | "declined". The evaluation AND the reading
+   of its value run inside the guard: realpart/cabs of a float special
+   function can signal too (2.3 e477: hypergeometric with a pole parameter,
+   `pquotient: attempted quotient by zero'), and an error, like a timeout,
+   declines. */
+mr_numeric_point(mr_d, mr_x, mr_x0) := block([mr_v],
+  mr_v : mr_guarded(lambda([], block([mr_w],
+        mr_w : rectform(float(mr_rect_li(float(ev(mr_d, append(mr_numeric_subs,
+                                                             [mr_x = mr_x0])))))),
+        if not (numberp(realpart(mr_w)) and numberp(imagpart(mr_w)))
+          then "declined"
+        else if is(cabs(mr_w) < mr_numeric_tol) then "ok"
+        else "mismatch"))),
+  if listp(mr_v) and mr_v # [] then part(mr_v, 1) else "declined")$
+
+/* Every point ok -> "ok"; any mismatch -> "mismatch"; else "declined". */
+mr_numeric_check(mr_d, mr_x) := block([mr_rs],
+  mr_rs : map(lambda([mr_x0], mr_numeric_point(mr_d, mr_x, mr_x0)), mr_numeric_points),
+  if every(lambda([mr_s], mr_s = "ok"), mr_rs) then "ok"
+  else if member("mismatch", mr_rs) then "mismatch"
+  else "declined")$
+
+/* The symbolic stages alone: [stage, timeouts] where stage is the first
+   stage that reduced D to 0, or false; timeouts lists the stages abandoned
+   at mr_stage_cap, and as "<stage>(heap)" those stopped by the heap guard
+   (test/mr_verify.lisp). */
+mr_proof_symbolic(mr_d, mr_stg) := block([mr_prev : [], mr_brk : [],
+                                          mr_tos : [], mr_rv, mr_ch, mr_in,
+                                          mr_hit : false],
+  for mr_nm in mr_stg do (
+    mr_ch : mr_stage_chain(mr_nm),
+    if not member(mr_ch, mr_brk) then (
+      /* a chain stage reworks its chain's latest result */
+      mr_in : assoc(mr_ch, mr_prev, mr_d),
+      mr_rv : mr_guarded(lambda([], mr_stage_apply(mr_nm, mr_in))),
+      if mr_rv = 'timeout then (mr_tos : endcons(mr_nm, mr_tos),
+                                mr_brk : cons(mr_ch, mr_brk))
+      else if mr_rv = 'heaplimit then (mr_tos : endcons(concat(mr_nm, "(heap)"), mr_tos),
+                                       mr_brk : cons(mr_ch, mr_brk))
+      else if mr_rv = [] then mr_brk : cons(mr_ch, mr_brk)
+      else (mr_rv : part(mr_rv, 1),
+            if mr_rv = 0 then return(mr_hit : mr_nm),
+            mr_prev : cons(mr_ch = mr_rv,
+                           sublist(mr_prev, lambda([mr_q], lhs(mr_q) # mr_ch)))))),
+  [mr_hit, mr_tos])$
+
+/* "numeric" or "none/numeric-<outcome>", with "/timeout:<stages>" when
+   stages were abandoned. */
+mr_unproved_tag(mr_num, mr_tos) := block([mr_tag],
+  mr_tag : if mr_num = "ok" then "numeric" else concat("none/numeric-", mr_num),
+  if mr_tos # [] then
+    mr_tag : concat(mr_tag, "/timeout:", simplode(unique(mr_tos), ",")),
+  mr_tag)$
+
+mr_proof([mr_args]) := block([mr_d, mr_x, mr_stg, mr_sym],
+  mr_d : mr_args[1], mr_x : mr_args[2],
+  mr_stg : if length(mr_args) >= 3 then mr_args[3] else mr_proof_stages,
+  mr_sym : mr_proof_symbolic(mr_d, mr_stg),
+  if stringp(mr_sym[1]) then mr_sym[1]
+  else mr_unproved_tag(mr_numeric_check(mr_d, mr_x), mr_sym[2]))$
+
+/* ---- the corpus driver's per-entry verdict ----
+   mr_check_entry(r, f, x, es) decides an answer R to the integrand F, given
+   the corpus answers ES -- a list of one or two errcatch results, [e] or []
+   for an answer that failed to simplify, which is skipped -- and prints
+
+     NUMERIC verified <ok|mismatch|declined>    before any symbolic stage
+     NUMERIC expected <...>                     one per corpus answer, likewise
+     CLASS <verified|expected|unverified>
+     PROOF <tag>
+
+   Symbolic proof of EITHER residual beats a numeric one: the self-diff
+   diff(r, x) - f first (it closes cheaply on a correct answer), then each
+   expected-diff diff(r - e, x); only when no stage proves any of them does
+   the numeric outcome decide -- self-diff first, then the expected-diffs.
+   The NUMERIC lines are flushed as they are printed: the driver kills the
+   process at its verification budget, and classifies a killed entry from
+   the lines it already has (test/corpus_driver.py classify_entry). */
+mr_say(mr_line) := (printf(true, "~a~%", mr_line), ?finish\-output())$
+
+mr_residual_of(mr_th) := block([errormsg : false, mr_rv],
+  mr_rv : errcatch(mr_th()),
+  if mr_rv = [] then false else part(mr_rv, 1))$
+
+mr_check_entry(mr_r, mr_f, mr_x, mr_es) := block([mr_dv, mr_nv, mr_sv,
+                                                  mr_tos : [], mr_nes : [],
+                                                  mr_de, mr_ne, mr_se, mr_done : false],
+  mr_dv : mr_residual_of(lambda([], diff(mr_r, mr_x) - mr_f)),
+  mr_nv : if mr_dv = false then "declined" else mr_numeric_check(mr_dv, mr_x),
+  mr_say(concat("NUMERIC verified ", mr_nv)),
+  if mr_dv # false then (
+    mr_sv : mr_proof_symbolic(mr_dv, mr_proof_stages),
+    mr_tos : append(mr_tos, mr_sv[2]),
+    if stringp(mr_sv[1]) then (
+      mr_say("CLASS verified"), mr_say(concat("PROOF ", mr_sv[1])),
+      mr_done : true)),
+  if not mr_done then
+    for mr_ec in mr_es do if not mr_done and mr_ec # [] then block([mr_e : part(mr_ec, 1)],
+      mr_de : mr_residual_of(lambda([], diff(mr_r - mr_e, mr_x))),
+      mr_ne : if mr_de = false then "declined" else mr_numeric_check(mr_de, mr_x),
+      mr_nes : endcons(mr_ne, mr_nes),
+      mr_say(concat("NUMERIC expected ", mr_ne)),
+      if mr_de # false then (
+        mr_se : mr_proof_symbolic(mr_de, mr_proof_stages),
+        mr_tos : append(mr_tos, mr_se[2]),
+        if stringp(mr_se[1]) then (
+          mr_say("CLASS expected"), mr_say(concat("PROOF ", mr_se[1])),
+          mr_done : true))),
+  if not mr_done then (
+    if mr_nv = "ok" then mr_say("CLASS verified")
+    else if member("ok", mr_nes) then mr_say("CLASS expected")
+    else mr_say("CLASS unverified"),
+    mr_say(concat("PROOF ",
+                  mr_unproved_tag(if mr_nv = "ok" or member("ok", mr_nes)
+                                    then "ok" else mr_nv, mr_tos)))),
+  done)$
+
+mr_verify_loaded : true$

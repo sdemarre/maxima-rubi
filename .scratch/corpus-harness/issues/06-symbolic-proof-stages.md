@@ -1,6 +1,6 @@
 # Verification: record which stage proved an entry, and add the radcan-family symbolic stages
 
-Status: ready-for-agent
+Status: in progress (branch `verification-stages`)
 Type: task (driver + harness guard + full-corpus A/B)
 Filed: 2026-09-26 (user request, after the README examples' symbolic verification)
 
@@ -77,3 +77,79 @@ exponentials, roots of unity), so the gain is likely concentrated in classes 3-7
 
 Harness guards (AGENTS.md list) including the new stage-recording guard; the full-corpus A/B
 above with every PASS→FAIL attributed.
+
+## Comments
+
+### 2026-09-28 — user decisions, and the implementation on `verification-stages`
+
+Decisions (asked with the measured options):
+
+- **Symbolic first, numeric last.** Numeric residuals are an indication, not a proof, in either
+  direction (a mismatch can be precision, branch or evaluation trouble). Every symbolic stage runs
+  before the numeric check; the tag says which kind closed an entry.
+- **Verification gets its own budget.** rubi keeps 30 s cpu; the checker gets `MR_VERIFY_CAP`
+  (30 s) on top, and each stage `MR_STAGE_CAP` (5 s cpu, `ITIMER_VIRTUAL`). A process killed after
+  rubi answered is not a rubi timeout.
+- **Proof stage in a `.proof` sidecar**, like `.caps`, so `ab_records.py` and the mergers keep
+  their line format.
+- **No full re-run yet**: improve the checker as far as possible first.
+
+Built (TDD): `test/mr_verify.mac` / `test/mr_verify.lisp` (the checker, `mr_check_entry`),
+`test/test_mr_verify.mac` (24 checks), `test/test_driver_proof.py` (20 checks); the driver, queue
+runner and class merger carry the protocol (`ANSWERED`, `NUMERIC`, `CLASS`, `PROOF`), the budget
+and the `verify:` header field. `test_driver_radcan_fallback` narrows the stage list to
+`["rat-radcan"]` (the radcan family now closes its witnesses first); `test_driver_parens` checks
+the list hand-over; `test_run_records`' stub speaks the new protocol.
+
+Found on the way: `float(li[s](z))` stays unevaluated unless `z` is already `a + b*%i`, so the
+numeric check declined on correct polylog answers (5.4.1 e18). The check now rectforms `li`
+arguments; e18 itself is now proved symbolically by `logarc`.
+
+Also built: `test/merge_proof.py` (merges and censuses the `.proof` sidecars against the merged
+record; `test/test_merge_proof.py`, 8 checks).
+
+### 2026-09-28 — the unverified subset (`probes/verify-stages/01-unverified-subset.{sh,out}`)
+
+The 1,530 `unverified` entries of `test/corpus_class<N>.pfs.out`, re-run under the checker (12
+workers, 30 s cpu rubi + 30 s verification, 5 s per stage; rules core `f2cb4fc6` = master
+`b62d6d7`). **386 now pass**, 384 of them proved symbolically:
+
+| closing stage | entries |
+|---|---:|
+| `exponentialize` | 325 (class 4 trig, 7.3.6 exponentials of atanh) |
+| `radcan` | 38 (mostly class 1, the expected-diff) |
+| `logarc` | 10 |
+| `demoivre` | 7 |
+| `rectform` | 4 |
+| numeric only | 2 |
+
+Per class: 1 +38, 3 +4, 4 +231, 5 +16, 6 +59, 7 +38; 2 and 8 none.
+
+The 1,144 still unproved: ~950 `none/numeric-declined` (the numeric check cannot evaluate them --
+mostly a free `m`/`n` or AppellF1), ~190 `none/numeric-mismatch` (a hand-inspection list, not a
+defect list: 4.1.7, 4.2.7, 6.1.7, 6.2.7 carry most of them).
+
+Stage cost: `rectform` accounts for 325 of the ~450 stage timeouts and both heap fills, and closed
+4 entries -- the first candidate for reordering or a tighter limit.
+
+Three checker defects the run exposed (18 entries read `error`), fixed test-first; the 18 re-run
+as `unverified` with honest tags (the record's last section):
+- the numeric check read its float value OUTSIDE its guard: `realpart`/`cabs` of a float
+  hypergeometric with a pole parameter raise `pquotient` (2.3 e477);
+- a corpus answer that fails to simplify (`expt: undefined: 0 to a negative exponent`, 4.2.7 e80)
+  was evaluated outside any errcatch -- each answer is now `errcatch`'d, a failure skipped;
+- heap exhaustion (4.5.1.2 e713/e714, the `rectform` stage filled the 1 GB heap, fatal in SBCL):
+  the stage timer's 20 ms tick now stops a stage above `mr_heap_fraction` (0.6) of the dynamic
+  space. Garbage of a stopped stage can stop the following stages of that entry too (`(heap)` in
+  the tag); a forced GC is not a way out (0.8-27 s in the rules core, and a deadlock from the
+  handler), so it stays -- 2 of 1,530 entries.
+
+Next, before any full run (user: improve the checker as far as possible first):
+1. `rectform`: last, or a tighter limit;
+2. give the numeric check values for `m`/`n`, and AppellF1 support (derivative + numeric
+   evaluator) -- an indication for ~950 entries, never a proof;
+3. hand-check a sample of the ~190 mismatches;
+4. a control sample (~1,000) of currently-`verified` entries: the numeric-only share, and any
+   verdict the new stages or the budget change;
+5. whether `rat-radcan` still earns its place behind `radcan` (no synthetic witness found that it
+   closes and `radcan` does not).

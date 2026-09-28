@@ -74,6 +74,13 @@ Measured 2026-09-21 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7:
 the rescue witness is nofb=0, withfb=1, gate=true; the gated witness is
 nofb=0, withfb=0, gate=false, and ungated radcan(rat(.)) = 0.
 
+CHECKER MODULE — 2026-09-28 (.scratch/corpus-harness/issues/06). The
+stages moved into test/mr_verify.mac (the fallback is its `rat-radcan`
+stage) and the radcan family now runs ahead of it, closing both witnesses
+on its own. Checks 3 and 4 therefore narrow mr_proof_stages to
+["rat-radcan"], so the fallback is again the only symbolic stage and the
+two zero_chain arms still differ by exactly that stage.
+
 Re-runnable:  python3 test/test_driver_radcan_fallback.py
 Exits nonzero if any check fails.
 """
@@ -114,29 +121,38 @@ def _load_driver():
 
 
 def check_construction(driver):
-    """The zero_chain text must carry the gated errcatched fallback."""
+    """zero_chain's FALLBACK flag must select the stage list with or
+    without rat-radcan, and the checker must carry the gated stage.
+
+    Since .scratch/corpus-harness/issues/06 (2026-09-28) the stages live
+    in test/mr_verify.mac and zero_chain calls mr_proof; this reads both."""
     failures = []
-    text = driver.zero_chain("MR_diff", "x")
-    if "errcatch(radcan(rat(MR_de)))" not in text:
-        failures.append("zero_chain lacks the errcatched "
-                        "radcan(rat(MR_de)) fallback stage")
-    gate = (f"apply(freeof, [{GATE_SYMS}, MR_de])")
-    if gate not in text:
-        failures.append("fallback not gated on the no-elliptic freeof "
-                        f"(want {gate!r})")
-    if "freeof([" in text:
-        failures.append("zero_chain carries a list-first-arg freeof "
+    with_fb = driver.zero_chain("MR_diff", "x", fallback=True)
+    no_fb = driver.zero_chain("MR_diff", "x", fallback=False)
+    if "mr_proof(" not in with_fb or "mr_proof_stages" not in with_fb \
+            or 'delete("rat-radcan"' in with_fb:
+        failures.append("zero_chain(fallback=True) does not run the full "
+                        "stage list through mr_proof")
+    if 'delete("rat-radcan", mr_proof_stages)' not in no_fb:
+        failures.append("zero_chain(fallback=False) does not drop the "
+                        "rat-radcan stage")
+    mac = " ".join(open(os.path.join(HERE, "mr_verify.mac"),
+                        encoding="utf-8").read().split())
+    gate = (f"apply(freeof, [{GATE_SYMS}, mr_rv])")
+    if '"rat-radcan" then (if ' + gate + " = true then radcan(rat(mr_rv))" \
+            not in mac:
+        failures.append("the rat-radcan stage is not radcan(rat()) gated on "
+                        f"the no-elliptic freeof (want {gate!r})")
+    if "freeof([" in mac:
+        failures.append("the checker carries a list-first-arg freeof "
                         "call (not a documented freeof form; silently "
                         "no-op gate — measured 2026-08-28)")
-    if "part(MR_zr, 1) = 1 then 1" not in text:
-        failures.append("fallback not short-circuited: a chain that "
-                        "closed must return 1 without running the "
-                        "fallback")
     # Paren balance: the nested hand-built string miscounted twice
     # before (measured 2026-08-25); keep it checked.
-    if text.count("(") != text.count(")"):
-        failures.append(f"zero_chain text paren imbalance: "
-                        f"{text.count('(')} ( vs {text.count(')')} )")
+    for name, text in (("fallback=True", with_fb), ("fallback=False", no_fb)):
+        if text.count("(") != text.count(")"):
+            failures.append(f"zero_chain({name}) text paren imbalance: "
+                            f"{text.count('(')} ( vs {text.count(')')} )")
     return failures
 
 
@@ -177,7 +193,14 @@ def _chain_probe(driver, witness):
     """(nofb, withfb, gate, ungated_radcan) for WITNESS, in one Maxima."""
     no_fb = driver.zero_chain(witness, "x", fallback=False)
     with_fb = driver.zero_chain(witness, "x", fallback=True)
-    text = ("MR_N: (" + no_fb + ")$\n"
+    # rat-radcan is the ONLY symbolic stage here: since issues/06 the
+    # radcan family runs ahead of it and closes both witnesses on its own
+    # (radcan(%e^(n*log(x)) - x^n) = 0), so with the full list neither arm
+    # would ever reach it. Narrowed, fallback=False leaves no symbolic
+    # stage at all and the numeric check declines on the free n.
+    text = ('load("test/mr_verify.mac")$\n'
+            'mr_proof_stages : ["rat-radcan"]$\n'
+            "MR_N: (" + no_fb + ")$\n"
             "MR_W: (" + with_fb + ")$\n"
             f"MR_G: apply(freeof, [{GATE_SYMS}, ({witness})])$\n"
             f"MR_R: errcatch(radcan(rat({witness})))$\n"
@@ -254,8 +277,8 @@ def main():
         print(f"FAIL [construction] {msg}")
     if not cf:
         n_passed += 1
-        print("PASS [construction] zero_chain carries the gated "
-              "errcatched radcan(rat()) fallback")
+        print("PASS [construction] zero_chain's fallback flag selects the "
+              "gated rat-radcan stage")
 
     checks = [("gate-semantics", check_gate_semantics,
                "the apply(freeof, ...) gate discriminates elliptic "

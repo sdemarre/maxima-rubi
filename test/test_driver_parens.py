@@ -11,8 +11,10 @@ CORRECT antiderivative fails the zero-test and the entry is misclassified
 `mr_r - (<e>)` residual zero.
 
 Two checks:
-  1. construction (no Maxima): build_text emits `diff(mr_r - (<e_text>), x)`
-     for both the primary and secondary expected chains.
+  1. construction (no Maxima): build_text passes both corpus answers to
+     mr_check_entry as list elements `[errcatch(<e1>), errcatch(<e2>)]` (it
+     emitted `diff(mr_r - (<e_text>), x)` until 2026-09-28, when the
+     expected-diff moved into test/mr_verify.mac).
   2. behavior (Maxima): the corpus entry that was broken, 1.3.2 e1, now
      classifies as a PASS class (expected / verified), not `unverified`.
 
@@ -53,19 +55,21 @@ def check_construction(driver):
     e_sum = "u_(x) + v_(x)"
     e2_sum = "p_(x) + q_(x)"
 
+    # Since .scratch/corpus-harness/issues/06 (2026-09-28) the expected-
+    # diff is built inside test/mr_verify.mac's mr_check_entry, as
+    # diff(mr_r - mr_e, x) on an already-evaluated answer mr_e; the driver
+    # hands the answers over as parenthesized list elements.
     t1 = driver.build_text(f_text, var_text, e_sum, None)
-    if f"diff(mr_r - ({e_sum}), {var_text})" not in t1:
-        failures.append(f"primary expected chain not parenthesized "
-                        f"(want `diff(mr_r - ({e_sum}), {var_text})`)")
-    elif f"diff(mr_r - {e_sum}, {var_text})" in t1.replace(
-            f"diff(mr_r - ({e_sum}), {var_text})", ""):
-        failures.append("primary expected chain still has the "
-                        "unparenthesized `mr_r - <e>` form")
+    if f"mr_check_entry(mr_r, mr_f, {var_text}, [errcatch({e_sum})])" not in t1:
+        failures.append(f"primary expected answer not passed as its own "
+                        f"expression (want `[errcatch({e_sum})]`)")
+    if f"mr_r - {e_sum}" in t1:
+        failures.append("the unparenthesized `mr_r - <e>` form is back")
 
     t2 = driver.build_text(f_text, var_text, e_sum, e2_sum)
-    if f"diff(mr_r - ({e2_sum}), {var_text})" not in t2:
-        failures.append(f"secondary expected chain not parenthesized "
-                        f"(want `diff(mr_r - ({e2_sum}), {var_text})`)")
+    if f"[errcatch({e_sum}), errcatch({e2_sum})]" not in t2:
+        failures.append(f"secondary expected answer not passed as its own "
+                        f"expression (want `[errcatch({e_sum}), errcatch({e2_sum})]`)")
     return failures
 
 

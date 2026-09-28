@@ -491,6 +491,12 @@ def zc_header():
     return "" if ZC_FALLBACK else "  zc-fallback: off"
 
 
+def verify_header():
+    """Suffix for the record's `filter:` line: the verification budget. A
+    record without it predates the budget (and the symbolic-first checker)."""
+    return f"  verify: {VERIFY_CAP}s {CAP_KIND}, stage {STAGE_CAP:g}s"
+
+
 def core_header():
     """Suffix for the record's `filter:` header line: names a pinned core
     (the shard merge accepts any `filter:` line), empty otherwise."""
@@ -527,6 +533,16 @@ CAP_KIND = os.environ.get("MR_CAP_KIND", "cpu")
 # taken with it is not comparable to one taken without, exactly as a cpu record
 # is not comparable to a wall one, which is why the header states it (below).
 ZC_FALLBACK = os.environ.get("MR_ZC_FALLBACK", "1") != "0"
+# Verification's own budget (user decision 2026-09-28,
+# .scratch/corpus-harness/issues/06). rubi keeps TIMEOUT; the checker gets
+# VERIFY_CAP more on top, so the process cap is TIMEOUT + VERIFY_CAP, and
+# the entry's ANSWERED line says how much of it rubi used: rubi over TIMEOUT
+# is a timeout even when it answered, and a process killed after ANSWERED
+# was killed while verifying (classify_entry). STAGE_CAP bounds each checker
+# stage (test/mr_verify.mac mr_stage_cap), so one runaway stage cannot eat
+# the whole verification budget. Both are CPU seconds under a cpu cap.
+VERIFY_CAP = int(os.environ.get("MR_VERIFY_CAP", "30"))
+STAGE_CAP = float(os.environ.get("MR_STAGE_CAP", "5"))
 if CAP_KIND not in ("cpu", "wall"):
     raise SystemExit(f"corpus_driver: MR_CAP_KIND must be cpu or wall, not {CAP_KIND!r}")
 
@@ -674,185 +690,27 @@ def extract_entries(path):
 
 
 def zero_chain(d_expr, var, fallback=True):
-    """Statement list whose value is 1 iff the zero-test closes.
+    """Statement list whose value is 1 iff the checker proves D_EXPR zero,
+    symbolically or by the numeric check (test/mr_verify.mac mr_proof).
 
-    FALLBACK=False emits the same chain WITHOUT the radcan(rat()) stage.
-    Nothing in a corpus run passes it: it exists so the fallback's guard
-    (test/test_driver_radcan_fallback.py) can run one diff BOTH ways and
-    prove the fallback is what closes it, rather than asserting a
-    classification that the rule set decides (2026-09-21 — the guard's
-    previous witnesses rotted at commit 29d237a for exactly that reason).
+    The corpus run itself no longer calls this: build_text hands the whole
+    verdict to mr_check_entry. It is kept, with its signature, for the
+    committed probes that build their own zero tests from it.
+    FALLBACK=False drops the rat-radcan stage (the MR_ZC_FALLBACK arm).
 
-    The whole chain is errcatch'd: a ratsimp/factor crash inside the
-    VERIFICATION (measured 2026-08-24: `quotient' by `zero' on 1.2.2.4
-    e165 / 1.2.2.8 e1) is an unverified zero-test, not a subprocess
-    fatality — without the guard the error kills Maxima before the CLASS
-    line and the entry is misclassified `error`. errcatch in this build
-    returns [value] on success and [] on error (probe-errcatch-semantics).
-
-    Stage order (measured 2026-08-25, 5.50.0/SBCL): TWO full chains —
-    factor-first, then ratsimp-first — because closure is ORDER-
-    DEPENDENT and no single order is uniformly cheap:
-      - radical diffs (correct package answer): factor closes in ~2 s,
-        ratsimp hangs >50 s (1.2.2.7 e1);
-      - 1.2.2.3 e1's expected-diff: factor-first chain = 47 s,
-        ratsimp-first chain = 9 s;
-      - 1.2.2.4 e165's self-diff closes only under the ratsimp-first
-        order (ratsimp(expand(ratsimp(D))) = 0; the same stages after a
-        leading factor do not close).
-    Each chain keeps the errcatch-crash semantics; a crash in either
-    chain is an unverified zero-test, not a fatality. The canary cap
-    is 60 s (test/canary.py) to hold both chains.
-
-    Fallback (measured 2026-08-28, 5.50.0/SBCL): when the chain did
-    not close, an elliptic-gated, errcatched `radcan(rat(MR_de))`
-    attempt runs — it closes zero-diffs of the `quotient' by 'zero'
-    zero-divisor class that no ratsimp/factor stage closes (1.1.3.8
-    e541/e543/e544, 1.2.1.4 e764). The gate skips elliptic-carrying
-    diffs (radcan(rat()) burns 30-100 s crashing on them — see the
-    measured note in the code below); a chain that closed returns 1
-    without running the fallback.
-    """
-    # Stage list: (expr to assign to MR_d, ...) — each stage reworks the
-    # previous MR_d; stage 1 of chain 2 restarts from the raw diff
-    # (MR_de — materialized ONCE: ev'd over a still-unevaluated
-    # diff(mr_r, x) substitutes x into the diff's variable argument and
-    # errors "second argument must be a variable; found 0.35", measured
-    # 2026-08-25). Stages are built programmatically so the
-    # nested-paren count can never drift (the hand-nested string
-    # miscounted twice, measured 2026-08-25).
-    stages = ["factor(MR_de)",
-              "ratsimp(MR_d)",
-              "ratsimp(expand(MR_d))",
-              "ratsimp(factor(MR_d))",
-              "ratsimp(MR_de)",
-              "ratsimp(expand(MR_d))",
-              "factor(MR_d)",
-              "ratsimp(factor(MR_d))"]
-    # FIRST numeric stage (measured 2026-08-25, 5.50.0/SBCL): correct
-    # Prompt budget (measured 2026-08-25, 5.50.0/SBCL): integrate's sign
-    # prompts are answered from the batch input stream, and a target that
-    # asks MORE questions than queued lines exhausts the stream — the
-    # reader hits EOF ("RETRIEVE: End of file encountered."), the batch
-    # dies before the CLASS line, and the entry misclassifies `error`
-    # (1.2.1.6 e77: the substring-fatality fix let its cascade reach the
-    # integrate fallback, which asked 13-20 questions vs the old 6/6
-    # budget). 40 pos + 20 no per stage covers the deepest cascade
-    # measured so far; an exhausted budget now degrades to `no` answers
-    # (graceful, classification-safe) rather than an EOF death. The pos-
-    # first order keeps Rubi's all-parameters-positive convention for as
-    # many questions as the budget reaches.
-    # answers whose diff carries elliptic_f/elliptic_e terms close under
-    # NO symbolic stage — 1.2.1.3 e1058 (after the SubstPower sqrt-head
-    # fix) is numerically exact (resid ~1e-15) but ratsimp/expand/factor
-    # all fail on its elliptic diff, and one of the symbolic stages
-    # CRASHES on it, so the single outer errcatch swallows the chain
-    # before a trailing numeric stage could run — the numeric stage
-    # therefore leads. Evaluate the diff at two points under the sweep
-    # parameter values (the same substitution the wrong-answer triage
-    # sweep uses); a float eval that still carries a symbolic parameter
-    # returns a float NOUN, whose is(abs(.) < 1e-9) is false — so
-    # symbolic-parameter targets are unaffected. A domain error (sqrt
-    # of negative, /0) at a test point is caught by the stage's OWN
-    # errcatch (measured 2026-08-25: letting such a domain error reach
-    # the OUTER errcatch kills the whole chain — 5 previously-verified
-    # targets, incl. 1.3.1 e1, regressed to unverified) and reads as
-    # "numeric stage declined, try the symbolic stages". Leading also
-    # saves the 60 s budget-eaters (1.1.2.4 e983 / 1.1.4.2 e182, both
-    # measured numerically correct) from burning the cap on the
-    # symbolic stages.
-    # NOTE: errcatch WRAPS its success value in a list (measured
-    # 2026-08-25: errcatch([f1, f2]) returns [[v1, v2]], so the
-    # two-point list form double-wraps and the condition dies) — each
-    # point gets its own errcatch, unwrapped with part(., 1).
-    # a = 0.9 (not 0.7): the quadratic-family reductions carry
-    # sqrt(4*a*c-b^2)-type branch terms, and 4*0.7*0.5-1.3^2 < 0 made
-    # the float eval take the COMPLEX branch of a branch-dependent
-    # (otherwise correct) answer, reading as a huge residual — measured
-    # 2026-08-25: 1.2.2.2 e957 and 1.2.1.5 e105 are numerically exact
-    # under 4ac-b^2 > 0 (resid ~1e-16) but "wrong" (resid 0.6-1.6 /
-    # exactly d) under 4ac-b^2 < 0. 4*0.9*0.5-1.3^2 = 0.11 > 0 and
-    # a+b*x+c*x^2 > 0 at both test points.
-    # p = 2: generic-exponent targets (free p, e.g. 1.2.1.4 e383
-    # x^3(d+e x)(a+b x^2)^p) otherwise defeat the stage — a float eval
-    # carrying the free p returns a float NOUN and the stage declines —
-    # while their formal zero chain cannot close the p-dependent diff
-    # (measured 2026-08-25: e383's answer is CORRECT, verified by
-    # instance at p = 2 / -3 / 5, resid ~1e-17). Substituting p = 2
-    # checks the p=2 instance (same standard as every other numeric
-    # verification); a target whose p=2 instance hits a domain error
-    # declines via the stage's own errcatch exactly as today, and a
-    # target with NO free p is untouched (its 3/2-style exponents are
-    # concrete, not the symbol p). p = 2 avoids the reduction-family
-    # 1/(p+1) / 1/(2p+3) coefficient singularities (p+1 = 3, 2p+3 = 7).
-    subs = ("a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, f=0.8, g=1.7, h=0.3, "
-            "A=0.6, B=1.4, C=0.4, D=0.9, p=2")
-    symbolic = "0"
-    for s in reversed(stages):
-        symbolic = f"MR_d: {s}, if is(MR_d=0) then 1 else (" + symbolic + ")"
-    numeric = ("MR_de: " + d_expr + ", "
-               "MR_z1 : errcatch(float(ev(MR_de, [" + subs + ", "
-               + var + "=0.35]))), "
-               "if MR_z1 = [] then (" + symbolic + ") else ("
-               "MR_z2 : errcatch(float(ev(MR_de, [" + subs + ", "
-               + var + "=0.65]))), "
-               "if MR_z2 = [] then (" + symbolic + ") else ("
-               "if is(abs(part(MR_z1, 1)) < 1e-9) = true "
-               "and is(abs(part(MR_z2, 1)) < 1e-9) = true "
-               "then 1 else (" + symbolic + ")))")
-    inner = numeric
-    # Fallback (measured 2026-08-28, 5.50.0/SBCL): if the chain above
-    # did not close, try `radcan(rat(MR_de))` — a different algorithm
-    # (full rational-function reduction over the algebraic extension +
-    # radical normalization). The redundant algebraic-generator
-    # zero-divisor bug (`quotient' by 'zero' in ratsimp's gcd
-    # reduction; minimal hand-typed repro:
-    # probes/maxima/probe-ratsimp-zero-divisor.mac) defeats every
-    # ratsimp/factor stage on some zero-diffs while radcan(rat())
-    # closes the same diff: measured 2026-08-28, 1.1.3.8 e541/e543/
-    # e544 and 1.2.1.4 e764 (`unverified` in the 2026-08-27 record)
-    # close under the fallback. Gated on a no-elliptic diff:
-    # measured 2026-08-28 — radcan(rat()) crashes with
-    # `PTPTQUOTIENT: Polynomial quotient is not exact' after
-    # burning 30-100 s on elliptic-family zero-diffs (1.2.1.3
-    # e455-e484 family). Trade measured by probe v2 (docs/corpus-
-    # radcan-fallback-attribution.md): the gate also blocks 35 A/B
-    # gains whose elliptic-carrying diffs radcan(rat()) DOES close
-    # in 1-2 s (22 crash entries of 1.1.3.x/1.2.2.x/1.3.2 plus 13
-    # chain-FINISHED entries) — a static elliptic gate cannot
-    # separate the fast-closers from the 30-100 s burners. The
-    # other crash classes measured on `unverified`-entry zero-diffs
-    # are immediate and errcatched:
-    # `expt: undefined: 0 to a negative exponent' (1.3.1 e147) and
-    # the zero-divisor bug via the fallback itself (1.1.1.2 e1501).
-    # The gate is apply(freeof, [syms..., MR_de]) — the documented
-    # variadic form `freeof(x1, ..., xn, expr)` == `freeof(x1, expr)
-    # and ... and freeof(xn, expr)` (freeof manual entry, 5.50.0),
-    # spliced over the symbol list. The earlier list-first-arg form
-    # freeof([syms], expr) is NOT a documented freeof call: it is read
-    # as "does the LIST occur in expr" and returned true on
-    # elliptic-carrying diffs (measured 2026-08-28: freeof(
-    # [elliptic_f], elliptic_f(x, -4)) = true) — a silently no-op
-    # gate that let radcan(rat()) run on elliptic-diffs, burning the
-    # 30 s cap on 28 entries (18 of them 1.2.1.3 e440-e484
-    # unverified->timeout) in the 2026-08-28 A/B.
-    fallback_text = ("if apply(freeof, [elliptic_f, elliptic_e, elliptic_pi, "
-                "elliptic_ec, elliptic_eu, elliptic_kc, MR_de]) = true "
-                "then block([MR_fb], "
-                "MR_fb : errcatch(radcan(rat(MR_de))), "
-                "if MR_fb = [] then 0 "
-                "else (MR_fb : part(MR_fb, 1), "
-                "if is(MR_fb = 0) then 1 else 0)) "
-                "else 0")
-    if not fallback:
-        return ("block([MR_zr], MR_zr : errcatch(" + inner + "), "
-                "if MR_zr # [] and part(MR_zr, 1) = 1 then 1 else 0)")
-    return (
-        "block([MR_zr, MR_zf], MR_zr : errcatch(" + inner + "), "
-        "if MR_zr # [] and part(MR_zr, 1) = 1 then 1 "
-        "else (MR_zf : errcatch(" + fallback_text + "), "
-        "if MR_zf = [] then 0 else part(MR_zf, 1)))"
-    )
+    The stage list, the numeric check and their measured history (the
+    two chain orders, the elliptic gate, the numeric parameter values,
+    the errcatch-per-stage lesson) live in test/mr_verify.mac since
+    .scratch/corpus-harness/issues/06; git history has the previous
+    string-built chain."""
+    stages = "mr_proof_stages" if fallback \
+        else 'delete("rat-radcan", mr_proof_stages)'
+    return ("block([MR_zd, MR_zt], "
+            "(if mr_verify_loaded # true then load(\"test/mr_verify.mac\")), "
+            "MR_zd : errcatch(" + d_expr + "), "
+            "if MR_zd = [] then 0 else ("
+            "MR_zt : mr_proof(part(MR_zd, 1), " + var + ", " + stages + "), "
+            "if substring(MR_zt, 1, 5) = \"none\" then 0 else 1))")
 
 
 def build_text(f_text, var_text, e_text, e_text2=None):
@@ -905,10 +763,23 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # counts this entry's cap hits only (exact seen test design 3.3).
     switches = "".join(f"{name} : {value}$\n"
                        for name, value in SWITCH_SETTINGS.items())
+    # ANSWERED <cpu> is rubi's own CPU, printed and flushed once it has
+    # returned and before the checker is even loaded: the process cap is
+    # TIMEOUT + VERIFY_CAP, and a process killed after this line was killed
+    # while VERIFYING, which is not a rubi timeout (classify_entry). It comes
+    # after the queued prompt answers, which must directly follow the call
+    # whose sign questions they answer.
     head = (switches + "mr_depth_cap_hits : 0$\n"
             + f"mr_f: {f_text}$\n"
+            + "mr_t0 : elapsed_run_time()$\n"
             f"mr_r: {call}$\n"
-            + "pos$\n" * 40 + "no$\n" * 20)
+            + "pos$\n" * 40 + "no$\n" * 20
+            + 'printf(true, "ANSWERED ~,3f~%", elapsed_run_time() - mr_t0)$\n'
+            + "?finish\\-output()$\n"
+            + 'load("test/mr_verify.mac")$\n'
+            + f"mr_stage_cap : {STAGE_CAP}$\n"
+            + ("" if ZC_FALLBACK
+               else 'mr_proof_stages : delete("rat-radcan", mr_proof_stages)$\n'))
     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
         # Interior-marker check FIRST (the other branch's has_noun): the
         # top-level noun detector only sees op(mr_r), so a partial
@@ -922,42 +793,23 @@ def build_text(f_text, var_text, e_text, e_text2=None):
                 f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
                 f"else disp(concat(\"CLASS unexpected\"))")
     else:
-        # The corpus expected text is inlined into the subtraction and MUST
-        # be parenthesized: an expected answer that is a SUM `A + B` would
-        # otherwise parse as `mr_r - A + B` (the sign of every term after
-        # the first is flipped), so a correct antiderivative fails the
-        # zero-test and is misclassified `unverified` (measured 2026-08-24
-        # on 1.3.2 e1: `mr_r - <e>` residual nonzero, `mr_r - (<e>)` zero).
-        # The SELF-diff (zv) is checked FIRST: for a correct answer it
-        # closes on the cheap factor stage, and a non-closing expected-
-        # diff (the package's right answer in a different radical form)
-        # would otherwise burn the whole per-target budget and starve
-        # the self-diff (measured 2026-08-25: 1.1.2.4 e983 / 1.1.4.2
-        # e182, both numerically correct, timed out under ze-first).
-        # "verified" and "expected" are both PASS classes, so the
-        # reordering is classification-safe.
-        ze = zero_chain(f"diff(mr_r - ({e_text}), {var_text})", var_text,
-                        ZC_FALLBACK)
-        zv = zero_chain(f"diff(mr_r, {var_text}) - mr_f", var_text, ZC_FALLBACK)
-        if e_text2 is not None:
-            ze2 = zero_chain(f"diff(mr_r - ({e_text2}), {var_text})", var_text,
-                             ZC_FALLBACK)
-            body = (leak + f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
-                    f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
-                    "else block([MR_z, MR_z2, MR_w], MR_w: (" + zv + "), "
-                    "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
-                    "else (MR_z: (" + ze + "), MR_z2: (" + ze2 + "), "
-                    "if is(MR_z=1) or is(MR_z2=1) "
-                    "then disp(concat(\"CLASS expected\")) "
-                    "else disp(concat(\"CLASS unverified\"))))")
-        else:
-            body = (leak + f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
-                    f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
-                    "else block([MR_z, MR_w], MR_w: (" + zv + "), "
-                    "if is(MR_w=1) then disp(concat(\"CLASS verified\")) "
-                    "else (MR_z: (" + ze + "), "
-                    "if is(MR_z=1) then disp(concat(\"CLASS expected\")) "
-                    "else disp(concat(\"CLASS unverified\"))))")
+        # The verdict is test/mr_verify.mac's mr_check_entry: symbolic proof
+        # of the self-diff, then of each expected-diff, and only then the
+        # numeric check (user decision 2026-09-28: symbolic first). It prints
+        # the NUMERIC lines, CLASS and PROOF. The corpus answers are passed
+        # as list elements -- each is its own expression, so a
+        # SUM-valued answer can no longer lose the sign of its later terms
+        # the way the inlined `mr_r - <e>` did (1.3.2 e1, 2026-08-24;
+        # test/test_driver_parens.py).
+        # Each answer is simplified inside its own errcatch: a corpus answer
+        # can fail to simplify (4.2.7 e80: `expt: undefined: 0 to a negative
+        # exponent'), which the old inlined chain caught and which must not
+        # take the entry down; mr_check_entry skips an [] element.
+        es = (f"[errcatch({e_text})"
+              + (f", errcatch({e_text2})" if e_text2 is not None else "") + "]")
+        body = (leak + f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
+                f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
+                f"else mr_check_entry(mr_r, mr_f, {var_text}, {es})")
     # This entry's depth-cap count, printed AFTER the CLASS line (the
     # driver's CLASS scan takes the first match, so the order is
     # classification-safe) and before the trailing queued answers. The
@@ -1007,40 +859,94 @@ def header_lines(title, detail, build_lines):
              f"date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"]
             + list(build_lines)
             + [f"filter: {FILTER!r}  {detail}" + switch_header()
-               + core_header() + zc_header(), ""])
+               + core_header() + zc_header() + verify_header(), ""])
 
 
-def classify_output(out, timed_out):
-    """(class, depth-cap hits) an entry run's output states; timeout / error
-    without a CLASS line. A killed entry (timeout) prints no DEPTHCAP line, so
-    its cap hits are simply not censused (exact seen test design 3.3)."""
-    cls = None
+class EntryResult:
+    """What one entry's output states: CLS, CAPS (depth-cap hits), PROOF (the
+    checker's tag, None when the entry never reached the checker) and
+    RUBI_CPU (the ANSWERED seconds, None when rubi never returned)."""
+    __slots__ = ("cls", "caps", "proof", "rubi_cpu")
+
+    def __init__(self, cls, caps, proof, rubi_cpu):
+        self.cls, self.caps, self.proof, self.rubi_cpu = cls, caps, proof, rubi_cpu
+
+
+def classify_entry(out, timed_out):
+    """Read an entry run's output (see build_text / test/mr_verify.mac).
+
+    - no ANSWERED line: rubi never returned -- `timeout` if the process hit
+      its cap, `error` otherwise;
+    - ANSWERED above TIMEOUT: `timeout` -- rubi overran its own budget, even
+      though the verification budget let it finish;
+    - a CLASS line: that class, with its PROOF tag;
+    - killed after ANSWERED with no CLASS line: killed while verifying. The
+      NUMERIC lines printed so far decide it the way mr_check_entry would
+      have had the symbolic stages all failed: self-diff ok -> `verified`,
+      an expected-diff ok -> `expected`, else `unverified`; the tag ends
+      `/verify-timeout`."""
+    cls = proof = rubi_cpu = None
     caps = 0
+    numeric = []
     for line in out.splitlines():
         line = line.strip()
-        if cls is None and line.startswith("CLASS "):
+        if line.startswith("ANSWERED ") and rubi_cpu is None:
+            try:
+                rubi_cpu = float(line[9:].strip())
+            except ValueError:
+                pass
+        elif line.startswith("NUMERIC "):
+            parts = line.split()
+            if len(parts) == 3:
+                numeric.append((parts[1], parts[2]))
+        elif cls is None and line.startswith("CLASS "):
             cls = line[6:].strip()
+        elif line.startswith("PROOF ") and proof is None:
+            proof = line[6:].strip()
         elif line.startswith("DEPTHCAP "):
             try:
                 caps = int(line[9:].strip())
             except ValueError:
                 caps = 0
-    if cls is None:
-        cls = "timeout" if timed_out else "error"
-    if cls not in KNOWN_CLASSES:
-        cls = "error"
-    return cls, caps
+    if rubi_cpu is None:
+        return EntryResult("timeout" if timed_out else "error", caps, None, None)
+    if rubi_cpu > TIMEOUT:
+        return EntryResult("timeout", caps, None, rubi_cpu)
+    if cls is None and timed_out:
+        verified = [o for w, o in numeric if w == "verified"]
+        expected = [o for w, o in numeric if w == "expected"]
+        if "ok" in verified:
+            cls, proof = "verified", "numeric/verify-timeout"
+        elif "ok" in expected:
+            cls, proof = "expected", "numeric/verify-timeout"
+        else:
+            cls = "unverified"
+            proof = (f"none/numeric-{verified[0]}/verify-timeout" if verified
+                     else "none/verify-timeout")
+        return EntryResult(cls, caps, proof, rubi_cpu)
+    if cls is None or cls not in KNOWN_CLASSES:
+        return EntryResult("error", caps, None, rubi_cpu)
+    return EntryResult(cls, caps, proof, rubi_cpu)
 
 
-def run_entry(rel, idx, entry_text, line_no):
+def classify_output(out, timed_out):
+    """(class, depth-cap hits) an entry run's output states -- the committed
+    probes' view of classify_entry."""
+    r = classify_entry(out, timed_out)
+    return r.cls, r.caps
+
+
+def run_entry_full(rel, idx, entry_text, line_no):
     """One corpus entry (ENTRY_TEXT as extract_entries returns it, IDX
-    0-based) through a fresh Maxima subprocess at the TIMEOUT cap:
-    (class, result line, depth-cap hits). main() and test/run_corpus_queue.py
-    both call it, so the two paths cannot drift."""
+    0-based) through a fresh Maxima subprocess at the TIMEOUT + VERIFY_CAP
+    process cap: (class, result line, depth-cap hits, proof tag or None).
+    main() and test/run_corpus_queue.py both call it, so the two paths
+    cannot drift."""
     els = split_elements(entry_text[1:-1])
     label = f"{rel} e{idx + 1} L{line_no}"
     if len(els) not in (4, 5):
-        return "error", f"{'error':14s} t=0.0s {label} bad-entry-shape({len(els)})", 0
+        return ("error", f"{'error':14s} t=0.0s {label} bad-entry-shape({len(els)})",
+                0, None)
     f_text = normalize_heads(els[0])
     var_text = els[1]
     e_text = normalize_heads(els[3])
@@ -1048,21 +954,30 @@ def run_entry(rel, idx, entry_text, line_no):
     t_start = time.time()
     cpu_out = []
     out, timed_out = maxima_run(
-        build_text(f_text, var_text, e_text, e_text2), TIMEOUT, cpu_out)
-    # Under a CPU cap the record's t= is the entry's CPU seconds — the same
-    # quantity the cap bounds, and reproducible whatever else was running. It
-    # falls back to wall when the reading is missing (a wall-backstop kill
-    # leaves no `times` dump).
+        build_text(f_text, var_text, e_text, e_text2), TIMEOUT + VERIFY_CAP, cpu_out)
+    # The record's t= is RUBI's CPU seconds (the ANSWERED line) -- the
+    # quantity the TIMEOUT cap bounds since verification got its own budget.
+    # Without an ANSWERED line it is the process's CPU seconds (under a CPU
+    # cap), or its wall (a wall-backstop kill leaves no `times` dump).
     dt = time.time() - t_start
     if cpu_out and cpu_out[0] is not None:
         dt = cpu_out[0]
-    cls, caps = classify_output(out, timed_out)
-    if cls == "error":
+    r = classify_entry(out, timed_out)
+    if r.rubi_cpu is not None:
+        dt = r.rubi_cpu
+    if r.cls == "error":
         leaked = inert_leak_heads(out)
         if leaked:
             sys.stderr.write(f"inert-leak {label}: the answer carries "
                              f"{', '.join(leaked)} (classified error)\n")
-    return cls, f"{cls:14s} t={dt:6.1f}s {label}", caps
+    return r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", r.caps, r.proof
+
+
+def run_entry(rel, idx, entry_text, line_no):
+    """run_entry_full without the proof tag: (class, result line, depth-cap
+    hits), the shape the committed probes unpack."""
+    cls, line, caps, _proof = run_entry_full(rel, idx, entry_text, line_no)
+    return cls, line, caps
 
 
 def main():
@@ -1116,6 +1031,10 @@ def main():
     caps_path = os.path.splitext(out_path)[0] + ".caps"
     outf = open(out_path, "a" if APPEND else "w", encoding="utf-8")
     capsf = open(caps_path, "a" if APPEND else "w", encoding="utf-8")
+    # The checker's proof sidecar: one `<tag> <label>` line per entry that
+    # reached the checker (.scratch/corpus-harness/issues/06).
+    proofs_path = os.path.splitext(out_path)[0] + ".proof"
+    prooff = open(proofs_path, "a" if APPEND else "w", encoding="utf-8")
     outf.write("\n".join(out_lines) + "\n")
     outf.flush()
     for fi, (path, rel) in enumerate(files):
@@ -1131,10 +1050,14 @@ def main():
             lo = SKIP_FIRST if fi == 0 else 0
             hi = min(lo + PER_FILE, len(entries))
         for idx in range(lo, hi):
-            cls, line, caps = run_entry(rel, idx, entries[idx], line_nos[idx])
+            cls, line, caps, proof = run_entry_full(rel, idx, entries[idx],
+                                                    line_nos[idx])
             if caps > 0:
                 capsf.write(f"{caps} {rel} e{idx + 1} L{line_nos[idx]}\n")
                 capsf.flush()
+            if proof is not None:
+                prooff.write(f"{proof} {rel} e{idx + 1} L{line_nos[idx]}\n")
+                prooff.flush()
             counts[cls] = counts.get(cls, 0) + 1
             out_lines.append(line)
             outf.write(line + "\n")
@@ -1159,6 +1082,7 @@ def main():
     outf.write("\n".join(out_lines[out_lines.index("=== summary ==="):]) + "\n")
     outf.close()
     capsf.close()
+    prooff.close()
     print("\n".join(out_lines[-8:]) + "\n")
 
 

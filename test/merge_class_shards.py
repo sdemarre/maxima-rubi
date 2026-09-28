@@ -144,8 +144,24 @@ for path in inputs:
 if len(caps) != 1:
     raise SystemExit(f"merge_class_shards: the shards do not state one cap: {sorted(caps)}")
 cap = caps.pop()
+# The verification budget (corpus_driver.verify_header, .scratch/corpus-
+# harness/issues/06) is read the same way: every shard must state the same
+# one, or none (a record from before the budget existed).
+verifies = set()
+for path in inputs:
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("filter:"):
+                m = re.search(r"\bverify: ([^ ]+ \w+, stage [\d.]+s)", line)
+                verifies.add(m.group(1) if m else None)
+                break
+if len(verifies) != 1:
+    raise SystemExit(f"merge_class_shards: the shards do not state one "
+                     f"verification budget: {sorted(map(str, verifies))}")
+verify = verifies.pop()
 out_lines.append(f"filter: {SECTION + '/'!r}  full run  timeout: {cap}  "
-                 f"({len(inputs)} shards, merged here)  switches: {switches}")
+                 f"({len(inputs)} shards, merged here)  switches: {switches}"
+                 + (f"  verify: {verify}" if verify else ""))
 out_lines.append("")
 
 for rel in sorted(counts):
