@@ -377,7 +377,8 @@ checks; the b4 e392 pin re-spelled): `Results: 1591 passed, 0 failed`; 1621 by
 2026-09-28 (the integrate-beats-rubi 01 fixes); with `%mr_coeff`'s Rubi `Together`
 fallback (2026-09-28, branch `coeff-together`, 5 checks): `Results: 1626 passed, 0
 failed`; with x-free terms of any head (`sqrt(3)`) read as constants and PolyQ's
-product walk (12 checks): **`Results: 1638 passed, 0 failed`**. The
+product walk (12 checks): `Results: 1638 passed, 0 failed`; with `%mr_neg1pow`, Mathematica's
+principal `(-1)^e` (8 checks): **`Results: 1646 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -420,9 +421,11 @@ the two-argument `Expand` -> `%mr_expand`, `undo_expand2`, class 2's 2 sites).
 Then `Results: 29 passed, 0 failed` (2026-09-25,
 `.scratch/matcher-translation-fixes/issues/02`: GtQ/LtQ/GeQ/LeQ emit the
 two-valued `%mr_gtQ`/`%mr_ltQ`/`%mr_geQ`/`%mr_leQ`, undone to `is(A op B)`,
-1,944 class-1/2/3 sites pinned). Now **`Results: 30 passed, 0 failed`**
+1,944 class-1/2/3 sites pinned). Then `Results: 30 passed, 0 failed`
 (2026-09-26, `.scratch/polylog-native-li/issues/01`: PolyLog emits the
 native `li[s](z)`, undone to `polylog(s, z)`, class 3's 37 sites pinned).
+Now **`Results: 31 passed, 0 failed`** (2026-09-28: Power[-1, e] emits
+`%mr_neg1pow(e)`, undone to `(-1)^e`, class 1's 4 sites pinned).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
@@ -441,7 +444,8 @@ ticket `.scratch/class-ports/issues/08`).
 
 The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
 guard, pure Python: `python3 test/test_generator_section9.py` — green
-**`Results: 28 passed, 0 failed`** (2026-09-25, the class-4 port's Step 4:
+**`Results: 33 passed, 0 failed`** (2026-09-28: +5, `wrap_neg1pow`, Power[-1, e] ->
+`%mr_neg1pow`; before: 28, 2026-09-25, the class-4 port's Step 4:
 +2, `===` (SameQ) emits Maxima's single `=`. Before: 26, the class-8 port: 23 after
 `7df5f9d`'s two `drop_comment_only_lines` join-guard checks, +3 for the
 guard's fix in `a6713a4` — a comment-only line before a blank line, before

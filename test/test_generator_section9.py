@@ -177,5 +177,18 @@ body = g.emit_rule(("Int[a_*b_,x_Symbol]", "a", cond), "t4", 1, {"a", "b"})
 check("class 4: === emits a single =", "_mr_t4_r1_a=-_mr_t4_r1_b" in body, True)
 check("class 4: no == left from ===", "==" in body, False)
 
+# Power[-1, e] -> %mr_neg1pow(e) (2026-09-28): Maxima's domain:real reads
+# (-1)^(2/3) as 1, collapsing 9_3 r60's roots of unity. A parenthesized
+# operand loses its parentheses; a call or a name is taken whole.
+check("neg1pow: parenthesized operand",
+      g.wrap_neg1pow("a*(-1)^(2*k/n)*b"), "a*%mr_neg1pow(2*k/n)*b")
+check("neg1pow: call operand",
+      g.wrap_neg1pow("x/((-1)^%mr_intPart(p)*c)"), "x/(%mr_neg1pow(%mr_intPart(p))*c)")
+check("neg1pow: name operand", g.wrap_neg1pow("(-1)^m*u"), "%mr_neg1pow(m)*u")
+check("neg1pow: nested inside the operand",
+      g.wrap_neg1pow("(-1)^(k*(-1)^(1/3))"), "%mr_neg1pow(k*%mr_neg1pow(1/3))")
+check("neg1pow: no Power[-1, e] leaves the text alone",
+      g.wrap_neg1pow("(x-1)^(2/3) + (-1)*u"), "(x-1)^(2/3) + (-1)*u")
+
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

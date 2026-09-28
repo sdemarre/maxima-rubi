@@ -474,7 +474,7 @@ _mr_cond_9_3_r59(mm, x) := block([_mr_9_3_r59_a, _mr_9_3_r59_b, _mr_9_3_r59_n, _
   freeof(x, _mr_9_3_r59_a) and freeof(x, _mr_9_3_r59_b)  and  %mr_iGtQ(_mr_9_3_r59_n/2, 1))$
 _mr_repl_9_3_r59(mm, x) := block([_mr_9_3_r59_a__s, _mr_9_3_r59_b__s, _mr_9_3_r59_n__s, _mr_9_3_r59_v__s],
   _mr_9_3_r59_a__s : geteqR(mm, '_mr_9_3_r59_a), _mr_9_3_r59_b__s : geteqR(mm, '_mr_9_3_r59_b), _mr_9_3_r59_n__s : geteqR(mm, '_mr_9_3_r59_n), _mr_9_3_r59_v__s : geteqR(mm, '_mr_9_3_r59_v),
-  2/(_mr_9_3_r59_a__s*_mr_9_3_r59_n__s) * mr_sum(lambda([k], mr_int(%mr_together(1/(1-_mr_9_3_r59_v__s^2/((-1)^(4*k/_mr_9_3_r59_n__s)*%mr_rt(-_mr_9_3_r59_a__s/_mr_9_3_r59_b__s, _mr_9_3_r59_n__s/2)))), x)), k, 1, _mr_9_3_r59_n__s/2))$
+  2/(_mr_9_3_r59_a__s*_mr_9_3_r59_n__s) * mr_sum(lambda([k], mr_int(%mr_together(1/(1-_mr_9_3_r59_v__s^2/(%mr_neg1pow(4*k/_mr_9_3_r59_n__s)*%mr_rt(-_mr_9_3_r59_a__s/_mr_9_3_r59_b__s, _mr_9_3_r59_n__s/2)))), x)), k, 1, _mr_9_3_r59_n__s/2))$
 _mr_rule_9_3_r59 : %mr_defrule("9_3", 59, "(Int (Power (Plus (Pattern |_mr_9_3_r59_a| (Blank)) (Times (Optional (Pattern |_mr_9_3_r59_b| (Blank))) (Power (Pattern |_mr_9_3_r59_v| (Blank)) (Pattern |_mr_9_3_r59_n| (Blank))))) -1) (Pattern x (Blank Symbol)))", _mr_cond_9_3_r59, _mr_repl_9_3_r59)$
 
 _mr_cond_9_3_r60(mm, x) := block([_mr_9_3_r60_a, _mr_9_3_r60_b, _mr_9_3_r60_n, _mr_9_3_r60_v],
@@ -482,7 +482,7 @@ _mr_cond_9_3_r60(mm, x) := block([_mr_9_3_r60_a, _mr_9_3_r60_b, _mr_9_3_r60_n, _
   freeof(x, _mr_9_3_r60_a) and freeof(x, _mr_9_3_r60_b)  and  %mr_iGtQ((_mr_9_3_r60_n-1)/2, 0))$
 _mr_repl_9_3_r60(mm, x) := block([_mr_9_3_r60_a__s, _mr_9_3_r60_b__s, _mr_9_3_r60_n__s, _mr_9_3_r60_v__s],
   _mr_9_3_r60_a__s : geteqR(mm, '_mr_9_3_r60_a), _mr_9_3_r60_b__s : geteqR(mm, '_mr_9_3_r60_b), _mr_9_3_r60_n__s : geteqR(mm, '_mr_9_3_r60_n), _mr_9_3_r60_v__s : geteqR(mm, '_mr_9_3_r60_v),
-  1/(_mr_9_3_r60_a__s*_mr_9_3_r60_n__s) * mr_sum(lambda([k], mr_int(%mr_together(1/(1-_mr_9_3_r60_v__s/((-1)^(2*k/_mr_9_3_r60_n__s)*%mr_rt(-_mr_9_3_r60_a__s/_mr_9_3_r60_b__s, _mr_9_3_r60_n__s)))), x)), k, 1, _mr_9_3_r60_n__s))$
+  1/(_mr_9_3_r60_a__s*_mr_9_3_r60_n__s) * mr_sum(lambda([k], mr_int(%mr_together(1/(1-_mr_9_3_r60_v__s/(%mr_neg1pow(2*k/_mr_9_3_r60_n__s)*%mr_rt(-_mr_9_3_r60_a__s/_mr_9_3_r60_b__s, _mr_9_3_r60_n__s)))), x)), k, 1, _mr_9_3_r60_n__s))$
 _mr_rule_9_3_r60 : %mr_defrule("9_3", 60, "(Int (Power (Plus (Pattern |_mr_9_3_r60_a| (Blank)) (Times (Optional (Pattern |_mr_9_3_r60_b| (Blank))) (Power (Pattern |_mr_9_3_r60_v| (Blank)) (Pattern |_mr_9_3_r60_n| (Blank))))) -1) (Pattern x (Blank Symbol)))", _mr_cond_9_3_r60, _mr_repl_9_3_r60)$
 
 _mr_cond_9_3_r61(mm, x) := block([_mr_9_3_r61_a, _mr_9_3_r61_b, _mr_9_3_r61_n, _mr_9_3_r61_u, _mr_9_3_r61_v],

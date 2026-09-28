@@ -2089,6 +2089,50 @@ def _assign_in_test(test, cassigns, ctx, key, n):
     return test
 
 
+_NEG1POW_NAME = re.compile(r"[%A-Za-z_][%A-Za-z0-9_]*")
+
+
+def _close_paren(s, i):
+    """The index just past the ) that closes the ( at s[i]."""
+    depth = 0
+    for j in range(i, len(s)):
+        depth += (s[j] == "(") - (s[j] == ")")
+        if depth == 0:
+            return j + 1
+    raise GenError(f"unbalanced parentheses at {i} in {s!r}")
+
+
+def wrap_neg1pow(s):
+    """Every (-1)^<operand> in the translated text S -> %mr_neg1pow(<operand>)
+    (2026-09-28). Mathematica's Power[-1, e] is the principal value
+    exp(i*pi*e); Maxima's domain:real reads (-1)^(2/3) as 1, collapsing the
+    roots of unity of 9_3 r59/r60 and 4_1_7 r43 (see %mr_neg1pow in
+    maxima_rubi_utils.mac). The operand is a parenthesized group (emitted
+    without its parentheses) or a name, optionally called. Recursive, so an
+    operand that itself carries (-1)^ is wrapped too."""
+    out, i = [], 0
+    while True:
+        j = s.find("(-1)^", i)
+        if j < 0:
+            out.append(s[i:])
+            return "".join(out)
+        out.append(s[i:j])
+        k = j + len("(-1)^")
+        if k < len(s) and s[k] == "(":
+            e = _close_paren(s, k)
+            operand = s[k + 1:e - 1]
+        else:
+            m = _NEG1POW_NAME.match(s, k)
+            if not m:
+                raise GenError(f"(-1)^ with an operand not understood at {k} in {s!r}")
+            e = m.end()
+            if e < len(s) and s[e] == "(":
+                e = _close_paren(s, e)
+            operand = s[k:e]
+        out.append(f"%mr_neg1pow({wrap_neg1pow(operand)})")
+        i = e
+
+
 def emit_rule(run, key, n, rule_vars, fname=None):
     """One rule run (lhs, rhs, cond) -> its cond and repl functions and its
     %mr_defrule registration, as Maxima text (spec 3.4). rule_vars is the
@@ -2182,6 +2226,10 @@ def emit_rule(run, key, n, rule_vars, fname=None):
     # (this build's quote NUD parses the quoted operand at lbp 190; a
     # balanced 'name' raises "' is not an infix operator", measured
     # 2026-08-20).
+    # Power[-1, e] -> %mr_neg1pow(e), in the rule records only: the rewrite
+    # tables (fname) stay byte-identical, and carry no Power[-1, e].
+    if fname is None:
+        cond_txt, repl_txt = wrap_neg1pow(cond_txt), wrap_neg1pow(repl_txt)
     caps = sorted(cap_name(key, n, v) for v in rule_vars)
     binds = [f"{c} : geteqR(mm, '{c})" for c in caps]
     bind_block = ", ".join(binds) if binds else "true"

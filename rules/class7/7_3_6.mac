@@ -82,7 +82,7 @@ _mr_cond_7_3_6_r10(mm, x) := block([_mr_7_3_6_r10_a, _mr_7_3_6_r10_c, _mr_7_3_6_
   freeof(x, _mr_7_3_6_r10_a) and freeof(x, _mr_7_3_6_r10_c) and freeof(x, _mr_7_3_6_r10_d) and freeof(x, _mr_7_3_6_r10_p)  and  %mr_eqQ(_mr_7_3_6_r10_c^2 - _mr_7_3_6_r10_a^2*_mr_7_3_6_r10_d^2, 0)  and  not(integerp(_mr_7_3_6_r10_p))  and  integerp(_mr_7_3_6_r10_n/2)  and  %mr_gtQ(_mr_7_3_6_r10_c, 0))$
 _mr_repl_7_3_6_r10(mm, x) := block([_mr_7_3_6_r10_a__s, _mr_7_3_6_r10_c__s, _mr_7_3_6_r10_d__s, _mr_7_3_6_r10_n__s, _mr_7_3_6_r10_p__s, _mr_7_3_6_r10_u__s],
   _mr_7_3_6_r10_a__s : geteqR(mm, '_mr_7_3_6_r10_a), _mr_7_3_6_r10_c__s : geteqR(mm, '_mr_7_3_6_r10_c), _mr_7_3_6_r10_d__s : geteqR(mm, '_mr_7_3_6_r10_d), _mr_7_3_6_r10_n__s : geteqR(mm, '_mr_7_3_6_r10_n), _mr_7_3_6_r10_p__s : geteqR(mm, '_mr_7_3_6_r10_p), _mr_7_3_6_r10_u__s : geteqR(mm, '_mr_7_3_6_r10_u),
-  (-1)^(_mr_7_3_6_r10_n__s/2)*_mr_7_3_6_r10_c__s^_mr_7_3_6_r10_p__s* mr_int(_mr_7_3_6_r10_u__s*(1 + _mr_7_3_6_r10_d__s/(_mr_7_3_6_r10_c__s*x))^_mr_7_3_6_r10_p__s*(1 + 1/(_mr_7_3_6_r10_a__s*x))^(_mr_7_3_6_r10_n__s/2)/(1 - 1/(_mr_7_3_6_r10_a__s*x))^(_mr_7_3_6_r10_n__s/2), x))$
+  %mr_neg1pow(_mr_7_3_6_r10_n__s/2)*_mr_7_3_6_r10_c__s^_mr_7_3_6_r10_p__s* mr_int(_mr_7_3_6_r10_u__s*(1 + _mr_7_3_6_r10_d__s/(_mr_7_3_6_r10_c__s*x))^_mr_7_3_6_r10_p__s*(1 + 1/(_mr_7_3_6_r10_a__s*x))^(_mr_7_3_6_r10_n__s/2)/(1 - 1/(_mr_7_3_6_r10_a__s*x))^(_mr_7_3_6_r10_n__s/2), x))$
 _mr_rule_7_3_6_r10 : %mr_defrule("7_3_6", 10, "(Int (Times (Optional (Pattern |_mr_7_3_6_r10_u| (Blank))) (Power E (Times (ArcTanh (Times (Optional (Pattern |_mr_7_3_6_r10_a| (Blank))) (Pattern x (Blank)))) (Pattern |_mr_7_3_6_r10_n| (Blank)))) (Power (Plus (Pattern |_mr_7_3_6_r10_c| (Blank)) (Times (Optional (Pattern |_mr_7_3_6_r10_d| (Blank))) (Power (Pattern x (Blank)) -1))) (Pattern |_mr_7_3_6_r10_p| (Blank)))) (Pattern x (Blank Symbol)))", _mr_cond_7_3_6_r10, _mr_repl_7_3_6_r10)$
 
 _mr_cond_7_3_6_r11(mm, x) := block([_mr_7_3_6_r11_a, _mr_7_3_6_r11_c, _mr_7_3_6_r11_d, _mr_7_3_6_r11_n, _mr_7_3_6_r11_p, _mr_7_3_6_r11_u],
@@ -362,7 +362,7 @@ _mr_cond_7_3_6_r45(mm, x) := block([_mr_7_3_6_r45_a, _mr_7_3_6_r45_n, _mr_7_3_6_
   freeof(x, _mr_7_3_6_r45_a)  and  integerp(_mr_7_3_6_r45_n/2))$
 _mr_repl_7_3_6_r45(mm, x) := block([_mr_7_3_6_r45_a__s, _mr_7_3_6_r45_n__s, _mr_7_3_6_r45_u__s],
   _mr_7_3_6_r45_a__s : geteqR(mm, '_mr_7_3_6_r45_a), _mr_7_3_6_r45_n__s : geteqR(mm, '_mr_7_3_6_r45_n), _mr_7_3_6_r45_u__s : geteqR(mm, '_mr_7_3_6_r45_u),
-  (-1)^(_mr_7_3_6_r45_n__s/2)*mr_int(_mr_7_3_6_r45_u__s*%e^(_mr_7_3_6_r45_n__s*atanh(_mr_7_3_6_r45_a__s*x)), x))$
+  %mr_neg1pow(_mr_7_3_6_r45_n__s/2)*mr_int(_mr_7_3_6_r45_u__s*%e^(_mr_7_3_6_r45_n__s*atanh(_mr_7_3_6_r45_a__s*x)), x))$
 _mr_rule_7_3_6_r45 : %mr_defrule("7_3_6", 45, "(Int (Times (Optional (Pattern |_mr_7_3_6_r45_u| (Blank))) (Power E (Times (ArcCoth (Times (Optional (Pattern |_mr_7_3_6_r45_a| (Blank))) (Pattern x (Blank)))) (Pattern |_mr_7_3_6_r45_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_7_3_6_r45, _mr_repl_7_3_6_r45)$
 
 _mr_cond_7_3_6_r46(mm, x) := block([_mr_7_3_6_r46_a, _mr_7_3_6_r46_n],
@@ -610,7 +610,7 @@ _mr_cond_7_3_6_r76(mm, x) := block([_mr_7_3_6_r76_a, _mr_7_3_6_r76_b, _mr_7_3_6_
   freeof(x, _mr_7_3_6_r76_a) and freeof(x, _mr_7_3_6_r76_b) and freeof(x, _mr_7_3_6_r76_c)  and  integerp(_mr_7_3_6_r76_n/2))$
 _mr_repl_7_3_6_r76(mm, x) := block([_mr_7_3_6_r76_a__s, _mr_7_3_6_r76_b__s, _mr_7_3_6_r76_c__s, _mr_7_3_6_r76_n__s, _mr_7_3_6_r76_u__s],
   _mr_7_3_6_r76_a__s : geteqR(mm, '_mr_7_3_6_r76_a), _mr_7_3_6_r76_b__s : geteqR(mm, '_mr_7_3_6_r76_b), _mr_7_3_6_r76_c__s : geteqR(mm, '_mr_7_3_6_r76_c), _mr_7_3_6_r76_n__s : geteqR(mm, '_mr_7_3_6_r76_n), _mr_7_3_6_r76_u__s : geteqR(mm, '_mr_7_3_6_r76_u),
-  (-1)^(_mr_7_3_6_r76_n__s/2)*mr_int(_mr_7_3_6_r76_u__s*%e^(_mr_7_3_6_r76_n__s*atanh(_mr_7_3_6_r76_c__s*(_mr_7_3_6_r76_a__s + _mr_7_3_6_r76_b__s*x))), x))$
+  %mr_neg1pow(_mr_7_3_6_r76_n__s/2)*mr_int(_mr_7_3_6_r76_u__s*%e^(_mr_7_3_6_r76_n__s*atanh(_mr_7_3_6_r76_c__s*(_mr_7_3_6_r76_a__s + _mr_7_3_6_r76_b__s*x))), x))$
 _mr_rule_7_3_6_r76 : %mr_defrule("7_3_6", 76, "(Int (Times (Optional (Pattern |_mr_7_3_6_r76_u| (Blank))) (Power E (Times (ArcCoth (Times (Optional (Pattern |_mr_7_3_6_r76_c| (Blank))) (Plus (Pattern |_mr_7_3_6_r76_a| (Blank)) (Times (Optional (Pattern |_mr_7_3_6_r76_b| (Blank))) (Pattern x (Blank)))))) (Pattern |_mr_7_3_6_r76_n| (Blank))))) (Pattern x (Blank Symbol)))", _mr_cond_7_3_6_r76, _mr_repl_7_3_6_r76)$
 
 _mr_cond_7_3_6_r77(mm, x) := block([_mr_7_3_6_r77_a, _mr_7_3_6_r77_b, _mr_7_3_6_r77_c, _mr_7_3_6_r77_n],
