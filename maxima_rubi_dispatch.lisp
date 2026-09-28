@@ -5,7 +5,7 @@
 ;; rules call at more than one arity.
 ;;
 ;; Loaded by maxima_rubi.mac after maxima_rubi_utils.mac (geteqR,
-;; %mr_containsBoolean, rubi_verbose, %mr_boolcheck),
+;; rubi_verbose, %mr_boolcheck),
 ;; maxima_rubi_match.lisp and maxima_rubi_tree.lisp.
 ;;
 ;; Naming (measured 2026-08-27, this build): the Lisp symbol of an
@@ -527,10 +527,83 @@ the misfire line."
   "is(v) = true (unknown and false are not true)."
   (eq (meval `(($is) ((mquote) ,v))) t))
 
+;;; The boolean-leak check (ticket 21 step 1, 2026-09-28). A boolean in a
+;;; binding or an answer is a port bug, not a result: a predicate's `false`
+;;; sentinel flowed into arithmetic, where Maxima booleans do not collapse
+;;; (126*false stays 126*false; 1.2.2.6 r8 on e123, measured 2026-08-25), so
+;;; the dispatcher reads it as a misfire. Until 2026-09-28 this was the
+;;; interpreted Maxima walk %mr_containsBoolean in maxima_rubi_utils.mac; run
+;;; on every binding list, it was 52-66 % of a class-4 entry's cpu
+;;; (probes/dispatch-index/01-profile.out). The native walk below answers
+;;; exactly what that walk answered -- test/matcher/test_mr_dispatch.mac keeps
+;;; it verbatim as ref_containsBoolean and checks agreement:
+;;;  - an atom hits when string() of it is "true" or "false": the booleans,
+;;;    a symbol printing so, and the reified `false` factor part() returns
+;;;    from a Times node (a NIL argument here). A string never hits (string()
+;;;    of the string "true" is not "true", measured);
+;;;  - a non-atom whose op() is one of the control names below is opaque:
+;;;    generated answers legally carry booleans as code, e.g. 1.4.1 r70's
+;;;    (if ... then ... else false) (1.2.1.3 e1058, measured 2026-08-25).
+;;;    op() gives the STRING only for some of them -- `if` is opaque, while
+;;;    `block` and `lambda` are walked, as they always were (measured);
+;;;  - everything else is walked. The old walk used part()/length(), i.e. the
+;;;    display form; the native one walks the internal arguments. The two
+;;;    differ only in numbers the display form adds or drops (a -1
+;;;    coefficient, a 1/x numerator), which never hit, and in a CRE, which is
+;;;    walked through ratdisrep as part() does.
+;;; An error counts as containing a boolean, as it did under errcatch.
+
+(defparameter +mr-bool-control-ops+
+  '("if" "block" "lambda" "let" "letf" "do" "for" "while" "when"))
+
+(defvar *mr-bool-symbol-hits* (make-hash-table :test 'eq)
+  "symbol -> whether string() of it is \"true\" or \"false\".")
+
+(defvar *mr-bool-opaque-heads* (make-hash-table :test 'eq)
+  "operator symbol -> whether op() of a form with that head names a control
+structure (+mr-bool-control-ops+).")
+
+(defun mr-bool-string-hit-p (e)
+  (let ((s (mfuncall '$string e)))
+    (and (stringp s) (or (string= s "true") (string= s "false")))))
+
+(defun mr-bool-atom-hit-p (e)
+  (cond ((or (eq e t) (null e)) t)
+        ((numberp e) nil)
+        ((symbolp e)
+         (multiple-value-bind (v found) (gethash e *mr-bool-symbol-hits*)
+           (if found v (setf (gethash e *mr-bool-symbol-hits*) (mr-bool-string-hit-p e)))))
+        (t (mr-bool-string-hit-p e))))
+
+(defun mr-bool-opaque-p (e)
+  (let ((h (caar e)))
+    (multiple-value-bind (v found) (gethash h *mr-bool-opaque-heads*)
+      (if found
+          v
+          (setf (gethash h *mr-bool-opaque-heads*)
+                (let ((o ($op e)))
+                  (and (stringp o)
+                       (member o +mr-bool-control-ops+ :test #'string=)
+                       t)))))))
+
+(defun mr-bool-walk (e)
+  (cond ((atom e) (mr-bool-atom-hit-p e))
+        ((eq (caar e) 'mrat) (mr-bool-walk (ratdisrep e)))
+        (($atom e) (mr-bool-string-hit-p e))
+        ((mr-bool-opaque-p e) nil)
+        (t (some #'mr-bool-walk (cdr e)))))
+
 (defun mr-contains-boolean-p (e)
-  "%mr_containsBoolean(e); an error counts as containing one."
-  (multiple-value-bind (r ok) (mr-call '|$%mr_containsBoolean| e)
-    (or (not ok) (eq r t))))
+  "Whether E carries a leaked boolean (see above); an error counts as one."
+  (handler-case (and (mr-bool-walk e) t)
+    (error () t)))
+
+(defmfun |$%mr_containsBoolean| (&rest args)
+  "%mr_containsBoolean(e): true when e carries a leaked boolean (the
+dispatcher's misfire test, maxima_rubi_dispatch.lisp)."
+  (unless (= (length args) 1)
+    (merror (intl:gettext "%mr_containsBoolean: expected 1 arg, found ~A") (length args)))
+  (mr-contains-boolean-p (first args)))
 
 (deftype mr-fault ()
   "The condition classes mr-guarded catches: any serious-condition except

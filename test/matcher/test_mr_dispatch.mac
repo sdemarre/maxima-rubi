@@ -586,6 +586,55 @@ test_verbose() := block([h7, hdecl, hmis, hcf, hout, hin, hbad, tbl, out, saved,
   mr_rule_table : saved_table,
   true)$
 
+/* ---- the boolean-leak check: %mr_containsBoolean (ticket 21 step 1) ------
+   The dispatcher runs it on every binding list and every answer. It was an
+   interpreted Maxima walk (maxima_rubi_utils.mac until 2026-09-28), 52-66 %
+   of a class-4 entry's cpu (probes/dispatch-index/01-profile.out); it is now
+   native Lisp (maxima_rubi_dispatch.lisp). ref_containsBoolean below is the
+   retired Maxima walk, verbatim, kept as the oracle: the native check must
+   agree with it on every witness. */
+ref_containsBoolean(e) := block([i, hit],
+  if atom(e) then is(string(e) = "true") or is(string(e) = "false")
+  else if op(e) = "if" or op(e) = "block" or op(e) = "lambda"
+    or op(e) = "let" or op(e) = "letf" or op(e) = "do"
+    or op(e) = "for" or op(e) = "while" or op(e) = "when"
+  then false
+  else if op(e) = "-" then (
+    ref_containsBoolean(part(e, 1))
+  )
+  else (
+    hit : false,
+    for i : 1 thru length(e) do (
+      if ref_containsBoolean(part(e, i)) then hit : true
+    ),
+    hit))$
+
+test_boolcheck() := block([w],
+  print("--- the boolean-leak check ---"),
+  check("%mr_containsBoolean is a Lisp function", is(?fboundp('%mr_containsBoolean) # false), true),
+  check("no Maxima definition shadows it",
+        member('%mr_containsBoolean, map(op, functions)), false),
+  /* [witness, expected]; the expectations are the retired walk's answers,
+     measured 2026-09-28 */
+  w : [[true, true], [false, true], ["true", false], ["false", false], [x, false],
+       [3, false], [1.5, false], [2.0b0, false], [-(1/2), false], [%true, false],
+       [trueX, false], ["", false],
+       [126*false, true], [a + false, true], [f(true), true], [[1, false], true],
+       [x = true, true], [-true, true], [a[false], true], [a[1](true), true],
+       [sqrt(false), true], [false^2, true], [x/false, true], [{false}, true],
+       [matrix([1, false]), true], [rat(x + 1), false], [rat(x) + false, true],
+       [elliptic_f(atan(x), -1/2), false],
+       ['(if a > 0 then 1 else false), false], ['(block([u], false)), true],
+       [a + '(if a > 0 then 1 else false), false], [lambda([u], false), true],
+       [sin(x)^2*(a + b*cos(x))^(3/2), false],
+       [[a = 1, b = x^2 + 1, u = cos(c + d*x)], false],
+       [[a = 1, u = x*false], true]],
+  for p in w do (
+    check(sconcat("containsBoolean ", string(p[1])), %mr_containsBoolean(p[1]), p[2]),
+    check(sconcat("agrees with the retired walk: ", string(p[1])),
+          %mr_containsBoolean(p[1]), ref_containsBoolean(p[1]))),
+  true)$
+
 test_records()$
 test_dispatch()$
 test_bindings()$
@@ -598,6 +647,7 @@ test_class4_body()$
 test_matchq()$
 test_rewrite()$
 test_verbose()$
+test_boolcheck()$
 print("")$
 print("========================================")$
 print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$
