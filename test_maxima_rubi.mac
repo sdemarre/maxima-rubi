@@ -5963,6 +5963,19 @@ test_rubi_errata() := block([mr_er_saved, mr_er_ok, mr_er_back, mr_er_f, mr_er_r
     check("errata: 1_1_2_6 r14 splits (e+f x^2)^3 exactly",
           radcan(mr_er_back(mr_er_r) - mr_er_f), 0),
     mr_rule_table : mr_er_saved),
+  /* 4.1.0.2 r18, (a sec)^m (b tan)^n for odd n: the source leaves b out of
+     FreeQ and out of the RHS. 4.7.7 e865's sqrt(csc(x))*sec(x)*tan(x)
+     bound b = sqrt(csc(x)) and the RHS dropped it (category 6). */
+  mr_er_ok : errcatch(%mr_load_sibling("rules/class4/4_1_0_2.mac",
+                                       'mr_witness_4_1_0_2), true),
+  check_bool("errata: 4_1_0_2 loads", is(mr_er_ok # [])),
+  if mr_er_ok # [] then (
+    check_bool("errata: 4_1_0_2 r18 refuses an x-dependent b",
+      is(%mr_rule_accept(_mr_rule_4_1_0_2_r18,
+                         sqrt(%mr_icsc(x))*%mr_isec(x)*%mr_itan(x), x) = false)),
+    check_bool("errata: 4_1_0_2 r18 still takes sec*tan^3 (b = 1)",
+      is(%mr_rule_accept(_mr_rule_4_1_0_2_r18, %mr_isec(x)*%mr_itan(x)^3, x)
+         # false))),
   true
 )$
 

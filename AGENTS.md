@@ -380,7 +380,8 @@ failed`; with x-free terms of any head (`sqrt(3)`) read as constants and PolyQ's
 product walk (12 checks): `Results: 1638 passed, 0 failed`; with `%mr_neg1pow`, Mathematica's
 principal `(-1)^e` (8 checks): `Results: 1646 passed, 0 failed`; with `%mr_fullSimplify`
 reducing logs of numbers before its `ratsimp` (6 checks): `Results: 1652 passed, 0 failed`;
-with the 1.1.2.6 r13/r14 upstream erratum (3 checks): **`Results: 1655 passed, 0 failed`**. The
+with the 1.1.2.6 r13/r14 upstream erratum (3 checks): `Results: 1655 passed, 0 failed`;
+with the 4.1.0.2 r18 erratum (3 checks): **`Results: 1658 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -449,7 +450,8 @@ ticket `.scratch/class-ports/issues/08`).
 
 The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
 guard, pure Python: `python3 test/test_generator_section9.py` — green
-**`Results: 38 passed, 0 failed`** (2026-09-28: +5, `apply_errata`, the upstream
+**`Results: 41 passed, 0 failed`** (2026-09-28: +3, the errata table's cond part and
+4.1.0.2 r18; before: 38, the same day, +5, `apply_errata`, the upstream
 errata table; before: 33, the same day, +5, `wrap_neg1pow`, Power[-1, e] ->
 `%mr_neg1pow`; before: 28, 2026-09-25, the class-4 port's Step 4:
 +2, `===` (SameQ) emits Maxima's single `=`. Before: 26, the class-8 port: 23 after
