@@ -347,7 +347,17 @@ mr_int(%mr_top_f, x) := if %mr_trace_inert then funmake('Int, [%mr_top_f, x])
  * different arg count REPLACES the first (the 2-arg call then errors
  * "Too few arguments supplied to rubi(f, x, fb)") — and no variadic
  * syntax (`b...` is a parse error; `argc`/`arglist` have no manual
- * entries), so the two modes must have distinct names. */
+ * entries), so the two modes must have distinct names.
+ *
+ * radexpand: Maxima simplifies the argument BEFORE rubi is entered, and
+ * under the default radexpand:true, sqrt(c*x^2) arrives as sqrt(c)*abs(x).
+ * Rubi has no rules for abs: Mathematica never makes one. mr_model_flags
+ * binds radexpand:false around the dispatch, which is too late for the
+ * argument. The caller writes the integrand under the flag:
+ *   block([radexpand:false], rubi(x*sqrt(c*x^2), x))  ->  (c*x^2)^(3/2)/(3*c)
+ * A variable assigned at a default prompt already holds the abs form.
+ * User decision 2026-09-28: documented, not undone here
+ * (.scratch/integrate-beats-rubi/issues/02-sqrt-c-x2-abs.md). */
 rubi(%mr_top_f, x) := mr_top(%mr_top_f, x, false)$
 rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
 

@@ -106,6 +106,29 @@ rubi_verbose : 'matches$   /* rubi answers [answer, steps]: the rules that fired
   `'unintegrable(f, x)` when no rule applies. It never hands the integral to
   Maxima's own `integrate`. `rubi_fallback(f, x, true)` does, at the top level;
   nested sub-integrals follow the switch `mr_nested_fallback` either way.
+- **`radexpand`: simplify the integrand under `radexpand:false`.** With
+  Maxima's default `radexpand:true`, the integrand is simplified before `rubi`
+  sees it: `sqrt(c*x^2)` becomes `sqrt(c)*abs(x)`, `sqrt(cos(x)^2)` becomes
+  `abs(cos(x))`. Rubi was written for Mathematica, which never does this, and
+  it has no rules for `abs`:
+
+  ```
+  (%i1) rubi(x*sqrt(c*x^2), x);
+  (%o1) sqrt(c)*'unintegrable(x*abs(x),x)
+  (%i2) block([radexpand:false], rubi(x*sqrt(c*x^2), x));
+  (%o2) (c*x^2)^(3/2)/(3*c)
+  ```
+
+  The expression must be **written** inside the `block`, or built under
+  `radexpand:false`. A variable assigned at a default prompt already holds the
+  `abs` form: after `f: x*sqrt(c*x^2)$`, even
+  `block([radexpand:false], rubi(f, x))` fails. Build it with
+  `f: block([radexpand:false], x*sqrt(c*x^2))$` instead.
+  - This is deliberate. `rubi` integrates what it receives and does not try to
+    undo the rewrite.
+  - On the test corpus it affects 1,390 of 70,385 integrands in classes 1, 4
+    and 6, and 655 of them fail.
+  - The measurement is in `.scratch/integrate-beats-rubi/issues/02-sqrt-c-x2-abs.md`.
 - The answer can contain Rubi's own special functions in their Maxima
   spelling: `elliptic_f`/`elliptic_e`/`elliptic_pi`, the polylogarithm
   `li[s](z)`, `expintegral_ei`/`_si`/`_ci`/`_shi`/`_chi`, `gamma_incomplete`,
