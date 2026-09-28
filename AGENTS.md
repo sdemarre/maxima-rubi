@@ -378,7 +378,8 @@ checks; the b4 e392 pin re-spelled): `Results: 1591 passed, 0 failed`; 1621 by
 fallback (2026-09-28, branch `coeff-together`, 5 checks): `Results: 1626 passed, 0
 failed`; with x-free terms of any head (`sqrt(3)`) read as constants and PolyQ's
 product walk (12 checks): `Results: 1638 passed, 0 failed`; with `%mr_neg1pow`, Mathematica's
-principal `(-1)^e` (8 checks): **`Results: 1646 passed, 0 failed`**. The
+principal `(-1)^e` (8 checks): `Results: 1646 passed, 0 failed`; with `%mr_fullSimplify`
+reducing logs of numbers before its `ratsimp` (6 checks): **`Results: 1652 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load

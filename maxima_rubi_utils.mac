@@ -5005,7 +5005,18 @@ mr_use_gamma_flag : false$
  * MEASURED 2026-08-28 (5.50.0/SBCL)) — that gap is what %mr_logRatio
  * covers for commensurable positive-integer bases (see above). */
 
-%mr_fullSimplify(u) := ratsimp(u)$
+/* Every call site simplifies a ratio of logs (the FunctionOfExponential
+   family), where FullSimplify reduces Log[2]/Log[4] to 1/2 and ratsimp
+   does not. So first radcan each log of a positive rational number, which
+   splits it into prime logs (log(4) -> 2*log(2), log(1/8) -> -3*log(2)),
+   and only then ratsimp. radcan touches nothing else: over the whole
+   expression it would also rewrite radicals (sqrt(x^2) -> abs(x)).
+   Found on 2.3 e725 (1+4^x)/(1+1/2^x): the unreduced x^(2*log(2)/log(4))
+   floated its 2F1 parameters to 3+-eps, and the answer evaluated to
+   -1e15 (handoffs/2026-09-28-checker-wrong-answers, category 5). */
+%mr_fullSimplify(u) := ratsimp(scanmap(lambda([t],
+    if not atom(t) and op(t) = 'log and ratnump(first(t)) and first(t) > 0
+      then radcan(t) else t), u))$
 
 /* One prime-power factor of factor output as [prime, exponent]. factor
    stores the same prime-power inconsistently (MEASURED 2026-08-28

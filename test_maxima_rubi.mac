@@ -2782,6 +2782,24 @@ test_class2_cluster_c() := block([],
   check_bool("fullSimplify: quotient keeps quotient",
     is(ratsimp(denom(%mr_fullSimplify(G1*H1*log(G2)/(D1*E1*log(F1))))
                - D1*E1*log(F1)) = 0)),
+  /* FullSimplify reduces a ratio of logs of commensurable numbers
+     (Log[2]/Log[4] -> 1/2); ratsimp alone does not. Unreduced, 2.3 e725
+     (1+4^x)/(1+1/2^x) carried x^(2*log(2)/log(4)) through 2_3 r96, and
+     its 2F1 parameters floated to 3+-eps: the answer evaluated to -1e15
+     (handoffs/2026-09-28-checker-wrong-answers, category 5). */
+  check("fullSimplify: 2*log(2)/log(4) = 1",
+    %mr_fullSimplify(2*log(2)/log(4)), 1),
+  check("fullSimplify: log(1/8)*B/(log(4)*D1) = -3*B/(2*D1)",
+    %mr_fullSimplify(log(1/8)*B/(log(4)*D1)), -3*B/(2*D1)),
+  check_bool("fullSimplify: log(6)/log(2) = 1 + log(3)/log(2)",
+    is(ratsimp(%mr_fullSimplify(log(6)/log(2)) - (1 + log(3)/log(2))) = 0)),
+  check_bool("fullSimplify: a symbolic log ratio is left alone",
+    is(%mr_fullSimplify(log(G2)/log(F1)) = log(G2)/log(F1))),
+  /* X stands for 2^X: 4^X -> X^2, 1/2^X -> 1/X */
+  check("foEF: (1+4^x)/(1+1/2^x) -> (X^3+X)/(X+1)",
+    %mr_functionOfExponentialFunction((1+4^X)/(1+1/2^X), X), (X^3+X)/(X+1)),
+  check_bool("foEF: (1+4^x)/(1+1/2^x) carries no log",
+    freeof(log, %mr_functionOfExponentialFunction((1+4^X)/(1+1/2^X), X))),
   true
 )$
 
