@@ -2133,6 +2133,39 @@ def wrap_neg1pow(s):
         i = e
 
 
+# Upstream errata: rules whose Rubi source is mathematically wrong, fixed as
+# exact text in the Mathematica RHS before translation. Each entry is
+# (key, n) -> (old, new); the old text must occur exactly once.
+#
+# 1.1.2.6 r13/r14 (added to Rubi in the 2023-12 release f7fa0fd, unchanged
+# at the pinned commit): Int[(g x)^m (a+b x^2)^p (c+d x^2)^q (e+f x^2)^r]
+# splits the last factor as e*(...)^(r-1) + f*x^2*(...)^(r-1), and
+# x^2*(g x)^m = (g x)^(m+2)/g^2, so the second term's coefficient is f/g^2;
+# the source has f/e^2. Found 2026-09-28 on 7.2.4b e96 / 7.2.5 e50
+# ((a+b*acosh(c*x))/(d+e*x^2)^(5/2)), which reach r13 through 1_1_2_6 r7
+# and answered wrong; with f/g^2 both answers pass a principal-branch
+# finite difference (handoffs/2026-09-28-checker-wrong-answers,
+# category 3). The P3 gate undoes it (test/check_generated_rules.py
+# undo_errata).
+RUBI_ERRATA = {
+    ("1_1_2_6", 13): ("f/e^2", "f/g^2"),
+    ("1_1_2_6", 14): ("f/e^2", "f/g^2"),
+}
+
+
+def apply_errata(rhs, key, n):
+    """RHS with the RUBI_ERRATA fix of rule KEY rN applied, or RHS itself
+    when the rule has none. GenError unless the old text occurs once."""
+    fix = RUBI_ERRATA.get((key, n))
+    if fix is None:
+        return rhs
+    old, new = fix
+    if rhs.count(old) != 1:
+        raise GenError(f"{key} r{n}: erratum expects exactly one {old!r} "
+                       f"in the RHS, found {rhs.count(old)}")
+    return rhs.replace(old, new)
+
+
 def emit_rule(run, key, n, rule_vars, fname=None):
     """One rule run (lhs, rhs, cond) -> its cond and repl functions and its
     %mr_defrule registration, as Maxima text (spec 3.4). rule_vars is the
@@ -2149,6 +2182,7 @@ def emit_rule(run, key, n, rule_vars, fname=None):
     %mr_rewrite's `(eq cond-fn t)` branch accepts every binding for it."""
     lhs, rhs, cond = run
     if fname is None:
+        rhs = apply_errata(rhs, key, n)
         # A2.4: 9.3's `Int[u_,x_]` give-up read as `Int[u_,x_Symbol]` --
         # a no-op on every already-typed class 1-6 LHS (_normalize_int_x).
         lhs = _normalize_int_x(lhs)

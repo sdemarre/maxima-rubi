@@ -190,5 +190,26 @@ check("neg1pow: nested inside the operand",
 check("neg1pow: no Power[-1, e] leaves the text alone",
       g.wrap_neg1pow("(x-1)^(2/3) + (-1)*u"), "(x-1)^(2/3) + (-1)*u")
 
+# Upstream errata (2026-09-28): Rubi's 1.1.2.6 r13/r14 split (e+f x^2)
+# against (g x)^m with f/e^2 where the algebra gives f/g^2 (7.2.4b e96,
+# 7.2.5 e50 answered wrong). The fix is exact text, and loud when the text
+# is not found exactly once.
+_R13 = ("e \\[Star] Int[(g*x)^m*(a+b*x^2)^p*(c+d*x^2)^q,x] + "
+        "f/e^2 \\[Star] Int[(g*x)^(m+2)*(a+b*x^2)^p*(c+d*x^2)^q,x]")
+check("errata: 1_1_2_6 r13 f/e^2 -> f/g^2",
+      g.apply_errata(_R13, "1_1_2_6", 13), _R13.replace("f/e^2", "f/g^2"))
+check("errata: 1_1_2_6 r14 f/e^2 -> f/g^2",
+      g.apply_errata(_R13, "1_1_2_6", 14), _R13.replace("f/e^2", "f/g^2"))
+check("errata: a rule without an erratum passes through",
+      g.apply_errata(_R13, "1_1_2_6", 12), _R13)
+for label, text in (("absent", _R13.replace("f/e^2", "f/c^2")),
+                    ("twice", _R13 + " + f/e^2")):
+    try:
+        g.apply_errata(text, "1_1_2_6", 13)
+        outcome = "no error"
+    except g.GenError:
+        outcome = "GenError"
+    check(f"errata: the old text {label} raises GenError", outcome, "GenError")
+
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

@@ -161,6 +161,7 @@ run_all_tests() := block([],
   test_subst_simp_switch(),
   test_gtq_real_reading(),
   test_partial_fraction_structure(),
+  test_rubi_errata(),
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
@@ -5929,6 +5930,39 @@ test_partial_fraction_structure() := block([mr_pf_saved, mr_pf_ok, mr_pf_u, mr_p
     check_bool("1_1_1_2 r13: the answer carries log(b*x+a) and log(d*x+c)",
           not freeof(log(b*x + a), mr_pf_r) and not freeof(log(d*x + c), mr_pf_r))),
   mr_rule_table : mr_pf_saved,
+  true
+)$
+
+/* ---- upstream errata (generator RUBI_ERRATA, 2026-09-28) ----
+   Rubi's 1.1.2.6 r13/r14 split (e+f x^2)^r against (g x)^m with f/e^2 where
+   x^2*(g x)^m = (g x)^(m+2)/g^2 gives f/g^2. 7.2.4b e96 / 7.2.5 e50
+   ((a+b*acosh(c*x))/(d+e*x^2)^(5/2)) reach r13 through 1_1_2_6 r7 and
+   answered wrong (handoffs/2026-09-28-checker-wrong-answers, category 3).
+   The check is the split's defining identity: with an empty table the
+   inner integrals stay nouns ('integrate here, 'unintegrable in the rules
+   core); put each noun's integrand back
+   and the sum must be the original integrand. */
+test_rubi_errata() := block([mr_er_saved, mr_er_ok, mr_er_back, mr_er_f, mr_er_r],
+  print("--- upstream errata: 1_1_2_6 r13/r14 ---"),
+  mr_er_back : lambda([mr_er_e], scanmap(lambda([mr_er_t],
+      if not atom(mr_er_t) and member(op(mr_er_t), [nounify(unintegrable),
+                                                    nounify(integrate)])
+        then first(mr_er_t) else mr_er_t), mr_er_e)),
+  mr_er_ok : errcatch(%mr_load_sibling("rules/class1/1_1_2_6.mac",
+                                       'mr_witness_1_1_2_6), true),
+  check_bool("errata: 1_1_2_6 loads", is(mr_er_ok # [])),
+  if mr_er_ok # [] then (
+    mr_er_saved : mr_rule_table,
+    mr_rule_table : [],
+    mr_er_f : (g*x)^m*(a+b*x^2)^p*(c+d*x^2)^q*(e+f*x^2),
+    mr_er_r : %mr_rule_apply(_mr_rule_1_1_2_6_r13, mr_er_f, x),
+    check("errata: 1_1_2_6 r13 splits (e+f x^2) exactly",
+          radcan(mr_er_back(mr_er_r) - mr_er_f), 0),
+    mr_er_f : (g*x)^m*(a+b*x^2)^p*(c+d*x^2)^q*(e+f*x^2)^3,
+    mr_er_r : %mr_rule_apply(_mr_rule_1_1_2_6_r14, mr_er_f, x),
+    check("errata: 1_1_2_6 r14 splits (e+f x^2)^3 exactly",
+          radcan(mr_er_back(mr_er_r) - mr_er_f), 0),
+    mr_rule_table : mr_er_saved),
   true
 )$
 
