@@ -3039,9 +3039,13 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
    2026-09-28, this build). The roots of unity of 9_3 r59/r60 and 4_1_7 r43
    ((-1)^(2*k/n)) then collapsed onto one root, and 9_3 r60 gave
    1/(1+tan(x)^3) three identical partial fractions. The generator emits
-   every Power[-1, e] as %mr_neg1pow(e): a non-integer rational e takes the
-   exponential form, which domain:real leaves alone; an integer or a
-   symbolic e keeps (-1)^e as before. */
+   every Power[-1, e] as %mr_neg1pow(e) (wrap_neg1pow): a non-integer
+   rational e takes the exponential form, which domain:real leaves alone; an
+   integer or a symbolic e keeps (-1)^e as before. An imaginary e (5_3_6
+   r41/r70's (-1)^(%i*n/2)) needs nothing: Maxima already gives exp(i*pi*e)
+   there. Found by the checker's mismatch triage
+   (probes/verify-stages/05-wrong-answer-traces: 4.3.7 e380, 4.4.7 e59,
+   6.3.7 e258, 6.4.7 e50). */
 %mr_neg1pow(e) :=
   if integerp(e) then (-1)^e
   else if ratnump(e) then %e^(%i*%pi*e)
