@@ -20,7 +20,7 @@ cd "$(dirname "$0")/../.." || exit 1
 ROOT=$(pwd)
 W=${TMPDIR:-/tmp}/mr-dispatch-index-01
 rm -rf "$W"; mkdir -p "$W"
-CORE=$ROOT/test/mr_rules.core
+CORE=${CORE:-$ROOT/test/mr_rules.core}
 SBCL=$(command -v sbcl)
 CAP=${CAP:-240}
 

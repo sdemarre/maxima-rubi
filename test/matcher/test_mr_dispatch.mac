@@ -635,6 +635,43 @@ test_boolcheck() := block([w],
           %mr_containsBoolean(p[1]), ref_containsBoolean(p[1]))),
   true)$
 
+/* ---- the binding lookup: geteqR (ticket 21 step 2) ----------------------
+   Every generated cond and repl opens with geteqR(mm, 'name) per bound
+   variable (107,764 call sites); it was an interpreted recursive walk
+   (maxima_rubi_utils.mac until 2026-09-28) and ranked second in
+   probes/dispatch-index/02-cond-functions.out. It is now native Lisp
+   (maxima_rubi_dispatch.lisp). ref_geteqR is the retired walk, verbatim: the
+   native lookup must return the SAME internal object (compared as the Lisp
+   printed form, not by =). */
+ref_geteqR(mm, nm) := block([],
+  if length(mm) = 0 then false
+    else if is(part(part(mm, 1), 1) = nm) then part(part(mm, 1), 2)
+         else ref_geteqR(rest(mm), nm))$
+
+lisp_form(e) := ?format(false, "~s", e)$
+
+test_geteqr() := block([mm, w],
+  print("--- the binding lookup geteqR ---"),
+  check("geteqR is a Lisp function", is(?fboundp('geteqR) # false), true),
+  check("no Maxima definition shadows it", member('geteqR, map(op, functions)), false),
+  mm : [_g_a = 3, _g_b = -x, _g_c = 1/(b*x^2 + a), _g_d = sqrt(1 + x),
+        _g_e = sin(c + d*x)^2*(a + b*cos(c + d*x))^(3/2), _g_f = sin, _g_g = a[1],
+        _g_h = 2.5b0, _g_i = -1/2, _g_j = [1, 2], _g_k = false, _g_a = 99],
+  for nm in ['_g_a, '_g_b, '_g_c, '_g_d, '_g_e, '_g_f, '_g_g, '_g_h, '_g_i, '_g_j,
+             '_g_k, '_g_missing] do
+    check(sconcat("geteqR agrees with the retired walk: ", string(nm)),
+          lisp_form(geteqR(mm, nm)), lisp_form(ref_geteqR(mm, nm))),
+  check("the first equation of a name wins", geteqR(mm, '_g_a), 3),
+  check("a missing name is false", geteqR(mm, '_g_missing), false),
+  check("the empty list is false", geteqR([], '_g_a), false),
+  check("a bound false is returned as false", geteqR(mm, '_g_k), false),
+  check("a function binding applies", apply(geteqR(mm, '_g_f), [0]), 0),
+  /* the dispatcher's own mm lists: a real binding list, through a rule */
+  check("geteqR on a dispatcher binding list", %mr_dispatch_tree(x^3, x,
+        [%mr_defrule("t", 90, "(Int (Power (Pattern x (Blank)) (Optional (Pattern |_t_m| (Blank)))) (Pattern x (Blank Symbol)))", t_true, t_m)], 1), 3),
+  check("a non-list is an error", errcatch(geteqR(5, '_g_a)), []),
+  true)$
+
 test_records()$
 test_dispatch()$
 test_bindings()$
@@ -648,6 +685,7 @@ test_matchq()$
 test_rewrite()$
 test_verbose()$
 test_boolcheck()$
+test_geteqr()$
 print("")$
 print("========================================")$
 print("Results: ", tests_passed, " passed, ", tests_failed, " failed")$

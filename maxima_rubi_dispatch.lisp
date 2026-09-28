@@ -4,8 +4,8 @@
 ;; 3.4-3.6), and the arity dispatchers for the two Rubi predicates the
 ;; rules call at more than one arity.
 ;;
-;; Loaded by maxima_rubi.mac after maxima_rubi_utils.mac (geteqR,
-;; rubi_verbose, %mr_boolcheck),
+;; Loaded by maxima_rubi.mac after maxima_rubi_utils.mac (rubi_verbose,
+;; %mr_boolcheck),
 ;; maxima_rubi_match.lisp and maxima_rubi_tree.lisp.
 ;;
 ;; Naming (measured 2026-08-27, this build): the Lisp symbol of an
@@ -498,6 +498,28 @@ compares with %mr_memberQ and the repl applies; anything else goes through
 tree->max."
   (or (and (symbolp tree) (mr-head-verb tree))
       (mr-tree:tree->max tree)))
+
+;;; geteqR(mm, nm): the value bound to NM in the mm list [name = value, ...]
+;;; mr-binding-list builds, or false when NM is not bound -- every generated
+;;; cond and repl opens with one call per bound variable. Until 2026-09-28 an
+;;; interpreted recursive walk in maxima_rubi_utils.mac, second in
+;;; probes/dispatch-index/02-cond-functions.out (ticket 21 step 2); native
+;;; here with the same answers, which test/matcher/test_mr_dispatch.mac checks
+;;; against the retired walk (ref_geteqR), object for object: the FIRST
+;;; element whose part 1 is(= NM) gives its part 2; a non-list is an error.
+(defmfun |$geteqR| (&rest args)
+  (unless (= (length args) 2)
+    (merror (intl:gettext "geteqR: expected 2 args, found ~A") (length args)))
+  (destructuring-bind (mm nm) args
+    (when ($atom mm)
+      (merror (intl:gettext "geteqR: not a list of equations: ~M") mm))
+    (dolist (eqn (cdr mm) nil)
+      (when ($atom eqn)
+        (merror (intl:gettext "geteqR: not an equation: ~M") eqn))
+      (when (alike1 (second eqn) nm)
+        (unless (cddr eqn)
+          (merror (intl:gettext "geteqR: an equation without a right side: ~M") eqn))
+        (return (third eqn))))))
 
 (defun mr-binding-list (bindings skip)
   "MR-MATCH bindings -> the Maxima list [name = value, ...] in pattern order,

@@ -10,12 +10,10 @@ rubi_verbose : false$
  * the harness never switches it. */
 mr_simplify_flag : true$
 
-/* Capture lookup on the [var = value] equation list (order unspecified,
- * measured T2 §3.6). Quoted symbol on both sides (house rule 1). */
-geteqR(mm, nm) := block([],
-  if length(mm) = 0 then false
-    else if is(part(part(mm, 1), 1) = nm) then part(part(mm, 1), 2)
-         else geteqR(rest(mm), nm))$
+/* geteqR(mm, nm), the capture lookup on the [var = value] equation list,
+ * is native Lisp since 2026-09-28 (ticket 21 step 2):
+ * maxima_rubi_dispatch.lisp. The interpreted walk that lived here is kept
+ * verbatim as ref_geteqR, the oracle in test/matcher/test_mr_dispatch.mac. */
 
 /* Boolean resolver (house rule 2): is()'s third value unknown is not true. */
 %mr_b(e) := block([v],

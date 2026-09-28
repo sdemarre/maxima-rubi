@@ -1,0 +1,466 @@
+== core stamp
+fingerprint 55d9490a8f05fe86f3a6a9a9359891b6
+git_rev f80724a4da2f6031e07316f0a87952515b8a41e7
+git_tree aa7b27a6873b43051fc11664d8bf8e537eecb16d
+git_dirty 3
+date 2026-09-28 11:37:50 UTC
+maxima Maxima branch_5_50_base_84_g4204fb669
+rules 7776
+
+== c1 1.1.1.2 e1170 profiled=0
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 1.137086 answered true 
+lisp-errors: 0
+== c1 1.1.1.2 e1170 profiled=1
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 1.212005 answered true 
+PROFILE c1 1.1.1.2 e1170
+  dispatches 17  max-depth 7  attempts 28118  attempts/dispatch 1654.0
+  of the cond time, binding conversion (tree->maxima, exclusive) 57.0 ms
+  of the cond time, the boolean-leak check on the binding list (%mr_containsBoolean) 6.0 ms over 4439 calls
+  matcher time (exclusive of cond) 64.0 ms; cond time (inclusive, nested) 1069.0 ms
+  NOBIND    n=   26899  match=     56.0ms  cond=      0.0ms  repl=     12.0ms  bindings=0
+  CONDFAIL  n=    1200  match=      8.0ms  cond=   1066.0ms  repl=      1.0ms  bindings=4418
+  DECLINE   n=       2  match=      0.0ms  cond=      1.0ms  repl=      9.0ms  bindings=2
+  FIRED     n=      17  match=      0.0ms  cond=      3.0ms  repl=   5218.0ms  bindings=19
+  oracle skips (attempts, matcher ms saved):
+    ROOT-SKIP   nobind=    5432 (6.0ms)  other=0
+    HEADS-SKIP  nobind=       4 (0.0ms)  other=0
+    ANY-SKIP    nobind=    5436 (6.0ms)  other=0
+  per class: attempts (nobind/condfail/decline/fired)  matcher ms  cond ms
+    class 1: 26883/1137/2/11  64.0  1052.0
+    class 9: 16/63/0/6  0.0  17.0
+  top rules by cond time in non-firing attempts (rule: ms attempts bindings):
+    1_1_1_4 r48: 115.0 16 192
+    1_4_2 r4: 106.0 6 192
+    1_3_4 r6: 56.0 6 192
+    1_4_2 r9: 46.0 6 48
+    1_2_3_6 r29: 35.0 6 98
+    1_1_3_8 r30: 32.0 6 161
+    1_4_2 r25: 30.0 6 84
+    1_3_4 r5: 28.0 6 72
+    1_1_1_4 r47: 20.0 16 48
+    1_4_2 r3: 19.0 6 48
+    1_4_1 r23: 19.0 6 125
+    1_1_1_7 r10: 19.0 6 125
+    1_4_1 r18: 18.0 6 100
+    1_1_1_7 r5: 18.0 6 100
+    1_4_2 r15: 15.0 6 48
+    1_4_2 r24: 14.0 6 84
+    1_3_3 r3: 14.0 6 84
+    1_4_1 r22: 14.0 6 84
+    1_1_1_7 r9: 14.0 6 84
+    1_2_3_4 r105: 13.0 6 38
+    1_4_1 r24: 11.0 6 52
+    1_1_1_7 r11: 11.0 6 52
+    1_3_4 r4: 11.0 6 48
+    1_4_2 r17: 11.0 6 48
+    1_4_2 r28: 10.0 6 30
+  oracle violations: 0
+lisp-errors: 0
+== c4 4.2.4.2 e18 profiled=0
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 2.148706 answered true 
+lisp-errors: 0
+== c4 4.2.4.2 e18 profiled=1
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 2.418499 answered true 
+PROFILE c4 4.2.4.2 e18
+  dispatches 17  max-depth 14  attempts 89019  attempts/dispatch 5236.4
+  of the cond time, binding conversion (tree->maxima, exclusive) 67.0 ms
+  of the cond time, the boolean-leak check on the binding list (%mr_containsBoolean) 8.0 ms over 6203 calls
+  matcher time (exclusive of cond) 127.0 ms; cond time (inclusive, nested) 2060.0 ms
+  NOBIND    n=   87799  match=    118.0ms  cond=      0.0ms  repl=     39.0ms  bindings=0
+  CONDFAIL  n=    1203  match=      9.0ms  cond=   2039.0ms  repl=      0.0ms  bindings=6186
+  DECLINE   n=       0  match=      0.0ms  cond=      0.0ms  repl=      0.0ms  bindings=0
+  FIRED     n=      17  match=      0.0ms  cond=     21.0ms  repl=   9768.0ms  bindings=17
+  oracle skips (attempts, matcher ms saved):
+    ROOT-SKIP   nobind=   28560 (27.0ms)  other=0
+    HEADS-SKIP  nobind=   36207 (46.0ms)  other=0
+    ANY-SKIP    nobind=   53611 (63.0ms)  other=0
+  per class: attempts (nobind/condfail/decline/fired)  matcher ms  cond ms
+    class 1: 47370/749/0/0  67.0  1000.0
+    class 2: 1686/125/0/0  3.0  49.0
+    class 3: 4747/15/0/0  6.0  4.0
+    class 4: 18410/123/0/15  25.0  62.0
+    class 5: 4659/10/0/0  5.0  8.0
+    class 6: 2730/0/0/0  3.0  0.0
+    class 7: 4974/10/0/0  5.0  7.0
+    class 8: 2142/0/0/0  6.0  0.0
+    class 9: 1081/171/0/2  7.0  930.0
+  top rules by cond time in non-firing attempts (rule: ms attempts bindings):
+    9_3 r8: 431.0 7 58
+    9_3 r13: 290.0 7 980
+    1_4_2 r9: 101.0 16 168
+    1_4_2 r3: 84.0 16 168
+    1_1_1_4 r47: 80.0 16 168
+    1_4_2 r15: 61.0 16 168
+    1_3_4 r4: 51.0 16 168
+    9_3 r7: 48.0 7 22
+    1_4_2 r17: 41.0 16 168
+    9_3 r22: 31.0 7 92
+    1_4_2 r25: 28.0 16 116
+    1_4_1 r23: 27.0 16 157
+    9_3 r24: 26.0 7 66
+    1_4_1 r18: 26.0 16 128
+    1_4_1 r22: 25.0 16 116
+    1_1_1_7 r5: 25.0 16 128
+    1_1_1_7 r9: 25.0 16 116
+    1_4_2 r24: 25.0 16 116
+    1_3_3 r3: 25.0 16 116
+    1_1_1_7 r10: 24.0 16 157
+    1_1_1_7 r7: 17.0 16 47
+    9_3 r29: 17.0 7 70
+    1_4_1 r4: 16.0 16 70
+    1_4_2 r28: 16.0 16 47
+    1_4_1 r68: 15.0 16 70
+  oracle violations: 0
+lisp-errors: 0
+== c4 4.5.4.2 e108 profiled=0
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 1.903447 answered true 
+lisp-errors: 0
+== c4 4.5.4.2 e108 profiled=1
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 2.087923 answered true 
+PROFILE c4 4.5.4.2 e108
+  dispatches 11  max-depth 11  attempts 62978  attempts/dispatch 5725.3
+  of the cond time, binding conversion (tree->maxima, exclusive) 73.0 ms
+  of the cond time, the boolean-leak check on the binding list (%mr_containsBoolean) 8.0 ms over 5906 calls
+  matcher time (exclusive of cond) 101.0 ms; cond time (inclusive, nested) 1823.0 ms
+  NOBIND    n=   62213  match=     93.0ms  cond=      0.0ms  repl=     27.0ms  bindings=0
+  CONDFAIL  n=     754  match=      8.0ms  cond=   1807.0ms  repl=      0.0ms  bindings=5895
+  DECLINE   n=       0  match=      0.0ms  cond=      0.0ms  repl=      0.0ms  bindings=0
+  FIRED     n=      11  match=      0.0ms  cond=     16.0ms  repl=   7242.0ms  bindings=11
+  oracle skips (attempts, matcher ms saved):
+    ROOT-SKIP   nobind=   16652 (14.0ms)  other=0
+    HEADS-SKIP  nobind=   29753 (40.0ms)  other=0
+    ANY-SKIP    nobind=   37938 (46.0ms)  other=0
+  per class: attempts (nobind/condfail/decline/fired)  matcher ms  cond ms
+    class 1: 29645/450/0/0  49.0  833.0
+    class 2: 1122/88/0/0  2.0  39.0
+    class 3: 3175/10/0/0  4.0  3.0
+    class 4: 17178/69/0/10  22.0  44.0
+    class 5: 3327/8/0/0  9.0  6.0
+    class 6: 1950/0/0/0  2.0  0.0
+    class 7: 3552/8/0/0  4.0  6.0
+    class 8: 1530/0/0/0  1.0  0.0
+    class 9: 734/121/0/1  7.0  891.0
+  top rules by cond time in non-firing attempts (rule: ms attempts bindings):
+    9_3 r13: 366.0 5 1194
+    9_3 r8: 295.0 5 58
+    1_4_2 r9: 95.0 10 168
+    1_4_2 r3: 79.0 10 168
+    1_1_1_4 r47: 75.0 10 168
+    9_3 r22: 63.0 5 186
+    1_4_2 r15: 61.0 10 168
+    1_3_4 r4: 43.0 10 168
+    1_4_2 r17: 39.0 10 168
+    9_3 r7: 36.0 5 19
+    9_3 r24: 36.0 5 91
+    1_4_2 r25: 27.0 10 116
+    1_2_3_6 r29: 24.0 10 84
+    1_4_1 r22: 23.0 10 116
+    1_4_2 r24: 23.0 10 116
+    1_1_1_7 r9: 23.0 10 116
+    1_3_3 r3: 23.0 10 116
+    1_4_1 r18: 21.0 10 116
+    1_1_1_7 r5: 21.0 10 116
+    1_4_1 r23: 20.0 10 134
+    1_1_1_7 r10: 20.0 10 134
+    1_2_3_4 r105: 18.0 10 52
+    9_3 r29: 16.0 5 76
+    1_4_1 r24: 16.0 10 80
+    1_1_1_7 r11: 16.0 10 80
+  oracle violations: 0
+lisp-errors: 0
+== c4 4.1.2.2 e88 profiled=0
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 2.996752 answered true 
+lisp-errors: 0
+== c4 4.1.2.2 e88 profiled=1
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 3.315103 answered true 
+PROFILE c4 4.1.2.2 e88
+  dispatches 15  max-depth 15  attempts 88025  attempts/dispatch 5868.3
+  of the cond time, binding conversion (tree->maxima, exclusive) 128.0 ms
+  of the cond time, the boolean-leak check on the binding list (%mr_containsBoolean) 14.0 ms over 12256 calls
+  matcher time (exclusive of cond) 143.0 ms; cond time (inclusive, nested) 2950.0 ms
+  NOBIND    n=   86721  match=    129.0ms  cond=      0.0ms  repl=     37.0ms  bindings=0
+  CONDFAIL  n=    1289  match=     14.0ms  cond=   2924.0ms  repl=      1.0ms  bindings=12234
+  DECLINE   n=       0  match=      0.0ms  cond=      0.0ms  repl=      0.0ms  bindings=0
+  FIRED     n=      15  match=      0.0ms  cond=     26.0ms  repl=  19259.0ms  bindings=22
+  oracle skips (attempts, matcher ms saved):
+    ROOT-SKIP   nobind=   16658 (14.0ms)  other=0
+    HEADS-SKIP  nobind=   36798 (47.0ms)  other=0
+    ANY-SKIP    nobind=   45863 (55.0ms)  other=0
+  per class: attempts (nobind/condfail/decline/fired)  matcher ms  cond ms
+    class 1: 44385/774/0/0  77.0  1914.0
+    class 2: 1683/136/0/0  4.0  125.0
+    class 3: 4778/15/0/0  7.0  5.0
+    class 4: 18192/145/0/14  28.0  106.0
+    class 5: 5322/14/0/0  6.0  17.0
+    class 6: 3120/0/0/0  4.0  0.0
+    class 7: 5682/14/0/0  7.0  12.0
+    class 8: 2448/0/0/0  2.0  0.0
+    class 9: 1111/191/0/1  8.0  771.0
+  top rules by cond time in non-firing attempts (rule: ms attempts bindings):
+    9_3 r13: 381.0 8 1078
+    1_4_2 r3: 247.0 15 624
+    1_4_2 r9: 246.0 15 624
+    1_1_1_4 r47: 237.0 15 624
+    9_3 r8: 223.0 8 168
+    1_4_2 r15: 184.0 15 624
+    1_3_4 r4: 138.0 15 624
+    1_4_2 r17: 135.0 15 624
+    1_1_3_8 r30: 81.0 15 364
+    1_4_2 r25: 67.0 15 312
+    9_3 r7: 63.0 8 42
+    1_4_1 r18: 48.0 15 312
+    1_1_1_7 r5: 48.0 15 312
+    1_4_2 r24: 48.0 15 312
+    1_3_3 r3: 45.0 15 312
+    1_4_1 r22: 44.0 15 312
+    1_1_1_7 r9: 44.0 15 312
+    1_4_1 r23: 30.0 15 183
+    1_1_1_7 r10: 30.0 15 183
+    9_3 r18: 26.0 8 84
+    2_3 r6: 24.0 15 156
+    4_7_5 r55: 23.0 8 168
+    2_3 r4: 21.0 15 156
+    2_3 r7: 21.0 15 156
+    2_3 r5: 20.0 15 156
+  oracle violations: 0
+lisp-errors: 0
+== c4 4.2.4.2 e912 (timeout) profiled=0
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 6.7852500000000004 answered true 
+lisp-errors: 0
+== c4 4.2.4.2 e912 (timeout) profiled=1
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 7.154784 answered true 
+PROFILE c4 4.2.4.2 e912 (timeout)
+  dispatches 23  max-depth 19  attempts 125347  attempts/dispatch 5449.9
+  of the cond time, binding conversion (tree->maxima, exclusive) 263.0 ms
+  of the cond time, the boolean-leak check on the binding list (%mr_containsBoolean) 26.0 ms over 14561 calls
+  matcher time (exclusive of cond) 212.0 ms; cond time (inclusive, nested) 6616.0 ms
+  NOBIND    n=  123103  match=    190.0ms  cond=      0.0ms  repl=     54.0ms  bindings=0
+  CONDFAIL  n=    2221  match=     22.0ms  cond=   6563.0ms  repl=      1.0ms  bindings=14536
+  DECLINE   n=       0  match=      0.0ms  cond=      0.0ms  repl=      0.0ms  bindings=0
+  FIRED     n=      23  match=      0.0ms  cond=     53.0ms  repl=  69447.0ms  bindings=25
+  oracle skips (attempts, matcher ms saved):
+    ROOT-SKIP   nobind=   10211 (7.0ms)  other=0
+    HEADS-SKIP  nobind=   49174 (64.0ms)  other=0
+    ANY-SKIP    nobind=   54425 (67.0ms)  other=0
+  per class: attempts (nobind/condfail/decline/fired)  matcher ms  cond ms
+    class 1: 67909/1260/0/0  119.0  3491.0
+    class 2: 2208/212/0/0  5.0  145.0
+    class 3: 6350/20/0/0  9.0  6.0
+    class 4: 24485/384/0/20  44.0  217.0
+    class 5: 6650/20/0/0  8.0  18.0
+    class 6: 3898/2/0/0  5.0  0.0
+    class 7: 7100/20/0/0  8.0  18.0
+    class 8: 3060/0/0/0  3.0  0.0
+    class 9: 1443/303/0/3  12.0  2719.0
+  top rules by cond time in non-firing attempts (rule: ms attempts bindings):
+    9_3 r8: 1738.0 10 128
+    9_3 r13: 487.0 10 1686
+    1_4_2 r9: 335.0 23 384
+    1_1_1_4 r48: 301.0 23 288
+    1_4_2 r4: 296.0 23 288
+    1_1_1_4 r47: 274.0 23 384
+    1_4_2 r3: 266.0 23 384
+    1_4_2 r15: 190.0 23 384
+    9_3 r7: 179.0 10 48
+    1_3_4 r4: 122.0 23 384
+    1_4_2 r17: 121.0 23 384
+    1_3_4 r6: 120.0 23 288
+    1_4_1 r22: 113.0 23 334
+    1_3_3 r3: 112.0 23 334
+    1_1_1_7 r9: 112.0 23 334
+    1_4_2 r24: 109.0 23 334
+    1_4_2 r25: 107.0 23 334
+    9_3 r22: 96.0 10 268
+    1_1_1_7 r5: 89.0 23 366
+    1_4_1 r18: 86.0 23 366
+    1_4_1 r23: 60.0 23 351
+    1_1_1_7 r10: 60.0 23 351
+    9_3 r24: 58.0 10 144
+    1_1_3_8 r30: 49.0 23 180
+    1_4_1 r68: 39.0 23 169
+  oracle violations: 0
+lisp-errors: 0
+== c4 4.5.4.2 e1328 (timeout) profiled=0
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 11.935671 answered true 
+lisp-errors: 0
+== c4 4.5.4.2 e1328 (timeout) profiled=1
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 12.860085000000002 answered true 
+PROFILE c4 4.5.4.2 e1328 (timeout)
+  dispatches 97  max-depth 26  attempts 327983  attempts/dispatch 3381.3
+  of the cond time, binding conversion (tree->maxima, exclusive) 360.0 ms
+  of the cond time, the boolean-leak check on the binding list (%mr_containsBoolean) 43.0 ms over 33019 calls
+  matcher time (exclusive of cond) 575.0 ms; cond time (inclusive, nested) 12466.0 ms
+  NOBIND    n=  322024  match=    520.0ms  cond=      0.0ms  repl=    143.0ms  bindings=0
+  CONDFAIL  n=    5850  match=     54.0ms  cond=  11245.0ms  repl=      2.0ms  bindings=32871
+  DECLINE   n=      12  match=      0.0ms  cond=     34.0ms  repl=      6.0ms  bindings=18
+  FIRED     n=      97  match=      0.0ms  cond=   1187.0ms  repl= 159538.0ms  bindings=130
+  oracle skips (attempts, matcher ms saved):
+    ROOT-SKIP   nobind=   67476 (66.0ms)  other=0
+    HEADS-SKIP  nobind=  118113 (138.0ms)  other=0
+    ANY-SKIP    nobind=  155221 (178.0ms)  other=0
+  per class: attempts (nobind/condfail/decline/fired)  matcher ms  cond ms
+    class 1: 190708/3896/12/42  388.0  7075.0
+    class 2: 4704/402/0/0  9.0  213.0
+    class 3: 13428/42/0/0  17.0  10.0
+    class 4: 60272/652/0/42  84.0  2215.0
+    class 5: 15970/38/0/0  17.0  28.0
+    class 6: 9352/8/0/0  11.0  2.0
+    class 7: 17050/38/0/0  18.0  28.0
+    class 8: 7344/0/0/0  6.0  0.0
+    class 9: 3196/774/0/13  24.0  2895.0
+  top rules by cond time in non-firing attempts (rule: ms attempts bindings):
+    9_3 r8: 1525.0 24 200
+    1_1_1_4 r47: 916.0 96 1584
+    4_7_5 r55: 673.0 27 200
+    9_3 r13: 614.0 24 2046
+    1_4_2 r3: 509.0 60 936
+    1_1_1_4 r48: 402.0 96 576
+    1_4_2 r4: 381.0 60 576
+    1_4_2 r9: 362.0 54 582
+    1_4_2 r15: 326.0 54 792
+    1_4_2 r17: 210.0 54 792
+    1_3_4 r4: 206.0 54 792
+    9_3 r7: 191.0 24 88
+    1_3_4 r6: 189.0 54 576
+    1_4_1 r18: 172.0 63 844
+    1_4_1 r22: 167.0 63 716
+    1_1_1_7 r5: 144.0 54 724
+    1_3_3 r3: 135.0 54 620
+    1_4_1 r23: 134.0 63 788
+    1_4_2 r24: 134.0 54 620
+    9_3 r22: 133.0 24 362
+    1_1_1_7 r9: 131.0 54 620
+    1_4_2 r25: 129.0 54 512
+    1_1_3_8 r30: 127.0 54 495
+    1_1_1_7 r10: 116.0 54 653
+    1_1_1_3 r73: 79.0 96 220
+  oracle violations: 0
+lisp-errors: 0
+== c4 4.1.2.2 e1470 (timeout) profiled=0
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 8.902128 answered true 
+lisp-errors: 0
+== c4 4.1.2.2 e1470 (timeout) profiled=1
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 9.193476 answered true 
+PROFILE c4 4.1.2.2 e1470 (timeout)
+  dispatches 47  max-depth 12  attempts 78130  attempts/dispatch 1662.3
+  of the cond time, binding conversion (tree->maxima, exclusive) 144.0 ms
+  of the cond time, the boolean-leak check on the binding list (%mr_containsBoolean) 27.0 ms over 23913 calls
+  matcher time (exclusive of cond) 251.0 ms; cond time (inclusive, nested) 11316.0 ms
+  NOBIND    n=   75211  match=    211.0ms  cond=      0.0ms  repl=     33.0ms  bindings=0
+  CONDFAIL  n=    2865  match=     39.0ms  cond=   8498.0ms  repl=      1.0ms  bindings=23811
+  DECLINE   n=       7  match=      0.0ms  cond=     17.0ms  repl=      5.0ms  bindings=55
+  FIRED     n=      47  match=      0.0ms  cond=   2800.0ms  repl=  55359.0ms  bindings=47
+  oracle skips (attempts, matcher ms saved):
+    ROOT-SKIP   nobind=   13159 (13.0ms)  other=0
+    HEADS-SKIP  nobind=   27419 (42.0ms)  other=0
+    ANY-SKIP    nobind=   37633 (53.0ms)  other=0
+  per class: attempts (nobind/condfail/decline/fired)  matcher ms  cond ms
+    class 1: 45348/2359/6/33  183.0  4921.0
+    class 2: 902/82/0/0  3.0  98.0
+    class 3: 2602/8/0/0  4.0  2.0
+    class 4: 13297/94/1/5  21.0  2798.0
+    class 5: 3990/12/0/0  5.0  20.0
+    class 6: 2338/2/0/0  4.0  2.0
+    class 7: 4260/12/0/0  10.0  20.0
+    class 8: 1836/3/0/0  2.0  6.0
+    class 9: 638/293/0/9  19.0  3450.0
+  top rules by cond time in non-firing attempts (rule: ms attempts bindings):
+    9_3 r14: 2182.0 6 4860
+    1_4_2 r4: 1018.0 11 1152
+    1_1_1_4 r48: 997.0 29 1152
+    9_3 r8: 575.0 6 216
+    1_3_4 r6: 471.0 11 1152
+    9_3 r13: 263.0 6 888
+    1_4_2 r25: 170.0 11 456
+    1_1_3_8 r30: 148.0 11 599
+    1_4_2 r10: 136.0 11 144
+    1_4_2 r3: 84.0 11 240
+    1_4_2 r9: 79.0 11 240
+    1_1_1_4 r47: 75.0 29 240
+    9_3 r7: 73.0 6 42
+    1_3_3 r3: 66.0 11 456
+    1_4_1 r18: 60.0 11 291
+    1_4_2 r15: 60.0 11 240
+    1_1_1_7 r5: 60.0 11 291
+    1_4_2 r24: 58.0 11 456
+    1_4_1 r22: 58.0 11 456
+    1_1_1_7 r9: 58.0 11 456
+    9_3 r18: 51.0 6 166
+    1_4_2 r17: 46.0 11 240
+    1_3_4 r4: 45.0 11 240
+    1_4_1 r4: 44.0 11 173
+    1_3_3 r7: 43.0 11 309
+  oracle violations: 0
+lisp-errors: 0
+== c4 4.1.2.2 e1403 (timeout at 100 s) profiled=0
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 1.651232 answered true 
+lisp-errors: 0
+== c4 4.1.2.2 e1403 (timeout at 100 s) profiled=1
+R build branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+R cpu s 2.047546 answered true 
+PROFILE c4 4.1.2.2 e1403 (timeout at 100 s)
+  dispatches 39  max-depth 11  attempts 125111  attempts/dispatch 3208.0
+  of the cond time, binding conversion (tree->maxima, exclusive) 86.0 ms
+  of the cond time, the boolean-leak check on the binding list (%mr_containsBoolean) 9.0 ms over 7986 calls
+  matcher time (exclusive of cond) 172.0 ms; cond time (inclusive, nested) 1550.0 ms
+  NOBIND    n=  122977  match=    162.0ms  cond=      0.0ms  repl=     54.0ms  bindings=0
+  CONDFAIL  n=    2095  match=     10.0ms  cond=   1518.0ms  repl=      1.0ms  bindings=7944
+  DECLINE   n=       0  match=      0.0ms  cond=      0.0ms  repl=      0.0ms  bindings=0
+  FIRED     n=      39  match=      0.0ms  cond=     32.0ms  repl=   8372.0ms  bindings=42
+  oracle skips (attempts, matcher ms saved):
+    ROOT-SKIP   nobind=   25267 (23.0ms)  other=0
+    HEADS-SKIP  nobind=   49908 (59.0ms)  other=0
+    ANY-SKIP    nobind=   66205 (74.0ms)  other=0
+  per class: attempts (nobind/condfail/decline/fired)  matcher ms  cond ms
+    class 1: 67413/1245/0/17  99.0  988.0
+    class 2: 2317/190/0/3  5.0  126.0
+    class 3: 5746/18/0/0  7.0  4.0
+    class 4: 25443/255/0/14  35.0  113.0
+    class 5: 6652/18/0/0  7.0  11.0
+    class 6: 3895/5/0/0  5.0  2.0
+    class 7: 7102/18/0/0  7.0  25.0
+    class 8: 3060/0/0/0  3.0  0.0
+    class 9: 1349/346/0/5  4.0  281.0
+  top rules by cond time in non-firing attempts (rule: ms attempts bindings):
+    9_3 r13: 73.0 10 158
+    1_4_2 r3: 69.0 21 192
+    1_1_1_4 r47: 65.0 37 192
+    1_4_2 r9: 63.0 21 192
+    1_4_2 r15: 51.0 21 192
+    1_1_1_4 r46: 49.0 37 176
+    9_3 r8: 47.0 10 64
+    1_4_2 r17: 43.0 21 192
+    1_3_4 r4: 38.0 21 192
+    9_3 r7: 33.0 10 40
+    1_4_1 r18: 30.0 21 200
+    1_1_1_7 r5: 29.0 21 200
+    1_4_1 r23: 26.0 21 156
+    1_1_1_7 r10: 25.0 21 156
+    2_1 r12: 23.0 21 83
+    2_1 r13: 23.0 21 83
+    1_4_2 r2: 23.0 21 96
+    1_4_2 r25: 22.0 21 104
+    1_4_2 r16: 22.0 21 96
+    1_3_4 r2: 21.0 21 96
+    1_1_1_7 r9: 21.0 21 104
+    7_3_7 r25: 20.0 10 40
+    1_4_2 r7: 20.0 21 96
+    9_3 r18: 17.0 10 60
+    1_4_2 r14: 15.0 21 96
+  oracle violations: 0
+lisp-errors: 0
