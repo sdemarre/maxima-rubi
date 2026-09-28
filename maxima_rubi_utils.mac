@@ -1456,6 +1456,11 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
   if atom(t) then (
     if is(t = x) then 1 else 0
   )
+  /* an x-free term is a degree-0 monomial WHATEVER its head: op(sqrt(3))
+     is sqrt, not "^", and no branch below took it, so sqrt(3) read false
+     and every walker dropped it (1_1_3_8 r17 / r9 on 1.3.2 e129-e136,
+     2026-09-28, probes/verify-stages/05-wrong-answer-traces) */
+  elseif freeof(x, t) then 0
   elseif op(t) = "-" then %mr_term_xexp(part(t, 1), x)
   elseif op(t) = "*" then (
     p : 0,
@@ -1496,15 +1501,20 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
     if is(part(t, 1) = x) then (
       if integerp(part(t, 2)) and part(t, 2) > 0 then part(t, 2) else false
     )
-    else if freeof(x, part(t, 1)) then 0
-         else false
+    /* an x-free term was taken above, so an x-free base here has x in
+       its exponent (2^x): not a monomial -- it used to read 0, a
+       constant */
+    else false
   )
   else false)$
 
 /* the x-free coefficient of x^n in one monomial term (caller ensures
    %mr_term_xexp(t, x) = n) */
 %mr_term_coeff(t, x, n) := block([i, f, c],
-  if atom(t) then (
+  /* an x-free term of any head (sqrt(3)) is its own coefficient at n = 0,
+     as %mr_term_xexp reads it */
+  if not atom(t) and freeof(x, t) then (if n = 0 then t else 0)
+  elseif atom(t) then (
     /* the atom being x itself has coefficient 1 at n = 1 (the atom
        branch of %mr_term_xexp already knows x has exponent 1 — mirror
        it here; review fix 2026-08-20, bug A) */
@@ -1691,17 +1701,14 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
       /* %mr_term_xexp returns false (never negative) on a term that is
          not a pure non-negative power of the variable, so k >= 0 holds
          whenever k # false */
+      /* the TERMS of r: a sum's arguments, or r itself. Looping over
+         part(r, i) of a non-sum walked a product's FACTORS as terms
+         (%e^atanh(a*x)*x^3: x^3 a monomial, the exponential read as a
+         constant -> true; 1_1_3_7 r44 on 7.3.6, 2026-09-28) */
       ok : true,
-      if atom(r) then (
-        k : %mr_term_xexp(r, t),
+      for term in (if not atom(r) and op(r) = "+" then args(r) else [r]) do (
+        k : %mr_term_xexp(term, t),
         if k = false or not integerp(k/v) then ok : false
-      )
-      else (
-        for i : 1 thru length(r) do (
-          term : part(r, i),
-          k : %mr_term_xexp(term, t),
-          if k = false or not integerp(k/v) then ok : false
-        )
       ),
       ok
     )
@@ -1721,16 +1728,9 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
      if is(r = 0) = true then false
      else (
        d : 0,
-       if atom(r) then (
-         k : %mr_term_xexp(r, t),
+       for term in (if not atom(r) and op(r) = "+" then args(r) else [r]) do (
+         k : %mr_term_xexp(term, t),
          if k # false and k/v > d then d : k/v
-       )
-       else (
-         for i : 1 thru length(r) do (
-           term : part(r, i),
-           k : %mr_term_xexp(term, t),
-           if k # false and k/v > d then d : k/v
-         )
        ),
        is(d = n)
      )

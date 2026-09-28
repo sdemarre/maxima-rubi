@@ -355,6 +355,30 @@ test_pred_cluster1() := block([],
         %mr_coeff(c^3*x^2/(x+1) + c^3*x/(x+1), x, 1), c^3),
   check("coeff powered form of a fraction-form polynomial",
         %mr_coeff(x^4/(x^2+1) + x^2/(x^2+1), x, 2, 1), 1),
+  /* an x-free term whose head is not "^": op(sqrt(3)) is sqrt, so the
+     term walkers dropped it -- 1_1_3_8 r17 read Coeff[1+sqrt(3)+x, x, 0]
+     as 1 and r9 read x+sqrt(3) as having no constant term, and 1.3.2
+     e129-e136 lost the sqrt(3) share of their atanh/atan term
+     (probes/verify-stages/05-wrong-answer-traces) */
+  check("coeff constant sqrt(3), n=0", %mr_coeff(x + sqrt(3) + 1, x, 0), sqrt(3) + 1),
+  check("coeff lone sqrt(3), n=0", %mr_coeff(x + sqrt(3), x, 0), sqrt(3)),
+  check("coeff symbolic sqrt, n=0", %mr_coeff(x + sqrt(a), x, 0), sqrt(a)),
+  check("coeff sqrt factor, n=1", %mr_coeff(sqrt(3)*x + 1, x, 1), sqrt(3)),
+  check_bool("degree 1+sqrt(3)+x", is(%mr_degree(1 + sqrt(3) + x, x) = 1)),
+  /* and the converse: an x-free BASE with x in the exponent is not a
+     constant (2^x was read as degree 0) */
+  check_bool("degree 2^x (not a polynomial)", is(%mr_degree(2^x, x) = -1)),
+  check("coeff 2^x + 1, n=0", %mr_coeff(2^x + 1, x, 0), 1),
+  /* PolyQ[u, x^v]: a single PRODUCT is one term, not a list of terms --
+     the walk took %e^atanh(a*x)*x^3 factor by factor, read x^3 as a
+     monomial and %e^atanh(a*x) as a constant, and 1_1_3_7 r44 fired on
+     7.3.6 e899/e911/e1059/e1069 and answered 0 */
+  check_not("polyPowerQ exp(atanh)*x^3 in x", %mr_polyPowerQ(%e^atanh(a*x)*x^3, x, 1)),
+  check_not("polyDegPowerQ exp(atanh)*x^3 deg 3",
+            %mr_polyDegPowerQ(%e^atanh(a*x)*x^3, x, 1, 3)),
+  check_bool("polyPowerQ b*x^4 in x^2", %mr_polyPowerQ(b*x^4, x, 2)),
+  check_bool("polyDegPowerQ b*x^4 deg 2 in x^2", %mr_polyDegPowerQ(b*x^4, x, 2, 2)),
+  check_not("polyPowerQ b*x^3 in x^2", %mr_polyPowerQ(b*x^3, x, 2)),
   check_bool("degree x^2", is(%mr_degree(x^2, x) = 2)),
   check_bool("degree x^2+1", is(%mr_degree(x^2 + 1, x) = 2)),
   /* totality: a non-polynomial returns the -1 sentinel, never a boolean */
