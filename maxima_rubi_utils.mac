@@ -752,6 +752,12 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
  * of a non-atom is a symbol, hence a leaf; LeafCount[1+x] = 3). */
 %mr_leafCount(e) := block([i, s],
   if atom(e) then 1
+  /* a rational is ONE number here, but a negative one shows as the "-"
+     node -(8/45) whose part 1 does not exist ("part: fell off the end");
+     Mathematica's LeafCount[Rational[-8, 45]] is 3 (the head and two
+     integers), and an integer or a float is 1
+     (.scratch/integrate-beats-rubi/issues/01) */
+  else if numberp(e) then (if integerp(e) or floatnump(e) then 1 else 3)
   else (
     s : 1,
     for i : 1 thru length(e) do
@@ -1824,12 +1830,13 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
    of the .m If-chain (polynomial / power / product / sum; First/Rest
    split as first term-or-factor over the rest). CoefficientList is
    the [c0..cd] walk over %mr_coeff (degree-gated; %mr_coeff is exact
-   on a confirmed polynomial). DEVIATIONS, documented:
-    - the .m's Drop chain Drop[Drop[lst,{m}],1],-1 (m = (Length+1)/2)
-     scans coefficients x^(n+2)..x^(2n-1) ONLY — the coefficients
-     x^(n-1) and x^(n+1) (the ones adjacent to the middle term) are
-     UNCHECKED; the port reproduces the scan exactly (the 1+x^2+x^3+x^4
-     probe pins the Rubi-faithful laxness);
+   on a confirmed polynomial). The .m's Drop chain
+   Drop[Drop[Drop[lst,{m}],1],-1] (m = (Length+1)/2) drops the middle,
+   then the first, then the last coefficient, and every one left must be
+   zero. (Until 2026-09-27 the port read it as a scan of x^(n+2)..x^(2n-1)
+   with the zero test inverted, so k*(c+d*x)^4 was a "trinomial" and
+   NormalizeIntegrand expanded it: .scratch/integrate-beats-rubi/issues/01.)
+   DEVIATION, documented:
    - the .m's :994 b-slot (lst3[[2]] where the reconstruction says
      lst2[[2]] — a typo in the pinned clone, the branch reachable only
      through a binomial-first/trinomial-rest sum split that
@@ -1843,10 +1850,13 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
     or %mr_eqQ(part(L, (length(L) + 1)/2), 0)
     then false
     else (
+      /* Drop[Drop[Drop[lst,{m}],1],-1] keeps every coefficient but the
+         first, the middle and the last; each must be zero
+         (.scratch/integrate-beats-rubi/issues/01, defect B2) */
       m : (length(L) + 1)/2,
       ok : true,
-      for i : m + 2 thru 2*m - 2 do
-        if %mr_eqQ(part(L, i), 0) then ok : false,
+      for i : 2 thru length(L) - 1 do
+        if i # m and not %mr_eqQ(part(L, i), 0) then ok : false,
       if ok
       then [part(L, 1), part(L, m), part(L, length(L)), (length(L) - 1)/2]
       else false
@@ -4750,9 +4760,23 @@ mr_use_gamma_flag : false$
    Simplify — %mr_simp (the value-preserving zero-chain, this file's
    line 498) stands in. */
 %mr_simplifyTerm(u, x) := block([v, w],
-  v : %mr_simpCleanup(u, x),
-  w : %mr_together(v),
+  v : %mr_keep_denominator(u, %mr_simpCleanup(u, x)),
+  w : %mr_keep_denominator(v, ratdisrep(%mr_together(v))),
   %mr_normalizeIntegrand(w, x))$
+
+/* SimplifyTerm's Simplify and Together stand-ins (ratsimp / expand and
+   rat) put a term in canonical form, which multiplies a partial
+   fraction's d^2/((b*c-a*d)^2*(c+d*x)^3) out into a 12-term cubic; no
+   rule then sees the linear power (.scratch/integrate-beats-rubi/
+   issues/01, defect A: 1.1.1.2 e1360 took 27 s of rubi). Mathematica's
+   Simplify and Together keep a denominator's factors, so a stand-in's
+   result is refused when its denominator is LARGER than the term's; a
+   numerator still expands and a cancellation still shrinks the
+   denominator, as before. (A first version refused any larger result;
+   that also refused the numerator expansions the sum split relies on --
+   3.1.5 e20 fell to a noun.) */
+%mr_keep_denominator(old, new) :=
+  if %mr_leafCount(denom(new)) > %mr_leafCount(denom(old)) then old else new$
 
 /* Rubi :2030  NormalizeIntegrandFactorBase (the :2025 x^m_*u_
    pre-distribution rule is unreachable on the r60 shape — deferred
@@ -4800,6 +4824,15 @@ mr_use_gamma_flag : false$
     if %mr_trinomialMatchQ(u, x) then u else %mr_expandToSum(u, x)
   else if not atom(u) and is(op(u) = "*") then
     apply("*", map(lambda([f], %mr_normalizeIntegrandFactor(f, x)), args(u)))
+  /* A quotient is a product too: Maxima stores 1/(k*(c+d*x)^n) as
+     k^-1*(c+d*x)^-n (inpart 0 is "*") and shows it as a "/" node.
+     Mathematica has no quotient, so the .m's ProductQ branch maps over
+     those factors; read as one "/" node, the last branch normalized the
+     denominator k*(c+d*x) whole and ExpandToSum multiplied it out
+     (.scratch/integrate-beats-rubi/issues/01, defect B1). */
+  else if not atom(u) and is(op(u) = "/") and is(inpart(u, 0) = "*") then
+    apply("*", map(lambda([f], %mr_normalizeIntegrandFactor(f, x)),
+                   block([inflag : true], args(u))))
   else if %mr_polynomialQ(u, x) and is(%mr_degree(u, x) <= 4) then
     %mr_expandToSum(u, x)
   else if %mr_sumQ(u) then (
