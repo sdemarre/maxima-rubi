@@ -3,16 +3,17 @@ new:  test/corpus_class6.pfs.out (5080 entries)
 key set: 0 missing from new, 0 extra in new
 
 === PASS/FAIL table ===
-PASS->PASS   4373
-PASS->FAIL      2
-FAIL->PASS     30
-FAIL->FAIL    675
+PASS->PASS   4371
+PASS->FAIL      4
+FAIL->PASS     27
+FAIL->FAIL    678
 
 === class transitions (changed only) ===
-   26  timeout -> verified
+   23  timeout -> verified
     4  timeout -> contains-noun
     4  contains-noun -> verified
     2  expected -> timeout
+    2  verified -> timeout
     1  timeout -> unverified
 
 === per file (PASS->FAIL / FAIL->PASS) ===
@@ -23,42 +24,40 @@ FAIL->FAIL    675
     0     3  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac
     1     9  6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac
     0     2  6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac
-    0     1  6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac
     0     2  6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac
-    0     9  6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac
+    2     7  6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac
 
-=== PASS->FAIL (2) ===
-  expected      -> timeout       t=30.0s -> t=30.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac e69
+=== PASS->FAIL (4) ===
+  expected      -> timeout       t=30.0s -> t=30.1s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.3 (e x)^m (a+b sinh(c+d x^n))^p.mac e69
   expected      -> timeout       t=20.1s -> t=30.1s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e75
+  verified      -> timeout       t=25.6s -> t=30.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e791
+  verified      -> timeout       t=27.2s -> t=30.1s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e794
 
-=== FAIL->PASS (30) ===
+=== FAIL->PASS (27) ===
   timeout       -> verified      t=30.1s -> t=2.0s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e360
-  timeout       -> verified      t=30.0s -> t=3.6s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e251
-  timeout       -> verified      t=30.1s -> t=6.5s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e252
-  timeout       -> verified      t=30.1s -> t=2.7s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e418
-  timeout       -> verified      t=30.1s -> t=25.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e83
+  timeout       -> verified      t=30.0s -> t=2.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e251
+  timeout       -> verified      t=30.1s -> t=6.9s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e252
+  timeout       -> verified      t=30.1s -> t=2.8s 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e418
+  timeout       -> verified      t=30.1s -> t=26.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e83
   contains-noun -> verified      t=1.1s -> t=1.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e160
   contains-noun -> verified      t=1.4s -> t=1.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e161
   timeout       -> verified      t=30.0s -> t=0.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e34
-  timeout       -> verified      t=30.1s -> t=0.8s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e42
-  timeout       -> verified      t=30.1s -> t=0.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e44
+  timeout       -> verified      t=30.1s -> t=0.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e42
+  timeout       -> verified      t=30.1s -> t=0.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e44
   timeout       -> verified      t=30.1s -> t=0.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e115
-  timeout       -> verified      t=30.1s -> t=0.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e126
-  timeout       -> verified      t=30.1s -> t=16.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e180
-  timeout       -> verified      t=30.0s -> t=3.4s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e191
-  timeout       -> verified      t=30.1s -> t=3.0s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e193
+  timeout       -> verified      t=30.1s -> t=0.5s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e126
+  timeout       -> verified      t=30.1s -> t=16.9s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e180
+  timeout       -> verified      t=30.0s -> t=3.7s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e191
+  timeout       -> verified      t=30.1s -> t=3.2s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e193
   timeout       -> verified      t=30.0s -> t=1.3s 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e195
-  contains-noun -> verified      t=1.2s -> t=1.1s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e165
+  contains-noun -> verified      t=1.2s -> t=1.0s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e165
   contains-noun -> verified      t=1.3s -> t=1.3s 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e166
-  timeout       -> verified      t=30.1s -> t=29.8s 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e168
-  timeout       -> verified      t=30.0s -> t=1.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e113
-  timeout       -> verified      t=30.1s -> t=1.0s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e115
-  timeout       -> verified      t=30.1s -> t=6.4s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e698
-  timeout       -> verified      t=30.1s -> t=9.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e701
-  timeout       -> verified      t=30.0s -> t=24.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e706
-  timeout       -> verified      t=30.1s -> t=29.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e716
-  timeout       -> verified      t=30.0s -> t=28.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e718
-  timeout       -> verified      t=30.1s -> t=15.7s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e827
-  timeout       -> verified      t=30.1s -> t=30.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e834
+  timeout       -> verified      t=30.0s -> t=1.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e113
+  timeout       -> verified      t=30.1s -> t=1.1s 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e115
+  timeout       -> verified      t=30.1s -> t=6.5s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e698
+  timeout       -> verified      t=30.1s -> t=9.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e701
+  timeout       -> verified      t=30.0s -> t=26.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e706
+  timeout       -> verified      t=30.0s -> t=29.2s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e718
+  timeout       -> verified      t=30.1s -> t=16.9s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e827
   timeout       -> verified      t=30.1s -> t=2.0s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e859
-  timeout       -> verified      t=30.0s -> t=2.6s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e860
+  timeout       -> verified      t=30.0s -> t=2.8s 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e860

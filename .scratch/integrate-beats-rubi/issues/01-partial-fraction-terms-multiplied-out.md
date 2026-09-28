@@ -150,3 +150,29 @@ the old whole-quotient reading. This is a hypothesis; none is traced yet,
 and 2.1 e78 is the cleanest witness. User decision 2026-09-28: commit
 with these 9 documented, re-run the full A/B, and treat the losses as
 follow-ups.
+
+### 2026-09-28: the A/B of the fix round (e4311e6)
+
+Same harness (`test/pfs_measure.sh`), against master's `*.sumfirst.out`
+records, with every transition re-run on both cores.
+
+**Result.** Credited to the fix: **616 gains, 10 losses**.
+
+| class | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| gains | 321 | 5 | 46 | 126 | 17 | 16 | 44 | 41 |
+| losses | 1 | 1 | 2 | 2 | 1 | 1 | 1 | 1 |
+
+**The 10 losses.** They are exactly the nine in the table above plus 6.3.7
+e75, which times out in verification only.
+
+**What the fix round cost.** Compared with the first version (635 / 25), the
+denominator guard gives up **21 class-1 gains** that the no-larger guard had
+won, and wins 1 of its own. In class 4, 4 gains are the first version's only
+and 6 this one's only; in class 6 it is 2 and 1. Class 1's 21:
+  - `1.2.1.3` e1855, e1856, e1857, e1858, e2113, e2114, e2115, e2116, e2117, e2118, e2119, e2120, e2121, e804, e805, e806, e807, e808
+  - `1.1.1.3` e2577, e2586
+
+A follow-up: 1.2.1.3's 18 look like one shape. They are probably a larger
+denominator that Simplify would still produce, i.e. a real simplification the
+denominator guard now refuses. Not traced.
