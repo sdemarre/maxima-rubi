@@ -752,6 +752,12 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
  * of a non-atom is a symbol, hence a leaf; LeafCount[1+x] = 3). */
 %mr_leafCount(e) := block([i, s],
   if atom(e) then 1
+  /* a rational is ONE number here, but a negative one shows as the "-"
+     node -(8/45) whose part 1 does not exist ("part: fell off the end");
+     Mathematica's LeafCount[Rational[-8, 45]] is 3 (the head and two
+     integers), and an integer or a float is 1
+     (.scratch/integrate-beats-rubi/issues/01) */
+  else if numberp(e) then (if integerp(e) or floatnump(e) then 1 else 3)
   else (
     s : 1,
     for i : 1 thru length(e) do
@@ -4754,8 +4760,8 @@ mr_use_gamma_flag : false$
    Simplify — %mr_simp (the value-preserving zero-chain, this file's
    line 498) stands in. */
 %mr_simplifyTerm(u, x) := block([v, w],
-  v : %mr_no_larger(u, %mr_simpCleanup(u, x)),
-  w : %mr_no_larger(v, ratdisrep(%mr_together(v))),
+  v : %mr_keep_denominator(u, %mr_simpCleanup(u, x)),
+  w : %mr_keep_denominator(v, ratdisrep(%mr_together(v))),
   %mr_normalizeIntegrand(w, x))$
 
 /* SimplifyTerm's Simplify and Together stand-ins (ratsimp / expand and
@@ -4763,11 +4769,14 @@ mr_use_gamma_flag : false$
    fraction's d^2/((b*c-a*d)^2*(c+d*x)^3) out into a 12-term cubic; no
    rule then sees the linear power (.scratch/integrate-beats-rubi/
    issues/01, defect A: 1.1.1.2 e1360 took 27 s of rubi). Mathematica's
-   Simplify never returns a form more complex than its input -- the
-   input is one of its candidates -- so a stand-in's result is kept only
-   when it has no more leaves than the term it replaces. */
-%mr_no_larger(old, new) :=
-  if %mr_leafCount(new) <= %mr_leafCount(old) then new else old$
+   Simplify and Together keep a denominator's factors, so a stand-in's
+   result is refused when its denominator is LARGER than the term's; a
+   numerator still expands and a cancellation still shrinks the
+   denominator, as before. (A first version refused any larger result;
+   that also refused the numerator expansions the sum split relies on --
+   3.1.5 e20 fell to a noun.) */
+%mr_keep_denominator(old, new) :=
+  if %mr_leafCount(denom(new)) > %mr_leafCount(denom(old)) then old else new$
 
 /* Rubi :2030  NormalizeIntegrandFactorBase (the :2025 x^m_*u_
    pre-distribution rule is unreachable on the r60 shape — deferred
