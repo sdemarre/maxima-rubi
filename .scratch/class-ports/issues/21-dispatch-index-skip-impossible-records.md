@@ -174,3 +174,27 @@ re-run of the timeout class would tell; ~40 min at 12 workers).
    share of the timeout class first.
 5. The dispatch index (the original steps 2-4) stays deferred until the condition path is
    fixed; re-measure its share then.
+
+### 2026-09-28 — revised step 1 done: native boolean check, `f80724a`
+
+Full-corpus A/B, `test/boolnative_measure.sh` (queue runner, 24 workers, 30 s cpu cap) on
+`f80724a`'s core against the promoted baselines `test/corpus_class<N>.out` (8de7080), every
+transition re-run at 12 workers on both cores (`test/boolnative_attr_class<N>.out`):
+
+| class | PASS before -> after | P->F | F->P | F->P credited to the change (FIX) | F->P drift |
+|---|---|---|---|---|---|
+| 1 | 23,672 -> 23,803 | 0 | 131 | 89 | 42 |
+| 2 | 871 -> 871 | 0 | 0 | — | — |
+| 3 | 2,619 -> 2,641 | 0 | 22 | 7 | 15 |
+| 4 | 20,168 -> 20,530 | 0 | 362 | 112 | 250 |
+| 5 | 3,787 -> 3,820 | 0 | 33 | 19 | 14 |
+| 6 | 4,398 -> 4,418 | 1 | 21 | 7 | 14 |
+| 7 | 5,557 -> 5,598 | 0 | 41 | 21 | 20 |
+| 8 | 1,716 -> 1,716 | 0 | 0 | — | — |
+
+62,788 -> 63,397 PASS (+609). Every F->P is a `timeout` that now finishes. FIX = at 12 workers
+the old core still fails and the new one passes. Drift = both cores pass at 12 workers: these are
+borderline entries that the faster code gets under the cap at 24 workers. The one P->F, 6.1.3
+e71 (`expected` 29.3 s -> `timeout` 30.0 s), passes on both cores at 12 workers, so it is noise at
+the cap, not a defect. Class 2 total cpu 1,203 s -> 819 s; median time of PASS entries >= 1 s
+halved.
