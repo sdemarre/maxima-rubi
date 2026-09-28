@@ -338,6 +338,23 @@ test_pred_cluster1() := block([],
   check("coeff x^2+2x+1 (x^2)", %mr_coeff(x^2 + 2*x + 1, x, 2), 1),
   check("coeff x", %mr_coeff(x, x, 1), 1),
   check("coeff x+1", %mr_coeff(x + 1, x, 1), 1),
+  /* a polynomial written with fractions (Rubi's Coeff, IntegrationUtility-
+     Functions.m:1249: Coefficient of expr, else of Together[expr] when the
+     two differ). -(e*x)/(e*x+d) - d/(e*x+d) is -1; read without Together
+     every coefficient was 0 and 1_1_3_7 r37 turned 1.2.1.4 e122's
+     integral into Int[0] (probes/verify-stages/03-zero-integrand-trace) */
+  check("coeff fraction-form constant, n=0",
+        %mr_coeff(-(e*x)/(e*x+d) - d/(e*x+d), x, 0), -1),
+  check("coeff fraction-form constant, n=1",
+        %mr_coeff(-(e*x)/(e*x+d) - d/(e*x+d), x, 1), 0),
+  check("coeff fraction-form linear, n=1",
+        %mr_coeff(x^2/(x+1) + x/(x+1), x, 1), 1),
+  /* the Together value is num/denom: content rat() moves below the line
+     comes back out (the 1.2.1.6 r4 lesson in %mr_coeff3's comment) */
+  check("coeff fraction-form keeps symbolic content",
+        %mr_coeff(c^3*x^2/(x+1) + c^3*x/(x+1), x, 1), c^3),
+  check("coeff powered form of a fraction-form polynomial",
+        %mr_coeff(x^4/(x^2+1) + x^2/(x^2+1), x, 2, 1), 1),
   check_bool("degree x^2", is(%mr_degree(x^2, x) = 2)),
   check_bool("degree x^2+1", is(%mr_degree(x^2 + 1, x) = 2)),
   /* totality: a non-polynomial returns the -1 sentinel, never a boolean */

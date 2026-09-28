@@ -373,7 +373,10 @@ checks): `Results: 1583 passed, 0 failed`; with the seen cut silenced
 1585 passed, 0 failed`; with the native polylogarithm `li[s](z)`
 (`.scratch/polylog-native-li/issues/01`, 2026-09-26: `%mr_polylogQ` /
 `%mr_polylogParts`, InverseFunctionQ / InverseFunctionOfLinear on `li`, 6
-checks; the b4 e392 pin re-spelled): **`Results: 1591 passed, 0 failed`**. The
+checks; the b4 e392 pin re-spelled): `Results: 1591 passed, 0 failed`; 1621 by
+2026-09-28 (the integrate-beats-rubi 01 fixes); with `%mr_coeff`'s Rubi `Together`
+fallback (2026-09-28, branch `coeff-together`, 5 checks): **`Results: 1626 passed, 0
+failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
