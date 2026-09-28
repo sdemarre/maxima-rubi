@@ -605,7 +605,7 @@ python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
 python3 test/test_head_rewrites.py          # Results: 70 passed, 0 failed
 python3 test/test_driver_proof.py           # Results: 21 passed, 0 failed
 python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
-maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 28 passed, 0 failed
+maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 30 passed, 0 failed
 ```
 
 **The checker** (`test/mr_verify.mac` + `test/mr_verify.lisp`,

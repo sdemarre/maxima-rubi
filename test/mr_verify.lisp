@@ -41,21 +41,43 @@
 (define-condition mr-cpu-timeout (error) ())
 (define-condition mr-heap-limit (error) ())
 
+;;; THREADS. The timer signal is process-directed, and SBCL starts a
+;;; finalizer thread lazily, so a tick can be delivered to that thread instead
+;;; of the one running the stage (4.1.7 e516, measured 2026-09-28: the handler
+;;; ran in the finalizer thread, read the tick count there -- unbound, so the
+;;; global 0 -- signalled the timeout in that thread and dropped it into its
+;;; debugger). So the arming thread is recorded globally and a tick taken by
+;;; any other thread is forwarded to it with sb-thread:interrupt-thread (the
+;;; mechanism sb-ext:with-timeout uses). *mr-timer-active* is bound true only
+;;; inside mr_cpu_timed: a tick that arrives outside a stage -- a forwarded
+;;; one landing late -- is ignored rather than signalled at top level.
+
 (defconstant +mr-tick-usec+ 20000)
 (defmvar $mr_heap_fraction 0.6)
 (defvar *mr-ticks-left* 0)
+(defvar *mr-timer-active* nil)
+(defvar *mr-timer-thread* nil)
+
+(defun mr-tick ()
+  (when *mr-timer-active*
+    (cond ((> (sb-kernel:dynamic-usage)
+              (* $mr_heap_fraction (sb-ext:dynamic-space-size)))
+           (error 'mr-heap-limit))
+          ((<= (decf *mr-ticks-left*) 0)
+           (error 'mr-cpu-timeout)))))
 
 (defun mr-vtalrm-handler (signal info context)
   (declare (ignore signal info context))
-  (cond ((> (sb-kernel:dynamic-usage)
-            (* $mr_heap_fraction (sb-ext:dynamic-space-size)))
-         (error 'mr-heap-limit))
-        ((<= (decf *mr-ticks-left*) 0)
-         (error 'mr-cpu-timeout))))
+  (let ((owner *mr-timer-thread*))
+    (cond ((eq sb-thread:*current-thread* owner) (mr-tick))
+          ((and owner (sb-thread:thread-alive-p owner))
+           (sb-thread:interrupt-thread owner #'mr-tick)))))
 
 (defmspec $mr_cpu_timed (form)
   (let ((*mr-ticks-left* (max 1 (ceiling (* (meval (third form)) 1000000)
-                                         +mr-tick-usec+))))
+                                         +mr-tick-usec+)))
+        (*mr-timer-active* t))
+    (setq *mr-timer-thread* sb-thread:*current-thread*)
     (sb-sys:enable-interrupt sb-unix:sigvtalrm #'mr-vtalrm-handler)
     (unwind-protect
          (handler-case

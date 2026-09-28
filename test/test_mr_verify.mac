@@ -127,6 +127,21 @@ check("mr_cpu_timed returns the value in a list", mr_cpu_timed(1+1, 2), [2])$
 check("mr_cpu_timed returns timeout past its limit",
   mr_cpu_timed(factor(expand((x+y+z+1)^60) - 1), 0.2), 'timeout)$
 
+:lisp (defun mr-test-foreign-ticks (n) (let ((th (sb-thread:make-thread (lambda () (dotimes (i n) (sleep 0.0005) (mr-vtalrm-handler nil nil nil)))))) (prog1 (loop for i below 200000000 sum i) (sb-thread:join-thread th :timeout 10 :default nil))))
+/* The timer signal is process-directed, and SBCL starts a finalizer thread
+   lazily: a tick can land in that thread (4.1.7 e516, 2026-09-28: the
+   handler ran there, read the unbound tick count as 0, signalled the
+   timeout in the wrong thread and dropped it into that thread's debugger).
+   A foreign tick is forwarded to the thread that armed the timer; a tick
+   while no stage is running is ignored. The witness: 300 foreign ticks
+   (0.5 ms apart, the real rate is one per 20 ms) against a 5 s limit of
+   250 ticks, on a loop of about a second -- it times out only if the
+   foreign ticks are counted. */
+check("a tick from another thread reaches the timed stage",
+  mr_cpu_timed(?mr\-test\-foreign\-ticks(300), 5), 'timeout)$
+check("a tick while no stage runs is ignored",
+  block([errormsg : false], errcatch(?mr\-vtalrm\-handler(false, false, false), 1)), [1])$
+
 /* A stage that allocates past mr_heap_fraction of the dynamic space is
    abandoned: heap exhaustion is FATAL in SBCL (4.5.1.2 e714, 2026-09-28: a
    radcan-family stage filled the 1 GB heap inside its 5 s and the entry
