@@ -171,8 +171,9 @@ Next, before any full run (user: improve the checker as far as possible first):
     FAIL->PASS (e475, e487 -> expected; e725).
   - **3, 7.2.4b e96 / 7.2.5 e50: fixed** (`4763cab`). An upstream typo in Rubi's 1.1.2.6
     r13/r14, `f/e^2` for `f/g^2` (added in the 2023-12 release). New generator errata table
-    `RUBI_ERRATA`, undone by the P3 gate. Both now `verified` (radcan). An A/B over classes 5 and
-    7 plus 1.1.2.4-6 was running at the time of writing.
+    `RUBI_ERRATA`, undone by the P3 gate. Both now `verified` (radcan). A/B over classes 5 and 7
+    plus 1.1.2.4-6 (12,459/12,459, same checker, base core `e5a9d89`): 0 PASS->FAIL, 4
+    FAIL->PASS (e96, e50 -> verified; 7.4.2 e769, e771 -> expected).
   - **6, 4.7.7 e865: fixed** (`4c62ae1`). Rubi's 4.1.0.2 r18 leaves `b` out of FreeQ and out of
     the RHS; `b` bound `sqrt(csc(x))` and was dropped. Erratum: `b` in FreeQ, `b^n` on the RHS.
     Now `verified`, but numeric only (`numeric/timeout:rectform`); the answer is correct but
