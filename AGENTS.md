@@ -284,7 +284,7 @@ substrate, `53dc578`: the six inert trig heads, +26 at the class-8 port,
 2026-09-25: user-function heads, Hurwitz `Zeta`, the formal-derivative
 noun as the curried `Derivative` tree, and their round trips; +4 on
 2026-09-26: `li[n](z)` with a symbolic order, conversion and round trip) and
-`Results: 131 passed, 0 failed`
+`Results: 224 passed, 0 failed`
 (dispatch: rule records, dispatcher outcomes, bindings / retry / head
 symbols / CRE / G-6, the test entries, MatchQ; 45 at Plan 2's Task 4,
 +4 at its review: the fault type excludes interrupts and timeouts, a
@@ -302,7 +302,9 @@ BODY records — the inert-leak exemption and their give-up-last tiers;
 +3 on 2026-09-27: the `matches` step trace, outermost first, with the
 integrand and the inert right-hand side — the same day, the trace became
 the `[answer, steps]` answer of the top-level call, checks rewritten, count
-unchanged).
+unchanged, 131; +72 on 2026-09-28: the native `%mr_containsBoolean` against
+the retired Maxima walk `ref_containsBoolean`, ticket 21 step 1; +21 the same
+day: the native `geteqR` against `ref_geteqR`, step 2).
 
 All five counts re-measured 2026-09-18 at commit `9401997`; Layer A is
 `Results: 1010 passed, 0 failed` (the 957 figure below is the
