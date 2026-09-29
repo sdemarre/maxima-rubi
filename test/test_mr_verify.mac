@@ -55,13 +55,16 @@ w_numeric : li[2](x) + li[2](1-x) - (%pi^2/6 - log(x)*log(1-x))$
 /* not zero */
 w_wrong : sin(x) - x$
 
-/* ---- 1. the stage order ---- */
-check("stage order: chains, radcan family, rat fallback",
+/* ---- 1. the stage order ----
+   rectform LAST (2026-09-29, probes/verify-stages/08-stage-order.out): the
+   order changes no verdict, but run third its heap garbage stopped the
+   stages after it. */
+check("stage order: chains, radcan family, rat fallback, rectform",
   mr_proof_stages,
   ["chainA.1", "chainA.2", "chainA.3", "chainA.4",
    "chainB.1", "chainB.2", "chainB.3", "chainB.4",
-   "radcan", "exponentialize", "rectform", "trigexpand", "demoivre",
-   "logarc", "rat-radcan"])$
+   "radcan", "exponentialize", "trigexpand", "demoivre",
+   "logarc", "rat-radcan", "rectform"])$
 
 /* ---- 2. the full chain names the first stage that proves it ---- */
 check("chain A proves a rational residual", mr_proof(w_chain, x), "chainA.1")$

@@ -27,7 +27,7 @@
      chainB.1-4   ratsimp, ratsimp(expand), factor, ratsimp(factor)
                   (two orders, because closure is order-dependent: measured
                   2026-08-25, 1.2.2.7 e1 / 1.2.2.3 e1 / 1.2.2.4 e165)
-     radcan, exponentialize, rectform, trigexpand, demoivre, logarc
+     radcan, exponentialize, trigexpand, demoivre, logarc
                   the radcan family; each closed README residuals that no
                   chain does (probes/readme-examples/01-symbolic-
                   verification.out) and each works on D itself
@@ -35,6 +35,12 @@
                   30-100 s crashing on them, measured 2026-08-28); closes
                   the ratsimp `quotient' by `zero' class (docs/corpus-radcan-
                   fallback-attribution.md)
+     rectform     radcan(exponentialize(rectform(D))), the radcan family's
+                  costliest member, LAST since 2026-09-29: over 2,551 corpus
+                  entries it is the only stage that proves 9, it takes ~350
+                  of the ~500 stage timeouts, and run third its heap
+                  garbage stopped the stages after it; the order changed no
+                  verdict (probes/verify-stages/08-stage-order.out)
 
    Every stage is errcatch'd and CPU-limited on its own: an error or a
    runaway in one stage never ends the chain. A chain stage that fails
@@ -51,8 +57,8 @@ mr_stage_cap : 5$
 
 mr_proof_stages : ["chainA.1", "chainA.2", "chainA.3", "chainA.4",
                    "chainB.1", "chainB.2", "chainB.3", "chainB.4",
-                   "radcan", "exponentialize", "rectform", "trigexpand",
-                   "demoivre", "logarc", "rat-radcan"]$
+                   "radcan", "exponentialize", "trigexpand", "demoivre",
+                   "logarc", "rat-radcan", "rectform"]$
 
 /* The numeric check's parameter values and test points (carried over
    unchanged from the driver's numeric stage, test/corpus_driver.py): a = 0.9

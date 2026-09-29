@@ -629,9 +629,9 @@ maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 30 passe
 answer. **Symbolic proof first**: the self-diff `diff(r, x) - f`, then each
 expected-diff, through the stages of `mr_proof_stages` (two
 factor/ratsimp chains, `radcan`, `radcan(exponentialize)`,
-`radcan(exponentialize(rectform))`, `radcan(trigexpand)`,
-`radcan(trigexpand(demoivre))`, `radcan(logarc)`, then the elliptic-gated
-`radcan(rat())`), each errcatch'd and CPU-limited on its own
+`radcan(trigexpand)`, `radcan(trigexpand(demoivre))`, `radcan(logarc)`, the
+elliptic-gated `radcan(rat())`, then `radcan(exponentialize(rectform))` —
+last since 2026-09-29, `probes/verify-stages/08-stage-order.out`), each errcatch'd and CPU-limited on its own
 (`MR_STAGE_CAP`, default 5 s, an `ITIMER_VIRTUAL` timer; its 20 ms tick also
 stops a stage whose heap use passes `mr_heap_fraction`, 0.6 — heap exhaustion is
 fatal in SBCL, and a forced GC is not an option here, see `test/mr_verify.lisp`). Only when no stage
