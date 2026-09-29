@@ -240,10 +240,11 @@ mr_proof([mr_args]) := block([mr_d, mr_x, mr_stg, mr_sym],
      CLASS <verified|expected|unverified>
      PROOF <tag>
 
-   Symbolic proof of EITHER residual beats a numeric one: the self-diff
-   diff(r, x) - f first (it closes cheaply on a correct answer), then each
-   expected-diff diff(r - e, x); only when no stage proves any of them does
-   the numeric outcome decide -- self-diff first, then the expected-diffs.
+   Symbolic proof of EITHER residual beats a numeric one. The stages run
+   breadth-first: the cheap chains on the self-diff diff(r, x) - f, then on
+   each expected-diff diff(r - e, x), then the radcan family in the same
+   order; only when no stage proves any of them does the numeric outcome
+   decide -- self-diff first, then the expected-diffs.
    The NUMERIC lines are flushed as they are printed: the driver kills the
    process at its verification budget, and classifies a killed entry from
    the lines it already has (test/corpus_driver.py classify_entry). */
@@ -253,31 +254,39 @@ mr_residual_of(mr_th) := block([errormsg : false, mr_rv],
   mr_rv : errcatch(mr_th()),
   if mr_rv = [] then false else part(mr_rv, 1))$
 
-mr_check_entry(mr_r, mr_f, mr_x, mr_es) := block([mr_dv, mr_nv, mr_sv,
-                                                  mr_tos : [], mr_nes : [],
-                                                  mr_de, mr_ne, mr_se, mr_done : false],
-  mr_dv : mr_residual_of(lambda([], diff(mr_r, mr_x) - mr_f)),
-  mr_nv : if mr_dv = false then "declined" else mr_numeric_check(mr_dv, mr_x),
-  mr_say(concat("NUMERIC verified ", mr_nv)),
-  if mr_dv # false then (
-    mr_sv : mr_proof_symbolic(mr_dv, mr_proof_stages),
-    mr_tos : append(mr_tos, mr_sv[2]),
-    if stringp(mr_sv[1]) then (
-      mr_say("CLASS verified"), mr_say(concat("PROOF ", mr_sv[1])),
-      mr_done : true)),
-  if not mr_done then
-    for mr_ec in mr_es do if not mr_done and mr_ec # [] then block([mr_e : part(mr_ec, 1)],
-      mr_de : mr_residual_of(lambda([], diff(mr_r - mr_e, mr_x))),
-      mr_ne : if mr_de = false then "declined" else mr_numeric_check(mr_de, mr_x),
-      mr_nes : endcons(mr_ne, mr_nes),
-      mr_say(concat("NUMERIC expected ", mr_ne)),
-      if mr_de # false then (
-        mr_se : mr_proof_symbolic(mr_de, mr_proof_stages),
-        mr_tos : append(mr_tos, mr_se[2]),
-        if stringp(mr_se[1]) then (
-          mr_say("CLASS expected"), mr_say(concat("PROOF ", mr_se[1])),
-          mr_done : true))),
-  if not mr_done then (
+mr_check_entry(mr_r, mr_f, mr_x, mr_es) := block([mr_ds, mr_ns : [], mr_sv,
+                                                  mr_tos : [], mr_done : false,
+                                                  mr_cheap, mr_dear, mr_e],
+  /* the residuals: [class, residual or false], the self-diff first */
+  mr_ds : [["verified", mr_residual_of(lambda([], diff(mr_r, mr_x) - mr_f))]],
+  for mr_ec in mr_es do if mr_ec # [] then (
+    mr_e : part(mr_ec, 1),
+    mr_ds : endcons(["expected", mr_residual_of(lambda([], diff(mr_r - mr_e, mr_x)))], mr_ds)),
+  /* every numeric outcome first, printed and flushed (a kill keeps them) */
+  for mr_q in mr_ds do block([mr_nv],
+    mr_nv : if mr_q[2] = false then "declined" else mr_numeric_check(mr_q[2], mr_x),
+    mr_ns : endcons([mr_q[1], mr_nv], mr_ns),
+    mr_say(concat("NUMERIC ", mr_q[1], " ", mr_nv))),
+  /* BREADTH-FIRST: the cheap chain stages of every residual, then the
+     radcan family of every residual, each phase self-diff first. The 30 s
+     verification budget was spent on the self-diff's radcan family before
+     an expected-diff's first stage ran: 13 class-1 entries (1.1.1.3
+     e3055/e3064/e3107, 1.1.3.4 e647-e750) read unverified/verify-timeout
+     although chainA.1 proves their expected-diff at once
+     (probes/verify-stages/13, 2026-09-29). An expected-diff proved by a
+     chain now beats a self-diff that only the radcan family proves: both
+     are a PASS, `expected' instead of `verified'. */
+  mr_cheap : sublist(mr_proof_stages, lambda([mr_nm], mr_stage_chain(mr_nm) # mr_nm)),
+  mr_dear : sublist(mr_proof_stages, lambda([mr_nm], mr_stage_chain(mr_nm) = mr_nm)),
+  for mr_phase in [mr_cheap, mr_dear] do
+    for mr_q in mr_ds do if not mr_done and mr_q[2] # false then (
+      mr_sv : mr_proof_symbolic(mr_q[2], mr_phase),
+      mr_tos : append(mr_tos, mr_sv[2]),
+      if stringp(mr_sv[1]) then (
+        mr_say(concat("CLASS ", mr_q[1])), mr_say(concat("PROOF ", mr_sv[1])),
+        mr_done : true)),
+  if not mr_done then block([mr_nv : second(first(mr_ns)),
+                             mr_nes : map(second, rest(mr_ns))],
     if mr_nv = "ok" then mr_say("CLASS verified")
     else if member("ok", mr_nes) then mr_say("CLASS expected")
     else mr_say("CLASS unverified"),

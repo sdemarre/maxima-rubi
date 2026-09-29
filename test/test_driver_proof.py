@@ -23,7 +23,9 @@ test/test_mr_verify.mac. This guard covers the driver around it:
     probes/verify-stages/08): the entry text assigns the list, the verify:
     field states it and the merger keeps it, an unknown or repeated stage
     name is refused; end to end, the first proving stage in the given order
-    names the proof.
+    names the proof (within a phase: the chain stages of every residual run
+    before the radcan family since the breadth-first order, so the witness
+    orders two radcan-family stages).
   sidecar (no Maxima) -- the queue runner writes one `<tag> <label>` line
     per entry that reached the checker into the shard's .proof file.
   entry text (no Maxima) -- the rubi call line is unchanged, the ANSWERED
@@ -191,11 +193,11 @@ def merge_filter_verify(drv, verify):
 
 
 def stage_order_checks(drv):
-    order = "logarc,chainA.1"
+    order = "logarc,radcan"
     sdrv = _load_env("corpus_driver", {"MR_PROOF_STAGES": order})
     text = sdrv.build_text("sin(x)", "x", "-cos(x)")
     check("stages: the entry text assigns the given order",
-          'mr_proof_stages : ["logarc", "chainA.1"]$' in text, True)
+          'mr_proof_stages : ["logarc", "radcan"]$' in text, True)
     check("stages: the default run leaves the checker's own list alone",
           "mr_proof_stages :" in drv.build_text("sin(x)", "x", "-cos(x)"), False)
     lines = sdrv.header_lines("T", "detail", [])
