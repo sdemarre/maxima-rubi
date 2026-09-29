@@ -18,6 +18,12 @@ test/test_mr_verify.mac. This guard covers the driver around it:
     a rubi timeout. rubi over its own cap is a timeout even if it answered.
   header (no Maxima) -- the record's filter: line states the verification
     budget, and the merger carries it into the merged record.
+  stage order (no Maxima but the last) -- MR_PROOF_STAGES reorders or
+    narrows the checker's stages for a whole run (the rectform-last A/B,
+    probes/verify-stages/08): the entry text assigns the list, the verify:
+    field states it and the merger keeps it, an unknown or repeated stage
+    name is refused; end to end, the first proving stage in the given order
+    names the proof.
   sidecar (no Maxima) -- the queue runner writes one `<tag> <label>` line
     per entry that reached the checker into the shard's .proof file.
   entry text (no Maxima) -- the rubi call line is unchanged, the ANSWERED
@@ -60,6 +66,21 @@ def _load(name, argv=None):
         return mod
     finally:
         sys.argv = real
+
+
+def _load_env(name, env):
+    """_load with ENV set in os.environ for the import (the driver reads its
+    knobs at import time), restored afterwards."""
+    saved = {k: os.environ.get(k) for k in env}
+    os.environ.update(env)
+    try:
+        return _load(name, ["corpus_driver.py", "ZZ no such section ZZ", "1", "30"])
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
 
 
 passed = 0
@@ -122,13 +143,20 @@ def header_checks(drv):
 
 
 def merge_checks(drv):
-    """merge_class_shards carries the verify: field into the merged record.
-    Two synthetic shards over the REAL class-2 key set (the merger asserts
+    """merge_class_shards carries the verify: field into the merged record."""
+    check("merge: the merged filter line keeps verify:",
+          merge_filter_verify(drv, "30s cpu, stage 5s"), "30s cpu, stage 5s")
+
+
+def merge_filter_verify(drv, verify):
+    """The verify: field of the record merge_class_shards makes from two
+    synthetic shards stating VERIFY, or the merger's output when it made
+    none. The shards cover the REAL class-2 key set (the merger asserts
     completeness against the corpus), written into test/ under a name no
     run uses, and removed again."""
     real = open(os.path.join(HERE, "corpus_class2.pfs.out"), encoding="utf-8").read()
     flt = [l for l in real.splitlines() if l.startswith("filter:")][0]
-    flt += "  verify: 30s cpu, stage 5s"
+    flt += f"  verify: {verify}"
     suite = os.path.join(ROOT, "reference", "maxima-syntax-test-suite")
     rels = []
     for dirpath, _dn, names in os.walk(os.path.join(suite, "2 Exponentials")):
@@ -158,8 +186,35 @@ def merge_checks(drv):
                 if os.path.exists(path):
                     os.unlink(path)
     mflt = [l for l in text.splitlines() if l.startswith("filter:")]
-    check("merge: the merged filter line keeps verify:",
-          bool(mflt) and "verify: 30s cpu, stage 5s" in mflt[0], True)
+    m = re.search(r"\bverify: (.*)$", mflt[0]) if mflt else None
+    return m.group(1) if m else text
+
+
+def stage_order_checks(drv):
+    order = "logarc,chainA.1"
+    sdrv = _load_env("corpus_driver", {"MR_PROOF_STAGES": order})
+    text = sdrv.build_text("sin(x)", "x", "-cos(x)")
+    check("stages: the entry text assigns the given order",
+          'mr_proof_stages : ["logarc", "chainA.1"]$' in text, True)
+    check("stages: the default run leaves the checker's own list alone",
+          "mr_proof_stages :" in drv.build_text("sin(x)", "x", "-cos(x)"), False)
+    lines = sdrv.header_lines("T", "detail", [])
+    flt = [l for l in lines if l.startswith("filter:")][0]
+    check("stages: the verify: field states the order",
+          f"verify: {sdrv.VERIFY_CAP}s {sdrv.CAP_KIND}, stage {sdrv.STAGE_CAP:g}s, "
+          f"stages {order}" in flt, True)
+    for bad in ("logarc,nosuch", "logarc,logarc", ""):
+        try:
+            _load_env("corpus_driver", {"MR_PROOF_STAGES": bad})
+            refused = False
+        except SystemExit:
+            refused = True
+        check(f"stages: {bad!r} is refused", refused, True)
+    check("stages: the merger keeps a stated order",
+          merge_filter_verify(drv, "30s cpu, stage 5s, stages rectform,radcan"),
+          "30s cpu, stage 5s, stages rectform,radcan")
+    check("end to end: the first proving stage in the given order names the proof",
+          _run(sdrv, "sin(x)", "-cos(x)", "-cos(x)"), ("verified", "logarc"))
 
 
 def sidecar_checks(queue_mod):
@@ -243,6 +298,7 @@ def main():
     classify_checks(drv)
     header_checks(drv)
     merge_checks(drv)
+    stage_order_checks(drv)
     sidecar_checks(queue_mod)
     text_checks(drv)
     maxima_checks(drv)

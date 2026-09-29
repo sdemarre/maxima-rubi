@@ -152,7 +152,7 @@ for path in inputs:
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             if line.startswith("filter:"):
-                m = re.search(r"\bverify: ([^ ]+ \w+, stage [\d.]+s)", line)
+                m = re.search(r"\bverify: ([^ ]+ \w+, stage [\d.]+s(?:, stages [\w.,-]+)?)", line)
                 verifies.add(m.group(1) if m else None)
                 break
 if len(verifies) != 1:

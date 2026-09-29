@@ -494,7 +494,8 @@ def zc_header():
 def verify_header():
     """Suffix for the record's `filter:` line: the verification budget. A
     record without it predates the budget (and the symbolic-first checker)."""
-    return f"  verify: {VERIFY_CAP}s {CAP_KIND}, stage {STAGE_CAP:g}s"
+    return (f"  verify: {VERIFY_CAP}s {CAP_KIND}, stage {STAGE_CAP:g}s"
+            + (f", stages {','.join(PROOF_STAGES)}" if PROOF_STAGES else ""))
 
 
 def core_header():
@@ -543,6 +544,28 @@ ZC_FALLBACK = os.environ.get("MR_ZC_FALLBACK", "1") != "0"
 # the whole verification budget. Both are CPU seconds under a cpu cap.
 VERIFY_CAP = int(os.environ.get("MR_VERIFY_CAP", "30"))
 STAGE_CAP = float(os.environ.get("MR_STAGE_CAP", "5"))
+# MR_PROOF_STAGES=<name>,<name>,... replaces the checker's stage list
+# (test/mr_verify.mac mr_proof_stages) for the whole run: the order the
+# stages are tried in, or a subset. It exists for the stage-order A/B
+# (probes/verify-stages/08: is `rectform` worth its place third in the
+# radcan family?). The first stage that proves a residual names the proof,
+# so the order changes the .proof tags and, through each stage's cap and
+# the heap guard, can change a verdict: the record states it on its
+# verify: field, and a run without it is byte-identical to before.
+def _proof_stage_names():
+    with open(os.path.join(ROOT, "test", "mr_verify.mac"), encoding="utf-8") as fh:
+        m = re.search(r"^mr_proof_stages\s*:\s*\[(.*?)\]", fh.read(), re.S | re.M)
+    return re.findall(r'"([^"]+)"', m.group(1))
+
+
+PROOF_STAGES = os.environ.get("MR_PROOF_STAGES")
+if PROOF_STAGES is not None:
+    PROOF_STAGES = PROOF_STAGES.split(",")
+    _known = _proof_stage_names()
+    if (not all(PROOF_STAGES) or len(set(PROOF_STAGES)) != len(PROOF_STAGES)
+            or not set(PROOF_STAGES) <= set(_known)):
+        raise SystemExit(f"corpus_driver: MR_PROOF_STAGES must name distinct stages "
+                         f"of {_known}, not {os.environ['MR_PROOF_STAGES']!r}")
 if CAP_KIND not in ("cpu", "wall"):
     raise SystemExit(f"corpus_driver: MR_CAP_KIND must be cpu or wall, not {CAP_KIND!r}")
 
@@ -778,6 +801,9 @@ def build_text(f_text, var_text, e_text, e_text2=None):
             + "?finish\\-output()$\n"
             + 'load("test/mr_verify.mac")$\n'
             + f"mr_stage_cap : {STAGE_CAP}$\n"
+            + ("" if PROOF_STAGES is None
+               else "mr_proof_stages : ["
+                    + ", ".join(f'"{n}"' for n in PROOF_STAGES) + "]$\n")
             + ("" if ZC_FALLBACK
                else 'mr_proof_stages : delete("rat-radcan", mr_proof_stages)$\n'))
     if e_text.startswith(("Unintegrable", "CannotIntegrate")):
