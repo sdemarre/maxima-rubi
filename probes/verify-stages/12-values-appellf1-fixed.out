@@ -1,0 +1,766 @@
+probes/verify-stages/12-values-appellf1-fixed -- issue 06 item 2 measured, 2026-09-29 11:21-11:44 CEST,
+branch coeff-together @ 1ffc606 (checker: m/n/q/F value sets + AppellF1, 024c263; the stage-timer fix,
+1ffc606), build branch_5_50_base_84_g4204fb669 / SBCL 2.6.7, rules core c01ce534 (7,776 rules, unchanged
+since probe 08). Entries and settings as probe 08 (12 workers, 30 s cpu rubi + 30 s verification, 5 s per
+stage). Base: probe 08 arm B (same rules, the checker before 024c263).
+
+== findings
+- unverified set (1,551): 1,004 -> 297 unverified. 707 FAIL -> PASS, 0 PASS -> FAIL. Every new pass is
+  numeric-only (422 `numeric`, 285 `numeric` after a stage timeout): an indication, not a proof.
+  By what the corpus line carries: 372 m/n/q/F only, 166 AppellF1 only, 134 both (+35 as `expected`).
+- control (1,000): 0 transitions.
+- Against probe 11 (the same checker change WITHOUT the timer fix): 12 PASS -> FAIL, 3 FAIL -> PASS.
+  The 12 passed in probe 11 only, "proved" at the first stage on a state the interrupted numeric check
+  had corrupted (x, a bound as globals): false passes, now `unverified`
+  (python3 test/ab_records.py over the two shard sets).
+- Still failing: 297, of which 56 numeric mismatches (22+14 carry neither m/n/q/F nor AppellF1), 241
+  declined (119 carry neither: other heads or failures to evaluate -- not yet censused).
+
+== report (12-values-appellf1-fixed-report.py)
+==== unverified: base 1551 entries, new 1551, missing 0
+  base (08 arm B): expected 190  timeout 1  unverified 1004  verified 356
+  new (1ffc606): expected 225  timeout 1  unverified 297  verified 1028
+  transitions (707), by what the corpus line carries:
+      372 unverified  -> verified    mnqF
+      166 unverified  -> verified    F1
+      134 unverified  -> verified    F1+mnqF
+       18 unverified  -> expected    F1
+       13 unverified  -> expected    F1+mnqF
+        4 unverified  -> expected    mnqF
+  new proof tags of the transitions:
+      422 numeric
+      285 numeric/timeout
+  still failing, by proof tag and feature:
+       72 none/numeric-declined                         -
+       51 none/numeric-declined                         F1+mnqF
+       47 none/numeric-declined/timeout                 -
+       22 none/numeric-mismatch                         -
+       22 none/numeric-declined/timeout                 F1+mnqF
+       16 none/numeric-declined                         mnqF
+       16 none/numeric-declined                         F1
+       14 none/numeric-mismatch/timeout                 -
+       10 none/numeric-mismatch                         mnqF
+       10 none/numeric-declined/timeout                 F1
+        6 none/numeric-declined/timeout                 mnqF
+        6 none/numeric-mismatch/timeout                 mnqF
+        2 none/numeric-declined/verify-timeout          F1+mnqF
+        2 none/numeric-mismatch                         F1
+        1 none/numeric-declined/verify-timeout          -
+        1 -                                             -
+  entries:
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.2 (a+b x)^m (c+d x)^n.mac e369
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e3092
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e3155
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e954
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e955
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e956
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e957
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e966
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e967
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e968
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e969
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e970
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e971
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e972
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e986
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e996
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.3 (a+b x)^m (c+d x)^n (e+f x)^p.mac e997
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.1 Linear/1.1.1.5 P(x) (a+b x)^m (c+d x)^n.mac e33
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.2 (c x)^m (a+b x^2)^p.mac e662
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.2 (c x)^m (a+b x^2)^p.mac e664
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.2 Quadratic/1.1.2.3 (a+b x^2)^p (c+d x^2)^q.mac e298
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2633
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2634
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2639
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2640
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2641
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2679
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2690
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2692
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2757
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2762
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2764
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2971
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2972
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2973
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2989
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2990
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2993
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e2994
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.2 (c x)^m (a+b x^n)^p.mac e3045
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.3 (a+b x^n)^p (c+d x^n)^q.mac e122
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.3 (a+b x^n)^p (c+d x^n)^q.mac e123
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.3 (a+b x^n)^p (c+d x^n)^q.mac e37
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.3 (a+b x^n)^p (c+d x^n)^q.mac e38
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e267
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e268
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e269
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e278
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e279
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e280
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e321
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e322
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e323
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e324
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e338
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e339
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e340
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e341
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e363
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e364
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e365
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e366
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e367
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e373
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e374
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e375
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e376
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e377
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e383
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e384
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e385
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e386
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e387
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e393
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e394
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e395
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e396
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e397
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e437
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e438
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e439
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e440
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e441
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e456
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e457
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e458
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e459
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e465
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e466
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e467
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e468
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e469
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e475
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e476
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e477
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e478
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e479
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e485
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e486
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e487
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e488
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e489
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e495
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e496
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e497
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e498
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e499
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e633
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e634
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e635
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e636
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e676
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e677
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e678
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e682
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e683
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e684
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e695
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e696
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e697
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e698
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e699
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e700
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e701
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e712
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e713
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e714
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e715
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e716
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e717
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e718
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e735
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e736
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e737
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e738
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e739
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e756
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e757
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e758
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e759
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e760
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e864
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e865
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e866
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e869
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.4 (e x)^m (a+b x^n)^p (c+d x^n)^q.mac e870
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e12
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e13
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e19
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e20
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e21
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e22
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e23
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e24
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e26
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e27
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e28
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e29
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e30
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e33
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e34
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e39
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e43
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e44
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.6 (g x)^m (a+b x^n)^p (c+d x^n)^q (e+f x^n)^r.mac e5
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.8 P(x) (c x)^m (a+b x^n)^p.mac e576
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.1 Binomial products/1.1.3 General/1.1.3.8 P(x) (c x)^m (a+b x^n)^p.mac e588
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2557
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2561
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2562
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2570
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2571
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2572
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e2573
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e724
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e727
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e728
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e731
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.2 (d+e x)^m (a+b x+c x^2)^p.mac e746
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1088
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1089
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1090
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.3 (d+e x)^m (f+g x) (a+b x+c x^2)^p.mac e1094
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e233
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e234
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e238
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e239
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e314
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e365
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e367
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e369
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e373
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e377
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e411
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e421
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e422
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e428
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e429
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e802
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e811
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e812
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e813
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e924
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e944
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e947
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e953
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e955
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.1 Quadratic/1.2.1.4 (d+e x)^m (f+g x)^n (a+b x+c x^2)^p.mac e956
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1089
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1090
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1091
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1092
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1093
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1094
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1095
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1096
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1097
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1098
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1099
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1100
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1101
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1102
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1103
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1104
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1110
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1111
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1112
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1113
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1114
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1122
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1123
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1124
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1125
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.2 (d x)^m (a+b x^2+c x^4)^p.mac e1126
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.3 (d+e x^2)^m (a+b x^2+c x^4)^p.mac e401
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.3 (d+e x^2)^m (a+b x^2+c x^4)^p.mac e402
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.3 (d+e x^2)^m (a+b x^2+c x^4)^p.mac e403
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e204
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e205
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e206
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e207
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e208
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e209
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e210
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e211
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e225
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e226
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e400
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e407
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e408
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e409
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e410
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e411
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.4 (f x)^m (d+e x^2)^q (a+b x^2+c x^4)^p.mac e412
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.7 P(x) (d+e x^2)^q (a+b x^2+c x^4)^p.mac e15
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.2 Quartic/1.2.2.7 P(x) (d+e x^2)^q (a+b x^2+c x^4)^p.mac e33
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e196
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e197
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e198
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e199
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e200
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e214
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e215
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e216
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e217
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e218
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e229
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e230
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e231
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e232
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e233
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e243
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e244
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e245
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e246
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e252
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e253
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e254
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e255
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e256
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e260
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e261
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e262
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e263
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e265
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e266
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e268
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e269
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e500
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e501
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e503
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e504
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e505
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e568
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e569
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e570
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e571
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e573
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e574
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e575
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e576
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e577
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e578
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e580
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e581
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e582
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e583
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e584
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e585
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e589
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e590
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e591
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e592
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e602
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e603
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e604
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.2 (d x)^m (a+b x^n+c x^(2 n))^p.mac e606
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e42
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e43
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e48
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e49
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e53
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e54
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e85
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e86
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e92
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.3 (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e93
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.4 (f x)^m (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e145
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.4 (f x)^m (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e146
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.4 (f x)^m (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e147
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.4 (f x)^m (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e148
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.4 (f x)^m (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e150
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.4 (f x)^m (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e151
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.4 (f x)^m (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e153
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.3 General/1.2.3.4 (f x)^m (d+e x^n)^q (a+b x^n+c x^(2 n))^p.mac e154
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.2 Trinomial products/1.2.4 Improper/1.2.4.2 (d x)^m (a x^q+b x^n+c x^(2 n-q))^p.mac e104
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     1 Algebraic functions/1.3 Miscellaneous/1.3.1 Rational functions.mac e31
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e234
+    unverified  -> verified    none/numeric-declined               -> numeric                             1 Algebraic functions/1.3 Miscellaneous/1.3.2 Algebraic functions.mac e425
+    unverified  -> verified    none/numeric-declined               -> numeric                             3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e58
+    unverified  -> verified    none/numeric-declined               -> numeric                             3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e59
+    unverified  -> verified    none/numeric-declined               -> numeric                             3 Logarithms/3.4 u (a+b log(c (d+e x^m)^n))^p.mac e60
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e345
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e346
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e348
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e349
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e364
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e365
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e496
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e498
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e499
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e501
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.0 (a sin)^m (b trg)^n.mac e502
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.1 (a+b sin)^n.mac e68
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.1 (a+b sin)^n.mac e71
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e372
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e373
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e374
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e375
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e623
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e624
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e625
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e626
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e627
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e628
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e629
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e637
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e638
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e639
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e640
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e641
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e642
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e643
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e644
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e645
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e646
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e651
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e652
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e653
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e124
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e125
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e620
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e621
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e623
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e624
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e626
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e631
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e632
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e634
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e635
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e637
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e638
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e640
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e641
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e642
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e643
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e645
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e646
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e648
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e649
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e651
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e652
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e653
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e825
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e835
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.1 Sine/4.1.2.1 (a+b sin)^m (c+d sin)^n.mac e836
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1509
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1510
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e1511
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e704
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.2.2 (g cos)^p (a+b sin)^m (c+d sin)^n.mac e911
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.3.1 (a+b sin)^m (c+d sin)^n (A+B sin).mac e13
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.7 (d trig)^m (a+b (c sin)^n)^p.mac e548
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.7 (d trig)^m (a+b (c sin)^n)^p.mac e549
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.7 (d trig)^m (a+b (c sin)^n)^p.mac e550
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.1 Sine/4.1.7 (d trig)^m (a+b (c sin)^n)^p.mac e551
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.2 Cosine/4.2.2.1 (a+b cos)^m (c+d cos)^n.mac e775
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.2 Cosine/4.2.2.1 (a+b cos)^m (c+d cos)^n.mac e776
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.2 Cosine/4.2.3.1 (a+b cos)^m (c+d cos)^n (A+B cos).mac e636
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.2 Cosine/4.2.3.1 (a+b cos)^m (c+d cos)^n (A+B cos).mac e637
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.2 Cosine/4.2.3.1 (a+b cos)^m (c+d cos)^n (A+B cos).mac e638
+    unverified  -> expected    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e166
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e167
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e168
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e182
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e183
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e184
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e359
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e360
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e361
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e372
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e373
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e379
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.0 (a trg)^m (b tan)^n.mac e380
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.3 Tangent/4.3.1.2 (d sec)^m (a+b tan)^n.mac e498
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.1.2 (d sec)^m (a+b tan)^n.mac e500
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.1.2 (d sec)^m (a+b tan)^n.mac e640
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.1.2 (d sec)^m (a+b tan)^n.mac e695
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.3 Tangent/4.3.1.2 (d sec)^m (a+b tan)^n.mac e696
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.1.2 (d sec)^m (a+b tan)^n.mac e697
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.1.3 (d sin)^m (a+b tan)^n.mac e80
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.3 Tangent/4.3.2.1 (a+b tan)^m (c+d tan)^n.mac e1321
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.3 Tangent/4.3.2.1 (a+b tan)^m (c+d tan)^n.mac e1328
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     4 Trig functions/4.3 Tangent/4.3.2.1 (a+b tan)^m (c+d tan)^n.mac e679
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.2.1 (a+b tan)^m (c+d tan)^n.mac e880
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.3 Tangent/4.3.2.1 (a+b tan)^m (c+d tan)^n.mac e884
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.3 Tangent/4.3.3.1 (a+b tan)^m (c+d tan)^n (A+B tan).mac e224
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac e172
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac e173
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac e406
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac e484
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.3 Tangent/4.3.7 (d trig)^m (a+b (c tan)^n)^p.mac e485
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.4 Cotangent/4.4.0 (a trg)^m (b cot)^n.mac e50
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.4 Cotangent/4.4.0 (a trg)^m (b cot)^n.mac e51
+    unverified  -> expected    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.0 (a sec)^m (b trg)^n.mac e291
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.0 (a sec)^m (b trg)^n.mac e292
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.0 (a sec)^m (b trg)^n.mac e294
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.0 (a sec)^m (b trg)^n.mac e295
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.0 (a sec)^m (b trg)^n.mac e68
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.0 (a sec)^m (b trg)^n.mac e69
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e280
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e281
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e282
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e289
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e290
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e292
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e293
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e294
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e299
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e300
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e303
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e304
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e307
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e320
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e441
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e442
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e444
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e445
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e688
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e700
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e710
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e713
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e714
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e715
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e716
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e875
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.2 (d sec)^n (a+b sec)^m.mac e876
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e134
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e135
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e137
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e140
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e141
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e142
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e143
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e144
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e145
+    unverified  -> verified    none/numeric-declined               -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e152
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e153
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e156
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e157
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e158
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e159
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e257
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e258
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.3 (d sin)^n (a+b sec)^m.mac e268
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.4 (d tan)^n (a+b sec)^m.mac e219
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.1.4 (d tan)^n (a+b sec)^m.mac e220
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.2.1 (a+b sec)^m (c+d sec)^n.mac e232
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.2.1 (a+b sec)^m (c+d sec)^n.mac e233
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.2.1 (a+b sec)^m (c+d sec)^n.mac e234
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.5 Secant/4.5.2.1 (a+b sec)^m (c+d sec)^n.mac e235
+    unverified  -> expected    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.2.1 (a+b sec)^m (c+d sec)^n.mac e238
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.2.1 (a+b sec)^m (c+d sec)^n.mac e239
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.3.1 (a+b sec)^m (d sec)^n (A+B sec).mac e276
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.3.1 (a+b sec)^m (d sec)^n (A+B sec).mac e479
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.3.1 (a+b sec)^m (d sec)^n (A+B sec).mac e480
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.3.1 (a+b sec)^m (d sec)^n (A+B sec).mac e481
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.3.1 (a+b sec)^m (d sec)^n (A+B sec).mac e482
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e21
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e22
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e23
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e24
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e25
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e26
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e27
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric                             4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e304
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e34
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e35
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e36
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e37
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e38
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e39
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric                             4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e634
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e65
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e66
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e67
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e68
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e69
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e70
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e71
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e78
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e79
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e80
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e81
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e82
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.5 Secant/4.5.4.2 (a+b sec)^m (d sec)^n (A+B sec+C sec^2).mac e83
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.6 Cosecant/4.6.0 (a csc)^m (b trg)^n.mac e68
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.6 Cosecant/4.6.0 (a csc)^m (b trg)^n.mac e69
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.7 Miscellaneous/4.7.1 (c trig)^m (d trig)^n.mac e123
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.7 Miscellaneous/4.7.1 (c trig)^m (d trig)^n.mac e124
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.7 Miscellaneous/4.7.1 (c trig)^m (d trig)^n.mac e125
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.1 (c trig)^m (d trig)^n.mac e126
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.1 (c trig)^m (d trig)^n.mac e127
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.1 (c trig)^m (d trig)^n.mac e128
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.7 Miscellaneous/4.7.1 (c trig)^m (d trig)^n.mac e187
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.7 Miscellaneous/4.7.1 (c trig)^m (d trig)^n.mac e188
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     4 Trig functions/4.7 Miscellaneous/4.7.1 (c trig)^m (d trig)^n.mac e189
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.2 trig^m (a trig+b trig)^n.mac e187
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.2 trig^m (a trig+b trig)^n.mac e274
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.2 trig^m (a trig+b trig)^n.mac e29
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.5 x^m trig(a+b log(c x^n))^p.mac e104
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.5 x^m trig(a+b log(c x^n))^p.mac e26
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.5 x^m trig(a+b log(c x^n))^p.mac e47
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.5 x^m trig(a+b log(c x^n))^p.mac e49
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.5 x^m trig(a+b log(c x^n))^p.mac e51
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.6 f^(a+b x+c x^2) trig(d+e x+f x^2)^n.mac e25
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.6 f^(a+b x+c x^2) trig(d+e x+f x^2)^n.mac e53
+    unverified  -> verified    none/numeric-declined               -> numeric                             4 Trig functions/4.7 Miscellaneous/4.7.6 f^(a+b x+c x^2) trig(d+e x+f x^2)^n.mac e55
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.1 Inverse sine/5.1.4a (f x)^m (d-c^2 d x^2)^p (a+b arcsin(c x))^n.mac e143
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.1 Inverse sine/5.1.4a (f x)^m (d-c^2 d x^2)^p (a+b arcsin(c x))^n.mac e145
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.1 Inverse sine/5.1.4b (f x)^m (d+e x^2)^p (a+b arcsin(c x))^n.mac e59
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.1 Inverse sine/5.1.4b (f x)^m (d+e x^2)^p (a+b arcsin(c x))^n.mac e60
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.1 Inverse sine/5.1.4b (f x)^m (d+e x^2)^p (a+b arcsin(c x))^n.mac e61
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e28
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.3 Inverse tangent/5.3.4 u (a+b arctan(c x))^p.mac e1241
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.3 Inverse tangent/5.3.4 u (a+b arctan(c x))^p.mac e1243
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     5 Inverse trig functions/5.3 Inverse tangent/5.3.4 u (a+b arctan(c x))^p.mac e1245
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.3 Inverse tangent/5.3.6 Exponentials of inverse tangent.mac e236
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     5 Inverse trig functions/5.5 Inverse secant/5.5.1 u (a+b arcsec(c x))^n.mac e161
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     5 Inverse trig functions/5.5 Inverse secant/5.5.1 u (a+b arcsec(c x))^n.mac e162
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric                             5 Inverse trig functions/5.5 Inverse secant/5.5.1 u (a+b arcsec(c x))^n.mac e163
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     5 Inverse trig functions/5.6 Inverse cosecant/5.6.1 u (a+b arccsc(c x))^n.mac e165
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     5 Inverse trig functions/5.6 Inverse cosecant/5.6.1 u (a+b arccsc(c x))^n.mac e166
+    unverified  -> verified    none/numeric-declined               -> numeric                             5 Inverse trig functions/5.6 Inverse cosecant/5.6.1 u (a+b arccsc(c x))^n.mac e167
+    unverified  -> verified    none/numeric-declined               -> numeric                             6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e186
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e100
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e110
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1135
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e120
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e127
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1308
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1309
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1310
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1311
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1312
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1313
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1314
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1316
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1318
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1319
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1327
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1328
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1329
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1330
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1331
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1332
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1333
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1334
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1335
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1336
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1337
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1338
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1339
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e134
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1341
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1342
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1356
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1357
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1358
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1359
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1360
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1361
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e1362
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e148
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e149
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e150
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e151
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e152
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e153
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e154
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e155
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e278
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e279
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e280
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e281
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e282
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e283
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e284
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e285
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e387
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e411
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e439
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e440
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e441
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e442
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e443
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e591
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e60
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e620
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e621
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e622
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e623
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e624
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e625
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e626
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e627
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e70
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e792
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e793
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e794
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e796
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e797
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e798
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e80
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e876
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e877
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e878
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e879
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e881
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e882
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.3 Inverse hyperbolic tangent/7.3.6 Exponentials of inverse hyperbolic tangent functions.mac e90
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e149
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e150
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e151
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e152
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e153
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e154
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e155
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e156
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e365
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e366
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e367
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e372
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e373
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e374
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e375
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e376
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e377
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e378
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e542
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e544
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e736
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e737
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e738
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e739
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e744
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e745
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e746
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e751
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e752
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e756
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e928
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e931
+    unverified  -> verified    none/numeric-declined               -> numeric                             7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e932
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     7 Inverse hyperbolic functions/7.6 Inverse hyperbolic cosecant/7.6.1 u (a+b arccsch(c x))^n.mac e165
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     7 Inverse hyperbolic functions/7.6 Inverse hyperbolic cosecant/7.6.1 u (a+b arccsch(c x))^n.mac e166
+    unverified  -> verified    none/numeric-declined/timeout       -> numeric/timeout                     7 Inverse hyperbolic functions/7.6 Inverse hyperbolic cosecant/7.6.1 u (a+b arccsch(c x))^n.mac e167
+
+==== control: base 1000 entries, new 1000, missing 0
+  base (08 arm B): expected 135  verified 865
+  new (1ffc606): expected 135  verified 865
+  transitions (0), by what the corpus line carries:
+  new proof tags of the transitions:
+  still failing, by proof tag and feature:
+  entries:
+

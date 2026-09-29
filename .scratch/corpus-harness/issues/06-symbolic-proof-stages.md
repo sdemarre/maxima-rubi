@@ -205,3 +205,22 @@ Next, before any full run (user: improve the checker as far as possible first):
   - **Control**: 1,000 / 1,000 still PASS; 135 are relabelled verified -> expected (a symbolic
     expected-diff beats a numeric self-diff, by design); **34 (3.4 %) are numeric-only** -- about
     1,900 of the corpus's ~57,000 verified entries if the sample holds.
+
+- 2026-09-29: **item 1 applied** -- rectform is the last stage (`ac2fad6`). **Item 2** (`024c263`,
+  `1ffc606`; probes `verify-stages/09`-`12`):
+  - Census (`09`): of the 968 entries the numeric check declined, 636 carry a free `m`/`n`/`q`/`F`
+    and 434 `AppellF1` (overlapping).
+  - `m`, `n`, `q`, `F` take two positive non-integer value sets, every set required ok (`10`: 382 ok
+    under both, 8 mismatch under both, 10 split). `AppellF1` gets a gradef and a numeric value
+    (compiled double series after the best Euler transformation), in the checker only. Maxima's
+    own float 2F1 is wrong at large parameters (hypergeometric([60.4,0.7],[62.2],0.6) -> 828.9),
+    so F1 is not built on it.
+  - **A checker soundness bug found on the way** (`1ffc606`): a stage timeout could strand a
+    Maxima binding frame (the tick is asynchronous; mbinding-sub's `win` window) and leave `x`,
+    `a`, ... bound as globals, and an errcatch inside the stage swallowed the timeout (the
+    conditions were ERRORs). Probe 11 had 12 false passes from it. mr_cpu_timed now unwinds the
+    bindlist like mcatch; the conditions are serious-conditions.
+  - Result (`12`, vs probe 08 arm B): unverified 1,004 -> 297, **707 FAIL -> PASS, 0 PASS -> FAIL**,
+    control 0 transitions. **All 707 are numeric-only passes** -- per the standing decision they
+    count as PASS until the user decides otherwise.
+  - Left: 297 (56 mismatches, 241 declined -- 119 of those carry neither m/n/q/F nor AppellF1).
