@@ -63,11 +63,14 @@ guards was untouched (`.scratch/corpus-harness/issues/03`).
 The witnesses are therefore synthetic and frozen, and depend on neither
 the rule set nor the corpus:
 
-    rescue      %e^(n*log(x)) - x^n
-    gate-blocks elliptic_f(x, 1/2)*(%e^(n*log(x)) - x^n)
+    rescue      %e^(k*log(x)) - x^k
+    gate-blocks elliptic_f(x, 1/2)*(%e^(k*log(x)) - x^k)
 
-Both are identically zero. `n` is deliberately NOT one of the zero
-chain's sweep parameters (a b c d e f g h A B C D p), so the leading
+Both are identically zero. `k` is deliberately NOT one of the zero
+chain's sweep parameters (a b c d e f g h A B C D p, and since
+2026-09-29 m n q F, test/mr_verify.mac mr_numeric_sets -- the witnesses
+were spelled with `n` until then, and the new values made the numeric
+check close them), so the leading
 numeric stage evaluates to a float NOUN and declines — which is the
 only way the symbolic stages, and then the fallback, are ever reached.
 Measured 2026-09-21 on branch_5_50_base_84_g4204fb669 / SBCL 2.6.7:
@@ -93,13 +96,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
 # A zero-diff no ratsimp/factor stage closes and radcan(rat()) does.
-# `n` is not a sweep parameter, so the leading numeric stage declines
+# `k` is not a sweep parameter, so the leading numeric stage declines
 # (see the module docstring); without that the numeric stage would
 # close any true zero and the fallback would never be reached.
-RESCUE_WITNESS = "%e^(n*log(x)) - x^n"
+RESCUE_WITNESS = "%e^(k*log(x)) - x^k"
 # The same zero-diff behind an elliptic factor: the gate must keep the
 # fallback off it EVEN THOUGH radcan(rat()) would return 0.
-GATED_WITNESS = "elliptic_f(x, 1/2)*(%e^(n*log(x)) - x^n)"
+GATED_WITNESS = "elliptic_f(x, 1/2)*(%e^(k*log(x)) - x^k)"
 GATE_SYMS = ("elliptic_f, elliptic_e, elliptic_pi, "
              "elliptic_ec, elliptic_eu, elliptic_kc")
 
@@ -195,9 +198,9 @@ def _chain_probe(driver, witness):
     with_fb = driver.zero_chain(witness, "x", fallback=True)
     # rat-radcan is the ONLY symbolic stage here: since issues/06 the
     # radcan family runs ahead of it and closes both witnesses on its own
-    # (radcan(%e^(n*log(x)) - x^n) = 0), so with the full list neither arm
+    # (radcan(%e^(k*log(x)) - x^k) = 0), so with the full list neither arm
     # would ever reach it. Narrowed, fallback=False leaves no symbolic
-    # stage at all and the numeric check declines on the free n.
+    # stage at all and the numeric check declines on the free k.
     text = ('load("test/mr_verify.mac")$\n'
             'mr_proof_stages : ["rat-radcan"]$\n'
             "MR_N: (" + no_fb + ")$\n"

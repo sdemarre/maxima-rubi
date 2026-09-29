@@ -68,6 +68,18 @@ mr_proof_stages : ["chainA.1", "chainA.2", "chainA.3", "chainA.4",
 mr_numeric_subs : [a=0.9, b=1.3, c=0.5, d=0.9, e=1.1, f=0.8, g=1.7, h=0.3,
                    A=0.6, B=1.4, C=0.4, D=0.9, p=2]$
 mr_numeric_points : [0.35, 0.65]$
+/* The generic exponents m, n, q and the exponential base F take TWO value
+   sets, positive and non-integer (the families' generic case: an integer m
+   or n lands on a pole or a degenerate case of many answers). A residual
+   that carries any of them is evaluated under each set, and the check is
+   "ok" only when every set is ok at every point: one set alone passed 10
+   entries the other set failed (.scratch/corpus-harness/issues/06 item 2,
+   probes/verify-stages/10-free-symbol-values.out, 2026-09-29: of the 636
+   entries that declined on these symbols, 382 are ok under both sets, 8
+   mismatch under both, 10 split). A residual free of them is evaluated
+   once, as before. */
+mr_numeric_sets : [[m=0.37, n=1.7, q=0.6, F=1.9],
+                   [m=1.3, n=0.45, q=1.4, F=2.3]]$
 mr_numeric_tol : 1e-9$
 
 /* The expression a stage applies to its input. */
@@ -104,6 +116,45 @@ mr_guarded(mr_th) := block([errormsg : false, mr_rv],
   mr_rv : errcatch(mr_cpu_timed(mr_th(), mr_stage_cap)),
   if mr_rv = [] then [] else part(mr_rv, 1))$
 
+/* AppellF1(a, b1, b2, c, z1, z2), the corpus's spelling (the rules emit
+   it as an inert noun too; Maxima has no F1). The checker gives it what
+   the numeric check needs, and nothing else: .scratch/corpus-harness/
+   issues/06 item 2, 434 of the 968 entries whose numeric check declined
+   carry it (probes/verify-stages/09-declined-census.out).
+   - a derivative: d/dz1 F1 = (a b1/c) F1(a+1; b1+1, b2; c+1; z1, z2), and
+     likewise in z2 with b2. The parameters are x-free in every corpus
+     entry; a parameter that is not keeps the mr_f1_dparam noun, so the
+     numeric check declines rather than passing a wrong value;
+   - a numeric value, mr_f1_float (test/mr_verify.lisp mr_f1_num): false
+     unless all six arguments are numbers, and when the series cannot be
+     brought inside its radius. */
+gradef(AppellF1(mr_a, mr_b1, mr_b2, mr_c, mr_z1, mr_z2),
+  mr_f1_dparam(1, mr_a, mr_b1, mr_b2, mr_c, mr_z1, mr_z2),
+  mr_f1_dparam(2, mr_a, mr_b1, mr_b2, mr_c, mr_z1, mr_z2),
+  mr_f1_dparam(3, mr_a, mr_b1, mr_b2, mr_c, mr_z1, mr_z2),
+  mr_f1_dparam(4, mr_a, mr_b1, mr_b2, mr_c, mr_z1, mr_z2),
+  mr_a*mr_b1/mr_c*AppellF1(mr_a+1, mr_b1+1, mr_b2, mr_c+1, mr_z1, mr_z2),
+  mr_a*mr_b2/mr_c*AppellF1(mr_a+1, mr_b1, mr_b2+1, mr_c+1, mr_z1, mr_z2))$
+
+mr_f1_float(mr_a, mr_b1, mr_b2, mr_c, mr_z1, mr_z2) := block([mr_ps, mr_r],
+  mr_ps : map(lambda([mr_w], rectform(float(mr_w))),
+              [mr_a, mr_b1, mr_b2, mr_c, mr_z1, mr_z2]),
+  if not every(lambda([mr_w], floatnump(realpart(mr_w)) or integerp(realpart(mr_w))), mr_ps)
+     or not every(lambda([mr_w], floatnump(imagpart(mr_w)) or integerp(imagpart(mr_w))), mr_ps)
+    then false
+  else (mr_r : apply(mr_f1_num,
+                     flatten(map(lambda([mr_w], [realpart(mr_w), imagpart(mr_w)]), mr_ps))),
+        if mr_r = false then false else mr_r[1] + %i*mr_r[2]))$
+
+/* Every AppellF1 with numeric arguments replaced by its value, bottom up;
+   one that has none stays, and the check declines on it. */
+mr_eval_f1(mr_e) := scanmap(lambda([mr_u],
+    if not atom(mr_u) and op(mr_u) = 'AppellF1 and length(mr_u) = 6 then
+      block([mr_v : apply(mr_f1_float, args(mr_u))],
+        if mr_v = false then mr_u else mr_v)
+    else mr_u),
+  mr_e, bottomup)$
+
 /* rectform every li argument, bottom up: float(li[2](z)) evaluates only
    when z is already a + b*%i (measured 2026-09-28: li[2](2.0/(0.315*%i
    - 1.0) + 1.0) stays unevaluated, li[2] of its rectform evaluates) --
@@ -118,10 +169,11 @@ mr_rect_li(mr_e) := scanmap(lambda([mr_u],
    function can signal too (2.3 e477: hypergeometric with a pole parameter,
    `pquotient: attempted quotient by zero'), and an error, like a timeout,
    declines. */
-mr_numeric_point(mr_d, mr_x, mr_x0) := block([mr_v],
+mr_numeric_point(mr_d, mr_x, mr_x0, [mr_set]) := block([mr_v],
+  mr_set : if mr_set = [] then [] else first(mr_set),
   mr_v : mr_guarded(lambda([], block([mr_w],
-        mr_w : rectform(float(mr_rect_li(float(ev(mr_d, append(mr_numeric_subs,
-                                                             [mr_x = mr_x0])))))),
+        mr_w : rectform(float(mr_eval_f1(mr_rect_li(float(ev(mr_d,
+                   append(mr_numeric_subs, mr_set, [mr_x = mr_x0]))))))),
         if not (numberp(realpart(mr_w)) and numberp(imagpart(mr_w)))
           then "declined"
         else if is(cabs(mr_w) < mr_numeric_tol) then "ok"
@@ -129,8 +181,12 @@ mr_numeric_point(mr_d, mr_x, mr_x0) := block([mr_v],
   if listp(mr_v) and mr_v # [] then part(mr_v, 1) else "declined")$
 
 /* Every point ok -> "ok"; any mismatch -> "mismatch"; else "declined". */
-mr_numeric_check(mr_d, mr_x) := block([mr_rs],
-  mr_rs : map(lambda([mr_x0], mr_numeric_point(mr_d, mr_x, mr_x0)), mr_numeric_points),
+mr_numeric_check(mr_d, mr_x) := block([mr_rs, mr_sets],
+  mr_sets : if every(lambda([mr_q], freeof(lhs(mr_q), mr_d)), first(mr_numeric_sets))
+              then [[]] else mr_numeric_sets,
+  mr_rs : flatten(map(lambda([mr_set],
+            map(lambda([mr_x0], mr_numeric_point(mr_d, mr_x, mr_x0, mr_set)),
+                mr_numeric_points)), mr_sets)),
   if every(lambda([mr_s], mr_s = "ok"), mr_rs) then "ok"
   else if member("mismatch", mr_rs) then "mismatch"
   else "declined")$

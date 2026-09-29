@@ -621,7 +621,7 @@ python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
 python3 test/test_head_rewrites.py          # Results: 70 passed, 0 failed
 python3 test/test_driver_proof.py           # Results: 29 passed, 0 failed
 python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
-maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 30 passed, 0 failed
+maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 46 passed, 0 failed
 ```
 
 **The checker** (`test/mr_verify.mac` + `test/mr_verify.lisp`,
@@ -636,7 +636,10 @@ last since 2026-09-29, `probes/verify-stages/08-stage-order.out`), each errcatch
 stops a stage whose heap use passes `mr_heap_fraction`, 0.6 — heap exhaustion is
 fatal in SBCL, and a forced GC is not an option here, see `test/mr_verify.lisp`). Only when no stage
 proves either residual does the **numeric check** decide (two points, the
-sweep parameters, `li` arguments rectformed first) — an indication, not a
+sweep parameters, `li` arguments rectformed first; since 2026-09-29 the generic
+exponents `m`/`n`/`q` and the base `F` under two value sets, every set required
+ok, and `AppellF1` with a derivative and a numeric value, harness-only —
+`probes/verify-stages/10`) — an indication, not a
 proof, in either direction. A numeric-only pass still counts as PASS until
 the user decides otherwise; its tag says so. **Verification has its own
 budget**: rubi keeps the 30 s cap, the checker gets `MR_VERIFY_CAP` (default
