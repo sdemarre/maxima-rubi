@@ -256,3 +256,18 @@ Next, before any full run (user: improve the checker as far as possible first):
     `b11a93f`; the faithful route is slow (`.scratch/class-ports/issues/26`).
   - Side finding: `mr_cpu_timed` around rubi is swallowed by the dispatcher's fault handler
     (`.scratch/corpus-harness/issues/09`); no effect on records.
+
+- 2026-09-30 00:10: **arm 1's 69 losses, attributed** (probes `verify-stages/13`-`15`, same 69
+  entries, master's pinned core):
+  - `13` (stage cap 30 s, verification 120 s): 14 pass, 13 by chainA.1 on the expected-diff --
+    their full-run tag was verify-timeout: the budget went to the self-diff's radcan family first.
+    Fix `477f2d2`: breadth-first (the chains of every residual, then the radcan family).
+  - `14` (breadth-first, default caps): 6 pass. Of the rest, 7.1.5 e318 by hand: the residual
+    kept expintegral_shi of an unsimplified complex float unevaluated, so the numeric check
+    declined; with every function's arguments rectformed it is 4e-16 at both points (the old
+    chain's abs() read it through cabs). Fix `648c6a4`: mr_rect_li -> mr_rect_args.
+  - `15` (both fixes, default caps): **65 of 69 pass** (61 numeric-only, 4 chainA.1). Left: 8.2
+    e61/e170 (Fresnel of complex arguments), two 7.1.5 entries. 1.1.3.4's chainA.1 needs 6.3 s
+    on its expected-diff (5 s cap) but these entries now pass numerically.
+  - Both fixes change verdicts beyond these 69 (any residual with a special function of a
+    complex argument); a full-corpus arm is needed to measure them.
