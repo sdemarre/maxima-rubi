@@ -1,0 +1,27 @@
+# test/ab_records.py <base> <new> --all; records from 07-ab-runner.py over
+# test/corpus_class2.pfs.out; base core 215918b, new core e5a9d89 (%mr_fullSimplify);
+# same checker; 2026-09-28, build branch_5_50_base_84_g4204fb669.
+base: /tmp/claude-1000/-home-serge-src-maxima-rubi/f7b8f0dd-72d3-438f-8805-e1a113d51eb5/scratchpad/c2.base.out (965 entries)
+new:  /tmp/claude-1000/-home-serge-src-maxima-rubi/f7b8f0dd-72d3-438f-8805-e1a113d51eb5/scratchpad/c2.new.out (965 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS    876
+PASS->FAIL      0
+FAIL->PASS      3
+FAIL->FAIL     86
+
+=== class transitions (changed only) ===
+    2  unverified -> expected
+    1  unverified -> verified
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     3  2 Exponentials/2.3 Exponential functions.mac
+
+=== PASS->FAIL (0) ===
+
+=== FAIL->PASS (3) ===
+  unverified    -> expected      t=0.0s -> t=0.0s 2 Exponentials/2.3 Exponential functions.mac e475
+  unverified    -> expected      t=0.1s -> t=0.0s 2 Exponentials/2.3 Exponential functions.mac e487
+  unverified    -> verified      t=0.2s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e725
+ALLDONE

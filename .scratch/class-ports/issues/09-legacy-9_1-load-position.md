@@ -36,8 +36,8 @@ the move is accepted. Related: ticket 07 (bare-`u_` records mid-table).
   and accepts it (`%mr_rule_accept`: `%mr_eqQ` reads the constant as 0) but is never reached. With
   `mr_rules_9_1` moved to the head of `mr_rule_table` in a session, rubi answers
   `c*atanh(sqrt(b)*x/sqrt(c*x^4+b*x^2))/(2*b^(3/2)) - sqrt(c*x^4+b*x^2)/(2*b*x^3)` in one step
-  (`9_1 r3`), exactly the corpus answer, and `radcan` proves the residual 0 (scratch probe on
-  `215918b`'s core). The load order is confirmed on every `Rubi.m` in the clone's history up to
+  (`9_1 r3`), exactly the corpus answer, and `radcan` proves the residual 0
+  (`probes/verify-stages/07-e1000-legacy-9_1-first.{mac,out}`, rules core `c01ce534`). The load order is confirmed on every `Rubi.m` in the clone's history up to
   `58a2225` (2020-05-07), including `a3afeee` (2018-06-25, the one current when the corpus was
   created on 2018-08-03: `LoadRules["9.1"]` right after the utilities). The full-table A/B this
   ticket prescribes is still the gate.

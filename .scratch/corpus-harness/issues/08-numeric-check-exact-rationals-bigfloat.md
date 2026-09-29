@@ -15,19 +15,20 @@ catastrophic cancellation in a large residual reads as a mismatch.
 ## The witness
 
 4.1.1.2 e466, `sec(c+d*x)^3/(a+b*sin(c+d*x))^8`: rubi's answer has coefficients of degree about 18 in
-a and b. The checker read `none/numeric-mismatch` with residual 4.5e-8. Measured by hand on
-2026-09-28 (category 7 of `handoffs/2026-09-28-checker-wrong-answers.md`, issue 06 comment), with the
-same parameter values and points substituted as exact rationals (`rationalize`):
+a and b. The checker read `none/numeric-mismatch` with residual 4.5e-8 at float parameters.
+`probes/verify-stages/07-e466-bigfloat.{mac,out}` (2026-09-29, rules core `c01ce534`) takes the same
+parameter values and points as exact rationals:
 
-| evaluation | residual at x = 0.35 | at x = 0.65 |
+| evaluation | residual at x = 7/20 | at x = 13/20 |
 |---|---|---|
-| float parameters (the checker) | 4.5e-8 | 2.8e-8 |
-| rationals, then `float` | 5.1e-13 | 1.2e-12 |
-| rationals, then `bfloat`, `fpprec: 50` | 2.5e-47 | 8.5e-48 |
-| rationals, then `bfloat`, `fpprec: 100` | 1.0e-97 | 1.1e-97 |
+| float parameters (the checker, 2026-09-28) | 4.5e-8 | 2.8e-8 |
+| rationals, then `float` | 1.5e-12 | 1.8e-13 |
+| rationals, then `bfloat`, `fpprec: 50` | 1.1e-47 | 8.8e-48 |
+| rationals, then `bfloat`, `fpprec: 100` | 1.3e-97 | 8.8e-99 |
 
-The answer is exact, and the mismatch is float noise only. SymPy's check of e96/e50/e865 on
-2026-09-29 used the same approach (rationals, then `N(…, 40)`) and read 0 or about 1e-175.
+The answer is exact, and the mismatch is float noise only. SymPy's check of e96/e50/e865
+(`probes/verify-stages/07-sympy-check.{py,out}`) uses the same approach (rationals, then
+`N(…, 40)`) and reads 0 or about 1e-175.
 
 ## The idea
 

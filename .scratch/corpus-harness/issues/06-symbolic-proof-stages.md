@@ -182,3 +182,11 @@ Next, before any full run (user: improve the checker as far as possible first):
     100, so float cancellation only. With the parameters substituted as exact rationals, the
     plain-float residual is 5e-13, under the tolerance: **checker idea**, substitute rationals
     (then float) instead of floats first. Not implemented.
+
+- 2026-09-29: the measurements behind the comment above are committed as
+  `probes/verify-stages/07-*`: `07-e466-bigfloat` (category 7), `07-e1000-legacy-9_1-first`
+  (category 4), `07-sympy-check` (an independent CAS: SymPy's `simplify` takes e96's and e50's
+  residuals to 0; e865's residual is below 1e-173 at 40 digits at four points but `simplify` does
+  not close it; the 1.1.2.6 r13 split is 0 with `f/g^2` and `f*g^m*x^(m+2)*…*(g^2-e^2)/e^2` with
+  `f/e^2`; SymPy's own `integrate` leaves both e96 and e50 unevaluated), `07-ab-runner.py` and the
+  two A/B reports (`07-ab-fullsimplify-class2.out`, `07-ab-errata-1.1.2.6.out`).
