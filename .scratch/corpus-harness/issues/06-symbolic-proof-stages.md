@@ -190,3 +190,18 @@ Next, before any full run (user: improve the checker as far as possible first):
   not close it; the 1.1.2.6 r13 split is 0 with `f/g^2` and `f*g^m*x^(m+2)*…*(g^2-e^2)/e^2` with
   `f/e^2`; SymPy's own `integrate` leaves both e96 and e50 unevaluated), `07-ab-runner.py` and the
   two A/B reports (`07-ab-fullsimplify-class2.out`, `07-ab-errata-1.1.2.6.out`).
+
+- 2026-09-29: **items 1 and 4, the stage-order A/B** (`probes/verify-stages/08-stage-order.{sh,out}`,
+  driver knob `MR_PROOF_STAGES`, `ec6838d`). The 1,551 `unverified` entries of the geteqr records
+  plus a seeded 1,000-entry control sample of their `verified` entries, arm A the current order,
+  arm B rectform last:
+  - **The order changes no verdict** (0 transitions in either set) and no wall time. Moving
+    rectform last does not remove its cost either: its timeouts are on unprovable entries, which
+    run every stage in any order (351 -> 356).
+  - **rectform earns its place**: it is the only stage that proves 9 of the 2,551 (arm B). Its
+    cost is ~360 x 5 s of CPU per ~1,000 unprovable entries, a few minutes of wall on a full run.
+    In arm A, its heap garbage also stops the stages after it (7 heap entries in both arms).
+  - **rat-radcan earns its place** (item 5): the only stage that proves 5.1.4a e439.
+  - **Control**: 1,000 / 1,000 still PASS; 135 are relabelled verified -> expected (a symbolic
+    expected-diff beats a numeric self-diff, by design); **34 (3.4 %) are numeric-only** -- about
+    1,900 of the corpus's ~57,000 verified entries if the sample holds.
