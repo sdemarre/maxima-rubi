@@ -21,7 +21,9 @@
 #     every arm 2 vs arm 1 transition, re-run on BOTH cores (FIX = the two
 #          cores disagree: the rule fixes' effect)
 #          -> test/chk_attr_head_class<N>.out.
-# The arms run one after the other, never concurrently.
+# The arms run one after the other, never concurrently. Re-launching resumes:
+# a class whose merged record exists is kept, and a class that fails is tried
+# once more.
 #   MASTER_CORE=<dir with mr_rules.core + .stamp> \
 #   setsid sh test/checker_measure.sh > test/checker_measure.log 2>&1 < /dev/null &
 set -u
@@ -39,6 +41,15 @@ CLASSES="2 Exponentials|8 Special functions|3 Logarithms|5 Inverse trig function
 
 run_class() {  # $1 section  $2 prev  $3 out  $4 arm
   slug="class$(echo "$1" | cut -d' ' -f1)"
+  # RESUME: a merged record is only ever written complete (the merger refuses
+  # otherwise), so one that exists is kept; its census is made if missing
+  # (the shards stay until the next launch of the same class).
+  if [ -f "$3" ]; then
+    echo "$(date '+%F %T %Z') keep $4 $1: $3 exists"
+    [ -f "${3%.out}.proof.out" ] || python3 test/merge_proof.py "$3" "${3%.out}.proof.out" \
+      > "test/chk_proofmerge_${4}_$slug.out" 2>&1 || echo "PROOF MERGE FAILED $4 $slug"
+    return 0
+  fi
   echo "$(date '+%F %T %Z') start $4 $1 -> $3"
   if [ "$4" = chk-master ]; then
     MR_RULES_CORE_PATH="$MASTER_CORE/mr_rules.core" python3 test/run_corpus_queue.py "$1" --prev "$2" --workers 24 --launch || return 1
@@ -59,9 +70,14 @@ for arm in chk-master chk-head; do
     n=$(echo "$spec" | cut -d' ' -f1)
     if [ "$arm" = chk-master ]; then base="test/corpus_class$n.geteqr.out"; else base="test/corpus_class$n.chk-master.out"; fi
     new="test/corpus_class$n.$arm.out"
-    run_class "$spec" "$base" "$new" "$arm" || { echo "FAILED $arm class $n"; IFS='|'; continue; }
+    # ONE retry: 2026-09-29 15:00 the class-1 queue manager of arm 1 died
+    # silently mid-run (no traceback, no OOM, no core; 18,757 entries missing)
+    run_class "$spec" "$base" "$new" "$arm" || {
+      echo "$(date '+%F %T %Z') RETRY $arm class $n; queue log tail:"
+      tail -2 "test/corpus_class$n.shard-queue.log"
+      run_class "$spec" "$base" "$new" "$arm"; } || { echo "FAILED $arm class $n"; IFS='|'; continue; }
     ab="test/chk_ab_${arm#chk-}_class$n.out"
-    python3 test/ab_records.py "$base" "$new" --all > "$ab" 2>&1
+    [ -f "$ab" ] || python3 test/ab_records.py "$base" "$new" --all > "$ab" 2>&1
     echo "== $arm class $n vs $base"; sed -n 5,9p "$ab"
     IFS='|'
   done
