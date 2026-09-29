@@ -224,3 +224,35 @@ Next, before any full run (user: improve the checker as far as possible first):
     control 0 transitions. **All 707 are numeric-only passes** -- per the standing decision they
     count as PASS until the user decides otherwise.
   - Left: 297 (56 mismatches, 241 declined -- 119 of those carry neither m/n/q/F nor AppellF1).
+
+- 2026-09-29 (evening): **the full re-run** (`test/checker_measure.sh`, `23d3c9a`/`7168e75`; user
+  decisions: two arms, 24 workers, numeric-only stays PASS). Queue runner, 30 s cpu rubi + 30 s
+  verification, 5 s per stage. Arm 1 = master's rules (pinned core f2cb4fc6, `b62d6d7`) with
+  this tree's checker; arm 2 = coeff-together `23d3c9a` (core c01ce534). Finished 19:53 CEST.
+  The first class-1 run of arm 1 was killed at 15:00 by another agent's kill of all sbcl /
+  python / sh processes (user, 2026-09-29) and re-run in full (`test/checker_measure.run1.log`).
+
+  | class | geteqr (master, old chain) | arm 1 | arm 2 |
+  |---|---:|---:|---:|
+  | 1 | 23,830 | 24,400 | 24,500 |
+  | 2 | 871 | 873 | 875 |
+  | 3 | 2,641 | 2,648 | 2,648 |
+  | 4 | 20,594 | 21,158 | 21,184 |
+  | 5 | 3,823 | 3,862 | 3,872 |
+  | 6 | 4,419 | 4,482 | 4,499 |
+  | 7 | 5,599 | 5,763 | 5,871 |
+  | 8 | 1,720 | 1,722 | 1,727 |
+  | all | 63,497 (90.2 %) | 64,908 | 65,176 (92.6 %) |
+
+  - **The checker** (arm 1 vs geteqr, `test/chk_ab_master_class<N>.out`): 1,480 FAIL -> PASS, 69
+    PASS -> FAIL; re-checked at 12 workers on arm 1's setup (`test/chk_attr_master_class<N>.out`):
+    65 reproduce, 4 noise. Sampled losses: no stage proves them, stages at the 5 s cap, the
+    numeric check declines; the old chain had no per-stage cap. Being tested:
+    `probes/verify-stages/13` (MR_STAGE_CAP=30, MR_VERIFY_CAP=120).
+  - **The rule fixes** (arm 2 vs arm 1, `test/chk_ab_head_class<N>.out`, both cores re-checked,
+    `test/chk_attr_head_class<N>.out`): 272 FAIL -> PASS (265 FIX gain, 7 drift), 11 PASS -> FAIL
+    (10 noise, 1 FIX loss). The loss, 7.3.6 e669, is attributed: a correct answer in 59 s cpu,
+    master's 0.47 s came from 1_1_3_7 r45 firing through the PolyQ factor-walk bug fixed in
+    `b11a93f`; the faithful route is slow (`.scratch/class-ports/issues/26`).
+  - Side finding: `mr_cpu_timed` around rubi is swallowed by the dispatcher's fault handler
+    (`.scratch/corpus-harness/issues/09`); no effect on records.

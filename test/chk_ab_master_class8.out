@@ -1,0 +1,31 @@
+base: test/corpus_class8.geteqr.out (1949 entries)
+new:  test/corpus_class8.chk-master.out (1949 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS   1718
+PASS->FAIL      2
+FAIL->PASS      4
+FAIL->FAIL    225
+
+=== class transitions (changed only) ===
+  389  verified -> expected
+   39  expected -> verified
+    3  timeout -> expected
+    2  verified -> unverified
+    1  timeout -> verified
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     1  8 Special functions/8.10 Formal derivatives.mac
+    2     0  8 Special functions/8.2 Fresnel integral functions.mac
+    0     3  8 Special functions/8.9 Product logarithm function.mac
+
+=== PASS->FAIL (2) ===
+  verified      -> unverified    t=0.2s -> t=0.1s 8 Special functions/8.2 Fresnel integral functions.mac e61
+  verified      -> unverified    t=0.2s -> t=0.1s 8 Special functions/8.2 Fresnel integral functions.mac e170
+
+=== FAIL->PASS (4) ===
+  timeout       -> verified      t=30.1s -> t=0.1s 8 Special functions/8.10 Formal derivatives.mac e40
+  timeout       -> expected      t=30.0s -> t=0.3s 8 Special functions/8.9 Product logarithm function.mac e145
+  timeout       -> expected      t=30.0s -> t=0.4s 8 Special functions/8.9 Product logarithm function.mac e149
+  timeout       -> expected      t=30.1s -> t=0.4s 8 Special functions/8.9 Product logarithm function.mac e150
