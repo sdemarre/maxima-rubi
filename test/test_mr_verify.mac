@@ -286,4 +286,22 @@ check("check entry: the radcan family runs on the self-diff first",
   sublist(mr_said, lambda([l], is(ssearch("NUMERIC", l) = false))),
   ["CLASS verified", "PROOF radcan"])$
 
+/* ---- 10. the numeric check rectforms every function's arguments ----
+   float() evaluates a special function of a complex argument only when the
+   argument is already a + b*%i (the li[2] case of section 5, generalized):
+   7.1.5 e318's correct answer read `declined' because its residual kept
+   expintegral_shi(0.38*(1.3*(1.24*%i+0.34)+0.9)) unevaluated; with the
+   arguments rectformed the residual is 4e-16 at both points
+   (probes/verify-stages/14, 2026-09-29). */
+check("numeric point: a special function of an unsimplified complex argument evaluates",
+  mr_numeric_point(expintegral_shi((1+%i)*(x+1)/2) - float(expintegral_shi(0.675+0.675*%i)),
+                   x, 0.35), "ok")$
+/* 7.1.5 e318, rubi's answer on master's rules (frozen): correct */
+block([r318 : ((cosh(a/(2*b))-%i*sinh(a/(2*b)))*x*expintegral_shi((b*asinh(d*x^2+%i)+a)/(2*b)))
+                /(2*b*(%i*sinh(asinh(d*x^2+%i)/2)+cosh(asinh(d*x^2+%i)/2)))
+              +((%i*cosh(a/(2*b))-sinh(a/(2*b)))*x*expintegral_chi((b*asinh(d*x^2+%i)+a)/(2*b)))
+                /(2*b*(%i*sinh(asinh(d*x^2+%i)/2)+cosh(asinh(d*x^2+%i)/2)))],
+  check("numeric check: 7.1.5 e318's answer is ok",
+    mr_numeric_check(diff(r318, x) - 1/(a+b*asinh(%i+d*x^2)), x), "ok"))$
+
 printf(true, "Results: ~d passed, ~d failed~%", tests_passed, tests_failed)$
