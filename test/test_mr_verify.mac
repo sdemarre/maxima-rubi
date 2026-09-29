@@ -139,6 +139,27 @@ block([mr_stage_cap : 0.3, t0, tag, dt],
 check("mr_cpu_timed returns the value in a list", mr_cpu_timed(1+1, 2), [2])$
 check("mr_cpu_timed returns timeout past its limit",
   mr_cpu_timed(factor(expand((x+y+z+1)^60) - 1), 0.2), 'timeout)$
+:lisp (defun $mr_test_strand (sym) (mbind (list sym) (list 42) nil) (loop))
+/* A stage stopped by the timer must leave Maxima's binding state as it
+   found it. The tick is ASYNCHRONOUS: landing between mbind's return and
+   mbinding-sub's `win' flag, it strands a frame of block locals on the
+   bindlist, and every enclosing block then unbinds the wrong variables on
+   its way out. Measured 2026-09-29 (probes/verify-stages/11): 7.4.1 e190's
+   numeric check, stopped inside Maxima's numeric hypergeometric, left x,
+   a, str, success and the checker's own locals bound as globals, and the
+   entry flipped between `expected' and `unverified' run to run. The
+   witness strands a frame on purpose (mbind with no munbind), then runs
+   past the limit. */
+mr_leak_r : block([zz_outer : 1], mr_cpu_timed(mr_test_strand('zz_strand), 0.3))$
+check("a stranded frame: the stage returns timeout", mr_leak_r, 'timeout)$
+check("a stranded frame is unbound after the timeout", zz_strand, 'zz_strand)$
+check("a stranded frame does not leak the enclosing block's local", zz_outer, 'zz_outer)$
+/* The timer's condition is not an `error': Maxima's errcatch catches every
+   Lisp error, so a tick landing inside an errcatch in the stage's own code
+   was swallowed there and the stage ran on past its limit, its result
+   decided by where the tick happened to land. */
+check("an errcatch inside the stage does not swallow the timeout",
+  mr_cpu_timed(block([zz_c : 0], errcatch(while true do zz_c : zz_c + 1)), 0.3), 'timeout)$
 
 :lisp (defun mr-test-foreign-ticks (n) (let ((th (sb-thread:make-thread (lambda () (dotimes (i n) (sleep 0.0005) (mr-vtalrm-handler nil nil nil)))))) (prog1 (loop for i below 200000000 sum i) (sb-thread:join-thread th :timeout 10 :default nil))))
 /* The timer signal is process-directed, and SBCL starts a finalizer thread

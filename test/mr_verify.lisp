@@ -38,8 +38,16 @@
 ;;; of the entry not dying; it concerns the rare entry that fills the heap
 ;;; (2 of the 1,530 re-checked unverified entries).
 
-(define-condition mr-cpu-timeout (error) ())
-(define-condition mr-heap-limit (error) ())
+;;; NOT subclasses of ERROR: Maxima's errcatch catches every Lisp error
+;;; (errset.lisp, its second handler-case clause), so a tick landing inside an
+;;; errcatch in the stage's own code -- Maxima's numeric hypergeometric has
+;;; them -- was swallowed there, and the stage ran on past its limit with a
+;;; result decided by where the tick landed (7.4.1 e190, 2026-09-29: the same
+;;; residual read `declined' or `mismatch' run to run; test_mr_verify.mac).
+;;; A SERIOUS-CONDITION is still signalled with ERROR and still reaches the
+;;; handler-case in mr_cpu_timed, and no Maxima handler catches it.
+(define-condition mr-cpu-timeout (serious-condition) ())
+(define-condition mr-heap-limit (serious-condition) ())
 
 ;;; THREADS. The timer signal is process-directed, and SBCL starts a
 ;;; finalizer thread lazily, so a tick can be delivered to that thread instead
@@ -73,10 +81,24 @@
           ((and owner (sb-thread:thread-alive-p owner))
            (sb-thread:interrupt-thread owner #'mr-tick)))))
 
+;;; BINDINGS. Maxima unbinds block locals and function parameters from its
+;;; own BINDLIST, and a frame is unbound on a non-local exit only when it was
+;;; fully set up: mbinding-sub (maxmac.lisp) sets its WIN flag after mbind
+;;; returns and unbinds only if it is set. Maxima's own exits are synchronous
+;;; and never land in between; a timer tick is asynchronous and does. A
+;;; frame stranded there stays on the bindlist, and every enclosing block then
+;;; unbinds the wrong variables on its way out (7.4.1 e190, 2026-09-29: x, a,
+;;; str, success and the checker's own locals were left bound as globals, and
+;;; the next stages ran on a residual with x bound -- a proof in 0.004 s on one
+;;; run, none on the next). So mr_cpu_timed does what Maxima's mcatch does
+;;; (suprv1.lisp): it records (bindlist . loclist) on entry and unwinds both
+;;; back to it with errlfun1 on the way out. On a normal return they are
+;;; already back and it does nothing.
 (defmspec $mr_cpu_timed (form)
   (let ((*mr-ticks-left* (max 1 (ceiling (* (meval (third form)) 1000000)
                                          +mr-tick-usec+)))
-        (*mr-timer-active* t))
+        (*mr-timer-active* t)
+        (saved (cons bindlist loclist)))
     (setq *mr-timer-thread* sb-thread:*current-thread*)
     (sb-sys:enable-interrupt sb-unix:sigvtalrm #'mr-vtalrm-handler)
     (unwind-protect
@@ -86,7 +108,8 @@
                (list '(mlist simp) (meval (second form))))
            (mr-cpu-timeout () '$timeout)
            (mr-heap-limit () '$heaplimit))
-      (sb-unix:unix-setitimer :virtual 0 0 0 0))))
+      (sb-unix:unix-setitimer :virtual 0 0 0 0)
+      (errlfun1 saved))))
 
 ;;; mr_flush() -- push buffered output to the driver's pipe now. The driver
 ;;; reads a marker line (ANSWERED, NUMERIC) from a process it may then kill
