@@ -27,8 +27,13 @@ run_arm() {  # $1 section  $2 arm (rubi|baseline)
   if [ -f "$base.grade.out" ] && [ "$base.grade.out" -nt "$out" ]; then
     echo "$(date '+%F %T %Z') keep $2 $1: $base.grade.out exists"; return 0
   fi
-  echo "$(date '+%F %T %Z') start $2 $1 -> $out"
-  python3 test/run_corpus_queue.py "$1" --workers 24 --launch || return 1
+  # --prev orders the queue longest-first: the arm's previous record, or for
+  # rubi the checker's latest (chk2-head) when there is one.
+  prev="$out"
+  [ "$2" = rubi ] && [ -f "test/corpus_class$n.chk2-head.out" ] && prev="test/corpus_class$n.chk2-head.out"
+  prevarg=""; [ -f "$prev" ] && prevarg="--prev $prev"
+  echo "$(date '+%F %T %Z') start $2 $1 -> $out ($prevarg)"
+  python3 test/run_corpus_queue.py "$1" $prevarg --workers 24 --launch || return 1
   sh test/wait_and_merge.sh "test/corpus_$slug.shard-pids" test/merge_class_shards.py \
      "test/graded_merge_$slug.out" "$1" "$out" test/corpus_driver.py "corpus_$slug.shard*.out" || return 1
   echo "$(date '+%F %T %Z') merged $out"; grep "Results:" "$out"
