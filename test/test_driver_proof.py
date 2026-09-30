@@ -227,11 +227,12 @@ def sidecar_checks(queue_mod):
         def header_lines(self, title, detail, build):
             return [title, "filter: x", ""]
 
-        def run_entry_full(self, rel, idx, text, line_no):
+        def run_entry_detail(self, rel, idx, text, line_no):
             if idx == 0:
                 return ("verified", f"verified       t=   0.1s {rel} e1 L{line_no}",
-                        0, "logarc")
-            return ("deferred", f"deferred       t=   0.1s {rel} e2 L{line_no}", 0, None)
+                        0, "logarc", {})
+            return ("deferred", f"deferred       t=   0.1s {rel} e2 L{line_no}", 0, None,
+                    {})
 
     with tempfile.TemporaryDirectory() as tmp:
         out = os.path.join(tmp, "corpus_class9.shard00.out")

@@ -53,6 +53,7 @@ balance them).
 import importlib.util
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -479,8 +480,30 @@ except ValueError as exc:
     raise SystemExit(str(exc))
 
 
+# MR_BASELINE=1: the NATIVE baseline (2026-09-30, user decision). The driver
+# then runs stock Maxima -- no package, no rules core -- and calls
+# `integrate`, and `risch` when integrate did not pass, in place of `rubi`.
+# Everything else is this driver's own path: the corpus-head normalisation,
+# the CPU cap, the ANSWERED line, the checker (test/mr_verify.mac) and its
+# .proof sidecar. So a baseline record and a rubi record are read with ONE
+# ruler; the old baseline probe (probes/corpus/probe-integrate-sample.py) had
+# its own four-stage zero chain, a wall cap, no head normalisation, and
+# scored `c*'integrate(g, x)` as verified (diff sees through the noun).
+# See run_entry_detail for the integrate -> risch protocol and the .via
+# sidecar. Guarded by test/test_driver_baseline.py.
+BASELINE = os.environ.get("MR_BASELINE") == "1"
+BASELINE_PRELOAD = os.path.join("test", "mr_baseline_preload.mac")
+BASELINE_INTEGRATORS = ("integrate", "risch")
+# integrate's classes that send the entry on to risch: every FAIL class but
+# `unexpected` (an answer where the corpus expects none is not a failure to
+# integrate).
+BASELINE_RETRY = {"timeout", "error", "deferred", "contains-noun", "unverified"}
+
+
 def switch_header():
     """Suffix for the record's `filter:` line: the switch arm."""
+    if BASELINE:
+        return "  switches: " + run_records.BASELINE_RISCH_ARM
     return "  switches: " + run_records.switches_text(SWITCH_SETTINGS)
 
 
@@ -504,7 +527,8 @@ def core_header():
     return f"  core: pinned {RULES_CORE}" if RULES_CORE_PIN else ""
 
 
-USE_RULES_CORE = ensure_rules_core()
+USE_RULES_CORE = False if BASELINE else ensure_rules_core()
+MAXIMA = shutil.which("maxima") or "maxima"
 
 workdir = tempfile.mkdtemp(prefix="maxima-rubi-corpus-")
 mac_file = os.path.join(workdir, "i.mac")
@@ -613,7 +637,13 @@ def maxima_run(mac_text, timeout, cpu_out=None):
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(mac_text)
-        if USE_RULES_CORE:
+        if BASELINE:
+            # Stock Maxima: the preload only sets batch_answers_from_file.
+            # The absolute path is for test/mr_cpu_cap.py's execv; the
+            # `maxima` script execs the Lisp image, so the pid the helper
+            # polls is the one that computes.
+            cmd = [MAXIMA, "--very-quiet", "-p", BASELINE_PRELOAD, "-b", fpath]
+        elif USE_RULES_CORE:
             # Option D: start from the rules image (rules + batch_answers_
             # from_file baked in — no -p preload). The image's SAVED
             # toplevel is cl-user::run (set at build time), so no --eval is
@@ -736,7 +766,7 @@ def zero_chain(d_expr, var, fallback=True):
             "if substring(MR_zt, 1, 5) = \"none\" then 0 else 1))")
 
 
-def build_text(f_text, var_text, e_text, e_text2=None):
+def build_text(f_text, var_text, e_text, e_text2=None, integrator=None):
     # mr_/MR_ template variables: the pasted corpus text is re-parsed in
     # their scope, so the names must not collide with corpus symbols.
     # Noun detector: the rubi fall-through is the integrate noun; the
@@ -747,7 +777,17 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # baseline runs). Maxima has no arity overloading, so the fallback
     # mode is the distinct entry rubi_fallback (utils file, measured
     # 2026-08-24).
-    if os.environ.get("MR_FALLBACK") == "1":
+    # INTEGRATOR (the native baseline, MR_BASELINE): `integrate` or `risch`
+    # in place of rubi, in stock Maxima. No package switch is assigned and
+    # no depth cap is read (neither exists there), and the no-answer noun is
+    # Maxima's own `integrate` noun ANYWHERE in the result: integrate and
+    # risch both answer `c*'integrate(g, x) + ...` for the part they cannot
+    # do, diff() sees through that noun, and the checker would prove such a
+    # non-answer correct (measured 2026-09-30: integrate(2*foo(x)+x, x)).
+    # For rubi an interior `integrate` noun stays a legitimate term (below).
+    if integrator is not None:
+        call = f"{integrator}(mr_f, {var_text})"
+    elif os.environ.get("MR_FALLBACK") == "1":
         call = f"rubi_fallback(mr_f, {var_text}, true)"
     else:
         call = f"rubi(mr_f, {var_text})"
@@ -770,7 +810,8 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # integral term — Maxima's diff knows d/dx ∫g dx = g, so such
     # answers verify normally (measured: 1.2.2.7 e1 carries a ∫-term
     # and its self-diff closes).
-    has_noun = "not is(freeof(unintegrable, mr_r))"
+    has_noun = ("not is(freeof(integrate, mr_r))" if integrator is not None
+                else "not is(freeof(unintegrable, mr_r))")
     # The inert-head leak test (INERT_HEADS above): first, in both
     # branches. freeof on an operator symbol tests whether that operator
     # occurs (freeof(%mr_isin, %mr_isin(x)) is false).
@@ -781,6 +822,8 @@ def build_text(f_text, var_text, e_text, e_text2=None):
             f"apply(concat, map(lambda([MR_h], concat(\" \", string(MR_h))), "
             f"sublist([{heads}], lambda([MR_h], not freeof(MR_h, mr_r)))))))) "
             "else ")
+    if integrator is not None:
+        leak = ""
     # Every switch is assigned at the head of the entry text, and the
     # depth-cap counter is reset with them, so the DEPTHCAP line below
     # counts this entry's cap hits only (exact seen test design 3.3).
@@ -792,7 +835,9 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # while VERIFYING, which is not a rubi timeout (classify_entry). It comes
     # after the queued prompt answers, which must directly follow the call
     # whose sign questions they answer.
-    head = (switches + "mr_depth_cap_hits : 0$\n"
+    if integrator is not None:
+        switches = ""
+    head = (switches + ("" if integrator is not None else "mr_depth_cap_hits : 0$\n")
             + f"mr_f: {f_text}$\n"
             + "mr_t0 : elapsed_run_time()$\n"
             f"mr_r: {call}$\n"
@@ -842,7 +887,8 @@ def build_text(f_text, var_text, e_text, e_text2=None):
     # entry loop parses it into the shard's .caps sidecar, which
     # test/merge_caps.py merges into the run's census (exact seen test
     # design 3.3).
-    depthcap = 'disp(concat("DEPTHCAP ", string(mr_depth_cap_hits)))'
+    depthcap = ('disp(concat("DEPTHCAP ", string(mr_depth_cap_hits)))'
+                if integrator is None else '0')
     return (head + body + "$\n" + depthcap + "$\n"
             + "pos$\n" * 40 + "no$\n" * 20)
 
@@ -962,29 +1008,18 @@ def classify_output(out, timed_out):
     return r.cls, r.caps
 
 
-def run_entry_full(rel, idx, entry_text, line_no):
-    """One corpus entry (ENTRY_TEXT as extract_entries returns it, IDX
-    0-based) through a fresh Maxima subprocess at the TIMEOUT + VERIFY_CAP
-    process cap: (class, result line, depth-cap hits, proof tag or None).
-    main() and test/run_corpus_queue.py both call it, so the two paths
-    cannot drift."""
-    els = split_elements(entry_text[1:-1])
-    label = f"{rel} e{idx + 1} L{line_no}"
-    if len(els) not in (4, 5):
-        return ("error", f"{'error':14s} t=0.0s {label} bad-entry-shape({len(els)})",
-                0, None)
-    f_text = normalize_heads(els[0])
-    var_text = els[1]
-    e_text = normalize_heads(els[3])
-    e_text2 = normalize_heads(els[4]) if len(els) == 5 else None
+def _run_once(label, f_text, var_text, e_text, e_text2, integrator=None):
+    """One Maxima subprocess for one entry at the TIMEOUT + VERIFY_CAP
+    process cap: (EntryResult, seconds). The seconds are the integrator's own
+    CPU (the ANSWERED line) -- the quantity the TIMEOUT cap bounds since
+    verification got its own budget. Without an ANSWERED line they are the
+    process's CPU seconds (under a CPU cap), or its wall (a wall-backstop
+    kill leaves no `times` dump)."""
     t_start = time.time()
     cpu_out = []
     out, timed_out = maxima_run(
-        build_text(f_text, var_text, e_text, e_text2), TIMEOUT + VERIFY_CAP, cpu_out)
-    # The record's t= is RUBI's CPU seconds (the ANSWERED line) -- the
-    # quantity the TIMEOUT cap bounds since verification got its own budget.
-    # Without an ANSWERED line it is the process's CPU seconds (under a CPU
-    # cap), or its wall (a wall-backstop kill leaves no `times` dump).
+        build_text(f_text, var_text, e_text, e_text2, integrator),
+        TIMEOUT + VERIFY_CAP, cpu_out)
     dt = time.time() - t_start
     if cpu_out and cpu_out[0] is not None:
         dt = cpu_out[0]
@@ -996,7 +1031,61 @@ def run_entry_full(rel, idx, entry_text, line_no):
         if leaked:
             sys.stderr.write(f"inert-leak {label}: the answer carries "
                              f"{', '.join(leaked)} (classified error)\n")
-    return r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", r.caps, r.proof
+    return r, dt
+
+
+def via_field(name, r, dt):
+    """`integrate=verified,0.1s,chainA.1`: one integrator's run in a .via line
+    (class, its CPU seconds, the checker's tag or `-`)."""
+    return f"{name}={r.cls},{dt:.1f}s,{r.proof or '-'}"
+
+
+def run_entry_detail(rel, idx, entry_text, line_no):
+    """One corpus entry (ENTRY_TEXT as extract_entries returns it, IDX
+    0-based): (class, result line, depth-cap hits, proof tag or None,
+    sidecars) where sidecars maps a sidecar suffix to this entry's line in it:
+    `via` for the native baseline, nothing for a package run. main() and
+    test/run_corpus_queue.py both call it, so the two paths cannot drift.
+
+    The native baseline (MR_BASELINE) runs `integrate` in its own process
+    and, when its class is in BASELINE_RETRY, `risch` in a second one -- a
+    fresh process, so an integrate that ran out its cap cannot starve risch
+    and nothing integrate asserted leaks into it; each has the full TIMEOUT
+    and VERIFY_CAP. The record takes risch's verdict only when risch PASSES;
+    otherwise it keeps integrate's class, time and tag. The .via line states
+    whose verdict that is and both runs:
+
+        <who> integrate=<class>,<cpu>s,<tag> risch=<class>,<cpu>s,<tag> <label>
+
+    with `risch=-` when risch was not run and `-` for a run that never
+    reached the checker."""
+    els = split_elements(entry_text[1:-1])
+    label = f"{rel} e{idx + 1} L{line_no}"
+    if len(els) not in (4, 5):
+        return ("error", f"{'error':14s} t=0.0s {label} bad-entry-shape({len(els)})",
+                0, None, {})
+    f_text = normalize_heads(els[0])
+    var_text = els[1]
+    e_text = normalize_heads(els[3])
+    e_text2 = normalize_heads(els[4]) if len(els) == 5 else None
+    if not BASELINE:
+        r, dt = _run_once(label, f_text, var_text, e_text, e_text2)
+        return r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", r.caps, r.proof, {}
+    r, dt = _run_once(label, f_text, var_text, e_text, e_text2, "integrate")
+    who, fields = "integrate", [via_field("integrate", r, dt), "risch=-"]
+    if r.cls in BASELINE_RETRY:
+        r2, dt2 = _run_once(label, f_text, var_text, e_text, e_text2, "risch")
+        fields[1] = via_field("risch", r2, dt2)
+        if r2.cls in PASS_CLASSES:
+            who, r, dt = "risch", r2, dt2
+    return (r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", 0, r.proof,
+            {"via": f"{who} {' '.join(fields)} {label}"})
+
+
+def run_entry_full(rel, idx, entry_text, line_no):
+    """run_entry_detail without the sidecars: (class, result line, depth-cap
+    hits, proof tag or None), the shape the committed probes unpack."""
+    return run_entry_detail(rel, idx, entry_text, line_no)[:4]
 
 
 def run_entry(rel, idx, entry_text, line_no):
@@ -1061,6 +1150,11 @@ def main():
     # reached the checker (.scratch/corpus-harness/issues/06).
     proofs_path = os.path.splitext(out_path)[0] + ".proof"
     prooff = open(proofs_path, "a" if APPEND else "w", encoding="utf-8")
+    # The per-entry sidecars of run_entry_detail: .via for the native
+    # baseline.
+    sidef = {k: open(os.path.splitext(out_path)[0] + "." + k, "a" if APPEND else "w",
+                     encoding="utf-8")
+             for k in (("via",) if BASELINE else ())}
     outf.write("\n".join(out_lines) + "\n")
     outf.flush()
     for fi, (path, rel) in enumerate(files):
@@ -1076,8 +1170,11 @@ def main():
             lo = SKIP_FIRST if fi == 0 else 0
             hi = min(lo + PER_FILE, len(entries))
         for idx in range(lo, hi):
-            cls, line, caps, proof = run_entry_full(rel, idx, entries[idx],
-                                                    line_nos[idx])
+            cls, line, caps, proof, sides = run_entry_detail(
+                rel, idx, entries[idx], line_nos[idx])
+            for k, v in sides.items():
+                sidef[k].write(v + "\n")
+                sidef[k].flush()
             if caps > 0:
                 capsf.write(f"{caps} {rel} e{idx + 1} L{line_nos[idx]}\n")
                 capsf.flush()
@@ -1109,6 +1206,8 @@ def main():
     outf.close()
     capsf.close()
     prooff.close()
+    for fh in sidef.values():
+        fh.close()
     print("\n".join(out_lines[-8:]) + "\n")
 
 

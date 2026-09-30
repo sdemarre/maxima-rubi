@@ -621,6 +621,7 @@ python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
 python3 test/test_head_rewrites.py          # Results: 70 passed, 0 failed
 python3 test/test_driver_proof.py           # Results: 29 passed, 0 failed
 python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
+python3 test/test_driver_baseline.py        # Results: 31 passed, 0 failed
 maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 55 passed, 0 failed
 ```
 
@@ -657,6 +658,28 @@ censused against the merged record by `test/merge_proof.py RECORD OUT`; the
 `filter:` line states `verify: 30s cpu, stage 5s`, and the merger carries it.
 Records without that field predate the checker and are NOT comparable on
 `verified`/`unverified`/`timeout`.
+
+**The native baseline** (`MR_BASELINE=1`, user decision 2026-09-30; guarded by
+`test_driver_baseline`) is the driver itself in stock Maxima — no package, no
+rules core — calling `integrate`, and `risch` in a second fresh process when
+integrate's class is `timeout`/`error`/`deferred`/`contains-noun`/`unverified`.
+Each has the 30 s CPU cap and the checker's own budget, so a baseline record
+and a rubi record are read with one ruler. The record takes risch's verdict
+only when risch passes. An `integrate` noun ANYWHERE in the result is no
+answer (`deferred` at top level, `contains-noun` inside): diff sees through
+the noun, so `2*'integrate(foo(x),x) + x^2/2` would otherwise be proved
+correct. The shard's **`.via` sidecar** has one line per entry,
+`<who> integrate=<class>,<cpu>s,<tag> risch=<class>,<cpu>s,<tag> <label>`
+(`risch=-` when not run), merged and censused by
+`test/merge_via.py RECORD OUT GLOB`; the `.proof` sidecar is written as for
+any run. The arm on the `filter:` line is `none (native integrate+risch
+baseline)`; shard names carry `.baseline` (`corpus_class<N>.baseline.shard*`).
+All classes: `setsid sh test/baseline_measure.sh > test/baseline_measure.log 2>&1 < /dev/null &`
+(one class: `MR_BASELINE=1 python3 test/run_corpus_queue.py "<SECTION>" --workers 24 --launch`).
+The old probe `probes/corpus/probe-integrate-sample.py` / `test/run_baseline_pool.py`
+(wall cap, four-stage zero chain, no head normalisation, arm `none (native
+integrate baseline)`) reproduces the pre-2026-09-30 baseline records only; the
+two kinds are NOT comparable.
 
 `test_driver_inert_leak` guards the inert-head leak classification: an answer
 carrying any of the six inert trig heads (`%mr_isin` … `%mr_icsc`, the bridge
