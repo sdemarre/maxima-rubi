@@ -1,0 +1,46 @@
+/* probes/verify-stages/06-principal-branch-4.1.0.mac -- one entry of the
+   4.1.0 group the 02 triage read as rubi wrong answers (handoff
+   2026-09-28-checker-wrong-answers, category 2: e304 e305 e309 e310 e314
+   e315 e320). Run by 06-principal-branch-4.1.0.sh, which substitutes the
+   label for LABEL and the integrand for GG. Prints, per entry:
+     FD    x0 |fd - f|   central difference (h = 1e-5) of rubi's answer
+                         against the integrand, both evaluated under
+                         domain:complex + radexpand:false (principal values)
+     RDEF  x0 |d|        the checker's residual diff(r, x) - f built AND
+                         evaluated under Maxima's defaults (what 05 read)
+     RFLG  x0 |d|        the residual built and evaluated under the flags
+     SYM   arm result    mr_proof_symbolic on the residual (stage cap 30 s);
+                         arm def/flg = default flags / the two flags
+     HB    arm result    the same after rewriting every 2F1(a,b;b+1;z) in
+                         rubi's answer to b*z^(-b)*beta_incomplete(b,1-a,z)
+                         BEFORE diff (DLMF 8.17.7) -- a diagnostic only, not
+                         a checker stage (user decision 2026-09-28) */
+load("test/mr_verify.mac")$
+display2d : false$
+mr_stage_cap : 30$
+pb_subs : [b = 1.3, e = 1.1, f = 0.8]$
+pb_nv(pb_g, pb_x0) := expand(float(rectform(float(ev(pb_g, append(pb_subs, [x = pb_x0]))))))$
+pb_nvc(pb_g, pb_x0) := block([domain : complex, radexpand : false], pb_nv(pb_g, pb_x0))$
+pb_hb(pb_e) := scanmap(lambda([pb_u], if not atom(pb_u) and op(pb_u) = 'hypergeometric
+     and length(first(pb_u)) = 2 and length(second(pb_u)) = 1 then
+     block([pb_a : first(pb_u)[1], pb_b : first(pb_u)[2], pb_c : second(pb_u)[1], pb_z : third(pb_u)],
+       if pb_c = pb_b + 1 then pb_b*pb_z^(-pb_b)*beta_incomplete(pb_b, 1 - pb_a, pb_z)
+       else if pb_c = pb_a + 1 then pb_a*pb_z^(-pb_a)*beta_incomplete(pb_a, 1 - pb_b, pb_z)
+       else pb_u)
+     else pb_u), pb_e)$
+pb_gg : GG$
+pb_r : rubi(pb_gg, x)$
+pb_ddef : diff(pb_r, x) - pb_gg$
+pb_dflg : block([domain : complex, radexpand : false], diff(pb_r, x) - pb_gg)$
+for pb_x0 in [0.35, 0.65] do (
+  printf(true, "LABEL FD ~a ~a~%", pb_x0,
+         cabs((pb_nvc(pb_r, pb_x0 + 1e-5) - pb_nvc(pb_r, pb_x0 - 1e-5))/2e-5 - pb_nvc(pb_gg, pb_x0))),
+  printf(true, "LABEL RDEF ~a ~a~%", pb_x0, cabs(pb_nv(pb_ddef, pb_x0))),
+  printf(true, "LABEL RFLG ~a ~a~%", pb_x0, cabs(pb_nvc(pb_dflg, pb_x0))))$
+printf(true, "LABEL SYM def ~a~%", string(mr_proof_symbolic(pb_ddef, mr_proof_stages)))$
+printf(true, "LABEL SYM flg ~a~%",
+       string(block([domain : complex, radexpand : false], mr_proof_symbolic(pb_dflg, mr_proof_stages))))$
+printf(true, "LABEL HB def ~a~%", string(mr_proof_symbolic(diff(pb_hb(pb_r), x) - pb_gg, mr_proof_stages)))$
+printf(true, "LABEL HB flg ~a~%",
+       string(block([domain : complex, radexpand : false],
+                    mr_proof_symbolic(diff(pb_hb(pb_r), x) - pb_gg, mr_proof_stages))))$

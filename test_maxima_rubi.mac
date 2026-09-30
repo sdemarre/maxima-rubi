@@ -161,6 +161,7 @@ run_all_tests() := block([],
   test_subst_simp_switch(),
   test_gtq_real_reading(),
   test_partial_fraction_structure(),
+  test_rubi_errata(),
   test_class4_cluster_a(),
   test_class4_free_factors(),
   test_class4_cluster_b(),
@@ -338,6 +339,64 @@ test_pred_cluster1() := block([],
   check("coeff x^2+2x+1 (x^2)", %mr_coeff(x^2 + 2*x + 1, x, 2), 1),
   check("coeff x", %mr_coeff(x, x, 1), 1),
   check("coeff x+1", %mr_coeff(x + 1, x, 1), 1),
+  /* a polynomial written with fractions (Rubi's Coeff, IntegrationUtility-
+     Functions.m:1249: Coefficient of expr, else of Together[expr] when the
+     two differ). -(e*x)/(e*x+d) - d/(e*x+d) is -1; read without Together
+     every coefficient was 0 and 1_1_3_7 r37 turned 1.2.1.4 e122's
+     integral into Int[0] (probes/verify-stages/03-zero-integrand-trace) */
+  check("coeff fraction-form constant, n=0",
+        %mr_coeff(-(e*x)/(e*x+d) - d/(e*x+d), x, 0), -1),
+  check("coeff fraction-form constant, n=1",
+        %mr_coeff(-(e*x)/(e*x+d) - d/(e*x+d), x, 1), 0),
+  check("coeff fraction-form linear, n=1",
+        %mr_coeff(x^2/(x+1) + x/(x+1), x, 1), 1),
+  /* the Together value is num/denom: content rat() moves below the line
+     comes back out (the 1.2.1.6 r4 lesson in %mr_coeff3's comment) */
+  check("coeff fraction-form keeps symbolic content",
+        %mr_coeff(c^3*x^2/(x+1) + c^3*x/(x+1), x, 1), c^3),
+  check("coeff powered form of a fraction-form polynomial",
+        %mr_coeff(x^4/(x^2+1) + x^2/(x^2+1), x, 2, 1), 1),
+  /* an x-free term whose head is not "^": op(sqrt(3)) is sqrt, so the
+     term walkers dropped it -- 1_1_3_8 r17 read Coeff[1+sqrt(3)+x, x, 0]
+     as 1 and r9 read x+sqrt(3) as having no constant term, and 1.3.2
+     e129-e136 lost the sqrt(3) share of their atanh/atan term
+     (probes/verify-stages/05-wrong-answer-traces) */
+  check("coeff constant sqrt(3), n=0", %mr_coeff(x + sqrt(3) + 1, x, 0), sqrt(3) + 1),
+  check("coeff lone sqrt(3), n=0", %mr_coeff(x + sqrt(3), x, 0), sqrt(3)),
+  check("coeff symbolic sqrt, n=0", %mr_coeff(x + sqrt(a), x, 0), sqrt(a)),
+  check("coeff sqrt factor, n=1", %mr_coeff(sqrt(3)*x + 1, x, 1), sqrt(3)),
+  check_bool("degree 1+sqrt(3)+x", is(%mr_degree(1 + sqrt(3) + x, x) = 1)),
+  /* and the converse: an x-free BASE with x in the exponent is not a
+     constant (2^x was read as degree 0) */
+  check_bool("degree 2^x (not a polynomial)", is(%mr_degree(2^x, x) = -1)),
+  check("coeff 2^x + 1, n=0", %mr_coeff(2^x + 1, x, 0), 1),
+  /* PolyQ[u, x^v]: a single PRODUCT is one term, not a list of terms --
+     the walk took %e^atanh(a*x)*x^3 factor by factor, read x^3 as a
+     monomial and %e^atanh(a*x) as a constant, and 1_1_3_7 r44 fired on
+     7.3.6 e899/e911/e1059/e1069 and answered 0 */
+  check_not("polyPowerQ exp(atanh)*x^3 in x", %mr_polyPowerQ(%e^atanh(a*x)*x^3, x, 1)),
+  check_not("polyDegPowerQ exp(atanh)*x^3 deg 3",
+            %mr_polyDegPowerQ(%e^atanh(a*x)*x^3, x, 1, 3)),
+  check_bool("polyPowerQ b*x^4 in x^2", %mr_polyPowerQ(b*x^4, x, 2)),
+  check_bool("polyDegPowerQ b*x^4 deg 2 in x^2", %mr_polyDegPowerQ(b*x^4, x, 2, 2)),
+  check_not("polyPowerQ b*x^3 in x^2", %mr_polyPowerQ(b*x^3, x, 2)),
+  /* Mathematica's (-1)^r is the principal value exp(i*pi*r); Maxima's
+     domain:real simplifies (-1)^(2/3) and (-1)^(4/3) to 1 and (-1)^(1/3)
+     to -1, so 9_3 r60's roots of unity (-1)^(2*k/n) collapsed and
+     1/(1+tan(x)^3) got three identical partial fractions (4.3.7 e380,
+     4.4.7 e59, 6.3.7 e258, 6.4.7 e50; 2026-09-28). The generator emits
+     %mr_neg1pow for every Power[-1, e]. */
+  check("neg1pow 2/3", rectform(%mr_neg1pow(2/3)), -1/2 + sqrt(3)*%i/2),
+  check("neg1pow 4/3", rectform(%mr_neg1pow(4/3)), -1/2 - sqrt(3)*%i/2),
+  check("neg1pow 1/3", rectform(%mr_neg1pow(1/3)), 1/2 + sqrt(3)*%i/2),
+  check("neg1pow 1/2", rectform(%mr_neg1pow(1/2)), %i),
+  check("neg1pow integer even", %mr_neg1pow(2), 1),
+  check("neg1pow integer odd", %mr_neg1pow(3), -1),
+  check("neg1pow symbolic stays (-1)^m", %mr_neg1pow(m), (-1)^m),
+  /* 5_3_6 r41/r70 carry (-1)^(%i*n/2): Maxima itself already gives
+     Mathematica's exp(i*pi*e) for an imaginary e (measured 2026-09-28), so
+     %mr_neg1pow's (-1)^e fall-through is right there -- pinned */
+  check("neg1pow complex constant", rectform(%mr_neg1pow(%i)), %e^(-%pi)),
   check_bool("degree x^2", is(%mr_degree(x^2, x) = 2)),
   check_bool("degree x^2+1", is(%mr_degree(x^2 + 1, x) = 2)),
   /* totality: a non-polynomial returns the -1 sentinel, never a boolean */
@@ -2724,6 +2783,24 @@ test_class2_cluster_c() := block([],
   check_bool("fullSimplify: quotient keeps quotient",
     is(ratsimp(denom(%mr_fullSimplify(G1*H1*log(G2)/(D1*E1*log(F1))))
                - D1*E1*log(F1)) = 0)),
+  /* FullSimplify reduces a ratio of logs of commensurable numbers
+     (Log[2]/Log[4] -> 1/2); ratsimp alone does not. Unreduced, 2.3 e725
+     (1+4^x)/(1+1/2^x) carried x^(2*log(2)/log(4)) through 2_3 r96, and
+     its 2F1 parameters floated to 3+-eps: the answer evaluated to -1e15
+     (handoffs/2026-09-28-checker-wrong-answers, category 5). */
+  check("fullSimplify: 2*log(2)/log(4) = 1",
+    %mr_fullSimplify(2*log(2)/log(4)), 1),
+  check("fullSimplify: log(1/8)*B/(log(4)*D1) = -3*B/(2*D1)",
+    %mr_fullSimplify(log(1/8)*B/(log(4)*D1)), -3*B/(2*D1)),
+  check_bool("fullSimplify: log(6)/log(2) = 1 + log(3)/log(2)",
+    is(ratsimp(%mr_fullSimplify(log(6)/log(2)) - (1 + log(3)/log(2))) = 0)),
+  check_bool("fullSimplify: a symbolic log ratio is left alone",
+    is(%mr_fullSimplify(log(G2)/log(F1)) = log(G2)/log(F1))),
+  /* X stands for 2^X: 4^X -> X^2, 1/2^X -> 1/X */
+  check("foEF: (1+4^x)/(1+1/2^x) -> (X^3+X)/(X+1)",
+    %mr_functionOfExponentialFunction((1+4^X)/(1+1/2^X), X), (X^3+X)/(X+1)),
+  check_bool("foEF: (1+4^x)/(1+1/2^x) carries no log",
+    freeof(log, %mr_functionOfExponentialFunction((1+4^X)/(1+1/2^X), X))),
   true
 )$
 
@@ -5853,6 +5930,52 @@ test_partial_fraction_structure() := block([mr_pf_saved, mr_pf_ok, mr_pf_u, mr_p
     check_bool("1_1_1_2 r13: the answer carries log(b*x+a) and log(d*x+c)",
           not freeof(log(b*x + a), mr_pf_r) and not freeof(log(d*x + c), mr_pf_r))),
   mr_rule_table : mr_pf_saved,
+  true
+)$
+
+/* ---- upstream errata (generator RUBI_ERRATA, 2026-09-28) ----
+   Rubi's 1.1.2.6 r13/r14 split (e+f x^2)^r against (g x)^m with f/e^2 where
+   x^2*(g x)^m = (g x)^(m+2)/g^2 gives f/g^2. 7.2.4b e96 / 7.2.5 e50
+   ((a+b*acosh(c*x))/(d+e*x^2)^(5/2)) reach r13 through 1_1_2_6 r7 and
+   answered wrong (handoffs/2026-09-28-checker-wrong-answers, category 3).
+   The check is the split's defining identity: with an empty table the
+   inner integrals stay nouns ('integrate here, 'unintegrable in the rules
+   core); put each noun's integrand back
+   and the sum must be the original integrand. */
+test_rubi_errata() := block([mr_er_saved, mr_er_ok, mr_er_back, mr_er_f, mr_er_r],
+  print("--- upstream errata: 1_1_2_6 r13/r14 ---"),
+  mr_er_back : lambda([mr_er_e], scanmap(lambda([mr_er_t],
+      if not atom(mr_er_t) and member(op(mr_er_t), [nounify(unintegrable),
+                                                    nounify(integrate)])
+        then first(mr_er_t) else mr_er_t), mr_er_e)),
+  mr_er_ok : errcatch(%mr_load_sibling("rules/class1/1_1_2_6.mac",
+                                       'mr_witness_1_1_2_6), true),
+  check_bool("errata: 1_1_2_6 loads", is(mr_er_ok # [])),
+  if mr_er_ok # [] then (
+    mr_er_saved : mr_rule_table,
+    mr_rule_table : [],
+    mr_er_f : (g*x)^m*(a+b*x^2)^p*(c+d*x^2)^q*(e+f*x^2),
+    mr_er_r : %mr_rule_apply(_mr_rule_1_1_2_6_r13, mr_er_f, x),
+    check("errata: 1_1_2_6 r13 splits (e+f x^2) exactly",
+          radcan(mr_er_back(mr_er_r) - mr_er_f), 0),
+    mr_er_f : (g*x)^m*(a+b*x^2)^p*(c+d*x^2)^q*(e+f*x^2)^3,
+    mr_er_r : %mr_rule_apply(_mr_rule_1_1_2_6_r14, mr_er_f, x),
+    check("errata: 1_1_2_6 r14 splits (e+f x^2)^3 exactly",
+          radcan(mr_er_back(mr_er_r) - mr_er_f), 0),
+    mr_rule_table : mr_er_saved),
+  /* 4.1.0.2 r18, (a sec)^m (b tan)^n for odd n: the source leaves b out of
+     FreeQ and out of the RHS. 4.7.7 e865's sqrt(csc(x))*sec(x)*tan(x)
+     bound b = sqrt(csc(x)) and the RHS dropped it (category 6). */
+  mr_er_ok : errcatch(%mr_load_sibling("rules/class4/4_1_0_2.mac",
+                                       'mr_witness_4_1_0_2), true),
+  check_bool("errata: 4_1_0_2 loads", is(mr_er_ok # [])),
+  if mr_er_ok # [] then (
+    check_bool("errata: 4_1_0_2 r18 refuses an x-dependent b",
+      is(%mr_rule_accept(_mr_rule_4_1_0_2_r18,
+                         sqrt(%mr_icsc(x))*%mr_isec(x)*%mr_itan(x), x) = false)),
+    check_bool("errata: 4_1_0_2 r18 still takes sec*tan^3 (b = 1)",
+      is(%mr_rule_accept(_mr_rule_4_1_0_2_r18, %mr_isec(x)*%mr_itan(x)^3, x)
+         # false))),
   true
 )$
 

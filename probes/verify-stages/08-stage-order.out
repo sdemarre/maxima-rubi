@@ -1,0 +1,134 @@
+probes/verify-stages/08-stage-order -- the checker's stage-order A/B (.scratch/corpus-harness/issues/06
+items 1 and 4), 2026-09-29 06:48-07:34 CEST, branch coeff-together @ ec6838d, build
+branch_5_50_base_84_g4204fb669 / SBCL 2.6.7, rules core fingerprint c01ce534 (7,776 rules).
+Queue runner subset mode, 12 workers, arms sequential; 30 s cpu rubi + 30 s verification, 5 s per stage.
+  arm A: the checker's own mr_proof_stages (rectform third in the radcan family)
+  arm B: MR_PROOF_STAGES with rectform LAST, after rat-radcan
+Entries (08-stage-order-entries.py, from test/corpus_class<N>.geteqr.out = master b62d6d7, old checker):
+  unverified -- all 1,551 `unverified` entries;
+  control    -- 1,000 `verified` entries, proportional per class, floor 25, seed 20260929.
+
+== findings
+- The order changes NO verdict: 0 class transitions in either set. Wall per arm is the same
+  (unverified 13.0 / 13.2 min, control 6.2 / 5.7 min).
+- Moving rectform last does not remove its cost: 351 -> 356 rectform stage timeouts on the
+  unverified set. Those entries are unprovable, so every stage runs in any order.
+- rectform is the ONLY stage that proves 9 of the 2,551 entries (arm B, where it runs last): 1.2.1.2
+  e1376, 3.5 e169/e210, 4.1.10 e33, 4.2.7 e80/e83, 4.6.11 e38, 6.2.7 e70/e73. 5 more that it
+  closed in arm A are closed by logarc once rectform runs after it.
+- Heap: 7 entries reach the heap guard in both arms (1.2.1.2 e724, 1.2.1.4 e369/e373, 4.5.1.2
+  e713-e716). In arm A, rectform's garbage also stops the stages after it (trigexpand, demoivre).
+- rat-radcan is the only stage that proves 1 entry (5.1.4a e439, arm B, where only rectform follows it).
+- Control: 1,000 / 1,000 still PASS; 135 move verified -> expected (the self-diff is not proved, the
+  expected-diff is: by design). 34 (3.4 %) pass on the numeric check only (21 of them after a
+  stage timeout); by section 1.2 10, 1.1 9, 4.5 5, 4.2 3, 4.1 2, 2.3/4.3/7.3/7.5/7.6 1.
+- The unverified set under this branch: 546 of 1,551 now PASS (356 verified, 190 expected); 36
+  numeric mismatches remain (master's triage had ~190).
+
+== report (08-stage-order-report.py)
+==== unverified: 1551 entries
+  arm A: 1551 results, 0 missing, wall 13.0 min
+   expected 190  timeout 1  unverified 1004  verified 356
+  arm B: 1551 results, 0 missing, wall 13.2 min
+   expected 190  timeout 1  unverified 1004  verified 356
+  class transitions A -> B (0):
+  arm A closing stage (proof tag's first part):
+     1004 none
+      342 exponentialize
+       71 chainA.1
+       67 logarc
+       41 radcan
+       13 demoivre
+        8 rectform
+        4 numeric
+  arm A stages abandoned (492 stage timeouts, 7 entries with (heap)):
+      351 rectform
+       58 demoivre
+       28 trigexpand
+       25 chainB.2
+       19 exponentialize
+        5 chainB.1
+        3 chainA.3
+        2 chainB.3
+        1 rat-radcan
+  arm B closing stage (proof tag's first part):
+     1004 none
+      342 exponentialize
+       71 chainA.1
+       69 logarc
+       41 radcan
+       13 demoivre
+        6 rectform
+        4 numeric
+  arm B stages abandoned (502 stage timeouts, 7 entries with (heap)):
+      356 rectform
+       56 demoivre
+       28 trigexpand
+       26 chainB.2
+       20 exponentialize
+        5 chainB.1
+        3 chainA.3
+        3 logarc
+        2 rat-radcan
+        2 chainB.3
+        1 chainA.1
+  closing stage changed A -> B (2):
+        2 rectform -> logarc
+
+==== control: 1000 entries
+  arm A: 1000 results, 0 missing, wall 6.2 min
+   expected 135  verified 865
+  arm B: 1000 results, 0 missing, wall 5.7 min
+   expected 135  verified 865
+  class transitions A -> B (0):
+  arm A closing stage (proof tag's first part):
+      553 chainA.1
+      325 exponentialize
+       39 logarc
+       34 numeric
+       23 radcan
+        8 trigexpand
+        6 rectform
+        5 chainA.2
+        4 demoivre
+        1 chainB.1
+        1 rat-radcan
+        1 chainA.3
+  arm A stages abandoned (30 stage timeouts, 0 entries with (heap)):
+       12 rectform
+        5 chainB.2
+        4 chainA.3
+        2 exponentialize
+        2 demoivre
+        2 trigexpand
+        1 chainB.1
+        1 logarc
+        1 radcan
+  arm B closing stage (proof tag's first part):
+      553 chainA.1
+      325 exponentialize
+       42 logarc
+       34 numeric
+       23 radcan
+        8 trigexpand
+        5 chainA.2
+        4 demoivre
+        3 rectform
+        1 chainB.1
+        1 rat-radcan
+        1 chainA.3
+  arm B stages abandoned (29 stage timeouts, 0 entries with (heap)):
+       12 rectform
+        5 chainB.2
+        4 chainA.3
+        2 demoivre
+        2 trigexpand
+        1 chainB.1
+        1 exponentialize
+        1 logarc
+        1 radcan
+  closing stage changed A -> B (3):
+        3 rectform -> logarc
+  arm A vs the old checker (all were verified): 0 no longer pass (none); 135 now `expected` (a PASS); numeric-only passes 34
+  arm B vs the old checker (all were verified): 0 no longer pass (none); 135 now `expected` (a PASS); numeric-only passes 34
+

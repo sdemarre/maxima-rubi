@@ -177,5 +177,52 @@ body = g.emit_rule(("Int[a_*b_,x_Symbol]", "a", cond), "t4", 1, {"a", "b"})
 check("class 4: === emits a single =", "_mr_t4_r1_a=-_mr_t4_r1_b" in body, True)
 check("class 4: no == left from ===", "==" in body, False)
 
+# Power[-1, e] -> %mr_neg1pow(e) (2026-09-28): Maxima's domain:real reads
+# (-1)^(2/3) as 1, collapsing 9_3 r60's roots of unity. A parenthesized
+# operand loses its parentheses; a call or a name is taken whole.
+check("neg1pow: parenthesized operand",
+      g.wrap_neg1pow("a*(-1)^(2*k/n)*b"), "a*%mr_neg1pow(2*k/n)*b")
+check("neg1pow: call operand",
+      g.wrap_neg1pow("x/((-1)^%mr_intPart(p)*c)"), "x/(%mr_neg1pow(%mr_intPart(p))*c)")
+check("neg1pow: name operand", g.wrap_neg1pow("(-1)^m*u"), "%mr_neg1pow(m)*u")
+check("neg1pow: nested inside the operand",
+      g.wrap_neg1pow("(-1)^(k*(-1)^(1/3))"), "%mr_neg1pow(k*%mr_neg1pow(1/3))")
+check("neg1pow: no Power[-1, e] leaves the text alone",
+      g.wrap_neg1pow("(x-1)^(2/3) + (-1)*u"), "(x-1)^(2/3) + (-1)*u")
+
+# Upstream errata (2026-09-28): Rubi's 1.1.2.6 r13/r14 split (e+f x^2)
+# against (g x)^m with f/e^2 where the algebra gives f/g^2 (7.2.4b e96,
+# 7.2.5 e50 answered wrong). The fix is exact text, and loud when the text
+# is not found exactly once.
+_R13 = ("e \\[Star] Int[(g*x)^m*(a+b*x^2)^p*(c+d*x^2)^q,x] + "
+        "f/e^2 \\[Star] Int[(g*x)^(m+2)*(a+b*x^2)^p*(c+d*x^2)^q,x]")
+check("errata: 1_1_2_6 r13 f/e^2 -> f/g^2",
+      g.apply_errata(_R13, "1_1_2_6", 13, "rhs"), _R13.replace("f/e^2", "f/g^2"))
+check("errata: 1_1_2_6 r14 f/e^2 -> f/g^2",
+      g.apply_errata(_R13, "1_1_2_6", 14, "rhs"), _R13.replace("f/e^2", "f/g^2"))
+check("errata: a rule without an erratum passes through",
+      g.apply_errata(_R13, "1_1_2_6", 12, "rhs"), _R13)
+check("errata: a part the erratum does not name passes through",
+      g.apply_errata(_R13, "1_1_2_6", 13, "cond"), _R13)
+for label, text in (("absent", _R13.replace("f/e^2", "f/c^2")),
+                    ("twice", _R13 + " + f/e^2")):
+    try:
+        g.apply_errata(text, "1_1_2_6", 13, "rhs")
+        outcome = "no error"
+    except g.GenError:
+        outcome = "GenError"
+    check(f"errata: the old text {label} raises GenError", outcome, "GenError")
+# 4.1.0.2 r18 (a sec)^m (b tan)^n: the source leaves b out of FreeQ and out
+# of the RHS, so b may bind an x-dependent factor (4.7.7 e865: b =
+# sqrt(csc(x)), dropped) and a constant b loses its b^n.
+_R18_RHS = "a/f*Subst[Int[(a*x)^(m - 1)*(-1 + x^2)^((n - 1)/2), x], x, Sec[e + f*x]]"
+_R18_COND = ("FreeQ[{a, e, f, m}, x] && IntegerQ[(n - 1)/2] && "
+             "Not[IntegerQ[m/2] && LtQ[0, m, n + 1]]")
+check("errata: 4_1_0_2 r18 RHS gains b^n",
+      g.apply_errata(_R18_RHS, "4_1_0_2", 18, "rhs"), "b^n*" + _R18_RHS)
+check("errata: 4_1_0_2 r18 cond puts b in FreeQ",
+      g.apply_errata(_R18_COND, "4_1_0_2", 18, "cond"),
+      _R18_COND.replace("FreeQ[{a, e, f, m}, x]", "FreeQ[{a, b, e, f, m}, x]"))
+
 print(f"Results: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

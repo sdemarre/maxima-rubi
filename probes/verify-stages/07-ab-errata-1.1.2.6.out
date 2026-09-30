@@ -1,0 +1,30 @@
+# test/ab_records.py <base> <new> --all; records from 07-ab-runner.py over classes 5 and 7
+# and class 1's 1.1.2.4-1.1.2.6 files; base core e5a9d89, new core 4763cab (1.1.2.6
+# r13/r14 erratum); same checker; 2026-09-28/29, build branch_5_50_base_84_g4204fb669.
+base: /tmp/claude-1000/-home-serge-src-maxima-rubi/f7b8f0dd-72d3-438f-8805-e1a113d51eb5/scratchpad/e.base.out (12459 entries)
+new:  /tmp/claude-1000/-home-serge-src-maxima-rubi/f7b8f0dd-72d3-438f-8805-e1a113d51eb5/scratchpad/e.new.out (12459 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS  10913
+PASS->FAIL      0
+FAIL->PASS      4
+FAIL->FAIL   1542
+
+=== class transitions (changed only) ===
+    2  unverified -> verified
+    2  unverified -> expected
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     1  7 Inverse hyperbolic functions/7.2 Inverse hyperbolic cosine/7.2.4b (f x)^m (d+e x^2)^p (a+b arccosh(c x))^n.mac
+    0     1  7 Inverse hyperbolic functions/7.2 Inverse hyperbolic cosine/7.2.5 Inverse hyperbolic cosine functions.mac
+    0     2  7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac
+
+=== PASS->FAIL (0) ===
+
+=== FAIL->PASS (4) ===
+  unverified    -> verified      t=0.9s -> t=0.9s 7 Inverse hyperbolic functions/7.2 Inverse hyperbolic cosine/7.2.4b (f x)^m (d+e x^2)^p (a+b arccosh(c x))^n.mac e96
+  unverified    -> verified      t=0.9s -> t=0.9s 7 Inverse hyperbolic functions/7.2 Inverse hyperbolic cosine/7.2.5 Inverse hyperbolic cosine functions.mac e50
+  unverified    -> expected      t=0.2s -> t=0.2s 7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e769
+  unverified    -> expected      t=0.2s -> t=0.2s 7 Inverse hyperbolic functions/7.4 Inverse hyperbolic cotangent/7.4.2 Exponentials of inverse hyperbolic cotangent functions.mac e771
+ALLDONE

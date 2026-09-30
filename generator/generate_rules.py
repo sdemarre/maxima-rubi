@@ -2089,6 +2089,98 @@ def _assign_in_test(test, cassigns, ctx, key, n):
     return test
 
 
+_NEG1POW_NAME = re.compile(r"[%A-Za-z_][%A-Za-z0-9_]*")
+
+
+def _close_paren(s, i):
+    """The index just past the ) that closes the ( at s[i]."""
+    depth = 0
+    for j in range(i, len(s)):
+        depth += (s[j] == "(") - (s[j] == ")")
+        if depth == 0:
+            return j + 1
+    raise GenError(f"unbalanced parentheses at {i} in {s!r}")
+
+
+def wrap_neg1pow(s):
+    """Every (-1)^<operand> in the translated text S -> %mr_neg1pow(<operand>)
+    (2026-09-28). Mathematica's Power[-1, e] is the principal value
+    exp(i*pi*e); Maxima's domain:real reads (-1)^(2/3) as 1, collapsing the
+    roots of unity of 9_3 r59/r60 and 4_1_7 r43 (see %mr_neg1pow in
+    maxima_rubi_utils.mac). The operand is a parenthesized group (emitted
+    without its parentheses) or a name, optionally called. Recursive, so an
+    operand that itself carries (-1)^ is wrapped too."""
+    out, i = [], 0
+    while True:
+        j = s.find("(-1)^", i)
+        if j < 0:
+            out.append(s[i:])
+            return "".join(out)
+        out.append(s[i:j])
+        k = j + len("(-1)^")
+        if k < len(s) and s[k] == "(":
+            e = _close_paren(s, k)
+            operand = s[k + 1:e - 1]
+        else:
+            m = _NEG1POW_NAME.match(s, k)
+            if not m:
+                raise GenError(f"(-1)^ with an operand not understood at {k} in {s!r}")
+            e = m.end()
+            if e < len(s) and s[e] == "(":
+                e = _close_paren(s, e)
+            operand = s[k:e]
+        out.append(f"%mr_neg1pow({wrap_neg1pow(operand)})")
+        i = e
+
+
+# Upstream errata: rules whose Rubi source is mathematically wrong, fixed as
+# exact text in the Mathematica source before translation. Each entry is
+# (key, n) -> [(part, old, new), ...] with part "rhs" or "cond" (the outer
+# condition); each old text must occur exactly once in its part.
+#
+# 1.1.2.6 r13/r14 (added to Rubi in the 2023-12 release f7fa0fd, unchanged
+# at the pinned commit): Int[(g x)^m (a+b x^2)^p (c+d x^2)^q (e+f x^2)^r]
+# splits the last factor as e*(...)^(r-1) + f*x^2*(...)^(r-1), and
+# x^2*(g x)^m = (g x)^(m+2)/g^2, so the second term's coefficient is f/g^2;
+# the source has f/e^2. Found 2026-09-28 on 7.2.4b e96 / 7.2.5 e50
+# ((a+b*acosh(c*x))/(d+e*x^2)^(5/2)), which reach r13 through 1_1_2_6 r7
+# and answered wrong; with f/g^2 both answers pass a principal-branch
+# finite difference (handoffs/2026-09-28-checker-wrong-answers,
+# category 3).
+#
+# 4.1.0.2 r18 (the same in the 2018 Rubi): Int[(a sec)^m (b tan)^n] ->
+# a/f*Subst[...] for odd n, with b neither in FreeQ nor in the RHS. So b
+# may bind an x-dependent factor: 4.7.7 e865's sqrt(csc(x))*sec(x)*tan(x)
+# matched with b = sqrt(csc(x)), which the RHS dropped (the answer lost the
+# term's elliptic part). A constant b != 1 loses its b^n too: for odd n,
+# (b tan)^n = b^n tan^n. Fix: b in FreeQ, b^n on the RHS. Found 2026-09-28
+# (category 6); with the FreeQ alone e865's answer passes a principal-branch
+# finite difference.
+#
+# The P3 gate undoes the class 1-3 entries (test/check_generated_rules.py
+# undo_errata).
+RUBI_ERRATA = {
+    ("1_1_2_6", 13): [("rhs", "f/e^2", "f/g^2")],
+    ("1_1_2_6", 14): [("rhs", "f/e^2", "f/g^2")],
+    ("4_1_0_2", 18): [("rhs", "a/f*Subst[", "b^n*a/f*Subst["),
+                      ("cond", "FreeQ[{a, e, f, m}, x]", "FreeQ[{a, b, e, f, m}, x]")],
+}
+
+
+def apply_errata(text, key, n, part):
+    """TEXT (rule KEY rN's PART, "rhs" or "cond") with its RUBI_ERRATA fixes
+    applied; TEXT itself when there are none. GenError unless each old text
+    occurs exactly once."""
+    for p, old, new in RUBI_ERRATA.get((key, n), []):
+        if p != part:
+            continue
+        if text.count(old) != 1:
+            raise GenError(f"{key} r{n}: erratum expects exactly one {old!r} "
+                           f"in the {part}, found {text.count(old)}")
+        text = text.replace(old, new)
+    return text
+
+
 def emit_rule(run, key, n, rule_vars, fname=None):
     """One rule run (lhs, rhs, cond) -> its cond and repl functions and its
     %mr_defrule registration, as Maxima text (spec 3.4). rule_vars is the
@@ -2105,6 +2197,9 @@ def emit_rule(run, key, n, rule_vars, fname=None):
     %mr_rewrite's `(eq cond-fn t)` branch accepts every binding for it."""
     lhs, rhs, cond = run
     if fname is None:
+        rhs = apply_errata(rhs, key, n, "rhs")
+        if cond:
+            cond = apply_errata(cond, key, n, "cond")
         # A2.4: 9.3's `Int[u_,x_]` give-up read as `Int[u_,x_Symbol]` --
         # a no-op on every already-typed class 1-6 LHS (_normalize_int_x).
         lhs = _normalize_int_x(lhs)
@@ -2182,6 +2277,10 @@ def emit_rule(run, key, n, rule_vars, fname=None):
     # (this build's quote NUD parses the quoted operand at lbp 190; a
     # balanced 'name' raises "' is not an infix operator", measured
     # 2026-08-20).
+    # Power[-1, e] -> %mr_neg1pow(e), in the rule records only: the rewrite
+    # tables (fname) stay byte-identical, and carry no Power[-1, e].
+    if fname is None:
+        cond_txt, repl_txt = wrap_neg1pow(cond_txt), wrap_neg1pow(repl_txt)
     caps = sorted(cap_name(key, n, v) for v in rule_vars)
     binds = [f"{c} : geteqR(mm, '{c})" for c in caps]
     bind_block = ", ".join(binds) if binds else "true"

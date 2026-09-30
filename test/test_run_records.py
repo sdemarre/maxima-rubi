@@ -124,10 +124,12 @@ spec.loader.exec_module(d)
 def stub(text, timeout, cpu_out=None):
     if cpu_out is not None:
         cpu_out.append(None)
+    # the entry output protocol: ANSWERED <rubi cpu>, then CLASS / PROOF
+    # (corpus_driver.classify_entry)
     if "mr_f: x$" in text:
-        return "CLASS expected\n", False
+        return "ANSWERED 0.1\nCLASS expected\nPROOF chainA.1\n", False
     if "mr_f: x^2$" in text:
-        return "CLASS verified\n", False
+        return "ANSWERED 0.1\nCLASS verified\nPROOF radcan\n", False
     return "", True
 d.maxima_run = stub
 d.build_info_lines = lambda: ["maxima: stub"]

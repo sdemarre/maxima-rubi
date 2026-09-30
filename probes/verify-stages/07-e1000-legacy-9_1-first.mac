@@ -1,0 +1,24 @@
+/* probes/verify-stages/07-e1000-legacy-9_1-first.mac -- 1.2.2.2 e1000,
+   1/(x^2*sqrt(2+2*a-2*(1+a)+b*x^2+c*x^4)) (category 4 of
+   handoffs/2026-09-28-checker-wrong-answers; ticket
+   .scratch/class-ports/issues/09): rubi's answer with the table as loaded,
+   then with mr_rules_9_1 (the legacy 9.1 Integrand simplification rules)
+   moved to the head of mr_rule_table IN THIS SESSION ONLY, with its rule
+   steps and the radcan of its residual. Also: 9_1 r3 binds and accepts the
+   integrand, and sits after 1_2_2_2 r17 in the table. Run on the rules core
+   by 07-run.sh. */
+display2d : false$
+p7_f : 1/(x^2*sqrt(2+2*a-2*(1+a)+b*x^2+c*x^4))$
+printf(true, "E1000 eqQ(constant, 0) ~a~%", string(%mr_eqQ(-2*(a+1)+2*a+2, 0)))$
+printf(true, "E1000 9_1 r3 accepts ~a~%", string(is(%mr_rule_accept(_mr_rule_9_1_r3, p7_f, x) # false)))$
+printf(true, "E1000 table positions 1_2_2_2 r17 ~a, 9_1 r3 ~a~%",
+       string(sublist_indices(mr_rule_table, lambda([h], h = _mr_rule_1_2_2_2_r17))),
+       string(sublist_indices(mr_rule_table, lambda([h], h = _mr_rule_9_1_r3))))$
+printf(true, "E1000 as loaded: ~a~%", string(rubi(p7_f, x)))$
+mr_rule_table : append(mr_rules_9_1, sublist(mr_rule_table, lambda([h], not member(h, mr_rules_9_1))))$
+rubi_verbose : 'matches$
+p7_rr : rubi(p7_f, x)$
+rubi_verbose : false$
+printf(true, "E1000 9.1 first: ~a~%", string(p7_rr[1]))$
+printf(true, "E1000 9.1 first steps: ~a~%", string(map(first, p7_rr[2])))$
+printf(true, "E1000 9.1 first radcan(residual): ~a~%", string(radcan(diff(p7_rr[1], x) - p7_f)))$

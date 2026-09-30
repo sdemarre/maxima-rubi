@@ -1,0 +1,37 @@
+# 2026-09-29T04:33Z, sympy 1.14.0, rules core fingerprint c01ce534166ed547534b937e5b35b99a, git_rev 2ab5335b98c2e6a9e5f96554ab7662e76cd39cbc
+1.1.2.6 r13 split minus integrand, f/g^2: 0
+1.1.2.6 r13 split minus integrand, f/e^2 (Rubi source): f*g**m*x**(m + 2)*(a + b*x**2)**p*(c + d*x**2)**q*(-e**2 + g**2)/e**2
+
+== e96  f = (a + b*acosh(c*x))/(d + e*x**2)**(5/2)
+   rubi: -((b*c*sqrt(c^2*x^2-1)*((e*x^2*sqrt(c^2*x^2-1))/(3*d^2*(-e-c^2*d)*sqrt(e*x^2+d))-((c^2*e*((2*(e/2-(c^2*d)/2)*atanh((sqrt(e)*sqrt(c^2*x^2-1))/(c*sqrt((e*(c^2*x^2-1))/c^2+e/c^2+d))))/(c^3*e^(3/2))+(sqrt(c^2*x^2-1)*sqrt(e*x^2+d))/(c^2*e)))/(3*d)+((e+3*c^2*d)*atanh((sqrt(e)*sqrt(c^2*x^2-1))/(c*sqrt((e*( ...
+   |res| at {'a': '9/10', 'b': '13/10', 'c': '1/2', 'd': '9/10', 'e': '11/10'} x = 7/20: 0
+   |res| at {'a': '9/10', 'b': '13/10', 'c': '1/2', 'd': '9/10', 'e': '11/10'} x = 13/20: 0
+   |res| at {'a': '9/10', 'b': '13/10', 'c': '1/2', 'd': '9/10', 'e': '11/10'} x = 3/2: 0
+   |res| at {'a': '9/10', 'b': '13/10', 'c': '1/2', 'd': '9/10', 'e': '11/10'} x = 5/2: 0
+   |res| at {'a': '2', 'b': '3', 'c': '3', 'd': '5', 'e': '7'} x = 7/20: 0
+   |res| at {'a': '2', 'b': '3', 'c': '3', 'd': '5', 'e': '7'} x = 13/20: 0
+   |res| at {'a': '2', 'b': '3', 'c': '3', 'd': '5', 'e': '7'} x = 3/2: 0
+   |res| at {'a': '2', 'b': '3', 'c': '3', 'd': '5', 'e': '7'} x = 5/2: 0
+   simplify(residual) = 0: True
+   sympy integrate: unevaluated Integral
+
+== e50  f = acosh(a*x)/(c + d*x**2)**(5/2)
+   rubi: -((a*sqrt(a^2*x^2-1)*((d*x^2*sqrt(a^2*x^2-1))/(3*c^2*(-d-a^2*c)*sqrt(d*x^2+c))-((a^2*d*((2*(d/2-(a^2*c)/2)*atanh((sqrt(d)*sqrt(a^2*x^2-1))/(a*sqrt((d*(a^2*x^2-1))/a^2+d/a^2+c))))/(a^3*d^(3/2))+(sqrt(a^2*x^2-1)*sqrt(d*x^2+c))/(a^2*d)))/(3*c)+((d+3*a^2*c)*atanh((sqrt(d)*sqrt(a^2*x^2-1))/(a*sqrt((d*(a^ ...
+   |res| at {'a': '9/10', 'c': '1/2', 'd': '9/10'} x = 7/20: 0
+   |res| at {'a': '9/10', 'c': '1/2', 'd': '9/10'} x = 13/20: 0
+   |res| at {'a': '9/10', 'c': '1/2', 'd': '9/10'} x = 3/2: 0
+   |res| at {'a': '9/10', 'c': '1/2', 'd': '9/10'} x = 5/2: 0
+   |res| at {'a': '2', 'c': '3', 'd': '5'} x = 7/20: 0
+   |res| at {'a': '2', 'c': '3', 'd': '5'} x = 13/20: 0
+   |res| at {'a': '2', 'c': '3', 'd': '5'} x = 3/2: 0
+   |res| at {'a': '2', 'c': '3', 'd': '5'} x = 5/2: 0
+   simplify(residual) = 0: True
+   sympy integrate: unevaluated Integral
+
+== e865  f = (x*cos(x) - 4*tan(x)*sec(x))*sqrt(csc(x))
+   rubi: -((4*elliptic_e((x-%pi/2)/2,2))/(sqrt(csc(x))*sqrt(sin(x))))+(2*x)/sqrt(csc(x))-(8*sqrt(tan(x/2))*sqrt((tan(x/2)^2+1)/(2*tan(x/2)))*((elliptic_f(2*atan(sqrt(tan(x/2))),1/2)*(tan(x/2)+1)*sqrt((tan(x/2)^2+1)/(tan(x/2)+1)^2))/(2*sqrt(tan(x/2)^2+1))-(elliptic_e(2*atan(sqrt(tan(x/2))),1/2)*(tan(x/2)+1)*s ...
+   |res| at {} x = 7/20: 0E-176
+   |res| at {} x = 13/20: 0E-175
+   |res| at {} x = 3/2: 0E-173
+   |res| at {} x = 5/2: 0E-174
+   simplify(residual) = 0: False

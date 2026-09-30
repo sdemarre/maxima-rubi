@@ -196,7 +196,8 @@ def run_queue(driver, jobs, workers, out_paths, title, detail, build_lines,
               log=print, job_seconds=0.0):
     """Run JOBS on WORKERS threads; worker k writes OUT_PATHS[k] with the header
     TITLE(k) / DETAIL(k), and its depth-cap sidecar OUT_PATHS[k] with .caps for
-    the suffix (the driver's own convention, so test/merge_caps.py finds them).
+    the suffix (the driver's own convention, so test/merge_caps.py finds them)
+    and its proof sidecar with .proof (the checker's tag per entry).
     JOB_SECONDS sizes the dispatch unit (see build_units). A Python exception
     around one entry writes it as `error` and counts a harness failure.
     Returns (counts by class, harness failures, wall seconds)."""
@@ -213,9 +214,11 @@ def run_queue(driver, jobs, workers, out_paths, title, detail, build_lines,
         counts = {}
         tw = time.time()
         caps_path = os.path.splitext(out_paths[k])[0] + ".caps"
+        proof_path = os.path.splitext(out_paths[k])[0] + ".proof"
         try:
             with open(out_paths[k], "w", encoding="utf-8") as outf, \
-                 open(caps_path, "w", encoding="utf-8") as capsf:
+                 open(caps_path, "w", encoding="utf-8") as capsf, \
+                 open(proof_path, "w", encoding="utf-8") as prooff:
                 outf.write("\n".join(driver.header_lines(title(k), detail(k), build_lines)) + "\n")
                 outf.flush()
                 while True:
@@ -226,8 +229,10 @@ def run_queue(driver, jobs, workers, out_paths, title, detail, build_lines,
                     for rel, idx, text, line_no, _cost in unit:
                         ts = time.time()
                         caps = 0
+                        proof = None
                         try:
-                            cls, line, caps = driver.run_entry(rel, idx, text, line_no)
+                            cls, line, caps, proof = driver.run_entry_full(
+                                rel, idx, text, line_no)
                         except Exception:
                             cls = "error"
                             line = (f"{'error':14s} t={time.time() - ts:6.1f}s "
@@ -242,6 +247,9 @@ def run_queue(driver, jobs, workers, out_paths, title, detail, build_lines,
                         if caps > 0:
                             capsf.write(f"{caps} {rel} e{idx + 1} L{line_no}\n")
                             capsf.flush()
+                        if proof is not None:
+                            prooff.write(f"{proof} {rel} e{idx + 1} L{line_no}\n")
+                            prooff.flush()
                         with lock:
                             totals[cls] = totals.get(cls, 0) + 1
                             log(f"{'PASS' if cls in driver.PASS_CLASSES else 'FAIL'}: {line}")
@@ -278,7 +286,7 @@ def clear_subset_dir(rr, out_dir):
                                      "wait for it or kill it before a new launch")
     removed = 0
     for name in sorted(os.listdir(out_dir)):
-        if re.fullmatch(r"shard\d+\.(?:out|log|files|caps)|pids|source|queue\.log|merge\.out|wait\.log", name):
+        if re.fullmatch(r"shard\d+\.(?:out|log|files|caps|proof)|pids|source|queue\.log|merge\.out|wait\.log", name):
             os.unlink(os.path.join(out_dir, name))
             removed += 1
     return removed

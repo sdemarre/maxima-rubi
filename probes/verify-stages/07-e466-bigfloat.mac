@@ -1,0 +1,20 @@
+/* probes/verify-stages/07-e466-bigfloat.mac -- 4.1.1.2 e466,
+   sec(c+d*x)^3/(a+b*sin(c+d*x))^8 (category 7 of
+   handoffs/2026-09-28-checker-wrong-answers): is the checker's 4.5e-8
+   residual a wrong answer or float cancellation? The residual diff(r,x)-f
+   at the checker's parameter values and points, substituted as exact
+   rationals, then evaluated in float, bigfloat fpprec 50 and fpprec 100.
+   A residual that shrinks with the precision is exact. Run on the rules core
+   by 07-run.sh. (.scratch/corpus-harness/issues/08) */
+display2d : false$
+p7_f : sec(c+d*x)^3/(a+b*sin(c+d*x))^8$
+p7_r : rubi(p7_f, x)$
+p7_d : diff(p7_r, x) - p7_f$
+p7_subs : [a = 9/10, b = 13/10, c = 1/2, d = 9/10]$
+for p7_x0 in [7/20, 13/20] do block([p7_e : ev(p7_d, append(p7_subs, [x = p7_x0]))],
+  printf(true, "E466 x=~a float ~a~%", p7_x0, float(p7_e)),
+  fpprec : 50,
+  printf(true, "E466 x=~a fpprec50 ~a~%", p7_x0, bfloat(p7_e)),
+  fpprec : 100,
+  printf(true, "E466 x=~a fpprec100 ~a~%", p7_x0, bfloat(p7_e)),
+  fpprec : 16)$

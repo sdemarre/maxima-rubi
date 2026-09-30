@@ -373,7 +373,15 @@ checks): `Results: 1583 passed, 0 failed`; with the seen cut silenced
 1585 passed, 0 failed`; with the native polylogarithm `li[s](z)`
 (`.scratch/polylog-native-li/issues/01`, 2026-09-26: `%mr_polylogQ` /
 `%mr_polylogParts`, InverseFunctionQ / InverseFunctionOfLinear on `li`, 6
-checks; the b4 e392 pin re-spelled): **`Results: 1591 passed, 0 failed`**. The
+checks; the b4 e392 pin re-spelled): `Results: 1591 passed, 0 failed`; 1621 by
+2026-09-28 (the integrate-beats-rubi 01 fixes); with `%mr_coeff`'s Rubi `Together`
+fallback (2026-09-28, branch `coeff-together`, 5 checks): `Results: 1626 passed, 0
+failed`; with x-free terms of any head (`sqrt(3)`) read as constants and PolyQ's
+product walk (12 checks): `Results: 1638 passed, 0 failed`; with `%mr_neg1pow`, Mathematica's
+principal `(-1)^e` (8 checks): `Results: 1646 passed, 0 failed`; with `%mr_fullSimplify`
+reducing logs of numbers before its `ratsimp` (6 checks): `Results: 1652 passed, 0 failed`;
+with the 1.1.2.6 r13/r14 upstream erratum (3 checks): `Results: 1655 passed, 0 failed`;
+with the 4.1.0.2 r18 erratum (3 checks): **`Results: 1658 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -416,9 +424,14 @@ the two-argument `Expand` -> `%mr_expand`, `undo_expand2`, class 2's 2 sites).
 Then `Results: 29 passed, 0 failed` (2026-09-25,
 `.scratch/matcher-translation-fixes/issues/02`: GtQ/LtQ/GeQ/LeQ emit the
 two-valued `%mr_gtQ`/`%mr_ltQ`/`%mr_geQ`/`%mr_leQ`, undone to `is(A op B)`,
-1,944 class-1/2/3 sites pinned). Now **`Results: 30 passed, 0 failed`**
+1,944 class-1/2/3 sites pinned). Then `Results: 30 passed, 0 failed`
 (2026-09-26, `.scratch/polylog-native-li/issues/01`: PolyLog emits the
 native `li[s](z)`, undone to `polylog(s, z)`, class 3's 37 sites pinned).
+Then `Results: 31 passed, 0 failed` (2026-09-28: Power[-1, e] emits
+`%mr_neg1pow(e)`, undone to `(-1)^e`, class 1's 4 sites pinned).
+Now **`Results: 32 passed, 0 failed`** (2026-09-28: the upstream errata,
+`RUBI_ERRATA` — 1.1.2.6 r13/r14 emit `f/g^2` for the source's `f/e^2`,
+undone to it, 2 sites pinned).
 It compares the working tree's
 `rules/class{1,2,3}/*.mac` with the P0 commit `0a6664c` (`--base
 <commit>` for another base): rule counts and `mr_rules_<key>` lines, no
@@ -437,7 +450,10 @@ ticket `.scratch/class-ports/issues/08`).
 
 The section-9 generator fixes (spec 2026-09-22 A2) have their own unit
 guard, pure Python: `python3 test/test_generator_section9.py` — green
-**`Results: 28 passed, 0 failed`** (2026-09-25, the class-4 port's Step 4:
+**`Results: 41 passed, 0 failed`** (2026-09-28: +3, the errata table's cond part and
+4.1.0.2 r18; before: 38, the same day, +5, `apply_errata`, the upstream
+errata table; before: 33, the same day, +5, `wrap_neg1pow`, Power[-1, e] ->
+`%mr_neg1pow`; before: 28, 2026-09-25, the class-4 port's Step 4:
 +2, `===` (SameQ) emits Maxima's single `=`. Before: 26, the class-8 port: 23 after
 `7df5f9d`'s two `drop_comment_only_lines` join-guard checks, +3 for the
 guard's fix in `a6713a4` — a comment-only line before a blank line, before
@@ -603,7 +619,44 @@ python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
 python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
 python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
 python3 test/test_head_rewrites.py          # Results: 70 passed, 0 failed
+python3 test/test_driver_proof.py           # Results: 29 passed, 0 failed
+python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
+maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 55 passed, 0 failed
 ```
+
+**The checker** (`test/mr_verify.mac` + `test/mr_verify.lisp`,
+`.scratch/corpus-harness/issues/06`, user decisions 2026-09-28) decides every
+answer. **Symbolic proof first**: the self-diff `diff(r, x) - f` and each
+expected-diff, breadth-first since 2026-09-29 (the chain stages of every
+residual, then the radcan family of every residual;
+`probes/verify-stages/13`), through the stages of `mr_proof_stages` (two
+factor/ratsimp chains, `radcan`, `radcan(exponentialize)`,
+`radcan(trigexpand)`, `radcan(trigexpand(demoivre))`, `radcan(logarc)`, the
+elliptic-gated `radcan(rat())`, then `radcan(exponentialize(rectform))` —
+last since 2026-09-29, `probes/verify-stages/08-stage-order.out`), each errcatch'd and CPU-limited on its own
+(`MR_STAGE_CAP`, default 5 s, an `ITIMER_VIRTUAL` timer; its 20 ms tick also
+stops a stage whose heap use passes `mr_heap_fraction`, 0.6 — heap exhaustion is
+fatal in SBCL, and a forced GC is not an option here, see `test/mr_verify.lisp`). Only when no stage
+proves either residual does the **numeric check** decide (two points, the
+sweep parameters, every function's arguments rectformed first (`li` only until
+2026-09-29, `probes/verify-stages/14`); since 2026-09-29 the generic
+exponents `m`/`n`/`q` and the base `F` under two value sets, every set required
+ok, and `AppellF1` with a derivative and a numeric value, harness-only —
+`probes/verify-stages/10`) — an indication, not a
+proof, in either direction. A numeric-only pass still counts as PASS until
+the user decides otherwise; its tag says so. **Verification has its own
+budget**: rubi keeps the 30 s cap, the checker gets `MR_VERIFY_CAP` (default
+30 s) on top; the entry prints `ANSWERED <rubi cpu>` (flushed) once rubi
+returns, rubi over 30 s is `timeout` even if it answered, and a process
+killed after `ANSWERED` was killed while verifying — it is classified from
+the `NUMERIC` lines already printed, with a `/verify-timeout` tag. **The
+record's `t=` is rubi's CPU** (the `ANSWERED` value) since this change, not
+the whole process. The tag of every entry that reached the checker goes to
+the shard's **`.proof` sidecar** (`<tag> <label>`), like `.caps`, merged and
+censused against the merged record by `test/merge_proof.py RECORD OUT`; the
+`filter:` line states `verify: 30s cpu, stage 5s`, and the merger carries it.
+Records without that field predate the checker and are NOT comparable on
+`verified`/`unverified`/`timeout`.
 
 `test_driver_inert_leak` guards the inert-head leak classification: an answer
 carrying any of the six inert trig heads (`%mr_isin` … `%mr_icsc`, the bridge

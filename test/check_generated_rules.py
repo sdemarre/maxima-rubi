@@ -38,6 +38,11 @@ commit (default: the P0 baseline commit 0a6664c) without running Maxima:
        - Rubi's real comparisons (matcher-translation-fixes issue 02,
          2026-09-25): %mr_gtQ/%mr_ltQ/%mr_leQ/%mr_geQ(A, B) undone to
          is(A op B), count pinned
+       - Power[-1, e] (2026-09-28): %mr_neg1pow(E) undone to the (-1)^E the
+         base emitted, count pinned
+       - the upstream errata (2026-09-28, generator RUBI_ERRATA): 1_1_2_6
+         r13/r14's f/g^2 undone to the f/e^2 of the Rubi source, count
+         pinned
        - the 29 manual 9.1 rules and the 52 rules that had a workaround
          emitter (no defmatch in the base) are exempt;
   4. the generator's reader self-test is green;
@@ -129,6 +134,19 @@ EXPAND2_SITES = 2
 # class, where the base emitted the unknown operator polylog(s, z). Undone on
 # the new body before the comparison; class 3's sites.
 POLYLOG_SITES = 37
+# Power[-1, e] (2026-09-28): Mathematica's principal value exp(i*pi*e), which
+# Maxima's domain:real breaks for a rational e ((-1)^(2/3) -> 1). The
+# generator emits %mr_neg1pow(e) in every class, where the base emitted
+# (-1)^e -- a parenthesized operand, or a name/call taken whole. Undone on the
+# new body before the comparison; class 1's 1_1_2_3 r9, 1_1_3_2 r37 and
+# 1_3_3 r16 (two sites).
+NEG1POW_SITES = 4
+# Upstream errata (2026-09-28, generator/generate_rules.py RUBI_ERRATA):
+# 1.1.2.6 r13/r14 emit f/g^2 where the Rubi source (and so the base) has the
+# typo f/e^2. Undone on the new body before the comparison; one site each.
+ERRATA_UNDO = {("1_1_2_6", 13): ("_f__s/_mr_1_1_2_6_r13_g__s^2", "_f__s/_mr_1_1_2_6_r13_e__s^2"),
+               ("1_1_2_6", 14): ("_f__s/_mr_1_1_2_6_r14_g__s^2", "_f__s/_mr_1_1_2_6_r14_e__s^2")}
+ERRATA_SITES = 2
 # user decision 2026-09-12 (Plan 2 writing session): move all 227 inner
 # conditions, including those whose locals integrate (IntHide -> mr_int);
 # their extra cost is watched by the P5 median-wall gate.
@@ -308,6 +326,38 @@ def undo_expand2(s, stats):
     s, n = re.subn(r"%mr_expand\(", "expand(", s)
     stats["expand2"] += n
     return s
+
+
+def undo_neg1pow(s, stats):
+    """The new expression line with each %mr_neg1pow(E) back in the base
+    spelling (-1)^E: E taken whole when it is a name or a call of one, else
+    (-1)^(E). Innermost first, so a nested site comes back too. Counts the
+    sites."""
+    name = re.compile(r"[%A-Za-z_][%A-Za-z0-9_]*(\(.*\))?")
+    while True:
+        m = None
+        for m_ in re.finditer(r"%mr_neg1pow\(", s):
+            m = m_
+        if m is None:
+            return s
+        i = m.end() - 1
+        j = _close(s, i, "(", ")")
+        inner = s[i + 1:j - 1]
+        whole = name.fullmatch(inner) and (not inner.endswith(")")
+                                           or _close(inner, inner.index("("), "(", ")") == len(inner))
+        s = s[:m.start()] + "(-1)^" + (inner if whole else "(" + inner + ")") + s[j:]
+        stats["neg1pow"] += 1
+
+
+def undo_errata(s, key, n, stats):
+    """The new expression line with rule KEY rN's ERRATA_UNDO fix back in
+    the base spelling. Counts the sites."""
+    fix = ERRATA_UNDO.get((key, n))
+    if fix is None:
+        return s
+    new, old = fix
+    stats["errata"] += s.count(new)
+    return s.replace(new, old)
 
 
 def _close(s, i, o, c):
@@ -507,7 +557,8 @@ def main(argv):
     counts_ok, lists_ok = [], []
     stats = dict(identical=0, guard=0, moved=0, matchq_old=0, workaround=0, nine=0,
                  no_defmatch=0, exempt_inner=0, exempt_matchq=0, int_cmp=0, real_cmp=0, notequal=0, juxta=0,
-                 local_prefix=0, native_heads=0, expand2=0, polylog=0)
+                 local_prefix=0, native_heads=0, expand2=0, polylog=0,
+                 neg1pow=0, errata=0)
     unexplained, entry_locals, bad_moves = [], [], []
     for rel in files:
         old = git_show(a.base, rel)
@@ -561,10 +612,12 @@ def main(argv):
                 continue
             try:
                 lines = [redo_juxtaposition(parts[0][2], stats), redo_juxtaposition(parts[1][2], stats),
-                         undo_polylog(undo_expand2(undo_native_heads(undo_fixes(
+                         undo_neg1pow(undo_polylog(undo_expand2(undo_native_heads(undo_fixes(
                              undo_local_prefix(parts[2][2], key, n, stats), stats), stats), stats), stats),
-                         undo_polylog(undo_expand2(undo_native_heads(undo_fixes(
-                             undo_local_prefix(parts[3][2], key, n, stats), stats), stats), stats), stats)]
+                             stats),
+                         undo_errata(undo_neg1pow(undo_polylog(undo_expand2(undo_native_heads(undo_fixes(
+                             undo_local_prefix(parts[3][2], key, n, stats), stats), stats), stats), stats),
+                             stats), key, n, stats)]
             except ValueError as e:
                 unexplained.append("%s: translation-fix undo: %s" % (rid, e))
                 continue
@@ -657,6 +710,10 @@ def main(argv):
             stats["expand2"] == EXPAND2_SITES, str(stats["expand2"]))
     g.check("native li[A](B) undone to polylog(A, B): %d sites" % POLYLOG_SITES,
             stats["polylog"] == POLYLOG_SITES, str(stats["polylog"]))
+    g.check("%%mr_neg1pow(E) undone to (-1)^E: %d sites" % NEG1POW_SITES,
+            stats["neg1pow"] == NEG1POW_SITES, str(stats["neg1pow"]))
+    g.check("upstream errata undone to the Rubi source text: %d sites" % ERRATA_SITES,
+            stats["errata"] == ERRATA_SITES, str(stats["errata"]))
     for rid in entry_locals:
         print("INFO: moved inner condition with a package entry in its locals: %s%s" % (
             rid, " (resolved)" if rid in RESOLVED_ENTRY_LOCALS else " (UNRESOLVED)"))
