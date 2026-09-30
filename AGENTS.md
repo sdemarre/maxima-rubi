@@ -622,7 +622,9 @@ python3 test/test_head_rewrites.py          # Results: 70 passed, 0 failed
 python3 test/test_driver_proof.py           # Results: 29 passed, 0 failed
 python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
 python3 test/test_driver_baseline.py        # Results: 31 passed, 0 failed
+python3 test/test_driver_grade.py           # Results: 21 passed, 0 failed
 maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 55 passed, 0 failed
+maxima --very-quiet -b test/test_mr_grade.mac < /dev/null    # Results: 49 passed, 0 failed
 ```
 
 **The checker** (`test/mr_verify.mac` + `test/mr_verify.lisp`,
@@ -680,6 +682,29 @@ The old probe `probes/corpus/probe-integrate-sample.py` / `test/run_baseline_poo
 (wall cap, four-stage zero chain, no head normalisation, arm `none (native
 integrate baseline)`) reproduces the pre-2026-09-30 baseline records only; the
 two kinds are NOT comparable.
+
+**The grade** (`test/mr_grade.lisp`, user request 2026-09-30; the full story
+in `docs/grading-and-leaf-size.md`; guarded by
+`test_mr_grade.mac` and `test_driver_grade`) is the A/B/C/F grade and the leaf
+size of the 12000.org independent CAS integration tests (N. Abbasi; the
+grading function is Albert Rich's `GradeAntiderivative`, the report's section
+4.2): an answer of no higher `ExpnType` than the optimal is A when its leaf
+size is at most twice the optimal's, B otherwise, C when it carries `%i` and
+the optimal does not; a higher type is C, or F when it holds an unevaluated
+integral. No antiderivative (`deferred`, `contains-noun`) is F, a timeout
+F(-1), an error F(-2); against a no-closed-form optimal any in-time result is
+A (the reference's rule). The leaf size is Mathematica's `LeafCount` read off
+Maxima's simplified form (rationals and complex numbers as Mathematica holds
+them); the optimal is evaluated under `logexpand:false, radexpand:false`.
+MEASURED against the report's own optimal leaf sizes over the independent
+suites: `probes/leaf-size/02-leaf-count-vs-reference.out`. `ExpnType` uses the
+SageMath port's function lists (the ones the report grades Maxima with). Every
+entry prints `OPTIMAL <leaf> <type>` and an answer `GRADE <g> <leaf> <type>`
+before the checker; the shard's **`.grade` sidecar** has one line per entry,
+`<grade> leaf=<result>/<optimal> type=<result>/<optimal> <label>`, censused by
+`test/merge_grade.py RECORD OUT GLOB` (grade distribution, mean time, mean /
+median leaf size and their normalized values, per-file grades). Both arms of
+a section with every census: `setsid sh test/graded_measure.sh "<SECTION>" > test/graded_measure.log 2>&1 < /dev/null &`.
 
 `test_driver_inert_leak` guards the inert-head leak classification: an answer
 carrying any of the six inert trig heads (`%mr_isin` … `%mr_icsc`, the bridge

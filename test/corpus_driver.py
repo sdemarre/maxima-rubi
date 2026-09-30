@@ -845,6 +845,7 @@ def build_text(f_text, var_text, e_text, e_text2=None, integrator=None):
             + 'printf(true, "ANSWERED ~,3f~%", elapsed_run_time() - mr_t0)$\n'
             + "?finish\\-output()$\n"
             + 'load("test/mr_verify.mac")$\n'
+            + 'load("test/mr_grade.lisp")$\n'
             + f"mr_stage_cap : {STAGE_CAP}$\n"
             + ("" if PROOF_STAGES is None
                else "mr_proof_stages : ["
@@ -878,9 +879,24 @@ def build_text(f_text, var_text, e_text, e_text2=None, integrator=None):
         # take the entry down; mr_check_entry skips an [] element.
         es = (f"[errcatch({e_text})"
               + (f", errcatch({e_text2})" if e_text2 is not None else "") + "]")
-        body = (leak + f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
+        # The grade (test/mr_grade.lisp, docs/grading-and-leaf-size.md; user
+        # request 2026-09-30): the
+        # optimal antiderivative's leaf size and expression type for every
+        # entry that answered, and for an answer the A/B/C/F grade against
+        # it, printed and flushed BEFORE the checker so that a kill while
+        # verifying keeps them. The optimal is evaluated under the model
+        # flags logexpand:false, radexpand:false, which keep log(u^2) and
+        # sqrt(x^2) as Mathematica writes them -- the reference's leaf sizes
+        # are Mathematica's LeafCount (probes/leaf-size/02). Each line is
+        # errcatch'd: a grading failure must not take the entry down.
+        grade = ("MR_opt : block([errormsg : false, logexpand : false, radexpand : false], "
+                 f"errcatch({e_text})), "
+                 "errcatch(mr_say(mr_grade_line(\"OPTIMAL\", false, MR_opt))), ")
+        body = ("(" + grade + leak
+                + f"if is({noun} = 1) then disp(concat(\"CLASS deferred\")) "
                 f"else if is({has_noun}) then disp(concat(\"CLASS contains-noun\")) "
-                f"else mr_check_entry(mr_r, mr_f, {var_text}, {es})")
+                "else (errcatch(mr_say(mr_grade_line(\"GRADE\", mr_r, MR_opt))), "
+                f"mr_check_entry(mr_r, mr_f, {var_text}, {es})))")
     # This entry's depth-cap count, printed AFTER the CLASS line (the
     # driver's CLASS scan takes the first match, so the order is
     # classification-safe) and before the trailing queued answers. The
@@ -938,10 +954,13 @@ class EntryResult:
     """What one entry's output states: CLS, CAPS (depth-cap hits), PROOF (the
     checker's tag, None when the entry never reached the checker) and
     RUBI_CPU (the ANSWERED seconds, None when rubi never returned)."""
-    __slots__ = ("cls", "caps", "proof", "rubi_cpu")
+    __slots__ = ("cls", "caps", "proof", "rubi_cpu", "optimal", "grade")
 
-    def __init__(self, cls, caps, proof, rubi_cpu):
+    def __init__(self, cls, caps, proof, rubi_cpu, optimal=None, grade=None):
         self.cls, self.caps, self.proof, self.rubi_cpu = cls, caps, proof, rubi_cpu
+        # OPTIMAL <leaf> <type> and GRADE <g> <leaf> <type> (test/mr_grade.lisp),
+        # as (leaf, type) and (grade, leaf, type) string tuples, or None.
+        self.optimal, self.grade = optimal, grade
 
 
 def classify_entry(out, timed_out):
@@ -957,11 +976,17 @@ def classify_entry(out, timed_out):
       have had the symbolic stages all failed: self-diff ok -> `verified`,
       an expected-diff ok -> `expected`, else `unverified`; the tag ends
       `/verify-timeout`."""
-    cls = proof = rubi_cpu = None
+    cls = proof = rubi_cpu = optimal = grade = None
     caps = 0
     numeric = []
     for line in out.splitlines():
         line = line.strip()
+        if line.startswith("OPTIMAL ") and optimal is None and len(line.split()) == 3:
+            optimal = tuple(line.split()[1:])
+            continue
+        if line.startswith("GRADE ") and grade is None and len(line.split()) == 4:
+            grade = tuple(line.split()[1:])
+            continue
         if line.startswith("ANSWERED ") and rubi_cpu is None:
             try:
                 rubi_cpu = float(line[9:].strip())
@@ -983,7 +1008,7 @@ def classify_entry(out, timed_out):
     if rubi_cpu is None:
         return EntryResult("timeout" if timed_out else "error", caps, None, None)
     if rubi_cpu > TIMEOUT:
-        return EntryResult("timeout", caps, None, rubi_cpu)
+        return EntryResult("timeout", caps, None, rubi_cpu, optimal)
     if cls is None and timed_out:
         verified = [o for w, o in numeric if w == "verified"]
         expected = [o for w, o in numeric if w == "expected"]
@@ -995,10 +1020,10 @@ def classify_entry(out, timed_out):
             cls = "unverified"
             proof = (f"none/numeric-{verified[0]}/verify-timeout" if verified
                      else "none/verify-timeout")
-        return EntryResult(cls, caps, proof, rubi_cpu)
+        return EntryResult(cls, caps, proof, rubi_cpu, optimal, grade)
     if cls is None or cls not in KNOWN_CLASSES:
-        return EntryResult("error", caps, None, rubi_cpu)
-    return EntryResult(cls, caps, proof, rubi_cpu)
+        return EntryResult("error", caps, None, rubi_cpu, optimal)
+    return EntryResult(cls, caps, proof, rubi_cpu, optimal, grade)
 
 
 def classify_output(out, timed_out):
@@ -1040,11 +1065,40 @@ def via_field(name, r, dt):
     return f"{name}={r.cls},{dt:.1f}s,{r.proof or '-'}"
 
 
+def grade_of(cls, r, marker):
+    """The entry's grade in the reference's scheme (12000.org independent
+    integration tests; test/mr_grade.lisp, docs/grading-and-leaf-size.md
+    section 2): A/B/C from GradeAntiderivative for
+    an answer, `F` for no antiderivative, `F(-1)` a timeout, `F(-2)` an error.
+    Against a no-closed-form optimal (MARKER) the reference grades an
+    unevaluated result A, and an antiderivative A too (it lists those
+    separately; our class says `unexpected`)."""
+    if cls == "timeout":
+        return "F(-1)"
+    if cls == "error":
+        return "F(-2)"
+    if cls in ("deferred", "contains-noun"):
+        return "F"
+    if marker:
+        return "A"
+    return r.grade[0] if r.grade else "-"
+
+
+def grade_line(cls, r, marker, label):
+    """The .grade sidecar line: `<grade> leaf=<result>/<optimal>
+    type=<result>/<optimal> <label>`, `-` for what is unknown."""
+    g = r.grade or ("-", "-", "-")
+    o = r.optimal or ("-", "-")
+    if cls not in ("verified", "expected", "unverified"):
+        g = ("-", "-", "-")
+    return f"{grade_of(cls, r, marker)} leaf={g[1]}/{o[0]} type={g[2]}/{o[1]} {label}"
+
+
 def run_entry_detail(rel, idx, entry_text, line_no):
     """One corpus entry (ENTRY_TEXT as extract_entries returns it, IDX
     0-based): (class, result line, depth-cap hits, proof tag or None,
     sidecars) where sidecars maps a sidecar suffix to this entry's line in it:
-    `via` for the native baseline, nothing for a package run. main() and
+    `grade` always (grade_line), `via` for the native baseline. main() and
     test/run_corpus_queue.py both call it, so the two paths cannot drift.
 
     The native baseline (MR_BASELINE) runs `integrate` in its own process
@@ -1063,14 +1117,16 @@ def run_entry_detail(rel, idx, entry_text, line_no):
     label = f"{rel} e{idx + 1} L{line_no}"
     if len(els) not in (4, 5):
         return ("error", f"{'error':14s} t=0.0s {label} bad-entry-shape({len(els)})",
-                0, None, {})
+                0, None, {"grade": f"F(-2) leaf=-/- type=-/- {label}"})
     f_text = normalize_heads(els[0])
     var_text = els[1]
     e_text = normalize_heads(els[3])
     e_text2 = normalize_heads(els[4]) if len(els) == 5 else None
+    marker = e_text.startswith(("Unintegrable", "CannotIntegrate"))
     if not BASELINE:
         r, dt = _run_once(label, f_text, var_text, e_text, e_text2)
-        return r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", r.caps, r.proof, {}
+        return (r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", r.caps, r.proof,
+                {"grade": grade_line(r.cls, r, marker, label)})
     r, dt = _run_once(label, f_text, var_text, e_text, e_text2, "integrate")
     who, fields = "integrate", [via_field("integrate", r, dt), "risch=-"]
     if r.cls in BASELINE_RETRY:
@@ -1079,7 +1135,8 @@ def run_entry_detail(rel, idx, entry_text, line_no):
         if r2.cls in PASS_CLASSES:
             who, r, dt = "risch", r2, dt2
     return (r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", 0, r.proof,
-            {"via": f"{who} {' '.join(fields)} {label}"})
+            {"via": f"{who} {' '.join(fields)} {label}",
+             "grade": grade_line(r.cls, r, marker, label)})
 
 
 def run_entry_full(rel, idx, entry_text, line_no):
@@ -1150,11 +1207,11 @@ def main():
     # reached the checker (.scratch/corpus-harness/issues/06).
     proofs_path = os.path.splitext(out_path)[0] + ".proof"
     prooff = open(proofs_path, "a" if APPEND else "w", encoding="utf-8")
-    # The per-entry sidecars of run_entry_detail: .via for the native
-    # baseline.
+    # The per-entry sidecars of run_entry_detail: .grade always, .via for
+    # the native baseline.
     sidef = {k: open(os.path.splitext(out_path)[0] + "." + k, "a" if APPEND else "w",
                      encoding="utf-8")
-             for k in (("via",) if BASELINE else ())}
+             for k in (("grade", "via") if BASELINE else ("grade",))}
     outf.write("\n".join(out_lines) + "\n")
     outf.flush()
     for fi, (path, rel) in enumerate(files):

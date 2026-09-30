@@ -1,0 +1,99 @@
+/* test/test_mr_grade.mac -- unit tests for the leaf size and the A/B/C/F
+   grade of test/mr_grade.lisp (the grade of the 12000.org independent CAS
+   integration tests; user request 2026-09-30; docs/grading-and-leaf-size.md). No rule files are loaded.
+   The leaf-size witnesses are optimal antiderivatives whose Mathematica
+   LeafCount the reference report states (probes/leaf-size/01-scrape-
+   reference.tsv: Wester e1-e8, Hebisch e2), plus the representation rules
+   the file header lists. From the repo root:
+     maxima --very-quiet -b test/test_mr_grade.mac < /dev/null
+   Ends with a Results: line; a missing Results line is a failure. */
+display2d : false$
+
+tests_passed : 0$
+tests_failed : 0$
+
+check(test_name, actual, expected) := block([],
+  if actual = expected then (
+    tests_passed : tests_passed + 1,
+    print("  PASS: ", test_name)
+  ) else (
+    tests_failed : tests_failed + 1,
+    print("  FAIL: ", test_name),
+    print("    expected: ", expected),
+    print("    actual:   ", actual)
+  ),
+  true)$
+
+load("test/mr_grade.lisp")$
+
+/* The model flags the driver evaluates an optimal under. The expression
+   must be EVALUATED under them: log(u^2) -> 2 log(u) happens when it is
+   simplified, so the flags go around the text itself (Wester e8), not
+   around a function that receives it already simplified. */
+mma(e) := mr_leaf_count(e)$
+
+print("--- leaf size: the reference's own optimal leaf sizes ---")$
+check("Wester e1", mma(-49/20/(-1+2*x)^(5/2)+7/2/(-1+2*x)^(3/2)-9/4/(-1+2*x)^(1/2)), 40)$
+check("Wester e3", mma(2*atan((a-b)^(1/2)*tan(1/2*x)/(a+b)^(1/2))/(a-b)^(1/2)/(a+b)^(1/2)), 42)$
+check("Wester e4", mma(1/4*log(3+4*tan(1/2*x))), 15)$
+check("Wester e5", mma(-1/3*log(4+3*cot(1/4*%pi+1/2*x))), 21)$
+check("Wester e6", mma(-1/(2+tan(1/2*x))), 12)$
+check("Wester e7", mma(1/11*11^(1/2)*x+2/11*atan((4*cos(x)-3*sin(x))/(6+3*cos(x)+4*sin(x)+11^(1/2)))*11^(1/2)), 43)$
+check("Wester e8, log(u^2) kept by the model flags",
+      block([logexpand : false, radexpand : false],
+        mr_leaf_count(-2*x+2*a*atanh(x/a)+1/2*x*log((-a^2+x^2)^2))), 30)$
+check("Wester e8 under the default flags: log(u^2) -> 2 log(u)",
+      mr_leaf_count(-2*x+2*a*atanh(x/a)+1/2*x*log((-a^2+x^2)^2)), 25)$
+check("Hebisch e2", mma(expintegral_ei(x/(x^2+2))), 10)$
+
+print("--- leaf size: Mathematica's representation ---")$
+check("an atom", mr_leaf_count(x), 1)$
+check("an integer, a negative integer, a float", map(mr_leaf_count, [7, -3, 0.5]), [1, 1, 1])$
+check("a rational is Rational[n, d]", mr_leaf_count(-1/2), 3)$
+check("x/2 is Times[Rational[1, 2], x]", mr_leaf_count(x/2), 5)$
+check("a - b is Plus[a, Times[-1, b]]", mr_leaf_count(a-b), 5)$
+check("a/b is Times[a, Power[b, -1]]", mr_leaf_count(a/b), 5)$
+check("sqrt(x) is Power[x, Rational[1, 2]]", mr_leaf_count(sqrt(x)), 5)$
+check("exp(x) is Power[E, x]", mr_leaf_count(exp(x)), 3)$
+check("%i is Complex[0, 1]", mr_leaf_count(%i), 3)$
+check("2*%i*x is Times[Complex[0, 2], x]", mr_leaf_count(2*%i*x), 5)$
+check("1 + 2*%i + x is Plus[Complex[1, 2], x]", mr_leaf_count(1+2*%i+x), 5)$
+check("%i/2 is Complex[0, Rational[1, 2]]", mr_leaf_count(%i/2), 5)$
+check("li[2](z) is PolyLog[2, z]", mr_leaf_count(li[2](z)), 3)$
+check("2F1 is Hypergeometric2F1[a, b, c, z]", mr_leaf_count(hypergeometric([a,b],[c],z)), 5)$
+check("1F1 is Hypergeometric1F1[a, b, z]", mr_leaf_count(hypergeometric([a],[b],z)), 4)$
+check("3F2 keeps its lists", mr_leaf_count(hypergeometric([a,b,c],[d,e],z)), 9)$
+
+print("--- expression type ---")$
+check("rational", mr_expn_type((x^2+1)/(x-3)), 1)$
+check("an algebraic number is rational", mr_expn_type(sqrt(2)*x), 1)$
+check("algebraic", mr_expn_type(sqrt(x+1)), 2)$
+check("elementary", mr_expn_type(exp(x)*log(x)), 3)$
+check("a symbolic power is elementary", mr_expn_type(x^n), 3)$
+check("abs, signum, floor, atan2 are elementary (the SageMath port)",
+      map(mr_expn_type, [abs(x), signum(x), floor(x), atan2(y, x)]), [3, 3, 3, 3])$
+check("special", map(mr_expn_type, [erf(x), li[2](x), gamma_incomplete(a, x), elliptic_f(x, m)]),
+      [4, 4, 4, 4])$
+check("hypergeometric", mr_expn_type(hypergeometric([1/2, 1], [3/2], x^2)), 5)$
+check("Appell", mr_expn_type(AppellF1(a, b, c, d, x, y)), 6)$
+check("an unevaluated integral", mr_expn_type('integrate(sin(x)/x, x)), 8)$
+check("... of an unknown function is unknown", mr_expn_type('integrate(f(x), x)), 9)$
+check("an unknown function", mr_expn_type(bessel_j(0, x)), 9)$
+check("the maximum over a sum", mr_expn_type(x + erf(x) + sqrt(x)), 4)$
+
+print("--- grade ---")$
+check("A: same type, not over twice the size", first(mr_grade(x^2/2 + x, x^2/2 + x)), "A")$
+check("B: over twice the optimal's size", mr_grade((x+1)^10/10, x^10), ["B", 9, 3, 1, 1])$
+check("A at exactly twice", first(mr_grade(a*b*c*d, a*b)), "A")$
+check("C: the imaginary unit where the optimal has none", first(mr_grade(%i*x, x)), "C")$
+check("A: both carry the imaginary unit", first(mr_grade(%i*x, %i*x)), "A")$
+check("C: a higher type", first(mr_grade(erf(x), log(x))), "C")$
+check("F: a higher type holding an unevaluated integral",
+      first(mr_grade(x + 'integrate(sin(x)/x, x), x)), "F")$
+check("the driver's GRADE line: x^2/2 is Times[Rational[1, 2], Power[x, 2]]",
+      mr_grade_line("GRADE", x^2/2, [x^2/2]), "GRADE A 7 1")$
+check("the driver's OPTIMAL line", mr_grade_line("OPTIMAL", false, [sqrt(x)]), "OPTIMAL 5 2")$
+check("an optimal that failed to evaluate", mr_grade_line("GRADE", x, []), "GRADE - 1 1")$
+check("... and its OPTIMAL line", mr_grade_line("OPTIMAL", false, []), "OPTIMAL - -")$
+
+printf(true, "Results: ~d passed, ~d failed~%", tests_passed, tests_failed)$

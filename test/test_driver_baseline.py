@@ -122,7 +122,7 @@ def protocol_checks(drv):
         def stub(label, f, v, e, e2, integrator=None):
             calls.append(integrator)
             cls, tag = integrate if integrator == "integrate" else risch
-            return (drv.EntryResult(cls, 0, tag, 0.5),
+            return (drv.EntryResult(cls, 0, tag, 0.5, ("5", "1"), ("A", "5", "1")),
                     (0.5 if integrator == "integrate" else 1.5))
         drv._run_once = stub
         try:

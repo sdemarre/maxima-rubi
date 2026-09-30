@@ -215,8 +215,9 @@ def run_queue(driver, jobs, workers, out_paths, title, detail, build_lines,
         tw = time.time()
         caps_path = os.path.splitext(out_paths[k])[0] + ".caps"
         proof_path = os.path.splitext(out_paths[k])[0] + ".proof"
-        # The per-entry sidecars of corpus_driver.run_entry_detail (.via for
-        # the native baseline), opened on first use.
+        # The per-entry sidecars of corpus_driver.run_entry_detail (.grade
+        # always -- docs/grading-and-leaf-size.md -- and .via for the native
+        # baseline), opened on first use.
         sidef = {}
         try:
             with open(out_paths[k], "w", encoding="utf-8") as outf, \
@@ -298,7 +299,7 @@ def clear_subset_dir(rr, out_dir):
                                      "wait for it or kill it before a new launch")
     removed = 0
     for name in sorted(os.listdir(out_dir)):
-        if re.fullmatch(r"shard\d+\.(?:out|log|files|caps|proof|via)|pids|source|queue\.log|merge\.out|wait\.log", name):
+        if re.fullmatch(r"shard\d+\.(?:out|log|files|caps|proof|via|grade)|pids|source|queue\.log|merge\.out|wait\.log", name):
             os.unlink(os.path.join(out_dir, name))
             removed += 1
     return removed

@@ -73,7 +73,7 @@ _VALUE_RE = {s: (r"\d+" if s in INT_SWITCHES else r"(?:true|false)")
              for s in SWITCHES}
 SWITCHES_RE = re.compile(
     r"\bswitches: (" + " ".join(rf"{s}={_VALUE_RE[s]}" for s in SWITCHES) + r")")
-SHARD_FILE_RE = re.compile(r"\.shard(?:\d+\.(?:out|log|files|caps|proof|via)|-pids)$")
+SHARD_FILE_RE = re.compile(r"\.shard(?:\d+\.(?:out|log|files|caps|proof|via|grade)|-pids)$")
 
 # A native-`integrate` baseline (probes/corpus/probe-integrate-sample.py)
 # runs no package code, so it has no switch arm to report — but a record
