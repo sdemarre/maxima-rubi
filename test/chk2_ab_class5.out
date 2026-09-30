@@ -1,0 +1,31 @@
+base: test/corpus_class5.chk-head.out (4585 entries)
+new:  test/corpus_class5.chk2-head.out (4585 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS   3871
+PASS->FAIL      1
+FAIL->PASS      6
+FAIL->FAIL    707
+
+=== class transitions (changed only) ===
+ 1002  verified -> expected
+    6  unverified -> verified
+    5  contains-noun -> timeout
+    1  verified -> timeout
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     4  5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac
+    1     0  5 Inverse trig functions/5.3 Inverse tangent/5.3.3 (d+e x)^m (a+b arctan(c x^n))^p.mac
+    0     2  5 Inverse trig functions/5.4 Inverse cotangent/5.4.1 Inverse cotangent functions.mac
+
+=== PASS->FAIL (1) ===
+  verified      -> timeout       t=28.4s -> t=35.4s 5 Inverse trig functions/5.3 Inverse tangent/5.3.3 (d+e x)^m (a+b arctan(c x^n))^p.mac e24
+
+=== FAIL->PASS (6) ===
+  unverified    -> verified      t=0.8s -> t=0.9s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e155
+  unverified    -> verified      t=0.5s -> t=0.6s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e156
+  unverified    -> verified      t=0.6s -> t=0.8s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e158
+  unverified    -> verified      t=0.5s -> t=0.7s 5 Inverse trig functions/5.1 Inverse sine/5.1.5 Inverse sine functions.mac e160
+  unverified    -> verified      t=1.2s -> t=1.3s 5 Inverse trig functions/5.4 Inverse cotangent/5.4.1 Inverse cotangent functions.mac e152
+  unverified    -> verified      t=0.7s -> t=0.8s 5 Inverse trig functions/5.4 Inverse cotangent/5.4.1 Inverse cotangent functions.mac e153

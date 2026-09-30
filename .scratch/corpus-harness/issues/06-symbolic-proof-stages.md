@@ -271,3 +271,12 @@ Next, before any full run (user: improve the checker as far as possible first):
     on its expected-diff (5 s cap) but these entries now pass numerically.
   - Both fixes change verdicts beyond these 69 (any residual with a special function of a
     complex argument); a full-corpus arm is needed to measure them.
+
+- 2026-09-30 12:53: **the one-arm re-run after the two fixes** (`test/checker2_measure.sh`,
+  `e365400`; coeff-together rules, core c01ce534, 24 workers): **65,408 PASS (92.9 %)**, vs arm 2
+  (same rules, previous checker) 65,176 and master's geteqr records 63,497. Against arm 2: 278
+  FAIL -> PASS, 46 PASS -> FAIL, all 46 noise on the 12-worker re-check
+  (`test/chk2_attr_class<N>.out`; class 4's 42 are verified -> timeout at 25-30 s rubi cpu, the
+  cap boundary). Class 1 alone +206 (24,500 -> 24,706).
+  - Label shift from the breadth-first order: e.g. class 4 7,333 verified -> expected (a chain
+    proves the expected-diff before the radcan family proves the self-diff). Both PASS.
