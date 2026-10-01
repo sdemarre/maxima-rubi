@@ -1,0 +1,76 @@
+base: test/corpus_class2.baseline.out (965 entries)
+new:  test/corpus_class2.chk2-head.out (965 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS    586
+PASS->FAIL     39
+FAIL->PASS    289
+FAIL->FAIL     51
+
+=== class transitions (changed only) ===
+  146  deferred -> expected
+   75  verified -> expected
+   61  contains-noun -> expected
+   48  deferred -> verified
+   22  deferred -> contains-noun
+   20  contains-noun -> verified
+   17  verified -> deferred
+   14  contains-noun -> no-answer
+    8  expected -> verified
+    7  verified -> contains-noun
+    6  verified -> timeout
+    5  verified -> unverified
+    4  contains-noun -> deferred
+    3  contains-noun -> timeout
+    2  deferred -> unverified
+    1  expected -> contains-noun
+    1  expected -> unverified
+    1  expected -> deferred
+    1  no-answer -> contains-noun
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    1    33  2 Exponentials/2.1 u (F^(c (a+b x)))^n.mac
+    1    22  2 Exponentials/2.2 (c+d x)^m (F^(g (e+f x)))^n (a+b (F^(g (e+f x)))^n)^p.mac
+   37   234  2 Exponentials/2.3 Exponential functions.mac
+
+=== PASS->FAIL (39) ===
+  verified      -> timeout       t=0.4s -> t=60.1s 2 Exponentials/2.1 u (F^(c (a+b x)))^n.mac e74
+  verified      -> contains-noun t=0.4s -> t=0.4s 2 Exponentials/2.2 (c+d x)^m (F^(g (e+f x)))^n (a+b (F^(g (e+f x)))^n)^p.mac e61
+  expected      -> contains-noun t=0.4s -> t=0.4s 2 Exponentials/2.3 Exponential functions.mac e65
+  verified      -> timeout       t=0.5s -> t=60.0s 2 Exponentials/2.3 Exponential functions.mac e255
+  verified      -> timeout       t=0.5s -> t=59.7s 2 Exponentials/2.3 Exponential functions.mac e256
+  verified      -> timeout       t=0.4s -> t=60.1s 2 Exponentials/2.3 Exponential functions.mac e281
+  verified      -> timeout       t=0.4s -> t=60.1s 2 Exponentials/2.3 Exponential functions.mac e283
+  verified      -> unverified    t=0.4s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e368
+  verified      -> unverified    t=0.4s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e369
+  verified      -> deferred      t=0.4s -> t=0.3s 2 Exponentials/2.3 Exponential functions.mac e438
+  verified      -> deferred      t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e439
+  verified      -> deferred      t=0.5s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e440
+  verified      -> deferred      t=0.4s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e441
+  verified      -> unverified    t=0.4s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e475
+  verified      -> unverified    t=0.4s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e477
+  verified      -> unverified    t=0.4s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e479
+  expected      -> unverified    t=0.4s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e487
+  verified      -> deferred      t=0.4s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e510
+  verified      -> deferred      t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e515
+  verified      -> deferred      t=0.4s -> t=0.1s 2 Exponentials/2.3 Exponential functions.mac e523
+  verified      -> deferred      t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e525
+  verified      -> deferred      t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e530
+  verified      -> deferred      t=0.3s -> t=0.3s 2 Exponentials/2.3 Exponential functions.mac e531
+  verified      -> deferred      t=0.4s -> t=0.3s 2 Exponentials/2.3 Exponential functions.mac e533
+  verified      -> deferred      t=0.4s -> t=0.4s 2 Exponentials/2.3 Exponential functions.mac e534
+  verified      -> deferred      t=0.4s -> t=0.3s 2 Exponentials/2.3 Exponential functions.mac e563
+  verified      -> deferred      t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e564
+  expected      -> deferred      t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e566
+  verified      -> deferred      t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e567
+  verified      -> deferred      t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e568
+  verified      -> deferred      t=0.4s -> t=0.3s 2 Exponentials/2.3 Exponential functions.mac e571
+  verified      -> timeout       t=0.5s -> t=60.1s 2 Exponentials/2.3 Exponential functions.mac e620
+  verified      -> contains-noun t=0.4s -> t=0.5s 2 Exponentials/2.3 Exponential functions.mac e692
+  verified      -> contains-noun t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e694
+  verified      -> contains-noun t=0.4s -> t=1.1s 2 Exponentials/2.3 Exponential functions.mac e750
+  verified      -> contains-noun t=0.4s -> t=0.9s 2 Exponentials/2.3 Exponential functions.mac e755
+  verified      -> contains-noun t=0.4s -> t=0.5s 2 Exponentials/2.3 Exponential functions.mac e756
+  no-answer     -> contains-noun t=0.4s -> t=0.2s 2 Exponentials/2.3 Exponential functions.mac e758
+  verified      -> contains-noun t=0.4s -> t=1.1s 2 Exponentials/2.3 Exponential functions.mac e774

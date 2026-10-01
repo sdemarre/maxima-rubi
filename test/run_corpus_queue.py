@@ -215,6 +215,10 @@ def run_queue(driver, jobs, workers, out_paths, title, detail, build_lines,
         tw = time.time()
         caps_path = os.path.splitext(out_paths[k])[0] + ".caps"
         proof_path = os.path.splitext(out_paths[k])[0] + ".proof"
+        # The per-entry sidecars of corpus_driver.run_entry_detail (.grade
+        # always -- docs/grading-and-leaf-size.md -- and .via for the native
+        # baseline), opened on first use.
+        sidef = {}
         try:
             with open(out_paths[k], "w", encoding="utf-8") as outf, \
                  open(caps_path, "w", encoding="utf-8") as capsf, \
@@ -230,8 +234,9 @@ def run_queue(driver, jobs, workers, out_paths, title, detail, build_lines,
                         ts = time.time()
                         caps = 0
                         proof = None
+                        sides = {}
                         try:
-                            cls, line, caps, proof = driver.run_entry_full(
+                            cls, line, caps, proof, sides = driver.run_entry_detail(
                                 rel, idx, text, line_no)
                         except Exception:
                             cls = "error"
@@ -250,10 +255,18 @@ def run_queue(driver, jobs, workers, out_paths, title, detail, build_lines,
                         if proof is not None:
                             prooff.write(f"{proof} {rel} e{idx + 1} L{line_no}\n")
                             prooff.flush()
+                        for key, val in sides.items():
+                            if key not in sidef:
+                                sidef[key] = open(os.path.splitext(out_paths[k])[0] + "." + key,
+                                                  "w", encoding="utf-8")
+                            sidef[key].write(val + "\n")
+                            sidef[key].flush()
                         with lock:
                             totals[cls] = totals.get(cls, 0) + 1
                             log(f"{'PASS' if cls in driver.PASS_CLASSES else 'FAIL'}: {line}")
                 outf.write("\n".join(summary_lines(driver, counts, time.time() - tw)) + "\n")
+            for fh in sidef.values():
+                fh.close()
         except Exception:
             with lock:
                 failures[0] += 1
@@ -286,7 +299,7 @@ def clear_subset_dir(rr, out_dir):
                                      "wait for it or kill it before a new launch")
     removed = 0
     for name in sorted(os.listdir(out_dir)):
-        if re.fullmatch(r"shard\d+\.(?:out|log|files|caps|proof)|pids|source|queue\.log|merge\.out|wait\.log", name):
+        if re.fullmatch(r"shard\d+\.(?:out|log|files|caps|proof|via|grade)|pids|source|queue\.log|merge\.out|wait\.log", name):
             os.unlink(os.path.join(out_dir, name))
             removed += 1
     return removed
@@ -306,7 +319,9 @@ def main(argv):
     a = parse_args(argv)
     os.chdir(ROOT)
     driver = load_driver(a.section, a.cap)
-    slug = "class" + a.section.split()[0]
+    # A baseline run (MR_BASELINE) has its own shard names, so it can neither
+    # clear nor be merged with the class's package shards.
+    slug = "class" + a.section.split()[0] + (".baseline" if driver.BASELINE else "")
     subset = None
     if a.entries_from:
         subset = {k for k, (c, _t) in read_record(a.entries_from).items() if c == a.cls}
@@ -340,7 +355,7 @@ def main(argv):
            f"  largest unit: {max(unit_costs, default=0.0) / 60:.1f} estimated min"),
         f"estimated core-seconds: {core_sec:.0f}  estimated wall: {est / 60:.1f} min "
         f"(= core-seconds/workers + largest unit; timed entries only)",
-        f"switches: {driver.run_records.switches_text(driver.SWITCH_SETTINGS)}",
+        f"switches:{driver.switch_header().split('switches:', 1)[1]}",
         f"outputs: {outs[0]} .. {os.path.basename(outs[-1])}  pids: {pidfile}  log: {logfile}",
     ]
     if cores and workers > cores:

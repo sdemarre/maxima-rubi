@@ -73,7 +73,7 @@ _VALUE_RE = {s: (r"\d+" if s in INT_SWITCHES else r"(?:true|false)")
              for s in SWITCHES}
 SWITCHES_RE = re.compile(
     r"\bswitches: (" + " ".join(rf"{s}={_VALUE_RE[s]}" for s in SWITCHES) + r")")
-SHARD_FILE_RE = re.compile(r"\.shard(?:\d+\.(?:out|log|files|caps|proof)|-pids)$")
+SHARD_FILE_RE = re.compile(r"\.shard(?:\d+\.(?:out|log|files|caps|proof|via|grade)|-pids)$")
 
 # A native-`integrate` baseline (probes/corpus/probe-integrate-sample.py)
 # runs no package code, so it has no switch arm to report — but a record
@@ -83,7 +83,12 @@ SHARD_FILE_RE = re.compile(r"\.shard(?:\d+\.(?:out|log|files|caps|proof)|-pids)$
 # package arm: baseline shards agree with each other, and a baseline shard
 # can never be merged with a package shard (the guard reports two arms).
 BASELINE_ARM = "none (native integrate baseline)"
-BASELINE_RE = re.compile(r"\bswitches: (none \(native integrate baseline\))")
+# The driver's own baseline mode (MR_BASELINE, 2026-09-30): integrate, then
+# risch where integrate did not pass, through the driver's checker. A third
+# arm, so its shards merge with neither a package run nor the old probe's.
+BASELINE_RISCH_ARM = "none (native integrate+risch baseline)"
+BASELINE_RE = re.compile(
+    r"\bswitches: (none \(native integrate(?:\+risch)? baseline\))")
 
 
 def valid_value(name, value):

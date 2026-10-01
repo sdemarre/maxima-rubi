@@ -621,7 +621,10 @@ python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
 python3 test/test_head_rewrites.py          # Results: 70 passed, 0 failed
 python3 test/test_driver_proof.py           # Results: 29 passed, 0 failed
 python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
+python3 test/test_driver_baseline.py        # Results: 31 passed, 0 failed
+python3 test/test_driver_grade.py           # Results: 21 passed, 0 failed
 maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 55 passed, 0 failed
+maxima --very-quiet -b test/test_mr_grade.mac < /dev/null    # Results: 54 passed, 0 failed
 ```
 
 **The checker** (`test/mr_verify.mac` + `test/mr_verify.lisp`,
@@ -657,6 +660,51 @@ censused against the merged record by `test/merge_proof.py RECORD OUT`; the
 `filter:` line states `verify: 30s cpu, stage 5s`, and the merger carries it.
 Records without that field predate the checker and are NOT comparable on
 `verified`/`unverified`/`timeout`.
+
+**The native baseline** (`MR_BASELINE=1`, user decision 2026-09-30; guarded by
+`test_driver_baseline`) is the driver itself in stock Maxima — no package, no
+rules core — calling `integrate`, and `risch` in a second fresh process when
+integrate's class is `timeout`/`error`/`deferred`/`contains-noun`/`unverified`.
+Each has the 30 s CPU cap and the checker's own budget, so a baseline record
+and a rubi record are read with one ruler. The record takes risch's verdict
+only when risch passes. An `integrate` noun ANYWHERE in the result is no
+answer (`deferred` at top level, `contains-noun` inside): diff sees through
+the noun, so `2*'integrate(foo(x),x) + x^2/2` would otherwise be proved
+correct. The shard's **`.via` sidecar** has one line per entry,
+`<who> integrate=<class>,<cpu>s,<tag> risch=<class>,<cpu>s,<tag> <label>`
+(`risch=-` when not run), merged and censused by
+`test/merge_via.py RECORD OUT GLOB`; the `.proof` sidecar is written as for
+any run. The arm on the `filter:` line is `none (native integrate+risch
+baseline)`; shard names carry `.baseline` (`corpus_class<N>.baseline.shard*`).
+All classes: `setsid sh test/baseline_measure.sh > test/baseline_measure.log 2>&1 < /dev/null &`
+(one class: `MR_BASELINE=1 python3 test/run_corpus_queue.py "<SECTION>" --workers 24 --launch`).
+The old probe `probes/corpus/probe-integrate-sample.py` / `test/run_baseline_pool.py`
+(wall cap, four-stage zero chain, no head normalisation, arm `none (native
+integrate baseline)`) reproduces the pre-2026-09-30 baseline records only; the
+two kinds are NOT comparable.
+
+**The grade** (`test/mr_grade.lisp`, user request 2026-09-30; the full story
+in `docs/grading-and-leaf-size.md`; guarded by
+`test_mr_grade.mac` and `test_driver_grade`) is the A/B/C/F grade and the leaf
+size of the 12000.org independent CAS integration tests (N. Abbasi; the
+grading function is Albert Rich's `GradeAntiderivative`, the report's section
+4.2): an answer of no higher `ExpnType` than the optimal is A when its leaf
+size is at most twice the optimal's, B otherwise, C when it carries `%i` and
+the optimal does not; a higher type is C, or F when it holds an unevaluated
+integral. No antiderivative (`deferred`, `contains-noun`) is F, a timeout
+F(-1), an error F(-2); against a no-closed-form optimal any in-time result is
+A (the reference's rule). The leaf size is Mathematica's `LeafCount` read off
+Maxima's simplified form (rationals and complex numbers as Mathematica holds
+them); the optimal is evaluated under `logexpand:false, radexpand:false`.
+MEASURED against the report's own optimal leaf sizes over the independent
+suites: `probes/leaf-size/02-leaf-count-vs-reference.out`. `ExpnType` uses the
+SageMath port's function lists (the ones the report grades Maxima with). Every
+entry prints `OPTIMAL <leaf> <type>` and an answer `GRADE <g> <leaf> <type>`
+before the checker; the shard's **`.grade` sidecar** has one line per entry,
+`<grade> leaf=<result>/<optimal> type=<result>/<optimal> <label>`, censused by
+`test/merge_grade.py RECORD OUT GLOB` (grade distribution, mean time, mean /
+median leaf size and their normalized values, per-file grades). Both arms of
+a section with every census: `setsid sh test/graded_measure.sh "<SECTION>" > test/graded_measure.log 2>&1 < /dev/null &`.
 
 `test_driver_inert_leak` guards the inert-head leak classification: an answer
 carrying any of the six inert trig heads (`%mr_isin` … `%mr_icsc`, the bridge
