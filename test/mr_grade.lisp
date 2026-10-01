@@ -123,8 +123,15 @@ sum: every real-number term and every numeric complex term."
                 (if rest (+ 1 num (reduce #'+ (mapcar #'mr-leaf rest))) num))
               (+ 1 (reduce #'+ (mapcar #'mr-leaf args))))))))
 
+(defun mr-grade-general (e)
+  "E in general form, simplified. Rubi can answer in CRE (rat) form, anywhere
+in the expression; the walks below would read the CRE's internal gensyms as
+leaves and fail on them (measured 2026-10-01: 136 corpus answers ungraded,
+`#:G823 is not of type LIST')."
+  (simplify ($totaldisrep e)))
+
 (defmfun $mr_leaf_count (e)
-  (mr-leaf (simplify e)))
+  (mr-leaf (mr-grade-general e)))
 
 (defparameter *mr-grade-elementary*
   '("exp" "log" "sin" "cos" "tan" "cot" "sec" "csc"
@@ -178,7 +185,7 @@ and subscripts included."
                    (t 9))))))
 
 (defmfun $mr_expn_type (e)
-  (mr-type (simplify e)))
+  (mr-type (mr-grade-general e)))
 
 (defun mr-grade-has (e pred)
   (cond ((atom e) (funcall pred e))
@@ -195,7 +202,7 @@ and subscripts included."
 (defmfun $mr_grade (result optimal)
   "[grade, leaf(result), leaf(optimal), type(result), type(optimal)]:
 GradeAntiderivative (see the file header)."
-  (let* ((r (simplify result)) (o (simplify optimal))
+  (let* ((r (mr-grade-general result)) (o (mr-grade-general optimal))
          (lr (mr-leaf r)) (lo (mr-leaf o)) (tr (mr-type r)) (to (mr-type o))
          (g (if (<= tr to)
                 (cond ((and (mr-grade-has-i r) (not (mr-grade-has-i o))) "C")
@@ -210,10 +217,10 @@ GradeAntiderivative (see the file header)."
 ;;; with `-' for what could not be computed (an optimal that failed to
 ;;; evaluate: the errcatch list is empty).
 (defmfun $mr_grade_line (tag r opt)
-  (let ((o (and ($listp opt) (cdr opt) (simplify (cadr opt)))))
+  (let ((o (and ($listp opt) (cdr opt) (mr-grade-general (cadr opt)))))
     (if (equal tag "OPTIMAL")
         (if o (format nil "OPTIMAL ~d ~d" (mr-leaf o) (mr-type o)) "OPTIMAL - -")
-        (let ((rs (simplify r)))
+        (let ((rs (mr-grade-general r)))
           (if o
               (let ((g (cdr ($mr_grade rs o))))
                 (format nil "GRADE ~a ~d ~d" (first g) (second g) (fourth g)))

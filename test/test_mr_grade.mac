@@ -96,4 +96,16 @@ check("the driver's OPTIMAL line", mr_grade_line("OPTIMAL", false, [sqrt(x)]), "
 check("an optimal that failed to evaluate", mr_grade_line("GRADE", x, []), "GRADE - 1 1")$
 check("... and its OPTIMAL line", mr_grade_line("OPTIMAL", false, []), "OPTIMAL - -")$
 
+print("--- CRE input (rubi can answer in rat form; its gensyms are not leaves) ---")$
+check("a CRE answer grades like its general form",
+      mr_grade_line("GRADE", rat(atan(x)*x + 2*sqrt(1 - x^2)), [atan(x)*x + 2*sqrt(1 - x^2)]),
+      mr_grade_line("GRADE", atan(x)*x + 2*sqrt(1 - x^2), [atan(x)*x + 2*sqrt(1 - x^2)]))$
+check("a CRE optimal is counted in its general form, (x^2+2*x)/2",
+      mr_grade_line("OPTIMAL", false, [rat(x^2/2 + x)]),
+      mr_grade_line("OPTIMAL", false, [(x^2 + 2*x)/2]))$
+check("a CRE inside a general expression", mr_leaf_count(sin(rat(x + 1))),
+      mr_leaf_count(sin(x + 1)))$
+check("mr_expn_type of a CRE", mr_expn_type(rat(sqrt(x) + 1)), 2)$
+check("mr_grade of a CRE", mr_grade(rat(%i*x), x), mr_grade(%i*x, x))$
+
 printf(true, "Results: ~d passed, ~d failed~%", tests_passed, tests_failed)$
