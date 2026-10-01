@@ -187,26 +187,28 @@ and so on -- a leaf or two either way on most of the 137 inexact optimals.
 
 | | maxima-rubi | Maxima 5.50 integrate+risch |
 |---|---:|---:|
-| A | 1,671 (89.4 %) | 1,385 (74.1 %) |
+| A | 1,672 (89.5 %) | 1,385 (74.1 %) |
 | B | 67 (3.6 %) | 155 (8.3 %) |
 | C | 45 (2.4 %) | 33 (1.8 %) |
 | F | 78 (4.2 %) | 280 (15.0 %) |
 | F(-1) | 7 (0.4 %) | 11 (0.6 %) |
 | F(-2) | 0 | 5 (0.3 %) |
-| solved (A/B/C) | 1,783 (95.4 %) | 1,573 (84.2 %) |
+| solved (A/B/C) | 1,784 (95.5 %) | 1,573 (84.2 %) |
 | PASS (verified) | 1,783 | 1,561 |
 | mean time | 0.16 s | 0.49 s |
-| mean / median leaf size | 54.3 / 28 | 57.4 / 27 |
+| mean / median leaf size | 54.2 / 28 | 57.4 / 27 |
 | normalized mean / median | 1.96 / 1.00 | 1.63 / 1.00 |
 
-One rubi answer is graded `-`: its optimal failed to evaluate in Maxima.
+Every answer is graded. (The first census had one rubi answer at `-`, put down to its
+optimal; it was an answer in CRE form, which the grade could not walk until
+`mr-grade-general` was added, 2026-10-01 -- regraded, it is an A.)
 
 `probes/leaf-size/03-compare-with-reference.py` sets these against the report,
 integral by integral (`03-compare-with-reference.out`, 1,833 integrals):
 
 | | reference | ours |
 |---|---|---|
-| Rubi 4.16.1 in Mathematica vs maxima-rubi | A 97.9 %, B 0.8 %, C 0.3 %, F 1.0 %; solved 99.0 % | A 89.5 %, B 3.5 %, C 2.3 %, F 4.3 %, F(-1) 0.4 %; solved 95.3 % |
+| Rubi 4.16.1 in Mathematica vs maxima-rubi | A 97.9 %, B 0.8 %, C 0.3 %, F 1.0 %; solved 99.0 % | A 89.6 %, B 3.5 %, C 2.3 %, F 4.3 %, F(-1) 0.4 %; solved 95.4 % |
 | Maxima 5.45 via SageMath vs Maxima 5.50 integrate+risch | A 75.5 %, B 8.1 %, C 0.8 %, F 13.6 %, F(-1) 0.2 %, F(-2) 1.7 %; solved 84.4 % | A 75.5 %, B 8.5 %, C 1.8 %, F 13.4 %, F(-1) 0.6 %, F(-2) 0.3 %; solved 85.8 % |
 
 Read with care:
@@ -221,7 +223,7 @@ Read with care:
   Maxima's answers with `tree_size`, we with `LeafCount` (section 1). Where both
   solved, the reference's normalized Maxima size is 0.88 (mean) and ours 1.12 --
   largely the unit, not the answers.
-- **Rubi's sizes are comparable** (both `LeafCount`). Where both solved (1,731
+- **Rubi's sizes are comparable** (both `LeafCount`). Where both solved (1,732
   integrals), Rubi's normalized mean is 1.01 and ours 1.26; the medians are both
   1.00. The 57 A -> B and 41 A -> C integrals are where maxima-rubi's answer is
   larger than, or of a higher type than, the answer Rubi gives in Mathematica
