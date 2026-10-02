@@ -623,6 +623,7 @@ python3 test/test_driver_proof.py           # Results: 29 passed, 0 failed
 python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
 python3 test/test_driver_baseline.py        # Results: 31 passed, 0 failed
 python3 test/test_driver_grade.py           # Results: 21 passed, 0 failed
+python3 test/test_ab_grades.py              # Results: 8 passed, 0 failed
 maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 55 passed, 0 failed
 maxima --very-quiet -b test/test_mr_grade.mac < /dev/null    # Results: 54 passed, 0 failed
 ```
