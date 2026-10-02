@@ -381,7 +381,9 @@ product walk (12 checks): `Results: 1638 passed, 0 failed`; with `%mr_neg1pow`, 
 principal `(-1)^e` (8 checks): `Results: 1646 passed, 0 failed`; with `%mr_fullSimplify`
 reducing logs of numbers before its `ratsimp` (6 checks): `Results: 1652 passed, 0 failed`;
 with the 1.1.2.6 r13/r14 upstream erratum (3 checks): `Results: 1655 passed, 0 failed`;
-with the 4.1.0.2 r18 erratum (3 checks): **`Results: 1658 passed, 0 failed`**. The
+with the 4.1.0.2 r18 erratum (3 checks): `Results: 1658 passed, 0 failed`; with the %i
+fold of the top-level answer (`%mr_ifold`, `%mr_top_final`, `.scratch/answer-quality/issues/01`,
+2026-10-02, 30 checks): **`Results: 1688 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
@@ -586,7 +588,10 @@ Every later `defmvar` run switch rides the same plumbing (`test/run_records.py`
 SWITCHES); the latest, `mr_eqq_symbolic` (default true, 2026-09-25), selects
 the EqQ/NeQ zero test — false is the syntactic `is(u - v = 0)` of every
 earlier record (`.scratch/matcher-translation-fixes/issues/03`,
-`probes/matcher/26-eqq-symbolic-zero-test.out`).
+`probes/matcher/26-eqq-symbolic-zero-test.out`); `mr_ifold` (default true,
+2026-10-02) folds `%i` out of the top-level answer (`.scratch/answer-quality/issues/01`);
+false reproduces the earlier answers. Adding a switch makes every older record's
+`filter:` line unreadable as an arm (`run_records.record_switches` returns None).
 The driver assigns them in every entry text and ends its `filter:`
 line with `switches: …`; the mergers refuse shards that state no arm
 or two arms. A launch first deletes the previous run's shard files and

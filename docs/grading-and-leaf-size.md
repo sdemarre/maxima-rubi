@@ -181,21 +181,22 @@ and so on -- a leaf or two either way on most of the 137 inexact optimals.
 ## 4. First results: the independent test suites
 
 `test/graded_measure.sh "0 Independent test suites"` (1,869 integrals, 24 workers,
-30 s CPU per integrator plus 30 s of verification): records
+30 s CPU per integrator plus 30 s of verification; the rubi column re-measured
+2026-10-02 with the %i fold, section 5): records
 `test/corpus_class0.out` and `test/corpus_class0.baseline.out`, grade censuses
 `test/corpus_class0.grade.out` and `test/corpus_class0.baseline.grade.out`.
 
 | | maxima-rubi | Maxima 5.50 integrate+risch |
 |---|---:|---:|
-| A | 1,672 (89.5 %) | 1,385 (74.1 %) |
+| A | 1,679 (89.8 %) | 1,385 (74.1 %) |
 | B | 67 (3.6 %) | 155 (8.3 %) |
-| C | 45 (2.4 %) | 33 (1.8 %) |
-| F | 78 (4.2 %) | 280 (15.0 %) |
-| F(-1) | 7 (0.4 %) | 11 (0.6 %) |
+| C | 38 (2.0 %) | 33 (1.8 %) |
+| F | 77 (4.1 %) | 280 (15.0 %) |
+| F(-1) | 8 (0.4 %) | 11 (0.6 %) |
 | F(-2) | 0 | 5 (0.3 %) |
 | solved (A/B/C) | 1,784 (95.5 %) | 1,573 (84.2 %) |
 | PASS (verified) | 1,783 | 1,561 |
-| mean time | 0.16 s | 0.49 s |
+| mean time | 0.18 s | 0.49 s |
 | mean / median leaf size | 54.2 / 28 | 57.4 / 27 |
 | normalized mean / median | 1.96 / 1.00 | 1.63 / 1.00 |
 
@@ -204,7 +205,8 @@ optimal; it was an answer in CRE form, which the grade could not walk until
 `mr-grade-general` was added, 2026-10-01 -- regraded, it is an A.)
 
 `probes/leaf-size/03-compare-with-reference.py` sets these against the report,
-integral by integral (`03-compare-with-reference.out`, 1,833 integrals):
+integral by integral (`03-compare-with-reference.out`, 1,833 integrals; measured on
+the records of 2026-10-01, before the %i fold):
 
 | | reference | ours |
 |---|---|---|
@@ -230,7 +232,36 @@ Read with care:
   (15 of rubi's C grades on the section are a `hypergeometric` answer where the
   optimal is elementary): port work, like the 56 A -> F.
 
-## 5. Where this lives
+## 5. The %i fold (2026-10-02)
+
+Rubi integrates hyperbolic functions through the trig rules: `DeactivateTrigAux`
+rewrites `Sinh[u]` as `-I*sin[I*u]`, and Mathematica's evaluator folds the result
+back (`Sin[I a + I b x]` -> `I Sinh[a + b x]`). Maxima's `%iargs` folds `sin(%i*v)`
+only when the argument is literally a multiple of `%i`, so rubi's answers kept
+`sin(%i*b*x+%i*a)` and its `%i` -- correct, but graded C by the grade's `%i` rule
+(section 6: 1,854 C of 5,080). The top-level answer now passes through `%mr_ifold`
+under `radexpand:false, logexpand:false` (run switch `mr_ifold`, default true; spec
+`docs/superpowers/specs/2026-10-02-ifold-answer-design.md`, ticket
+`.scratch/answer-quality/issues/01`). Measured before shipping on every entry it can
+act on (`probes/leaf-size/05`, `06`), then by re-running every section's rubi arm
+(build `branch_5_50_base_84_g4204fb669`, 24 workers, 30 s CPU;
+`.scratch/answer-quality/ifold_ab/`):
+
+| | before | with the fold |
+|---|---:|---:|
+| rubi A, all sections | 60,716 (84.0 %) | 62,583 (86.6 %) |
+| rubi C, all sections | 3,102 (4.3 %) | 1,187 (1.6 %) |
+| section 6 A / C | 2,534 / 1,854 | 4,057 / 283 |
+| entries integrate+risch grades better than rubi | 3,793 | 2,482 |
+
+No PASS -> FAIL outside nine section-6 entries whose answers the checker cannot prove
+in the folded shape (their original answers pass only by a symbolic stage; both
+forms agree point for point with principal-branch arithmetic and differentiate to
+the integrand, probe 06) and four section-4 entries at the 30 s cap (verified at
+29.7-29.9 s before; they verify at ~18 s in both switch arms at 4 workers). No grade
+got worse but those four. The whole-corpus numbers: `test/grade_report.out`.
+
+## 6. Where this lives
 
 | what | where |
 |---|---|
@@ -239,5 +270,7 @@ Read with care:
 | the sidecar in the queue runner | `test/run_corpus_queue.py` |
 | the census | `test/merge_grade.py` |
 | both arms of a section, every census | `test/graded_measure.sh` |
-| guards | `test/test_mr_grade.mac`, `test/test_driver_grade.py` |
-| the reference data and the measurements | `probes/leaf-size/01`-`03` |
+| guards | `test/test_mr_grade.mac`, `test/test_driver_grade.py`, `test/test_ab_grades.py` |
+| the grade A/B of two runs | `test/ab_grades.py` |
+| the %i fold | `maxima_rubi_utils.mac` (`%mr_ifold`, `%mr_top_final`), switch `mr_ifold` |
+| the reference data and the measurements | `probes/leaf-size/01`-`06` |
