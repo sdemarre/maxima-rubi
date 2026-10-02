@@ -167,6 +167,7 @@ run_all_tests() := block([],
   test_class4_cluster_b(),
   test_class4_cluster_c(),
   test_class4_e2e(),
+  test_ifold_unit(),
   test_census(),
   print(""),
   print("========================================"),
@@ -5976,6 +5977,51 @@ test_rubi_errata() := block([mr_er_saved, mr_er_ok, mr_er_back, mr_er_f, mr_er_r
     check_bool("errata: 4_1_0_2 r18 still takes sec*tan^3 (b = 1)",
       is(%mr_rule_accept(_mr_rule_4_1_0_2_r18, %mr_isec(x)*%mr_itan(x)^3, x)
          # false))),
+  true
+)$
+
+/* The %i fold of the top-level answer (.scratch/answer-quality/issues/01,
+   spec docs/superpowers/specs/2026-10-02-ifold-answer-design.md). The fold
+   itself: %mr_ifold under the flags %mr_top_final binds. Expected forms are
+   the measured outputs of the build (2026-10-02). */
+t_if(t_if_e) := block([radexpand : false, logexpand : false], %mr_ifold(t_if_e))$
+test_ifold_unit() := block([t_if_r, t_if_e],
+  print("--- the %i fold: %mr_ifold ---"),
+  check("ifold: sin of an imaginary sum", t_if(sin(%i*b*x+%i*a)), %i*sinh(b*x+a)),
+  check("ifold: cos of an imaginary sum", t_if(cos(%i*b*x+%i*a)), cosh(b*x+a)),
+  check("ifold: the outer %i multiplies out", t_if(-%i*(%i*X+%i*Y)), X+Y),
+  check("ifold: nested (6.1.1 e1's shape)",
+        t_if(-(%i*((%i*x*cos(%i*b*x+%i*a))/b-sin(%i*b*x+%i*a)/b^2))),
+        (x*cosh(b*x+a))/b-sinh(b*x+a)/b^2),
+  check("ifold: a product of folded functions",
+        t_if(-((%i*cos(%i*b*x+%i*a)*sin(%i*b*x+%i*a))/(2*b))-x/2),
+        (cosh(b*x+a)*sinh(b*x+a))/(2*b)-x/2),
+  check("ifold: inside a log", t_if(log(cos(%i*b*x+%i*a))/b), log(cosh(b*x+a))/b),
+  check("ifold: atan -> %i atanh", t_if(atan(%i*x+%i*a)), %i*atanh(x+a)),
+  check("ifold: acot -> -%i acoth", t_if(acot(%i*x+%i*a)), -%i*acoth(x+a)),
+  /* untouched */
+  t_if_e : x^2 + sin(x),
+  check_bool("ifold: an %i-free answer is returned itself", is(t_if(t_if_e) = t_if_e)),
+  check_bool("ifold: an %i-free CRE answer stays CRE", ratp(t_if(rat(x^2/2 + x)))),
+  check("ifold: a CRE answer with %i keeps its value",
+        radcan(t_if(rat(%i*x+%i*a)) - (%i*x+%i*a)), 0),
+  check("ifold: an unfoldable %i keeps its value",
+        radcan(t_if(sqrt(%i*x+%i*a)) - sqrt(%i*x+%i*a)), 0),
+  t_if_e : 'unintegrable(sin(%i*x+%i*a), x),
+  check_bool("ifold: the unintegrable noun is opaque", is(t_if(t_if_e) = t_if_e)),
+  t_if_e : 'integrate(sin(%i*x+%i*a), x),
+  check_bool("ifold: the integrate noun is opaque", is(t_if(t_if_e) = t_if_e)),
+  t_if_r : t_if(sin(%i*x+%i*a) + 'integrate(cos(%i*x+%i*a), x)),
+  check_bool("ifold: a noun inside a sum is opaque, its sibling folds",
+             is(t_if_r = %i*sinh(x+a) + 'integrate(cos(%i*x+%i*a), x))),
+  /* the flags: the folded power keeps its base whole under radexpand:false;
+     under the defaults it splits onto the wrong branch (the hazard) */
+  t_if_r : t_if(cot(%i*b*x+%i*a)^(1/3)),
+  check_bool("ifold: under the flags the folded power keeps its base",
+             is(op(t_if_r) = "^") and is(part(t_if_r, 2) = 1/3)
+             and is(part(t_if_r, 1) = -%i*coth(b*x+a))),
+  check_bool("ifold: under radexpand:true the same fold splits (the hazard)",
+             freeof(%i, block([radexpand : true], %mr_ifold(cot(%i*b*x+%i*a)^(1/3))))),
   true
 )$
 

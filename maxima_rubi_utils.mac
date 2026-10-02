@@ -259,6 +259,42 @@ depth_level : 0$
     else mr_unintegrable(%mr_top_f, x)
   ) else %mr_top_ans)$
 
+/* ---- the %i fold of the top-level answer -------------------------------
+   (.scratch/answer-quality/issues/01; spec
+   docs/superpowers/specs/2026-10-02-ifold-answer-design.md.) Rubi
+   integrates hyperbolics through the trig rules: DeactivateTrigAux
+   (IntegrationUtilityFunctions.m:6198, %mr_deactivateTrigAux below)
+   rewrites Sinh[u] as -I*sin[I*u], and Mathematica's evaluator folds the
+   result back (Sin[I a + I b x] -> I Sinh[a + b x]). Maxima's %iargs
+   folds sin(%i*v) only when the argument is literally a multiple of %i,
+   so rubi's answers kept sin(%i*b*x+%i*a) and their %i (section 6 graded C
+   on 1,854 of 5,080). %mr_ifold puts each such argument into the literal
+   form %iargs folds, and pulls %i out of a sum whose every term carries
+   one. Probe 04's fold, plus two guards: an %i-free expression is returned
+   itself (a CRE answer stays CRE), and the integrate / unintegrable nouns
+   are opaque (the top-level no-answer noun keeps its operator; an
+   unintegrated integrand is not an answer). It binds no flag: its caller,
+   %mr_top_final, binds radexpand:false, logexpand:false -- under the
+   defaults the simplifier splits the folded powers onto the wrong branch,
+   (-%i*y)^(2/3) -> -y^(2/3) (probes/leaf-size/05, MR_IFOLD_FLAGS=default).
+   Measured on every entry it can act on (probe 05): no grade worse. */
+%mr_ifold(%mr_if_e) :=
+  if freeof(%i, %mr_if_e) or atom(%mr_if_e) then %mr_if_e
+  else if member(string(op(%mr_if_e)), ["integrate", "unintegrable"]) then %mr_if_e
+  else block([%mr_if_o : op(%mr_if_e), %mr_if_a : map('%mr_ifold, args(%mr_if_e)), %mr_if_v],
+    if member(%mr_if_o, [sin, cos, tan, cot, sec, csc, sinh, cosh, tanh, coth, sech, csch,
+                         asin, acos, atan, acot, asec, acsc,
+                         asinh, acosh, atanh, acoth, asech, acsch])
+       and length(%mr_if_a) = 1 and not freeof(%i, %mr_if_a[1]) then (
+      %mr_if_v : ratsimp(%mr_if_a[1]/%i),
+      if freeof(%i, %mr_if_v) then apply(%mr_if_o, [%i*%mr_if_v])
+      else apply(%mr_if_o, %mr_if_a))
+    else if %mr_if_o = "+" and not freeof(%i, %mr_if_a) then (
+      %mr_if_v : map(lambda([%mr_if_t], %mr_if_t/%i), %mr_if_a),
+      if freeof(%i, %mr_if_v) then %i*apply("+", %mr_if_v)
+      else apply(%mr_if_o, %mr_if_a))
+    else apply(%mr_if_o, %mr_if_a))$
+
 /* Under rubi_verbose : matches the top-level call (depth 0: rubi,
    rubi_fallback) answers [answer, steps], steps the list of the fired
    rules' nodes [rule, 'integrate(f, x), rhs, [child steps]], outermost first
