@@ -248,6 +248,23 @@ from Rubi, which ignores assumptions. User decision 2026-09-25
 (matcher-translation-fixes issue 02; probes/gtq/: over 8,843 corpus calls
 the two readings disagreed on 10 and changed no verdict).")
 
+(defmvar $mr_ifold t
+  "Run switch: true (default) = the top-level call's answer is passed through
+%mr_ifold (maxima_rubi_utils.mac) under radexpand:false, logexpand:false,
+which folds %i out of a trig / hyperbolic / inverse function of an imaginary
+argument the way Mathematica's evaluator does (sin(%i*b*x+%i*a) ->
+%i*sinh(b*x+a)); false = the answer as the rules built it, every record
+before 2026-10-02.
+
+WHY (.scratch/answer-quality/issues/01, user decision 2026-10-02). Rubi
+integrates hyperbolics through the trig rules (DeactivateTrigAux,
+Sinh[u] -> -I*sin[I*u]) and relies on Mathematica's evaluator to fold the I
+back out; Maxima's %iargs folds sin(%i*v) only when the argument is literally
+a multiple of %i. Section 6 graded C on 1,854 of 5,080 answers for it.
+Measured on every entry it can act on (probes/leaf-size/05): no grade worse,
+section 6 C->A 1,511, 0 PASS lost outside 9 attributed checker artefacts
+(probe 06).")
+
 ;; The EqQ fast path (%mr_symbolicZeroQ, maxima_rubi_utils.mac): an
 ;; EXPANDED polynomial -- a number, a variable symbol, a product of numbers
 ;; and integer powers of variable symbols, or a sum of such terms -- is in
