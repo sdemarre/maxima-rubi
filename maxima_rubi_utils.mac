@@ -295,15 +295,30 @@ depth_level : 0$
       else apply(%mr_if_o, %mr_if_a))
     else apply(%mr_if_o, %mr_if_a))$
 
+/* The top-level answer's last step: the %i fold (%mr_ifold above) under
+   the run switch mr_ifold, with radexpand:false, logexpand:false bound
+   here -- not by mr_model_flags: without them the fold is unsound. Inside
+   errcatch, errormsg off: a fold that errors returns the answer unfolded,
+   so the fold can never cost an answer. */
+%mr_top_final(%mr_tf_ans) :=
+  if mr_ifold # true then %mr_tf_ans
+  else block([%mr_tf_r : block([errormsg : false],
+                                errcatch(block([radexpand : false, logexpand : false],
+                                               %mr_ifold(%mr_tf_ans))))],
+    if %mr_tf_r = [] then %mr_tf_ans else first(%mr_tf_r))$
+
 /* Under rubi_verbose : matches the top-level call (depth 0: rubi,
    rubi_fallback) answers [answer, steps], steps the list of the fired
    rules' nodes [rule, 'integrate(f, x), rhs, [child steps]], outermost first
-   (maxima_rubi_dispatch.lisp %mr_take_steps). Nested calls answer as ever. */
+   (maxima_rubi_dispatch.lisp %mr_take_steps). Nested calls answer as ever.
+   The depth-0 answer passes through %mr_top_final, the %i fold; the steps
+   keep the rules' form. */
 mr_top(%mr_top_f, x, %mr_top_fb) :=
   if depth_level = 0 and %mr_verbose_matches() then block([%mr_top_ans],
     %mr_take_steps(),
     %mr_top_ans : %mr_top_body(%mr_top_f, x, %mr_top_fb),
-    [%mr_top_ans, %mr_take_steps()])
+    [%mr_top_final(%mr_top_ans), %mr_take_steps()])
+  else if depth_level = 0 then %mr_top_final(%mr_top_body(%mr_top_f, x, %mr_top_fb))
   else %mr_top_body(%mr_top_f, x, %mr_top_fb)$
 
 /* Nested sub-integral entry: every generated replacement calls mr_int by

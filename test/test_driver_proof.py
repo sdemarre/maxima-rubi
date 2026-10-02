@@ -158,6 +158,10 @@ def merge_filter_verify(drv, verify):
     run uses, and removed again."""
     real = open(os.path.join(HERE, "corpus_class2.pfs.out"), encoding="utf-8").read()
     flt = [l for l in real.splitlines() if l.startswith("filter:")][0]
+    # The record predates later run switches (mr_ifold, 2026-10-02); the
+    # mergers require the current switch list, so state the default arm.
+    flt = re.sub(r"switches: .*$", "switches: " + drv.run_records.switches_text(
+        drv.run_records.SWITCH_DEFAULTS), flt)
     flt += f"  verify: {verify}"
     suite = os.path.join(ROOT, "reference", "maxima-syntax-test-suite")
     rels = []
