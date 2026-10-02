@@ -1,6 +1,6 @@
 # Hyperbolic answers keep an %i: sin(%i*a + %i*b*x) is never folded back to %i*sinh(a + b*x)
 
-Status: needs-triage
+Status: ready-for-agent
 Type: answer quality (grade C, verdict unaffected) — section 6, ~1,850 entries
 Filed: 2026-10-01
 
@@ -91,3 +91,45 @@ step: the package's rule is Rubi's own rules, not extra machinery
   explained.
 
 ## Comments
+
+### 2026-10-02 -- triage: option (a), measured; decided
+
+**Where the conversion happens.** Rubi's `DeactivateTrigAux`
+(`IntegrationUtilityFunctions.m:6198`; port `%mr_deactivateTrigAux`,
+`maxima_rubi_utils.mac:6145`) rewrites `Sinh[u]` as `-I*sin[I*u]` and its
+siblings. No Rubi rule or utility folds the `I` back out: `Simp`/`SimpHelp`
+(`:2265`) keeps a trig argument as it is, and `SimpFixFactor` only pulls `I`
+out of a power of a sum. The fold in Mathematica's output is its evaluator's,
+wherever an expression is built -- so option (b) has no single boundary.
+
+**Option (a) measured on every entry it can act on.** Probe
+`probes/leaf-size/05-ifold-all-sections.py` (output `.out`): by the grade's
+rule (`test/mr_grade.lisp:207`), an A/B answer carries `%i` only when its
+optimal does, so the candidates are every C plus every A/B with `%i` in the
+optimal -- 8,332 entries, sections 0-8. The fold is probe 04's `mr_ifold`, run
+under `radexpand:false, logexpand:false`.
+
+- Outside section 6: 5,918 candidates, 739 changed; C->A 343 (section 7:
+  274), B->A 2, C->B 1; **no grade worse, 0 PASS lost**.
+- Section 6: 2,414 candidates, 2,074 changed; C->A 1,511, C->B 60, B->A 10;
+  **no grade worse**; 9 PASS lost (below). C 1,854 -> ~283.
+- The fold costs 2-10 ms CPU.
+- **The flags are required.** Folded under Maxima's defaults, the simplifier
+  splits the folded powers -- `(-%i*y)^(2/3)` -> `-y^(2/3)`, wrong on the
+  principal branch -- and the first run of the probe (not kept) had wrong
+  answers and one A->B. `MR_IFOLD_FLAGS=default` reproduces it.
+
+**The 9 PASS -> unverified** (6.4.2 e14/e22/e26/e47, 6.7.1
+e57/e58/e64/e65/e66; cube roots of cot/sin of an imaginary argument) are the
+checker's, not the fold's: their original answers already mismatch in the
+numeric check and pass only by the symbolic chainA.1, which times out on the
+folded shape. Probe `probes/leaf-size/06-ifold-principal-branch.py`
+evaluates both answers and the integrand with principal-branch complex
+arithmetic (cmath): R0 = R1 at all 27 points, and both differentiate to the
+integrand (worst 8.4e-9).
+
+**Decision (user, 2026-10-02):** option (a) -- the depth-0 fold in `mr_top`,
+under `radexpand:false, logexpand:false`. The 9 entries above are accepted as
+attributed checker artefacts: the acceptance's 0 PASS -> FAIL excludes exactly
+them.
+
