@@ -78,6 +78,17 @@ In `maxima_rubi_utils.mac`, beside `mr_top`. Bottom-up over `e`:
      `%i*(the sum of those quotients)`, so `-%i*(%i*X + %i*Y)` multiplies out.
    Anything else is rebuilt from its folded arguments.
 
+The folding itself is Maxima's: the core option `%iargs` (default `true`)
+simplifies `sin(%i*v)` to `%i*sinh(v)` (and its siblings) when the argument is
+literally a multiple of `%i`; `%mr_ifold` only rewrites each argument into that
+form, and adds the sum rule, which `%iargs` has no counterpart for. trigtools
+was checked (2026-10-02, its manual via `?? trigtools`) and has no equivalent:
+`c2trig` converts the other way (hyperbolic -> trig, Rubi's `DeactivateTrig`
+direction), `c2hyp` rewrites `exp(z)` as `sinh(z)+cosh(z)` and, after
+`exponentialize`, returns the answer as `cos(%i*...) + %i*sin(%i*...)`, and
+the others (`c2sin`, `c2cos`, `trigfactor`, `trigsolve`, `trigvalue`,
+`trigeval`, `atan_contract`) do not touch a function of an imaginary argument.
+
 The guards only narrow what the fold touches: the fast path changes nothing
 on an answer with `%i`, and the noun guard only differs from the prototype on
 an answer that carries an `integrate`/`unintegrable` noun — no-answer and F
