@@ -625,9 +625,9 @@ python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
 python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
 python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
 python3 test/test_head_rewrites.py          # Results: 70 passed, 0 failed
-python3 test/test_driver_proof.py           # Results: 29 passed, 0 failed
+python3 test/test_driver_proof.py           # Results: 30 passed, 0 failed
 python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
-python3 test/test_driver_baseline.py        # Results: 31 passed, 0 failed
+python3 test/test_driver_baseline.py        # Results: 52 passed, 0 failed
 python3 test/test_driver_grade.py           # Results: 21 passed, 0 failed
 python3 test/test_ab_grades.py              # Results: 8 passed, 0 failed
 maxima --very-quiet -b test/test_mr_verify.mac < /dev/null   # Results: 55 passed, 0 failed
@@ -672,9 +672,19 @@ Records without that field predate the checker and are NOT comparable on
 `test_driver_baseline`) is the driver itself in stock Maxima — no package, no
 rules core — calling `integrate`, and `risch` in a second fresh process when
 integrate's class is `timeout`/`error`/`deferred`/`contains-noun`/`unverified`.
-Each has the 30 s CPU cap and the checker's own budget, so a baseline record
-and a rubi record are read with one ruler. The record takes risch's verdict
-only when risch passes. An `integrate` noun ANYWHERE in the result is no
+The two share ONE 30 s CPU budget (user decision 2026-10-03,
+`.scratch/corpus-harness/issues/11` option (b)): risch gets what integrate left
+and is not run when nothing is; each run has the checker's own budget, so a
+baseline record and a rubi record are read with one ruler. The record takes
+risch's verdict only when risch passes, and its `t=` is then the two runs' sum.
+Every arm reads the time into `mr_dt` before calling `printf`: in stock Maxima
+the first `printf` autoloads `stringproc` (~0.23 s) before evaluating its
+arguments, which put a 0.3-0.5 s floor under every native `t=` until
+2026-10-03 (`probes/timing/01-first-call-cost.out`). The `filter:` line states
+`timing: printf-free` (rubi) or `timing: printf-free+one-budget` (baseline);
+the merger refuses shards that disagree, and older native records are not
+comparable on time. `test/attrib_one_budget.py OLD OLD.via NEW NEW.via`
+attributes a baseline re-run's PASS -> FAIL to the one budget. An `integrate` noun ANYWHERE in the result is no
 answer (`deferred` at top level, `contains-noun` inside): diff sees through
 the noun, so `2*'integrate(foo(x),x) + x^2/2` would otherwise be proved
 correct. The shard's **`.via` sidecar** has one line per entry,
@@ -683,7 +693,7 @@ correct. The shard's **`.via` sidecar** has one line per entry,
 `test/merge_via.py RECORD OUT GLOB`; the `.proof` sidecar is written as for
 any run. The arm on the `filter:` line is `none (native integrate+risch
 baseline)`; shard names carry `.baseline` (`corpus_class<N>.baseline.shard*`).
-All classes: `setsid sh test/baseline_measure.sh > test/baseline_measure.log 2>&1 < /dev/null &`
+All classes (0-8, A/B against the pre-issue-11 records read from git): `setsid sh test/baseline_measure.sh > test/baseline_measure.log 2>&1 < /dev/null &`
 (one class: `MR_BASELINE=1 python3 test/run_corpus_queue.py "<SECTION>" --workers 24 --launch`).
 The old probe `probes/corpus/probe-integrate-sample.py` / `test/run_baseline_pool.py`
 (wall cap, four-stage zero chain, no head normalisation, arm `none (native

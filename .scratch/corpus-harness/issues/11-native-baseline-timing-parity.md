@@ -1,6 +1,6 @@
 # The native baseline's times are not comparable with rubi's
 
-Status: ready-for-agent
+Status: implemented 2026-10-03 (driver, guards, runner); native re-run of sections 0-8 launched the same night, A/B pending
 Type: harness fidelity (timing)
 Filed: 2026-10-03 (user request: time both arms the same way, then shared
 maxima-rubi / native time histograms in the grade report artifact)

@@ -521,6 +521,17 @@ def verify_header():
             + (f", stages {','.join(PROOF_STAGES)}" if PROOF_STAGES else ""))
 
 
+def timing_header():
+    """Suffix for the record's `filter:` line: the timing mode
+    (.scratch/corpus-harness/issues/11). `printf-free`: ANSWERED is read
+    before printf is called, so a stock Maxima's stringproc autoload is not
+    in t= (probes/timing/01); `+one-budget`, the native baseline: risch gets
+    only what integrate left of TIMEOUT, and a risch verdict's t= is the two
+    runs' sum. A record without it predates both, and its native t= carry the
+    autoload."""
+    return "  timing: printf-free" + ("+one-budget" if BASELINE else "")
+
+
 def core_header():
     """Suffix for the record's `filter:` header line: names a pinned core
     (the shard merge accepts any `filter:` line), empty otherwise."""
@@ -834,7 +845,11 @@ def build_text(f_text, var_text, e_text, e_text2=None, integrator=None):
     # TIMEOUT + VERIFY_CAP, and a process killed after this line was killed
     # while VERIFYING, which is not a rubi timeout (classify_entry). It comes
     # after the queued prompt answers, which must directly follow the call
-    # whose sign questions they answer.
+    # whose sign questions they answer. The time is read into mr_dt BEFORE
+    # printf is called: in stock Maxima printf is an autoload stub, and its
+    # first call loads stringproc (~0.23 s CPU) before evaluating its
+    # arguments, which put the load inside the native arms' timed window
+    # (probes/timing/01-first-call-cost.out, .scratch/corpus-harness/issues/11).
     if integrator is not None:
         switches = ""
     head = (switches + ("" if integrator is not None else "mr_depth_cap_hits : 0$\n")
@@ -842,7 +857,8 @@ def build_text(f_text, var_text, e_text, e_text2=None, integrator=None):
             + "mr_t0 : elapsed_run_time()$\n"
             f"mr_r: {call}$\n"
             + "pos$\n" * 40 + "no$\n" * 20
-            + 'printf(true, "ANSWERED ~,3f~%", elapsed_run_time() - mr_t0)$\n'
+            + "mr_dt : elapsed_run_time() - mr_t0$\n"
+            + 'printf(true, "ANSWERED ~,3f~%", mr_dt)$\n'
             + "?finish\\-output()$\n"
             + 'load("test/mr_verify.mac")$\n'
             + 'load("test/mr_grade.lisp")$\n'
@@ -947,7 +963,7 @@ def header_lines(title, detail, build_lines):
              f"date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"]
             + list(build_lines)
             + [f"filter: {FILTER!r}  {detail}" + switch_header()
-               + core_header() + zc_header() + verify_header(), ""])
+               + core_header() + zc_header() + verify_header() + timing_header(), ""])
 
 
 class EntryResult:
@@ -963,12 +979,14 @@ class EntryResult:
         self.optimal, self.grade = optimal, grade
 
 
-def classify_entry(out, timed_out):
+def classify_entry(out, timed_out, budget=None):
     """Read an entry run's output (see build_text / test/mr_verify.mac).
+    BUDGET is the integrator's own CPU budget, TIMEOUT unless given (the
+    native baseline's risch run gets what integrate left of it).
 
     - no ANSWERED line: rubi never returned -- `timeout` if the process hit
       its cap, `error` otherwise;
-    - ANSWERED above TIMEOUT: `timeout` -- rubi overran its own budget, even
+    - ANSWERED above BUDGET: `timeout` -- rubi overran its own budget, even
       though the verification budget let it finish;
     - a CLASS line: that class, with its PROOF tag;
     - killed after ANSWERED with no CLASS line: killed while verifying. The
@@ -1007,7 +1025,7 @@ def classify_entry(out, timed_out):
                 caps = 0
     if rubi_cpu is None:
         return EntryResult("timeout" if timed_out else "error", caps, None, None)
-    if rubi_cpu > TIMEOUT:
+    if rubi_cpu > (TIMEOUT if budget is None else budget):
         return EntryResult("timeout", caps, None, rubi_cpu, optimal)
     if cls is None and timed_out:
         verified = [o for w, o in numeric if w == "verified"]
@@ -1033,22 +1051,25 @@ def classify_output(out, timed_out):
     return r.cls, r.caps
 
 
-def _run_once(label, f_text, var_text, e_text, e_text2, integrator=None):
-    """One Maxima subprocess for one entry at the TIMEOUT + VERIFY_CAP
-    process cap: (EntryResult, seconds). The seconds are the integrator's own
+def _run_once(label, f_text, var_text, e_text, e_text2, integrator=None, budget=None):
+    """One Maxima subprocess for one entry at the BUDGET + VERIFY_CAP
+    process cap, BUDGET being TIMEOUT unless given (the native baseline's
+    risch run): (EntryResult, seconds). The seconds are the integrator's own
     CPU (the ANSWERED line) -- the quantity the TIMEOUT cap bounds since
     verification got its own budget. Without an ANSWERED line they are the
     process's CPU seconds (under a CPU cap), or its wall (a wall-backstop
     kill leaves no `times` dump)."""
+    if budget is None:
+        budget = TIMEOUT
     t_start = time.time()
     cpu_out = []
     out, timed_out = maxima_run(
         build_text(f_text, var_text, e_text, e_text2, integrator),
-        TIMEOUT + VERIFY_CAP, cpu_out)
+        budget + VERIFY_CAP, cpu_out)
     dt = time.time() - t_start
     if cpu_out and cpu_out[0] is not None:
         dt = cpu_out[0]
-    r = classify_entry(out, timed_out)
+    r = classify_entry(out, timed_out, budget)
     if r.rubi_cpu is not None:
         dt = r.rubi_cpu
     if r.cls == "error":
@@ -1103,11 +1124,15 @@ def run_entry_detail(rel, idx, entry_text, line_no):
 
     The native baseline (MR_BASELINE) runs `integrate` in its own process
     and, when its class is in BASELINE_RETRY, `risch` in a second one -- a
-    fresh process, so an integrate that ran out its cap cannot starve risch
-    and nothing integrate asserted leaks into it; each has the full TIMEOUT
-    and VERIFY_CAP. The record takes risch's verdict only when risch PASSES;
+    fresh process, so nothing integrate asserted leaks into it. The two share
+    ONE TIMEOUT (user decision 2026-10-03, .scratch/corpus-harness/issues/11
+    option (b)): risch's budget is TIMEOUT minus integrate's CPU (its
+    ANSWERED seconds, or the process's CPU when it never answered), and risch
+    is not run when nothing is left; each run has its own VERIFY_CAP. The
+    record takes risch's verdict only when risch PASSES, and then its t= is
+    the two runs' sum -- what a user who tries integrate, then risch, waits;
     otherwise it keeps integrate's class, time and tag. The .via line states
-    whose verdict that is and both runs:
+    whose verdict that is and both runs, each with its own time:
 
         <who> integrate=<class>,<cpu>s,<tag> risch=<class>,<cpu>s,<tag> <label>
 
@@ -1129,11 +1154,12 @@ def run_entry_detail(rel, idx, entry_text, line_no):
                 {"grade": grade_line(r.cls, r, marker, label)})
     r, dt = _run_once(label, f_text, var_text, e_text, e_text2, "integrate")
     who, fields = "integrate", [via_field("integrate", r, dt), "risch=-"]
-    if r.cls in BASELINE_RETRY:
-        r2, dt2 = _run_once(label, f_text, var_text, e_text, e_text2, "risch")
+    left = TIMEOUT - dt
+    if r.cls in BASELINE_RETRY and left > 0:
+        r2, dt2 = _run_once(label, f_text, var_text, e_text, e_text2, "risch", left)
         fields[1] = via_field("risch", r2, dt2)
         if r2.cls in PASS_CLASSES:
-            who, r, dt = "risch", r2, dt2
+            who, r, dt = "risch", r2, dt + dt2
     return (r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", 0, r.proof,
             {"via": f"{who} {' '.join(fields)} {label}",
              "grade": grade_line(r.cls, r, marker, label)})

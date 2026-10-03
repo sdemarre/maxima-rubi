@@ -86,6 +86,8 @@ def header_checks(drv):
         os.unlink(fh.name)
     check("header: the verification budget is stated",
           "verify: 30s cpu, stage 5s" in line, True)
+    check("header: the timing mode is stated (corpus-harness 11)",
+          line.endswith("  timing: printf-free+one-budget"), True)
     with tempfile.NamedTemporaryFile("w", suffix=".out", delete=False) as fh:
         fh.write(f"filter: 'x'  switches: {rr.BASELINE_ARM}\n")
     try:
@@ -106,6 +108,16 @@ def text_checks(drv):
               False)
         check(f"text ({name}): the integrate noun anywhere is no answer",
               "not is(freeof(integrate, mr_r))" in text, True)
+    for name in (None, "integrate", "risch"):
+        text = drv.build_text("sin(x)", "x", "-cos(x)", None, name)
+        t0, t1 = "mr_t0 : elapsed_run_time()$", "mr_dt : elapsed_run_time() - mr_t0$"
+        ok = t0 in text and t1 in text and text.index(t0) < text.index(t1)
+        check(f"timing ({name or 'rubi'}): mr_dt is read after mr_t0", ok, True)
+        check(f"timing ({name or 'rubi'}): no printf inside the timed window "
+              "(printf's stringproc autoload, probes/timing/01)",
+              ok and "printf" in text[text.index(t0):text.index(t1)], False)
+        check(f"timing ({name or 'rubi'}): ANSWERED prints mr_dt",
+              'printf(true, "ANSWERED ~,3f~%", mr_dt)$' in text, True)
     check("text: a package run is untouched by the integrator argument",
           drv.build_text("sin(x)", "x", "-cos(x)"),
           drv.build_text("sin(x)", "x", "-cos(x)", None, None))
@@ -115,15 +127,16 @@ def protocol_checks(drv):
     real = drv._run_once
     calls = []
 
-    def case(integrate, risch):
-        """Run one entry with the two runs stubbed to (class, tag)."""
+    def case(integrate, risch, dts=(0.5, 1.5)):
+        """Run one entry with the two runs stubbed to (class, tag), taking
+        DTS seconds of CPU; CALLS gets (integrator, budget) per run."""
         del calls[:]
 
-        def stub(label, f, v, e, e2, integrator=None):
-            calls.append(integrator)
+        def stub(label, f, v, e, e2, integrator=None, budget=None):
+            calls.append((integrator, budget))
             cls, tag = integrate if integrator == "integrate" else risch
             return (drv.EntryResult(cls, 0, tag, 0.5, ("5", "1"), ("A", "5", "1")),
-                    (0.5 if integrator == "integrate" else 1.5))
+                    dts[0] if integrator == "integrate" else dts[1])
         drv._run_once = stub
         try:
             cls, line, _caps, proof, sides = drv.run_entry_detail(
@@ -131,29 +144,111 @@ def protocol_checks(drv):
             via = sides["via"]
         finally:
             drv._run_once = real
-        return cls, line.split()[1:3], proof, via, list(calls)
+        return cls, line.split()[1:3], proof, via, [c[0] for c in calls]
 
     check("protocol: integrate passes, risch is not run",
           case(("verified", "radcan"), None),
           ("verified", ["t=", "0.5s"], "radcan",
            "integrate integrate=verified,0.5s,radcan risch=- 9 T/f.mac e1 L7",
            ["integrate"]))
-    check("protocol: integrate fails, risch passes -- risch's verdict, time and tag",
-          case(("timeout", None), ("verified", "numeric")),
-          ("verified", ["t=", "1.5s"], "numeric",
-           "risch integrate=timeout,0.5s,- risch=verified,1.5s,numeric 9 T/f.mac e1 L7",
+    check("protocol: integrate fails, risch passes -- risch's verdict and tag, "
+          "the two runs' time summed (decision (b))",
+          case(("contains-noun", None), ("verified", "numeric")),
+          ("verified", ["t=", "2.0s"], "numeric",
+           "risch integrate=contains-noun,0.5s,- risch=verified,1.5s,numeric 9 T/f.mac e1 L7",
            ["integrate", "risch"]))
-    check("protocol: both fail -- integrate's verdict stays",
+    check("protocol: integrate's run is given the whole TIMEOUT",
+          calls[0], ("integrate", None))
+    check("protocol: risch is given what integrate left of TIMEOUT",
+          calls[1], ("risch", drv.TIMEOUT - 0.5))
+    check("protocol: both fail -- integrate's verdict and time stay",
           case(("unverified", "none/numeric-mismatch"), ("deferred", None)),
           ("unverified", ["t=", "0.5s"], "none/numeric-mismatch",
            "integrate integrate=unverified,0.5s,none/numeric-mismatch "
            "risch=deferred,1.5s,- 9 T/f.mac e1 L7",
            ["integrate", "risch"]))
+    check("protocol: integrate used the whole budget -- risch is not run",
+          case(("timeout", None), ("verified", "numeric"), (float(drv.TIMEOUT), 1.5)),
+          ("timeout", ["t=", f"{drv.TIMEOUT:.1f}s"], None,
+           f"integrate integrate=timeout,{drv.TIMEOUT:.1f}s,- risch=- 9 T/f.mac e1 L7",
+           ["integrate"]))
+    check("protocol: integrate ran past the budget (process CPU) -- risch is not run",
+          case(("timeout", None), ("verified", "numeric"), (drv.TIMEOUT + 12.3, 1.5))[4],
+          ["integrate"])
+    check("protocol: a sliver of budget left -- risch runs on it",
+          (case(("error", None), ("verified", "radcan"), (drv.TIMEOUT - 0.5, 0.25))[:2],
+           calls[1]),
+          (("verified", ["t=", f"{drv.TIMEOUT - 0.25:.1f}s"]), ("risch", 0.5)))
     for cls in sorted(drv.KNOWN_CLASSES):
         retry = cls not in drv.PASS_CLASSES and cls != "unexpected"
         check(f"protocol: integrate {cls} -> risch {'runs' if retry else 'does not run'}",
               case((cls, None), ("deferred", None))[4],
               ["integrate", "risch"] if retry else ["integrate"])
+
+
+def budget_checks(drv):
+    """classify_entry reads ANSWERED against the run's own budget: risch's
+    is what integrate left, not TIMEOUT."""
+    out = "ANSWERED 5.000\nCLASS verified\nPROOF radcan\n"
+    check("budget: ANSWERED within TIMEOUT -- its class",
+          drv.classify_entry(out, False).cls, "verified")
+    check("budget: ANSWERED above a smaller budget -- timeout",
+          drv.classify_entry(out, False, 4.0).cls, "timeout")
+    check("budget: ANSWERED within a smaller budget -- its class",
+          drv.classify_entry(out, False, 6.0).cls, "verified")
+
+
+def merge_checks(drv):
+    """merge_class_shards carries the timing: field and refuses shards that
+    state different ones (or one without any)."""
+    real = "  timing: printf-free+one-budget"
+    check("merge: one timing mode is carried into the merged record",
+          merge_filter(drv, [real, real]).endswith(real), True)
+    for name, pair in (("two modes", [real, "  timing: printf-free"]),
+                       ("a shard without one", [real, ""])):
+        text = merge_filter(drv, pair)
+        check(f"merge: {name} are refused",
+              "do not state one timing mode" in text, True)
+
+
+def merge_filter(drv, timings):
+    """The merged record's filter: line from two synthetic baseline shards
+    whose filter: lines end in TIMINGS[k], or the merger's output when it
+    made none. The shards cover the REAL class-2 key set (the merger asserts
+    completeness against the corpus), written into test/ under a name no run
+    uses, and removed again."""
+    flt = (f"filter: '2 Exponentials/'  timeout: 30s cpu  switches: "
+           f"{drv.run_records.BASELINE_RISCH_ARM}  verify: 30s cpu, stage 5s")
+    suite = os.path.join(ROOT, "reference", "maxima-syntax-test-suite")
+    rels = []
+    for dirpath, _dn, names in os.walk(os.path.join(suite, "2 Exponentials")):
+        for fn in names:
+            if fn.endswith(".mac"):
+                path = os.path.join(dirpath, fn)
+                n = len(drv.extract_entries(path)[0])
+                rel = os.path.relpath(path, suite)
+                rels += [f"verified       t=   0.1s {rel} e{i} L{i}" for i in range(1, n + 1)]
+    tag = f"tmp_baselineguard_{os.getpid()}"
+    shards = [os.path.join(HERE, f"{tag}.shard{k:02d}.out") for k in (0, 1)]
+    with tempfile.TemporaryDirectory() as tmp:
+        out = os.path.join(tmp, "merged.out")
+        try:
+            for k, path in enumerate(shards):
+                with open(path, "w", encoding="utf-8") as fh:
+                    fh.write(f"=== w{k} ===\ndate: x\n{flt}{timings[k]}\n\n")
+                    fh.write("\n".join(rels[k::2]) + "\n")
+            r = subprocess.run(
+                [sys.executable, os.path.join(HERE, "merge_class_shards.py"),
+                 "2 Exponentials", out, "test/corpus_driver.py", f"{tag}.shard*.out"],
+                capture_output=True, text=True, cwd=ROOT)
+            text = (open(out, encoding="utf-8").read() if os.path.exists(out)
+                    else r.stdout + r.stderr)
+        finally:
+            for path in shards:
+                if os.path.exists(path):
+                    os.unlink(path)
+    mflt = [l for l in text.splitlines() if l.startswith("filter:")]
+    return mflt[0] if mflt else text
 
 
 def sidecar_checks(drv, queue_mod, merge_via):
@@ -239,6 +334,8 @@ def main():
     header_checks(drv)
     text_checks(drv)
     protocol_checks(drv)
+    budget_checks(drv)
+    merge_checks(drv)
     sidecar_checks(drv, queue_mod, merge_via)
     maxima_checks(drv)
     print(f"Results: {passed} passed, {len(failures)} failed")

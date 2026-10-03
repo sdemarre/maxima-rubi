@@ -142,6 +142,8 @@ def header_checks(drv):
     check("header: the filter line states the verification budget",
           bool(re.search(rf"verify: {drv.VERIFY_CAP}s {drv.CAP_KIND}, "
                          rf"stage {drv.STAGE_CAP:g}s", flt)), True)
+    check("header: the filter line states the timing mode, ending it "
+          "(corpus-harness 11)", flt.endswith("  timing: printf-free"), True)
 
 
 def merge_checks(drv):

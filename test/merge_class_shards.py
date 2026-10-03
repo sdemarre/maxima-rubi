@@ -159,9 +159,24 @@ if len(verifies) != 1:
     raise SystemExit(f"merge_class_shards: the shards do not state one "
                      f"verification budget: {sorted(map(str, verifies))}")
 verify = verifies.pop()
+# The timing mode (corpus_driver.timing_header, .scratch/corpus-harness/
+# issues/11) likewise: one for every shard, or none (a record from before it).
+timings = set()
+for path in inputs:
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("filter:"):
+                m = re.search(r"\btiming: (\S+)", line)
+                timings.add(m.group(1) if m else None)
+                break
+if len(timings) != 1:
+    raise SystemExit(f"merge_class_shards: the shards do not state one "
+                     f"timing mode: {sorted(map(str, timings))}")
+timing = timings.pop()
 out_lines.append(f"filter: {SECTION + '/'!r}  full run  timeout: {cap}  "
                  f"({len(inputs)} shards, merged here)  switches: {switches}"
-                 + (f"  verify: {verify}" if verify else ""))
+                 + (f"  verify: {verify}" if verify else "")
+                 + (f"  timing: {timing}" if timing else ""))
 out_lines.append("")
 
 for rel in sorted(counts):
