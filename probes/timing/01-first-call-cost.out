@@ -1,0 +1,110 @@
+date 2026-10-03 20:26:52 UTC
+branch_5_50_base_84_g4204fb669 2026-08-31 13:27:47 
+
+== A. the driver's timed text (ANSWERED = the record's t=)
+integrate as is                    run 1: ANSWERED 0.246
+integrate as is                    run 2: ANSWERED 0.239
+integrate as is                    run 3: ANSWERED 0.237
+integrate load(stringproc) first   run 1: ANSWERED 0.000
+integrate load(stringproc) first   run 2: ANSWERED 0.000
+integrate load(stringproc) first   run 3: ANSWERED 0.000
+risch     as is                    run 1: ANSWERED 0.233
+risch     as is                    run 2: ANSWERED 0.227
+risch     as is                    run 3: ANSWERED 0.227
+risch     load(stringproc) first   run 1: ANSWERED 0.000
+risch     load(stringproc) first   run 2: ANSWERED 0.001
+risch     load(stringproc) first   run 3: ANSWERED 0.000
+
+== B/C. first timed expressions per image (printf-timed, as the driver)
+[stock maxima, run 1]
+T 2 0.233
+T expand((x+1)^5) 0.000
+T integrate(x,x) 0.000
+T risch(x,x) 0.000
+T rubi(x,x) 0.000
+[stock maxima, run 2]
+T 2 0.230
+T expand((x+1)^5) 0.000
+T integrate(x,x) 0.000
+T risch(x,x) 0.000
+T rubi(x,x) 0.000
+[stock + warmed integrate/risch image, run 1]
+T 2 0.229
+T expand((x+1)^5) 0.000
+T integrate(x,x) 0.000
+T risch(x,x) 0.000
+T rubi(x,x) 0.000
+[stock + warmed integrate/risch image, run 2]
+T 2 0.229
+T expand((x+1)^5) 0.000
+T integrate(x,x) 0.000
+T risch(x,x) 0.000
+T rubi(x,x) 0.000
+[rules core (test/mr_rules.core), run 1]
+T 2 0.000
+T expand((x+1)^5) 0.000
+T integrate(x,x) 0.000
+T risch(x,x) 0.000
+T rubi(x,x) 0.000
+[rules core (test/mr_rules.core), run 2]
+T 2 0.000
+T expand((x+1)^5) 0.000
+T integrate(x,x) 0.000
+T risch(x,x) 0.000
+T rubi(x,x) 0.000
+[rules core + warmed integrate/risch, run 1]
+T 2 0.000
+T expand((x+1)^5) 0.000
+T integrate(x,x) 0.000
+T risch(x,x) 0.000
+T rubi(x,x) 0.000
+[rules core + warmed integrate/risch, run 2]
+T 2 0.000
+T expand((x+1)^5) 0.000
+T integrate(x,x) 0.000
+T risch(x,x) 0.000
+T rubi(x,x) 0.000
+(rubi(x,x) in the stock images is the unevaluated function call)
+
+== D. cold vs warmed first call, no printf in the window (CPU s, median of 3)
+integrate 1/(1+x^3)              cold first 0.0002  again 0.0001  (n=3)
+integrate 1/(1+x^3)              warm first 0.0002  again 0.0000  (n=3)
+integrate 1/sqrt(1-x^4)          cold first 0.0107  again 0.0009  (n=3)
+integrate 1/sqrt(1-x^4)          warm first 0.0107  again 0.0009  (n=3)
+integrate atan(x)                cold first 0.0001  again 0.0000  (n=3)
+integrate atan(x)                warm first 0.0001  again 0.0000  (n=3)
+integrate exp(-x^2)              cold first 0.0002  again 0.0001  (n=3)
+integrate exp(-x^2)              warm first 0.0002  again 0.0000  (n=3)
+integrate log(x)^2               cold first 0.0003  again 0.0001  (n=3)
+integrate log(x)^2               warm first 0.0003  again 0.0001  (n=3)
+integrate sin(x)^3*cos(x)^2      cold first 0.0003  again 0.0001  (n=3)
+integrate sin(x)^3*cos(x)^2      warm first 0.0003  again 0.0001  (n=3)
+integrate sqrt(1+x^2)            cold first 0.0002  again 0.0000  (n=3)
+integrate sqrt(1+x^2)            warm first 0.0001  again 0.0000  (n=3)
+integrate x*exp(x)               cold first 0.0003  again 0.0001  (n=3)
+integrate x*exp(x)               warm first 0.0002  again 0.0001  (n=3)
+integrate x*sin(x)               cold first 0.0004  again 0.0002  (n=3)
+integrate x*sin(x)               warm first 0.0004  again 0.0002  (n=3)
+integrate x^2/(a+b*x)^3          cold first 0.0002  again 0.0001  (n=3)
+integrate x^2/(a+b*x)^3          warm first 0.0002  again 0.0001  (n=3)
+risch     1/(1+x^3)              cold first 0.0002  again 0.0000  (n=3)
+risch     1/(1+x^3)              warm first 0.0002  again 0.0000  (n=3)
+risch     1/sqrt(1-x^4)          cold first 0.0005  again 0.0003  (n=3)
+risch     1/sqrt(1-x^4)          warm first 0.0005  again 0.0003  (n=3)
+risch     atan(x)                cold first 0.0006  again 0.0003  (n=3)
+risch     atan(x)                warm first 0.0005  again 0.0003  (n=3)
+risch     exp(-x^2)              cold first 0.0002  again 0.0001  (n=3)
+risch     exp(-x^2)              warm first 0.0001  again 0.0000  (n=3)
+risch     log(x)^2               cold first 0.0001  again 0.0000  (n=3)
+risch     log(x)^2               warm first 0.0001  again 0.0000  (n=3)
+risch     sin(x)^3*cos(x)^2      cold first 0.0004  again 0.0002  (n=3)
+risch     sin(x)^3*cos(x)^2      warm first 0.0004  again 0.0002  (n=3)
+risch     sqrt(1+x^2)            cold first 0.0003  again 0.0001  (n=3)
+risch     sqrt(1+x^2)            warm first 0.0002  again 0.0001  (n=3)
+risch     x*exp(x)               cold first 0.0001  again 0.0000  (n=3)
+risch     x*exp(x)               warm first 0.0001  again 0.0000  (n=3)
+risch     x*sin(x)               cold first 0.0004  again 0.0002  (n=3)
+risch     x*sin(x)               warm first 0.0003  again 0.0001  (n=3)
+risch     x^2/(a+b*x)^3          cold first 0.0002  again 0.0001  (n=3)
+risch     x^2/(a+b*x)^3          warm first 0.0002  again 0.0001  (n=3)
+DONE

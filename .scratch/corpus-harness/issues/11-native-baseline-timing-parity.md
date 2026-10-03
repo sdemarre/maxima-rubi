@@ -7,46 +7,67 @@ maxima-rubi / native time histograms in the grade report artifact)
 
 ## Symptom
 
-Every native-baseline time (`test/corpus_class<N>.baseline.out`, `t=`) is at
-least 0.4 s, even for `integrate(x, x)`; rubi's records start at 0.0 s. Over the
-passing entries, no native time in any section falls below 0.4 s, while 40 % of
-rubi's section-1 passes are under 0.1 s.
+Native-baseline times (`test/corpus_class<N>.baseline.out`, `t=`) start at
+0.3 s, even for `integrate(x, x)`; rubi's records start at 0.0 s. Over the
+answered entries (verified/expected/unverified) of every section, no native time
+is below 0.3 s (599 at 0.3, 24,294 at 0.4, 10,283 at 0.5), while 40 % of rubi's
+section-1 passes are under 0.1 s.
 
-## Cause (measured 2026-10-03)
+## Cause (measured 2026-10-03, `probes/timing/01-first-call-cost.sh` / `.out`)
 
 Both arms are timed alike: `test/corpus_driver.py` `build_text` brackets the one
 integrator call with `elapsed_run_time()` (Maxima's CPU clock) and prints
-`ANSWERED <cpu>`; that value is the record's `t=`. `showtime` is not involved.
-They differ in what the timed call includes:
+`printf(true, "ANSWERED ~,3f~%", elapsed_run_time() - mr_t0)`; that value is the
+record's `t=`. `showtime` is not involved. They differ in two ways:
 
-1. **First-call loading.** rubi runs from the prebuilt image
-   (`test/mr_rules.core`), its code loaded before the clock starts. The native arm
-   is stock Maxima in a fresh process, and `integrate` loads parts of itself on
-   first use, inside the timed call: a fresh `maxima --very-quiet -b` measured
-   `integrate(x, x)` at 0.244 s CPU, then `integrate(x^2, x)` and
-   `integrate(sin(x)*x, x)` at 0.000 s (build `branch_5_50_base_84_g4204fb669`;
-   the probe text is in the 2026-10-03 session, to be committed as a probe by this
-   ticket). `risch`, run in its own fresh process, pays the same kind of cost.
+1. **`printf`'s autoload is inside the timed window.** In stock Maxima `printf`
+   is an autoload stub (`stringproc`). The first `printf` call loads
+   `stringproc` *before* its arguments are evaluated, so the load (about 0.23 s
+   CPU) is in `elapsed_run_time() - mr_t0`. The rubi core has `stringproc`
+   loaded already, because the package uses `printf`, so rubi never pays it.
+   Measured (probe A, the driver's own `build_text`, MR_BASELINE=1, build
+   `branch_5_50_base_84_g4204fb669`): `integrate(x, x)` ANSWERED 0.237-0.246 as
+   is, 0.000 with `load(stringproc)` before `mr_t0`; `risch(x, x)` 0.227-0.233
+   vs 0.000-0.001. Probe B: in a stock batch, the first printf-timed
+   expression costs about 0.23 s even when it is `1+1`, and integrate after it
+   costs 0.000.
+
+   **integrate and risch have no first-call cost of their own.** Probe D times
+   ten integrands (trig, rational, sqrt, exp, log, elliptic, parametric) with no
+   `printf` in the window, in a cold process and after an `integrate(x,x)` /
+   `risch(x,x)` warm-up: the medians are identical to 0.1 ms for every integrand
+   and both integrators. The first draft of this ticket blamed integrate's
+   first-use loading; its 0.244 s figure was the `printf` load too. Probe C:
+   saving a stock image after warming integrate/risch leaves the 0.23 s (the
+   warm-up never called `printf`). A rules core with warmed integrate/risch,
+   one image for both arms (the user's suggestion), shows 0.000 only because
+   the package had loaded `stringproc`. It is not needed: it brings no gain over
+   the one-line fix below, the native arm would stop being stock Maxima, and
+   that arm would become tied to the rule-file fingerprint.
+
+   The baseline records show 0.3-0.5 s rather than 0.23 s (section 1: 21,686 of
+   25,716 lines at `t= 0.4`). That is probably the 24-worker run inflating the
+   load's CPU (SMT, AGENTS.md "1.35x inflation"); not measured under load.
 2. **The integrate -> risch hand-off.** When `integrate`'s class is
-   `timeout`/`error`/`deferred`/`contains-noun`/`unverified`, `run_entry_detail` (`:1097`)
+   `timeout`/`error`/`deferred`/`contains-noun`/`unverified`, `run_entry_detail`
    re-runs the entry with `risch` in a second process and, when risch passes,
    the record takes risch's verdict and **risch's time only**
-   (`corpus_driver.py:1136`, `who, r, dt = "risch", r2, dt2`). The time integrate
+   (`corpus_driver.py`, `who, r, dt = "risch", r2, dt2`). The time integrate
    spent failing first is in the `.via` sidecar but not in `t=`, so `t=`
    understates what a user who tries `integrate` and then `risch` waits.
 
 ## Wanted
 
-- **A warm-up before the clock**, in the native arm: one throwaway call of the
-  same integrator on a trivial integrand (`integrate(x, x)` / `risch(x, x)`)
-  before `mr_t0`, so the timed call does not pay first-use loading. Measure
-  whether rubi has any first-call cost from the core (a probe timing
-  `rubi(x, x)` twice in a fresh core process); if it does, warm it up the same
-  way so the arms stay symmetric, and say so in the record.
+- **No `printf` load in the window**: compute the time before calling `printf`,
+  `mr_dt : elapsed_run_time() - mr_t0$` then `printf(true, "ANSWERED ~,3f~%",
+  mr_dt)$`. This applies to both arms; the rubi arm's numbers do not change,
+  since `stringproc` is already in its core. No warm-up call and no shared image.
 - **The hand-off time counted**: when the record takes risch's verdict, `t=` is
-  integrate's CPU plus risch's. The per-leg times stay in `.via`.
-- The record's `filter:` line states the timing mode (e.g. `timing: warm`), and
-  the mergers refuse to mix modes, like the cap kind.
+  integrate's CPU plus risch's, under the single budget of the decision below.
+  The per-leg times stay in `.via`.
+- The record's `filter:` line states the timing mode (e.g. `timing: dt-first`),
+  and the mergers refuse to mix modes, like the cap kind. Older native records'
+  `t=` carry the `printf` load and are not comparable on time.
 
 ## Decision (user, 2026-10-03): one 30 s budget per integral -- option (b)
 
@@ -79,8 +100,10 @@ whose remaining budget is <= 0 is not run, and the entry keeps integrate's class
 
 ## Acceptance
 
-- Guards: `test/test_driver_baseline.py` gains the warm-up and the summed time
-  (no Maxima); the first-call probe committed under `probes/`.
+- Guards: `test/test_driver_baseline.py` gains the `printf`-free window (the
+  text computes `mr_dt` before any `printf`) and the summed time (no Maxima).
+  The first-call probe is `probes/timing/01-first-call-cost.sh` (committed
+  2026-10-03); after the fix, its probe A "as is" rows should read 0.000.
 - A full native re-run of sections 0-8 (`setsid sh test/baseline_measure.sh`,
   about 9 h with 24 workers -- overnight). The verdicts must not move except at
   the cap: A/B with `test/ab_records.py` and `test/ab_grades.py` against the
