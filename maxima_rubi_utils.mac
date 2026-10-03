@@ -295,17 +295,22 @@ depth_level : 0$
       else apply(%mr_if_o, %mr_if_a))
     else apply(%mr_if_o, %mr_if_a))$
 
-/* The top-level answer's last step: the %i fold (%mr_ifold above) under
-   the run switch mr_ifold, with radexpand:false, logexpand:false bound
-   here -- not by mr_model_flags: without them the fold is unsound. Inside
-   errcatch, errormsg off: a fold that errors returns the answer unfolded,
-   so the fold can never cost an answer. */
-%mr_top_final(%mr_tf_ans) :=
-  if mr_ifold # true then %mr_tf_ans
-  else block([%mr_tf_r : block([errormsg : false],
+/* The guarded %i fold: %mr_ifold above under the run switch mr_ifold, with
+   radexpand:false, logexpand:false bound here -- not by mr_model_flags:
+   without them the fold is unsound. Inside errcatch, errormsg off: a fold
+   that errors returns its input unfolded, so the fold can never cost an
+   answer. Two callers: the depth-0 answer (%mr_top_final) and
+   RemoveContent's argument (%mr_removeContent, answer-quality 02, spec
+   docs/superpowers/specs/2026-10-03-removecontent-ifold-design.md). */
+%mr_ifold_safe(%mr_is_e) :=
+  if mr_ifold # true then %mr_is_e
+  else block([%mr_is_r : block([errormsg : false],
                                 errcatch(block([radexpand : false, logexpand : false],
-                                               %mr_ifold(%mr_tf_ans))))],
-    if %mr_tf_r = [] then %mr_tf_ans else first(%mr_tf_r))$
+                                               %mr_ifold(%mr_is_e))))],
+    if %mr_is_r = [] then %mr_is_e else first(%mr_is_r))$
+
+/* The top-level answer's last step: the guarded %i fold. */
+%mr_top_final(%mr_tf_ans) := %mr_ifold_safe(%mr_tf_ans)$
 
 /* Under rubi_verbose : matches the top-level call (depth 0: rubi,
    rubi_fallback) answers [answer, steps], steps the list of the fired
@@ -2414,6 +2419,13 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
  * Rubi :1152  RemoveContent[u,x] := with v = NonfreeFactors[u,x],
  *   w = Together[v]: if EqQ[FreeFactors[w,x],1] then Aux[v,x]
  *   else Aux[NonfreeFactors[w,x],x] */
+/* RemoveContent's argument is %i-folded first (%mr_ifold_safe, under the
+   run switch mr_ifold): Mathematica evaluates it before RemoveContent sees
+   it -- 4_3_1_1 r3's Cos[I a + I b x + Pi/2] arrives as -I Sinh[a + b x]
+   and the content -I is stripped -- while Maxima keeps sin(%i*b*x+%i*a),
+   and the depth-0 fold then left log(%i*sinh(b*x+a)) (answer-quality 02,
+   probes/leaf-size/09: 34 of 50 such answers cleared). Safe for matching:
+   every rule call site is log(%mr_removeContent(..)), an answer term. */
 /* Class 4 (2026-09-25): both read u with inflag:true, i.e. Rubi's
    ProductQ reading -- a quotient x/2 or a/(b x) is Times[...] with Power[.,
    -1] factors, as in Mathematica. Without it op(x/2) is "/", neither "-"
@@ -2554,8 +2566,8 @@ rubi_fallback(%mr_top_f, x, %mr_top_fb) := mr_top(%mr_top_f, x, %mr_top_fb)$
   else if not atom(u) and op(u) = "+" and %mr_negQ(inpart(u, 1)) then -u
   else u)$
 
-%mr_removeContent(u, x) := block([v, w],
-  v : %mr_nonfreeFactors(u, x),
+%mr_removeContent(u, x) := block([v, w, %mr_rc_u : %mr_ifold_safe(u)],
+  v : %mr_nonfreeFactors(%mr_rc_u, x),
   w : %mr_together(v),
   if %mr_eqQ(%mr_freeFactors(w, x), 1) then %mr_removeContentAux(v, x)
   else %mr_removeContentAux(%mr_nonfreeFactors(w, x), x))$
