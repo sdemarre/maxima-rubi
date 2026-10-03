@@ -127,7 +127,8 @@ rubi_verbose : 'matches$   /* rubi answers [answer, steps]: the rules that fired
   - This is deliberate. `rubi` integrates what it receives and does not try to
     undo the rewrite.
   - On the test corpus it affects 1,390 of 70,385 integrands in classes 1, 4
-    and 6, and 655 of them fail.
+    and 6. In the 2026-10-03 records 611 of them fail, 561 of those because of
+    an `abs` (`probes/integrate-beats-rubi/05-abs-fails-current-records.out`).
   - The measurement is in `.scratch/integrate-beats-rubi/issues/02-sqrt-c-x2-abs.md`.
 - The answer can contain Rubi's own special functions in their Maxima
   spelling: `elliptic_f`/`elliptic_e`/`elliptic_pi`, the polylogarithm
@@ -168,6 +169,7 @@ Run switches, set at the prompt (the defaults are what the corpus records use):
 | `mr_eqq_symbolic` | true | EqQ/NeQ read an identically-zero difference as zero (ratsimp/expand/factor), as Rubi's `PossibleZeroQ` does |
 | `mr_subst_simp` | false | true: simplify every `Subst` result (the milestone-1 behaviour) |
 | `mr_nested_fallback` | false | true: nested sub-integrals no rule answers fall through to `integrate` |
+| `mr_ifold` | true | fold `%i` out of the answer (`sin(%i*b*x+%i*a)` -> `%i*sinh(b*x+a)`) and out of RemoveContent's argument, as Mathematica's evaluator does; false keeps the rules' form |
 
 The rest (`mr_flat_wide`, `mr_cond_retry`, `mr_model_flags`, `mr_giveup_last`,
 `mr_inert_leak_misfire`, `mr_last_resort_tier`, `mr_general_after_giveups`)
@@ -176,28 +178,34 @@ are migration and ordering switches of the matcher; they are documented in
 
 ## Measured state
 
-Full-corpus records on `master` (2026-09-26; Maxima
-`branch_5_50_base_84_g4204fb669`, SBCL 2.6.7; 30 s CPU cap per integral; PASS
-= the answer is verified by differentiation, matches the corpus answer, or is
-a correct no-answer). Each record states its own build and switches in its
-header.
+Full-corpus records on `master` (rubi 2026-10-03, native baseline 2026-09-30/10-01;
+Maxima `branch_5_50_base_84_g4204fb669`, SBCL 2.6.7; 24 workers; 30 s CPU per
+integrator plus 30 s CPU for verification). PASS = the checker proves the answer
+by differentiation (or, failing every symbolic stage, a two-point numeric check
+agrees), or the entry is a correct no-answer. The native baseline is stock Maxima
+on the same harness: `integrate`, then `risch` when `integrate` fails. Each record
+states its build, switches and caps in its header.
 
-| class | integrals | `rubi` PASS | native `integrate` | record |
+| section | integrals | `rubi` PASS | native `integrate`+`risch` | record |
 |---|---:|---:|---:|---|
-| 1 algebraic | 25,697 | **23,203 (90.3 %)** | — | `test/corpus_class1.out` |
-| 2 exponentials | 965 | **863 (89.4 %)** | 363 | `test/corpus_class2.out` |
-| 3 logarithms | 3,085 | **2,446 (79.3 %)** | 1,190 | `test/corpus_class3.out` |
-| 4 trigonometric | 22,472 | **19,932 (88.7 %)** | 1,384 | `docs/corpus-class4-baseline-uplift.md` |
-| 5 inverse trig | 4,585 | **3,629 (79.1 %)** | 1,234 | `docs/corpus-class5-baseline-uplift.md` |
-| 6 hyperbolic | 5,080 | **4,314 (84.9 %)** | 301 | `docs/corpus-class6-baseline-uplift.md` |
-| 7 inverse hyperbolic | 6,552 | **5,342 (81.5 %)** | 953 | `docs/corpus-class7-baseline-uplift.md` |
-| 8 special functions | 1,949 | **1,537 (78.9 %)** | 327 | `docs/corpus-class8-baseline-uplift.md` |
-| **all** | **70,385** | **61,266 (87.0 %)** | | |
+| 0 independent suites | 1,869 | **1,783 (95.4 %)** | 1,561 (83.5 %) | `test/corpus_class0.out` |
+| 1 algebraic | 25,697 | **24,706 (96.1 %)** | 16,676 (64.9 %) | `test/corpus_class1.out` |
+| 2 exponentials | 965 | **875 (90.7 %)** | 625 (64.8 %) | `test/corpus_class2.out` |
+| 3 logarithms | 3,085 | **2,648 (85.8 %)** | 1,975 (64.0 %) | `test/corpus_class3.out` |
+| 4 trigonometric | 22,472 | **21,213 (94.4 %)** | 11,414 (50.8 %) | `test/corpus_class4.out` |
+| 5 inverse trig | 4,585 | **3,879 (84.6 %)** | 1,383 (30.2 %) | `test/corpus_class5.out` |
+| 6 hyperbolic | 5,080 | **4,496 (88.5 %)** | 3,078 (60.6 %) | `test/corpus_class6.out` |
+| 7 inverse hyperbolic | 6,552 | **5,894 (90.0 %)** | 2,250 (34.3 %) | `test/corpus_class7.out` |
+| 8 special functions | 1,949 | **1,727 (88.6 %)** | 595 (30.5 %) | `test/corpus_class8.out` |
+| **sections 1-8** | **70,385** | **65,438 (93.0 %)** | 37,996 (54.0 %) | |
 
-The native-`integrate` baselines are scored the same way (classes 2, 3 and 6
-re-measured 2026-09-20; classes 4, 5, 7 and 8 on 2026-09-25). The class-1
-baseline is the older sample-based figure in `docs/corpus-baseline-uplift.md`
-and is not comparable.
+The native records are `test/corpus_class<N>.baseline.out`.
+
+Every answer is also graded A/B/C/F with the 12000.org CAS integration tests'
+`GradeAntiderivative` (leaf size against the optimal antiderivative, function
+type, `%i`). Over all 72,254 integrals: `rubi` A 86.7 %, solved (A/B/C) 93.4 %;
+native A 39.8 %, solved 55.2 %. The census is `test/grade_report.out`; the grade
+and leaf size are defined in `docs/grading-and-leaf-size.md`.
 
 ## Testing
 
@@ -208,7 +216,7 @@ so also grep the output for `Lisp error` and compare the pass count with the
 expected figure.
 
 - **Layer A**, the unit suite:
-  `maxima --very-quiet -b test_maxima_rubi.mac < /dev/null` (1,585 checks).
+  `maxima --very-quiet -b test_maxima_rubi.mac < /dev/null` (1,701 checks).
 - **The gates on the real table**: `test/test_rule_table_order.mac`,
   `test/test_section9_e2e.mac`, and the matcher suites under `test/matcher/`.
 - **The generator's static gate**: `python3 test/check_generated_rules.py`.
@@ -216,7 +224,7 @@ expected figure.
   process per integral, 24 workers):
   `python3 test/run_corpus_queue.py "<section>" --prev <record> --workers 24 --launch`,
   then `test/wait_and_merge.sh`; compare two records with
-  `python3 test/ab_records.py <old> <new>`. Class 1 takes about 50 minutes.
+  `python3 test/ab_records.py <old> <new>`. Class 1 takes about an hour (66 minutes on 2026-10-03).
 
 `AGENTS.md` (`## Tests`) holds every gate with its current green figure and
 the reading protocol in detail.
