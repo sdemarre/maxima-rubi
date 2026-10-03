@@ -273,8 +273,9 @@ depth_level : 0$
    one. Probe 04's fold, plus two guards: an %i-free expression is returned
    itself (a CRE answer stays CRE), and the integrate / unintegrable nouns
    are opaque (the top-level no-answer noun keeps its operator; an
-   unintegrated integrand is not an answer). It binds no flag: its caller,
-   %mr_top_final, binds radexpand:false, logexpand:false -- under the
+   unintegrated integrand is not an answer). It binds no flag: its guard,
+   %mr_ifold_safe below (the depth-0 answer's %mr_top_final and
+   %mr_removeContent call it), binds radexpand:false, logexpand:false -- under the
    defaults the simplifier splits the folded powers onto the wrong branch,
    (-%i*y)^(2/3) -> -y^(2/3) (probes/leaf-size/05, MR_IFOLD_FLAGS=default).
    Measured on every entry it can act on (probe 05): no grade worse. */

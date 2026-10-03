@@ -69,3 +69,8 @@ log 111 -> 77, the rest unchanged.
 Left in this ticket: the `%pi/2` shift (63), the complex-conjugate pairs (92), the
 elliptic `%i*asinh` (57), the fractional powers (20, issue 01's family), 11
 `log(%i*tanh(u))` (ticket 03), 6 hypergeometric (not `%i`).
+
+Note for the next A/B against these records: the committed `test/corpus_class4.out`
+carries six timeouts caused by load (4.1.1.2 e537/e567/e568/e571, 4.5.1.4 e310, 4.7.2
+e258; 30.1-31.2 s under 24 workers, ~18 s alone in both switch arms). Expect them to
+flip back to verified; they are not a change's effect.

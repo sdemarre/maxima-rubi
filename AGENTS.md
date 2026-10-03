@@ -383,7 +383,7 @@ reducing logs of numbers before its `ratsimp` (6 checks): `Results: 1652 passed,
 with the 1.1.2.6 r13/r14 upstream erratum (3 checks): `Results: 1655 passed, 0 failed`;
 with the 4.1.0.2 r18 erratum (3 checks): `Results: 1658 passed, 0 failed`; with the %i
 fold of the top-level answer (`%mr_ifold`, `%mr_top_final`, `.scratch/answer-quality/issues/01`,
-2026-10-02, 30 checks): `Results: 1688 passed, 0 failed`; with RemoveContent's %i fold (`%mr_ifold_safe`, `.scratch/answer-quality/issues/02`, 2026-10-03, 12 checks): **`Results: 1700 passed, 0 failed`**. The
+2026-10-02, 30 checks): `Results: 1688 passed, 0 failed`; with RemoveContent's %i fold (`%mr_ifold_safe`, `.scratch/answer-quality/issues/02`, 2026-10-03, 13 checks; the review's fixes made both flags-untouched checks able to fail): **`Results: 1701 passed, 0 failed`**. The
 matcher suites re-measured the same day: mr-match 57, mr-tree 58, dispatch 71.
 `test_mr_match.lisp` has no Maxima dependency and also runs in plain
 SBCL: `sbcl --non-interactive --load maxima_rubi_match.lisp --load
