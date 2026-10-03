@@ -261,6 +261,36 @@ the integrand, probe 06) and four section-4 entries at the 30 s cap (verified at
 29.7-29.9 s before; they verify at ~18 s in both switch arms at 4 workers). No grade
 got worse but those four. The whole-corpus numbers: `test/grade_report.out`.
 
+### RemoveContent's %i fold (2026-10-03)
+
+Of the 283 section-6 C's left by the fold, 50 kept `log(%i*u)` where Rubi has
+`log(u)` (`probes/leaf-size/07`, `08`). Traced (6.1.1 e30): `4_3_1_1 r3` returns
+`Log[RemoveContent[Cos[I a + I b x + Pi/2], x]]`; Mathematica evaluates the
+argument to `-I Sinh[a + b x]` before RemoveContent strips the content `-I`, while
+Maxima keeps `sin(%i*b*x+%i*a)` and the depth-0 fold later puts the `%i` inside the
+log. RemoveContent now folds its argument first, with the same guarded fold
+(`%mr_ifold_safe`, under the same switch `mr_ifold`; spec
+`docs/superpowers/specs/2026-10-03-removecontent-ifold-design.md`). Every rule call
+site is `log(%mr_removeContent(..))`, so matching is unaffected. Probe 09 measured
+34 of the 50 cleared; the re-run of every section (2026-10-03, same build, 24
+workers; `.scratch/answer-quality/rcfold_ab/`):
+
+| | before | with RemoveContent's fold |
+|---|---:|---:|
+| rubi A, all sections | 62,583 (86.6 %) | 62,615 (86.7 %) |
+| rubi C, all sections | 1,187 (1.6 %) | 1,153 (1.6 %) |
+| section 6 A / C | 4,057 / 283 | 4,090 / 249 |
+| entries integrate+risch grades better than rubi | 2,482 | 2,451 |
+
+Section 6: C -> A 33, C -> B 1; no other section's grades moved but by the 30 s cap.
+Ten entries changed verdict, all at the cap or the checker's budget under 24
+workers, and each re-checked alone in both switch arms: six section-4 entries
+(verified at 28.6-29.4 s before, 30.1-31.2 s now; 17.4-18.1 s in both arms at 6
+workers, the arms within 0.2 s), three section-5 entries the other way (timeout ->
+an answer with a noun, FAIL both), and 5.3.6 e243 (a verify timeout; proved alone
+in both arms). The 11 `log(%i*tanh(u))` entries left come through `Subst`, whose
+`SimplifyAntiderivative` is not ported (`.scratch/answer-quality/issues/03`).
+
 ## 6. Where this lives
 
 | what | where |
@@ -272,5 +302,5 @@ got worse but those four. The whole-corpus numbers: `test/grade_report.out`.
 | both arms of a section, every census | `test/graded_measure.sh` |
 | guards | `test/test_mr_grade.mac`, `test/test_driver_grade.py`, `test/test_ab_grades.py` |
 | the grade A/B of two runs | `test/ab_grades.py` |
-| the %i fold | `maxima_rubi_utils.mac` (`%mr_ifold`, `%mr_top_final`), switch `mr_ifold` |
-| the reference data and the measurements | `probes/leaf-size/01`-`06` |
+| the %i fold | `maxima_rubi_utils.mac` (`%mr_ifold`, `%mr_ifold_safe`, `%mr_top_final`, `%mr_removeContent`), switch `mr_ifold` |
+| the reference data and the measurements | `probes/leaf-size/01`-`09` |

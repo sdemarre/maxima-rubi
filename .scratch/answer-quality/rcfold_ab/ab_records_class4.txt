@@ -1,0 +1,27 @@
+base: .scratch/answer-quality/rcfold_ab/old_class4.out (22472 entries)
+new:  test/corpus_class4.out (22472 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS  21213
+PASS->FAIL      6
+FAIL->PASS      0
+FAIL->FAIL   1253
+
+=== class transitions (changed only) ===
+    6  verified -> timeout
+    1  expected -> verified
+    1  contains-noun -> timeout
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    4     0  4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac
+    1     0  4 Trig functions/4.5 Secant/4.5.1.4 (d tan)^n (a+b sec)^m.mac
+    1     0  4 Trig functions/4.7 Miscellaneous/4.7.2 trig^m (a trig+b trig)^n.mac
+
+=== PASS->FAIL (6) ===
+  verified      -> timeout       t=28.8s -> t=30.1s 4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e537
+  verified      -> timeout       t=29.3s -> t=30.2s 4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e567
+  verified      -> timeout       t=28.6s -> t=30.2s 4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e568
+  verified      -> timeout       t=29.4s -> t=31.2s 4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac e571
+  verified      -> timeout       t=28.7s -> t=30.7s 4 Trig functions/4.5 Secant/4.5.1.4 (d tan)^n (a+b sec)^m.mac e310
+  verified      -> timeout       t=28.9s -> t=30.5s 4 Trig functions/4.7 Miscellaneous/4.7.2 trig^m (a trig+b trig)^n.mac e258

@@ -168,6 +168,7 @@ run_all_tests() := block([],
   test_class4_cluster_c(),
   test_class4_e2e(),
   test_ifold_unit(),
+  test_removecontent_ifold(),
   test_ifold_top(),
   test_census(),
   print(""),
@@ -5404,6 +5405,28 @@ test_class4_e2e() := block([mr_c4e_saved, mr_c4e_fb, mr_c4e_ok, mr_c4e_r, mr_c4e
     check("ifold e2e: Int tanh(a+b x)", rubi(tanh(a+b*x), x), log(cosh(b*x+a))/b),
     check("ifold e2e: mr_ifold false keeps the rules' form",
           block([mr_ifold : false], rubi(tanh(a+b*x), x)), log(cos(%i*b*x+%i*a))/b),
+    /* RemoveContent's fold (answer-quality 02): 6.1.1 e30. Measured on the
+       full table 2026-10-03 (probe 07/09): shipped
+       (d*log(%i*sinh(b*x+a)))/b^2+((-(d*x)-c)*coth(b*x+a))/b, with the
+       fold Rubi's optimal below. */
+    mr_c4e_r : rubi((c+d*x)*csch(a+b*x)^2, x),
+    check("rc fold e2e: 6.1.1 e30 Int (c+d x) csch(a+b x)^2",
+          mr_c4e_r, (d*log(sinh(b*x+a)))/b^2+((-(d*x)-c)*coth(b*x+a))/b),
+    check_bool("rc fold e2e: 6.1.1 e30 differentiates to the integrand",
+               mr_c4e_clean(mr_c4e_r)
+               and mr_c4e_num(subst([c = 5, d = 7], mr_c4e_r),
+                              subst([c = 5, d = 7], (c+d*x)*csch(a+b*x)^2))),
+    /* the witness on THIS table: with RemoveContent's pre-fold body (the
+       depth-0 fold still on) e30 answers the shipped log(%i*sinh(..)) */
+    check("rc fold e2e: without RemoveContent's fold 6.1.1 e30 keeps log(%i*sinh)",
+          block([], local(%mr_removeContent),
+                %mr_removeContent(u, x) := block([v, w],
+                  v : %mr_nonfreeFactors(u, x),
+                  w : %mr_together(v),
+                  if %mr_eqQ(%mr_freeFactors(w, x), 1) then %mr_removeContentAux(v, x)
+                  else %mr_removeContentAux(%mr_nonfreeFactors(w, x), x)),
+                rubi((c+d*x)*csch(a+b*x)^2, x)),
+          (d*log(%i*sinh(b*x+a)))/b^2+((-(d*x)-c)*coth(b*x+a))/b),
     check("4.1.1.1 r5 binds sin(c + Pi/2 + d x) (Pi-arg flag)",
           %mr_rule_apply(_mr_rule_4_1_1_1_r5, %mr_isin(c + %pi/2 + d*x), x), sin(d*x + c)/d),
     check_bool("4.1.10 r12 binds sin(k Pi + x) with k = 1/2 (Pi-arg flag)",
@@ -6037,6 +6060,52 @@ test_ifold_unit() := block([t_if_r, t_if_e],
   true
 )$
 
+/* RemoveContent folds %i out of its argument (answer-quality 02; spec
+   docs/superpowers/specs/2026-10-03-removecontent-ifold-design.md).
+   4_3_1_1 r3 builds log(RemoveContent(cos(%i*b*x+%i*a+%pi/2))); Mathematica
+   evaluates the argument to -I Sinh[a+b x] before RemoveContent strips -I.
+   Measured 2026-10-03 (probe 09's redefinition): both arguments below give
+   sinh(b*x+a); shipped, sin(%i*b*x+%i*a). */
+test_removecontent_ifold() := block([t_rc_sw, t_rc_r],
+  print("--- the %i fold: RemoveContent's argument ---"),
+  t_rc_sw : mr_ifold,
+  mr_ifold : true,
+  check("rc fold: sin of an imaginary sum",
+        %mr_removeContent(sin(%i*b*x+%i*a), x), sinh(b*x+a)),
+  check("rc fold: 4_3_1_1 r3's Pi/2-shifted cos",
+        %mr_removeContent(cos(%i*b*x+%i*a+%pi/2), x), sinh(b*x+a)),
+  check("rc fold: an %i-free argument, content stripped",
+        %mr_removeContent(3*(x+1), x), x+1),
+  check_bool("rc fold: an %i-free function is returned unchanged",
+             is(%mr_removeContent(sin(b*x+a), x) = sin(b*x+a))),
+  /* the switch off: the shipped value */
+  check("rc fold: mr_ifold false, sin",
+        block([mr_ifold : false], %mr_removeContent(sin(%i*b*x+%i*a), x)),
+        sin(%i*b*x+%i*a)),
+  check("rc fold: mr_ifold false, Pi/2-shifted cos",
+        block([mr_ifold : false], %mr_removeContent(cos(%i*b*x+%i*a+%pi/2), x)),
+        sin(%i*b*x+%i*a)),
+  /* an erroring fold leaves RemoveContent's old value */
+  t_rc_r : block([], local(%mr_ifold), %mr_ifold(t_rc_e) := error("rc fold test"),
+                 %mr_removeContent(sin(%i*b*x+%i*a), x)),
+  check("rc fold: a fold error gives the unfolded value", t_rc_r, sin(%i*b*x+%i*a)),
+  /* the helper binds its own flags: the caller's radexpand:true neither
+     splits the folded power nor is changed */
+  t_rc_r : block([radexpand : true], %mr_ifold_safe(cot(%i*b*x+%i*a)^(1/3))),
+  check_bool("rc fold: the helper keeps the folded power's base",
+             is(op(t_rc_r) = "^") and is(part(t_rc_r, 1) = -%i*coth(b*x+a))),
+  /* read INSIDE the caller's binding: after the block exits, a leaked
+     assignment would already be undone and the check could not fail */
+  check("rc fold: the caller's flags are untouched",
+        block([radexpand : true, logexpand : true],
+              %mr_ifold_safe(cot(%i*b*x+%i*a)^(1/3)), [radexpand, logexpand]),
+        [true, true]),
+  check("rc fold: the helper with mr_ifold false is the identity",
+        block([mr_ifold : false], %mr_ifold_safe(sin(%i*b*x+%i*a))), sin(%i*b*x+%i*a)),
+  mr_ifold : t_rc_sw,
+  true
+)$
+
 /* The fold at depth 0 (mr_top / %mr_top_final), with synthetic rule records
    (the test_dispatch idiom): r1 answers x^7 with an imaginary-argument sin,
    r2 answers x^5 the same way, r3 answers x^7 by dispatching x^5 and
@@ -6073,7 +6142,10 @@ test_ifold_top() := block([t_ifr_p7, t_ifr_p5, h7, h5, h57, hcot, t_ifr_saved,
   t_ifr_r : rubi(x^7, x),
   check_bool("top fold: the folded power keeps its base at the caller",
              is(op(t_ifr_r) = "^") and is(part(t_ifr_r, 1) = -%i*coth(b*x+a))),
-  check("top fold: the caller's flags are untouched", [radexpand, logexpand], [true, true]),
+  /* read inside the caller's binding (see the rc fold check) */
+  check("top fold: the caller's flags are untouched",
+        block([radexpand : true, logexpand : true], rubi(x^7, x), [radexpand, logexpand]),
+        [true, true]),
   /* an erroring fold returns the unfolded answer */
   mr_rule_table : [h7],
   t_ifr_r : block([], local(%mr_ifold), %mr_ifold(t_ifr_e) := error("ifold test"),
