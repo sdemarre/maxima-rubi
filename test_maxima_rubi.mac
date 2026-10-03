@@ -5405,6 +5405,17 @@ test_class4_e2e() := block([mr_c4e_saved, mr_c4e_fb, mr_c4e_ok, mr_c4e_r, mr_c4e
     check("ifold e2e: Int tanh(a+b x)", rubi(tanh(a+b*x), x), log(cosh(b*x+a))/b),
     check("ifold e2e: mr_ifold false keeps the rules' form",
           block([mr_ifold : false], rubi(tanh(a+b*x), x)), log(cos(%i*b*x+%i*a))/b),
+    /* RemoveContent's fold (answer-quality 02): 6.1.1 e30. Measured on the
+       full table 2026-10-03 (probe 07/09): shipped
+       (d*log(%i*sinh(b*x+a)))/b^2+((-(d*x)-c)*coth(b*x+a))/b, with the
+       fold Rubi's optimal below. */
+    mr_c4e_r : rubi((c+d*x)*csch(a+b*x)^2, x),
+    check("rc fold e2e: 6.1.1 e30 Int (c+d x) csch(a+b x)^2",
+          mr_c4e_r, (d*log(sinh(b*x+a)))/b^2+((-(d*x)-c)*coth(b*x+a))/b),
+    check_bool("rc fold e2e: 6.1.1 e30 differentiates to the integrand",
+               mr_c4e_clean(mr_c4e_r)
+               and mr_c4e_num(subst([c = 5, d = 7], mr_c4e_r),
+                              subst([c = 5, d = 7], (c+d*x)*csch(a+b*x)^2))),
     check("4.1.1.1 r5 binds sin(c + Pi/2 + d x) (Pi-arg flag)",
           %mr_rule_apply(_mr_rule_4_1_1_1_r5, %mr_isin(c + %pi/2 + d*x), x), sin(d*x + c)/d),
     check_bool("4.1.10 r12 binds sin(k Pi + x) with k = 1/2 (Pi-arg flag)",
