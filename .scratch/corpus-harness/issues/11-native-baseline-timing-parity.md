@@ -48,14 +48,30 @@ They differ in what the timed call includes:
 - The record's `filter:` line states the timing mode (e.g. `timing: warm`), and
   the mergers refuse to mix modes, like the cap kind.
 
-## Decision needed before implementing
+## Decision (user, 2026-10-03): one 30 s budget per integral -- option (b)
 
-- **The cap when the times are summed**: each leg keeps its own 30 s cap today.
-  With `t=` the sum, a risch-answered entry can show `t=` above 30 s although
-  neither leg hit its cap. Options: (a) keep per-leg caps and allow `t=` > 30 s
-  for risch-answered entries (the histograms then need a "> 30 s" bin for the
-  native arm); (b) give risch only what integrate left of the 30 s; (c) report
-  the sum but cap the histogram at 30 s and count the rest separately.
+`risch` gets only what `integrate` left of the 30 s CPU cap; the record's `t=` is
+the sum and never exceeds 30 s, the same budget maxima-rubi has. Rejected: (a) per-
+leg caps with `t=` > 30 s (a "> 30 s" histogram bin only native could reach), (c)
+summing but capping the histogram.
+
+Measured on the 2026-09-30/10-01 baseline `.via` sidecars before deciding: risch's
+verdict was taken on **1,295** entries (integrate first: contains-noun 400,
+deferred 377, error 315, timeout 116, unverified 87; section 4 527, 1 408, 3 179,
+7 96, 5 63, 8 12, 6 6, 2 4). integrate's time before risch: median 0.4 s, under
+1 s on 88 %. **1,179 fit a shared 30 s budget and keep their verdict; the 116
+whose integrate timed out become `timeout` under (b)** -- the expected PASS -> FAIL
+of the re-run, not a regression; attribute exactly these. Examples (run
+2026-10-03): `sqrt(x^2+x^3)` (integrate returns the noun, risch
+`(sqrt(x+1)*(6*x^2+2*x-4))/15`); `sin(x)/(%i+cot(x))` (integrate errors);
+`expintegral_e(-2,a+b*x)` (integrate leaves an interior integral);
+`sin(a+b/sqrt(c+d*x))` (integrate times out, risch answers in < 1 s);
+`cos(a+b*x)/(c+d*x)^(2/3)` (integrate's gamma_incomplete answer is unverified,
+risch's expintegral_e form verifies -- the checker's limit, not risch's gain).
+
+Implementation note: the remaining budget is `TIMEOUT - integrate's CPU` (the
+ANSWERED value, or the process CPU when integrate never returned); a risch leg
+whose remaining budget is <= 0 is not run, and the entry keeps integrate's class.
 
 ## Acceptance
 
@@ -64,9 +80,10 @@ They differ in what the timed call includes:
 - A full native re-run of sections 0-8 (`setsid sh test/baseline_measure.sh`,
   about 9 h with 24 workers -- overnight). The verdicts must not move except at
   the cap: A/B with `test/ab_records.py` and `test/ab_grades.py` against the
-  2026-09-30/10-01 baseline records, every PASS -> FAIL attributed.
+  2026-09-30/10-01 baseline records, every PASS -> FAIL attributed (expected:
+  the 116 integrate-timeout risch rescues above).
 - Then the follow-up the user asked for: **shared time histograms** in the grade
   report artifact (https://claude.ai/artifact/XHpx6cnE6geM8QV8Y1vN8L), maxima-rubi
   and native Maxima side by side per section on the same 1-2-5 bins (`<0.1` ...
-  `20-30` s, plus whatever the cap decision above adds), each arm as a share of
+  `20-30` s; under the decision above no time exceeds 30 s), each arm as a share of
   its own passing integrals. The rubi-only panels of version 9 are the template.
