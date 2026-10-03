@@ -1,0 +1,375 @@
+batch("probes/leaf-size/08-classify-remaining-i.mac")
+logexpand:false
+radexpand:false
+trighyp_ops:[sin,cos,tan,cot,sec,csc,sinh,cosh,tanh,coth,sech,csch]
+invtrig_ops:[asin,acos,atan,acot,asec,acsc,asinh,acosh,atanh,acoth,asech,
+             acsch,atan2]
+elliptic_ops:[elliptic_f,elliptic_e,elliptic_pi,elliptic_kc,elliptic_ec]
+ctx(e):=if e = %i then [bare]
+     else (if atom(e) or freeof(%i,e) then []
+               else block([o:op(e)],
+                          if member(o,trighyp_ops)
+                              then (if freeof(%pi,args(e)) then [trigarg]
+                                        else [pishift])
+                              else (if member(o,elliptic_ops) then [elliptic]
+                                        else (if o = log then [log]
+                                                  else (if 
+                                                  member(o,invtrig_ops)
+                                                   then [invtrig]
+                                                   else (if 
+                                                   o = "^"
+                                                     and not integerp(
+                                                     second(args(e)))
+                                                     and not freeof(
+                                                     %i,first(args(e)))
+                                                    then append([fracpow],
+                                                                ctx(
+                                                                 second(
+                                                                  args(e))))
+                                                    else (if 
+                                                    member(o,
+                                                           ["+","*","^","-",
+                                                            "/"])
+                                                     then apply(append,
+                                                                map(ctx,
+                                                                    args(e)))
+                                                     else [special])))))))
+ctxset(e):=sort(listify(setify(ctx(e))))
+lines:block([s:openr("probes/leaf-size/07-remaining-i-answers.out"),l,acc:[]],
+            while (l:readline(s)) # false do acc:cons(l,acc),close(s),
+            reverse(acc))
+label:""
+census:[]
+single:[]
+bump(al,k):=block([p:mr_find(k,al)],
+     if p = false then cons([k,1],al)
+         else map(lambda([q],if first(q) = k then [k,second(q)+1] else q),al))
+mr_find(k,al):=block([r:false],for q in al do if first(q) = k then r:q,r)
+for l in lines do
+    if slength(l) > 3 and substring(l,1,4) = "## " then label:substring(l,4)
+        else (if slength(l) > 7 and substring(l,1,8) = "ANSWER "
+                  then block([e:errcatch(parse_string(substring(l,8))),c],
+                             c:if e = [] then [parse_error]
+                                   else ctxset(first(e)),
+                             if c = [] then c:[none],
+                             printf(true,"CTX ~a ~a~%",
+                                    simplode(map(string,c),","),label),
+                             census:bump(census,simplode(map(string,c),",")),
+                             for k in c do single:bump(single,string(k))))
+CTX bare,pishift 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e6 L17
+CTX bare,pishift 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e12 L23
+CTX bare,pishift 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e14 L25
+CTX bare,pishift 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e21 L32
+CTX log 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e30 L43
+CTX bare,pishift 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e161 L220
+CTX bare,pishift 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e166 L225
+CTX bare,pishift 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e167 L226
+CTX bare,pishift 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e168 L227
+CTX log 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e245 L328
+CTX log 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e250 L333
+CTX bare,log 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e443 L594
+CTX bare,log 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e471 L630
+CTX log 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e477 L642
+CTX bare,log 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.1 (c+d x)^m (a+b sinh)^n.mac e498 L667
+CTX none 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.5 Hyperbolic sine functions.mac e305 L406
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e29 L42
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e31 L44
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e33 L46
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e35 L48
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e44 L57
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e46 L59
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e53 L66
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e55 L68
+CTX bare 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e60 L73
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e71 L88
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e74 L91
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e75 L92
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e82 L99
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e85 L102
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e86 L103
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e102 L121
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e105 L124
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e106 L125
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e111 L130
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e112 L131
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e115 L134
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e120 L139
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e121 L140
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e124 L143
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e236 L275
+CTX bare,invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e238 L277
+CTX bare 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e265 L304
+CTX invtrig,special 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e266 L305
+CTX bare,invtrig,special 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e268 L311
+CTX invtrig 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e272 L315
+CTX bare,invtrig,special 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e274 L317
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e357 L420
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e358 L421
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e360 L423
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e361 L424
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e368 L431
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e369 L432
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e371 L434
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e372 L435
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e377 L442
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e378 L443
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e380 L445
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e381 L446
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e386 L451
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e387 L452
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e388 L453
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e390 L455
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e395 L460
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e396 L461
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e397 L462
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e399 L464
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e463 L556
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e464 L557
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e466 L559
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e467 L560
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e474 L567
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e475 L568
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e477 L570
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e478 L571
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e485 L580
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e486 L581
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e488 L583
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e489 L584
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e496 L591
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e497 L592
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e499 L594
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e500 L595
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e507 L602
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e508 L603
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e510 L605
+CTX bare,elliptic 6 Hyperbolic functions/6.1 Hyperbolic sine/6.1.7 hyper^m (a+b sinh^n)^p.mac e511 L606
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e5 L16
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e7 L18
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e12 L23
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e14 L25
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e20 L31
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e22 L33
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e102 L139
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e104 L141
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e108 L145
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e110 L147
+CTX pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e121 L164
+CTX pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e122 L165
+CTX pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e123 L166
+CTX pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e124 L167
+CTX pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e125 L168
+CTX pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e126 L169
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e159 L216
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e161 L218
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e165 L222
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.1 (c+d x)^m (a+b cosh)^n.mac e167 L224
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e18 L29
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e19 L30
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e20 L31
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e21 L32
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e22 L33
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e23 L34
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e24 L35
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e25 L36
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e26 L37
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e27 L38
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e28 L39
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e29 L40
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e31 L42
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e32 L43
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e33 L44
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e34 L45
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e35 L46
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e36 L47
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e37 L48
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e38 L49
+CTX bare,pishift 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.2 (e x)^m (a+b x^n)^p cosh.mac e39 L50
+CTX none 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e268 L357
+CTX none 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.5 Hyperbolic cosine functions.mac e295 L390
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e16 L35
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e21 L56
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e23 L58
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e25 L60
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e27 L62
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e33 L68
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e34 L69
+CTX bare,invtrig 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e35 L70
+CTX bare,invtrig 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e36 L71
+CTX bare,invtrig 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e37 L72
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e56 L99
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e57 L100
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e58 L101
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e60 L105
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e61 L106
+CTX invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e62 L107
+CTX bare,invtrig 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e63 L108
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e64 L111
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e65 L112
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e67 L114
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e68 L115
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e71 L118
+CTX bare,invtrig,special 6 Hyperbolic functions/6.2 Hyperbolic cosine/6.2.7 hyper^m (a+b cosh^n)^p.mac e72 L119
+CTX bare,pishift 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e35 L60
+CTX bare,pishift 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e36 L61
+CTX bare,pishift 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e37 L62
+CTX bare,pishift 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e41 L66
+CTX bare,pishift 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e42 L67
+CTX bare,pishift 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e46 L71
+CTX bare,pishift 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.1 (c+d x)^m (a+b tanh)^n.mac e47 L72
+CTX log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e7 L16
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e9 L18
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e11 L20
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e13 L24
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e14 L25
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e15 L26
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e18 L29
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e19 L30
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e20 L31
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e151 L212
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e152 L213
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e155 L216
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.2 Hyperbolic tangent functions.mac e156 L217
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e56 L71
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e64 L79
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e72 L87
+CTX bare,invtrig,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e73 L90
+CTX bare,invtrig,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e75 L92
+CTX bare,invtrig,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e78 L95
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e80 L97
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e171 L216
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e173 L218
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e175 L220
+CTX bare,log 6 Hyperbolic functions/6.3 Hyperbolic tangent/6.3.7 (d hyper)^m (a+b (c tanh)^n)^p.mac e258 L317
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e8 L17
+CTX bare,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e12 L21
+CTX bare,pishift 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e19 L38
+CTX bare,pishift 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e20 L39
+CTX bare,pishift 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e21 L40
+CTX bare,pishift 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e25 L44
+CTX bare,pishift 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e26 L45
+CTX bare,pishift 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e30 L49
+CTX bare,pishift 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e31 L50
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e44 L71
+CTX bare,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e48 L75
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.1 (c+d x)^m (a+b coth)^n.mac e49 L76
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e1 L10
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e2 L11
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e3 L12
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e6 L15
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e7 L16
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e8 L17
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e9 L20
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e14 L25
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e22 L39
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e23 L40
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e26 L43
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e27 L44
+CTX bare,fracpow,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e29 L48
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e30 L49
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e31 L50
+CTX bare,fracpow,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e32 L51
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e35 L54
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e44 L65
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e45 L66
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e46 L67
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e47 L68
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e48 L69
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e49 L70
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e77 L108
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e78 L109
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e79 L110
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e80 L111
+CTX bare,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e85 L116
+CTX bare,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e86 L117
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e151 L208
+CTX bare,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e153 L210
+CTX bare,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e155 L212
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e156 L215
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e157 L216
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e160 L219
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.2 Hyperbolic cotangent functions.mac e161 L220
+CTX bare,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e5 L22
+CTX log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e9 L26
+CTX bare,log 6 Hyperbolic functions/6.4 Hyperbolic cotangent/6.4.7 (d hyper)^m (a+b (c coth)^n)^p.mac e50 L81
+CTX bare,elliptic 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e147 L202
+CTX bare,elliptic 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e150 L205
+CTX none 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e154 L213
+CTX none 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.3 Hyperbolic secant functions.mac e186 L251
+CTX bare,invtrig,special 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e78 L93
+CTX bare,invtrig,special 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e80 L95
+CTX bare,invtrig,special 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e82 L97
+CTX bare,invtrig,special 6 Hyperbolic functions/6.5 Hyperbolic secant/6.5.7 (d hyper)^m (a+b (c sech)^n)^p.mac e143 L168
+CTX log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.1 (c+d x)^m (a+b csch)^n.mac e7 L14
+CTX log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e10 L21
+CTX bare,special,log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e16 L29
+CTX bare,special,log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e18 L31
+CTX bare,special,log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e41 L62
+CTX bare,special,log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e42 L63
+CTX bare,special,log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e43 L64
+CTX bare,special,log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e61 L88
+CTX bare,special,log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e62 L89
+CTX log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e76 L107
+CTX bare,special,log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e79 L112
+CTX bare,special,log 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.2 (e x)^m (a+b csch(c+d x^n))^p.mac e80 L113
+CTX none 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.3 Hyperbolic cosecant functions.mac e160 L213
+CTX bare,invtrig 6 Hyperbolic functions/6.6 Hyperbolic cosecant/6.6.7 (d hyper)^m (a+b (c csch)^n)^p.mac e5 L14
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e24 L39
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e49 L64
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e50 L65
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e51 L66
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e54 L69
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e55 L70
+CTX bare,invtrig,special,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e56 L71
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e57 L72
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e58 L73
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e59 L74
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e64 L79
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e65 L80
+CTX bare,fracpow,invtrig,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e66 L81
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e137 L158
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e138 L159
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e141 L162
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e142 L163
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e152 L173
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e164 L185
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e447 L502
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e470 L529
+CTX log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e497 L558
+CTX bare 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e575 L650
+CTX bare,invtrig 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e577 L652
+CTX bare,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1052 L1263
+CTX bare,log 6 Hyperbolic functions/6.7 Miscellaneous/6.7.1 Hyperbolic functions.mac e1059 L1270
+printf(true,"# census: entries per context set~%")
+# census: entries per context set
+for q in sort(census,lambda([a,b],second(a) > second(b))) do
+    printf(true,"#   ~4d ~a~%",second(q),first(q))
+#     57 bare,elliptic
+#     57 bare,pishift
+#     28 bare,invtrig,special,log
+#     28 log
+#     24 bare,invtrig,special
+#     23 bare,log
+#     18 bare,fracpow,invtrig,log
+#     16 bare,invtrig
+#      9 bare,special,log
+#      6 pishift
+#      6 none
+#      3 bare,invtrig,log
+#      3 bare
+#      2 bare,fracpow,invtrig,special,log
+#      2 invtrig,special
+#      1 invtrig
+printf(true,
+       "# census: entries per single context (an entry counts under each of its contexts)~%")
+# census: entries per single context (an entry counts under each of its contexts)
+for q in sort(single,lambda([a,b],second(a) > second(b))) do
+    printf(true,"#   ~4d ~a~%",second(q),first(q))
+#    240 bare
+#    111 log
+#     94 invtrig
+#     65 special
+#     63 pishift
+#     57 elliptic
+#     20 fracpow
+#      6 none
+   /home/serge/src/maxima-rubi/probes/leaf-size/08-classify-remaining-i.mac

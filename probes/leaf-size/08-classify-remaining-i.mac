@@ -1,0 +1,78 @@
+/* .scratch/answer-quality/issues/02: WHERE does the %i of each remaining
+   section-6 C answer sit? Reads probe 07's dump
+   (probes/leaf-size/07-remaining-i-answers.out), parses each ANSWER line and
+   walks its tree. Every occurrence of %i is attributed to its NEAREST
+   enclosing context:
+     pishift   a trig/hyperbolic function whose argument holds %i and %pi
+               (Rubi's I*Pi/2 argument shift, unreduced)
+     trigarg   a trig/hyperbolic function whose argument holds %i, no %pi
+     elliptic  an elliptic_* argument
+     log       a log argument
+     invtrig   an atan/atanh/asin/... argument
+     special   any other function's argument (expintegral_*, erf, li, ...)
+     fracpow   the base of a non-integer power (sqrt included)
+     bare      %i as a coefficient / in a rational part (no enclosing
+               function or fractional power)
+   The walk stops at the nearest context: %i inside log(sqrt(%i*u)) is
+   fracpow, not log. Parsed under logexpand:false, radexpand:false.
+
+     maxima --very-quiet -b probes/leaf-size/08-classify-remaining-i.mac < /dev/null \
+         > probes/leaf-size/08-classify-remaining-i.out
+
+   Each entry prints `CTX <sorted context set> <label>`; the census counts
+   entries per context set and per single context (an entry with several
+   contexts counts once under each). */
+
+logexpand : false$
+radexpand : false$
+
+trighyp_ops : [sin, cos, tan, cot, sec, csc, sinh, cosh, tanh, coth, sech, csch]$
+invtrig_ops : [asin, acos, atan, acot, asec, acsc, asinh, acosh, atanh, acoth,
+           asech, acsch, atan2]$
+elliptic_ops : [elliptic_f, elliptic_e, elliptic_pi, elliptic_kc, elliptic_ec]$
+
+ctx(e) :=
+  if e = %i then [bare]
+  else if atom(e) or freeof(%i, e) then []
+  else block([o : op(e)],
+    if member(o, trighyp_ops) then
+      (if freeof(%pi, args(e)) then [trigarg] else [pishift])
+    else if member(o, elliptic_ops) then [elliptic]
+    else if o = log then [log]
+    else if member(o, invtrig_ops) then [invtrig]
+    else if o = "^" and not integerp(second(args(e))) and not freeof(%i, first(args(e)))
+      then append([fracpow], ctx(second(args(e))))
+    else if member(o, ["+", "*", "^", "-", "/"]) then
+      apply(append, map(ctx, args(e)))
+    else [special])$
+
+ctxset(e) := sort(listify(setify(ctx(e))))$
+
+lines : block([s : openr("probes/leaf-size/07-remaining-i-answers.out"), l, acc : []],
+  while (l : readline(s)) # false do acc : cons(l, acc),
+  close(s), reverse(acc))$
+
+label : ""$
+census : []$
+single : []$
+bump(al, k) := block([p : mr_find(k, al)],
+  if p = false then cons([k, 1], al)
+  else map(lambda([q], if first(q) = k then [k, second(q) + 1] else q), al))$
+mr_find(k, al) := block([r : false], for q in al do if first(q) = k then r : q, r)$
+
+for l in lines do (
+  if slength(l) > 3 and substring(l, 1, 4) = "## " then label : substring(l, 4)
+  else if slength(l) > 7 and substring(l, 1, 8) = "ANSWER " then block(
+    [e : errcatch(parse_string(substring(l, 8))), c],
+    c : if e = [] then [parse_error] else ctxset(first(e)),
+    if c = [] then c : [none],
+    printf(true, "CTX ~a ~a~%", simplode(map(string, c), ","), label),
+    census : bump(census, simplode(map(string, c), ",")),
+    for k in c do single : bump(single, string(k))))$
+
+printf(true, "# census: entries per context set~%")$
+for q in sort(census, lambda([a, b], second(a) > second(b))) do
+  printf(true, "#   ~4d ~a~%", second(q), first(q))$
+printf(true, "# census: entries per single context (an entry counts under each of its contexts)~%")$
+for q in sort(single, lambda([a, b], second(a) > second(b))) do
+  printf(true, "#   ~4d ~a~%", second(q), first(q))$
