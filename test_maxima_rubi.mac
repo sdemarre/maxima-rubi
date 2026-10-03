@@ -167,6 +167,8 @@ run_all_tests() := block([],
   test_class4_cluster_b(),
   test_class4_cluster_c(),
   test_class4_e2e(),
+  test_ifold_unit(),
+  test_ifold_top(),
   test_census(),
   print(""),
   print("========================================"),
@@ -5391,6 +5393,17 @@ test_class4_e2e() := block([mr_c4e_saved, mr_c4e_fb, mr_c4e_ok, mr_c4e_r, mr_c4e
           rubi(sinh(2*x)/x, x), expintegral_shi(2*x)),
     check("4.7.5 r5 (active cosh, pure-Sinh FunctionOfQ): Int cosh(x) sinh(x)^2",
           rubi(cosh(x)*sinh(x)^2, x), sinh(x)^3/3),
+    /* the %i fold (answer-quality 01): measured before the fold (2026-10-02)
+       these three answered -(%i*((%i*x*cos(%i*b*x+%i*a))/b-sin(%i*b*x+%i*a)/b^2)),
+       -((%i*cos(%i*b*x+%i*a)*sin(%i*b*x+%i*a))/(2*b))-x/2 and
+       log(cos(%i*b*x+%i*a))/b */
+    check("ifold e2e: Int x sinh(a+b x)", rubi(x*sinh(a+b*x), x),
+          (x*cosh(b*x+a))/b-sinh(b*x+a)/b^2),
+    check("ifold e2e: Int sinh(a+b x)^2", rubi(sinh(a+b*x)^2, x),
+          (cosh(b*x+a)*sinh(b*x+a))/(2*b)-x/2),
+    check("ifold e2e: Int tanh(a+b x)", rubi(tanh(a+b*x), x), log(cosh(b*x+a))/b),
+    check("ifold e2e: mr_ifold false keeps the rules' form",
+          block([mr_ifold : false], rubi(tanh(a+b*x), x)), log(cos(%i*b*x+%i*a))/b),
     check("4.1.1.1 r5 binds sin(c + Pi/2 + d x) (Pi-arg flag)",
           %mr_rule_apply(_mr_rule_4_1_1_1_r5, %mr_isin(c + %pi/2 + d*x), x), sin(d*x + c)/d),
     check_bool("4.1.10 r12 binds sin(k Pi + x) with k = 1/2 (Pi-arg flag)",
@@ -5976,6 +5989,103 @@ test_rubi_errata() := block([mr_er_saved, mr_er_ok, mr_er_back, mr_er_f, mr_er_r
     check_bool("errata: 4_1_0_2 r18 still takes sec*tan^3 (b = 1)",
       is(%mr_rule_accept(_mr_rule_4_1_0_2_r18, %mr_isec(x)*%mr_itan(x)^3, x)
          # false))),
+  true
+)$
+
+/* The %i fold of the top-level answer (.scratch/answer-quality/issues/01,
+   spec docs/superpowers/specs/2026-10-02-ifold-answer-design.md). The fold
+   itself: %mr_ifold under the flags %mr_top_final binds. Expected forms are
+   the measured outputs of the build (2026-10-02). */
+t_if(t_if_e) := block([radexpand : false, logexpand : false], %mr_ifold(t_if_e))$
+test_ifold_unit() := block([t_if_r, t_if_e],
+  print("--- the %i fold: %mr_ifold ---"),
+  check("ifold: sin of an imaginary sum", t_if(sin(%i*b*x+%i*a)), %i*sinh(b*x+a)),
+  check("ifold: cos of an imaginary sum", t_if(cos(%i*b*x+%i*a)), cosh(b*x+a)),
+  check("ifold: the outer %i multiplies out", t_if(-%i*(%i*X+%i*Y)), X+Y),
+  check("ifold: nested (6.1.1 e1's shape)",
+        t_if(-(%i*((%i*x*cos(%i*b*x+%i*a))/b-sin(%i*b*x+%i*a)/b^2))),
+        (x*cosh(b*x+a))/b-sinh(b*x+a)/b^2),
+  check("ifold: a product of folded functions",
+        t_if(-((%i*cos(%i*b*x+%i*a)*sin(%i*b*x+%i*a))/(2*b))-x/2),
+        (cosh(b*x+a)*sinh(b*x+a))/(2*b)-x/2),
+  check("ifold: inside a log", t_if(log(cos(%i*b*x+%i*a))/b), log(cosh(b*x+a))/b),
+  check("ifold: atan -> %i atanh", t_if(atan(%i*x+%i*a)), %i*atanh(x+a)),
+  check("ifold: acot -> -%i acoth", t_if(acot(%i*x+%i*a)), -%i*acoth(x+a)),
+  /* untouched */
+  t_if_e : x^2 + sin(x),
+  check_bool("ifold: an %i-free answer is returned itself", is(t_if(t_if_e) = t_if_e)),
+  check_bool("ifold: an %i-free CRE answer stays CRE", ratp(t_if(rat(x^2/2 + x)))),
+  check("ifold: a CRE answer with %i keeps its value",
+        radcan(t_if(rat(%i*x+%i*a)) - (%i*x+%i*a)), 0),
+  check("ifold: an unfoldable %i keeps its value",
+        radcan(t_if(sqrt(%i*x+%i*a)) - sqrt(%i*x+%i*a)), 0),
+  t_if_e : 'unintegrable(sin(%i*x+%i*a), x),
+  check_bool("ifold: the unintegrable noun is opaque", is(t_if(t_if_e) = t_if_e)),
+  t_if_e : 'integrate(sin(%i*x+%i*a), x),
+  check_bool("ifold: the integrate noun is opaque", is(t_if(t_if_e) = t_if_e)),
+  t_if_r : t_if(sin(%i*x+%i*a) + 'integrate(cos(%i*x+%i*a), x)),
+  check_bool("ifold: a noun inside a sum is opaque, its sibling folds",
+             is(t_if_r = %i*sinh(x+a) + 'integrate(cos(%i*x+%i*a), x))),
+  /* the flags: the folded power keeps its base whole under radexpand:false;
+     under the defaults it splits onto the wrong branch (the hazard) */
+  t_if_r : t_if(cot(%i*b*x+%i*a)^(1/3)),
+  check_bool("ifold: under the flags the folded power keeps its base",
+             is(op(t_if_r) = "^") and is(part(t_if_r, 2) = 1/3)
+             and is(part(t_if_r, 1) = -%i*coth(b*x+a))),
+  check_bool("ifold: under radexpand:true the same fold splits (the hazard)",
+             freeof(%i, block([radexpand : true], %mr_ifold(cot(%i*b*x+%i*a)^(1/3))))),
+  true
+)$
+
+/* The fold at depth 0 (mr_top / %mr_top_final), with synthetic rule records
+   (the test_dispatch idiom): r1 answers x^7 with an imaginary-argument sin,
+   r2 answers x^5 the same way, r3 answers x^7 by dispatching x^5 and
+   recording the nested result, r4 answers x^7 with a cube root of cot. */
+t_ifr_true(mm, x) := true$
+t_ifr_sin(mm, x) := sin(%i*x+%i*a)$
+t_ifr_cot(mm, x) := cot(%i*b*x+%i*a)^(1/3)$
+t_ifr_nest(mm, x) := (t_ifr_seen : mr_int(x^5, x), 1)$
+test_ifold_top() := block([t_ifr_p7, t_ifr_p5, h7, h5, h57, hcot, t_ifr_saved,
+                           t_ifr_sw, t_ifr_vb, t_ifr_r],
+  print("--- the %i fold: the top-level answer ---"),
+  t_ifr_p7 : "(Int (Power (Pattern x (Blank)) 7) (Pattern x (Blank Symbol)))",
+  t_ifr_p5 : "(Int (Power (Pattern x (Blank)) 5) (Pattern x (Blank Symbol)))",
+  h7 : %mr_defrule("ifold", 1, t_ifr_p7, t_ifr_true, t_ifr_sin),
+  h5 : %mr_defrule("ifold", 2, t_ifr_p5, t_ifr_true, t_ifr_sin),
+  h57 : %mr_defrule("ifold", 3, t_ifr_p7, t_ifr_true, t_ifr_nest),
+  hcot : %mr_defrule("ifold", 4, t_ifr_p7, t_ifr_true, t_ifr_cot),
+  t_ifr_saved : mr_rule_table, t_ifr_sw : mr_ifold, t_ifr_vb : rubi_verbose,
+  rubi_verbose : false,
+  mr_rule_table : [h7],
+  mr_ifold : true,
+  check("top fold: the answer is folded", rubi(x^7, x), %i*sinh(x+a)),
+  check("top fold: rubi_fallback folds too", rubi_fallback(x^7, x, true), %i*sinh(x+a)),
+  mr_ifold : false,
+  check("top fold: mr_ifold false answers the rules' form", rubi(x^7, x), sin(%i*x+%i*a)),
+  mr_ifold : true,
+  /* nested: the inner answer is NOT folded */
+  mr_rule_table : [h57, h5],
+  t_ifr_seen : false,
+  rubi(x^7, x),
+  check("top fold: a nested call's answer is not folded", t_ifr_seen, sin(%i*x+%i*a)),
+  /* the caller's radexpand:true does not split the folded power */
+  mr_rule_table : [hcot],
+  t_ifr_r : rubi(x^7, x),
+  check_bool("top fold: the folded power keeps its base at the caller",
+             is(op(t_ifr_r) = "^") and is(part(t_ifr_r, 1) = -%i*coth(b*x+a))),
+  check("top fold: the caller's flags are untouched", [radexpand, logexpand], [true, true]),
+  /* an erroring fold returns the unfolded answer */
+  mr_rule_table : [h7],
+  t_ifr_r : block([], local(%mr_ifold), %mr_ifold(t_ifr_e) := error("ifold test"),
+                  rubi(x^7, x)),
+  check("top fold: a fold error returns the answer unfolded", t_ifr_r, sin(%i*x+%i*a)),
+  check("top fold: %mr_ifold is restored after local", rubi(x^7, x), %i*sinh(x+a)),
+  /* verbose matches: the answer folds, the steps keep the rules' form */
+  rubi_verbose : 'matches,
+  check("top fold: verbose folds the answer, keeps the steps",
+        rubi(x^7, x),
+        [%i*sinh(x+a), [["ifold r1", 'integrate(x^7, x), sin(%i*x+%i*a), []]]]),
+  rubi_verbose : t_ifr_vb, mr_ifold : t_ifr_sw, mr_rule_table : t_ifr_saved,
   true
 )$
 

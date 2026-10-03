@@ -1,6 +1,6 @@
 # Hyperbolic answers keep an %i: sin(%i*a + %i*b*x) is never folded back to %i*sinh(a + b*x)
 
-Status: ready-for-agent
+Status: closed
 Type: answer quality (grade C, verdict unaffected) — section 6, ~1,850 entries
 Filed: 2026-10-01
 
@@ -132,4 +132,25 @@ integrand (worst 8.4e-9).
 under `radexpand:false, logexpand:false`. The 9 entries above are accepted as
 attributed checker artefacts: the acceptance's 0 PASS -> FAIL excludes exactly
 them.
+
+### 2026-10-03 -- accepted
+
+Implemented on branch `ifold-answer` (spec
+`docs/superpowers/specs/2026-10-02-ifold-answer-design.md`, plan
+`docs/superpowers/plans/2026-10-02-ifold-answer.md`): run switch `mr_ifold`
+(`14bd527`), `%mr_ifold` (`5de01b6`), `%mr_top_final` at depth 0 (`d08e904`),
+`test/ab_grades.py` (`6e09656`), the records (`2988844`). Layer A 1658 -> 1688.
+
+Every section's rubi arm re-run and graded against e6ab9ae's records
+(`.scratch/answer-quality/ifold_ab/`):
+
+- PASS -> FAIL: 0 in sections 0, 1, 2, 3, 5, 7, 8; section 6 the 9 attributed
+  above; section 4, 4 entries verified at 29.7-29.9 s before, timeout at
+  30.0-30.6 s now, which verify at ~18 s in both switch arms at 4 workers (run
+  noise at the cap: `sec4_recheck.log`, `recheck_*`).
+- Grades worse: those 4 section-4 entries only.
+- Section 6: C 1,854 -> 283, A 2,534 -> 4,057 (79.9 %). All sections: A 84.0 %
+  -> 86.6 %; integrate+risch grades better on 2,482 entries (was 3,793).
+
+The 283 remaining section-6 C's: issue 02.
 
