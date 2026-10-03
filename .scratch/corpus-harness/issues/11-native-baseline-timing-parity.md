@@ -66,8 +66,12 @@ of the re-run, not a regression; attribute exactly these. Examples (run
 `(sqrt(x+1)*(6*x^2+2*x-4))/15`); `sin(x)/(%i+cot(x))` (integrate errors);
 `expintegral_e(-2,a+b*x)` (integrate leaves an interior integral);
 `sin(a+b/sqrt(c+d*x))` (integrate times out, risch answers in < 1 s);
-`cos(a+b*x)/(c+d*x)^(2/3)` (integrate's gamma_incomplete answer is unverified,
-risch's expintegral_e form verifies -- the checker's limit, not risch's gain).
+`cos(a+b*x)/(c+d*x)^(2/3)` (4.2.10 e71: integrate's gamma_incomplete answer is
+WRONG -- with mpmath principal-branch arithmetic its derivative misses the integrand
+by 0.16-0.32 at x = 0.3/0.7/2 (a,b,c,d = 1,2,3,5) -- and risch's expintegral_e answer
+is right to 1e-17; a genuine rescue. The same check shows Rubi's reference answer,
+which rubi reproduces exactly, right to 1e-17, although rubi's record calls it
+`unverified`: Maxima's float evaluation puts `(%i*y)^(2/3)` on another branch).
 
 Implementation note: the remaining budget is `TIMEOUT - integrate's CPU` (the
 ANSWERED value, or the process CPU when integrate never returned); a risch leg
