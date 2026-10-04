@@ -1,6 +1,6 @@
 # The native baseline's times are not comparable with rubi's
 
-Status: implemented 2026-10-03 (driver, guards, runner); native re-run of sections 0-8 launched the same night, A/B pending
+Status: closed 2026-10-04 (implemented `3afaae6`; re-run accepted, see Result)
 Type: harness fidelity (timing)
 Filed: 2026-10-03 (user request: time both arms the same way, then shared
 maxima-rubi / native time histograms in the grade report artifact)
@@ -114,3 +114,33 @@ whose remaining budget is <= 0 is not run, and the entry keeps integrate's class
   and native Maxima side by side per section on the same 1-2-5 bins (`<0.1` ...
   `20-30` s; under the decision above no time exceeds 30 s), each arm as a share of
   its own passing integrals. The rubi-only panels of version 9 are the template.
+
+## Result (re-run 2026-10-03 23:01 - 2026-10-04 03:19 CEST, `3afaae6`, 24 workers)
+
+All nine sections merged complete (key sets equal to the old records). A/B against
+the pre-issue-11 records (`4a90538`, `test/baseline11_ab_class<N>.out`,
+`test/baseline11_abgrade_class<N>.out`, `test/baseline11_attrib_class<N>.out`):
+
+| section | PASS->FAIL | FAIL->PASS | attribution |
+|---|---|---|---|
+| 0 | 1 | 0 | noise: Moses e87 |
+| 1, 2, 5, 6, 7, 8 | 0 | 0 | -- |
+| 3 | 2 | 0 | both one-budget losses |
+| 4 | 112 | 2 | 110 one-budget losses, 2 noise; FAIL->PASS = issue 10 |
+
+- **One-budget losses: 112 of the 116** predicted (integrate used its 30 s, risch
+  passed after). The other 4 (4.5.4.2 e261/e580/e589/e1149) kept their PASS:
+  integrate itself answered in 28.9-29.6 s this time.
+- **3 unattributed** (0 Moses e87 verified -> timeout, 4.1.3.1 e36 verified ->
+  unverified (risch's verification timed out), 4.5.3.1 e552 verified -> timeout):
+  each re-run alone twice on an idle machine (2026-10-04 07:19) passes both times,
+  at about half the CPU the 24-worker run charged (e87 16.7 s vs 34.1 s, e552
+  16.5 s vs 30.6 s, e36 risch 1.5 s vs 3.1 s): load at the cap, not this change.
+- **FAIL->PASS 2** (4.3.3.1 e604, 4.4.2.1 e84, error -> verified): issue 10's
+  GC-timing heap crash, flipping back.
+- FAIL->FAIL class swaps (7 deferred -> timeout, 2 timeout -> deferred, 4 timeout
+  -> error): integrate at 28.7-31.9 s against the cap, or a crash vs a kill near 60 s.
+- Grades: the only worse grades are the PASS->FAIL entries above (1 + 2 + 116).
+- **Times**: over passing entries, native min 0.3 s / median 0.4-0.5 s before, now
+  min 0.0 / median 0.0 / max 29.6 s (no sum over 30 s); 80-99 % of native passes
+  per section are under 0.1 s.
