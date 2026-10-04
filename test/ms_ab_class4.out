@@ -1,0 +1,24 @@
+base: .scratch/corpus-harness/records-pre-ms/corpus_class4.out (22472 entries)
+new:  test/corpus_class4.out (22472 entries)
+key set: 0 missing from new, 0 extra in new
+
+=== PASS/FAIL table ===
+PASS->PASS  21212
+PASS->FAIL      1
+FAIL->PASS      7
+FAIL->FAIL   1252
+
+=== class transitions (changed only) ===
+    6  timeout -> verified
+    4  verified -> expected
+    1  timeout -> expected
+    1  verified -> error
+    1  timeout -> contains-noun
+
+=== per file (PASS->FAIL / FAIL->PASS) ===
+    0     5  4 Trig functions/4.1 Sine/4.1.1.2 (g cos)^p (a+b sin)^m.mac
+    1     1  4 Trig functions/4.5 Secant/4.5.1.4 (d tan)^n (a+b sec)^m.mac
+    0     1  4 Trig functions/4.7 Miscellaneous/4.7.2 trig^m (a trig+b trig)^n.mac
+
+=== PASS->FAIL (1) ===
+  verified      -> error         t=14.1s -> t=13.3s 4 Trig functions/4.5 Secant/4.5.1.4 (d tan)^n (a+b sec)^m.mac e316
