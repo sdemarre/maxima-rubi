@@ -143,7 +143,10 @@ def header_checks(drv):
           bool(re.search(rf"verify: {drv.VERIFY_CAP}s {drv.CAP_KIND}, "
                          rf"stage {drv.STAGE_CAP:g}s", flt)), True)
     check("header: the filter line states the timing mode, ending it "
-          "(corpus-harness 11)", flt.endswith("  timing: printf-free"), True)
+          "(corpus-harness 11)", flt.endswith("  timing: printf-free+ms"), True)
+    check("result line: t= carries milliseconds",
+          drv.result_line("verified", 0.0123, "1 T/f.mac e1 L1"),
+          "verified       t=  0.012s 1 T/f.mac e1 L1")
 
 
 def merge_checks(drv):

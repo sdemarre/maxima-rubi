@@ -3,7 +3,7 @@
 # driver's own path (MR_BASELINE=1, test/corpus_driver.py run_entry_detail):
 # stock Maxima's integrate, then risch where integrate did not pass, the two
 # sharing ONE 30 s CPU budget, timed without printf's stringproc autoload
-# (`timing: printf-free+one-budget`, .scratch/corpus-harness/issues/11), the
+# (`timing: printf-free+ms+one-budget`, .scratch/corpus-harness/issues/11), the
 # symbolic-first checker with its own 30 s budget. Per class N:
 #   test/corpus_class<N>.baseline.out        the merged record
 #   test/corpus_class<N>.baseline.proof.out  the checker's proof census
@@ -47,7 +47,7 @@ run_class() {  # $1 section
   slug="class$n.baseline"
   out="test/corpus_class$n.baseline.out"
   base="${out%.out}"
-  if grep -q "timing: printf-free+one-budget" "$out" 2>/dev/null \
+  if grep -q "timing: printf-free+ms+one-budget" "$out" 2>/dev/null \
      && [ -f "$base.grade.out" ] && [ "$base.grade.out" -nt "$out" ]; then
     echo "$(date '+%F %T %Z') keep $1: $out is already the issue-11 record"
   else

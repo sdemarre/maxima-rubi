@@ -87,7 +87,7 @@ def header_checks(drv):
     check("header: the verification budget is stated",
           "verify: 30s cpu, stage 5s" in line, True)
     check("header: the timing mode is stated (corpus-harness 11)",
-          line.endswith("  timing: printf-free+one-budget"), True)
+          line.endswith("  timing: printf-free+ms+one-budget"), True)
     with tempfile.NamedTemporaryFile("w", suffix=".out", delete=False) as fh:
         fh.write(f"filter: 'x'  switches: {rr.BASELINE_ARM}\n")
     try:
@@ -148,14 +148,14 @@ def protocol_checks(drv):
 
     check("protocol: integrate passes, risch is not run",
           case(("verified", "radcan"), None),
-          ("verified", ["t=", "0.5s"], "radcan",
-           "integrate integrate=verified,0.5s,radcan risch=- 9 T/f.mac e1 L7",
+          ("verified", ["t=", "0.500s"], "radcan",
+           "integrate integrate=verified,0.500s,radcan risch=- 9 T/f.mac e1 L7",
            ["integrate"]))
     check("protocol: integrate fails, risch passes -- risch's verdict and tag, "
           "the two runs' time summed (decision (b))",
           case(("contains-noun", None), ("verified", "numeric")),
-          ("verified", ["t=", "2.0s"], "numeric",
-           "risch integrate=contains-noun,0.5s,- risch=verified,1.5s,numeric 9 T/f.mac e1 L7",
+          ("verified", ["t=", "2.000s"], "numeric",
+           "risch integrate=contains-noun,0.500s,- risch=verified,1.500s,numeric 9 T/f.mac e1 L7",
            ["integrate", "risch"]))
     check("protocol: integrate's run is given the whole TIMEOUT",
           calls[0], ("integrate", None))
@@ -163,14 +163,14 @@ def protocol_checks(drv):
           calls[1], ("risch", drv.TIMEOUT - 0.5))
     check("protocol: both fail -- integrate's verdict and time stay",
           case(("unverified", "none/numeric-mismatch"), ("deferred", None)),
-          ("unverified", ["t=", "0.5s"], "none/numeric-mismatch",
-           "integrate integrate=unverified,0.5s,none/numeric-mismatch "
-           "risch=deferred,1.5s,- 9 T/f.mac e1 L7",
+          ("unverified", ["t=", "0.500s"], "none/numeric-mismatch",
+           "integrate integrate=unverified,0.500s,none/numeric-mismatch "
+           "risch=deferred,1.500s,- 9 T/f.mac e1 L7",
            ["integrate", "risch"]))
     check("protocol: integrate used the whole budget -- risch is not run",
           case(("timeout", None), ("verified", "numeric"), (float(drv.TIMEOUT), 1.5)),
-          ("timeout", ["t=", f"{drv.TIMEOUT:.1f}s"], None,
-           f"integrate integrate=timeout,{drv.TIMEOUT:.1f}s,- risch=- 9 T/f.mac e1 L7",
+          ("timeout", ["t=", f"{drv.TIMEOUT:.3f}s"], None,
+           f"integrate integrate=timeout,{drv.TIMEOUT:.3f}s,- risch=- 9 T/f.mac e1 L7",
            ["integrate"]))
     check("protocol: integrate ran past the budget (process CPU) -- risch is not run",
           case(("timeout", None), ("verified", "numeric"), (drv.TIMEOUT + 12.3, 1.5))[4],
@@ -178,7 +178,7 @@ def protocol_checks(drv):
     check("protocol: a sliver of budget left -- risch runs on it",
           (case(("error", None), ("verified", "radcan"), (drv.TIMEOUT - 0.5, 0.25))[:2],
            calls[1]),
-          (("verified", ["t=", f"{drv.TIMEOUT - 0.25:.1f}s"]), ("risch", 0.5)))
+          (("verified", ["t=", f"{drv.TIMEOUT - 0.25:.3f}s"]), ("risch", 0.5)))
     for cls in sorted(drv.KNOWN_CLASSES):
         retry = cls not in drv.PASS_CLASSES and cls != "unexpected"
         check(f"protocol: integrate {cls} -> risch {'runs' if retry else 'does not run'}",
@@ -201,10 +201,10 @@ def budget_checks(drv):
 def merge_checks(drv):
     """merge_class_shards carries the timing: field and refuses shards that
     state different ones (or one without any)."""
-    real = "  timing: printf-free+one-budget"
+    real = "  timing: printf-free+ms+one-budget"
     check("merge: one timing mode is carried into the merged record",
           merge_filter(drv, [real, real]).endswith(real), True)
-    for name, pair in (("two modes", [real, "  timing: printf-free"]),
+    for name, pair in (("two modes", [real, "  timing: printf-free+one-budget"]),
                        ("a shard without one", [real, ""])):
         text = merge_filter(drv, pair)
         check(f"merge: {name} are refused",

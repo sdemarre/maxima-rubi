@@ -527,9 +527,10 @@ def timing_header():
     before printf is called, so a stock Maxima's stringproc autoload is not
     in t= (probes/timing/01); `+one-budget`, the native baseline: risch gets
     only what integrate left of TIMEOUT, and a risch verdict's t= is the two
-    runs' sum. A record without it predates both, and its native t= carry the
-    autoload."""
-    return "  timing: printf-free" + ("+one-budget" if BASELINE else "")
+    runs' sum; `+ms`: t= (and the .via times) carry milliseconds, not 0.1 s
+    (2026-10-04). A record without the field predates all three, and its
+    native t= carry the autoload."""
+    return "  timing: printf-free+ms" + ("+one-budget" if BASELINE else "")
 
 
 def core_header():
@@ -1080,10 +1081,18 @@ def _run_once(label, f_text, var_text, e_text, e_text2, integrator=None, budget=
     return r, dt
 
 
+def result_line(cls, dt, label):
+    """One record line: `<class> t=<seconds>s <label>`. The seconds carry
+    milliseconds since 2026-10-04 (`timing: ...+ms`): the ANSWERED value is
+    measured to the millisecond, and at 0.1 s nearly every native pass
+    recorded 0.0. Every reader takes t= as `[0-9.]+`."""
+    return f"{cls:14s} t={dt:7.3f}s {label}"
+
+
 def via_field(name, r, dt):
     """`integrate=verified,0.1s,chainA.1`: one integrator's run in a .via line
     (class, its CPU seconds, the checker's tag or `-`)."""
-    return f"{name}={r.cls},{dt:.1f}s,{r.proof or '-'}"
+    return f"{name}={r.cls},{dt:.3f}s,{r.proof or '-'}"
 
 
 def grade_of(cls, r, marker):
@@ -1150,7 +1159,7 @@ def run_entry_detail(rel, idx, entry_text, line_no):
     marker = e_text.startswith(("Unintegrable", "CannotIntegrate"))
     if not BASELINE:
         r, dt = _run_once(label, f_text, var_text, e_text, e_text2)
-        return (r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", r.caps, r.proof,
+        return (r.cls, result_line(r.cls, dt, label), r.caps, r.proof,
                 {"grade": grade_line(r.cls, r, marker, label)})
     r, dt = _run_once(label, f_text, var_text, e_text, e_text2, "integrate")
     who, fields = "integrate", [via_field("integrate", r, dt), "risch=-"]
@@ -1160,7 +1169,7 @@ def run_entry_detail(rel, idx, entry_text, line_no):
         fields[1] = via_field("risch", r2, dt2)
         if r2.cls in PASS_CLASSES:
             who, r, dt = "risch", r2, dt + dt2
-    return (r.cls, f"{r.cls:14s} t={dt:6.1f}s {label}", 0, r.proof,
+    return (r.cls, result_line(r.cls, dt, label), 0, r.proof,
             {"via": f"{who} {' '.join(fields)} {label}",
              "grade": grade_line(r.cls, r, marker, label)})
 

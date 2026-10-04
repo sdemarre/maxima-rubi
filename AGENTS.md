@@ -625,7 +625,7 @@ python3 test/test_merge_classes.py          # Results: 2 passed, 0 failed
 python3 test/test_record_medians.py         # Results: 3 passed, 0 failed
 python3 test/test_driver_inert_leak.py      # Results: 5 passed, 0 failed
 python3 test/test_head_rewrites.py          # Results: 70 passed, 0 failed
-python3 test/test_driver_proof.py           # Results: 30 passed, 0 failed
+python3 test/test_driver_proof.py           # Results: 31 passed, 0 failed
 python3 test/test_merge_proof.py            # Results: 8 passed, 0 failed
 python3 test/test_driver_baseline.py        # Results: 52 passed, 0 failed
 python3 test/test_driver_grade.py           # Results: 21 passed, 0 failed
@@ -681,9 +681,13 @@ Every arm reads the time into `mr_dt` before calling `printf`: in stock Maxima
 the first `printf` autoloads `stringproc` (~0.23 s) before evaluating its
 arguments, which put a 0.3-0.5 s floor under every native `t=` until
 2026-10-03 (`probes/timing/01-first-call-cost.out`). The `filter:` line states
-`timing: printf-free` (rubi) or `timing: printf-free+one-budget` (baseline);
+`timing: printf-free+ms` (rubi) or `timing: printf-free+ms+one-budget` (baseline),
+`+ms` since 2026-10-04: `t=` and the `.via` times carry milliseconds (they had
+0.1 s resolution, and nearly every native pass recorded 0.0 s);
 the merger refuses shards that disagree, and older native records are not
-comparable on time. `test/attrib_one_budget.py OLD OLD.via NEW NEW.via`
+comparable on time. Both arms of every section, re-measured, with A/Bs against
+the records before: `setsid sh test/ms_measure.sh > test/ms_measure.log 2>&1 < /dev/null &`.
+`test/attrib_one_budget.py OLD OLD.via NEW NEW.via`
 attributes a baseline re-run's PASS -> FAIL to the one budget. An `integrate` noun ANYWHERE in the result is no
 answer (`deferred` at top level, `contains-noun` inside): diff sees through
 the noun, so `2*'integrate(foo(x),x) + x^2/2` would otherwise be proved

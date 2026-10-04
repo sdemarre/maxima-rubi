@@ -9,7 +9,8 @@
 #   test/corpus_class<N>.baseline.out         integrate+risch (+ .proof.out, .grade.out, .via.out)
 # 24 workers, 30 s CPU per integrator, 30 s CPU of verification.
 #   setsid sh test/graded_measure.sh "0 Independent test suites" > test/graded_measure.log 2>&1 < /dev/null &
-# An arm whose grade census exists and is newer than its record is kept.
+# An arm whose grade census exists and is newer than its record, and whose
+# record states the current timing mode, is kept.
 set -u
 cd "$(dirname "$0")/.." || exit 1
 echo "$(date '+%F %T %Z') host check"; uptime
@@ -24,7 +25,11 @@ run_arm() {  # $1 section  $2 arm (rubi|baseline)
   else slug="class$n"; unset MR_BASELINE; fi
   out="test/corpus_$slug.out"
   base="${out%.out}"
-  if [ -f "$base.grade.out" ] && [ "$base.grade.out" -nt "$out" ]; then
+  # Kept only when the record also states the driver's current timing mode
+  # (corpus_driver.timing_header): a record from before a timing change is
+  # re-measured even though its grade census is newer.
+  if [ -f "$base.grade.out" ] && [ "$base.grade.out" -nt "$out" ] \
+     && grep -qE "timing: printf-free\+ms(\+one-budget)?\s*$" "$out"; then
     echo "$(date '+%F %T %Z') keep $2 $1: $base.grade.out exists"; return 0
   fi
   # --prev orders the queue longest-first: the arm's previous record, or for
