@@ -178,9 +178,9 @@ are migration and ordering switches of the matcher; they are documented in
 
 ## Measured state
 
-Full-corpus records on `master` (rubi 2026-10-03, native baseline 2026-09-30/10-01;
+Full-corpus records on `master` (both arms 2026-10-04;
 Maxima `branch_5_50_base_84_g4204fb669`, SBCL 2.6.7; 24 workers; 30 s CPU per
-integrator plus 30 s CPU for verification). PASS = the checker proves the answer
+integral -- native `integrate` and `risch` share it -- plus 30 s CPU for verification). PASS = the checker proves the answer
 by differentiation (or, failing every symbolic stage, a two-point numeric check
 agrees), or the entry is a correct no-answer. The native baseline is stock Maxima
 on the same harness: `integrate`, then `risch` when `integrate` fails. Each record
@@ -188,24 +188,28 @@ states its build, switches and caps in its header.
 
 | section | integrals | `rubi` PASS | native `integrate`+`risch` | record |
 |---|---:|---:|---:|---|
-| 0 independent suites | 1,869 | **1,783 (95.4 %)** | 1,561 (83.5 %) | `test/corpus_class0.out` |
-| 1 algebraic | 25,697 | **24,706 (96.1 %)** | 16,676 (64.9 %) | `test/corpus_class1.out` |
+| 0 independent suites | 1,869 | **1,783 (95.4 %)** | 1,560 (83.5 %) | `test/corpus_class0.out` |
+| 1 algebraic | 25,697 | **24,706 (96.1 %)** | 16,677 (64.9 %) | `test/corpus_class1.out` |
 | 2 exponentials | 965 | **875 (90.7 %)** | 625 (64.8 %) | `test/corpus_class2.out` |
-| 3 logarithms | 3,085 | **2,648 (85.8 %)** | 1,975 (64.0 %) | `test/corpus_class3.out` |
-| 4 trigonometric | 22,472 | **21,213 (94.4 %)** | 11,414 (50.8 %) | `test/corpus_class4.out` |
-| 5 inverse trig | 4,585 | **3,879 (84.6 %)** | 1,383 (30.2 %) | `test/corpus_class5.out` |
+| 3 logarithms | 3,085 | **2,648 (85.8 %)** | 1,973 (64.0 %) | `test/corpus_class3.out` |
+| 4 trigonometric | 22,472 | **21,219 (94.4 %)** | 11,310 (50.3 %) | `test/corpus_class4.out` |
+| 5 inverse trig | 4,585 | **3,880 (84.6 %)** | 1,383 (30.2 %) | `test/corpus_class5.out` |
 | 6 hyperbolic | 5,080 | **4,496 (88.5 %)** | 3,078 (60.6 %) | `test/corpus_class6.out` |
 | 7 inverse hyperbolic | 6,552 | **5,894 (90.0 %)** | 2,250 (34.3 %) | `test/corpus_class7.out` |
 | 8 special functions | 1,949 | **1,727 (88.6 %)** | 595 (30.5 %) | `test/corpus_class8.out` |
-| **sections 1-8** | **70,385** | **65,438 (93.0 %)** | 37,996 (54.0 %) | |
+| **sections 1-8** | **70,385** | **65,445 (93.0 %)** | 37,891 (53.8 %) | |
 
 The native records are `test/corpus_class<N>.baseline.out`.
 
 Every answer is also graded A/B/C/F with the 12000.org CAS integration tests'
 `GradeAntiderivative` (leaf size against the optimal antiderivative, function
 type, `%i`). Over all 72,254 integrals: `rubi` A 86.7 %, solved (A/B/C) 93.4 %;
-native A 39.8 %, solved 55.2 %. The census is `test/grade_report.out`; the grade
+native A 39.8 %, solved 55.1 %. The census is `test/grade_report.out`; the grade
 and leaf size are defined in `docs/grading-and-leaf-size.md`.
+
+The full grade report -- per-section grades, leaf sizes, run times and time
+histograms of both arms, and where `rubi` loses grades -- is published at
+<https://claude.ai/artifact/XHpx6cnE6geM8QV8Y1vN8L>.
 
 ## Testing
 
