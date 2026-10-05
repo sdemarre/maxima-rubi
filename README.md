@@ -11,35 +11,26 @@ logarithmic, trigonometric, inverse trigonometric, hyperbolic, inverse
 hyperbolic and special functions, plus Rubi's section-9 utility rules. That is
 7,776 rules.
 
+**How well it does:** the full grade report compares `rubi` with Maxima's own
+`integrate` (then `risch`) on every integral of the corpus. It covers
+per-section A/B/C/F grades, leaf sizes, run times and time histograms of both,
+and where `rubi` loses grades:
+<https://claude.ai/artifact/XHpx6cnE6geM8QV8Y1vN8L>. In short, over all 72,254
+integrals, `rubi` gets an A on 86.7 % and solves 93.4 % (A/B/C); native Maxima
+gets an A on 39.8 % and solves 55.1 %. See [Measured state](#measured-state)
+for the per-section pass counts.
+
 ## Quick start
 
-The fastest way in is the prebuilt rules core: an SBCL image with Maxima and
-all 7,776 rules already loaded, which starts in under a second.
-
-```sh
-sh test/build_rules_core.sh        # (re)build test/mr_rules.core, a few seconds
-rlwrap sbcl --tls-limit 100000 --core test/mr_rules.core --noinform
-```
-
-That gives an ordinary Maxima prompt (`rlwrap` is optional; it adds line
-editing):
-
-```maxima
-rubi(sec(x)^3, x);                            /* atanh(sin(x))/2 + sec(x)^2*sin(x)/2 */
-r : rubi(x^3/sqrt(a+b*x^2), x)$
-ratsimp(diff(r, x) - x^3/sqrt(a+b*x^2));      /* 0 */
-```
-
-The core is built from the files on disk. Rebuild it after pulling or after
-changing any rule or package file.
-
-Without the core, from a plain Maxima started in the package directory (about
-4 s to load):
+From a plain Maxima started in the package directory (loading takes about
+4 s):
 
 ```maxima
 load("maxima_rubi.mac")$
 mr_load_all()$
-rubi(sec(x)^3, x);
+rubi(sec(x)^3, x);                            /* atanh(sin(x))/2 + sec(x)^2*sin(x)/2 */
+r : rubi(x^3/sqrt(a+b*x^2), x)$
+ratsimp(diff(r, x) - x^3/sqrt(a+b*x^2));      /* 0 */
 ```
 
 `load("maxima_rubi.mac")` must be able to find its siblings, by one of four
@@ -207,9 +198,7 @@ type, `%i`). Over all 72,254 integrals: `rubi` A 86.7 %, solved (A/B/C) 93.4 %;
 native A 39.8 %, solved 55.1 %. The census is `test/grade_report.out`; the grade
 and leaf size are defined in `docs/grading-and-leaf-size.md`.
 
-The full grade report -- per-section grades, leaf sizes, run times and time
-histograms of both arms, and where `rubi` loses grades -- is published at
-<https://claude.ai/artifact/XHpx6cnE6geM8QV8Y1vN8L>.
+The full grade report is linked in the introduction.
 
 ## Testing
 
@@ -229,6 +218,10 @@ expected figure.
   `python3 test/run_corpus_queue.py "<section>" --prev <record> --workers 24 --launch`,
   then `test/wait_and_merge.sh`; compare two records with
   `python3 test/ab_records.py <old> <new>`. Class 1 takes about an hour (66 minutes on 2026-10-03).
+  The driver starts each integral from `test/mr_rules.core`, an SBCL image with
+  the rules preloaded that `sh test/build_rules_core.sh` builds from the files
+  on disk. It is a harness device for the 70,000 per-integral launches, not a
+  way to use the package.
 
 `AGENTS.md` (`## Tests`) holds every gate with its current green figure and
 the reading protocol in detail.
